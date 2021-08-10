@@ -8,7 +8,7 @@ import subprocess
 import weakref
 
 from test_tools import communication, constants, logger, network, paths_to_executables
-from test_tools.exceptions import CommunicationError, NodeIsNotRunning, NodeProcessRunFailedError
+from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
@@ -75,19 +75,18 @@ class Node:
             self.__logger.debug(' '.join(item for item in command))
 
             if blocking:
-                process_handle = subprocess.run(
+                subprocess.run(
+                    command,
+                    cwd=self.__directory,
+                    **self.__files,
+                    check=True,
+                )
+            else:
+                self.__process = subprocess.Popen(
                     command,
                     cwd=self.__directory,
                     **self.__files,
                 )
-                return process_handle.returncode
-
-            self.__process = subprocess.Popen(
-                command,
-                cwd=self.__directory,
-                **self.__files,
-            )
-            return None
 
         def get_id(self):
             return self.__process.pid
@@ -320,12 +319,7 @@ class Node:
         if write_config_before_run:
             self.config.write_to_file(self.__get_config_file_path())
 
-        return_code = self.__process.run(blocking=blocking, with_arguments=with_arguments)
-
-        if return_code is not None and return_code != 0:
-            raise NodeProcessRunFailedError(f'Process closed with error code {return_code}', return_code)
-
-        return return_code
+        self.__process.run(blocking=blocking, with_arguments=with_arguments)
 
     def run(
             self,
@@ -389,13 +383,13 @@ class Node:
         else:
             self.__logger.info(f'{log_message} and NOT waiting for live...')
 
-        return_code = self.__run_process(blocking=exit_before_synchronization, with_arguments=additional_arguments)
+        self.__run_process(blocking=exit_before_synchronization, with_arguments=additional_arguments)
 
         self.__produced_files = True
         if wait_for_live:
             self._wait_for_live(timeout)
 
-        self.__log_run_summary(return_code)
+        self.__log_run_summary()
 
     def __handle_loading_snapshot(self, snapshot_source: Snapshot, additional_arguments: list):
         if not isinstance(snapshot_source, Snapshot):
@@ -421,7 +415,7 @@ class Node:
         blocklog_directory.mkdir()
         replay_source.copy_to(blocklog_directory)
 
-    def __log_run_summary(self, return_code):
+    def __log_run_summary(self):
         if self.is_running():
             message = f'Run with pid {self.__process.get_id()}, '
 
@@ -431,7 +425,7 @@ class Node:
             else:
                 message += 'without any server'
         else:
-            message = f'Run completed with return code {return_code}'
+            message = f'Run completed'
 
         message += f', {self.__executable.get_build_version()} build'
         message += f' commit={self.__executable.get_build_commit_hash()[:8]}'
