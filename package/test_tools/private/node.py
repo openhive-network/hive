@@ -36,7 +36,8 @@ class Node:
 
         def is_test_net_build(self):
             error_message = self.__run_and_get_output('--chain-id')
-            return error_message == 'Error parsing command line: the required argument for option \'--chain-id\' is missing'
+            return error_message == 'Error parsing command line: '\
+                                    'the required argument for option \'--chain-id\' is missing'
 
         def is_main_net_build(self):
             error_message = self.__run_and_get_output('--chain-id')
