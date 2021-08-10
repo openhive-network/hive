@@ -1,3 +1,5 @@
+import re
+
 from test_tools.exceptions import NotSupported, ParseError
 from test_tools.private.node_config_entry_types.config_entry import ConfigEntry
 
@@ -30,7 +32,6 @@ class List(ConfigEntry):
         self.set_value([])
 
     def parse_from_text(self, text):
-        import re
         match_result = re.match(fr'^\s*{re.escape(self.__begin)}(.*){re.escape(self.__end)}\s*$', text)
 
         if not match_result:

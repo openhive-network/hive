@@ -1,6 +1,7 @@
+from argparse import ArgumentParser
 from os import getenv, path
 from pathlib import Path
-
+import shutil
 
 from test_tools.exceptions import MissingPathToExecutable, NotSupported
 
@@ -111,7 +112,6 @@ class _PathsToExecutables:
         self.paths[executable_name] = executable_path
 
     def parse_command_line_arguments(self, arguments=None):
-        from argparse import ArgumentParser
         parser = ArgumentParser()
 
         parser.add_argument(self.BUILD_ROOT_PATH_COMMAND_LINE_ARGUMENT, dest='build_root')
@@ -146,7 +146,6 @@ class _PathsToExecutables:
         self.installed_executables = {}
 
         if installed_executables is None:
-            import shutil
             for executable in self.supported_executables:
                 self.installed_executables[executable.name] = shutil.which(executable.name)
             return

@@ -4,9 +4,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+from test_tools import paths_to_executables
+
 
 def check_paths_to_executables():
-    from test_tools import paths_to_executables
     paths = paths_to_executables.get_paths_in_use()
 
     if any(path is None for executable, path in paths.items()):

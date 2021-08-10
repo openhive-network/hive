@@ -1,5 +1,7 @@
-import requests
 import json
+import time
+
+import requests
 
 from test_tools.exceptions import CommunicationError
 from test_tools.private.asset import AssetBase
@@ -23,7 +25,6 @@ def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.
         result = requests.post(url, data=message)
         if result.status_code != 200:
             if attempts_left > 0:
-                import time
                 time.sleep(seconds_between_attempts)
             attempts_left -= 1
             continue

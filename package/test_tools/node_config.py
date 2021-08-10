@@ -1,3 +1,5 @@
+import re
+
 from test_tools.private.node_config_entry_types import *
 
 
@@ -185,8 +187,6 @@ class NodeConfig:
 
     def load_from_lines(self, lines):
         assert isinstance(lines, list)
-
-        import re
 
         def parse_entry_line(line):
             result = re.match(r'^\s*([\w\-]+)\s*=\s*(.*?)\s*$', line)

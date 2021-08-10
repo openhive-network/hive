@@ -1,6 +1,9 @@
 from pathlib import Path
 import re
+import shutil
+import signal
 import subprocess
+import warnings
 
 from test_tools import Account, communication, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError
@@ -54,7 +57,6 @@ class Wallet:
             return response
 
         def __handle_broadcast_parameter(self, params):
-            import warnings
             if params['broadcast'] is None:
                 params['broadcast'] = self.__get_default_broadcast_value()
             elif self.__is_transaction_build_in_progress():
@@ -484,7 +486,6 @@ class Wallet:
         if not self.http_server_port:
             self.http_server_port = 0
 
-        import shutil
         shutil.rmtree(self.directory, ignore_errors=True)
         self.directory.mkdir(parents=True)
 
@@ -562,7 +563,6 @@ class Wallet:
         if self.process is None:
             return
 
-        import signal
         self.process.send_signal(signal.SIGINT)
         try:
             return_code = self.process.wait(timeout=3)

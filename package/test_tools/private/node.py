@@ -5,13 +5,16 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
+import weakref
 
-from test_tools import constants, logger, paths_to_executables
+from test_tools import communication, constants, logger, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning, NodeProcessRunFailedError
+from test_tools.network import Network
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
 from test_tools.private.snapshot import Snapshot
+from test_tools.private.wait_for import wait_for
 from test_tools.wallet import Wallet
 
 
@@ -127,7 +130,6 @@ class Node:
     def __init__(self, creator, name, directory):
         self.api = Apis(self)
 
-        import weakref
         self.__creator = weakref.proxy(creator)
         self.__name = name
         self.directory = Path(directory).joinpath(self.__name).absolute()
@@ -141,7 +143,6 @@ class Node:
         self.config = create_default_config()
 
     def __str__(self):
-        from test_tools.network import Network
         return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, Network) else self.__name
 
     def __get_config_file_path(self):
@@ -202,7 +203,6 @@ class Node:
         self.wait_for_block_with_number(self.get_last_block_number() + blocks_to_wait, timeout=timeout)
 
     def wait_for_block_with_number(self, number, *, timeout=math.inf):
-        from test_tools.private.wait_for import wait_for
         wait_for(
             lambda: self.__is_block_with_number_reached(number),
             timeout=timeout,
@@ -219,12 +219,10 @@ class Node:
         return response['result']['head_block_number']
 
     def _wait_for_p2p_plugin_start(self, timeout=10):
-        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_p2p_plugin_started, timeout=timeout,
                  timeout_error_message=f'Waiting too long for start of {self} p2p plugin')
 
     def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
-        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_live, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
@@ -245,7 +243,6 @@ class Node:
 
         self.__wait_for_http_listening()
 
-        from test_tools import communication
         response = communication.request(endpoint, message)
 
         if 'error' in response:
@@ -254,7 +251,6 @@ class Node:
         return response
 
     def __wait_for_http_listening(self, timeout=10):
-        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_http_listening, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to start listening on http port')
 
@@ -310,7 +306,6 @@ class Node:
             self.config.plugin.append(plugin_required_for_snapshots)
 
     def __wait_for_dumping_snapshot_finish(self, timeout=15):
-        from test_tools.private.wait_for import wait_for
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 

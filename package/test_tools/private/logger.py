@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+import sys
 
 
 class Logger:
@@ -29,8 +30,7 @@ class Logger:
         self.__initialize_file_handler(formatter)
 
         # Configure stream handler
-        from sys import stdout
-        self.__stream_handler = logging.StreamHandler(stdout)
+        self.__stream_handler = logging.StreamHandler(sys.stdout)
         self.__stream_handler.setFormatter(formatter)
         self.__stream_handler.setLevel(logging.INFO)
         logging.root.addHandler(self.__stream_handler)
