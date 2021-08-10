@@ -22,7 +22,8 @@ class Node:
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
 
     class __Executable:
-        def get_path(self):
+        @staticmethod
+        def get_path():
             return paths_to_executables.get_path_of('hived')
 
         def get_build_version(self):

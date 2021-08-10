@@ -85,7 +85,8 @@ class World(NodesCreator):
         self.__networks.append(network)
         return network
 
-    def create_remote_node(self, endpoint):
+    @staticmethod
+    def create_remote_node(endpoint):
         return RemoteNode(endpoint)
 
     def network(self, name: str) -> Network:
