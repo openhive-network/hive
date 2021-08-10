@@ -489,6 +489,8 @@ class Wallet:
         shutil.rmtree(self.directory, ignore_errors=True)
         self.directory.mkdir(parents=True)
 
+        # pylint: disable=consider-using-with
+        # Files opened here have to exist longer than current scope
         self.stdout_file = open(self.get_stdout_file_path(), 'w')
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
@@ -501,6 +503,8 @@ class Wallet:
             timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
         )
 
+        # pylint: disable=consider-using-with
+        # Process created here have to exist longer than current scope
         self.process = subprocess.Popen(
             [
                 str(self.executable_file_path),

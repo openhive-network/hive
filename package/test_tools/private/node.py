@@ -82,6 +82,8 @@ class Node:
                     check=True,
                 )
             else:
+                # pylint: disable=consider-using-with
+                # Process created here have to exist longer than current scope
                 self.__process = subprocess.Popen(
                     command,
                     cwd=self.__directory,
@@ -94,6 +96,8 @@ class Node:
         def __prepare_files_for_streams(self):
             for name in self.__files:
                 if self.__files[name] is None:
+                    # pylint: disable=consider-using-with
+                    # Files opened here have to exist longer than current scope
                     self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w')
 
         def workaround_stderr_parsing_problem(self):
@@ -102,6 +106,9 @@ class Node:
                 return
 
             file.close()
+
+            # pylint: disable=consider-using-with
+            # File stderr.txt was opened earlier and have to be opened after this function end
             self.__files['stderr'] = open(self.__directory.joinpath('stderr.txt'), 'w')
 
         def close(self):
