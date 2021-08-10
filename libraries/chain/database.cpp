@@ -911,7 +911,7 @@ const comment_object& database::get_comment_for_payout_time( const comment_objec
   if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.is_root() )
     return comment;
   else
-    return get< comment_object >( comment.get_root_id() );
+    return get< comment_object >( find_comment_cashout_ex( comment )->get_root_id() );
 }
 
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
@@ -925,9 +925,8 @@ const time_point_sec database::calculate_discussion_payout_time( const comment_o
     return time_point_sec::maximum();
 }
 
-const time_point_sec database::calculate_discussion_payout_time( const comment_cashout_object& comment_cashout )const
+const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment, const comment_cashout_object& comment_cashout )const
 {
-  const comment_object& comment = get_comment( comment_cashout );
   const comment_object& _comment = get_comment_for_payout_time( comment );
 
   if( _comment.get_id() == comment.get_id() )
@@ -994,8 +993,13 @@ const comment_object& database::get_comment( const comment_cashout_object& comme
   return *found;
 }
 
-void database::remove_old_comments()
+void database::remove_old_cashouts()
 {
+  // Remove all cashout extras
+  auto& comment_cashout_ex_idx = get_mutable_index< comment_cashout_ex_index >();
+  comment_cashout_ex_idx.clear();
+
+  // Remove regular cashouts for paid comments
   const auto& idx = get_index< comment_cashout_index, by_cashout_time >();
   auto itr = idx.find( fc::time_point_sec::maximum() );
 
@@ -2967,7 +2971,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       } );
     }
 
-    if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment_cashout ) == fc::time_point_sec::maximum() )
+    if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment, comment_cashout ) == fc::time_point_sec::maximum() )
     {
       push_virtual_operation( comment_payout_update_operation( get_account(comment_cashout.author_id).name, to_string( comment_cashout.permlink ) ) );
     }
@@ -3028,25 +3032,25 @@ void database::process_comment_cashout()
     funds.push_back( rf_ctx );
   }
 
-  const auto& cidx        = get_index< comment_cashout_index >().indices().get< by_cashout_time >();
-  const auto& com_by_root = get_index< comment_index >().indices().get< by_root >();
+  const auto& cidx        = get_index< comment_cashout_index, by_cashout_time >();
+  const auto& com_by_root = get_index< comment_cashout_ex_index, by_root >();
 
-  auto current = cidx.begin();
+  auto _current = cidx.begin();
   //  add all rshares about to be cashed out to the reward funds. This ensures equal satoshi per rshare payment
   if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
   {
-    while( current != cidx.end() && current->cashout_time <= head_block_time() )
+    while( _current != cidx.end() && _current->cashout_time <= head_block_time() )
     {
-      if( current->net_rshares > 0 )
+      if( _current->net_rshares > 0 )
       {
         const auto& rf = get_reward_fund();
-        funds[ rf.get_id() ].recent_claims += util::evaluate_reward_curve( current->net_rshares.value, rf.author_reward_curve, rf.content_constant );
+        funds[ rf.get_id() ].recent_claims += util::evaluate_reward_curve( _current->net_rshares.value, rf.author_reward_curve, rf.content_constant );
       }
 
-      ++current;
+      ++_current;
     }
 
-    current = cidx.begin();
+    _current = cidx.begin();
   }
 
   bool forward_curation_remainder = !has_hardfork( HIVE_HARDFORK_0_20__1877 );
@@ -3063,31 +3067,32 @@ void database::process_comment_cashout()
     * the global state updated each payout. After the hardfork, each payout is done
     * against a reward fund state that is snapshotted before all payouts in the block.
     */
-  while( current != cidx.end() && current->cashout_time <= head_block_time() )
+  while( _current != cidx.end() && _current->cashout_time <= head_block_time() )
   {
-    const comment_object& _comment = get_comment( *current );
-
     if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
     {
       auto fund_id = get_reward_fund().get_id();
       ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
       ctx.total_reward_fund_hive = funds[ fund_id ].reward_balance;
 
-      funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *current,
+      const comment_object& _comment = get_comment( *_current );
+      funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *_current,
         find_comment_cashout_ex( _comment ), forward_curation_remainder );
     }
     else
     {
-      auto itr = com_by_root.lower_bound( _comment.get_root_id() );
-      while( itr != com_by_root.end() && itr->get_root_id() == _comment.get_root_id() )
+      comment_id_type root_id = find_comment_cashout_ex( _current->get_comment_id() )->get_root_id();
+      auto itr = com_by_root.lower_bound( root_id );
+      while( itr != com_by_root.end() && itr->get_root_id() == root_id )
       {
-        const auto& comment = *itr; ++itr;
+        const auto& comment_cashout_ex = *itr; ++itr;
         ctx.total_reward_shares2 = gpo.total_reward_shares2;
         ctx.total_reward_fund_hive = gpo.get_total_reward_fund_hive();
 
-        const comment_cashout_object* current = find_comment_cashout( comment );
-        FC_ASSERT( current );
-        auto reward = cashout_comment_helper( ctx, comment, *current, find_comment_cashout_ex( comment ) );
+        const comment_object& comment = get_comment( comment_cashout_ex.get_comment_id() );
+        const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
+        FC_ASSERT( comment_cashout );
+        auto reward = cashout_comment_helper( ctx, comment, *comment_cashout, &comment_cashout_ex );
 
         if( reward > 0 )
         {
@@ -3100,8 +3105,8 @@ void database::process_comment_cashout()
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_19 ) )
-      remove( *current );
-    current = cidx.begin();
+      remove( *_current );
+    _current = cidx.begin();
   }
 
   // Write the cached fund state back to the database
@@ -6078,7 +6083,7 @@ void database::apply_hardfork( uint32_t hardfork )
         * their cashout time in a similar way, grabbing the root post as their inherent cashout time.
         */
         const auto& comment_idx = get_index< comment_cashout_index, by_cashout_time >();
-        const auto& by_root_idx = get_index< comment_index, by_root >();
+        const auto& by_root_idx = get_index< comment_cashout_ex_index, by_root >();
         vector< const comment_cashout_object* > root_posts;
         root_posts.reserve( HIVE_HF_17_NUM_POSTS );
         vector< const comment_cashout_object* > replies;
@@ -6087,11 +6092,11 @@ void database::apply_hardfork( uint32_t hardfork )
         for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time < fc::time_point_sec::maximum(); ++itr )
         {
           root_posts.push_back( &(*itr) );
-          auto cid = itr->get_comment_id();
+          auto root_id = itr->get_comment_id();
 
-          for( auto reply_itr = by_root_idx.lower_bound( cid ); reply_itr != by_root_idx.end() && reply_itr->get_root_id() == cid; ++reply_itr )
+          for( auto reply_itr = by_root_idx.lower_bound( root_id ); reply_itr != by_root_idx.end() && reply_itr->get_root_id() == root_id; ++reply_itr )
           {
-            const comment_cashout_object* comment_cashout = find_comment_cashout( *reply_itr );
+            const comment_cashout_object* comment_cashout = find_comment_cashout( reply_itr->get_comment_id() );
             replies.push_back( comment_cashout );
           }
         }
@@ -6108,7 +6113,7 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           modify( *itr, [&]( comment_cashout_object& c )
           {
-            c.cashout_time = std::max( calculate_discussion_payout_time( c ), itr->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+            c.cashout_time = std::max( calculate_discussion_payout_time( get_comment( c ), c ), c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
           });
         }
       }
@@ -6117,10 +6122,6 @@ void database::apply_hardfork( uint32_t hardfork )
       break;
     case HIVE_HARDFORK_0_19:
       {
-        // Remove all cashout extras
-        auto& comment_cashout_ex_idx = get_mutable_index< comment_cashout_ex_index >();
-        comment_cashout_ex_idx.clear();
-
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
         {
           gpo.vote_power_reserve_rate = HIVE_REDUCED_VOTE_POWER_RATE;
@@ -6153,7 +6154,7 @@ void database::apply_hardfork( uint32_t hardfork )
           remove( *delegation_ptr );
         }
 
-        remove_old_comments();
+        remove_old_cashouts();
       }
       break;
     case HIVE_HARDFORK_0_20:

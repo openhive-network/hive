@@ -289,7 +289,7 @@ namespace chain {
     public:
 
       const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
-      const time_point_sec                   calculate_discussion_payout_time( const comment_cashout_object& comment_cashout )const;
+      const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment, const comment_cashout_object& comment_cashout )const;
       const reward_fund_object&              get_reward_fund()const;
 
       const comment_cashout_object* find_comment_cashout( const comment_object& comment ) const;
@@ -297,7 +297,7 @@ namespace chain {
       const comment_cashout_ex_object* find_comment_cashout_ex( const comment_object& comment ) const;
       const comment_cashout_ex_object* find_comment_cashout_ex( comment_id_type comment_id ) const;
       const comment_object& get_comment( const comment_cashout_object& comment_cashout ) const;
-      void remove_old_comments();
+      void remove_old_cashouts();
 
       asset get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const;
 

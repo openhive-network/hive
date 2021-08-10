@@ -38,9 +38,7 @@ enum sort_order_type
   by_conversion_date,
   by_cashout_time,
   by_permlink,
-  by_root,
   by_parent,
-  by_author_last_update,
   by_comment_voter,
   by_voter_comment,
   by_price,
@@ -716,9 +714,7 @@ FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_conversion_date)
   (by_cashout_time)
   (by_permlink)
-  (by_root)
   (by_parent)
-  (by_author_last_update)
   (by_comment_voter)
   (by_voter_comment)
   (by_price)
