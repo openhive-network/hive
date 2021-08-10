@@ -61,7 +61,7 @@ class Logger:
 
     def show_debug_logs_on_stdout(self):
         self.__ensure_initialization()
-        __stream_handler.setLevel(logging.DEBUG)
+        self.__stream_handler.setLevel(logging.DEBUG)
 
     def set_directory(self, directory):
         if self.__file_handler is not None:
