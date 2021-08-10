@@ -24,6 +24,8 @@ class NodeConfig:
     def __define_entries(self):
         super().__setattr__('__entries', {})
 
+        # pylint: disable=attribute-defined-outside-init
+        # This method is called in __init__
         self.log_appender = Untouched()  # TODO: Set correct type
         self.log_console_appender = Untouched()  # TODO: Set correct type
         self.log_file_appender = Untouched()  # TODO: Set correct type
