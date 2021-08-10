@@ -21,9 +21,14 @@ class Node:
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
 
     class __Executable:
-        @staticmethod
-        def get_path():
-            return paths_to_executables.get_path_of('hived')
+        def __init__(self):
+            self.__path = None
+
+        def get_path(self):
+            return paths_to_executables.get_path_of('hived') if self.__path is None else self.__path
+
+        def set_path(self, path):
+            self.__path = path
 
         def get_build_version(self):
             if self.is_test_net_build():
@@ -527,7 +532,7 @@ class Node:
         self.__remove(self.directory)
 
     def set_executable_file_path(self, executable_file_path):
-        self.__executable_file_path = executable_file_path
+        self.__executable.set_path(executable_file_path)
 
     def set_clean_up_policy(self, policy: constants.NodeCleanUpPolicy):
         self.__clean_up_policy = policy
