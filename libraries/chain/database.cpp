@@ -55,19 +55,14 @@
 
 long next_hf_time()
 {
-  // current "next hardfork" is HF25
-  long hfTime =
-#ifdef IS_TEST_NET
-    1622808000; //  Friday, 4 June 2021 12:00:00
-#else
-    1625061600; //  Wednesday, 30 June 2021 14:00:00
-#endif /// IS_TEST_NET
+  // current "next hardfork" is HF26
+  long hfTime = 1640952000; //  Thursday, 31 December 2021 12:00:00 GMT
 
-  const char* value = getenv("HIVE_HF25_TIME");
+  const char* value = getenv("HIVE_HF26_TIME");
   if(value != nullptr)
   {
     hfTime = atol(value);
-    ilog("HIVE_HF25_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hfTime));
+    ilog("HIVE_HF26_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hfTime));
   }
 
   return hfTime;
@@ -760,7 +755,7 @@ const witness_object* database::find_witness( const account_name_type& name ) co
 
 std::string database::get_treasury_name( uint32_t hardfork ) const
 {
-  if( hardfork >= HIVE_TREASURY_RENAME_HARDFORK )
+  if( hardfork >= HIVE_HARDFORK_1_24_TREASURY_RENAME )
     return NEW_HIVE_TREASURY_ACCOUNT;
   else
     return OBSOLETE_TREASURY_ACCOUNT;
@@ -1963,11 +1958,11 @@ void database::clear_null_account_balance()
 
 void database::consolidate_treasury_balance()
 {
-  if( !has_hardfork( HIVE_TREASURY_RENAME_HARDFORK ) )
+  if( !has_hardfork( HIVE_HARDFORK_1_24_TREASURY_RENAME ) )
     return;
 
   auto treasury_name = get_treasury_name();
-  auto old_treasury_name = get_treasury_name( HIVE_TREASURY_RENAME_HARDFORK - 1 );
+  auto old_treasury_name = get_treasury_name( HIVE_HARDFORK_1_24_TREASURY_RENAME - 1 );
 
   const auto& old_treasury_account = get_account( old_treasury_name );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
@@ -5843,10 +5838,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_25 == 25, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_25 ] = fc::time_point_sec( HIVE_HARDFORK_1_25_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_25 ] = HIVE_HARDFORK_1_25_VERSION;
-#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
   FC_ASSERT( HIVE_HARDFORK_1_26 == 26, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
+#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
+  FC_ASSERT( HIVE_HARDFORK_1_27 == 27, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_27 ] = fc::time_point_sec( HIVE_HARDFORK_1_27_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_27 ] = HIVE_HARDFORK_1_27_VERSION;
 #endif
 }
 
@@ -6280,7 +6278,7 @@ void database::apply_hardfork( uint32_t hardfork )
     FC_ASSERT( hfp.processed_hardforks[ hfp.last_hardfork ] == _hardfork_versions.times[ hfp.last_hardfork ], "Hardfork processing failed sanity check..." );
   } );
 
-  if( hardfork == HIVE_TREASURY_RENAME_HARDFORK )
+  if( hardfork == HIVE_HARDFORK_1_24_TREASURY_RENAME )
   {
     lock_account( get_treasury() );
     //the following routine can only be called effectively after hardfork was marked as applied
