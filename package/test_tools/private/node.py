@@ -28,10 +28,11 @@ class Node:
         def get_build_version(self):
             if self.is_test_net_build():
                 return 'testnet'
-            elif self.is_main_net_build():
+
+            if self.is_main_net_build():
                 return 'mainnet'
-            else:
-                return 'unrecognised'
+
+            return 'unrecognised'
 
         def is_test_net_build(self):
             error_message = self.__run_and_get_output('--chain-id')

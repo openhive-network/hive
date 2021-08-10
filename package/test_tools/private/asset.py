@@ -67,7 +67,8 @@ class AssetBase:
     def __eq__(self, other):
         if isinstance(other, str):
             return str(self) == other
-        elif type(self) is type(other):
+
+        if type(self) is type(other):
             return self.amount == other.amount
 
         raise TypeError(f'Assets can\'t be compared with objects of type {type(other)}')

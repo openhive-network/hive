@@ -11,10 +11,11 @@ def get_preferred_directory(request):
         test_case_name = request.function.__name__
 
         return current_directory / f'generated_during_{module_name}' / test_case_name
-    elif request.scope == 'package':
+
+    if request.scope == 'package':
         return __get_package_directory(request) / f'generated_by_fixture_{request.fixturename}'
-    else:
-        raise RuntimeError('Unsupported pytest.fixture scope, supported is only function and package scopes')
+
+    raise RuntimeError('Unsupported pytest.fixture scope, supported is only function and package scopes')
 
 
 def __get_package_directory(request):
