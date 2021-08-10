@@ -62,10 +62,10 @@ class Wallet:
             elif self.__is_transaction_build_in_progress():
                 if params['broadcast'] is True:
                     raise RuntimeError(
-                        f'You cannot broadcast api call during transaction building.\n'
-                        f'\n'
-                        f'Replace broadcast parameter with value False or better -- remove it\n'
-                        f'completely, because it is default value during transaction building.'
+                        'You cannot broadcast api call during transaction building.\n'
+                        '\n'
+                        'Replace broadcast parameter with value False or better -- remove it\n'
+                        'completely, because it is default value during transaction building.'
                     )
                 else:
                     warnings.warn(
@@ -574,7 +574,7 @@ class Wallet:
         except subprocess.TimeoutExpired:
             self.process.kill()
             self.process.wait()
-            self.logger.warning(f'Process was force-closed with SIGKILL, because didn\'t close before timeout')
+            self.logger.warning('Process was force-closed with SIGKILL, because didn\'t close before timeout')
 
     def __close_opened_files(self):
         for file in [self.stdout_file, self.stderr_file]:

@@ -122,7 +122,7 @@ class Node:
             except subprocess.TimeoutExpired:
                 self.__process.kill()
                 self.__process.wait()
-                self.__logger.warning(f'Process was force-closed with SIGKILL, because didn\'t close before timeout')
+                self.__logger.warning('Process was force-closed with SIGKILL, because didn\'t close before timeout')
 
         def close_opened_files(self):
             for name, file in self.__files.items():
@@ -432,7 +432,7 @@ class Node:
             else:
                 message += 'without any server'
         else:
-            message = f'Run completed'
+            message = 'Run completed'
 
         message += f', {self.__executable.get_build_version()} build'
         message += f' commit={self.__executable.get_build_commit_hash()[:8]}'
@@ -449,13 +449,13 @@ class Node:
 
     def __set_unset_endpoints(self):
         if self.config.p2p_endpoint is None:
-            self.config.p2p_endpoint = f'0.0.0.0:0'
+            self.config.p2p_endpoint = '0.0.0.0:0'
 
         if self.config.webserver_http_endpoint is None:
-            self.config.webserver_http_endpoint = f'0.0.0.0:0'
+            self.config.webserver_http_endpoint = '0.0.0.0:0'
 
         if self.config.webserver_ws_endpoint is None:
-            self.config.webserver_ws_endpoint = f'0.0.0.0:0'
+            self.config.webserver_ws_endpoint = '0.0.0.0:0'
 
     def _get_p2p_endpoint(self):
         self._wait_for_p2p_plugin_start()
