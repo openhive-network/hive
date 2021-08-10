@@ -42,8 +42,7 @@ class Wallet:
             transaction = self.__transaction_builder.get_transaction()
             self.__transaction_builder = None
 
-            if transaction is not None:
-                return self.sign_transaction(transaction, broadcast=broadcast)
+            return self.sign_transaction(transaction, broadcast=broadcast) if transaction is not None else None
 
         def __send(self, method, jsonrpc='2.0', id_=0, **params):
             if 'broadcast' in params:
@@ -555,6 +554,7 @@ class Wallet:
                 if 'Listening for incoming HTTP RPC requests on' in line:
                     endpoint = re.match(r'^.*Listening for incoming HTTP RPC requests on ([\d\.]+\:\d+)\s*$', line)[1]
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
+        return None
 
     def connect_to(self, node):
         self.connected_node = node

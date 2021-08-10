@@ -464,6 +464,7 @@ class Node:
                 if 'P2P node listening at ' in line:
                     endpoint = re.match(r'^.*P2P node listening at ([\d\.]+\:\d+)\s*$', line)[1]
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
+        return None
 
     def _get_http_endpoint(self):
         self.__wait_for_http_listening()
@@ -472,6 +473,7 @@ class Node:
                 if 'start listening for http requests' in line:
                     endpoint = re.match(r'^.*start listening for http requests on ([\d\.]+\:\d+)\s*$', line)[1]
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
+        return None
 
     def _get_ws_endpoint(self):
         self.__wait_for_http_listening()
@@ -480,6 +482,7 @@ class Node:
                 if 'start listening for ws requests' in line:
                     endpoint = re.match(r'^.*start listening for ws requests on ([\d\.]+\:\d+)\s*$', line)[1]
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
+        return None
 
     def close(self):
         self.__process.close()
