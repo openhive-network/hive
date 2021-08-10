@@ -74,15 +74,20 @@ class Node:
             command = [str(self.__executable.get_path()), '-d', '.', *with_arguments]
             self.__logger.debug(' '.join(item for item in command))
 
-            run_subprocess = subprocess.run if blocking else subprocess.Popen
-            process_handle = run_subprocess(
+            if blocking:
+                process_handle = subprocess.run(
+                    command,
+                    cwd=self.__directory,
+                    **self.__files,
+                )
+                return process_handle.returncode
+
+            self.__process = subprocess.Popen(
                 command,
                 cwd=self.__directory,
                 **self.__files,
             )
-
-            self.__process = process_handle if not blocking else None
-            return process_handle.returncode if blocking else None
+            return None
 
         def get_id(self):
             return self.__process.pid
