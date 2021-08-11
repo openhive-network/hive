@@ -44,11 +44,11 @@ class Wallet:
 
             return self.sign_transaction(transaction, broadcast=broadcast) if transaction is not None else None
 
-        def __send(self, method, jsonrpc='2.0', id_=0, **params):
+        def __send(self, method_, jsonrpc='2.0', id_=0, **params):
             if 'broadcast' in params:
                 self.__handle_broadcast_parameter(params)
 
-            response = self.__wallet.send(method, *list(params.values()), jsonrpc=jsonrpc, id_=id_)
+            response = self.__wallet.send(method_, *list(params.values()), jsonrpc=jsonrpc, id_=id_)
 
             if self.__is_transaction_build_in_progress():
                 self.__transaction_builder.append_operation(response)
