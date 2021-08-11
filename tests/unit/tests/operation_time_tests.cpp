@@ -2651,43 +2651,25 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "1.250 TESTS" ) );
     set_price_feed( exchange_rate );
 
-    signed_transaction tx;
-
     comment_operation comment;
     comment.author = "alice";
     comment.parent_author = "";
     comment.permlink = "test";
     comment.parent_permlink = "test";
     comment.body = "test";
-
-    tx.operations.push_back( comment );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    comment.body = "test2";
+    push_transaction( comment, alice_private_key );
 
     generate_block();
 
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( comment );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    comment.body = "test2";
+    push_transaction( comment, alice_private_key );
 
     vote_operation vote;
     vote.weight = HIVE_100_PERCENT;
     vote.voter = "bob";
     vote.author = "alice";
     vote.permlink = "test";
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, bob_private_key );
 
     BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time != fc::time_point_sec::min() );
     BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time != fc::time_point_sec::maximum() );
@@ -2701,15 +2683,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     }
 
     vote.voter = "sam";
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, sam_private_key );
     /// Starting from HF25 voting for already paid posts is allowed again.
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, sam_private_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2719,15 +2694,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
 
     vote.voter = "bob";
     vote.weight = HIVE_100_PERCENT * -1;
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, bob_private_key );
     /// Starting from HF25 voting for already paid posts is allowed again.
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, bob_private_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2737,15 +2705,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
 
     vote.voter = "dave";
     vote.weight = 0;
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, dave_private_key );
     /// Starting from HF25 voting for already paid posts is allowed again.
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, dave_private_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2754,13 +2715,30 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     }
 
     comment.body = "test4";
+    push_transaction( comment, alice_private_key ); // Works now in #1714
 
-    tx.operations.clear();
-    tx.signatures.clear();
+    comment.author = "alice";
+    comment.parent_author = "";
+    comment.permlink = "test-fast-vote";
+    comment.parent_permlink = "test";
+    comment.body = "test";
+    push_transaction( comment, alice_private_key );
 
-    tx.operations.push_back( comment );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 ); // Works now in #1714
+    comment.author = "bob";
+    push_transaction( comment, bob_private_key );
+
+    generate_block();
+
+    // vote multiple times in the same block - no longer 3s cooldown - works since HF26
+    vote.author = "alice";
+    vote.permlink = "test-fast-vote";
+    vote.voter = "dave";
+    vote.weight = HIVE_100_PERCENT;
+    push_transaction( vote, dave_private_key );
+    vote.author = "bob";
+    push_transaction( vote, dave_private_key );
+
+    generate_block();
   }
   FC_LOG_AND_RETHROW()
 }
