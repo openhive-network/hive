@@ -110,6 +110,8 @@ namespace hive { namespace converter {
 
     const hp::custom_binary_operation& operator()( hp::custom_binary_operation& op )const;
 
+    const hp::limit_order_create_operation& operator()( hp::limit_order_create_operation& op )const;
+
     const hp::pow_operation& operator()( hp::pow_operation& op )const;
 
     const hp::pow2_operation& operator()( hp::pow2_operation& op )const;
