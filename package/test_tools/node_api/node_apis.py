@@ -19,6 +19,9 @@ from test_tools.node_api.witness_api import WitnessApi
 
 
 class Apis:
+    # pylint: disable=too-many-instance-attributes
+    # Node contains so many APIs and all of them must be defined here
+
     def __init__(self, node):
         self.__node = node
 
