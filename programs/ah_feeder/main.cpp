@@ -13,6 +13,8 @@
 #include <fstream>
 #include <streambuf>
 #include <chrono>
+#include <csignal>
+#include <atomic>
 
 #include <boost/program_options.hpp>
 #include <boost/exception/diagnostic_information.hpp>
@@ -121,9 +123,15 @@ struct args_container
 
 class ah_loader
 {
+  public:
+
+    using ah_loader_ptr = std::shared_ptr<ah_loader>;
+
   private:
 
     using account_cache_t = std::map<string, account_info>;
+
+    std::atomic_bool interrupted;
 
     args_container args;
 
@@ -136,12 +144,40 @@ class ah_loader
 
     ah_query query;
 
+    transaction_ptr trx;
     transaction_controller_ptr tx_controller;
 
     string read_file( const fc::path& path )
     {
       std::ifstream s( path.string() );
       return string( ( std::istreambuf_iterator<char>( s ) ), std::istreambuf_iterator<char>() );
+    }
+
+    pqxx::result exec( const string& _query )
+    {
+      ilog("${q}", ("q", _query) );
+      FC_ASSERT( trx );
+      return trx->exec( _query );
+    }
+
+    void finish_trx( bool force_rollback = false )
+    {
+      if( !trx )
+        return;
+
+      if( force_rollback || is_interrupted() )
+      {
+        ilog("Rollback..." );
+        trx->rollback();
+        ilog("Rollback finished..." );
+      }
+      else
+      {
+        ilog("Commit..." );
+        trx->commit();
+        ilog("Commit finished..." );
+      }
+      trx.reset();
     }
 
     template<typename T>
@@ -159,9 +195,9 @@ class ah_loader
       return false;
     }
 
-    void import_accounts( transaction_ptr& trx )
+    void import_accounts()
     {
-      pqxx::result _accounts = trx->exec( query.accounts );
+      pqxx::result _accounts = exec( query.accounts );
 
       for( const auto& _record : _accounts )
       {
@@ -178,9 +214,9 @@ class ah_loader
         ++account_info::next_account_id;
     }
 
-    void import_account_operations( transaction_ptr& trx )
+    void import_account_operations()
     {
-      pqxx::result _account_ops = trx->exec( query.account_ops );
+      pqxx::result _account_ops = exec( query.account_ops );
 
       for( const auto& _record : _account_ops )
       {
@@ -194,23 +230,23 @@ class ah_loader
       }
     }
 
-    void import_initial_data( transaction_ptr& trx )
+    void import_initial_data()
     {
-      import_accounts( trx );
-      import_account_operations( trx );
+      import_accounts();
+      import_account_operations();
     }
 
-    bool context_exists( transaction_ptr& trx )
+    bool context_exists()
     {
       bool _val = false;
 
-      pqxx::result _res = trx->exec( query.check_context );
+      pqxx::result _res = exec( query.check_context );
       get_single_value( _res, _val );
 
       return _val;
     }
 
-    void gather_part_of_queries( transaction_ptr& trx, uint64_t operation_id, const string& account_name )
+    void gather_part_of_queries( uint64_t operation_id, const string& account_name )
     {
       auto found = account_cache.find( account_name );
 
@@ -233,7 +269,7 @@ class ah_loader
       account_ops_queries.emplace_back( query.format( query.insert_into_account_ops[1], _next_account_id, _op_cnt, operation_id ) );
     }
 
-    void execute_query( transaction_ptr& trx, const std::vector< string >& queries, const ah_query::part_query_type& q_parts )
+    void execute_query( const std::vector< string >& queries, const ah_query::part_query_type& q_parts )
     {
       if( queries.empty() )
         return;
@@ -249,55 +285,80 @@ class ah_loader
 
       _total_query = query.create_full_query( q_parts[0], _total_query, q_parts[2] );
 
-      trx->exec( _total_query );
+      exec( _total_query );
     }
 
-    void execute_queries( transaction_ptr& trx )
+    void execute_queries()
     {
-      execute_query( trx, accounts_queries, query.insert_into_accounts );
-      execute_query( trx, account_ops_queries, query.insert_into_account_ops );
+      execute_query( accounts_queries, query.insert_into_accounts );
+      execute_query( account_ops_queries, query.insert_into_account_ops );
 
       accounts_queries.clear();
       account_ops_queries.clear();
     }
 
+    ah_loader()
+    : interrupted( false ), query( application_context )
+    {
+    }
+
   public:
 
-    ah_loader( const args_container& _args )
-    : args{ _args }, query( application_context )
+    static ah_loader::ah_loader_ptr instance()
     {
+      static ah_loader_ptr _obj = ah_loader_ptr( new ah_loader() );
+      return _obj;
+    }
+
+    void init( const args_container& _args )
+    {
+      args = _args;
       tx_controller = hive::utilities::build_single_transaction_controller( args.url );
+    }
+
+    void interrupt()
+    {
+      interrupted.store( true );
+    }
+
+    bool is_interrupted()
+    {
+      return interrupted.load();
     }
 
     void prepare()
     {
-      transaction_ptr trx = tx_controller->openTx();
+      if( is_interrupted() )
+        return;
 
-      if( !context_exists( trx ) )
+      FC_ASSERT( tx_controller );
+      trx = tx_controller->openTx();
+
+      if( !context_exists() )
       {
         string tables_query    = read_file( args.schema_path / "ah_schema_tables.sql" );
         string functions_query = read_file( args.schema_path / "ah_schema_functions.sql" );
 
         tables_query = query.format( tables_query, application_context, application_context );
 
-        trx->exec( query.create_context );
-        trx->exec( tables_query );
-        trx->exec( functions_query );
+        exec( query.create_context );
+        exec( tables_query );
+        exec( functions_query );
       }
 
-      import_initial_data( trx );
+      import_initial_data();
 
-      trx->commit();
+      finish_trx();
     }
 
-    bool process( transaction_ptr& trx, uint64_t first_block, uint64_t last_block )
+    bool process( uint64_t first_block, uint64_t last_block )
     {
       ilog("Processed blocks: ${fb} - ${lb}", ("fb", first_block)("lb", last_block) );
 
-      trx->exec( query.detach_context );
+      exec( query.detach_context );
 
       string _query = query.format( query.get_bodies, first_block, last_block );
-      pqxx::result _blocks_ops = trx->exec( _query );
+      pqxx::result _blocks_ops = exec( _query );
 
       if( !_blocks_ops.empty() )
       {
@@ -317,28 +378,32 @@ class ah_loader
 
           for( auto& account_name : impacted )
           {
-            gather_part_of_queries( trx, _operation_id, account_name );
+            gather_part_of_queries( _operation_id, account_name );
           }
         }
-        execute_queries( trx );
+        execute_queries();
       }
 
       auto _attach_context_query  = query.format( query.attach_context, application_context, last_block );
-      trx->exec( _attach_context_query );
+      exec( _attach_context_query );
 
       return true;
     }
 
     bool process()
     {
+      if( is_interrupted() )
+        return true;
+
       bool empty = false;
 
       uint64_t _first_block = 0;
       uint64_t _last_block  = 0;
 
-      transaction_ptr trx = tx_controller->openTx();
+      FC_ASSERT( tx_controller );
+      trx = tx_controller->openTx();
 
-      pqxx::result _range_blocks = trx->exec( query.next_block );
+      pqxx::result _range_blocks = exec( query.next_block );
 
       if( !_range_blocks.empty() )
       {
@@ -353,7 +418,7 @@ class ah_loader
           }
           catch(...)
           {
-            trx->rollback();
+            finish_trx( true/*force_roolback*/ );
             return true;
           }
 
@@ -362,18 +427,18 @@ class ah_loader
             if( _last_block - _first_block > 0 )
             {
               if( ( _last_block - _first_block + 1 ) > args.flush_size )
-                process( trx, _first_block, _first_block + args.flush_size - 1 );
+                process( _first_block, _first_block + args.flush_size - 1 );
               else
-                process( trx, _first_block, _last_block );
+                process( _first_block, _last_block );
             }
             else
             {
-              process( trx, _first_block, _last_block );
+              process( _first_block, _last_block );
             }
           }
           catch(...)
           {
-            trx->rollback();
+            finish_trx( true/*force_roolback*/ );
             return true;
           }
       }
@@ -382,7 +447,7 @@ class ah_loader
         empty = true;
       }
 
-      trx->commit();
+      finish_trx();
 
       return empty;
     }
@@ -394,26 +459,93 @@ std::tuple<string, string, uint64_t, uint64_t > process_arguments( int argc, cha
   // Setup logging config
   bpo::options_description opts;
 
-  //ahsql-url = "dbname=block_mario user=mario password=mario hostaddr=127.0.0.1 port=5432"
-  //postgresql://mario:mario@localhost/hivemind
-  opts.add_options()("ahsql-url", bpo::value<string>(), "postgres connection string for AH database");
-  opts.add_options()("ahsql-schema-dir", bpo::value<string>(), "directory where schemas are stored");
-  opts.add_options()("ahsql-flush-size", bpo::value<uint64_t>()->default_value( 1000 ), "Number of blocks processed at once");
-  opts.add_options()("ahsql-empty-results", bpo::value<uint64_t>()->default_value( 100 ), "Number of results from a database when an empty set");
+  //--url postgresql://mario:mario@localhost/hivemind
+  opts.add_options()("url", bpo::value<string>(), "postgres connection string for AH database");
+  opts.add_options()("schema-dir", bpo::value<string>(), "directory where schemas are stored");
+  opts.add_options()("range-blocks-flush", bpo::value<uint64_t>()->default_value( 1000 ), "Number of blocks processed at once");
+  opts.add_options()("allowed-empty-results", bpo::value<int64_t>()->default_value( -1 ), "Allowed number of empty results from a database. After N tries, an application closes. A value `-1` means infinite number of tries");
 
   bpo::variables_map options;
 
   bpo::store( bpo::parse_command_line(argc, argv, opts), options );
 
-  FC_ASSERT( options.count("ahsql-url"), "`ahsql-url` is required" );
-  FC_ASSERT( options.count("ahsql-schema-dir"), "`ahsql-schema-dir` is required" );
-  FC_ASSERT( options.count("ahsql-flush-size"), "`ahsql-flush-size` is required" );
-  FC_ASSERT( options.count("ahsql-empty-results"), "`ahsql-empty-results` is required" );
+  FC_ASSERT( options.count("url"), "`url` is required" );
+  FC_ASSERT( options.count("schema-dir"), "`schema-dir` is required" );
+  FC_ASSERT( options.count("range-blocks-flush"), "`range-blocks-flush` is required" );
+  FC_ASSERT( options.count("allowed-empty-results"), "`allowed-empty-results` is required" );
 
-  return {  options["ahsql-url"].as<string>(),
-            options["ahsql-schema-dir"].as<string>(),
-            options["ahsql-flush-size"].as<uint64_t>(),
-            options["ahsql-empty-results"].as<uint64_t>() };
+  return {  options["url"].as<string>(),
+            options["schema-dir"].as<string>(),
+            options["range-blocks-flush"].as<uint64_t>(),
+            options["allowed-empty-results"].as<int64_t>() };
+}
+
+bool allow_close_app( bool empty, int64_t declared_empty_results, int64_t& cnt_empty_result )
+{
+  bool res = false;
+
+  cnt_empty_result = empty ? ( cnt_empty_result + 1 ) : 0;
+
+  if( declared_empty_results == -1 )
+  {
+    if( empty )
+      ilog("A result returned from a database is empty. Actual empty result: ${er}", ("er", cnt_empty_result) );
+  }
+  else
+  {
+    if( empty )
+    {
+      ilog("A result returned from a database is empty. Declared empty results: ${der} Actual empty result: ${er}", ("der", declared_empty_results)("er", cnt_empty_result) );
+
+      if( declared_empty_results < cnt_empty_result )
+      {
+        res = true;
+      }
+    }
+  }
+
+  return res;
+}
+
+void shutdown_properly()
+{
+  ilog("Closing. Wait...");
+
+  auto _loader = ah_loader::instance();
+  _loader->interrupt();
+}
+
+void handle_signal_action( int signal )
+{
+  if( signal == SIGINT )
+  {
+    ilog("SIGINT was caught");
+    shutdown_properly();
+  }
+  else if ( signal == SIGTERM )
+  {
+    ilog("SIGTERM was caught");
+    shutdown_properly();
+  }
+}
+
+int setup_signals()
+{
+  struct sigaction sa;
+  sa.sa_handler = handle_signal_action;
+
+  if( sigaction( SIGINT, &sa, 0 ) != 0 )
+  {
+    ilog("Error setting `SIGINT` handler");
+    return -1;
+  }
+  if( sigaction( SIGTERM, &sa, 0 ) != 0 )
+  {
+    ilog("Error setting `SIGTERM` handler");
+    return -1;
+  }
+  
+  return 0;
 }
 
 int main( int argc, char** argv )
@@ -422,55 +554,57 @@ int main( int argc, char** argv )
   {
     auto args = process_arguments( argc, argv );
 
-    ah_loader loader( args_container{ std::get<0>( args ), std::get<1>( args ), std::get<2>( args ) } );
+    auto _loader = ah_loader::instance();
 
-    loader.prepare();
+    FC_ASSERT( _loader );
 
-    uint64_t cnt_empty_result = 0;
-    uint64_t declared_empty_results = std::get<3>( args );
+    _loader->init( args_container{ std::get<0>( args ), std::get<1>( args ), std::get<2>( args ) } );
 
-    while( true )
+    if( setup_signals() != 0 )
+      exit( EXIT_FAILURE );
+
+    _loader->prepare();
+
+    int64_t cnt_empty_result = 0;
+    int64_t declared_empty_results = std::get<3>( args );
+
+    while( !_loader->is_interrupted() )
     {
       auto start = std::chrono::high_resolution_clock::now();
 
-      bool empty = loader.process();
+      bool empty = _loader->process();
 
       auto end = std::chrono::high_resolution_clock::now();
-      auto milliseconds = std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count();
-      ilog("time[ms]: ${m}", ("m", milliseconds));
-      ilog("***");
-
-      if( empty )
-      {
-        ilog("result returned from a database is empty. Declared empty results: ${der} Actual empty result: ${er}", ("der", declared_empty_results)("er", cnt_empty_result) );
-
-        ++cnt_empty_result;
-        if( cnt_empty_result >= declared_empty_results )
-        {
-          return true;
-        }
-      }
-      else
-        cnt_empty_result = 0;
+      ilog("time[ms]: ${m}", ( "m", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+ 
+      if( allow_close_app( empty, declared_empty_results, cnt_empty_result ) )
+        break;
     }
+
+    if( _loader->is_interrupted() )
+      ilog("An application was interrupted...");
 
   }
   catch ( const boost::exception& e )
   {
     std::cerr << boost::diagnostic_information(e) << "\n";
+    return EXIT_FAILURE;
   }
   catch ( const fc::exception& e )
   {
     std::cerr << e.to_detail_string() << "\n";
+    return EXIT_FAILURE;
   }
   catch ( const std::exception& e )
   {
     std::cerr << e.what() << "\n";
+    return EXIT_FAILURE;
   }
   catch ( ... )
   {
     std::cerr << "unknown exception\n";
+    return EXIT_FAILURE;
   }
 
-  return -1;
+  return EXIT_SUCCESS;
 }

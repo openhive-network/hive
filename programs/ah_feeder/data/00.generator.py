@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
   offset = 1
 
-  blocks_number = 5000
+  blocks_number = 10000
   transactions_number_per_block = 3
   transactions_multi_sig_number_per_block = 1
 
