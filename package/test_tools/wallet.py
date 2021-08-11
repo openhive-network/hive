@@ -66,12 +66,12 @@ class Wallet:
                         'Replace broadcast parameter with value False or better -- remove it\n'
                         'completely, because it is default value during transaction building.'
                     )
-                else:
-                    warnings.warn(
-                        'Avoid explicit setting "broadcast" parameter to False during registering operations in\n'
-                        'transaction. False is a default value in this context. It is considered bad practice,\n'
-                        'because obscures code and decreases its readability.'
-                    )
+
+                warnings.warn(
+                    'Avoid explicit setting "broadcast" parameter to False during registering operations in\n'
+                    'transaction. False is a default value in this context. It is considered bad practice,\n'
+                    'because obscures code and decreases its readability.'
+                )
             elif params['broadcast'] is True and not self.__is_transaction_build_in_progress():
                 warnings.warn(
                     'Avoid explicit setting "broadcast" parameter to True in this context, it is default value.\n'
