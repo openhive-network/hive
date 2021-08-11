@@ -128,7 +128,7 @@ namespace detail {
     if( output_con.get_socket().is_open() )
       output_con.get_socket().close();
 
-    if( hp::block_header::num_from_id( converter.get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
+    if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
   }
 
