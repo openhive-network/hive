@@ -66,9 +66,9 @@ namespace hive { namespace converter {
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
     hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time = auto_trx_time );
 
-    void convert_signed_header( hp::signed_block_header& _signed_header );
+    void sign_header( hp::signed_block_header& _signed_header );
 
-    void convert_authority( authority& _auth, authority::classification type );
+    void add_second_authority( authority& _auth, authority::classification type );
 
     void sign_transaction( hp::signed_transaction& trx )const;
 
