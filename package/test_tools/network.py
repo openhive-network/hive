@@ -54,7 +54,7 @@ class Network(NodesCreator):
             constants.NetworkCleanUpPolicy.DO_NOT_REMOVE_FILES:        super().CleanUpPolicy.DO_NOT_REMOVE_FILES,
         }
 
-        super().handle_final_cleanup(default_policy=corresponding_nodes_creator_policy[policy])
+        self._handle_final_cleanup(default_policy=corresponding_nodes_creator_policy[policy])
 
         for wallet in self.__wallets:
             if wallet.is_running():

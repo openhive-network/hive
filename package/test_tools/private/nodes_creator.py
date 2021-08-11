@@ -95,7 +95,7 @@ class NodesCreator:
     def nodes(self):
         return self._nodes.copy()
 
-    def handle_final_cleanup(self, *, default_policy: CleanUpPolicy):
+    def _handle_final_cleanup(self, *, default_policy: CleanUpPolicy):
         for node in self._nodes:
             node.handle_final_cleanup(default_policy=self.__get_corresponding_node_policy(default_policy))
 

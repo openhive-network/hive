@@ -44,7 +44,7 @@ class World(NodesCreator):
             raise RuntimeError('World was already closed. Can be closed only once.')
 
         nodes_creator_policy = self.__get_corresponding_nodes_creator_policy(self.__clean_up_policy)
-        super().handle_final_cleanup(default_policy=nodes_creator_policy)
+        self._handle_final_cleanup(default_policy=nodes_creator_policy)
 
         for wallet in self.__wallets:
             if wallet.is_running():
