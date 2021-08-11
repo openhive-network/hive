@@ -9,9 +9,5 @@ long next_hf_time();
 
 //no more 3s limit on votes
 #define HIVE_HARDFORK_1_26_NO_VOTE_COOLDOWN (HIVE_HARDFORK_1_26)
-//dust votes are votes
-#define HIVE_HARDFORK_1_26_DUST_VOTE_FIX (HIVE_HARDFORK_1_26)
-//no more penalty for vote edit - works as if it was new vote
-#define HIVE_HARDFORK_1_26_NO_VOTE_EDIT_PENALTY (HIVE_HARDFORK_1_26)
 
 #endif
