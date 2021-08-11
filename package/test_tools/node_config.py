@@ -4,6 +4,9 @@ from test_tools.private.node_config_entry_types import Boolean, Integer, List, P
 
 
 class NodeConfig:
+    # pylint: disable=too-many-instance-attributes
+    # Config contains so many entries and all of them must be defined here
+
     def __init__(self):
         self.__enter_initialization_stage()
         self.__initialize()
