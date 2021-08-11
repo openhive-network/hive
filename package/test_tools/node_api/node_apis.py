@@ -34,7 +34,7 @@ class Apis:
         self.market_history = MarketHistoryApi(self.__node)
         self.network_broadcast = NetworkBroadcastApi(self.__node)
         self.network_node = NetworkNodeApi(self.__node)
-        self.rc = RcApi(self.__node)
+        self.rc = RcApi(self.__node)  # pylint: disable=invalid-name
         self.reputation = ReputationApi(self.__node)
         self.rewards = RewardsApi(self.__node)
         self.tags = TagsApi(self.__node)
