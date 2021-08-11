@@ -1,5 +1,6 @@
 from test_tools import communication
 from test_tools.node_api.node_apis import Apis
+from test_tools.private.node_message import NodeMessage
 
 
 class RemoteNode:
@@ -8,13 +9,7 @@ class RemoteNode:
         self.__endpoint = endpoint
 
     def _send(self, method, params=None, jsonrpc='2.0', id_=1):
-        message = {
-            'jsonrpc': jsonrpc,
-            'id': id_,
-            'method': method,
-        }
-
-        if params is not None:
-            message['params'] = params
-
-        return communication.request(self.__endpoint, message)
+        return communication.request(
+            self.__endpoint,
+            NodeMessage(method, params, jsonrpc, id_).as_json()
+        )

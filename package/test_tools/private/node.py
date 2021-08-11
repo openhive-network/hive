@@ -12,6 +12,7 @@ from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
+from test_tools.private.node_message import NodeMessage
 from test_tools.private.snapshot import Snapshot
 from test_tools.private.wait_for import wait_for
 from test_tools.wallet import Wallet
@@ -245,15 +246,6 @@ class Node:
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
     def _send(self, method, params=None, jsonrpc='2.0', id_=1):
-        message = {
-            'jsonrpc': jsonrpc,
-            'id': id_,
-            'method': method,
-        }
-
-        if params is not None:
-            message['params'] = params
-
         if self.config.webserver_http_endpoint is None:
             raise Exception('Webserver http endpoint is unknown')
 
@@ -261,6 +253,7 @@ class Node:
 
         self.__wait_for_http_listening()
 
+        message = NodeMessage(method, params, jsonrpc, id_).as_json()
         response = communication.request(endpoint, message)
 
         if 'error' in response:
