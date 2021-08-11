@@ -32,6 +32,8 @@ struct debug_generate_blocks_args
   uint32_t                                  skip = hive::chain::database::skip_nothing;
   uint32_t                                  miss_blocks = 0;
   bool                                      edit_if_needed = true;
+  uint32_t                                  timestamp = 0;
+  bool                                      broadcast = false;
 };
 
 struct debug_generate_blocks_return
@@ -128,6 +130,8 @@ FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_args,
         (skip)
         (miss_blocks)
         (edit_if_needed)
+        (timestamp)
+        (broadcast)
         )
 FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_return,
         (blocks)

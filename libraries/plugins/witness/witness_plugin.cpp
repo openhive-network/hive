@@ -69,6 +69,7 @@ namespace detail {
     void schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop();
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
+    bool set_debug_stop_production(bool next);
 
     bool     _production_enabled              = false;
     uint32_t _required_witness_participation  = DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT;
@@ -85,6 +86,7 @@ namespace detail {
     boost::signals2::connection   _post_apply_operation_conn;
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
+    bool                                                               _debug_stop_production = false;
   };
 
   struct comment_options_extension_visitor
@@ -370,6 +372,8 @@ namespace detail {
         break;
       case block_production_condition::wait_for_genesis:
         break;
+      case block_production_condition::debug_stop:
+        break;
     }
 
     schedule_production_loop();
@@ -380,6 +384,11 @@ namespace detail {
   {
     fc::time_point now_fine = fc::time_point::now();
     fc::time_point_sec now = now_fine + fc::microseconds( 500000 );
+
+    if( _debug_stop_production )
+    {
+      return block_production_condition::debug_stop;
+    }
 
     // If the next block production opportunity is in the present or future, we're synced.
     if( !_production_enabled )
@@ -450,6 +459,13 @@ namespace detail {
 
     appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
     return block_production_condition::produced;
+  }
+
+  bool witness_plugin_impl::set_debug_stop_production(bool next)
+  {
+    bool previous = _debug_stop_production;
+    _debug_stop_production = next;
+    return previous;
   }
 } // detail
 
@@ -564,6 +580,11 @@ void witness_plugin::plugin_shutdown()
   {
     edump( (e.to_detail_string()) );
   }
+}
+
+bool witness_plugin::set_debug_stop_production(bool next)
+{
+  return my->set_debug_stop_production(next);
 }
 
 } } } // hive::plugins::witness

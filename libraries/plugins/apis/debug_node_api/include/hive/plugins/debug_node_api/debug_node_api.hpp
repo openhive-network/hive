@@ -2,6 +2,7 @@
 #include <hive/plugins/json_rpc/utility.hpp>
 #include <hive/plugins/database_api/database_api_objects.hpp>
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/protocol/types.hpp>
 
@@ -46,6 +47,18 @@ struct debug_pop_block_return
 typedef void_type debug_get_witness_schedule_args;
 typedef database_api::api_witness_schedule_object debug_get_witness_schedule_return;
 
+struct debug_get_scheduled_witness_args
+{
+  uint32_t                                  slot;
+};
+
+struct debug_get_scheduled_witness_return
+{
+  std::string                               scheduled_witness;
+  uint32_t                                  aslot;
+  fc::time_point_sec                        scheduled_time;
+};
+
 typedef void_type debug_get_hardfork_property_object_args;
 typedef database_api::api_hardfork_property_object debug_get_hardfork_property_object_return;
 
@@ -68,6 +81,16 @@ typedef void_type debug_get_json_schema_args;
 struct debug_get_json_schema_return
 {
   std::string schema;
+};
+
+struct debug_switch_witness_production_args
+{
+  bool next;
+};
+
+struct debug_switch_witness_production_return
+{
+  bool previous;
 };
 
 
@@ -98,11 +121,13 @@ class debug_node_api
       */
       (debug_pop_block)
       (debug_get_witness_schedule)
+      (debug_get_scheduled_witness)
       (debug_get_hardfork_property_object)
 
       (debug_set_hardfork)
       (debug_has_hardfork)
       (debug_get_json_schema)
+      (debug_switch_witness_production)
     )
 
   private:
@@ -131,3 +156,15 @@ FC_REFLECT( hive::plugins::debug_node::debug_has_hardfork_return,
 
 FC_REFLECT( hive::plugins::debug_node::debug_get_json_schema_return,
         (schema) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_get_scheduled_witness_args,
+        (slot) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_get_scheduled_witness_return,
+        (scheduled_witness)(aslot)(scheduled_time) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_switch_witness_production_args,
+        (next) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_switch_witness_production_return,
+        (previous) )

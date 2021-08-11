@@ -9,10 +9,13 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/global_property_object.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
 namespace hive { namespace plugins { namespace debug_node {
+
+using namespace hive::chain;
 
 namespace detail {
 
@@ -29,10 +32,12 @@ class debug_node_api_impl
       (debug_generate_blocks_until)
       (debug_pop_block)
       (debug_get_witness_schedule)
+      (debug_get_scheduled_witness)
       (debug_get_hardfork_property_object)
       (debug_set_hardfork)
       (debug_has_hardfork)
       (debug_get_json_schema)
+      (debug_switch_witness_production)
     )
 
     chain::database& _db;
@@ -115,6 +120,19 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_witness_schedule )
   return debug_get_witness_schedule_return( _db.get( chain::witness_schedule_id_type() ), _db );
 }
 
+DEFINE_API_IMPL( debug_node_api_impl, debug_get_scheduled_witness )
+{
+  debug_get_scheduled_witness_return ret;
+  ret.scheduled_witness = _db.get_scheduled_witness( args.slot );
+  const dynamic_global_property_object& dpo = _db.get_dynamic_global_properties();
+  ret.aslot = dpo.current_aslot + args.slot;
+  if( args.slot == 0 )
+    ret.scheduled_time = dpo.time;
+  else
+    ret.scheduled_time = _db.get_slot_time( args.slot );
+  return ret;
+}
+
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_hardfork_property_object )
 {
   return _db.get( chain::hardfork_property_id_type() );
@@ -143,6 +161,25 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_json_schema )
   return { _db.get_json_schema() };
 }
 
+DEFINE_API_IMPL( debug_node_api_impl, debug_switch_witness_production )
+{
+  debug_switch_witness_production_return ret;
+  try
+  {
+    elog("SETTING PRODUCTION TO ${b}", ("b", args.next));
+    bool previous = appbase::app().get_plugin< witness::witness_plugin >().set_debug_stop_production( args.next );
+    ret.previous = previous;
+  }
+  catch(const std::exception& e)
+  {
+    elog("FAILED SETTING");
+    std::cerr << e.what() << '\n';
+    ret.previous = false;
+  }
+  
+  return ret;
+}
+
 } // detail
 
 debug_node_api::debug_node_api(): my( new detail::debug_node_api_impl() )
@@ -158,10 +195,12 @@ DEFINE_LOCKLESS_APIS( debug_node_api,
   (debug_generate_blocks_until)
   (debug_pop_block)
   (debug_get_witness_schedule)
+  (debug_get_scheduled_witness)
   (debug_get_hardfork_property_object)
   (debug_set_hardfork)
   (debug_has_hardfork)
   (debug_get_json_schema)
+  (debug_switch_witness_production)
 )
 
 } } } // hive::plugins::debug_node

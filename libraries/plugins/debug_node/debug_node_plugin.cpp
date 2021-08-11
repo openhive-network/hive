@@ -1,6 +1,7 @@
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
 #include <hive/plugins/witness/block_producer.hpp>
+#include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/chain/witness_objects.hpp>
 
 #include <fc/io/buffered_iostream.hpp>
@@ -225,6 +226,8 @@ void debug_node_plugin::debug_generate_blocks(
     uint32_t new_slot = args.miss_blocks+1;
     std::string scheduled_witness_name = db.get_scheduled_witness( slot );
     fc::time_point_sec scheduled_time = db.get_slot_time( slot );
+    if(args.timestamp > 0)
+      scheduled_time = fc::time_point_sec(args.timestamp);
     const chain::witness_object& scheduled_witness = db.get_witness( scheduled_witness_name );
     chain::public_key_type scheduled_key = scheduled_witness.signing_key;
     if( logging )
@@ -246,10 +249,12 @@ void debug_node_plugin::debug_generate_blocks(
         }, args.skip );
       }
       else
-        break;
+        wlog("Debug key does not match scheduled key, edit_if_needed: ${e}, skip_witness_signature flag: ${s}",
+          ("e", args.edit_if_needed)("s", args.skip & chain::database::skip_witness_signature));
     }
-
-    bp.generate_block( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    auto block = bp.generate_block( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    if(args.broadcast)
+      appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
     ++produced;
     slot = new_slot;
   }
