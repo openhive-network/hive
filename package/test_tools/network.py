@@ -1,8 +1,9 @@
 from pathlib import Path
 from shutil import rmtree
 
-from test_tools import constants, logger
+from test_tools import constants
 from test_tools.wallet import Wallet
+from test_tools.private.logger_singleton import logger
 from test_tools.private.nodes_creator import NodesCreator
 
 

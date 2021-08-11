@@ -5,8 +5,10 @@ import signal
 import subprocess
 import warnings
 
-from test_tools import Account, communication, logger, paths_to_executables
+from test_tools import communication, paths_to_executables
+from test_tools.account import Account
 from test_tools.exceptions import CommunicationError
+from test_tools.private.logger_singleton import logger
 from test_tools.private.wait_for import wait_for
 
 
