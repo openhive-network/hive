@@ -330,7 +330,8 @@ class ah_loader
 
     void interrupt()
     {
-      interrupted.store( true );
+      if( !is_interrupted() )
+        interrupted.store( true );
     }
 
     bool is_interrupted()
@@ -536,6 +537,8 @@ void shutdown_properly()
 
   auto _loader = ah_loader::instance();
   _loader->interrupt();
+
+  ilog("Interrupted...");
 }
 
 void handle_signal_action( int signal )
@@ -550,12 +553,15 @@ void handle_signal_action( int signal )
     ilog("SIGTERM was caught");
     shutdown_properly();
   }
+  else
+    ilog("Not supported signal ${signal}", ( "signal", signal ));
 }
 
 int setup_signals()
 {
   struct sigaction sa;
   sa.sa_handler = handle_signal_action;
+  sa.sa_flags = SA_RESTART;
 
   if( sigaction( SIGINT, &sa, 0 ) != 0 )
   {
