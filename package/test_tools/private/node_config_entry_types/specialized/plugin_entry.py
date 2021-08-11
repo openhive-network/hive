@@ -27,6 +27,6 @@ class Plugin(Untouched):
         if value is not None:
             cls.__check_if_plugin_is_supported(value)
 
-    def parse_from_text(self, plugin):
-        self.__check_if_plugin_is_supported(plugin)
-        return super().parse_from_text(plugin)
+    def parse_from_text(self, text):
+        self.__check_if_plugin_is_supported(text)
+        return super().parse_from_text(text)

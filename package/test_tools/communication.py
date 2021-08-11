@@ -8,11 +8,11 @@ from test_tools.private.asset import AssetBase
 
 
 class CustomJsonEncoder(json.JSONEncoder):
-    def default(self, item):
-        if isinstance(item, AssetBase):
-            return str(item)
+    def default(self, o):
+        if isinstance(o, AssetBase):
+            return str(o)
 
-        return super().default(item)
+        return super().default(o)
 
 
 def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.2):
