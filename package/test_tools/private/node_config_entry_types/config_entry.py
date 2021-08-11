@@ -1,5 +1,6 @@
 class ConfigEntry:
     def __init__(self, value=None):
+        self._value = None  # To disable the warning about definition outside of __init__
         self.set_value(value)
 
     def clear(self):
