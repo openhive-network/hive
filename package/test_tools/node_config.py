@@ -155,10 +155,10 @@ class NodeConfig:
             if should_skip_entry(entry):
                 continue
 
-            value = entry.serialize_to_text()
-            value = value if isinstance(value, list) else [value]
-            for v in value:
-                file_entries.append(f"{key.replace('_', '-')} = {v}")
+            values = entry.serialize_to_text()
+            values = values if isinstance(values, list) else [values]
+            for value in values:
+                file_entries.append(f"{key.replace('_', '-')} = {value}")
 
         return file_entries
 
