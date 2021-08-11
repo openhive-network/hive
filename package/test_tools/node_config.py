@@ -22,6 +22,9 @@ class NodeConfig:
         return '_initialization_stage' in self.__dict__
 
     def __define_entries(self):
+        # pylint: disable=too-many-statements
+        # Config contains so many entries and all of them must be defined here
+
         super().__setattr__('__entries', {})
 
         # pylint: disable=attribute-defined-outside-init
