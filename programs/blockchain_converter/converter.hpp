@@ -20,8 +20,6 @@
 
 #include <boost/lockfree/stack.hpp>
 
-#define HIVE_HARDFORK_0_17_BLOCK_NUM 10629455 // for pow operations
-
 namespace hive { namespace converter {
 
   namespace hp = hive::protocol;
@@ -33,7 +31,7 @@ namespace hive { namespace converter {
   private:
     hp::private_key_type _private_key;
     hp::chain_id_type    chain_id;
-    hp::block_id_type    previous_block_id;
+    hp::signed_block*    current_block_ptr = nullptr;
 
     std::map< authority::classification, hp::private_key_type > second_authority;
 
@@ -50,9 +48,12 @@ namespace hive { namespace converter {
     boost::lockfree::stack< sig_stack_in_type >  shared_signatures_stack_in;  // pair< trx index in block, signed transaction ptr to convert >
     boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
 
-    std::atomic_bool signers_exit;
+    std::atomic_bool     signers_exit;
+    std::atomic_uint32_t current_hardfork;
 
-    std::mutex second_auth_mutex;
+    mutable std::mutex second_auth_mutex;
+
+    void check_for_hardfork( const hp::signed_block& _signed_block );
 
   public:
     /// Used in convert_signed_block to specify that expiration time of the transaction should not be altered (automatically deduct expiration time of the transaction using timestamp of the signed block)
@@ -81,7 +82,10 @@ namespace hive { namespace converter {
     const hp::private_key_type& get_witness_key()const;
     const hp::chain_id_type& get_chain_id()const;
 
-    const hp::block_id_type& get_previous_block_id()const;
+    uint32_t get_current_hardfork()const;
+    bool has_hardfork( uint32_t hf )const;
+
+    const hp::signed_block& get_current_block()const;
   };
 
   class convert_operations_visitor
