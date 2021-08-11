@@ -32,9 +32,9 @@ namespace hive { namespace converter {
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
-    converter.convert_authority( op.owner, authority::owner );
-    converter.convert_authority( op.active, authority::active );
-    converter.convert_authority( op.posting, authority::posting );
+    converter.add_second_authority( op.owner, authority::owner );
+    converter.add_second_authority( op.active, authority::active );
+    converter.add_second_authority( op.posting, authority::posting );
 
     converter.add_account( op.new_account_name );
 
@@ -43,9 +43,9 @@ namespace hive { namespace converter {
 
   const hp::account_create_with_delegation_operation& convert_operations_visitor::operator()( hp::account_create_with_delegation_operation& op )const
   {
-    converter.convert_authority( op.owner, authority::owner );
-    converter.convert_authority( op.active, authority::active );
-    converter.convert_authority( op.posting, authority::posting );
+    converter.add_second_authority( op.owner, authority::owner );
+    converter.add_second_authority( op.active, authority::active );
+    converter.add_second_authority( op.posting, authority::posting );
 
     converter.add_account( op.new_account_name );
 
@@ -55,11 +55,11 @@ namespace hive { namespace converter {
   const hp::account_update_operation& convert_operations_visitor::operator()( hp::account_update_operation& op )const
   {
     if( op.owner.valid() )
-      converter.convert_authority( *op.owner, authority::owner );
+      converter.add_second_authority( *op.owner, authority::owner );
     if( op.active.valid() )
-      converter.convert_authority( *op.active, authority::active );
+      converter.add_second_authority( *op.active, authority::active );
     if( op.posting.valid() )
-      converter.convert_authority( *op.posting, authority::posting );
+      converter.add_second_authority( *op.posting, authority::posting );
 
     return op;
   }
@@ -67,20 +67,20 @@ namespace hive { namespace converter {
   const hp::account_update2_operation& convert_operations_visitor::operator()( hp::account_update2_operation& op )const
   {
     if( op.owner.valid() )
-      converter.convert_authority( *op.owner, authority::owner );
+      converter.add_second_authority( *op.owner, authority::owner );
     if( op.active.valid() )
-      converter.convert_authority( *op.active, authority::active );
+      converter.add_second_authority( *op.active, authority::active );
     if( op.posting.valid() )
-      converter.convert_authority( *op.posting, authority::posting );
+      converter.add_second_authority( *op.posting, authority::posting );
 
     return op;
   }
 
   const hp::create_claimed_account_operation& convert_operations_visitor::operator()( hp::create_claimed_account_operation& op )const
   {
-    converter.convert_authority( op.owner, authority::owner );
-    converter.convert_authority( op.active, authority::active );
-    converter.convert_authority( op.posting, authority::posting );
+    converter.add_second_authority( op.owner, authority::owner );
+    converter.add_second_authority( op.active, authority::active );
+    converter.add_second_authority( op.posting, authority::posting );
 
     converter.add_account( op.new_account_name );
 
@@ -120,23 +120,23 @@ namespace hive { namespace converter {
 
   const hp::report_over_production_operation& convert_operations_visitor::operator()( hp::report_over_production_operation& op )const
   {
-    converter.convert_signed_header( op.first_block );
-    converter.convert_signed_header( op.second_block );
+    converter.sign_header( op.first_block );
+    converter.sign_header( op.second_block );
 
     return op;
   }
 
   const hp::request_account_recovery_operation& convert_operations_visitor::operator()( hp::request_account_recovery_operation& op )const
   {
-    converter.convert_authority( op.new_owner_authority, authority::owner );
+    converter.add_second_authority( op.new_owner_authority, authority::owner );
 
     return op;
   }
 
   const hp::recover_account_operation& convert_operations_visitor::operator()( hp::recover_account_operation& op )const
   {
-    converter.convert_authority( op.new_owner_authority, authority::owner );
-    converter.convert_authority( op.recent_owner_authority, authority::owner );
+    converter.add_second_authority( op.new_owner_authority, authority::owner );
+    converter.add_second_authority( op.recent_owner_authority, authority::owner );
 
     return op;
   }
@@ -349,7 +349,7 @@ namespace hive { namespace converter {
     _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
 
     // Sign header (using given witness' private key)
-    convert_signed_header( _signed_block );
+    sign_header( _signed_block );
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
@@ -366,12 +366,12 @@ namespace hive { namespace converter {
     }
   }
 
-  void blockchain_converter::convert_signed_header( hp::signed_block_header& _signed_header )
-  { // todo: change name of function
+  void blockchain_converter::sign_header( hp::signed_block_header& _signed_header )
+  {
     _signed_header.sign( _private_key );
   }
 
-  void blockchain_converter::convert_authority( authority& _auth, authority::classification type )
+  void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
   {
     _auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
   }
