@@ -79,7 +79,7 @@ class Wallet:
                 )
 
         def __get_default_broadcast_value(self):
-            return False if self.__is_transaction_build_in_progress() else True
+            return not self.__is_transaction_build_in_progress()
 
         def __is_transaction_build_in_progress(self):
             return self.__transaction_builder is not None
