@@ -1,12 +1,6 @@
 import pytest
 
 from test_tools.exceptions import NotSupported
-from test_tools.node_config import NodeConfig
-
-
-@pytest.fixture
-def config():
-    return NodeConfig()
 
 
 def test_addition_operator_is_removed(config):

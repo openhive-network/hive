@@ -9,27 +9,20 @@
 
 import pytest
 
-from test_tools.node_config import NodeConfig
+
+def test_getting_unset_but_correct_entry(config):
+    assert config.required_participation is None
 
 
-@pytest.fixture
-def empty_config():
-    return NodeConfig()
-
-
-def test_getting_unset_but_correct_entry(empty_config):
-    assert empty_config.required_participation is None
-
-
-def test_getting_incorrect_entry(empty_config):
+def test_getting_incorrect_entry(config):
     with pytest.raises(KeyError):
-        assert empty_config.incorrect_entry
+        assert config.incorrect_entry
 
 
-def test_setting_correct_entry(empty_config):
-    empty_config.required_participation = 33
+def test_setting_correct_entry(config):
+    config.required_participation = 33
 
 
-def test_setting_incorrect_entry(empty_config):
+def test_setting_incorrect_entry(config):
     with pytest.raises(KeyError):
-        empty_config.incorrect_entry = 'value'
+        config.incorrect_entry = 'value'

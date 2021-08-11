@@ -1,12 +1,5 @@
 import pytest
 
-from test_tools.node_config import NodeConfig
-
-
-@pytest.fixture
-def config():
-    return NodeConfig()
-
 
 def test_single_value_loading(config):
     config.load_from_lines(['block-log-info-print-file = ILOG'])

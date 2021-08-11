@@ -1,13 +1,3 @@
-import pytest
-
-from test_tools.node_config import NodeConfig
-
-
-@pytest.fixture
-def config():
-    return NodeConfig()
-
-
 def test_single_entry_serialization(config):
     config.required_participation = 0
     lines = config.write_to_lines()
