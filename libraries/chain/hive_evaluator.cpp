@@ -2351,11 +2351,13 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
   {
     FC_ASSERT( o.expiration <= _db.head_block_time() + HIVE_MAX_LIMIT_ORDER_EXPIRATION, "Limit Order Expiration must not be more than 28 days in the future" );
   }
+#ifndef HIVE_CONVERTER_BUILD // limit_order_object expiration time is explicitly set during the conversion time before HF20, due to the altered block id
   else
   {
     uint32_t rand_offset = _db.head_block_id()._hash[ 4 ] % 86400;
     expiration = std::min( o.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
   }
+#endif
 
   _db.adjust_balance( o.owner, -o.amount_to_sell );
   const auto& order = _db.create<limit_order_object>( o.owner, o.amount_to_sell, o.get_price(), _db.head_block_time(), expiration, o.orderid );

@@ -95,6 +95,17 @@ namespace hive { namespace converter {
     return op;
   }
 
+  const hp::limit_order_create_operation& convert_operations_visitor::operator()( hp::limit_order_create_operation& op )const
+  {
+    if( !converter.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
+    {
+      uint32_t rand_offset = converter.get_current_block().id()._hash[ 4 ] % 86400;
+      op.expiration = std::min( op.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
+    }
+
+    return op;
+  }
+
   const hp::pow_operation& convert_operations_visitor::operator()( hp::pow_operation& op )const
   {
     op.block_id = converter.get_current_block().previous;
@@ -292,8 +303,6 @@ namespace hive { namespace converter {
 
     check_for_hardfork( _signed_block );
 
-    _signed_block.previous = previous_block_id;
-
     auto trx_time = trx_now_time;
 
     if( trx_now_time == auto_trx_time )
@@ -312,6 +321,8 @@ namespace hive { namespace converter {
       transaction_itr->expiration = trx_time;
       trx_time += 1;
     }
+
+    _signed_block.previous = previous_block_id;
 
     switch( _signed_block.transactions.size() )
     {
