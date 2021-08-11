@@ -8,6 +8,12 @@
 #include <vector>
 #include <functional>
 
+#include <boost/preprocessor/repetition.hpp>
+#include <boost/preprocessor/arithmetic/add.hpp>
+#include <boost/preprocessor/control/if.hpp>
+#include <boost/preprocessor/comparison/equal.hpp>
+#include <boost/preprocessor/logical/and.hpp>
+
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/operations.hpp>
@@ -84,14 +90,14 @@ namespace hive { namespace converter {
   const hp::custom_binary_operation& convert_operations_visitor::operator()( hp::custom_binary_operation& op )const
   {
     op.required_auths.clear();
-    std::cout << "Clearing custom_binary_operation required_auths in block: " << hp::block_header::num_from_id( converter.get_previous_block_id() ) + 1 << '\n';
+    std::cout << "Clearing custom_binary_operation required_auths in block: " << converter.get_current_block().block_num() << '\n';
 
     return op;
   }
 
   const hp::pow_operation& convert_operations_visitor::operator()( hp::pow_operation& op )const
   {
-    op.block_id = converter.get_previous_block_id();
+    op.block_id = converter.get_current_block().previous;
 
     converter.add_pow_key( op.worker_account, op.work.worker );
 
@@ -107,7 +113,7 @@ namespace hive { namespace converter {
 
     auto& prev_block = op.work.which() ? op.work.get< hp::equihash_pow >().prev_block : op.work.get< hp::pow2 >().input.prev_block;
 
-    prev_block = converter.get_previous_block_id();
+    prev_block = converter.get_current_block().previous;
 
     return op;
   }
@@ -151,7 +157,7 @@ namespace hive { namespace converter {
 
 
   blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size )
-    : _private_key( _private_key ), chain_id( chain_id ), signers_exit( false )
+    : _private_key( _private_key ), chain_id( chain_id ), signers_exit( false ), current_hardfork( 0 )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
@@ -198,9 +204,93 @@ namespace hive { namespace converter {
 
   const fc::time_point_sec blockchain_converter::auto_trx_time = fc::time_point::min();
 
+#ifndef HIVE_BC_HARDFORKS_MAJOR_SIZE
+#  define HIVE_BC_HARDFORKS_MAJOR_SIZE 2
+#endif
+
+#ifndef HIVE_BC_HARDFORKS_0_START
+#  define HIVE_BC_HARDFORKS_0_START 1
+#endif
+#ifndef HIVE_BC_HARDFORKS_0_STOP
+#  define HIVE_BC_HARDFORKS_0_STOP 23
+#endif
+
+#ifndef HIVE_BC_HARDFORKS_1_START
+#  define HIVE_BC_HARDFORKS_1_START BOOST_PP_ADD( 1, HIVE_BC_HARDFORKS_0_STOP )
+#endif
+#ifndef HIVE_BC_HARDFORKS_1_STOP
+#  define HIVE_BC_HARDFORKS_1_STOP HIVE_NUM_HARDFORKS
+#endif
+
+#ifdef  HIVE_HARDFORK_1_25_TIME // XXX: Should it really be initially next_hf_time()?
+#  undef  HIVE_HARDFORK_1_25_TIME
+#  define HIVE_HARDFORK_1_25_TIME 1625061600
+#endif
+
+#ifndef HIVE_BC_HF_N_CASE_MACRO
+#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) \
+  BOOST_PP_IF( BOOST_PP_AND( BOOST_PP_EQUAL( data, 0 ), BOOST_PP_EQUAL( n, 18 ) ), \
+               /* Duplicate case HIVE_HARDFORK_0_18_TIME */,                       \
+               case ( HIVE_HARDFORK_ ##data ## _ ##n ## _TIME ):                   \
+              )
+#endif
+
+#ifndef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
+#  define HIVE_BC_HF_ALL_CASE_MACRO_LOOP(z, n, data)                           \
+  BOOST_PP_REPEAT_FROM_TO( HIVE_BC_HARDFORKS_ ##n ## _START,                   \
+                           BOOST_PP_ADD( 1, HIVE_BC_HARDFORKS_ ##n ## _STOP ), \
+                           HIVE_BC_HF_N_CASE_MACRO,                            \
+                           n                                                   \
+                          )
+#endif
+
+#ifndef HIVE_BC_HF_ALL_CASE_MACRO
+#  define HIVE_BC_HF_ALL_CASE_MACRO \
+  BOOST_PP_REPEAT( HIVE_BC_HARDFORKS_MAJOR_SIZE, HIVE_BC_HF_ALL_CASE_MACRO_LOOP, )
+#endif
+
+#ifndef HIVE_BC_HF_ALL_CASE_MACRO_START
+#  define HIVE_BC_HF_ALL_CASE_MACRO_START( data_to_compare ) \
+  switch( data_to_compare )                                  \
+  {                                                          \
+    HIVE_BC_HF_ALL_CASE_MACRO
+#endif
+
+#ifndef HIVE_BC_HF_ALL_CASE_MACRO_END
+#  define HIVE_BC_HF_ALL_CASE_MACRO_END() \
+    default: break;                       \
+  }
+#endif
+
+  void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
+  {
+    // Expands to the switch statement that increments current_hardfork every time _signed_block.timestamp equals to the original timestamp of the hardfork
+    HIVE_BC_HF_ALL_CASE_MACRO_START( _signed_block.timestamp.sec_since_epoch() );
+      ++current_hardfork;
+      // std::cout << "\nGot hardfork: " << current_hardfork << " in block " << _signed_block.block_num() << '\n';
+    HIVE_BC_HF_ALL_CASE_MACRO_END();
+  }
+
+// Cleanup defines
+#undef HIVE_BC_HARDFORKS_MAJOR_SIZE
+#undef HIVE_BC_HARDFORKS_0_START
+#undef HIVE_BC_HARDFORKS_0_STOP
+#undef HIVE_BC_HARDFORKS_1_START
+#undef HIVE_BC_HARDFORKS_1_STOP
+#undef HIVE_BC_HF_N_CASE_MACRO
+#undef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
+#undef HIVE_BC_HF_ALL_CASE_MACRO
+#undef HIVE_BC_HF_ALL_CASE_MACRO_START
+#undef HIVE_BC_HF_ALL_CASE_MACRO_END
+
+#undef HIVE_HARDFORK_1_25_TIME
+#define HIVE_HARDFORK_1_25_TIME next_hf_time()
+
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
-    this->previous_block_id = previous_block_id;
+    current_block_ptr = &_signed_block;
+
+    check_for_hardfork( _signed_block );
 
     _signed_block.previous = previous_block_id;
 
@@ -261,6 +351,8 @@ namespace hive { namespace converter {
     // Sign header (using given witness' private key)
     convert_signed_header( _signed_block );
 
+    current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
+
     return _signed_block.id();
   }
 
@@ -275,7 +367,7 @@ namespace hive { namespace converter {
   }
 
   void blockchain_converter::convert_signed_header( hp::signed_block_header& _signed_header )
-  {
+  { // todo: change name of function
     _signed_header.sign( _private_key );
   }
 
@@ -307,7 +399,7 @@ namespace hive { namespace converter {
 
   void blockchain_converter::add_account( const hp::account_name_type& acc )
   {
-    if( hp::block_header::num_from_id( get_previous_block_id() ) + 1 <= HIVE_HARDFORK_0_17_BLOCK_NUM )
+    if( has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       accounts.insert( acc );
     else if( accounts.size() )
       accounts.clear(); // Free some space
@@ -328,9 +420,20 @@ namespace hive { namespace converter {
     return chain_id;
   }
 
-  const hp::block_id_type& blockchain_converter::get_previous_block_id()const
+  uint32_t blockchain_converter::get_current_hardfork()const
   {
-    return previous_block_id;
+    return current_hardfork;
+  }
+
+  bool blockchain_converter::has_hardfork( uint32_t hf )const
+  {
+    return current_hardfork >= hf;
+  }
+
+  const hp::signed_block& blockchain_converter::get_current_block()const
+  {
+    FC_ASSERT( current_block_ptr != nullptr, "Cannot return reference to the signed block. You can access block that is currently being converted only during its conversion." );
+    return *current_block_ptr;
   }
 
 } } // hive::converter
