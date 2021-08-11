@@ -197,6 +197,9 @@ class ah_loader
 
     void import_accounts()
     {
+      if( is_interrupted() )
+        return;
+
       pqxx::result _accounts = exec( query.accounts );
 
       for( const auto& _record : _accounts )
@@ -216,6 +219,9 @@ class ah_loader
 
     void import_account_operations()
     {
+      if( is_interrupted() )
+        return;
+
       pqxx::result _account_ops = exec( query.account_ops );
 
       for( const auto& _record : _account_ops )
@@ -238,6 +244,9 @@ class ah_loader
 
     bool context_exists()
     {
+      if( is_interrupted() )
+        return false;
+
       bool _val = false;
 
       pqxx::result _res = exec( query.check_context );
@@ -271,6 +280,9 @@ class ah_loader
 
     void execute_query( const std::vector< string >& queries, const ah_query::part_query_type& q_parts )
     {
+      if( is_interrupted() )
+        return;
+
       if( queries.empty() )
         return;
 
@@ -341,8 +353,16 @@ class ah_loader
 
         tables_query = query.format( tables_query, application_context, application_context );
 
+        if( is_interrupted() )
+          return;
         exec( query.create_context );
+
+        if( is_interrupted() )
+          return;
         exec( tables_query );
+
+        if( is_interrupted() )
+          return;
         exec( functions_query );
       }
 
@@ -351,8 +371,11 @@ class ah_loader
       finish_trx();
     }
 
-    bool process( uint64_t first_block, uint64_t last_block )
+    void process( uint64_t first_block, uint64_t last_block )
     {
+      if( is_interrupted() )
+        return;
+
       ilog("Processed blocks: ${fb} - ${lb}", ("fb", first_block)("lb", last_block) );
 
       exec( query.detach_context );
@@ -387,7 +410,7 @@ class ah_loader
       auto _attach_context_query  = query.format( query.attach_context, application_context, last_block );
       exec( _attach_context_query );
 
-      return true;
+      return;
     }
 
     bool process()
