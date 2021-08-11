@@ -1,3 +1,6 @@
+# pylint: disable=all
+# Check git blame for details
+
 import pytest
 
 from test_tools.private.node_config_entry_types import String

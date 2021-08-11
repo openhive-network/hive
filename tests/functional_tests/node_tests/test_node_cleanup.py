@@ -1,3 +1,6 @@
+# pylint: disable=all
+# Check git blame for details
+
 from test_tools import constants
 from test_tools.private.utilities_for_tests.node_files import important_files_are_removed, unneeded_files_are_removed
 
