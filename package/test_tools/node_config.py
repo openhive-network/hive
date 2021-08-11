@@ -1,6 +1,6 @@
 import re
 
-from test_tools.private.node_config_entry_types import *
+from test_tools.private.node_config_entry_types import Boolean, Integer, List, Plugin, String, Untouched
 
 
 class NodeConfig:
