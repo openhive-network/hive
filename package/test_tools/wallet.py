@@ -12,6 +12,9 @@ from test_tools.private.wait_for import wait_for
 
 class Wallet:
     class __Api:
+        # pylint: disable=invalid-name, too-many-arguments, too-many-public-methods
+        # Wallet api is out of TestTools control
+
         class __TransactionBuilder:
             '''Helper class for sending multiple operations in single transaction'''
 
