@@ -34,7 +34,7 @@ class Network(NodesCreator):
             seed_node.run(wait_for_live=wait_for_live)
             nodes_connecting_to_seed = self._nodes[1:]
         else:
-            seed_node = self.__connect_with_network._nodes[0]
+            seed_node = self.__connect_with_network.nodes()[0]
             self.__connect_with_network = None
             nodes_connecting_to_seed = self._nodes
 
@@ -72,7 +72,7 @@ class Network(NodesCreator):
         return wallet
 
     def connect_with(self, network):
-        if len(self._nodes) == 0 or len(network._nodes) == 0:
+        if len(self._nodes) == 0 or len(network.nodes()) == 0:
             raise Exception('Unable to connect empty network')
 
         if not self.is_running:
@@ -93,7 +93,7 @@ class Network(NodesCreator):
         network.disconnected_networks.remove(self)
 
     def disconnect_from(self, network):
-        if len(self._nodes) == 0 or len(network._nodes) == 0:
+        if len(self._nodes) == 0 or len(network.nodes()) == 0:
             raise Exception('Unable to disconnect empty network')
 
         self.disconnected_networks.append(network)
