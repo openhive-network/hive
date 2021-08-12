@@ -93,7 +93,7 @@ class NodesCreator:
         node.config.plugin.extend([plugin for plugin in all_api_plugins if plugin not in node.config.plugin])
 
     def nodes(self):
-        return self._nodes.copy()
+        return self._nodes
 
     def _handle_final_cleanup(self, *, default_policy: CleanUpPolicy):
         for node in self._nodes:
