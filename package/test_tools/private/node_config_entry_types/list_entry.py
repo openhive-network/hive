@@ -57,7 +57,7 @@ class List(ConfigEntry):
         def check_single_value(single_value, item_type):
             if single_value is None:
                 raise ValueError('You cannot store None in list')
-            item_type._validate(single_value)
+            item_type.validate(single_value)
 
         if isinstance(value, list):
             for single_value in value:

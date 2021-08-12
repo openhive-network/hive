@@ -44,8 +44,8 @@ class Snapshot:
         return f'<Snapshot{optional_creator_info}: path={self.__snapshot_path}>'
 
     def __eq__(self, other) -> bool:
-        my_files = sorted(get_files_matching_pattern(f'{self.__snapshot_path}/**/*.sst', recursive=True))
-        others_files = sorted(get_files_matching_pattern(f'{other.__snapshot_path}/**/*.sst', recursive=True))
+        my_files = sorted(get_files_matching_pattern(f'{self.get_path()}/**/*.sst', recursive=True))
+        others_files = sorted(get_files_matching_pattern(f'{other.get_path()}/**/*.sst', recursive=True))
 
         if len(my_files) != len(others_files):
             return False

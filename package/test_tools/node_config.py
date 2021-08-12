@@ -191,7 +191,7 @@ class NodeConfig:
 
     def __assert_valid_plugins_names(self):
         for plugin in self.plugin:
-            Plugin._validate(plugin)
+            Plugin.validate(plugin)
 
     def load_from_lines(self, lines):
         assert isinstance(lines, list)
