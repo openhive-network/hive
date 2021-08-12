@@ -1500,7 +1500,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     a.voting_manabar.current_mana = current_power - used_power;
     a.last_vote_time = _now;
-    a.voting_manabar.last_update_time = a.last_vote_time.sec_since_epoch();
+    a.voting_manabar.last_update_time = _now.sec_since_epoch();
   } );
 
   /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
