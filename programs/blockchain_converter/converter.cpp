@@ -27,8 +27,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter )
-    : converter( converter ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const hp::block_id_type& previous_block_id )
+    : converter( converter ), previous_block_id( previous_block_id ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -108,7 +108,7 @@ namespace hive { namespace converter {
 
   const hp::pow_operation& convert_operations_visitor::operator()( hp::pow_operation& op )const
   {
-    op.block_id = converter.get_current_block().previous;
+    op.block_id = previous_block_id;
 
     converter.add_pow_key( op.worker_account, op.work.worker );
 
@@ -124,7 +124,7 @@ namespace hive { namespace converter {
 
     auto& prev_block = op.work.which() ? op.work.get< hp::equihash_pow >().prev_block : op.work.get< hp::pow2 >().input.prev_block;
 
-    prev_block = converter.get_current_block().previous;
+    prev_block = previous_block_id;
 
     return op;
   }
@@ -312,7 +312,7 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, previous_block_id ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
