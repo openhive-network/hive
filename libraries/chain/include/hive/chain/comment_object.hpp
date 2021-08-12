@@ -248,8 +248,6 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( comment_vote_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( comment_vote_object )
-
       template< typename Allocator >
       comment_vote_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _voter, const comment_object& _comment,
