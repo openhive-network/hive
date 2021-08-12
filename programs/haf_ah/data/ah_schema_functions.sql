@@ -1,5 +1,5 @@
 DROP FUNCTION IF EXISTS public.get_ops_in_block;
-CREATE FUNCTION public.get_ops_in_block( in _BLOCK_NUM INT, in _ONLY_VIRTUAL BOOLEAN )
+CREATE FUNCTION public.get_ops_in_block( in _BLOCK_NUM INT, in _ONLY_VIRTUAL BOOLEAN, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _trx_in_block BIGINT,
@@ -12,6 +12,19 @@ RETURNS TABLE(
 AS
 $function$
 BEGIN
+
+  IF (NOT _INCLUDE_REVERSIBLE) AND _BLOCK_NUM > hive.app_get_irreversible_block( 'account_history' ) THEN
+    RETURN QUERY SELECT 
+      NULL::TEXT,
+      NULL::BIGINT,
+      NULL::BIGINT,
+      NULL::BOOLEAN,
+      NULL::TEXT,
+      NULL::TEXT,
+      NULL::INT
+    LIMIT 0;
+    RETURN;
+  END IF;
 
   RETURN QUERY
     SELECT
@@ -48,7 +61,7 @@ $function$
 language plpgsql STABLE;
 
 DROP FUNCTION IF EXISTS public.get_transaction;
-CREATE FUNCTION public.get_transaction( in _TRX_HASH BYTEA )
+CREATE FUNCTION public.get_transaction( in _TRX_HASH BYTEA, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _ref_block_num INT,
     _ref_block_prefix BIGINT,
@@ -61,22 +74,36 @@ RETURNS TABLE(
 AS
 $function$
 DECLARE
+  __result hive.account_history_transactions_view%ROWTYPE;
   __multisig_number SMALLINT;
 BEGIN
+
+  SELECT * INTO __result FROM hive.account_history_transactions_view WHERE ht.trx_hash = _TRX_HASH;
+  IF NOT _INCLUDE_REVERSIBLE AND __result.block_num > hive.app_get_irreversible_block( 'account_history' ) THEN
+    RETURN QUERY SELECT
+      NULL::INT,
+      NULL::BIGINT,
+      NULL::TEXT,
+      NULL::INT,
+      NULL::SMALLINT,
+      NULL::TEXT,
+      NULL::SMALLINT
+    LIMIT 0;
+    RETURN;
+  END IF;
 
   SELECT count(*) INTO __multisig_number FROM hive.account_history_transactions_multisig_view htm WHERE htm.trx_hash = _TRX_HASH;
 
   RETURN QUERY
     SELECT
-      ref_block_num _ref_block_num,
-      ref_block_prefix _ref_block_prefix,
+      ht.ref_block_num _ref_block_num,
+      ht.ref_block_prefix _ref_block_prefix,
       '2016-06-20T19:34:09' _expiration,--lack of data
       ht.block_num _block_num,
       ht.trx_in_block _trx_in_block,
       encode(ht.signature, 'escape') _signature,
       __multisig_number
-    FROM hive.account_history_transactions_view ht
-    WHERE ht.trx_hash = _TRX_HASH;
+    FROM __result ht;
 END
 $function$
 language plpgsql STABLE;
@@ -119,7 +146,7 @@ $function$
 language plpgsql STABLE;
 
 DROP FUNCTION IF EXISTS public.enum_virtual_ops;
-CREATE FUNCTION public.enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT )
+CREATE FUNCTION public.enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
@@ -133,10 +160,30 @@ RETURNS TABLE(
 AS
 $function$
 DECLARE
+  __upper_block_limit INT;
   __filter_info INT;
 BEGIN
 
    SELECT INTO __filter_info ( select array_length( _FILTER, 1 ) );
+
+  IF NOT _INCLUDE_REVERSIBLE THEN 
+    SELECT hive.app_get_irreversible_block( 'account_history' ) INTO __upper_block_limit;
+    IF _BLOCK_RANGE_BEGIN > __upper_block_limit THEN
+      RETURN QUERY SELECT 
+        NULL::TEXT,
+        NULL::INT,
+        NULL::BIGINT,
+        NULL::BIGINT,
+        NULL::BOOLEAN,
+        NULL::TEXT,
+        NULL::TEXT,
+        NULL::INT
+      LIMIT 0;
+      RETURN;
+    ELSIF __upper_block_limit < _BLOCK_RANGE_END  THEN
+      SELECT __upper_block_limit INTO _BLOCK_RANGE_END;
+    END IF;
+  END IF;
 
   RETURN QUERY
     SELECT
@@ -180,7 +227,7 @@ $function$
 language plpgsql STABLE;
 
 DROP FUNCTION IF EXISTS public.ah_get_account_history;
-CREATE FUNCTION public.ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _START INT, _LIMIT INT )
+CREATE FUNCTION public.ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _START INT, _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
@@ -196,11 +243,34 @@ $function$
 DECLARE
   __account_id INT;
   __filter_info INT;
+  __upper_block_limit INT;
+  __reverted BOOLEAN;
 BEGIN
 
   SELECT INTO __filter_info ( select array_length( _FILTER, 1 ) );
 
+  IF NOT _INCLUDE_REVERSIBLE THEN
+    SELECT hive.app_get_irreversible_block( 'account_history' ) INTO __upper_block_limit;
+    IF _START > __upper_block_limit THEN
+      RETURN QUERY SELECT
+        NULL::TEXT,
+        NULL::INT,
+        NULL::BIGINT,
+        NULL::BIGINT,
+        NULL::BOOLEAN,
+        NULL::TEXT,
+        NULL::TEXT,
+        NULL::INT
+      LIMIT 0;
+      RETURN;
+    END IF;
+  END IF;
+
   SELECT INTO __account_id ( select id from public.accounts where name = _ACCOUNT );
+
+  SELECT _START < 0 INTO __reverted;
+  SELECT abs(_START) INTO _START;
+
 
   IF __filter_info IS NULL THEN
   RETURN QUERY
@@ -228,13 +298,16 @@ BEGIN
         SELECT hao.operation_id as operation_id, hao.account_op_seq_no as seq_no
         FROM public.account_operations hao 
         WHERE hao.account_id = __account_id AND hao.account_op_seq_no <= _START
-        ORDER BY seq_no DESC
+        ORDER BY 
+          CASE WHEN __reverted = true THEN hao.account_op_seq_no END ASC,
+          CASE WHEN __reverted = false THEN hao.account_op_seq_no END DESC
         LIMIT _LIMIT
       ) T
     JOIN hive.operations ho ON T.operation_id = ho.id
     JOIN hive.blocks hb ON hb.num = ho.block_num
     JOIN hive.operation_types hot ON hot.id = ho.op_type_id
     LEFT JOIN hive.transactions ht ON ho.block_num = ht.block_num AND ho.trx_in_block = ht.trx_in_block
+    WHERE ( (__upper_block_limit IS NULL) OR ho.block_num <= __upper_block_limit )
     LIMIT _LIMIT;
   ELSE
     RETURN QUERY
@@ -264,9 +337,13 @@ BEGIN
             ho.id, ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id, hao.account_op_seq_no as seq_no
             FROM hive.operations ho
             JOIN public.account_operations hao ON ho.id = hao.operation_id
-            WHERE hao.account_id = __account_id AND hao.account_op_seq_no <= _START
-            AND ( ho.op_type_id = ANY( _FILTER ) ) 
-            ORDER BY seq_no DESC
+            WHERE ( (__upper_block_limit IS NULL) OR ho.block_num <= __upper_block_limit )
+              AND hao.account_id = __account_id
+              AND hao.account_op_seq_no <= _START
+              AND ( ho.op_type_id = ANY( _FILTER ) )
+            ORDER BY 
+              CASE WHEN __reverted = true THEN hao.account_op_seq_no END ASC,
+              CASE WHEN __reverted = false THEN hao.account_op_seq_no END DESC
             LIMIT _LIMIT
         ) T
         JOIN hive.blocks hb ON hb.num = T.block_num
@@ -292,3 +369,5 @@ FROM public.account_operations ao
 GROUP BY ao.account_id
 )T ON ha.id = T.account_id
 ;
+
+
