@@ -47,6 +47,8 @@ struct manabar
       last_update_time = now;
       return;
     }
+    if( dt == 0 )
+      return;
 
     if( !skip_cap_regen )
       dt = (dt > params.regen_time) ? params.regen_time : dt;
