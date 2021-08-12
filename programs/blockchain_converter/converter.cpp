@@ -27,8 +27,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const hp::block_id_type& previous_block_id )
-    : converter( converter ), previous_block_id( previous_block_id ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter )
+    : converter( converter ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
