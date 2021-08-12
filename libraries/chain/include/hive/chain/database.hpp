@@ -289,13 +289,15 @@ namespace chain {
     public:
 
       const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
-      const time_point_sec                   calculate_discussion_payout_time( const comment_cashout_object& comment_cashout )const;
+      const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment, const comment_cashout_object& comment_cashout )const;
       const reward_fund_object&              get_reward_fund()const;
 
       const comment_cashout_object* find_comment_cashout( const comment_object& comment ) const;
       const comment_cashout_object* find_comment_cashout( comment_id_type comment_id ) const;
+      const comment_cashout_ex_object* find_comment_cashout_ex( const comment_object& comment ) const;
+      const comment_cashout_ex_object* find_comment_cashout_ex( comment_id_type comment_id ) const;
       const comment_object& get_comment( const comment_cashout_object& comment_cashout ) const;
-      void remove_old_comments();
+      void remove_old_cashouts();
 
       asset get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const;
 
@@ -465,8 +467,6 @@ namespace chain {
 
       asset create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
 
-      void adjust_total_payout( const comment_cashout_object& a, const asset& hbd, const asset& curator_hbd_value, const asset& beneficiary_value );
-
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
       void adjust_balance( const account_object& a, const asset& delta );
@@ -517,7 +517,9 @@ namespace chain {
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
       share_type pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards );
-      share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment, const comment_cashout_object& comment_cashout, bool forward_curation_remainder = true );
+      share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
+        const comment_cashout_object& comment_cashout, const comment_cashout_ex_object* comment_cashout_ex,
+        bool forward_curation_remainder = true );
       void process_comment_cashout();
       void process_funds();
       void process_conversions();

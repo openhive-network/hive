@@ -1,0 +1,9 @@
+#ifndef HIVE_HARDFORK_1_27
+#define HIVE_HARDFORK_1_27 27
+#define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_27
+
+#define HIVE_HARDFORK_1_27_TIME 1654084800 // Wednesday, 1 June 2022 12:00:00
+
+#define HIVE_HARDFORK_1_27_VERSION hardfork_version( 1, 27 )
+
+#endif
