@@ -23,7 +23,7 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
   reward_weight = cc.reward_weight;
   total_payout_value = cc.total_payout_value;
   curator_payout_value = cc.curator_payout_value;
-  author_rewards = cc.author_rewards;
+  author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
   net_votes = cc.net_votes;
   active = cc.active;
   last_payout = cc.last_payout;

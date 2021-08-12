@@ -478,7 +478,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104u ); //at most <30d> of ownership updates
   BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 96u ); //at most <1d> of account recoveries
   BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 40u ); //at most <30d> of recovery account changes
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 200u //at most <7d> of unpaid comments (all comments prior to HF19)
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 184u //at most <7d> of unpaid comments (all comments prior to HF19)
 #ifdef HIVE_ENABLE_SMT
     + 32
 #endif
@@ -492,8 +492,9 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( decline_voting_rights_request_object ), 32u ); //at most <30d> of decline requests
   BOOST_CHECK_EQUAL( sizeof( proposal_object ), 144u ); //potentially infinite, but costs a lot to make (especially after HF24)
   BOOST_CHECK_EQUAL( sizeof( proposal_vote_object ), 32u ); //potentially infinite, but limited by account_object and time of proposal_object life
+  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_object ), 72u ); //TODO: estimate number of active objects
 
-  //singletons (size only affects performance, especially with MIRA)
+  //singletons (size only affects performance)
   BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96u );
   BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 368u
 #ifdef HIVE_ENABLE_SMT
@@ -504,7 +505,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
   BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536u );
-  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_object ), 72u );
 
   //TODO: categorize and evaluate size potential of SMT related objects:
   //account_regular_balance_object
