@@ -91,12 +91,13 @@ namespace hive { namespace converter {
   class convert_operations_visitor
   {
   private:
+    const hp::block_id_type& previous_block_id;
     blockchain_converter& converter;
 
   public:
     typedef hp::operation result_type;
 
-    convert_operations_visitor( blockchain_converter& converter );
+    convert_operations_visitor( blockchain_converter& converter, const hp::block_id_type& previous_block_id );
 
     const hp::account_create_operation& operator()( hp::account_create_operation& op )const;
 
