@@ -27,6 +27,10 @@ class ConfigEntry:
         self._value = value
 
     @classmethod
+    def validate(cls, value):
+        return cls._validate(value)
+
+    @classmethod
     def _validate(cls, value):
         '''Raises exception if value or its type is incorrect.
 
