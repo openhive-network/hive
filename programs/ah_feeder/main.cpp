@@ -155,9 +155,20 @@ class ah_loader
 
     pqxx::result exec( const string& _query )
     {
-      dlog("${q}", ("q", _query) );
+      if( _query.size() > 100 )
+        dlog("${q}..", ("q", _query.substr(0,100)) );
+      else
+        dlog("${q}", ("q", _query) );
       FC_ASSERT( trx );
-      return trx->exec( _query );
+
+      auto start = std::chrono::high_resolution_clock::now();
+
+      pqxx::result res = trx->exec( _query );
+
+      auto end = std::chrono::high_resolution_clock::now();
+      dlog("query time[ms]: ${m}\n", ( "m", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+
+      return res;
     }
 
     void finish_trx( bool force_rollback = false )
