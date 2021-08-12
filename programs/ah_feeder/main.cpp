@@ -105,12 +105,12 @@ struct ah_query
     FC_ASSERT( insert_into_accounts.size() == 3 );
     insert_into_accounts[0] = " INSERT INTO public.accounts( id, name ) VALUES";
     insert_into_accounts[1] = " ( %d, '%s')";
-    insert_into_accounts[2] = " ON CONFLICT DO NOTHING;";
+    insert_into_accounts[2] = " ;";
 
     FC_ASSERT( insert_into_account_ops.size() == 3 );
     insert_into_account_ops[0] = " INSERT INTO public.account_operations( account_id, account_op_seq_no, operation_id ) VALUES";
     insert_into_account_ops[1] = " ( %d, %d, %d )";
-    insert_into_account_ops[2] = " ON CONFLICT DO NOTHING;";
+    insert_into_account_ops[2] = " ;";
   }
 };
 
@@ -155,7 +155,7 @@ class ah_loader
 
     pqxx::result exec( const string& _query )
     {
-      ilog("${q}", ("q", _query) );
+      dlog("${q}", ("q", _query) );
       FC_ASSERT( trx );
       return trx->exec( _query );
     }
@@ -167,15 +167,15 @@ class ah_loader
 
       if( force_rollback || is_interrupted() )
       {
-        ilog("Rollback..." );
+        dlog("Rollback..." );
         trx->rollback();
-        ilog("Rollback finished..." );
+        dlog("Rollback finished..." );
       }
       else
       {
-        ilog("Commit..." );
+        dlog("Commit..." );
         trx->commit();
-        ilog("Commit finished..." );
+        dlog("Commit finished..." );
       }
       trx.reset();
     }
@@ -377,7 +377,7 @@ class ah_loader
       if( is_interrupted() )
         return;
 
-      ilog("Processed blocks: ${fb} - ${lb}", ("fb", first_block)("lb", last_block) );
+      dlog("Processed blocks: ${fb} - ${lb}", ("fb", first_block)("lb", last_block) );
 
       exec( query.detach_context );
 
@@ -386,6 +386,7 @@ class ah_loader
 
       if( !_blocks_ops.empty() )
       {
+        dlog("Found ${s} operations", ("s", _blocks_ops.size()) );
         for( const auto& _record : _blocks_ops )
         {
           uint64_t _operation_id  = _record[0].as<uint64_t>();
@@ -513,13 +514,13 @@ bool allow_close_app( bool empty, int64_t declared_empty_results, int64_t& cnt_e
   if( declared_empty_results == -1 )
   {
     if( empty )
-      ilog("A result returned from a database is empty. Actual empty result: ${er}", ("er", cnt_empty_result) );
+      dlog("A result returned from a database is empty. Actual empty result: ${er}", ("er", cnt_empty_result) );
   }
   else
   {
     if( empty )
     {
-      ilog("A result returned from a database is empty. Declared empty results: ${der} Actual empty result: ${er}", ("der", declared_empty_results)("er", cnt_empty_result) );
+      dlog("A result returned from a database is empty. Declared empty results: ${der} Actual empty result: ${er}", ("der", declared_empty_results)("er", cnt_empty_result) );
 
       if( declared_empty_results < cnt_empty_result )
       {
@@ -533,28 +534,28 @@ bool allow_close_app( bool empty, int64_t declared_empty_results, int64_t& cnt_e
 
 void shutdown_properly()
 {
-  ilog("Closing. Wait...");
+  dlog("Closing. Wait...");
 
   auto _loader = ah_loader::instance();
   _loader->interrupt();
 
-  ilog("Interrupted...");
+  dlog("Interrupted...");
 }
 
 void handle_signal_action( int signal )
 {
   if( signal == SIGINT )
   {
-    ilog("SIGINT was caught");
+    dlog("SIGINT was caught");
     shutdown_properly();
   }
   else if ( signal == SIGTERM )
   {
-    ilog("SIGTERM was caught");
+    dlog("SIGTERM was caught");
     shutdown_properly();
   }
   else
-    ilog("Not supported signal ${signal}", ( "signal", signal ));
+    dlog("Not supported signal ${signal}", ( "signal", signal ));
 }
 
 int setup_signals()
@@ -565,12 +566,12 @@ int setup_signals()
 
   if( sigaction( SIGINT, &sa, 0 ) != 0 )
   {
-    ilog("Error setting `SIGINT` handler");
+    dlog("Error setting `SIGINT` handler");
     return -1;
   }
   if( sigaction( SIGTERM, &sa, 0 ) != 0 )
   {
-    ilog("Error setting `SIGTERM` handler");
+    dlog("Error setting `SIGTERM` handler");
     return -1;
   }
   
@@ -604,14 +605,14 @@ int main( int argc, char** argv )
       bool empty = _loader->process();
 
       auto end = std::chrono::high_resolution_clock::now();
-      ilog("time[ms]: ${m}", ( "m", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      dlog("time[ms]: ${m}\n", ( "m", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
  
       if( allow_close_app( empty, declared_empty_results, cnt_empty_result ) )
         break;
     }
 
     if( _loader->is_interrupted() )
-      ilog("An application was interrupted...");
+      dlog("An application was interrupted...");
 
   }
   catch ( const boost::exception& e )
