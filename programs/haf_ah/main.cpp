@@ -1,7 +1,7 @@
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/types.hpp>
 
-#include <hive/utilities/transaction_controllers.hpp>
+#include <hive/sql_utilities/transaction_controllers.hpp>
 
 #include <hive/chain/util/impacted.hpp>
 
@@ -469,6 +469,7 @@ class ah_loader
               trx = tx_controller->openTx();
               __last_block = std::min( __last_block + args.flush_size, _last_block );
               process( _first_block, __last_block );
+              _first_block = __last_block + 1;
               finish_trx();
             }
 
