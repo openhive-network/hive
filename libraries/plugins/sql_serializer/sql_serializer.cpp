@@ -595,14 +595,15 @@ using chain::reindex_notification;
         new_ids_collector(account_cache_t* known_accounts, int* next_account_id,
           permlink_cache_t* permlink_cache, int* next_permlink_id,
           account_data_container_t* newAccounts,
-          permlink_data_container_t* newPermlinks) :
+          permlink_data_container_t* newPermlinks, bool reversible_block) :
           _known_accounts(known_accounts),
           _known_permlinks(permlink_cache),
           _next_account_id(*next_account_id),
           _next_permlink_id(*next_permlink_id),
           _new_accounts(newAccounts),
           _new_permlinks(newPermlinks),
-          _processed_operation(nullptr)
+          _processed_operation(nullptr),
+          _reversible_block(reversible_block)
         {
         }
 
@@ -674,7 +675,9 @@ using chain::reindex_notification;
           auto ii = _known_accounts->emplace(std::string(name), account_info(_next_account_id, 0));
           _new_accounts->emplace_back(_next_account_id, std::string(name));
 
-          FC_ASSERT(ii.second, "Already found account `${a}' at processing operation: `{o}.", ("a", name)("o", get_operation_name(*_processed_operation)));
+          /// Until HAF synchronization scheme will be introduced, state data (like accounts) must be a little hacked due to forks
+
+          FC_ASSERT(ii.second || _reversible_block, "Already found account `${a}' at processing operation: `{o}.", ("a", name)("o", get_operation_name(*_processed_operation)));
         }
 
       private:
@@ -688,6 +691,7 @@ using chain::reindex_notification;
         permlink_data_container_t* _new_permlinks;
 
         const hive::protocol::operation* _processed_operation;
+        bool _reversible_block;
       };
 
 
@@ -1135,7 +1139,7 @@ using chain::reindex_notification;
           void wait_for_data_processing_finish();
 
           void process_cached_data();
-          void collect_new_ids(const hive::protocol::operation& op);
+          void collect_new_ids(const hive::protocol::operation& op, uint32_t block_num);
           void collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op);
 
           bool skip_reversible_block(uint32_t block);
@@ -1254,7 +1258,7 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
   ++op_sequence_id;
 
   if(is_virtual == false)
-    collect_new_ids(note.op);
+    collect_new_ids(note.op, note.block);
 
   cdtf->operations.emplace_back(
     op_sequence_id,
@@ -1418,15 +1422,18 @@ void sql_serializer_plugin_impl::process_cached_data()
   trigger_data_flush(data->account_operations);
 }
 
-void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op)
+void sql_serializer_plugin_impl::collect_new_ids(const hive::protocol::operation& op, uint32_t block_num)
 {
   auto* data = currently_caching_data.get();
   auto* account_cache = &data->_account_cache;
   auto* permlink_cache = &data->_permlink_cache;
 
+  bool reversible_block = block_num > chain_db.get_last_irreversible_block_num();
+
   new_ids_collector collector(account_cache, &data->_next_account_id, permlink_cache, &data->_next_permlink_id,
-    &data->accounts, &data->permlinks);
-  op.visit(collector);
+    &data->accounts, &data->permlinks, reversible_block);
+  
+  collector.collect(op);
 }
 
 void sql_serializer_plugin_impl::collect_impacted_accounts(int64_t operation_id, const hive::protocol::operation& op)
