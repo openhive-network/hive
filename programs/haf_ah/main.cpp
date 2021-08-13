@@ -390,8 +390,6 @@ class ah_loader
 
       dlog("Processed blocks: ${fb} - ${lb}", ("fb", first_block)("lb", last_block) );
 
-      exec( query.detach_context );
-
       string _query = query.format( query.get_bodies, first_block, last_block );
       pqxx::result _blocks_ops = exec( _query );
 
@@ -419,11 +417,6 @@ class ah_loader
         }
         execute_queries();
       }
-
-      auto _attach_context_query  = query.format( query.attach_context, application_context, last_block );
-      exec( _attach_context_query );
-
-      return;
     }
 
     bool process()
@@ -447,25 +440,33 @@ class ah_loader
 
           const auto& record = _range_blocks[0];
 
-          try
+          if( record[0].is_null() || record[1].is_null() )
           {
-            _first_block = record[0].as<uint64_t>();
-            _last_block = record[1].as<uint64_t>();
-          }
-          catch(...)
-          {
-            finish_trx( true/*force_roolback*/ );
+            finish_trx( true/*force_rollback*/ );
             return true;
+          }
+          else
+          {
+            _first_block  = record[0].as<uint64_t>();
+            _last_block   = record[1].as<uint64_t>();
           }
 
           try
           {
             if( _last_block - _first_block > 0 )
             {
-              if( ( _last_block - _first_block + 1 ) > args.flush_size )
-                process( _first_block, _first_block + args.flush_size - 1 );
-              else
-                process( _first_block, _last_block );
+              exec( query.detach_context );
+
+              uint64_t __last_block = _first_block;
+
+              while( __last_block != _last_block )
+              {
+                __last_block = std::min( __last_block + args.flush_size, _last_block );
+                process( _first_block, __last_block );
+              }
+
+              auto _attach_context_query  = query.format( query.attach_context, application_context, __last_block );
+              exec( _attach_context_query );
             }
             else
             {
@@ -474,7 +475,7 @@ class ah_loader
           }
           catch(...)
           {
-            finish_trx( true/*force_roolback*/ );
+            finish_trx( true/*force_rollback*/ );
             return true;
           }
       }
@@ -499,7 +500,7 @@ std::tuple<string, string, uint64_t, uint64_t > process_arguments( int argc, cha
   opts.add_options()("url", bpo::value<string>(), "postgres connection string for AH database");
   opts.add_options()("schema-dir", bpo::value<string>(), "directory where schemas are stored");
   opts.add_options()("range-blocks-flush", bpo::value<uint64_t>()->default_value( 1000 ), "Number of blocks processed at once");
-  opts.add_options()("allowed-empty-results", bpo::value<int64_t>()->default_value( -1 ), "Allowed number of empty results from a database. After N tries, an application closes. A value `-1` means infinite number of tries");
+  opts.add_options()("allowed-empty-results", bpo::value<int64_t>()->default_value( -1 ), "Allowed number of empty results from a database. After N tries, an application closes. A value `-1` means an infinite number of tries");
 
   bpo::variables_map options;
 
