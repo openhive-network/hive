@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/utilities/transaction_controllers.hpp>
+#include <hive/sql_utilities/transaction_controllers.hpp>
 
 #include <fc/optional.hpp>
 
