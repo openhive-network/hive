@@ -5,9 +5,6 @@ find_package(PostgreSQL 10.0)
 IF (PostgreSQL_FOUND)
   MESSAGE (STATUS "Found PostgreSQL installation.")
 
-  FIND_LIBRARY(PQXX_LIB pqxx)
-  FIND_LIBRARY(PQ_LIB pq)
-
   ADD_LIBRARY( sql_serializer_plugin
                sql_serializer.cpp
                data_processor.cpp
@@ -21,11 +18,10 @@ ELSE()
               )
 ENDIF()
 
-target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol  ${PQXX_LIB} ${PostgreSQL_LIBRARIES} )
+target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol hive_utilities )
 
 target_include_directories( sql_serializer_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                            PRIVATE "${PostgreSQL_INCLUDE_DIRS}"
                           )
 
 if( CLANG_TIDY_EXE )
