@@ -166,7 +166,7 @@ class ah_loader
       pqxx::result res = trx->exec( _query );
 
       auto end = std::chrono::high_resolution_clock::now();
-      dlog("query time[ms]: ${m}\n", ( "m", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      dlog("query time[ms]: ${time}\n", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
 
       return res;
     }
@@ -355,32 +355,39 @@ class ah_loader
       if( is_interrupted() )
         return;
 
-      FC_ASSERT( tx_controller );
-      trx = tx_controller->openTx();
-
-      if( !context_exists() )
+      try
       {
-        string tables_query    = read_file( args.schema_path / "ah_schema_tables.sql" );
-        string functions_query = read_file( args.schema_path / "ah_schema_functions.sql" );
+        FC_ASSERT( tx_controller );
+        trx = tx_controller->openTx();
 
-        tables_query = query.format( tables_query, application_context, application_context );
+        if( !context_exists() )
+        {
+          string tables_query    = read_file( args.schema_path / "ah_schema_tables.sql" );
+          string functions_query = read_file( args.schema_path / "ah_schema_functions.sql" );
 
-        if( is_interrupted() )
-          return;
-        exec( query.create_context );
+          tables_query = query.format( tables_query, application_context, application_context );
 
-        if( is_interrupted() )
-          return;
-        exec( tables_query );
+          if( is_interrupted() )
+            return;
+          exec( query.create_context );
 
-        if( is_interrupted() )
-          return;
-        exec( functions_query );
+          if( is_interrupted() )
+            return;
+          exec( tables_query );
+
+          if( is_interrupted() )
+            return;
+          exec( functions_query );
+        }
+
+        import_initial_data();
+
+        finish_trx();
       }
-
-      import_initial_data();
-
-      finish_trx();
+      catch(...)
+      {
+        finish_trx( true/*force_rollback*/ );
+      }
     }
 
     void process( uint64_t first_block, uint64_t last_block )
@@ -424,69 +431,69 @@ class ah_loader
       if( is_interrupted() )
         return true;
 
-      bool empty = false;
-
-      uint64_t _first_block = 0;
-      uint64_t _last_block  = 0;
-
-      FC_ASSERT( tx_controller );
-      trx = tx_controller->openTx();
-
-      pqxx::result _range_blocks = exec( query.next_block );
-
-      if( !_range_blocks.empty() )
+      try
       {
+        uint64_t _first_block = 0;
+        uint64_t _last_block  = 0;
+
+        FC_ASSERT( tx_controller );
+
+        trx = tx_controller->openTx();
+        pqxx::result _range_blocks = exec( query.next_block );
+        finish_trx();
+
+        if( !_range_blocks.empty() )
+        {
           FC_ASSERT( _range_blocks.size() == 1 );
 
           const auto& record = _range_blocks[0];
 
           if( record[0].is_null() || record[1].is_null() )
-          {
-            finish_trx( true/*force_rollback*/ );
             return true;
-          }
           else
           {
             _first_block  = record[0].as<uint64_t>();
             _last_block   = record[1].as<uint64_t>();
           }
 
-          try
+          trx = tx_controller->openTx();
+          exec( query.detach_context );
+          finish_trx();
+
+          if( _last_block - _first_block > 0 )
           {
-            if( _last_block - _first_block > 0 )
+            uint64_t __last_block = _first_block;
+
+            while( __last_block != _last_block )
             {
-              exec( query.detach_context );
-
-              uint64_t __last_block = _first_block;
-
-              while( __last_block != _last_block )
-              {
-                __last_block = std::min( __last_block + args.flush_size, _last_block );
-                process( _first_block, __last_block );
-              }
-
-              auto _attach_context_query  = query.format( query.attach_context, application_context, __last_block );
-              exec( _attach_context_query );
+              trx = tx_controller->openTx();
+              __last_block = std::min( __last_block + args.flush_size, _last_block );
+              process( _first_block, __last_block );
+              finish_trx();
             }
-            else
-            {
-              process( _first_block, _last_block );
-            }
+
+            trx = tx_controller->openTx();
+            auto _attach_context_query  = query.format( query.attach_context, application_context, __last_block );
+            exec( _attach_context_query );
+            finish_trx();
           }
-          catch(...)
+          else
           {
-            finish_trx( true/*force_rollback*/ );
-            return true;
+            process( _first_block, _last_block );
           }
+        }
+        else
+        {
+          return true;
+        }
       }
-      else
+      catch(...)
       {
-        empty = true;
+        finish_trx( true/*force_rollback*/ );
+        return true;
       }
 
-      finish_trx();
-
-      return empty;
+      return false;
     }
 
 };
@@ -610,6 +617,8 @@ int main( int argc, char** argv )
     int64_t cnt_empty_result = 0;
     int64_t declared_empty_results = std::get<3>( args );
 
+    auto total_start = std::chrono::high_resolution_clock::now();
+
     while( !_loader->is_interrupted() )
     {
       auto start = std::chrono::high_resolution_clock::now();
@@ -617,11 +626,15 @@ int main( int argc, char** argv )
       bool empty = _loader->process();
 
       auto end = std::chrono::high_resolution_clock::now();
-      dlog("time[ms]: ${m}\n", ( "m", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      dlog("time[ms]: ${time}\n", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >( end - start ).count() ));
  
       if( allow_close_app( empty, declared_empty_results, cnt_empty_result ) )
         break;
     }
+
+    auto total_end = std::chrono::high_resolution_clock::now();
+    dlog("*****Total time*****");
+    dlog("total time[s]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >( total_end - total_start ).count() / 1000 ));
 
     if( _loader->is_interrupted() )
       dlog("An application was interrupted...");
