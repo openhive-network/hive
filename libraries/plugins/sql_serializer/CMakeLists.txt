@@ -20,7 +20,7 @@ ELSE()
   set (PostgreSQL_LIBRARIES "")
 ENDIF()
 
-target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol hive_utilities )
+target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol sql_hive_utilities )
 
 target_include_directories( sql_serializer_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"

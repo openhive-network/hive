@@ -16,7 +16,7 @@ if( HIVE_STATIC_BUILD )
       "-static-libstdc++ -static-libgcc"
       hive_chain
       hive_protocol
-      hive_utilities
+      sql_hive_utilities
       ${CMAKE_DL_LIBS}hive_apphive_app
       ${PLATFORM_SPECIFIC_LIBS}
       ${BROTLI_LIBRARIES}
@@ -25,7 +25,7 @@ else( HIVE_STATIC_BUILD )
    target_link_libraries( haf_ah PRIVATE
       hive_chain
       hive_protocol
-      hive_utilities
+      sql_hive_utilities
       ${CMAKE_DL_LIBS}
       ${PLATFORM_SPECIFIC_LIBS}
       ${BROTLI_LIBRARIES}
