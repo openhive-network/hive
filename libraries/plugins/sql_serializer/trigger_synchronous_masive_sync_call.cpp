@@ -36,6 +36,7 @@ namespace hive::plugins::sql_serializer {
       m_completed_threads.erase( stage_it );
       m_triggered_function( _stage_block_num );
       m_already_commited_blocks = _stage_block_num;
+      ilog( "Dump to blocks ${i}", ("i", _stage_block_num) );
       return;
     }
 

@@ -724,6 +724,8 @@ using chain::reindex_notification;
           {
             head_block_number = max_block_number;
 
+            FC_ASSERT( is_database_correct(), "Database is in invalid state" );
+
             load_initial_db_data();
 
             if(freshDb)
@@ -732,6 +734,28 @@ using chain::reindex_notification;
             }
 
             switch_db_items( false/*mode*/ );
+          }
+
+          bool is_database_correct() {
+            ilog( "Checking correctness of database..." );
+
+            bool is_extension_created = false;
+            data_processor db_checker(
+                  db_url
+                , "Check correctness"
+                , [&is_extension_created](const data_chunk_ptr&, transaction& tx) -> data_processing_status {
+                    data_processing_status processingStatus;
+                    pqxx::result data = tx.exec("select 1 as _result from pg_extension where extname='hive_fork_manager';");
+                    is_extension_created = !data.empty();
+                    return data_processing_status();
+                }
+              , nullptr
+              );
+
+            db_checker.trigger(data_processor::data_chunk_ptr(), 0);
+            db_checker.join();
+
+            return is_extension_created;
           }
 
           void load_initial_db_data()

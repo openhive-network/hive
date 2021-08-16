@@ -22,16 +22,12 @@ end_massive_sync_processor::end_massive_sync_processor( std::string psqlUrl )
 
 void
 end_massive_sync_processor::trigger_block_number( uint32_t last_dumped_block ) {
-  assert( data_processor );
-
   _block_number = last_dumped_block;
   _data_processor->trigger( nullptr, 0 );
 }
 
 void
 end_massive_sync_processor::complete_data_processing() {
-  assert( _data_processor );
-
   _data_processor->complete_data_processing();
 }
 
