@@ -104,9 +104,7 @@ void own_tx_controller::own_transaction::rollback()
 
 transaction_controller::transaction_ptr own_tx_controller::openTx()
 {
-  if(_opened_connection)
-    _opened_connection->activate();
-  else
+  if(!_opened_connection)
     _opened_connection = std::make_unique<pqxx::connection>(_dbUrl);
 
   return std::make_unique<own_transaction>(this);
