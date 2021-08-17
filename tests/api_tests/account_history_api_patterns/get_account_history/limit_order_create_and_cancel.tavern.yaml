@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api limit_order create and cancel operations
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api limit_order create and cancel
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"adm", "operation_filter_low": 96, "start": 10000, "limit": 1000}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "limit_order_create_and_cancel"
+            directory: "account_history_api_patterns/get_account_history"

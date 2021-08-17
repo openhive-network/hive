@@ -1,0 +1,33 @@
+{
+  "history": [
+    [
+      3210,
+      {
+        "block": 2888724,
+        "op": {
+          "type": "fill_vesting_withdraw_operation",
+          "value": {
+            "deposited": {
+              "amount": "299792",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "from_account": "adm",
+            "to_account": "adm",
+            "withdrawn": {
+              "amount": "1569493022171",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-03T23:45:09",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ]
+  ]
+}

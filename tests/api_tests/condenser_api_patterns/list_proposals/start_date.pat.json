@@ -1,0 +1,26 @@
+[
+  {
+    "creator": "aggroed",
+    "daily_pay": "1000.000 HBD",
+    "end_date": "2021-03-04T00:00:00",
+    "id": 137,
+    "permlink": "hive-engine-dao-funding-proposal",
+    "proposal_id": 137,
+    "receiver": "hive-engine",
+    "start_date": "2020-11-24T00:00:00",
+    "subject": "Hive-Engine Development Proposal for Community and Business Development on Hive",
+    "total_votes": "6890891606809004"
+  },
+  {
+    "creator": "asgarth-dev",
+    "daily_pay": "0.998 HBD",
+    "end_date": "2030-12-31T23:59:59",
+    "id": 139,
+    "permlink": "test-proposal-for-dhf-related-developments",
+    "proposal_id": 139,
+    "receiver": "null",
+    "start_date": "2030-11-30T23:59:59",
+    "subject": "Test proposal for DHF related tests and improvements",
+    "total_votes": 0
+  }
+]

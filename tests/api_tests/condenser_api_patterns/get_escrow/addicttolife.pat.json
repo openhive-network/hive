@@ -1,0 +1,15 @@
+{
+  "agent": "ongame",
+  "agent_approved": true,
+  "disputed": false,
+  "escrow_expiration": "2018-11-24T17:31:26",
+  "escrow_id": 1,
+  "from": "addicttolife",
+  "hbd_balance": "0.000 HBD",
+  "hive_balance": "4.832 HIVE",
+  "id": 158,
+  "pending_fee": "0.000 HIVE",
+  "ratification_deadline": "2018-11-23T17:31:26",
+  "to": "fundition.help",
+  "to_approved": true
+}

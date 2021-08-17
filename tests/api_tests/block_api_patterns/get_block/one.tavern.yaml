@@ -1,0 +1,28 @@
+---
+  test_name: Hived block_api.get_block
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: block_api.get_block
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "block_api.get_block"
+          params: {"block_num": 1}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "one"
+            directory: "block_api_patterns/get_block"

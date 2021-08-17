@@ -1,0 +1,55 @@
+{
+  "proposals": [
+    {
+      "creator": "gtg",
+      "daily_pay": {
+        "amount": "240000000000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2029-12-31T23:59:59",
+      "id": 0,
+      "permlink": "steemdao",
+      "proposal_id": 0,
+      "receiver": "steem.dao",
+      "start_date": "2019-08-27T00:00:00",
+      "status": "active",
+      "subject": "Return Proposal",
+      "total_votes": "43476413649360133"
+    },
+    {
+      "creator": "jpbliberty",
+      "daily_pay": {
+        "amount": "200000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-12-31T23:30:00",
+      "id": 2,
+      "permlink": "sps-proposal-class-action-lawsuit-against-facebook-google-and-twitter-s-crypto-ad-ban",
+      "proposal_id": 2,
+      "receiver": "jpbliberty",
+      "start_date": "2019-08-27T15:15:00",
+      "status": "active",
+      "subject": "Class Action Lawsuit vs Facebook Google Crypto Ad Ban",
+      "total_votes": "3473577917635314"
+    },
+    {
+      "creator": "demotruk",
+      "daily_pay": {
+        "amount": "1000000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2029-08-31T23:59:59",
+      "id": 21,
+      "permlink": "reduced-inflation-proposal",
+      "proposal_id": 21,
+      "receiver": "null",
+      "start_date": "2019-08-31T00:00:00",
+      "status": "active",
+      "subject": "Reduced Inflation Proposal",
+      "total_votes": "13940980468177242"
+    }
+  ]
+}

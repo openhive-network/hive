@@ -1,0 +1,6504 @@
+{
+  "trades": [
+    {
+      "current_pays": {
+        "amount": "2730",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T10:34:03",
+      "open_pays": {
+        "amount": "21000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "21665",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T10:33:12",
+      "open_pays": {
+        "amount": "2814",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "42356",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T10:29:09",
+      "open_pays": {
+        "amount": "5086",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4038",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T10:29:09",
+      "open_pays": {
+        "amount": "538",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3575",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T10:26:12",
+      "open_pays": {
+        "amount": "26796",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1958",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T10:22:45",
+      "open_pays": {
+        "amount": "14654",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6435",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:32:36",
+      "open_pays": {
+        "amount": "859",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2789",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:32:36",
+      "open_pays": {
+        "amount": "373",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "944",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:29:21",
+      "open_pays": {
+        "amount": "125",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12671",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:29:21",
+      "open_pays": {
+        "amount": "1695",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14196",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:28:15",
+      "open_pays": {
+        "amount": "106119",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1415",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:18:03",
+      "open_pays": {
+        "amount": "188",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9585",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:18:03",
+      "open_pays": {
+        "amount": "1280",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "815",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:12:51",
+      "open_pays": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11008",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:12:51",
+      "open_pays": {
+        "amount": "1470",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15266",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T09:10:54",
+      "open_pays": {
+        "amount": "2038",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "49785",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "5974",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "24598",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "3000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "1",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "1",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "1",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "1",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "584",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:12",
+      "open_pays": {
+        "amount": "73",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "266622",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:09",
+      "open_pays": {
+        "amount": "33327",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "720",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:09",
+      "open_pays": {
+        "amount": "90",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15999",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:51:09",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "19281",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:48:03",
+      "open_pays": {
+        "amount": "2410",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "848",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:48:03",
+      "open_pays": {
+        "amount": "106",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "28878",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:48:03",
+      "open_pays": {
+        "amount": "3611",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15993",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:48:03",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "962",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:44:18",
+      "open_pays": {
+        "amount": "7184",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3609",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:23:18",
+      "open_pays": {
+        "amount": "26942",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:23:18",
+      "open_pays": {
+        "amount": "14926",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "582",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:14:12",
+      "open_pays": {
+        "amount": "4337",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:14:12",
+      "open_pays": {
+        "amount": "14906",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "25",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:14:12",
+      "open_pays": {
+        "amount": "193",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9568",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:11:57",
+      "open_pays": {
+        "amount": "1284",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1251",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:11:42",
+      "open_pays": {
+        "amount": "9321",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T08:00:06",
+      "open_pays": {
+        "amount": "2",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "701",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:59:57",
+      "open_pays": {
+        "amount": "94",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14910",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:59:57",
+      "open_pays": {
+        "amount": "2001",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:59:24",
+      "open_pays": {
+        "amount": "14895",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "21162",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:52:42",
+      "open_pays": {
+        "amount": "2840",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "17809",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:46:24",
+      "open_pays": {
+        "amount": "2390",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5009",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:36:39",
+      "open_pays": {
+        "amount": "37243",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:36:39",
+      "open_pays": {
+        "amount": "14869",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "19153",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:34:09",
+      "open_pays": {
+        "amount": "2394",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "52312",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:34:09",
+      "open_pays": {
+        "amount": "6539",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "535",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:34:09",
+      "open_pays": {
+        "amount": "67",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "58865",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:33:39",
+      "open_pays": {
+        "amount": "7358",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "136",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:33:39",
+      "open_pays": {
+        "amount": "17",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15999",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:33:39",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7867",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:30:09",
+      "open_pays": {
+        "amount": "983",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1084",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:30:09",
+      "open_pays": {
+        "amount": "136",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37217",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:30:09",
+      "open_pays": {
+        "amount": "4701",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15832",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:30:09",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "56163",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:26:21",
+      "open_pays": {
+        "amount": "7093",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3101",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:26:21",
+      "open_pays": {
+        "amount": "400",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "232",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:26:21",
+      "open_pays": {
+        "amount": "30",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15504",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:26:21",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "531",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:25:06",
+      "open_pays": {
+        "amount": "3947",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "410",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:24:00",
+      "open_pays": {
+        "amount": "3047",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "102112",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:39",
+      "open_pays": {
+        "amount": "13172",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "493",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:39",
+      "open_pays": {
+        "amount": "64",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5962",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:39",
+      "open_pays": {
+        "amount": "775",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "769",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:39",
+      "open_pays": {
+        "amount": "100",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "184",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:39",
+      "open_pays": {
+        "amount": "24",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "83997",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:36",
+      "open_pays": {
+        "amount": "10919",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "298262",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:30",
+      "open_pays": {
+        "amount": "38781",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "49751",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:30",
+      "open_pays": {
+        "amount": "6468",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "46",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:30",
+      "open_pays": {
+        "amount": "6",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "199",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:30",
+      "open_pays": {
+        "amount": "26",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9739",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:30",
+      "open_pays": {
+        "amount": "1276",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15265",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:22:30",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "283",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:20:42",
+      "open_pays": {
+        "amount": "2103",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15196",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:18:15",
+      "open_pays": {
+        "amount": "1991",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "71",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:18:15",
+      "open_pays": {
+        "amount": "9",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15265",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:17:39",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "112",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:14:51",
+      "open_pays": {
+        "amount": "15",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "407",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:07:30",
+      "open_pays": {
+        "amount": "3022",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "89",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:04:15",
+      "open_pays": {
+        "amount": "12",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "10684",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:04:12",
+      "open_pays": {
+        "amount": "1438",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "44168",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:04:12",
+      "open_pays": {
+        "amount": "5949",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "16148",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:04:12",
+      "open_pays": {
+        "amount": "2175",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1301",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T07:02:33",
+      "open_pays": {
+        "amount": "9659",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1049",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:57:30",
+      "open_pays": {
+        "amount": "7788",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "21",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:54:33",
+      "open_pays": {
+        "amount": "160",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "160",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:52:48",
+      "open_pays": {
+        "amount": "20",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7200",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:52:48",
+      "open_pays": {
+        "amount": "970",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1647",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:51:33",
+      "open_pays": {
+        "amount": "12225",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3006",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:48",
+      "open_pays": {
+        "amount": "22312",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1994",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:48",
+      "open_pays": {
+        "amount": "14806",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14962",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:18",
+      "open_pays": {
+        "amount": "1960",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15266",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:18",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14806",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:18",
+      "open_pays": {
+        "amount": "1940",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9286",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:18",
+      "open_pays": {
+        "amount": "1251",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20680",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:48:18",
+      "open_pays": {
+        "amount": "2786",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1794",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:47:33",
+      "open_pays": {
+        "amount": "13316",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11662",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:43:09",
+      "open_pays": {
+        "amount": "86563",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3468",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:41:09",
+      "open_pays": {
+        "amount": "25741",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "61",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:38:18",
+      "open_pays": {
+        "amount": "459",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "459",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:34:45",
+      "open_pays": {
+        "amount": "60",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20598",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:34:45",
+      "open_pays": {
+        "amount": "2775",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "580",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:31:51",
+      "open_pays": {
+        "amount": "4304",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:31:51",
+      "open_pays": {
+        "amount": "14849",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "355",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:31:51",
+      "open_pays": {
+        "amount": "2643",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5612",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:22:51",
+      "open_pays": {
+        "amount": "41638",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1551",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:15:36",
+      "open_pays": {
+        "amount": "11514",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "376",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:00:57",
+      "open_pays": {
+        "amount": "49",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "17231",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T06:00:57",
+      "open_pays": {
+        "amount": "2321",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7416",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:55:00",
+      "open_pays": {
+        "amount": "1000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "43109",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:55:00",
+      "open_pays": {
+        "amount": "5813",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13346",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:42:51",
+      "open_pays": {
+        "amount": "1735",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "26068",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:42:51",
+      "open_pays": {
+        "amount": "3516",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "26586",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:42:51",
+      "open_pays": {
+        "amount": "3586",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:34:06",
+      "open_pays": {
+        "amount": "14828",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1400",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:24:09",
+      "open_pays": {
+        "amount": "182",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1700",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:22:57",
+      "open_pays": {
+        "amount": "12603",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "39",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:05:48",
+      "open_pays": {
+        "amount": "289",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "84",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:02:48",
+      "open_pays": {
+        "amount": "622",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "386",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:00:39",
+      "open_pays": {
+        "amount": "50",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:00:39",
+      "open_pays": {
+        "amount": "132",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15150",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:00:39",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:00:39",
+      "open_pays": {
+        "amount": "133",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "277",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:00:39",
+      "open_pays": {
+        "amount": "37",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "761",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T05:00:39",
+      "open_pays": {
+        "amount": "102",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "243",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:59:09",
+      "open_pays": {
+        "amount": "1799",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "543",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:59:09",
+      "open_pays": {
+        "amount": "4028",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:57:15",
+      "open_pays": {
+        "amount": "14822",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "246",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:54:51",
+      "open_pays": {
+        "amount": "32",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1550",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:50:21",
+      "open_pays": {
+        "amount": "11492",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14616",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:49:12",
+      "open_pays": {
+        "amount": "1900",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15384",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:49:12",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "184616",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "24000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "800",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "104",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "2600",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "62864",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "8173",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6430",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "836",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "38429",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "5000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15332",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4400",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "574",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "262695",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "34284",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "22901",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "3000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "50669",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "6663",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "215030",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "28277",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2500",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "329",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "75758",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "10000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "112355",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "14831",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8592",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "1136",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "862",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13553",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "1795",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2804",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "375",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14958",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "82",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "11",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "185",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "25",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1014",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:48:18",
+      "open_pays": {
+        "amount": "137",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6289",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:42:12",
+      "open_pays": {
+        "amount": "848",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "711",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:42:12",
+      "open_pays": {
+        "amount": "96",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:41:42",
+      "open_pays": {
+        "amount": "674",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6346",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:27:45",
+      "open_pays": {
+        "amount": "47007",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "326",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T04:20:12",
+      "open_pays": {
+        "amount": "2414",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T03:49:30",
+      "open_pays": {
+        "amount": "809",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9748",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T03:43:03",
+      "open_pays": {
+        "amount": "72225",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "241",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T03:43:03",
+      "open_pays": {
+        "amount": "1792",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1563",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T03:24:54",
+      "open_pays": {
+        "amount": "211",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2135",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T03:06:33",
+      "open_pays": {
+        "amount": "15815",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13896",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T02:57:57",
+      "open_pays": {
+        "amount": "1872",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "289",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T02:48:09",
+      "open_pays": {
+        "amount": "2140",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1551",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T02:45:12",
+      "open_pays": {
+        "amount": "11487",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "705",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T02:33:51",
+      "open_pays": {
+        "amount": "5221",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T02:33:51",
+      "open_pays": {
+        "amount": "8239",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11324",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T02:15:03",
+      "open_pays": {
+        "amount": "1513",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4552",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:59:45",
+      "open_pays": {
+        "amount": "33721",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "448",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:59:45",
+      "open_pays": {
+        "amount": "3328",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3651",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:37:00",
+      "open_pays": {
+        "amount": "27050",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1349",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:37:00",
+      "open_pays": {
+        "amount": "10000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5150",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:35:30",
+      "open_pays": {
+        "amount": "38152",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "61",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:34:54",
+      "open_pays": {
+        "amount": "8",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "292",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:20:48",
+      "open_pays": {
+        "amount": "38",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37898",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:20:48",
+      "open_pays": {
+        "amount": "5099",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "446",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:19:57",
+      "open_pays": {
+        "amount": "3314",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "268",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:09:57",
+      "open_pays": {
+        "amount": "36",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T01:08:18",
+      "open_pays": {
+        "amount": "37040",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "85",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:39:03",
+      "open_pays": {
+        "amount": "629",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8868",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:35:06",
+      "open_pays": {
+        "amount": "65691",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1104",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:35:06",
+      "open_pays": {
+        "amount": "8182",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:35:06",
+      "open_pays": {
+        "amount": "879",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "33000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:35:03",
+      "open_pays": {
+        "amount": "4430",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "115719",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:34:54",
+      "open_pays": {
+        "amount": "15534",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:31:21",
+      "open_pays": {
+        "amount": "1",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:30:24",
+      "open_pays": {
+        "amount": "103",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1700",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:27:36",
+      "open_pays": {
+        "amount": "229",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1354",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:26:45",
+      "open_pays": {
+        "amount": "10034",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:26:45",
+      "open_pays": {
+        "amount": "14821",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8285",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "1095",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13534",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "1800",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2200",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "293",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12758",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "1701",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "67",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "9",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "156",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:25:27",
+      "open_pays": {
+        "amount": "21",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3002",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:22:42",
+      "open_pays": {
+        "amount": "22247",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:22:42",
+      "open_pays": {
+        "amount": "14821",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "741",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:11:15",
+      "open_pays": {
+        "amount": "100",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3097",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:11:15",
+      "open_pays": {
+        "amount": "418",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "563",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-30T00:11:15",
+      "open_pays": {
+        "amount": "76",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4377",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:57:27",
+      "open_pays": {
+        "amount": "591",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1684",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:54:54",
+      "open_pays": {
+        "amount": "227",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1622",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:40:48",
+      "open_pays": {
+        "amount": "219",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "437",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:40:03",
+      "open_pays": {
+        "amount": "59",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "19998",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:28:12",
+      "open_pays": {
+        "amount": "2700",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14754",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:21:09",
+      "open_pays": {
+        "amount": "1992",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "16000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:17:12",
+      "open_pays": {
+        "amount": "118493",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "52491",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:11:33",
+      "open_pays": {
+        "amount": "7085",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4792",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:11:09",
+      "open_pays": {
+        "amount": "647",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7406",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:10:30",
+      "open_pays": {
+        "amount": "1000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7406",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:10:30",
+      "open_pays": {
+        "amount": "1000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11871",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:10:18",
+      "open_pays": {
+        "amount": "1603",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:09:51",
+      "open_pays": {
+        "amount": "96",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4646",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T23:07:06",
+      "open_pays": {
+        "amount": "34406",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "107645",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:54:45",
+      "open_pays": {
+        "amount": "797134",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "10348",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:53:36",
+      "open_pays": {
+        "amount": "1397",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9085",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:50:33",
+      "open_pays": {
+        "amount": "67279",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "71",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:49:42",
+      "open_pays": {
+        "amount": "525",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2101",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:24:24",
+      "open_pays": {
+        "amount": "15558",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "447",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:21:48",
+      "open_pays": {
+        "amount": "3310",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "998",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:20:30",
+      "open_pays": {
+        "amount": "7390",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:09:36",
+      "open_pays": {
+        "amount": "148109",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8657",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T22:05:30",
+      "open_pays": {
+        "amount": "1169",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "19720",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:52:48",
+      "open_pays": {
+        "amount": "2663",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "40787",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:52:48",
+      "open_pays": {
+        "amount": "5508",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3376",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:52:48",
+      "open_pays": {
+        "amount": "456",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "50000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:48:18",
+      "open_pays": {
+        "amount": "6752",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "746",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:46:18",
+      "open_pays": {
+        "amount": "5524",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "386",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:24:42",
+      "open_pays": {
+        "amount": "2858",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5454",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:23:03",
+      "open_pays": {
+        "amount": "736",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5546",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:23:03",
+      "open_pays": {
+        "amount": "749",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "27010",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:21:00",
+      "open_pays": {
+        "amount": "200007",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2244",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:19:18",
+      "open_pays": {
+        "amount": "16616",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "542",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:18:27",
+      "open_pays": {
+        "amount": "4013",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8001",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:17:33",
+      "open_pays": {
+        "amount": "59246",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T21:09:24",
+      "open_pays": {
+        "amount": "405",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7550",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:58:27",
+      "open_pays": {
+        "amount": "55907",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "962",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:56:06",
+      "open_pays": {
+        "amount": "7123",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2645",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:47:30",
+      "open_pays": {
+        "amount": "19586",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "23665",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:35:54",
+      "open_pays": {
+        "amount": "3171",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14924",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:35:54",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "597",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:31:39",
+      "open_pays": {
+        "amount": "80",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37504",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:39",
+      "open_pays": {
+        "amount": "277714",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "918",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:39",
+      "open_pays": {
+        "amount": "6803",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "124",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:39",
+      "open_pays": {
+        "amount": "922",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6803",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:00",
+      "open_pays": {
+        "amount": "911",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "10130",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:00",
+      "open_pays": {
+        "amount": "1358",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "163",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:00",
+      "open_pays": {
+        "amount": "22",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2904",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:28:00",
+      "open_pays": {
+        "amount": "392",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "445",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:21:39",
+      "open_pays": {
+        "amount": "3295",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "536",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:08:15",
+      "open_pays": {
+        "amount": "3969",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1989",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:07:27",
+      "open_pays": {
+        "amount": "14728",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "628",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T20:00:42",
+      "open_pays": {
+        "amount": "4650",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "72289",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:57:21",
+      "open_pays": {
+        "amount": "9757",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2711",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:57:21",
+      "open_pays": {
+        "amount": "366",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "294",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:46:39",
+      "open_pays": {
+        "amount": "2179",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1705",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:46:24",
+      "open_pays": {
+        "amount": "12631",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9592",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:45:15",
+      "open_pays": {
+        "amount": "1285",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "410",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:45:15",
+      "open_pays": {
+        "amount": "55",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12385",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:44:51",
+      "open_pays": {
+        "amount": "1660",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37178",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:29:54",
+      "open_pays": {
+        "amount": "5000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2127",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:09:51",
+      "open_pays": {
+        "amount": "285",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "810",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T19:04:54",
+      "open_pays": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15057",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:54:06",
+      "open_pays": {
+        "amount": "111550",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "870",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:54:06",
+      "open_pays": {
+        "amount": "6446",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13009",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:51:39",
+      "open_pays": {
+        "amount": "96377",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1972",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:51:39",
+      "open_pays": {
+        "amount": "14616",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "922",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:26:30",
+      "open_pays": {
+        "amount": "6822",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:26:30",
+      "open_pays": {
+        "amount": "14799",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14496",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:24:06",
+      "open_pays": {
+        "amount": "1943",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14646",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:22:27",
+      "open_pays": {
+        "amount": "1962",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11071",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:22:27",
+      "open_pays": {
+        "amount": "1484",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14919",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:22:27",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "587",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:22:27",
+      "open_pays": {
+        "amount": "79",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1418",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:22:27",
+      "open_pays": {
+        "amount": "191",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "853",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:22:27",
+      "open_pays": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "47",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:19:09",
+      "open_pays": {
+        "amount": "6",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1488",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:19:09",
+      "open_pays": {
+        "amount": "201",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "518",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:19:09",
+      "open_pays": {
+        "amount": "70",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5556",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:17:39",
+      "open_pays": {
+        "amount": "751",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "26868",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:17:39",
+      "open_pays": {
+        "amount": "3632",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5533",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:17:39",
+      "open_pays": {
+        "amount": "748",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37403",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:17:36",
+      "open_pays": {
+        "amount": "5056",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37593",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:17:36",
+      "open_pays": {
+        "amount": "5083",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15678",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:17:09",
+      "open_pays": {
+        "amount": "2119",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7260",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:16:42",
+      "open_pays": {
+        "amount": "53706",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "541",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:13:39",
+      "open_pays": {
+        "amount": "4002",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20890",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T18:08:39",
+      "open_pays": {
+        "amount": "2823",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1294",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:51:36",
+      "open_pays": {
+        "amount": "175",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7142",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:46:00",
+      "open_pays": {
+        "amount": "965",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1353",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:34:48",
+      "open_pays": {
+        "amount": "10005",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "78",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:34:27",
+      "open_pays": {
+        "amount": "576",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4455",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:32:36",
+      "open_pays": {
+        "amount": "32944",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "292",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:32:30",
+      "open_pays": {
+        "amount": "2159",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1036",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:32:03",
+      "open_pays": {
+        "amount": "7661",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2122",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:29:30",
+      "open_pays": {
+        "amount": "15692",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "452",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:29:30",
+      "open_pays": {
+        "amount": "3344",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12615",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:05:54",
+      "open_pays": {
+        "amount": "1705",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1484",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:00:36",
+      "open_pays": {
+        "amount": "11000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "865",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T17:00:36",
+      "open_pays": {
+        "amount": "6416",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1134",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:54:42",
+      "open_pays": {
+        "amount": "8409",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2250",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "299",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "195",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "26",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "45",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "6",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "2",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6086",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "815",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "31341",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "4200",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14923",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "134",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:42",
+      "open_pays": {
+        "amount": "18",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:51:03",
+      "open_pays": {
+        "amount": "14815",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:50:15",
+      "open_pays": {
+        "amount": "14815",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "139609",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:40:00",
+      "open_pays": {
+        "amount": "18860",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "383",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:39:15",
+      "open_pays": {
+        "amount": "2837",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:32:03",
+      "open_pays": {
+        "amount": "267",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3397",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:31:54",
+      "open_pays": {
+        "amount": "454",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4030",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:31:54",
+      "open_pays": {
+        "amount": "541",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "573",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:31:54",
+      "open_pays": {
+        "amount": "77",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14330",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:30:00",
+      "open_pays": {
+        "amount": "1923",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:27:48",
+      "open_pays": {
+        "amount": "148",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "234",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:26:06",
+      "open_pays": {
+        "amount": "31",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14897",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:26:06",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11664",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:26:06",
+      "open_pays": {
+        "amount": "1575",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1596",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:24:48",
+      "open_pays": {
+        "amount": "11820",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1445",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:24:06",
+      "open_pays": {
+        "amount": "195",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15366",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:16:12",
+      "open_pays": {
+        "amount": "2058",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14358",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:16:12",
+      "open_pays": {
+        "amount": "1923",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "27678",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:16:12",
+      "open_pays": {
+        "amount": "3707",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "443369",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:16:12",
+      "open_pays": {
+        "amount": "59411",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "302899",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "40588",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11437",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "1537",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15016",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "2018",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "13364",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "1796",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "473422",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "63626",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "109645",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "14736",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1510",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "203",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "22305",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "3000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14869",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "740",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "100",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4247",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "574",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "30546",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:15:51",
+      "open_pays": {
+        "amount": "4129",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "350",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:14:06",
+      "open_pays": {
+        "amount": "2589",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "186",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T16:11:57",
+      "open_pays": {
+        "amount": "1376",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1055",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:55:12",
+      "open_pays": {
+        "amount": "7804",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14154",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:48:24",
+      "open_pays": {
+        "amount": "1914",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2248",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:48:24",
+      "open_pays": {
+        "amount": "304",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "562",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:48:24",
+      "open_pays": {
+        "amount": "76",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "16822",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:48:24",
+      "open_pays": {
+        "amount": "2275",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1020",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:27:03",
+      "open_pays": {
+        "amount": "138",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14781",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:27:03",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1867",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:27:03",
+      "open_pays": {
+        "amount": "253",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "317",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:27:03",
+      "open_pays": {
+        "amount": "43",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "434",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:22:51",
+      "open_pays": {
+        "amount": "3193",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:22:51",
+      "open_pays": {
+        "amount": "273",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "80935",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:22:21",
+      "open_pays": {
+        "amount": "11000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:21:12",
+      "open_pays": {
+        "amount": "14708",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:13:00",
+      "open_pays": {
+        "amount": "14707",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12162",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:01:54",
+      "open_pays": {
+        "amount": "1642",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14813",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T15:01:54",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14813",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:55:27",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "464330",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:51:36",
+      "open_pays": {
+        "amount": "62684",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11995",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:48:15",
+      "open_pays": {
+        "amount": "88855",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2025",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:45:45",
+      "open_pays": {
+        "amount": "15000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "716",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:41:18",
+      "open_pays": {
+        "amount": "5303",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9186",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:33:36",
+      "open_pays": {
+        "amount": "1240",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14327",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:30:03",
+      "open_pays": {
+        "amount": "1934",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3978",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:30:03",
+      "open_pays": {
+        "amount": "537",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9104",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:30:03",
+      "open_pays": {
+        "amount": "1229",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "124036",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:02:39",
+      "open_pays": {
+        "amount": "918785",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15964",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:02:39",
+      "open_pays": {
+        "amount": "118342",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1339",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T14:01:57",
+      "open_pays": {
+        "amount": "9925",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "29103",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T13:59:33",
+      "open_pays": {
+        "amount": "215738",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8904",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T13:59:33",
+      "open_pays": {
+        "amount": "66012",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1993",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T13:59:33",
+      "open_pays": {
+        "amount": "14820",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "640",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T13:46:30",
+      "open_pays": {
+        "amount": "4758",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1190",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T13:17:51",
+      "open_pays": {
+        "amount": "8854",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "63",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T13:08:57",
+      "open_pays": {
+        "amount": "468",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5831",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:45:48",
+      "open_pays": {
+        "amount": "43353",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:45:48",
+      "open_pays": {
+        "amount": "14870",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:42:48",
+      "open_pays": {
+        "amount": "853",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1001",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:42:15",
+      "open_pays": {
+        "amount": "7473",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5303",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:26:57",
+      "open_pays": {
+        "amount": "39593",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12424",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:11:36",
+      "open_pays": {
+        "amount": "92760",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6458",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:07:06",
+      "open_pays": {
+        "amount": "864",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14932",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:02:45",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "342",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:02:03",
+      "open_pays": {
+        "amount": "46",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "36727",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:02:03",
+      "open_pays": {
+        "amount": "4940",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "33988",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T12:01:42",
+      "open_pays": {
+        "amount": "4585",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:57:48",
+      "open_pays": {
+        "amount": "674",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "100000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:55:27",
+      "open_pays": {
+        "amount": "741292",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14452",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:48:51",
+      "open_pays": {
+        "amount": "107131",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9562",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:48:51",
+      "open_pays": {
+        "amount": "70886",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11300",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:36:15",
+      "open_pays": {
+        "amount": "1519",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2821",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:34:03",
+      "open_pays": {
+        "amount": "20916",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "37074",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:20:09",
+      "open_pays": {
+        "amount": "5000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "36629",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T11:20:09",
+      "open_pays": {
+        "amount": "4940",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "532",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:59:24",
+      "open_pays": {
+        "amount": "3944",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:24:21",
+      "open_pays": {
+        "amount": "268",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5212",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:15:33",
+      "open_pays": {
+        "amount": "703",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "314",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:13:15",
+      "open_pays": {
+        "amount": "2327",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "147",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:13:15",
+      "open_pays": {
+        "amount": "1090",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2922",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:07:18",
+      "open_pays": {
+        "amount": "394",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "15498",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:03:06",
+      "open_pays": {
+        "amount": "2090",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8809",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T10:00:21",
+      "open_pays": {
+        "amount": "1188",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:59:45",
+      "open_pays": {
+        "amount": "14873",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:59:30",
+      "open_pays": {
+        "amount": "14873",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:59:12",
+      "open_pays": {
+        "amount": "14873",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7658",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:58:42",
+      "open_pays": {
+        "amount": "1030",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5660",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:57:27",
+      "open_pays": {
+        "amount": "762",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "40058",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:57:27",
+      "open_pays": {
+        "amount": "5393",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2800",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:50:51",
+      "open_pays": {
+        "amount": "377",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "349",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:50:39",
+      "open_pays": {
+        "amount": "47",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "40038",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:50:39",
+      "open_pays": {
+        "amount": "5392",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2157",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:37:00",
+      "open_pays": {
+        "amount": "15982",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:37:00",
+      "open_pays": {
+        "amount": "14819",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "233",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:36:42",
+      "open_pays": {
+        "amount": "1727",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "45622",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:35:24",
+      "open_pays": {
+        "amount": "6147",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1559",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:35:18",
+      "open_pays": {
+        "amount": "210",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "89871",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:35:18",
+      "open_pays": {
+        "amount": "12110",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8570",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:35:18",
+      "open_pays": {
+        "amount": "1155",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1384",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:35:06",
+      "open_pays": {
+        "amount": "10254",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "39445",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:34:57",
+      "open_pays": {
+        "amount": "5325",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "577",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:31:09",
+      "open_pays": {
+        "amount": "4274",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "68",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:29:42",
+      "open_pays": {
+        "amount": "503",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5273",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:29:21",
+      "open_pays": {
+        "amount": "710",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2158",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:22:18",
+      "open_pays": {
+        "amount": "290",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7637",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:21:30",
+      "open_pays": {
+        "amount": "1030",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11845",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:20:42",
+      "open_pays": {
+        "amount": "1599",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11889",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:20:42",
+      "open_pays": {
+        "amount": "1605",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "51852",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:20:42",
+      "open_pays": {
+        "amount": "7000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14118",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:20:42",
+      "open_pays": {
+        "amount": "1906",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1421",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:13:21",
+      "open_pays": {
+        "amount": "10525",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5325",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:10:39",
+      "open_pays": {
+        "amount": "39444",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:03:27",
+      "open_pays": {
+        "amount": "134",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5601",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T09:02:15",
+      "open_pays": {
+        "amount": "41488",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5325",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:58:48",
+      "open_pays": {
+        "amount": "39444",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7969",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:47:42",
+      "open_pays": {
+        "amount": "59029",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2933",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:40:54",
+      "open_pays": {
+        "amount": "21725",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "59940",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:38:00",
+      "open_pays": {
+        "amount": "444000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8728",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:36:03",
+      "open_pays": {
+        "amount": "1179",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1066",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:36:03",
+      "open_pays": {
+        "amount": "144",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3915",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:36:03",
+      "open_pays": {
+        "amount": "529",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7616",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:36:03",
+      "open_pays": {
+        "amount": "1031",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "36402",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:36:03",
+      "open_pays": {
+        "amount": "4929",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14362",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:36:03",
+      "open_pays": {
+        "amount": "1945",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "407",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:34:24",
+      "open_pays": {
+        "amount": "55",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "998",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:33:15",
+      "open_pays": {
+        "amount": "7328",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "771",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:05:33",
+      "open_pays": {
+        "amount": "5652",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1999",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T08:05:33",
+      "open_pays": {
+        "amount": "14663",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "6725",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:37:03",
+      "open_pays": {
+        "amount": "916",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "5515",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:37:03",
+      "open_pays": {
+        "amount": "752",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12780",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:37:03",
+      "open_pays": {
+        "amount": "1743",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "11130",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:37:03",
+      "open_pays": {
+        "amount": "1518",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1187",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:32:21",
+      "open_pays": {
+        "amount": "8702",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2731",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:26:21",
+      "open_pays": {
+        "amount": "20022",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3158",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:23:30",
+      "open_pays": {
+        "amount": "430",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "30100",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:21:06",
+      "open_pays": {
+        "amount": "4106",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14660",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:21:06",
+      "open_pays": {
+        "amount": "2000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "400",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:19:36",
+      "open_pays": {
+        "amount": "2923",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "660",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:14:15",
+      "open_pays": {
+        "amount": "4824",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1031",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T07:08:45",
+      "open_pays": {
+        "amount": "7560",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3708",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:56:15",
+      "open_pays": {
+        "amount": "500",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "140",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:56:15",
+      "open_pays": {
+        "amount": "19",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3691",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:56:15",
+      "open_pays": {
+        "amount": "503",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3588",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:56:15",
+      "open_pays": {
+        "amount": "489",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12369",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:55:33",
+      "open_pays": {
+        "amount": "1686",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "12750",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:55:33",
+      "open_pays": {
+        "amount": "1738",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "163754",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:55:33",
+      "open_pays": {
+        "amount": "22332",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "8082",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:49:42",
+      "open_pays": {
+        "amount": "1101",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2347",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:49:42",
+      "open_pays": {
+        "amount": "320",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1929",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:49:42",
+      "open_pays": {
+        "amount": "263",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "739",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T06:34:45",
+      "open_pays": {
+        "amount": "5422",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1260",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "date": "2020-10-29T05:37:18",
+      "open_pays": {
+        "amount": "9243",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1257",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T05:24:09",
+      "open_pays": {
+        "amount": "171",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1267",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T05:06:39",
+      "open_pays": {
+        "amount": "172",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2062",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T03:35:39",
+      "open_pays": {
+        "amount": "281",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2656",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T03:35:39",
+      "open_pays": {
+        "amount": "362",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2831",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T03:35:39",
+      "open_pays": {
+        "amount": "386",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7723",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T03:19:00",
+      "open_pays": {
+        "amount": "1052",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "1355",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T03:11:39",
+      "open_pays": {
+        "amount": "184",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "20058",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:48",
+      "open_pays": {
+        "amount": "2707",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "300118",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:48",
+      "open_pays": {
+        "amount": "40516",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "2369",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:48",
+      "open_pays": {
+        "amount": "320",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "440626",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "59484",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "918563",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "124006",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "3006",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "407",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7624",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "1033",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "50428",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "6844",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "7596",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "1033",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "100924",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "13757",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "4613",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "629",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "65379",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "8916",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "14627",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "1995",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "9159",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:43:18",
+      "open_pays": {
+        "amount": "1254",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "current_pays": {
+        "amount": "43",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "date": "2020-10-29T02:34:06",
+      "open_pays": {
+        "amount": "5",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    }
+  ]
+}

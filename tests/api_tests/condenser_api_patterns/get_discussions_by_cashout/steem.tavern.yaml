@@ -1,0 +1,29 @@
+---
+  test_name: Hived get_discussions_by_cashout
+
+  marks:
+    - patterntest
+    - xfail # _tags_api: tags_api_plugin not enabled.
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_discussions_by_cashout
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_discussions_by_cashout"
+          params: ["steem"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "steem"
+            directory: "condenser_api_patterns/get_discussions_by_cashout"

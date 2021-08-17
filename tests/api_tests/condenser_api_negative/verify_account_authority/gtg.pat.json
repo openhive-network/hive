@@ -1,0 +1,109 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 3010000,
+    "message": "missing required active authority",
+    "name": "tx_missing_active_auth",
+    "stack": [
+      {
+        "context": {
+          "file": "transaction_util.hpp",
+          "hostname": "",
+          "level": "error",
+          "line": 88,
+          "method": "verify_authority",
+          "timestamp": "2020-10-30T12:35:56"
+        },
+        "data": {
+          "auth": {
+            "account_auths": [],
+            "key_auths": [
+              [
+                "STM8NWQYG4BvjGNu8zqqV9fbR7aSCZHcxkVib41PYnpGmPRe6BHVG",
+                1
+              ]
+            ],
+            "weight_threshold": 1
+          },
+          "id": "gtg",
+          "owner": {
+            "account_auths": [],
+            "key_auths": [
+              [
+                "STM5RLQ1Jh8Kf56go3xpzoodg4vRsgCeWhANXoEXrYH7bLEwSVyjh",
+                1
+              ]
+            ],
+            "weight_threshold": 1
+          }
+        },
+        "format": "Missing Active Authority ${id}"
+      },
+      {
+        "context": {
+          "file": "transaction_util.hpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 103,
+          "method": "verify_authority",
+          "timestamp": "2020-10-30T12:35:56"
+        },
+        "data": {
+          "auth_containers": [
+            {
+              "type": "transfer_operation",
+              "value": {
+                "amount": {
+                  "amount": "0",
+                  "nai": "@@000000021",
+                  "precision": 3
+                },
+                "from": "gtg",
+                "memo": "",
+                "to": ""
+              }
+            }
+          ],
+          "sigs": []
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "transaction.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 232,
+          "method": "verify_authority",
+          "timestamp": "2020-10-30T12:35:56"
+        },
+        "data": {
+          "*this": {
+            "expiration": "1970-01-01T00:00:00",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "transfer_operation",
+                "value": {
+                  "amount": {
+                    "amount": "0",
+                    "nai": "@@000000021",
+                    "precision": 3
+                  },
+                  "from": "gtg",
+                  "memo": "",
+                  "to": ""
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 0,
+            "signatures": []
+          }
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "missing required active authority:Missing Active Authority gtg"
+}

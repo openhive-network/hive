@@ -1,0 +1,31 @@
+---
+  test_name: Hived transaction_status_api.find_transaction within_irreversible_block
+
+  marks:
+    - patterntest # works on fullsync
+    - xfail # unknown?
+
+  includes:
+    - !include ../common.yaml
+
+  stages:
+    - name: transaction_status_api.find_transaction within_irreversible_block
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "transaction_status_api.find_transaction"
+          params: {
+            "transaction_id": "048227e5bf601c05240becc3ed265c0766a763a8",
+          }
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "within_irreversible_block"
+            directory: "transaction_status_api_patterns"

@@ -1,0 +1,244 @@
+{
+  "history": [
+    [
+      139,
+      {
+        "block": 2885318,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "json_metadata": "",
+            "memo_key": "STM5F9tCbND6zWPwksy1rEN24WjPiQWSU2vwGgegQVjAcYDe1zTWi",
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM69ZG1hx2rdU2hxQkkmX5MmYkHPCmdNeXg4r6CR7gvKUzYwWPPZ",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-03T20:54:21",
+        "trx_id": "28590cbf62ba9f0ec6dd6fe9669852068772ee59",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ],
+    [
+      140,
+      {
+        "block": 2885370,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM6AzXNwWRzTWCVTgP4oKQEALTW8HmDuRq1avGWjHH23XBNhux6U",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "json_metadata": "",
+            "memo_key": "STM5F9tCbND6zWPwksy1rEN24WjPiQWSU2vwGgegQVjAcYDe1zTWi"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-03T20:56:57",
+        "trx_id": "60a00c1016cede7d7924f6b32ba4190252b369b7",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      141,
+      {
+        "block": 2885375,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "json_metadata": "",
+            "memo_key": "STM78Vaf41p9UUMMJvafLTjMurnnnuAiTqChiT5GBph7VDWahQRsz"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-03T20:57:12",
+        "trx_id": "57a8a136ff02b6b89c31b55314c7e3112939be14",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      142,
+      {
+        "block": 2885409,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "json_metadata": "",
+            "memo_key": "STM6EY4jgDpLKrJa1RE5y49oUu64BLTrjo4SAso7fxtsaY8Mpzqgx"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-03T20:58:54",
+        "trx_id": "3fc900bf7e4ce2f81664359d399ec0c61826f0a0",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      143,
+      {
+        "block": 2885463,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM6AzXNwWRzTWCVTgP4oKQEALTW8HmDuRq1avGWjHH23XBNhux6U",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "json_metadata": "",
+            "memo_key": "STM78Vaf41p9UUMMJvafLTjMurnnnuAiTqChiT5GBph7VDWahQRsz",
+            "owner": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5F9tCbND6zWPwksy1rEN24WjPiQWSU2vwGgegQVjAcYDe1zTWi",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM69ZG1hx2rdU2hxQkkmX5MmYkHPCmdNeXg4r6CR7gvKUzYwWPPZ",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-03T21:01:36",
+        "trx_id": "59ccc2dd299ada55308a5f4fd9e2735847e92a58",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      356,
+      {
+        "block": 3191323,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM6AzXNwWRzTWCVTgP4oKQEALTW8HmDuRq1avGWjHH23XBNhux6U",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "json_metadata": "",
+            "memo_key": "STM78Vaf41p9UUMMJvafLTjMurnnnuAiTqChiT5GBph7VDWahQRsz",
+            "owner": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM6oUcdLthTMc2CDQk5Docc8pB9Zh9s5EQ1wjBZwnMvggbMkRBth",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM69ZG1hx2rdU2hxQkkmX5MmYkHPCmdNeXg4r6CR7gvKUzYwWPPZ",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-14T13:29:03",
+        "trx_id": "8edfc3159e6b8490e86262dc066336f85b730be7",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ],
+    [
+      378,
+      {
+        "block": 3399203,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "gtg",
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM4vuEE8F2xyJhwiNCnHxjUVLNXxdFXtVxgghBq5LVLt49zLKLRX",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "json_metadata": "",
+            "memo_key": "STM4uD3dfLvbz7Tkd7of4K9VYGnkgrY5BHSQt52vE52CBL5qBfKHN",
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5tp5hWbGLL1R3tMVsgYdYxLPyAQFdKoYFbT2hcWUmrU42p1MQC",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-21T21:48:06",
+        "trx_id": "5a3a345d3265d40fd4f7ac1906fddec59ac177c3",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

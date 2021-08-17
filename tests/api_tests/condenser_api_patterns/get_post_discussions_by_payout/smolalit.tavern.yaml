@@ -1,0 +1,28 @@
+---
+  test_name: Hived get_post_discussions_by_payout
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_post_discussions_by_payout
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_post_discussions_by_payout"
+          params: ["smolalit", 'simple-fractal-prostoi-fraktal']
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "smolalit"
+            directory: "condenser_api_patterns/get_post_discussions_by_payout"

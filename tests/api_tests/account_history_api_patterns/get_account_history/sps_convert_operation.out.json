@@ -1,0 +1,2748 @@
+{
+  "history": [
+    [
+      100,
+      {
+        "block": 734472,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "doom",
+            "pending_payout": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "blocktrades-dev-uses-privileged-possition-to-dump-steem-then-takes-vacation-",
+            "rshares": -684109,
+            "total_vote_weight": "4788832024978",
+            "voter": "blocktrades",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-04-19T15:39:27",
+        "trx_id": "429703445b71556528f8f50c34f455dca171d108",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      102,
+      {
+        "block": 740612,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "xeldal",
+            "pending_payout": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "how-to-transfer-steem-between-the-bitshares-and-steem-networks",
+            "rshares": 684109,
+            "total_vote_weight": "612768981385",
+            "voter": "blocktrades",
+            "weight": "166455976876"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-04-19T21:04:03",
+        "trx_id": "30ad34661420b617dca5bcb649d023c218d4a637",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      451,
+      {
+        "block": 1071809,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "doom",
+            "pending_payout": {
+              "amount": "107951",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "bittrex-first-to-market-offers-steem-trade-depositwithdraw-is-live",
+            "rshares": -17799952530723,
+            "total_vote_weight": "12747765505556",
+            "voter": "blocktrades",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-01T16:23:12",
+        "trx_id": "2264140a96083da04dcf6b94b23f3792ce1570e4",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      535,
+      {
+        "block": 1106036,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "85",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "8086892480",
+            "total_vote_weight": "8086892480",
+            "voter": "markopaasila",
+            "weight": "8086892480"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T20:58:51",
+        "trx_id": "1670bd665bb2e0041e71959e70d8d7bd35c89265",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      537,
+      {
+        "block": 1106160,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1194409",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "19364490133943",
+            "total_vote_weight": "19356413367435",
+            "voter": "dantheman",
+            "weight": "19348326474955"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:05:03",
+        "trx_id": "3ed2b333612c0216d21a87b8211fe9a275773059",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      539,
+      {
+        "block": 1106187,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1194516",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 693389889,
+            "total_vote_weight": "19356413367435",
+            "voter": "team",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:06:24",
+        "trx_id": "5e51094727df747497c30b2fe80104afa79d7f2d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      541,
+      {
+        "block": 1106215,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1203385",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "78345515000",
+            "total_vote_weight": "19356414638392",
+            "voter": "adol",
+            "weight": 1270957
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:07:48",
+        "trx_id": "446edda666f2d049f4858193449dbdf1ddb43da4",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      543,
+      {
+        "block": 1106376,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1215644",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "109873143672",
+            "total_vote_weight": "19356418104729",
+            "voter": "tuck-fheman",
+            "weight": 3466337
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:15:51",
+        "trx_id": "e9ab6e3f9d5011b6d2382e1c33fd9e7870d676a5",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      545,
+      {
+        "block": 1106466,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1215820",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 678319293,
+            "total_vote_weight": "19356418104729",
+            "voter": "hcf27",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:20:21",
+        "trx_id": "de3215cb992130fec51697c44d9250c237e71ebd",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      547,
+      {
+        "block": 1106472,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "8342596",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "34920507540794",
+            "total_vote_weight": "33702218954811",
+            "voter": "blocktrades",
+            "weight": "14345800850082"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:20:39",
+        "trx_id": "ab4af0d313585a79aa026aa60942acbc5b3ac93b",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      550,
+      {
+        "block": 1106624,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "9021594",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "2267577970000",
+            "total_vote_weight": "33705839309198",
+            "voter": "hr1",
+            "weight": 3620354387
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:28:15",
+        "trx_id": "1de6565c735a4eb790681c9ffa15757f22b98d1d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      553,
+      {
+        "block": 1107029,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "10787404",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "5534657036411",
+            "total_vote_weight": "33749541827291",
+            "voter": "analisa",
+            "weight": "43702518093"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:48:36",
+        "trx_id": "1607327428aea96e5364ea15991195eaca98ca32",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      555,
+      {
+        "block": 1107046,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "12158504",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "4007967417773",
+            "total_vote_weight": "33764191867212",
+            "voter": "anastacia",
+            "weight": "14650039921"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:49:27",
+        "trx_id": "186a5516d83763bdaaa7ff6f3922aecf4e678bd7",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      557,
+      {
+        "block": 1107061,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13471891",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "3640038132234",
+            "total_vote_weight": "33774053629528",
+            "voter": "abdul",
+            "weight": "9861762316"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T21:50:15",
+        "trx_id": "23fdf1da7ad2977b54f7c8d34f1ac20f44258e23",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      560,
+      {
+        "block": 1107464,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13451334",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "27395661465",
+            "total_vote_weight": "33774053633728",
+            "voter": "pfunk",
+            "weight": 4200
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T22:10:24",
+        "trx_id": "7897128de3ab473ca5371eebdeb7cafcdbea6ab9",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      563,
+      {
+        "block": 1108184,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "14699354",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "3300201515967",
+            "total_vote_weight": "33780750651807",
+            "voter": "pharesim",
+            "weight": "6697018079"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T22:46:30",
+        "trx_id": "fc3293c3756501f577a1292375bc8156d12139ba",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      566,
+      {
+        "block": 1108312,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "14690141",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "8396553396",
+            "total_vote_weight": "33780750651917",
+            "voter": "pheonike",
+            "weight": 110
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T22:53:00",
+        "trx_id": "5adf64a02904090723c65f8e3666e3c5b022b9dd",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      568,
+      {
+        "block": 1108459,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "14758922",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "181381171111",
+            "total_vote_weight": "33780751758004",
+            "voter": "hopeless",
+            "weight": 1106087
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T23:00:21",
+        "trx_id": "8ae468dbc6da1f5014c1d8ff5c014ec3447faec1",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      570,
+      {
+        "block": 1108478,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "15188687",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1109412754887",
+            "total_vote_weight": "33780997382187",
+            "voter": "roadscape",
+            "weight": 245624183
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-02T23:01:18",
+        "trx_id": "74b880cf898975042e9c4e91946cf982e69b96ee",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      578,
+      {
+        "block": 1110749,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "15211921",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 2977210070,
+            "total_vote_weight": "33780997382191",
+            "voter": "anon",
+            "weight": 4
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T00:54:54",
+        "trx_id": "ffffce844dbde0ca7284224215be4d554b35d6d0",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      580,
+      {
+        "block": 1110893,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "15212510",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 1879030119,
+            "total_vote_weight": "33780997382192",
+            "voter": "code",
+            "weight": 1
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:02:06",
+        "trx_id": "840dee2630ab7dcda4db72eb3751ba40cb3393e8",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      583,
+      {
+        "block": 1111022,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "15188049",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 1017319501,
+            "total_vote_weight": "33780997382192",
+            "voter": "esteem",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:08:36",
+        "trx_id": "079826bcb830630406c466014a3c35161bdb9563",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      585,
+      {
+        "block": 1111079,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29314442",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "30581589579830",
+            "total_vote_weight": "36367929428364",
+            "voter": "berniesanders",
+            "weight": "2586932046172"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:11:27",
+        "trx_id": "b5c4cc5b31b1b253baa549e8d3d12c7498be8c8f",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      587,
+      {
+        "block": 1111127,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29091895",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 868263163,
+            "total_vote_weight": "36367929428364",
+            "voter": "yes",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:13:51",
+        "trx_id": "10fc1b153f0639cec380adc8d76a661d92fc5c06",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      591,
+      {
+        "block": 1111728,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29236294",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "296658857689",
+            "total_vote_weight": "36367931776495",
+            "voter": "bitcube",
+            "weight": 2348131
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:43:54",
+        "trx_id": "4aca9dc7cd6b979a87492d92b109bd2a6bc916fd",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      594,
+      {
+        "block": 1111881,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29240662",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 652978915,
+            "total_vote_weight": "36367931776495",
+            "voter": "bangking",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:51:33",
+        "trx_id": "6df38cb57f349354342f84d07665db8ca34d64f7",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      596,
+      {
+        "block": 1112035,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29977613",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1854266021528",
+            "total_vote_weight": "36368485534240",
+            "voter": "nextgencrypto",
+            "weight": 553757745
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T01:59:18",
+        "trx_id": "773fd2b245cc845a22075657059b76b48f3a19fc",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      607,
+      {
+        "block": 1115580,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29625327",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 1339559281,
+            "total_vote_weight": "36368485534240",
+            "voter": "orwell",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T04:56:54",
+        "trx_id": "dba0ac2cbe55025ab95d032ccb3ec1e5be8d1530",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      612,
+      {
+        "block": 1117137,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "28118662",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 137396000,
+            "total_vote_weight": "36368485534240",
+            "voter": "danknugs",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T06:14:57",
+        "trx_id": "98753046b968b8e40f9f4cb636516d87ac1253d3",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      641,
+      {
+        "block": 1128940,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "28165301",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "15522797453",
+            "total_vote_weight": "36368485534564",
+            "voter": "rnglab",
+            "weight": 324
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T16:06:33",
+        "trx_id": "540bf902977213b49cd93a3626a6fb249af5a915",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      645,
+      {
+        "block": 1129705,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "28137731",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": -641623635,
+            "total_vote_weight": "36368485534564",
+            "voter": "fusan",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T16:44:51",
+        "trx_id": "0088478608340129009a7c444679d3dffdba35be",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      650,
+      {
+        "block": 1130863,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "3187871",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "34924207117628",
+            "total_vote_weight": "34924207117628",
+            "voter": "blocktrades",
+            "weight": "34924207117628"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T17:42:48",
+        "trx_id": "cab8fbb49fe1f065b1d3c3a272270dbe574d0226",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      652,
+      {
+        "block": 1130883,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7290836",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "18985829097485",
+            "total_vote_weight": "37278982324335",
+            "voter": "dantheman",
+            "weight": "2354775206707"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T17:43:48",
+        "trx_id": "9d34f2e7c2926e70433ab22980dfd4c6ddfa06d8",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      654,
+      {
+        "block": 1130989,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7303061",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "102718714238",
+            "total_vote_weight": "37278982695832",
+            "voter": "tuck-fheman",
+            "weight": 371497
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T17:49:06",
+        "trx_id": "87a81460a75540410c0e5a25db78631335e33b86",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      657,
+      {
+        "block": 1131261,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7305147",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 1270432146,
+            "total_vote_weight": "37278982695832",
+            "voter": "hcf27",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T18:02:42",
+        "trx_id": "057d30206f280111ad64e541da100aac05bef88b",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      661,
+      {
+        "block": 1131756,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7300658",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 679794009,
+            "total_vote_weight": "37278982695832",
+            "voter": "team",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T18:27:30",
+        "trx_id": "2cfc7e10ef218ed9fcf1a666a48c00b4f1c41a3e",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      663,
+      {
+        "block": 1131840,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7301366",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 640568795,
+            "total_vote_weight": "37278982695832",
+            "voter": "ash",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T18:31:42",
+        "trx_id": "07ffdac638a7aeb70cf5b50bd6b7ce2cb34e1061",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      666,
+      {
+        "block": 1131993,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7303170",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "8231915094",
+            "total_vote_weight": "37278982696023",
+            "voter": "pheonike",
+            "weight": 191
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T18:39:21",
+        "trx_id": "2a1dd28183ac54dfabbd68fc807d401923ef0c26",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      668,
+      {
+        "block": 1132356,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7305424",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 652978915,
+            "total_vote_weight": "37278982696023",
+            "voter": "bangking",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T18:57:30",
+        "trx_id": "a1b55b7fff21f08f6b989bf4210c6bdd2cb878e9",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      671,
+      {
+        "block": 1132633,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7464971",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "645252451568",
+            "total_vote_weight": "37279072583471",
+            "voter": "bhuz",
+            "weight": 89887448
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T19:11:24",
+        "trx_id": "036c89cf3b478972faafe90728480da1d3f29195",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      676,
+      {
+        "block": 1134086,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7422531",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 626478504,
+            "total_vote_weight": "37279072583471",
+            "voter": "pseunodim",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T20:24:12",
+        "trx_id": "a01e741d43e035aff4ad1d6f17af670253246137",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      678,
+      {
+        "block": 1134174,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "27639115",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": -600907953,
+            "total_vote_weight": "36368485534564",
+            "voter": "pseunodim",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T20:28:36",
+        "trx_id": "0fcf1110acf2fc2ab61a76f5996bb85c62107fca",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      680,
+      {
+        "block": 1134197,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "steemed",
+            "pending_payout": {
+              "amount": "40335291",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "become-a-steem-witness-essentials",
+            "rshares": "34924664164714",
+            "total_vote_weight": "25200476097234",
+            "voter": "blocktrades",
+            "weight": "2471423779880"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T20:29:45",
+        "trx_id": "54569297cc465f1d8650ebe56abc3122e55270f4",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      684,
+      {
+        "block": 1135111,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7278311",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 745876207,
+            "total_vote_weight": "37279072583471",
+            "voter": "jsc",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T21:15:27",
+        "trx_id": "8770eb2bedf7521963e61028afc34fb0fc7ca544",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      686,
+      {
+        "block": 1135162,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "27163357",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "119565980523",
+            "total_vote_weight": "36368485682649",
+            "voter": "felix.mg1",
+            "weight": 148085
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T21:18:00",
+        "trx_id": "fc77cc5bc01560bdb633115cf3e114a95a91bb4d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      688,
+      {
+        "block": 1135171,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "xeroc",
+            "pending_payout": {
+              "amount": "7625513",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "ann-peerplays-prelaunch",
+            "rshares": "34924794518051",
+            "total_vote_weight": "19789616986295",
+            "voter": "blocktrades",
+            "weight": "13488985206127"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-03T21:18:27",
+        "trx_id": "96318757b3cde54f94932c5127d4dd2f21052338",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      708,
+      {
+        "block": 1142760,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "26292325",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "19392755472",
+            "total_vote_weight": "36368485683280",
+            "voter": "donkeypong",
+            "weight": 631
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T03:38:18",
+        "trx_id": "09b9bd342dec8d45b2067631faf00fdfdec5aca4",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      713,
+      {
+        "block": 1143333,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "donkeypong",
+            "pending_payout": {
+              "amount": "2977163",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160504t033756202z",
+            "rshares": "34925898405615",
+            "total_vote_weight": "34925898405615",
+            "voter": "blocktrades",
+            "weight": "34925898405615"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T04:07:03",
+        "trx_id": "387956248b0dce2fa456f24e743262a8df1f55b2",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      716,
+      {
+        "block": 1143557,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "26552514",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "724442990446",
+            "total_vote_weight": "36368518170204",
+            "voter": "justin",
+            "weight": 32486924
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T04:18:21",
+        "trx_id": "581413b8694202517f72347500522180e8f6af34",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      720,
+      {
+        "block": 1143764,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7012026",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 688140839,
+            "total_vote_weight": "37279072583471",
+            "voter": "jazzycrypt",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T04:28:42",
+        "trx_id": "0ee69ae51e67f37f48821c75845f035a84bf0237",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      729,
+      {
+        "block": 1146155,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "6928368",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "27666747272",
+            "total_vote_weight": "37279072590549",
+            "voter": "pfunk",
+            "weight": 7078
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T06:28:24",
+        "trx_id": "5b29ab5a332b2ff432e9d4cf039e0c041f895a7c",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      738,
+      {
+        "block": 1148866,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "25565932",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": -631440500,
+            "total_vote_weight": "36368518170204",
+            "voter": "jamiedavis",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T08:44:03",
+        "trx_id": "af6cc5282915b06ba25285a1ec322af563805941",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      749,
+      {
+        "block": 1153192,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "11",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-donkeypong-re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160504t033756202z-20160504t040457169z",
+            "rshares": 1357925143,
+            "total_vote_weight": 1357925143,
+            "voter": "hcf27",
+            "weight": 1357925143
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T12:21:06",
+        "trx_id": "9bf208407d256a8b1c8408ce4a2af56fbab61adf",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      761,
+      {
+        "block": 1157299,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "steemrollin",
+            "pending_payout": {
+              "amount": "8595215",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "japan-officially-recognizes-bitcoin-and-digital-currencies-as-money",
+            "rshares": "34927893052128",
+            "total_vote_weight": "25346170211228",
+            "voter": "blocktrades",
+            "weight": "10883292817119"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T15:48:42",
+        "trx_id": "5e7bde70234ec7c65bd94572f0a4a46a2c17b251",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      777,
+      {
+        "block": 1162725,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "svk",
+            "pending_payout": {
+              "amount": "18002081",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "bitshares-gui-release-2",
+            "rshares": "34928658877954",
+            "total_vote_weight": "25967285623667",
+            "voter": "blocktrades",
+            "weight": "4991214884913"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T20:20:30",
+        "trx_id": "f9f4225f9ea5e45b9e3a64330a04da811d95b11b",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      784,
+      {
+        "block": 1163707,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "mldorton",
+            "pending_payout": {
+              "amount": "2881636",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "open-ledger--you-are-in-control",
+            "rshares": "34928786194911",
+            "total_vote_weight": "34060414944678",
+            "voter": "blocktrades",
+            "weight": "33118491745370"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T21:09:48",
+        "trx_id": "9b94f58bebcfa9fec30f34152c76fad7ac50c7f8",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      786,
+      {
+        "block": 1163712,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "tuck-fheman",
+            "pending_payout": {
+              "amount": "3619458",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "digixdao-dgd-assets-to-be-listed-on-openledger",
+            "rshares": "34243908034226",
+            "total_vote_weight": "28972340342865",
+            "voter": "blocktrades",
+            "weight": "24477614138010"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T21:10:03",
+        "trx_id": "bdcbc4600e53f33e81e8a4677a4fb291bf87b290",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      791,
+      {
+        "block": 1165019,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "steem-nation",
+            "pending_payout": {
+              "amount": "2579238",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "april-29-2016-hangout-transcript",
+            "rshares": "34244095079286",
+            "total_vote_weight": "34234448710658",
+            "voter": "blocktrades",
+            "weight": "34224794179314"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T22:15:36",
+        "trx_id": "fbce2c1f764f66467ba39f9ac6917caae89d502d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      793,
+      {
+        "block": 1165082,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "arhag",
+            "pending_payout": {
+              "amount": "16571400",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "how-the-new-witness-scheduling-algorithm-works",
+            "rshares": "34244095079286",
+            "total_vote_weight": "34094427628755",
+            "voter": "blocktrades",
+            "weight": "4931053558930"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T22:18:48",
+        "trx_id": "c84a39684b65ae096657b4b4cb51c6e7fecef2c0",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      795,
+      {
+        "block": 1165181,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "23929053",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "668648816030",
+            "total_vote_weight": "36368543401124",
+            "voter": "bhuz",
+            "weight": 25230920
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-04T22:23:48",
+        "trx_id": "addb4b1b37175135c530c54264ceb7dec97a3b32",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      805,
+      {
+        "block": 1168303,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "23235399",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 1979572546,
+            "total_vote_weight": "36368543401124",
+            "voter": "steempowered",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T01:00:27",
+        "trx_id": "0d5c97f0a3bbf84c4fb54361bb962ec05747a7ec",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      807,
+      {
+        "block": 1168308,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "6074005",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 1979572546,
+            "total_vote_weight": "37279072590551",
+            "voter": "steempowered",
+            "weight": 2
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T01:00:42",
+        "trx_id": "198aaa7f7393781a1869ebfb38b10f64a7a83e68",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      815,
+      {
+        "block": 1171224,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "tuck-fheman",
+            "pending_payout": {
+              "amount": "2574628",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "a-website-that-totals-up-user-earnings-on-steemit",
+            "rshares": "34929801144676",
+            "total_vote_weight": "34798565962604",
+            "voter": "blocktrades",
+            "weight": "34668372198744"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T03:26:57",
+        "trx_id": "8141b523f5c968a763ce673d70c910bb25959e76",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      821,
+      {
+        "block": 1171638,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "23734853",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1548344070199",
+            "total_vote_weight": "36368847950357",
+            "voter": "augusta",
+            "weight": 304549233
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T03:47:42",
+        "trx_id": "f43ca75dbd705c530db4d2b5b2eaa8378cc2d123",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      823,
+      {
+        "block": 1171676,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "6360749",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "1517984382548",
+            "total_vote_weight": "37280179298387",
+            "voter": "augusta",
+            "weight": 1106707836
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T03:49:36",
+        "trx_id": "947ace72d6f64aa5351200a95184a6316cb2f760",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      827,
+      {
+        "block": 1171985,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7620859",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "5534657036411",
+            "total_vote_weight": "37324636725874",
+            "voter": "analisa",
+            "weight": "44457427487"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:05:06",
+        "trx_id": "76418d978390e6a5441675afcd73f35e16912f66",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      832,
+      {
+        "block": 1172007,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "8602034",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "4007967417773",
+            "total_vote_weight": "37339524342611",
+            "voter": "anastacia",
+            "weight": "14887616737"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:06:12",
+        "trx_id": "366337ea25586e000a7a56b95ce97f7dcdd8ee8e",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      834,
+      {
+        "block": 1172023,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "24299661",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1494835734305",
+            "total_vote_weight": "36369114730591",
+            "voter": "ashleigh",
+            "weight": 266780234
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:07:00",
+        "trx_id": "8d183414d713185fe019cf9cf9cde0cd8ff7bb24",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      836,
+      {
+        "block": 1172029,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "8969826",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "1465525229711",
+            "total_vote_weight": "37340220789896",
+            "voter": "ashleigh",
+            "weight": 696447285
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:07:18",
+        "trx_id": "8a3f5a103dfc71394000b221ca006bc9293e2b43",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      840,
+      {
+        "block": 1172144,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "9900664",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "3641271773318",
+            "total_vote_weight": "37349833628023",
+            "voter": "abdul",
+            "weight": "9612838127"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:13:03",
+        "trx_id": "fd0b4c539337c9ec26d17e3d685d663acada7b14",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      843,
+      {
+        "block": 1172203,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "24929014",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1857709034756",
+            "total_vote_weight": "36369610185651",
+            "voter": "aftergut",
+            "weight": 495455060
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:16:00",
+        "trx_id": "2055b9e7a1172ccf05c9259445293302ccc95e2a",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      845,
+      {
+        "block": 1172207,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "10370438",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "1821283367408",
+            "total_vote_weight": "37350976992437",
+            "voter": "aftergut",
+            "weight": 1143364414
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:16:12",
+        "trx_id": "44cf43af780930c9fa442d1bcf6a785fae893a97",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      848,
+      {
+        "block": 1172228,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "25791323",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "2063876903722",
+            "total_vote_weight": "36370265582932",
+            "voter": "adrian",
+            "weight": 655397281
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:17:15",
+        "trx_id": "42a1dff15146f058a19a4932fa39862e8d05549b",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      850,
+      {
+        "block": 1172231,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "10924808",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "2023408729139",
+            "total_vote_weight": "37352461065085",
+            "voter": "adrian",
+            "weight": 1484072648
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:17:24",
+        "trx_id": "714620f93cf1766fcdc39c3b21676921f46b7a3d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      855,
+      {
+        "block": 1172434,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "27101526",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "3172700973000",
+            "total_vote_weight": "36372521206484",
+            "voter": "graavor",
+            "weight": 2255623552
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:27:33",
+        "trx_id": "fb0b3bad9e9c28007bb234e75e0c5dc77ece5cf6",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      857,
+      {
+        "block": 1172439,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "11782947",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "3110491150000",
+            "total_vote_weight": "37357429988225",
+            "voter": "graavor",
+            "weight": "4968923140"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:27:48",
+        "trx_id": "70622594b43170613ad3a22f88c546c688965515",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      860,
+      {
+        "block": 1172632,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "27978486",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "2063625225337",
+            "total_vote_weight": "36373120910567",
+            "voter": "chana",
+            "weight": 599704083
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:37:30",
+        "trx_id": "169f4266f94d14fb6b415e4e69190c1b0e67cfe3",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      862,
+      {
+        "block": 1172636,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "12367125",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "2023161985625",
+            "total_vote_weight": "37358728887288",
+            "voter": "chana",
+            "weight": 1298899063
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:37:42",
+        "trx_id": "ee8fd768cb27870d8a54a8b08a97c7bc32893aee",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      865,
+      {
+        "block": 1172664,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "28624396",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1539829310766",
+            "total_vote_weight": "36373363841770",
+            "voter": "gifthana",
+            "weight": 242931203
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:39:06",
+        "trx_id": "9f565c80c906762f9a9dfaaf8cc1ed68a29af719",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      867,
+      {
+        "block": 1172668,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "12803278",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "1509636579182",
+            "total_vote_weight": "37359248682039",
+            "voter": "gifthana",
+            "weight": 519794751
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:39:18",
+        "trx_id": "84fb721146ba2e84f3d23f81d210f4aec5f935a3",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      871,
+      {
+        "block": 1172692,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29437493",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "1835520554492",
+            "total_vote_weight": "36373763266387",
+            "voter": "jamgotin",
+            "weight": 399424617
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:40:30",
+        "trx_id": "8e6d3ce39aaad300e0c022ee6f20062042bca27f",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      873,
+      {
+        "block": 1172697,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13344442",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "1799529955384",
+            "total_vote_weight": "37360091412975",
+            "voter": "jamgotin",
+            "weight": 842730936
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:40:45",
+        "trx_id": "d6513e64b5ae07169a8e428e175e174911aba576",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      875,
+      {
+        "block": 1172699,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "29421969",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 595548167,
+            "total_vote_weight": "36373763266387",
+            "voter": "jupiter00000",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:40:51",
+        "trx_id": "472e9b2b3e1fd72fd831339623adec07ad762037",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      879,
+      {
+        "block": 1172963,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "732165",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-tuck-fheman-our-brain-uses-statistics-to-calculate-confidence-make-decisions-20160505t033418323z",
+            "rshares": "18228088333813",
+            "total_vote_weight": "18228088333813",
+            "voter": "dantheman",
+            "weight": "18228088333813"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:54:03",
+        "trx_id": "0a0d92070edff4621185ec9b977d060d64186853",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      881,
+      {
+        "block": 1172985,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "731659",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-tuck-fheman-guccifer-i-breached-clinton-server-it-was-easy-20160505t033905723z",
+            "rshares": "18228088333813",
+            "total_vote_weight": "18228088333813",
+            "voter": "dantheman",
+            "weight": "18228088333813"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T04:55:09",
+        "trx_id": "b465e100abc32941c38f4392636721850e66662d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      888,
+      {
+        "block": 1174056,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "719478",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-tuck-fheman-our-brain-uses-statistics-to-calculate-confidence-make-decisions-20160505t033418323z",
+            "rshares": 558326407,
+            "total_vote_weight": "18228088333813",
+            "voter": "jupiter00000",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T05:48:51",
+        "trx_id": "fff30fd6d19fed2e0a8e26795ccd58935f780acb",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      931,
+      {
+        "block": 1186613,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "kencode",
+            "pending_payout": {
+              "amount": "3370741",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "smartcoins-pos-the-free-way-for-companies-to-accept-crypto-currencies",
+            "rshares": "34932817517190",
+            "total_vote_weight": "27047473409471",
+            "voter": "blocktrades",
+            "weight": "23508679896482"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T16:18:24",
+        "trx_id": "c595009ee90e51b675a67d93e911da55d14adb67",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      933,
+      {
+        "block": 1186715,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "peerplays",
+            "pending_payout": {
+              "amount": "6721429",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "peerplays-whitepaper",
+            "rshares": "34247860310971",
+            "total_vote_weight": "24066948170274",
+            "voter": "blocktrades",
+            "weight": "10762966429152"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T16:23:30",
+        "trx_id": "f94d7bd584dc3f0ae3d39157850b33d0d324e778",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      940,
+      {
+        "block": 1188027,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "26895165",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "626293481626",
+            "total_vote_weight": "36373778974559",
+            "voter": "joseph",
+            "weight": 15708172
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T17:29:18",
+        "trx_id": "99473f720e0c861b955b13f49a9cc42c02df7a9e",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      942,
+      {
+        "block": 1188037,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "12218485",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "587948982751",
+            "total_vote_weight": "37360120393813",
+            "voter": "joseph",
+            "weight": 28980838
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T17:29:48",
+        "trx_id": "77ebb0b3afe2281ff9f9d50b66fb8193b4688b64",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      961,
+      {
+        "block": 1192680,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "jupiter00000",
+            "pending_payout": {
+              "amount": "2250194",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160505t044256676z",
+            "rshares": "34934063672230",
+            "total_vote_weight": "34933468154520",
+            "voter": "blocktrades",
+            "weight": "34932872606353"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T21:22:24",
+        "trx_id": "d1f44080e3147951a5701ed59f150d57784e2a21",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      965,
+      {
+        "block": 1192735,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "linouxis9",
+            "pending_payout": {
+              "amount": "2266659",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "liqbot-0",
+            "rshares": "34249203900398",
+            "total_vote_weight": "33327928560277",
+            "voter": "blocktrades",
+            "weight": "32576749611867"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-05T21:25:09",
+        "trx_id": "76ee012b1e8f368bfb27469b7167c813780a4210",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      983,
+      {
+        "block": 1197695,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "peerplays",
+            "pending_payout": {
+              "amount": "7544121",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "bitcointalk--ann-peerplays--first-ever-blockchain-based-gaming-platform",
+            "rshares": "34935056330419",
+            "total_vote_weight": "25070330320677",
+            "voter": "blocktrades",
+            "weight": "9545654788724"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-06T01:33:48",
+        "trx_id": "b9bf4d8f9fbfb36785d39c4e257b88ab02b2c2a5",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      985,
+      {
+        "block": 1197778,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "2083758",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-liondani-re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160505t163923579z-20160505t182852284z",
+            "rshares": "34250055225901",
+            "total_vote_weight": "34250055225901",
+            "voter": "blocktrades",
+            "weight": "34250055225901"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-06T01:38:00",
+        "trx_id": "0992cfaaf4241319b7d54cb02957c72e5de76d6b",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      987,
+      {
+        "block": 1197778,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "liondani",
+            "pending_payout": {
+              "amount": "2079637",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160505t163923579z",
+            "rshares": "34250055225901",
+            "total_vote_weight": "34250055225901",
+            "voter": "blocktrades",
+            "weight": "34250055225901"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-06T01:38:00",
+        "trx_id": "d431d191af3758cf9633fc71b8fa4e181388359c",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      989,
+      {
+        "block": 1197784,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "jakev",
+            "pending_payout": {
+              "amount": "2075543",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160503t012311460z",
+            "rshares": "34250055225901",
+            "total_vote_weight": "34250055225901",
+            "voter": "blocktrades",
+            "weight": "34250055225901"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-06T01:38:18",
+        "trx_id": "fb28a7e5bf84852a6ac22261459475b76c48331a",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      991,
+      {
+        "block": 1197785,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "2071457",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-jakev-re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160503t012311460z-20160503t035116540z",
+            "rshares": "34250055225901",
+            "total_vote_weight": "34250055225901",
+            "voter": "blocktrades",
+            "weight": "34250055225901"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-06T01:38:21",
+        "trx_id": "801bbf788e5326b9e5865feca25e9fabc93ef6db",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ],
+    [
+      993,
+      {
+        "block": 1197789,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1990059",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-donkeypong-re-blocktrades--blocktrades-adds-support-for-directly-buyingselling-steem-20160504t033756202z-20160504t040457169z",
+            "rshares": "33565054121383",
+            "total_vote_weight": "33563696361041",
+            "voter": "blocktrades",
+            "weight": "33562338435898"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-06T01:38:33",
+        "trx_id": "f563fa945b5b30dda9b4dd76299f6502d071ce80",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ]
+  ]
+}

@@ -1,0 +1,28 @@
+---
+  test_name: Hived condenser_api.list_proposal_votes
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: condenser_api.list_proposal_votes
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.list_proposal_votes"
+          params: [[10], 10, "by_proposal_voter", "ascending", "votable"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "proposal_votable"
+            directory: "condenser_api_patterns/list_proposal_votes"

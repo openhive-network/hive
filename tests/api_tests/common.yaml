@@ -1,0 +1,7 @@
+---
+  name: Common test values
+  description: Common values for tests
+
+  variables:
+    service:
+      url: "{tavern.env_vars.HIVEMIND_URL}"

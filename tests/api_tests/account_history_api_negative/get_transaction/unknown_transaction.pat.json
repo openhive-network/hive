@@ -1,0 +1,25 @@
+{
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "account_history_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 203,
+          "method": "get_transaction",
+          "timestamp": "2020-10-22T13:44:23"
+        },
+        "data": {
+          "t": "1000000000000000000000000000000000000000"
+        },
+        "format": "false: Unknown Transaction ${t}"
+      }
+    ]
+  },
+  "message": "Assert Exception:false: Unknown Transaction 1000000000000000000000000000000000000000"
+}

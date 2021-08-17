@@ -1,0 +1,29 @@
+---
+  test_name: Hived list_savings_withdrawals by_from_id
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: list_savings_withdrawals by_from_id
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_savings_withdrawals"
+          params: {"start":["gtg",  -1], "limit":10, "order":"by_from_id"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "by_from_id"
+            directory: "database_api_patterns/list_savings_withdrawals"
+            ignore_tags: ['withdrawals']

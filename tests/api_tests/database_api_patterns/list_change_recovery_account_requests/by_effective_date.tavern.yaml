@@ -1,0 +1,29 @@
+---
+  test_name: Hived list_change_recovery_account_requests
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: list_change_recovery_account_requests
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_change_recovery_account_requests"
+          params: {"start":["2017-01-01T00:00:00", "gtg"], "limit":10, "order":"by_effective_date"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "by_effective_date"
+            directory: "database_api_patterns/list_change_recovery_account_requests"
+            ignore_tags: ['requests']

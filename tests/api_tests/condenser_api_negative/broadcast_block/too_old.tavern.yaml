@@ -1,0 +1,40 @@
+---
+  test_name: Hived broadcast_block
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: broadcast_block
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.broadcast_block"
+          params: [
+            {
+              "previous": "0000000000000000000000000000000000000000",
+              "timestamp": "1970-01-01T00:00:00",
+              "witness": "",
+              "transaction_merkle_root": "0000000000000000000000000000000000000000",
+              "extensions": [ ],
+              "witness_signature": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "transactions": [ ]
+            }
+          ]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "too_old"
+            directory: "condenser_api_negative/broadcast_block"
+            error_response: true
+            ignore_tags: ['stack']

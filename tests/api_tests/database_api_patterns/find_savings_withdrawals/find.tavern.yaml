@@ -1,0 +1,28 @@
+---
+  test_name: Hived find_savings_withdrawals
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: find_savings_withdrawals
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.find_savings_withdrawals"
+          params: {"account": "gtg"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "find"
+            directory: "database_api_patterns/find_savings_withdrawals"

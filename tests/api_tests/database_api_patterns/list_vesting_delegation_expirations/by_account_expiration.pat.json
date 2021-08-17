@@ -1,0 +1,104 @@
+{
+  "delegations": [
+    {
+      "delegator": "guineapig",
+      "expiration": "2020-11-08T18:57:39",
+      "id": 4718541,
+      "vesting_shares": {
+        "amount": "979216034629",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "holovision",
+      "expiration": "2020-11-09T13:25:09",
+      "id": 4718645,
+      "vesting_shares": {
+        "amount": "192017649039",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "holovision",
+      "expiration": "2020-11-09T13:25:48",
+      "id": 4718646,
+      "vesting_shares": {
+        "amount": "192017649039",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "holoz0r",
+      "expiration": "2020-11-07T03:18:39",
+      "id": 4718405,
+      "vesting_shares": {
+        "amount": "323141291427",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "holoz0r",
+      "expiration": "2020-11-11T11:22:54",
+      "id": 4718774,
+      "vesting_shares": {
+        "amount": "832341463163",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "hope-on-fire",
+      "expiration": "2020-11-06T22:41:06",
+      "id": 4718384,
+      "vesting_shares": {
+        "amount": "1455956540765",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "husamia",
+      "expiration": "2020-11-06T16:54:45",
+      "id": 4718337,
+      "vesting_shares": {
+        "amount": "321274560053",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "husamia",
+      "expiration": "2020-11-06T16:58:12",
+      "id": 4718338,
+      "vesting_shares": {
+        "amount": "78725439947",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "iamalisha",
+      "expiration": "2020-11-10T18:03:33",
+      "id": 4718738,
+      "vesting_shares": {
+        "amount": "2115363316184",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "ibc",
+      "expiration": "2020-11-10T19:03:33",
+      "id": 4718741,
+      "vesting_shares": {
+        "amount": "598909245077",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    }
+  ]
+}

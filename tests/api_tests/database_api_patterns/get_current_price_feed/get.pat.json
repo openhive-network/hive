@@ -1,0 +1,12 @@
+{
+  "base": {
+    "amount": "115",
+    "nai": "@@000000013",
+    "precision": 3
+  },
+  "quote": {
+    "amount": "1000",
+    "nai": "@@000000021",
+    "precision": 3
+  }
+}

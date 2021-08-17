@@ -1,0 +1,151 @@
+{
+  "history": [
+    [
+      233,
+      {
+        "block": 3155225,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 100,
+            "to_account": "aizensou"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-13T07:13:27",
+        "trx_id": "8e8b13ea0622b5255aea2b011f0605c38ad9977a",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      237,
+      {
+        "block": 3339107,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 100,
+            "to_account": "bento"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-19T19:11:06",
+        "trx_id": "a5a23d669949b10f446414e326f4f54554dcf950",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      241,
+      {
+        "block": 3354142,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 1,
+            "to_account": "aizensou"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-20T07:50:21",
+        "trx_id": "cfdfecd2a67ed091a8fad56b2e13c34f2dcd8fc8",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      244,
+      {
+        "block": 3354503,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 0,
+            "to_account": "aizensou"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-20T08:08:33",
+        "trx_id": "e11af21721952cc0d1b7dfcb03cfad7292f86586",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      245,
+      {
+        "block": 3354601,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 10000,
+            "to_account": "bento"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-20T08:13:33",
+        "trx_id": "430f31ea1cf468feb9398ee4ffc502a62eb3fc03",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ],
+    [
+      246,
+      {
+        "block": 3389889,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 0,
+            "to_account": "bento"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-21T13:55:54",
+        "trx_id": "0d23491cfcc3d0e79d3e3a474c15dd18e050ad84",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      247,
+      {
+        "block": 3389890,
+        "op": {
+          "type": "set_withdraw_vesting_route_operation",
+          "value": {
+            "auto_vest": false,
+            "from_account": "aizen24",
+            "percent": 10000,
+            "to_account": "aizensou"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-21T13:55:57",
+        "trx_id": "e45e2c2ec28ad63dca4a30e07a51a67e5e5a0daf",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

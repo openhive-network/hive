@@ -1,0 +1,29 @@
+---
+  test_name: Hived find_decline_voting_rights_requests
+
+  marks:
+    - patterntest # find nonempty requests
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: find_decline_voting_rights_requests
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.find_decline_voting_rights_requests"
+          params: {"accounts": ["hive.test"]}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "hive_test"
+            directory: "database_api_patterns/find_decline_voting_rights_requests"
+            ignore_tags: ['requests'] # as requests stays active for 30 days, only posibility to test is to use block limit

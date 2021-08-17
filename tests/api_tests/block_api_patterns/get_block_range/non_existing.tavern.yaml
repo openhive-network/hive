@@ -1,0 +1,28 @@
+---
+  test_name: Hived block_api.get_block_range non existing
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: block_api.get_block_range non existing
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "block_api.get_block_range"
+          params: {"starting_block_num": 1000000000, "count": 1000}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "non_existing"
+            directory: "block_api_patterns/get_block_range"

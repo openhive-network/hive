@@ -1,0 +1,1025 @@
+{
+  "current_median_history": {
+    "base": {
+      "amount": "115",
+      "nai": "@@000000013",
+      "precision": 3
+    },
+    "quote": {
+      "amount": "1000",
+      "nai": "@@000000021",
+      "precision": 3
+    }
+  },
+  "id": 0,
+  "price_history": [
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "116",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "116",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "118",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "116",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "116",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "116",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "116",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "117",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "115",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "114",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "113",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "111",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "110",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "111",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "111",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "111",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "110",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "112",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "111",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "110",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "107",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "109",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    },
+    {
+      "base": {
+        "amount": "108",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "quote": {
+        "amount": "1000",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+---
+  test_name: Hived jsonrpc get_signature
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../common.yaml
+
+  stages:
+    - name: jsonrpc get_signature
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "jsonrpc.get_signature"
+          params: {"method":"condenser_api.get_order_book"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get_signature"
+            directory: "jsonrpc_patterns"

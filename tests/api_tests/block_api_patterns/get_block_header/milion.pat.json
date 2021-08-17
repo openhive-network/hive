@@ -1,0 +1,9 @@
+{
+  "header": {
+    "extensions": [],
+    "previous": "000f423f974857674873d93d1909e0eeb7e4916e",
+    "timestamp": "2016-04-29T04:12:00",
+    "transaction_merkle_root": "0000000000000000000000000000000000000000",
+    "witness": "abit"
+  }
+}

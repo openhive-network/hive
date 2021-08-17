@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api get_key_references tulpa_posting
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_key_references tulpa_posting
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_by_key_api.get_key_references"
+          params: {"keys":["STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS"]}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "tulpa_posting"
+            directory: "account_by_key_api_patterns/get_key_references"

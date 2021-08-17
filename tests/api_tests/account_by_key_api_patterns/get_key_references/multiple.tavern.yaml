@@ -1,0 +1,33 @@
+---
+  test_name: Hived account_history_api get_key_references
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_key_references
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_by_key_api.get_key_references"
+          params: {"keys":[
+              "STM5tp5hWbGLL1R3tMVsgYdYxLPyAQFdKoYFbT2hcWUmrU42p1MQC",
+              "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR",
+              "STM5ya7Y8XKBRuWL2uL8NsSnB691cCzca87Ho9MXaPZ1ZYdGaJBBc",
+              "STM8epVc3pAcL44kvfvntsQGWVAyeQmFKC9nFdbPFYW1fCEg4sM14"
+          ]}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "multiple"
+            directory: "account_by_key_api_patterns/get_key_references"

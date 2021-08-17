@@ -1,0 +1,28 @@
+---
+  test_name: Hived condenser_api.get_block_header milion
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: block_api.get_block milion
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_block_header"
+          params: [1000000]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "milion"
+            directory: "condenser_api_patterns/get_block_header"

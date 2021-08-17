@@ -1,0 +1,212 @@
+[
+  {
+    "id": 49027,
+    "proposal": {
+      "creator": "good-karma",
+      "daily_pay": {
+        "amount": "70000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2022-04-15T00:00:00",
+      "id": 88,
+      "permlink": "hivesigner-ongoing-development-and-improvement",
+      "proposal_id": 88,
+      "receiver": "good-karma",
+      "start_date": "2020-04-15T00:00:00",
+      "status": "active",
+      "subject": "Hivesigner - Ongoing development and improvement",
+      "total_votes": "58407787848092993"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 48436,
+    "proposal": {
+      "creator": "keychain",
+      "daily_pay": {
+        "amount": "200000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-11-15T16:08:18",
+      "id": 98,
+      "permlink": "hive-keychain-proposal-dhf",
+      "proposal_id": 98,
+      "receiver": "keychain",
+      "start_date": "2020-05-15T16:08:12",
+      "status": "active",
+      "subject": "DHF Proposal for Hive Keychain development.",
+      "total_votes": "58281624993968845"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 48820,
+    "proposal": {
+      "creator": "hivebuzz",
+      "daily_pay": {
+        "amount": "125000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-12-31T23:59:59",
+      "id": 109,
+      "permlink": "proposal-2020",
+      "proposal_id": 109,
+      "receiver": "hivechain.app",
+      "start_date": "2020-05-18T00:00:00",
+      "status": "active",
+      "subject": "The Hive Gamification Proposal",
+      "total_votes": "55666716089928268"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 51258,
+    "proposal": {
+      "creator": "guiltyparties",
+      "daily_pay": {
+        "amount": "5000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-05-20T19:03:24",
+      "id": 110,
+      "permlink": "spaminator-server-and-tech-only-funding-proposal",
+      "proposal_id": 110,
+      "receiver": "spaminator",
+      "start_date": "2020-05-20T19:03:09",
+      "status": "active",
+      "subject": "Spaminator Server and Tech-Only Funding Proposal",
+      "total_votes": "45011291733503879"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 51259,
+    "proposal": {
+      "creator": "good-karma",
+      "daily_pay": {
+        "amount": "45000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-11-30T00:00:00",
+      "id": 114,
+      "permlink": "open-search-engine-development-and-maintenance",
+      "proposal_id": 114,
+      "receiver": "good-karma",
+      "start_date": "2020-06-01T00:00:00",
+      "status": "active",
+      "subject": "Open Search Engine development and maintenance",
+      "total_votes": "61353779264942744"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 51361,
+    "proposal": {
+      "creator": "hivewatchers",
+      "daily_pay": {
+        "amount": "65000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-07-31T12:04:39",
+      "id": 124,
+      "permlink": "hivewatchers-dhf-proposal",
+      "proposal_id": 124,
+      "receiver": "hivewatchers",
+      "start_date": "2020-08-01T12:04:22",
+      "status": "active",
+      "subject": "Hivewatchers Operational Proposal",
+      "total_votes": "45887762710237852"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 52658,
+    "proposal": {
+      "creator": "hiveio",
+      "daily_pay": {
+        "amount": "4750000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-11-22T00:00:00",
+      "id": 133,
+      "permlink": "airdrop-vested-funds-distribution-round-corrections",
+      "proposal_id": 133,
+      "receiver": "blocktrades",
+      "start_date": "2020-10-23T00:00:00",
+      "status": "active",
+      "subject": "Airdrop VESTS/HP:  non DHF funds held in trust used to repay up-front correction",
+      "total_votes": "61846690875243411"
+    },
+    "voter": "gtg"
+  },
+  {
+    "id": 49310,
+    "proposal": {
+      "creator": "hivebuzz",
+      "daily_pay": {
+        "amount": "125000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-12-31T23:59:59",
+      "id": 109,
+      "permlink": "proposal-2020",
+      "proposal_id": 109,
+      "receiver": "hivechain.app",
+      "start_date": "2020-05-18T00:00:00",
+      "status": "active",
+      "subject": "The Hive Gamification Proposal",
+      "total_votes": "55666716089928268"
+    },
+    "voter": "gtrussi"
+  },
+  {
+    "id": 50827,
+    "proposal": {
+      "creator": "good-karma",
+      "daily_pay": {
+        "amount": "70000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2022-04-15T00:00:00",
+      "id": 88,
+      "permlink": "hivesigner-ongoing-development-and-improvement",
+      "proposal_id": 88,
+      "receiver": "good-karma",
+      "start_date": "2020-04-15T00:00:00",
+      "status": "active",
+      "subject": "Hivesigner - Ongoing development and improvement",
+      "total_votes": "58407787848092993"
+    },
+    "voter": "guillermogarciac"
+  },
+  {
+    "id": 50829,
+    "proposal": {
+      "creator": "keychain",
+      "daily_pay": {
+        "amount": "200000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-11-15T16:08:18",
+      "id": 98,
+      "permlink": "hive-keychain-proposal-dhf",
+      "proposal_id": 98,
+      "receiver": "keychain",
+      "start_date": "2020-05-15T16:08:12",
+      "status": "active",
+      "subject": "DHF Proposal for Hive Keychain development.",
+      "total_votes": "58281624993968845"
+    },
+    "voter": "guillermogarciac"
+  }
+]

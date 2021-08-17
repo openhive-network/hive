@@ -1,0 +1,329 @@
+{
+  "history": [
+    [
+      3220,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "abit",
+            "comment_permlink": "abit-first-post",
+            "curator": "adm",
+            "reward": {
+              "amount": "3386877857",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 198
+      }
+    ],
+    [
+      3221,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "abit",
+            "comment_permlink": "abit-witness-post",
+            "curator": "adm",
+            "reward": {
+              "amount": "36810703386",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 205
+      }
+    ],
+    [
+      3222,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "abit",
+            "comment_permlink": "abit-witness-post-re3",
+            "curator": "adm",
+            "reward": {
+              "amount": "3659084423",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 217
+      }
+    ],
+    [
+      3223,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "abit",
+            "comment_permlink": "abit-witness-post-re3-re1",
+            "curator": "adm",
+            "reward": {
+              "amount": "335023466",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 222
+      }
+    ],
+    [
+      3224,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "abit",
+            "comment_permlink": "come-on-miners",
+            "curator": "adm",
+            "reward": {
+              "amount": "3454929498",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 259
+      }
+    ],
+    [
+      3225,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "abit",
+            "comment_permlink": "re-masteryoda-test-post-test-20160612t105535643z",
+            "curator": "adm",
+            "reward": {
+              "amount": "3821361415",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 10155
+      }
+    ],
+    [
+      3226,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "mummyimperfect",
+            "comment_permlink": "8-weeks-ive-become-one-with-the-sofa-9th-jan-2016",
+            "curator": "adm",
+            "reward": {
+              "amount": "942253499",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 33569
+      }
+    ],
+    [
+      3227,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "gavvet",
+            "comment_permlink": "how-to-defeat-a-bot-add-a-little-chaos",
+            "curator": "adm",
+            "reward": {
+              "amount": "34277088420",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 40076
+      }
+    ],
+    [
+      3228,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "alyssas",
+            "comment_permlink": "re-liondani-re-alyssas-re-abit-ned-started-voting-randomly-on-new-posts-20160602t152250745z",
+            "curator": "adm",
+            "reward": {
+              "amount": "3821361415",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 40206
+      }
+    ],
+    [
+      3229,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "oholiab",
+            "comment_permlink": "vrhackspace-proof-of-concept",
+            "curator": "adm",
+            "reward": {
+              "amount": "1245868516",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 40222
+      }
+    ],
+    [
+      3230,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "nanzo-scoop",
+            "comment_permlink": "an-idiots-to-what-the-dollar-figure-against-your-post-means-i-think",
+            "curator": "adm",
+            "reward": {
+              "amount": "5250445889",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 41012
+      }
+    ],
+    [
+      3231,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "gregory-f",
+            "comment_permlink": "clueless-users-guide-to-upgrading-to-version-0",
+            "curator": "adm",
+            "reward": {
+              "amount": "25456548715",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 50607
+      }
+    ],
+    [
+      3232,
+      {
+        "block": 2889020,
+        "op": {
+          "type": "curation_reward_operation",
+          "value": {
+            "comment_author": "liondani",
+            "comment_permlink": "re-tuck-fheman-re-galina-hello-im-galina-and-you--20160610t154341363z",
+            "curator": "adm",
+            "reward": {
+              "amount": "3774248740",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 1733
+      }
+    ]
+  ]
+}

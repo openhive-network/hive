@@ -1,0 +1,28 @@
+---
+  test_name: Hived get_conversion_requests
+
+  marks:
+    - patterntest # as conversions requests change over time, it tests only if API is called
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_conversion_requests
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_conversion_requests"
+          params: [144423]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get"
+            directory: "condenser_api_patterns/get_conversion_requests"

@@ -1,0 +1,29 @@
+---
+  test_name: Hived reputation_api.get_account_reputations
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../common.yaml
+
+  stages:
+    - name: reputation_api.get_account_reputations
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "reputation_api.get_account_reputations"
+          params: {"account_lower_bound": "gtg"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get_account_reputations"
+            directory: "reputation_api_patterns"
+            ignore_tags: ["account", "reputation"]

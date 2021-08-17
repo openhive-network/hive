@@ -1,0 +1,29 @@
+---
+  test_name: Hived condenser_api.get_recovery_request
+
+  marks:
+    - patterntest
+    - xfail #todo find account with recovery request to test
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: condenser_api.get_recovery_request
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_recovery_request"
+          params: ["steem"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get"
+            directory: "condenser_api_patterns/get_recovery_request"

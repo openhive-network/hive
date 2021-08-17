@@ -1,0 +1,29 @@
+---
+  test_name: Hived list_hbd_conversion_requests
+
+  marks:
+    - patterntest # todo, try to set parameters in a way to get old conversion requests, looks like its not working properly
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: list_hbd_conversion_requests
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_hbd_conversion_requests"
+          params: {"start":["gtg", 1], "limit":10, "order":"by_account"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "by_account"
+            directory: "database_api_patterns/list_hbd_conversion_requests"
+            ignore_tags: ['requests']

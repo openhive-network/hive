@@ -1,0 +1,5002 @@
+[
+  {
+    "current_pays": "99.862 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "62.127 HBD"
+  },
+  {
+    "current_pays": "3.894 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "2.423 HBD"
+  },
+  {
+    "current_pays": "605.515 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "380.544 HBD"
+  },
+  {
+    "current_pays": "0.445 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "0.280 HBD"
+  },
+  {
+    "current_pays": "460.215 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "289.936 HBD"
+  },
+  {
+    "current_pays": "22.332 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "14.070 HBD"
+  },
+  {
+    "current_pays": "132.255 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "83.387 HBD"
+  },
+  {
+    "current_pays": "14.776 HIVE",
+    "date": "2016-09-15T19:42:51",
+    "open_pays": "9.590 HBD"
+  },
+  {
+    "current_pays": "25.798 HIVE",
+    "date": "2016-09-15T19:40:45",
+    "open_pays": "16.771 HBD"
+  },
+  {
+    "current_pays": "0.593 HIVE",
+    "date": "2016-09-15T19:36:36",
+    "open_pays": "0.385 HBD"
+  },
+  {
+    "current_pays": "1.101 HIVE",
+    "date": "2016-09-15T19:34:42",
+    "open_pays": "0.715 HBD"
+  },
+  {
+    "current_pays": "2.046 HIVE",
+    "date": "2016-09-15T19:32:48",
+    "open_pays": "1.330 HBD"
+  },
+  {
+    "current_pays": "1.107 HIVE",
+    "date": "2016-09-15T19:31:48",
+    "open_pays": "0.719 HBD"
+  },
+  {
+    "current_pays": "10.849 HIVE",
+    "date": "2016-09-15T19:31:42",
+    "open_pays": "7.053 HBD"
+  },
+  {
+    "current_pays": "1.352 HBD",
+    "date": "2016-09-15T19:09:18",
+    "open_pays": "2.045 HIVE"
+  },
+  {
+    "current_pays": "1.237 HIVE",
+    "date": "2016-09-15T18:57:54",
+    "open_pays": "0.820 HBD"
+  },
+  {
+    "current_pays": "11.900 HIVE",
+    "date": "2016-09-15T18:57:51",
+    "open_pays": "7.885 HBD"
+  },
+  {
+    "current_pays": "0.005 HBD",
+    "date": "2016-09-15T18:57:48",
+    "open_pays": "0.009 HIVE"
+  },
+  {
+    "current_pays": "0.130 HBD",
+    "date": "2016-09-15T18:57:48",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.246 HIVE",
+    "date": "2016-09-15T18:53:33",
+    "open_pays": "0.159 HBD"
+  },
+  {
+    "current_pays": "0.294 HBD",
+    "date": "2016-09-15T18:53:12",
+    "open_pays": "0.455 HIVE"
+  },
+  {
+    "current_pays": "45.818 HIVE",
+    "date": "2016-09-15T17:37:09",
+    "open_pays": "29.762 HBD"
+  },
+  {
+    "current_pays": "0.455 HIVE",
+    "date": "2016-09-15T17:36:48",
+    "open_pays": "0.295 HBD"
+  },
+  {
+    "current_pays": "10.036 HIVE",
+    "date": "2016-09-15T17:36:48",
+    "open_pays": "6.519 HBD"
+  },
+  {
+    "current_pays": "0.455 HIVE",
+    "date": "2016-09-15T17:36:33",
+    "open_pays": "0.295 HBD"
+  },
+  {
+    "current_pays": "10.036 HIVE",
+    "date": "2016-09-15T17:36:33",
+    "open_pays": "6.519 HBD"
+  },
+  {
+    "current_pays": "2.226 HIVE",
+    "date": "2016-09-15T17:36:18",
+    "open_pays": "1.445 HBD"
+  },
+  {
+    "current_pays": "0.900 HIVE",
+    "date": "2016-09-15T17:36:06",
+    "open_pays": "0.584 HBD"
+  },
+  {
+    "current_pays": "0.428 HIVE",
+    "date": "2016-09-15T17:35:36",
+    "open_pays": "0.278 HBD"
+  },
+  {
+    "current_pays": "1.425 HBD",
+    "date": "2016-09-15T17:30:03",
+    "open_pays": "2.194 HIVE"
+  },
+  {
+    "current_pays": "6.058 HBD",
+    "date": "2016-09-15T17:30:03",
+    "open_pays": "9.327 HIVE"
+  },
+  {
+    "current_pays": "0.611 HBD",
+    "date": "2016-09-15T16:22:18",
+    "open_pays": "0.940 HIVE"
+  },
+  {
+    "current_pays": "1.068 HBD",
+    "date": "2016-09-15T16:12:33",
+    "open_pays": "1.644 HIVE"
+  },
+  {
+    "current_pays": "6.669 HBD",
+    "date": "2016-09-15T16:12:33",
+    "open_pays": "10.267 HIVE"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T16:02:36",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T16:02:12",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "8.600 HIVE",
+    "date": "2016-09-15T16:01:57",
+    "open_pays": "5.535 HBD"
+  },
+  {
+    "current_pays": "0.494 HIVE",
+    "date": "2016-09-15T16:01:57",
+    "open_pays": "0.318 HBD"
+  },
+  {
+    "current_pays": "0.492 HIVE",
+    "date": "2016-09-15T16:01:51",
+    "open_pays": "0.316 HBD"
+  },
+  {
+    "current_pays": "8.600 HIVE",
+    "date": "2016-09-15T16:01:45",
+    "open_pays": "5.535 HBD"
+  },
+  {
+    "current_pays": "8.600 HIVE",
+    "date": "2016-09-15T16:01:27",
+    "open_pays": "5.535 HBD"
+  },
+  {
+    "current_pays": "9.584 HIVE",
+    "date": "2016-09-15T16:01:15",
+    "open_pays": "6.169 HBD"
+  },
+  {
+    "current_pays": "0.985 HIVE",
+    "date": "2016-09-15T16:01:09",
+    "open_pays": "0.634 HBD"
+  },
+  {
+    "current_pays": "517.862 HIVE",
+    "date": "2016-09-15T16:00:57",
+    "open_pays": "333.335 HBD"
+  },
+  {
+    "current_pays": "9.584 HIVE",
+    "date": "2016-09-15T16:00:57",
+    "open_pays": "6.169 HBD"
+  },
+  {
+    "current_pays": "0.009 HIVE",
+    "date": "2016-09-15T16:00:39",
+    "open_pays": "0.005 HBD"
+  },
+  {
+    "current_pays": "9.584 HIVE",
+    "date": "2016-09-15T16:00:39",
+    "open_pays": "6.169 HBD"
+  },
+  {
+    "current_pays": "274.579 HIVE",
+    "date": "2016-09-15T15:59:30",
+    "open_pays": "176.739 HBD"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T15:59:30",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "29.640 HIVE",
+    "date": "2016-09-15T15:59:30",
+    "open_pays": "19.269 HBD"
+  },
+  {
+    "current_pays": "9.751 HIVE",
+    "date": "2016-09-15T15:59:30",
+    "open_pays": "6.339 HBD"
+  },
+  {
+    "current_pays": "0.819 HIVE",
+    "date": "2016-09-15T15:59:24",
+    "open_pays": "0.532 HBD"
+  },
+  {
+    "current_pays": "9.751 HIVE",
+    "date": "2016-09-15T15:59:24",
+    "open_pays": "6.339 HBD"
+  },
+  {
+    "current_pays": "8.973 HIVE",
+    "date": "2016-09-15T15:59:00",
+    "open_pays": "5.833 HBD"
+  },
+  {
+    "current_pays": "1.159 HIVE",
+    "date": "2016-09-15T15:58:36",
+    "open_pays": "0.753 HBD"
+  },
+  {
+    "current_pays": "2.317 HIVE",
+    "date": "2016-09-15T15:58:00",
+    "open_pays": "1.506 HBD"
+  },
+  {
+    "current_pays": "4.635 HIVE",
+    "date": "2016-09-15T15:57:18",
+    "open_pays": "3.013 HBD"
+  },
+  {
+    "current_pays": "0.185 HIVE",
+    "date": "2016-09-15T15:56:39",
+    "open_pays": "0.120 HBD"
+  },
+  {
+    "current_pays": "0.015 HIVE",
+    "date": "2016-09-15T15:56:39",
+    "open_pays": "0.010 HBD"
+  },
+  {
+    "current_pays": "0.200 HIVE",
+    "date": "2016-09-15T15:56:03",
+    "open_pays": "0.130 HBD"
+  },
+  {
+    "current_pays": "0.215 HIVE",
+    "date": "2016-09-15T15:55:27",
+    "open_pays": "0.140 HBD"
+  },
+  {
+    "current_pays": "0.801 HIVE",
+    "date": "2016-09-15T15:54:00",
+    "open_pays": "0.532 HBD"
+  },
+  {
+    "current_pays": "9.798 HIVE",
+    "date": "2016-09-15T15:54:00",
+    "open_pays": "6.505 HBD"
+  },
+  {
+    "current_pays": "0.810 HIVE",
+    "date": "2016-09-15T15:53:45",
+    "open_pays": "0.537 HBD"
+  },
+  {
+    "current_pays": "7.379 HIVE",
+    "date": "2016-09-15T15:53:45",
+    "open_pays": "4.899 HBD"
+  },
+  {
+    "current_pays": "2.420 HIVE",
+    "date": "2016-09-15T15:53:21",
+    "open_pays": "1.606 HBD"
+  },
+  {
+    "current_pays": "0.810 HIVE",
+    "date": "2016-09-15T15:53:09",
+    "open_pays": "0.537 HBD"
+  },
+  {
+    "current_pays": "9.493 HIVE",
+    "date": "2016-09-15T15:53:09",
+    "open_pays": "6.303 HBD"
+  },
+  {
+    "current_pays": "0.305 HIVE",
+    "date": "2016-09-15T15:48:42",
+    "open_pays": "0.202 HBD"
+  },
+  {
+    "current_pays": "1.220 HIVE",
+    "date": "2016-09-15T15:47:30",
+    "open_pays": "0.809 HBD"
+  },
+  {
+    "current_pays": "2.440 HIVE",
+    "date": "2016-09-15T15:46:54",
+    "open_pays": "1.619 HBD"
+  },
+  {
+    "current_pays": "4.899 HIVE",
+    "date": "2016-09-15T15:46:18",
+    "open_pays": "3.252 HBD"
+  },
+  {
+    "current_pays": "4.899 HIVE",
+    "date": "2016-09-15T15:45:33",
+    "open_pays": "3.252 HBD"
+  },
+  {
+    "current_pays": "96.352 HBD",
+    "date": "2016-09-15T15:39:33",
+    "open_pays": "144.700 HIVE"
+  },
+  {
+    "current_pays": "26.601 HBD",
+    "date": "2016-09-15T15:39:33",
+    "open_pays": "39.998 HIVE"
+  },
+  {
+    "current_pays": "0.331 HBD",
+    "date": "2016-09-15T15:39:33",
+    "open_pays": "0.498 HIVE"
+  },
+  {
+    "current_pays": "19.920 HBD",
+    "date": "2016-09-15T15:37:24",
+    "open_pays": "30.000 HIVE"
+  },
+  {
+    "current_pays": "6.970 HBD",
+    "date": "2016-09-15T15:37:24",
+    "open_pays": "10.497 HIVE"
+  },
+  {
+    "current_pays": "0.421 HIVE",
+    "date": "2016-09-15T15:35:00",
+    "open_pays": "0.279 HBD"
+  },
+  {
+    "current_pays": "3.254 HIVE",
+    "date": "2016-09-15T15:32:00",
+    "open_pays": "2.160 HBD"
+  },
+  {
+    "current_pays": "4.899 HIVE",
+    "date": "2016-09-15T15:31:24",
+    "open_pays": "3.252 HBD"
+  },
+  {
+    "current_pays": "4.899 HIVE",
+    "date": "2016-09-15T15:30:48",
+    "open_pays": "3.252 HBD"
+  },
+  {
+    "current_pays": "4.899 HIVE",
+    "date": "2016-09-15T15:30:12",
+    "open_pays": "3.252 HBD"
+  },
+  {
+    "current_pays": "6.334 HBD",
+    "date": "2016-09-15T15:07:09",
+    "open_pays": "9.523 HIVE"
+  },
+  {
+    "current_pays": "0.423 HBD",
+    "date": "2016-09-15T15:07:09",
+    "open_pays": "0.642 HIVE"
+  },
+  {
+    "current_pays": "2.496 HBD",
+    "date": "2016-09-15T14:58:45",
+    "open_pays": "3.781 HIVE"
+  },
+  {
+    "current_pays": "2.513 HBD",
+    "date": "2016-09-15T14:56:51",
+    "open_pays": "3.807 HIVE"
+  },
+  {
+    "current_pays": "0.528 HBD",
+    "date": "2016-09-15T14:50:15",
+    "open_pays": "0.800 HIVE"
+  },
+  {
+    "current_pays": "9.303 HBD",
+    "date": "2016-09-15T14:46:48",
+    "open_pays": "14.095 HIVE"
+  },
+  {
+    "current_pays": "4.538 HBD",
+    "date": "2016-09-15T14:46:24",
+    "open_pays": "6.875 HIVE"
+  },
+  {
+    "current_pays": "0.319 HBD",
+    "date": "2016-09-15T14:27:24",
+    "open_pays": "0.479 HIVE"
+  },
+  {
+    "current_pays": "0.477 HIVE",
+    "date": "2016-09-15T14:00:18",
+    "open_pays": "0.317 HBD"
+  },
+  {
+    "current_pays": "6.537 HBD",
+    "date": "2016-09-15T13:03:45",
+    "open_pays": "10.079 HIVE"
+  },
+  {
+    "current_pays": "0.262 HBD",
+    "date": "2016-09-15T13:03:36",
+    "open_pays": "0.403 HIVE"
+  },
+  {
+    "current_pays": "6.163 HBD",
+    "date": "2016-09-15T13:03:36",
+    "open_pays": "9.501 HIVE"
+  },
+  {
+    "current_pays": "6.163 HBD",
+    "date": "2016-09-15T13:03:30",
+    "open_pays": "9.501 HIVE"
+  },
+  {
+    "current_pays": "1.789 HIVE",
+    "date": "2016-09-15T12:18:06",
+    "open_pays": "1.152 HBD"
+  },
+  {
+    "current_pays": "5.794 HIVE",
+    "date": "2016-09-15T12:15:27",
+    "open_pays": "3.732 HBD"
+  },
+  {
+    "current_pays": "9.960 HIVE",
+    "date": "2016-09-15T12:15:27",
+    "open_pays": "6.416 HBD"
+  },
+  {
+    "current_pays": "0.130 HBD",
+    "date": "2016-09-15T12:07:03",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.259 HBD",
+    "date": "2016-09-15T12:06:24",
+    "open_pays": "0.399 HIVE"
+  },
+  {
+    "current_pays": "0.518 HBD",
+    "date": "2016-09-15T12:05:45",
+    "open_pays": "0.798 HIVE"
+  },
+  {
+    "current_pays": "1.038 HBD",
+    "date": "2016-09-15T12:05:06",
+    "open_pays": "1.600 HIVE"
+  },
+  {
+    "current_pays": "2.077 HBD",
+    "date": "2016-09-15T12:04:27",
+    "open_pays": "3.201 HIVE"
+  },
+  {
+    "current_pays": "3.085 HBD",
+    "date": "2016-09-15T12:03:48",
+    "open_pays": "4.755 HIVE"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T12:03:24",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "3.085 HBD",
+    "date": "2016-09-15T12:03:09",
+    "open_pays": "4.755 HIVE"
+  },
+  {
+    "current_pays": "3.085 HBD",
+    "date": "2016-09-15T12:02:24",
+    "open_pays": "4.755 HIVE"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T11:55:45",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "10.483 HIVE",
+    "date": "2016-09-15T11:55:27",
+    "open_pays": "6.813 HBD"
+  },
+  {
+    "current_pays": "20.317 HIVE",
+    "date": "2016-09-15T11:55:15",
+    "open_pays": "13.206 HBD"
+  },
+  {
+    "current_pays": "10.483 HIVE",
+    "date": "2016-09-15T11:55:15",
+    "open_pays": "6.814 HBD"
+  },
+  {
+    "current_pays": "11.826 HBD",
+    "date": "2016-09-15T11:55:09",
+    "open_pays": "17.760 HIVE"
+  },
+  {
+    "current_pays": "1.492 HBD",
+    "date": "2016-09-15T11:55:09",
+    "open_pays": "2.249 HIVE"
+  },
+  {
+    "current_pays": "2.512 HIVE",
+    "date": "2016-09-15T11:54:57",
+    "open_pays": "1.670 HBD"
+  },
+  {
+    "current_pays": "9.650 HIVE",
+    "date": "2016-09-15T11:54:57",
+    "open_pays": "6.415 HBD"
+  },
+  {
+    "current_pays": "11.900 HIVE",
+    "date": "2016-09-15T11:54:54",
+    "open_pays": "7.910 HBD"
+  },
+  {
+    "current_pays": "2.289 HIVE",
+    "date": "2016-09-15T11:54:42",
+    "open_pays": "1.521 HBD"
+  },
+  {
+    "current_pays": "8.842 HBD",
+    "date": "2016-09-15T11:54:33",
+    "open_pays": "13.301 HIVE"
+  },
+  {
+    "current_pays": "5.242 HIVE",
+    "date": "2016-09-15T11:54:21",
+    "open_pays": "3.407 HBD"
+  },
+  {
+    "current_pays": "0.130 HBD",
+    "date": "2016-09-15T11:54:03",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.483 HBD",
+    "date": "2016-09-15T11:52:21",
+    "open_pays": "0.725 HIVE"
+  },
+  {
+    "current_pays": "0.130 HBD",
+    "date": "2016-09-15T11:52:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "31.508 HIVE",
+    "date": "2016-09-15T11:37:24",
+    "open_pays": "20.980 HBD"
+  },
+  {
+    "current_pays": "58.365 HBD",
+    "date": "2016-09-15T10:28:00",
+    "open_pays": "90.179 HIVE"
+  },
+  {
+    "current_pays": "4.577 HBD",
+    "date": "2016-09-15T10:26:54",
+    "open_pays": "7.071 HIVE"
+  },
+  {
+    "current_pays": "99.395 HBD",
+    "date": "2016-09-15T10:24:33",
+    "open_pays": "155.984 HIVE"
+  },
+  {
+    "current_pays": "315.000 HBD",
+    "date": "2016-09-15T10:19:30",
+    "open_pays": "494.335 HIVE"
+  },
+  {
+    "current_pays": "26.841 HBD",
+    "date": "2016-09-15T10:09:30",
+    "open_pays": "42.122 HIVE"
+  },
+  {
+    "current_pays": "4.012 HBD",
+    "date": "2016-09-15T09:45:45",
+    "open_pays": "6.296 HIVE"
+  },
+  {
+    "current_pays": "2.169 HBD",
+    "date": "2016-09-15T09:45:30",
+    "open_pays": "3.403 HIVE"
+  },
+  {
+    "current_pays": "1.212 HBD",
+    "date": "2016-09-15T09:45:27",
+    "open_pays": "1.902 HIVE"
+  },
+  {
+    "current_pays": "2.776 HBD",
+    "date": "2016-09-15T09:45:18",
+    "open_pays": "4.356 HIVE"
+  },
+  {
+    "current_pays": "1.902 HBD",
+    "date": "2016-09-15T09:40:42",
+    "open_pays": "2.984 HIVE"
+  },
+  {
+    "current_pays": "2.346 HBD",
+    "date": "2016-09-15T09:28:57",
+    "open_pays": "3.712 HIVE"
+  },
+  {
+    "current_pays": "34.464 HBD",
+    "date": "2016-09-15T09:28:48",
+    "open_pays": "54.520 HIVE"
+  },
+  {
+    "current_pays": "80.134 HBD",
+    "date": "2016-09-15T09:28:36",
+    "open_pays": "126.768 HIVE"
+  },
+  {
+    "current_pays": "9.482 HBD",
+    "date": "2016-09-15T09:28:21",
+    "open_pays": "15.000 HIVE"
+  },
+  {
+    "current_pays": "126.426 HBD",
+    "date": "2016-09-15T09:27:42",
+    "open_pays": "200.000 HIVE"
+  },
+  {
+    "current_pays": "127.692 HBD",
+    "date": "2016-09-15T09:24:51",
+    "open_pays": "200.000 HIVE"
+  },
+  {
+    "current_pays": "15.223 HBD",
+    "date": "2016-09-15T09:23:18",
+    "open_pays": "23.889 HIVE"
+  },
+  {
+    "current_pays": "112.221 HBD",
+    "date": "2016-09-15T09:23:03",
+    "open_pays": "176.110 HIVE"
+  },
+  {
+    "current_pays": "0.130 HBD",
+    "date": "2016-09-15T09:20:54",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.180 HBD",
+    "date": "2016-09-15T09:17:48",
+    "open_pays": "0.291 HIVE"
+  },
+  {
+    "current_pays": "2.422 HBD",
+    "date": "2016-09-15T09:17:48",
+    "open_pays": "3.901 HIVE"
+  },
+  {
+    "current_pays": "121.568 HBD",
+    "date": "2016-09-15T09:17:33",
+    "open_pays": "195.808 HIVE"
+  },
+  {
+    "current_pays": "39.941 HBD",
+    "date": "2016-09-15T09:16:57",
+    "open_pays": "63.615 HIVE"
+  },
+  {
+    "current_pays": "8.508 HBD",
+    "date": "2016-09-15T09:16:42",
+    "open_pays": "13.551 HIVE"
+  },
+  {
+    "current_pays": "41.483 HBD",
+    "date": "2016-09-15T09:16:27",
+    "open_pays": "66.071 HIVE"
+  },
+  {
+    "current_pays": "7.473 HBD",
+    "date": "2016-09-15T09:16:18",
+    "open_pays": "11.902 HIVE"
+  },
+  {
+    "current_pays": "6.389 HBD",
+    "date": "2016-09-15T09:16:12",
+    "open_pays": "10.176 HIVE"
+  },
+  {
+    "current_pays": "1.024 HBD",
+    "date": "2016-09-15T09:16:00",
+    "open_pays": "1.630 HIVE"
+  },
+  {
+    "current_pays": "33.234 HIVE",
+    "date": "2016-09-15T09:15:57",
+    "open_pays": "20.866 HBD"
+  },
+  {
+    "current_pays": "9.996 HIVE",
+    "date": "2016-09-15T09:15:57",
+    "open_pays": "6.276 HBD"
+  },
+  {
+    "current_pays": "80.701 HBD",
+    "date": "2016-09-15T09:13:12",
+    "open_pays": "128.664 HIVE"
+  },
+  {
+    "current_pays": "7.473 HBD",
+    "date": "2016-09-15T09:13:03",
+    "open_pays": "11.914 HIVE"
+  },
+  {
+    "current_pays": "24.423 HBD",
+    "date": "2016-09-15T09:12:57",
+    "open_pays": "38.938 HIVE"
+  },
+  {
+    "current_pays": "20.483 HIVE",
+    "date": "2016-09-15T09:12:51",
+    "open_pays": "13.257 HBD"
+  },
+  {
+    "current_pays": "0.252 HBD",
+    "date": "2016-09-15T09:06:48",
+    "open_pays": "0.389 HIVE"
+  },
+  {
+    "current_pays": "95.886 HBD",
+    "date": "2016-09-15T09:02:21",
+    "open_pays": "158.066 HIVE"
+  },
+  {
+    "current_pays": "7.223 HBD",
+    "date": "2016-09-15T09:02:09",
+    "open_pays": "11.906 HIVE"
+  },
+  {
+    "current_pays": "109.656 HBD",
+    "date": "2016-09-15T09:02:06",
+    "open_pays": "186.926 HIVE"
+  },
+  {
+    "current_pays": "15.116 HBD",
+    "date": "2016-09-15T09:01:51",
+    "open_pays": "26.677 HIVE"
+  },
+  {
+    "current_pays": "15.657 HBD",
+    "date": "2016-09-15T09:01:39",
+    "open_pays": "27.632 HIVE"
+  },
+  {
+    "current_pays": "39.917 HBD",
+    "date": "2016-09-15T09:01:24",
+    "open_pays": "70.446 HIVE"
+  },
+  {
+    "current_pays": "6.747 HBD",
+    "date": "2016-09-15T09:01:21",
+    "open_pays": "11.907 HIVE"
+  },
+  {
+    "current_pays": "1.032 HBD",
+    "date": "2016-09-15T09:01:12",
+    "open_pays": "1.824 HIVE"
+  },
+  {
+    "current_pays": "20.895 HBD",
+    "date": "2016-09-15T09:01:03",
+    "open_pays": "36.876 HIVE"
+  },
+  {
+    "current_pays": "1.350 HBD",
+    "date": "2016-09-15T09:01:00",
+    "open_pays": "2.382 HIVE"
+  },
+  {
+    "current_pays": "1.822 HBD",
+    "date": "2016-09-15T09:00:48",
+    "open_pays": "3.215 HIVE"
+  },
+  {
+    "current_pays": "0.567 HBD",
+    "date": "2016-09-15T09:00:33",
+    "open_pays": "1.000 HIVE"
+  },
+  {
+    "current_pays": "7.075 HBD",
+    "date": "2016-09-15T09:00:33",
+    "open_pays": "12.486 HIVE"
+  },
+  {
+    "current_pays": "4.181 HBD",
+    "date": "2016-09-15T09:00:21",
+    "open_pays": "7.378 HIVE"
+  },
+  {
+    "current_pays": "6.820 HBD",
+    "date": "2016-09-15T09:00:09",
+    "open_pays": "11.625 HIVE"
+  },
+  {
+    "current_pays": "1.802 HBD",
+    "date": "2016-09-15T09:00:09",
+    "open_pays": "3.074 HIVE"
+  },
+  {
+    "current_pays": "0.850 HBD",
+    "date": "2016-09-15T08:59:48",
+    "open_pays": "1.448 HIVE"
+  },
+  {
+    "current_pays": "0.910 HBD",
+    "date": "2016-09-15T08:58:57",
+    "open_pays": "1.500 HIVE"
+  },
+  {
+    "current_pays": "17.306 HBD",
+    "date": "2016-09-15T08:58:57",
+    "open_pays": "28.528 HIVE"
+  },
+  {
+    "current_pays": "20.598 HBD",
+    "date": "2016-09-15T08:55:51",
+    "open_pays": "32.199 HIVE"
+  },
+  {
+    "current_pays": "35.399 HBD",
+    "date": "2016-09-15T08:55:33",
+    "open_pays": "55.337 HIVE"
+  },
+  {
+    "current_pays": "28.533 HBD",
+    "date": "2016-09-15T08:55:21",
+    "open_pays": "44.604 HIVE"
+  },
+  {
+    "current_pays": "6.072 HBD",
+    "date": "2016-09-15T08:55:21",
+    "open_pays": "9.500 HIVE"
+  },
+  {
+    "current_pays": "0.078 HBD",
+    "date": "2016-09-15T08:55:21",
+    "open_pays": "0.131 HIVE"
+  },
+  {
+    "current_pays": "0.901 HBD",
+    "date": "2016-09-15T08:54:21",
+    "open_pays": "1.501 HIVE"
+  },
+  {
+    "current_pays": "32.572 HBD",
+    "date": "2016-09-15T08:53:18",
+    "open_pays": "54.276 HIVE"
+  },
+  {
+    "current_pays": "7.456 HBD",
+    "date": "2016-09-15T08:53:06",
+    "open_pays": "12.424 HIVE"
+  },
+  {
+    "current_pays": "20.913 HBD",
+    "date": "2016-09-15T08:52:57",
+    "open_pays": "34.848 HIVE"
+  },
+  {
+    "current_pays": "18.714 HBD",
+    "date": "2016-09-15T08:52:51",
+    "open_pays": "31.184 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-15T08:52:36",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "6.417 HBD",
+    "date": "2016-09-15T08:52:36",
+    "open_pays": "10.703 HIVE"
+  },
+  {
+    "current_pays": "32.573 HBD",
+    "date": "2016-09-15T08:52:21",
+    "open_pays": "54.323 HIVE"
+  },
+  {
+    "current_pays": "9.285 HBD",
+    "date": "2016-09-15T08:52:09",
+    "open_pays": "15.472 HIVE"
+  },
+  {
+    "current_pays": "17.602 HBD",
+    "date": "2016-09-15T08:51:57",
+    "open_pays": "29.331 HIVE"
+  },
+  {
+    "current_pays": "5.701 HBD",
+    "date": "2016-09-15T08:51:42",
+    "open_pays": "9.500 HIVE"
+  },
+  {
+    "current_pays": "82.043 HBD",
+    "date": "2016-09-15T08:51:27",
+    "open_pays": "136.713 HIVE"
+  },
+  {
+    "current_pays": "36.000 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "21.604 HBD"
+  },
+  {
+    "current_pays": "408.749 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "245.295 HBD"
+  },
+  {
+    "current_pays": "24.917 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "15.000 HBD"
+  },
+  {
+    "current_pays": "14.890 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "8.990 HBD"
+  },
+  {
+    "current_pays": "9.922 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "6.010 HBD"
+  },
+  {
+    "current_pays": "9.922 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "6.010 HBD"
+  },
+  {
+    "current_pays": "15.555 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "9.500 HBD"
+  },
+  {
+    "current_pays": "72.905 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "44.526 HBD"
+  },
+  {
+    "current_pays": "14.890 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "9.140 HBD"
+  },
+  {
+    "current_pays": "8.107 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "5.000 HBD"
+  },
+  {
+    "current_pays": "11.338 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "7.015 HBD"
+  },
+  {
+    "current_pays": "16.136 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "10.000 HBD"
+  },
+  {
+    "current_pays": "24.608 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "15.252 HBD"
+  },
+  {
+    "current_pays": "5.816 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "3.631 HBD"
+  },
+  {
+    "current_pays": "10.365 HIVE",
+    "date": "2016-09-15T08:51:24",
+    "open_pays": "6.471 HBD"
+  },
+  {
+    "current_pays": "2.176 HBD",
+    "date": "2016-09-15T08:50:18",
+    "open_pays": "3.401 HIVE"
+  },
+  {
+    "current_pays": "13.898 HBD",
+    "date": "2016-09-15T08:50:18",
+    "open_pays": "21.726 HIVE"
+  },
+  {
+    "current_pays": "2.467 HBD",
+    "date": "2016-09-15T08:50:00",
+    "open_pays": "3.860 HIVE"
+  },
+  {
+    "current_pays": "0.128 HBD",
+    "date": "2016-09-15T08:49:12",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.252 HBD",
+    "date": "2016-09-15T08:48:33",
+    "open_pays": "0.394 HIVE"
+  },
+  {
+    "current_pays": "0.505 HBD",
+    "date": "2016-09-15T08:47:54",
+    "open_pays": "0.790 HIVE"
+  },
+  {
+    "current_pays": "38.534 HBD",
+    "date": "2016-09-15T08:47:21",
+    "open_pays": "60.238 HIVE"
+  },
+  {
+    "current_pays": "1.010 HBD",
+    "date": "2016-09-15T08:47:12",
+    "open_pays": "1.578 HIVE"
+  },
+  {
+    "current_pays": "12.794 HBD",
+    "date": "2016-09-15T08:47:06",
+    "open_pays": "20.000 HIVE"
+  },
+  {
+    "current_pays": "68.711 HBD",
+    "date": "2016-09-15T08:46:51",
+    "open_pays": "107.412 HIVE"
+  },
+  {
+    "current_pays": "1.609 HBD",
+    "date": "2016-09-15T08:46:39",
+    "open_pays": "2.517 HIVE"
+  },
+  {
+    "current_pays": "1.613 HBD",
+    "date": "2016-09-15T08:46:30",
+    "open_pays": "2.523 HIVE"
+  },
+  {
+    "current_pays": "1.472 HBD",
+    "date": "2016-09-15T08:46:24",
+    "open_pays": "2.301 HIVE"
+  },
+  {
+    "current_pays": "4.222 HBD",
+    "date": "2016-09-15T08:46:18",
+    "open_pays": "6.600 HIVE"
+  },
+  {
+    "current_pays": "13.996 HBD",
+    "date": "2016-09-15T08:46:03",
+    "open_pays": "21.879 HIVE"
+  },
+  {
+    "current_pays": "5.474 HBD",
+    "date": "2016-09-15T08:45:51",
+    "open_pays": "8.557 HIVE"
+  },
+  {
+    "current_pays": "0.960 HBD",
+    "date": "2016-09-15T08:45:36",
+    "open_pays": "1.500 HIVE"
+  },
+  {
+    "current_pays": "1.745 HBD",
+    "date": "2016-09-15T08:45:33",
+    "open_pays": "2.727 HIVE"
+  },
+  {
+    "current_pays": "9.889 HIVE",
+    "date": "2016-09-15T08:45:27",
+    "open_pays": "6.326 HBD"
+  },
+  {
+    "current_pays": "10.108 HIVE",
+    "date": "2016-09-15T08:45:27",
+    "open_pays": "6.466 HBD"
+  },
+  {
+    "current_pays": "4.342 HBD",
+    "date": "2016-09-15T08:44:24",
+    "open_pays": "6.713 HIVE"
+  },
+  {
+    "current_pays": "26.739 HBD",
+    "date": "2016-09-15T08:44:09",
+    "open_pays": "41.885 HIVE"
+  },
+  {
+    "current_pays": "6.326 HBD",
+    "date": "2016-09-15T08:43:48",
+    "open_pays": "9.908 HIVE"
+  },
+  {
+    "current_pays": "5.041 HBD",
+    "date": "2016-09-15T08:43:33",
+    "open_pays": "7.896 HIVE"
+  },
+  {
+    "current_pays": "4.843 HBD",
+    "date": "2016-09-15T08:43:12",
+    "open_pays": "7.687 HIVE"
+  },
+  {
+    "current_pays": "7.497 HBD",
+    "date": "2016-09-15T08:43:03",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "6.331 HBD",
+    "date": "2016-09-15T08:42:57",
+    "open_pays": "10.050 HIVE"
+  },
+  {
+    "current_pays": "20.961 HBD",
+    "date": "2016-09-15T08:42:45",
+    "open_pays": "33.274 HIVE"
+  },
+  {
+    "current_pays": "6.411 HBD",
+    "date": "2016-09-15T08:42:42",
+    "open_pays": "10.177 HIVE"
+  },
+  {
+    "current_pays": "9.917 HBD",
+    "date": "2016-09-15T08:42:27",
+    "open_pays": "15.742 HIVE"
+  },
+  {
+    "current_pays": "11.531 HIVE",
+    "date": "2016-09-15T08:42:18",
+    "open_pays": "7.264 HBD"
+  },
+  {
+    "current_pays": "9.815 HIVE",
+    "date": "2016-09-15T08:42:18",
+    "open_pays": "6.183 HBD"
+  },
+  {
+    "current_pays": "0.527 HBD",
+    "date": "2016-09-15T08:42:15",
+    "open_pays": "0.825 HIVE"
+  },
+  {
+    "current_pays": "3.101 HBD",
+    "date": "2016-09-15T08:42:15",
+    "open_pays": "4.858 HIVE"
+  },
+  {
+    "current_pays": "3.451 HBD",
+    "date": "2016-09-15T08:42:12",
+    "open_pays": "5.405 HIVE"
+  },
+  {
+    "current_pays": "6.552 HBD",
+    "date": "2016-09-15T08:42:03",
+    "open_pays": "10.263 HIVE"
+  },
+  {
+    "current_pays": "6.552 HBD",
+    "date": "2016-09-15T08:41:45",
+    "open_pays": "10.263 HIVE"
+  },
+  {
+    "current_pays": "5.836 HBD",
+    "date": "2016-09-15T08:41:30",
+    "open_pays": "9.141 HIVE"
+  },
+  {
+    "current_pays": "0.354 HBD",
+    "date": "2016-09-15T08:41:30",
+    "open_pays": "0.555 HIVE"
+  },
+  {
+    "current_pays": "6.198 HBD",
+    "date": "2016-09-15T08:41:27",
+    "open_pays": "9.708 HIVE"
+  },
+  {
+    "current_pays": "2.822 HBD",
+    "date": "2016-09-15T08:41:15",
+    "open_pays": "4.420 HIVE"
+  },
+  {
+    "current_pays": "15.529 HIVE",
+    "date": "2016-09-15T08:41:03",
+    "open_pays": "9.914 HBD"
+  },
+  {
+    "current_pays": "10.396 HIVE",
+    "date": "2016-09-15T08:41:03",
+    "open_pays": "6.637 HBD"
+  },
+  {
+    "current_pays": "1.002 HBD",
+    "date": "2016-09-15T08:40:51",
+    "open_pays": "1.549 HIVE"
+  },
+  {
+    "current_pays": "1.406 HBD",
+    "date": "2016-09-15T08:40:36",
+    "open_pays": "2.174 HIVE"
+  },
+  {
+    "current_pays": "1.296 HBD",
+    "date": "2016-09-15T08:40:36",
+    "open_pays": "2.004 HIVE"
+  },
+  {
+    "current_pays": "3.315 HBD",
+    "date": "2016-09-15T08:40:30",
+    "open_pays": "5.121 HIVE"
+  },
+  {
+    "current_pays": "1.399 HBD",
+    "date": "2016-09-15T08:40:24",
+    "open_pays": "2.161 HIVE"
+  },
+  {
+    "current_pays": "7.835 HIVE",
+    "date": "2016-09-15T07:53:57",
+    "open_pays": "5.002 HBD"
+  },
+  {
+    "current_pays": "10.396 HIVE",
+    "date": "2016-09-15T07:53:57",
+    "open_pays": "6.637 HBD"
+  },
+  {
+    "current_pays": "0.471 HIVE",
+    "date": "2016-09-15T07:49:36",
+    "open_pays": "0.316 HBD"
+  },
+  {
+    "current_pays": "2.020 HIVE",
+    "date": "2016-09-15T07:49:09",
+    "open_pays": "1.353 HBD"
+  },
+  {
+    "current_pays": "9.980 HIVE",
+    "date": "2016-09-15T07:49:09",
+    "open_pays": "6.686 HBD"
+  },
+  {
+    "current_pays": "1.991 HIVE",
+    "date": "2016-09-15T07:48:39",
+    "open_pays": "1.333 HBD"
+  },
+  {
+    "current_pays": "9.980 HIVE",
+    "date": "2016-09-15T07:48:39",
+    "open_pays": "6.686 HBD"
+  },
+  {
+    "current_pays": "26.080 HIVE",
+    "date": "2016-09-15T06:50:00",
+    "open_pays": "17.572 HBD"
+  },
+  {
+    "current_pays": "9.433 HIVE",
+    "date": "2016-09-15T06:49:45",
+    "open_pays": "6.355 HBD"
+  },
+  {
+    "current_pays": "105.311 HIVE",
+    "date": "2016-09-15T06:49:33",
+    "open_pays": "70.954 HBD"
+  },
+  {
+    "current_pays": "7.599 HIVE",
+    "date": "2016-09-15T06:49:18",
+    "open_pays": "5.119 HBD"
+  },
+  {
+    "current_pays": "3.616 HBD",
+    "date": "2016-09-15T06:10:57",
+    "open_pays": "5.366 HIVE"
+  },
+  {
+    "current_pays": "6.803 HBD",
+    "date": "2016-09-15T06:10:57",
+    "open_pays": "10.097 HIVE"
+  },
+  {
+    "current_pays": "2.621 HBD",
+    "date": "2016-09-15T04:55:21",
+    "open_pays": "3.891 HIVE"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T04:55:21",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "3.072 HIVE",
+    "date": "2016-09-15T04:55:21",
+    "open_pays": "2.074 HBD"
+  },
+  {
+    "current_pays": "3.072 HIVE",
+    "date": "2016-09-15T04:55:06",
+    "open_pays": "2.073 HBD"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.091 HBD",
+    "date": "2016-09-15T04:55:00",
+    "open_pays": "0.135 HIVE"
+  },
+  {
+    "current_pays": "0.044 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.065 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.135 HBD",
+    "date": "2016-09-15T04:14:21",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "88.145 HIVE",
+    "date": "2016-09-15T03:26:00",
+    "open_pays": "59.497 HBD"
+  },
+  {
+    "current_pays": "28.425 HIVE",
+    "date": "2016-09-15T03:16:27",
+    "open_pays": "19.186 HBD"
+  },
+  {
+    "current_pays": "80.192 HIVE",
+    "date": "2016-09-15T03:09:27",
+    "open_pays": "54.129 HBD"
+  },
+  {
+    "current_pays": "99.734 HIVE",
+    "date": "2016-09-15T03:09:06",
+    "open_pays": "67.320 HBD"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-15T03:09:06",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "8.842 HIVE",
+    "date": "2016-09-15T02:55:21",
+    "open_pays": "5.990 HBD"
+  },
+  {
+    "current_pays": "9.893 HIVE",
+    "date": "2016-09-15T02:55:21",
+    "open_pays": "6.702 HBD"
+  },
+  {
+    "current_pays": "19.808 HIVE",
+    "date": "2016-09-15T02:44:36",
+    "open_pays": "13.408 HBD"
+  },
+  {
+    "current_pays": "3.204 HBD",
+    "date": "2016-09-15T02:42:48",
+    "open_pays": "4.734 HIVE"
+  },
+  {
+    "current_pays": "0.014 HBD",
+    "date": "2016-09-15T02:41:15",
+    "open_pays": "0.020 HIVE"
+  },
+  {
+    "current_pays": "17.561 HBD",
+    "date": "2016-09-15T02:02:48",
+    "open_pays": "25.902 HIVE"
+  },
+  {
+    "current_pays": "29.652 HBD",
+    "date": "2016-09-15T02:02:48",
+    "open_pays": "43.769 HIVE"
+  },
+  {
+    "current_pays": "7.091 HBD",
+    "date": "2016-09-15T02:02:48",
+    "open_pays": "10.467 HIVE"
+  },
+  {
+    "current_pays": "6.773 HBD",
+    "date": "2016-09-15T02:02:48",
+    "open_pays": "10.000 HIVE"
+  },
+  {
+    "current_pays": "6.875 HIVE",
+    "date": "2016-09-15T01:49:15",
+    "open_pays": "4.431 HBD"
+  },
+  {
+    "current_pays": "2.000 HBD",
+    "date": "2016-09-15T01:43:45",
+    "open_pays": "2.952 HIVE"
+  },
+  {
+    "current_pays": "17.186 HBD",
+    "date": "2016-09-15T01:41:18",
+    "open_pays": "25.388 HIVE"
+  },
+  {
+    "current_pays": "0.636 HBD",
+    "date": "2016-09-15T01:39:42",
+    "open_pays": "0.940 HIVE"
+  },
+  {
+    "current_pays": "6.093 HBD",
+    "date": "2016-09-15T01:38:09",
+    "open_pays": "9.000 HIVE"
+  },
+  {
+    "current_pays": "6.087 HBD",
+    "date": "2016-09-15T01:36:42",
+    "open_pays": "9.000 HIVE"
+  },
+  {
+    "current_pays": "6.950 HBD",
+    "date": "2016-09-15T01:36:42",
+    "open_pays": "10.276 HIVE"
+  },
+  {
+    "current_pays": "115.104 HIVE",
+    "date": "2016-09-15T01:07:51",
+    "open_pays": "58.128 HBD"
+  },
+  {
+    "current_pays": "9.980 HIVE",
+    "date": "2016-09-15T01:07:51",
+    "open_pays": "5.040 HBD"
+  },
+  {
+    "current_pays": "275.714 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "139.238 HBD"
+  },
+  {
+    "current_pays": "50.000 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "25.300 HBD"
+  },
+  {
+    "current_pays": "98.262 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "49.819 HBD"
+  },
+  {
+    "current_pays": "1.973 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "1.027 HBD"
+  },
+  {
+    "current_pays": "1.528 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "0.919 HBD"
+  },
+  {
+    "current_pays": "1.632 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "1.028 HBD"
+  },
+  {
+    "current_pays": "50.000 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "31.706 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "5.708 HBD"
+  },
+  {
+    "current_pays": "2.951 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "2.000 HBD"
+  },
+  {
+    "current_pays": "9.767 HIVE",
+    "date": "2016-09-15T01:06:36",
+    "open_pays": "6.620 HBD"
+  },
+  {
+    "current_pays": "0.200 HIVE",
+    "date": "2016-09-15T01:06:03",
+    "open_pays": "0.135 HBD"
+  },
+  {
+    "current_pays": "6.040 HBD",
+    "date": "2016-09-15T01:00:51",
+    "open_pays": "8.909 HIVE"
+  },
+  {
+    "current_pays": "0.335 HIVE",
+    "date": "2016-09-15T00:48:27",
+    "open_pays": "0.224 HBD"
+  },
+  {
+    "current_pays": "0.669 HIVE",
+    "date": "2016-09-15T00:47:51",
+    "open_pays": "0.448 HBD"
+  },
+  {
+    "current_pays": "1.338 HIVE",
+    "date": "2016-09-15T00:47:15",
+    "open_pays": "0.896 HBD"
+  },
+  {
+    "current_pays": "2.676 HIVE",
+    "date": "2016-09-15T00:46:39",
+    "open_pays": "1.792 HBD"
+  },
+  {
+    "current_pays": "5.352 HIVE",
+    "date": "2016-09-15T00:45:57",
+    "open_pays": "3.585 HBD"
+  },
+  {
+    "current_pays": "1.319 HBD",
+    "date": "2016-09-15T00:44:24",
+    "open_pays": "1.945 HIVE"
+  },
+  {
+    "current_pays": "5.366 HBD",
+    "date": "2016-09-15T00:44:24",
+    "open_pays": "7.921 HIVE"
+  },
+  {
+    "current_pays": "10.704 HIVE",
+    "date": "2016-09-15T00:42:24",
+    "open_pays": "7.256 HBD"
+  },
+  {
+    "current_pays": "32.517 HBD",
+    "date": "2016-09-15T00:42:09",
+    "open_pays": "48.000 HIVE"
+  },
+  {
+    "current_pays": "20.438 HBD",
+    "date": "2016-09-15T00:42:09",
+    "open_pays": "30.191 HIVE"
+  },
+  {
+    "current_pays": "6.092 HBD",
+    "date": "2016-09-15T00:42:09",
+    "open_pays": "9.000 HIVE"
+  },
+  {
+    "current_pays": "8.563 HBD",
+    "date": "2016-09-15T00:17:15",
+    "open_pays": "12.649 HIVE"
+  },
+  {
+    "current_pays": "4.202 HBD",
+    "date": "2016-09-14T23:21:06",
+    "open_pays": "7.004 HIVE"
+  },
+  {
+    "current_pays": "1.177 HBD",
+    "date": "2016-09-14T23:21:06",
+    "open_pays": "1.962 HIVE"
+  },
+  {
+    "current_pays": "5.121 HBD",
+    "date": "2016-09-14T23:21:03",
+    "open_pays": "8.535 HIVE"
+  },
+  {
+    "current_pays": "6.569 HBD",
+    "date": "2016-09-14T23:20:54",
+    "open_pays": "10.948 HIVE"
+  },
+  {
+    "current_pays": "4.709 HBD",
+    "date": "2016-09-14T23:20:45",
+    "open_pays": "7.848 HIVE"
+  },
+  {
+    "current_pays": "1.562 HBD",
+    "date": "2016-09-14T23:20:36",
+    "open_pays": "2.603 HIVE"
+  },
+  {
+    "current_pays": "2.100 HBD",
+    "date": "2016-09-14T23:20:24",
+    "open_pays": "3.500 HIVE"
+  },
+  {
+    "current_pays": "3.946 HBD",
+    "date": "2016-09-14T23:20:18",
+    "open_pays": "6.576 HIVE"
+  },
+  {
+    "current_pays": "10000.000 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "6000.000 HBD"
+  },
+  {
+    "current_pays": "327.000 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "199.470 HBD"
+  },
+  {
+    "current_pays": "1.250 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "0.764 HBD"
+  },
+  {
+    "current_pays": "966.906 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "590.978 HBD"
+  },
+  {
+    "current_pays": "2.780 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "1.702 HBD"
+  },
+  {
+    "current_pays": "191.650 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "120.740 HBD"
+  },
+  {
+    "current_pays": "31.497 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "20.000 HBD"
+  },
+  {
+    "current_pays": "5.000 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "3.182 HBD"
+  },
+  {
+    "current_pays": "7.843 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "5.000 HBD"
+  },
+  {
+    "current_pays": "36.402 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "23.227 HBD"
+  },
+  {
+    "current_pays": "39.267 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "25.080 HBD"
+  },
+  {
+    "current_pays": "31.296 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "20.000 HBD"
+  },
+  {
+    "current_pays": "40.562 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "25.922 HBD"
+  },
+  {
+    "current_pays": "53.144 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "33.996 HBD"
+  },
+  {
+    "current_pays": "40.562 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "25.963 HBD"
+  },
+  {
+    "current_pays": "40.562 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "26.000 HBD"
+  },
+  {
+    "current_pays": "2.848 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "1.827 HBD"
+  },
+  {
+    "current_pays": "45.043 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "29.000 HBD"
+  },
+  {
+    "current_pays": "0.657 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "0.423 HBD"
+  },
+  {
+    "current_pays": "0.110 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "0.071 HBD"
+  },
+  {
+    "current_pays": "30.774 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "20.000 HBD"
+  },
+  {
+    "current_pays": "45.043 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "29.341 HBD"
+  },
+  {
+    "current_pays": "30.774 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "20.066 HBD"
+  },
+  {
+    "current_pays": "30.774 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "20.084 HBD"
+  },
+  {
+    "current_pays": "15.300 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "9.991 HBD"
+  },
+  {
+    "current_pays": "15.300 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "10.000 HBD"
+  },
+  {
+    "current_pays": "15.300 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "10.004 HBD"
+  },
+  {
+    "current_pays": "15.300 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "10.006 HBD"
+  },
+  {
+    "current_pays": "30.774 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "20.127 HBD"
+  },
+  {
+    "current_pays": "45.043 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "29.464 HBD"
+  },
+  {
+    "current_pays": "6.300 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "4.123 HBD"
+  },
+  {
+    "current_pays": "81.884 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "53.595 HBD"
+  },
+  {
+    "current_pays": "19.954 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "13.088 HBD"
+  },
+  {
+    "current_pays": "48.000 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "31.488 HBD"
+  },
+  {
+    "current_pays": "10.407 HIVE",
+    "date": "2016-09-14T23:20:12",
+    "open_pays": "6.827 HBD"
+  },
+  {
+    "current_pays": "1.341 HIVE",
+    "date": "2016-09-14T22:46:15",
+    "open_pays": "0.879 HBD"
+  },
+  {
+    "current_pays": "10.014 HIVE",
+    "date": "2016-09-14T22:46:15",
+    "open_pays": "6.568 HBD"
+  },
+  {
+    "current_pays": "1.028 HBD",
+    "date": "2016-09-14T22:37:42",
+    "open_pays": "1.515 HIVE"
+  },
+  {
+    "current_pays": "88.999 HBD",
+    "date": "2016-09-14T21:54:06",
+    "open_pays": "131.268 HIVE"
+  },
+  {
+    "current_pays": "0.988 HBD",
+    "date": "2016-09-14T21:54:06",
+    "open_pays": "1.459 HIVE"
+  },
+  {
+    "current_pays": "0.016 HIVE",
+    "date": "2016-09-14T21:51:33",
+    "open_pays": "0.010 HBD"
+  },
+  {
+    "current_pays": "43.455 HBD",
+    "date": "2016-09-14T21:18:03",
+    "open_pays": "64.315 HIVE"
+  },
+  {
+    "current_pays": "0.730 HBD",
+    "date": "2016-09-14T21:18:03",
+    "open_pays": "1.081 HIVE"
+  },
+  {
+    "current_pays": "27.456 HIVE",
+    "date": "2016-09-14T21:17:30",
+    "open_pays": "18.551 HBD"
+  },
+  {
+    "current_pays": "3.496 HIVE",
+    "date": "2016-09-14T21:14:57",
+    "open_pays": "2.362 HBD"
+  },
+  {
+    "current_pays": "2.589 HIVE",
+    "date": "2016-09-14T21:14:00",
+    "open_pays": "1.749 HBD"
+  },
+  {
+    "current_pays": "67.795 HBD",
+    "date": "2016-09-14T20:56:27",
+    "open_pays": "99.998 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-14T20:56:12",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "19.967 HBD",
+    "date": "2016-09-14T20:56:12",
+    "open_pays": "29.473 HIVE"
+  },
+  {
+    "current_pays": "0.261 HBD",
+    "date": "2016-09-14T20:56:12",
+    "open_pays": "0.386 HIVE"
+  },
+  {
+    "current_pays": "45.979 HBD",
+    "date": "2016-09-14T20:55:36",
+    "open_pays": "68.000 HIVE"
+  },
+  {
+    "current_pays": "27.846 HBD",
+    "date": "2016-09-14T20:19:45",
+    "open_pays": "41.438 HIVE"
+  },
+  {
+    "current_pays": "6.719 HBD",
+    "date": "2016-09-14T20:19:24",
+    "open_pays": "10.000 HIVE"
+  },
+  {
+    "current_pays": "6.919 HBD",
+    "date": "2016-09-14T20:17:57",
+    "open_pays": "10.304 HIVE"
+  },
+  {
+    "current_pays": "0.045 HBD",
+    "date": "2016-09-14T19:54:06",
+    "open_pays": "0.067 HIVE"
+  },
+  {
+    "current_pays": "14.795 HIVE",
+    "date": "2016-09-14T19:17:27",
+    "open_pays": "9.942 HBD"
+  },
+  {
+    "current_pays": "0.200 HIVE",
+    "date": "2016-09-14T19:16:21",
+    "open_pays": "0.134 HBD"
+  },
+  {
+    "current_pays": "3.000 HBD",
+    "date": "2016-09-14T19:12:09",
+    "open_pays": "4.464 HIVE"
+  },
+  {
+    "current_pays": "0.260 HBD",
+    "date": "2016-09-14T19:08:48",
+    "open_pays": "0.386 HIVE"
+  },
+  {
+    "current_pays": "3.506 HBD",
+    "date": "2016-09-14T19:05:51",
+    "open_pays": "5.217 HIVE"
+  },
+  {
+    "current_pays": "6.574 HBD",
+    "date": "2016-09-14T19:05:51",
+    "open_pays": "9.783 HIVE"
+  },
+  {
+    "current_pays": "0.152 HBD",
+    "date": "2016-09-14T18:31:00",
+    "open_pays": "0.235 HIVE"
+  },
+  {
+    "current_pays": "0.229 HIVE",
+    "date": "2016-09-14T18:30:51",
+    "open_pays": "0.148 HBD"
+  },
+  {
+    "current_pays": "35.000 HIVE",
+    "date": "2016-09-14T18:17:21",
+    "open_pays": "23.450 HBD"
+  },
+  {
+    "current_pays": "0.476 HIVE",
+    "date": "2016-09-14T18:17:21",
+    "open_pays": "0.320 HBD"
+  },
+  {
+    "current_pays": "9.972 HIVE",
+    "date": "2016-09-14T18:02:24",
+    "open_pays": "6.703 HBD"
+  },
+  {
+    "current_pays": "9.966 HIVE",
+    "date": "2016-09-14T18:02:24",
+    "open_pays": "6.699 HBD"
+  },
+  {
+    "current_pays": "4.238 HIVE",
+    "date": "2016-09-14T17:52:12",
+    "open_pays": "2.848 HBD"
+  },
+  {
+    "current_pays": "0.200 HIVE",
+    "date": "2016-09-14T17:39:36",
+    "open_pays": "0.134 HBD"
+  },
+  {
+    "current_pays": "0.262 HIVE",
+    "date": "2016-09-14T17:38:57",
+    "open_pays": "0.176 HBD"
+  },
+  {
+    "current_pays": "0.523 HIVE",
+    "date": "2016-09-14T17:36:51",
+    "open_pays": "0.351 HBD"
+  },
+  {
+    "current_pays": "1.046 HIVE",
+    "date": "2016-09-14T17:36:12",
+    "open_pays": "0.703 HBD"
+  },
+  {
+    "current_pays": "2.091 HIVE",
+    "date": "2016-09-14T17:35:36",
+    "open_pays": "1.405 HBD"
+  },
+  {
+    "current_pays": "4.184 HIVE",
+    "date": "2016-09-14T17:35:00",
+    "open_pays": "2.812 HBD"
+  },
+  {
+    "current_pays": "4.983 HIVE",
+    "date": "2016-09-14T17:34:24",
+    "open_pays": "3.349 HBD"
+  },
+  {
+    "current_pays": "0.123 HBD",
+    "date": "2016-09-14T17:33:57",
+    "open_pays": "0.183 HIVE"
+  },
+  {
+    "current_pays": "0.220 HIVE",
+    "date": "2016-09-14T17:15:54",
+    "open_pays": "0.148 HBD"
+  },
+  {
+    "current_pays": "0.221 HIVE",
+    "date": "2016-09-14T17:06:21",
+    "open_pays": "0.148 HBD"
+  },
+  {
+    "current_pays": "17.000 HIVE",
+    "date": "2016-09-14T16:45:06",
+    "open_pays": "11.389 HBD"
+  },
+  {
+    "current_pays": "0.079 HBD",
+    "date": "2016-09-14T16:02:00",
+    "open_pays": "0.116 HIVE"
+  },
+  {
+    "current_pays": "5.971 HBD",
+    "date": "2016-09-14T16:00:42",
+    "open_pays": "8.813 HIVE"
+  },
+  {
+    "current_pays": "0.209 HIVE",
+    "date": "2016-09-14T15:59:06",
+    "open_pays": "0.140 HBD"
+  },
+  {
+    "current_pays": "0.417 HIVE",
+    "date": "2016-09-14T15:58:30",
+    "open_pays": "0.279 HBD"
+  },
+  {
+    "current_pays": "0.835 HIVE",
+    "date": "2016-09-14T15:57:39",
+    "open_pays": "0.559 HBD"
+  },
+  {
+    "current_pays": "1.669 HIVE",
+    "date": "2016-09-14T15:57:03",
+    "open_pays": "1.118 HBD"
+  },
+  {
+    "current_pays": "3.339 HIVE",
+    "date": "2016-09-14T15:56:27",
+    "open_pays": "2.237 HBD"
+  },
+  {
+    "current_pays": "26.473 HIVE",
+    "date": "2016-09-14T15:55:48",
+    "open_pays": "17.736 HBD"
+  },
+  {
+    "current_pays": "6.678 HIVE",
+    "date": "2016-09-14T15:55:39",
+    "open_pays": "4.474 HBD"
+  },
+  {
+    "current_pays": "13.355 HIVE",
+    "date": "2016-09-14T15:55:03",
+    "open_pays": "8.947 HBD"
+  },
+  {
+    "current_pays": "3.521 HBD",
+    "date": "2016-09-14T15:20:42",
+    "open_pays": "5.189 HIVE"
+  },
+  {
+    "current_pays": "0.769 HBD",
+    "date": "2016-09-14T15:20:42",
+    "open_pays": "1.149 HIVE"
+  },
+  {
+    "current_pays": "5.888 HBD",
+    "date": "2016-09-14T15:20:42",
+    "open_pays": "8.794 HIVE"
+  },
+  {
+    "current_pays": "0.134 HBD",
+    "date": "2016-09-14T14:23:12",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.251 HBD",
+    "date": "2016-09-14T14:22:33",
+    "open_pays": "0.374 HIVE"
+  },
+  {
+    "current_pays": "0.503 HBD",
+    "date": "2016-09-14T14:21:51",
+    "open_pays": "0.751 HIVE"
+  },
+  {
+    "current_pays": "0.234 HBD",
+    "date": "2016-09-14T14:20:33",
+    "open_pays": "0.349 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-14T14:19:54",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "6.071 HBD",
+    "date": "2016-09-14T14:19:54",
+    "open_pays": "9.068 HIVE"
+  },
+  {
+    "current_pays": "0.938 HBD",
+    "date": "2016-09-14T14:19:06",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "1.877 HBD",
+    "date": "2016-09-14T14:18:24",
+    "open_pays": "2.803 HIVE"
+  },
+  {
+    "current_pays": "2.808 HBD",
+    "date": "2016-09-14T14:17:45",
+    "open_pays": "4.193 HIVE"
+  },
+  {
+    "current_pays": "0.122 HBD",
+    "date": "2016-09-14T14:12:09",
+    "open_pays": "0.182 HIVE"
+  },
+  {
+    "current_pays": "0.134 HBD",
+    "date": "2016-09-14T14:11:03",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.163 HBD",
+    "date": "2016-09-14T14:10:21",
+    "open_pays": "0.243 HIVE"
+  },
+  {
+    "current_pays": "0.327 HBD",
+    "date": "2016-09-14T14:09:42",
+    "open_pays": "0.488 HIVE"
+  },
+  {
+    "current_pays": "0.654 HBD",
+    "date": "2016-09-14T14:09:03",
+    "open_pays": "0.976 HIVE"
+  },
+  {
+    "current_pays": "15.541 HBD",
+    "date": "2016-09-14T14:05:18",
+    "open_pays": "24.283 HIVE"
+  },
+  {
+    "current_pays": "6.407 HBD",
+    "date": "2016-09-14T14:05:18",
+    "open_pays": "10.019 HIVE"
+  },
+  {
+    "current_pays": "6.528 HBD",
+    "date": "2016-09-14T14:05:12",
+    "open_pays": "10.200 HIVE"
+  },
+  {
+    "current_pays": "2.944 HBD",
+    "date": "2016-09-14T14:05:09",
+    "open_pays": "4.600 HIVE"
+  },
+  {
+    "current_pays": "2.016 HBD",
+    "date": "2016-09-14T14:05:06",
+    "open_pays": "3.150 HIVE"
+  },
+  {
+    "current_pays": "10.938 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "7.000 HBD"
+  },
+  {
+    "current_pays": "5.760 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "3.687 HBD"
+  },
+  {
+    "current_pays": "9.236 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "5.912 HBD"
+  },
+  {
+    "current_pays": "13.942 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "9.141 HBD"
+  },
+  {
+    "current_pays": "109.632 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "72.357 HBD"
+  },
+  {
+    "current_pays": "63.190 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "41.800 HBD"
+  },
+  {
+    "current_pays": "13.121 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "8.791 HBD"
+  },
+  {
+    "current_pays": "3.403 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "2.280 HBD"
+  },
+  {
+    "current_pays": "106.959 HIVE",
+    "date": "2016-09-14T14:05:00",
+    "open_pays": "72.572 HBD"
+  },
+  {
+    "current_pays": "0.199 HBD",
+    "date": "2016-09-14T13:49:00",
+    "open_pays": "0.292 HIVE"
+  },
+  {
+    "current_pays": "13.597 HBD",
+    "date": "2016-09-14T13:48:21",
+    "open_pays": "20.000 HIVE"
+  },
+  {
+    "current_pays": "11.243 HIVE",
+    "date": "2016-09-14T13:40:45",
+    "open_pays": "7.628 HBD"
+  },
+  {
+    "current_pays": "15.766 HBD",
+    "date": "2016-09-14T13:34:51",
+    "open_pays": "23.191 HIVE"
+  },
+  {
+    "current_pays": "67.800 HBD",
+    "date": "2016-09-14T13:06:45",
+    "open_pays": "100.000 HIVE"
+  },
+  {
+    "current_pays": "0.179 HIVE",
+    "date": "2016-09-14T12:29:09",
+    "open_pays": "0.120 HBD"
+  },
+  {
+    "current_pays": "0.309 HIVE",
+    "date": "2016-09-14T12:21:21",
+    "open_pays": "0.207 HBD"
+  },
+  {
+    "current_pays": "0.371 HIVE",
+    "date": "2016-09-14T12:20:45",
+    "open_pays": "0.248 HBD"
+  },
+  {
+    "current_pays": "0.989 HIVE",
+    "date": "2016-09-14T12:18:51",
+    "open_pays": "0.662 HBD"
+  },
+  {
+    "current_pays": "1.978 HIVE",
+    "date": "2016-09-14T12:18:15",
+    "open_pays": "1.325 HBD"
+  },
+  {
+    "current_pays": "3.956 HIVE",
+    "date": "2016-09-14T12:17:39",
+    "open_pays": "2.650 HBD"
+  },
+  {
+    "current_pays": "4.753 HIVE",
+    "date": "2016-09-14T12:17:03",
+    "open_pays": "3.184 HBD"
+  },
+  {
+    "current_pays": "4.753 HIVE",
+    "date": "2016-09-14T12:16:27",
+    "open_pays": "3.184 HBD"
+  },
+  {
+    "current_pays": "4.753 HIVE",
+    "date": "2016-09-14T12:15:51",
+    "open_pays": "3.184 HBD"
+  },
+  {
+    "current_pays": "5.194 HIVE",
+    "date": "2016-09-14T12:12:21",
+    "open_pays": "3.479 HBD"
+  },
+  {
+    "current_pays": "0.709 HBD",
+    "date": "2016-09-14T12:07:06",
+    "open_pays": "1.042 HIVE"
+  },
+  {
+    "current_pays": "2.271 HBD",
+    "date": "2016-09-14T12:07:06",
+    "open_pays": "3.342 HIVE"
+  },
+  {
+    "current_pays": "2.000 HBD",
+    "date": "2016-09-14T12:03:24",
+    "open_pays": "2.941 HIVE"
+  },
+  {
+    "current_pays": "7.236 HBD",
+    "date": "2016-09-14T12:01:06",
+    "open_pays": "10.643 HIVE"
+  },
+  {
+    "current_pays": "0.736 HBD",
+    "date": "2016-09-14T11:32:39",
+    "open_pays": "1.082 HIVE"
+  },
+  {
+    "current_pays": "99.840 HBD",
+    "date": "2016-09-14T11:25:21",
+    "open_pays": "146.823 HIVE"
+  },
+  {
+    "current_pays": "1.805 HIVE",
+    "date": "2016-09-14T11:15:24",
+    "open_pays": "1.209 HBD"
+  },
+  {
+    "current_pays": "7.353 HIVE",
+    "date": "2016-09-14T11:15:24",
+    "open_pays": "5.000 HBD"
+  },
+  {
+    "current_pays": "97.305 HBD",
+    "date": "2016-09-14T11:11:09",
+    "open_pays": "143.095 HIVE"
+  },
+  {
+    "current_pays": "52.405 HBD",
+    "date": "2016-09-14T11:10:24",
+    "open_pays": "77.066 HIVE"
+  },
+  {
+    "current_pays": "111.119 HBD",
+    "date": "2016-09-14T10:55:18",
+    "open_pays": "163.410 HIVE"
+  },
+  {
+    "current_pays": "118.278 HBD",
+    "date": "2016-09-14T10:54:57",
+    "open_pays": "173.938 HIVE"
+  },
+  {
+    "current_pays": "145.298 HBD",
+    "date": "2016-09-14T10:54:45",
+    "open_pays": "213.673 HIVE"
+  },
+  {
+    "current_pays": "21.049 HBD",
+    "date": "2016-09-14T10:54:33",
+    "open_pays": "31.000 HIVE"
+  },
+  {
+    "current_pays": "34.000 HBD",
+    "date": "2016-09-14T10:51:03",
+    "open_pays": "50.000 HIVE"
+  },
+  {
+    "current_pays": "9.744 HBD",
+    "date": "2016-09-14T10:26:27",
+    "open_pays": "14.329 HIVE"
+  },
+  {
+    "current_pays": "356.828 HBD",
+    "date": "2016-09-14T10:26:15",
+    "open_pays": "524.747 HIVE"
+  },
+  {
+    "current_pays": "497.218 HBD",
+    "date": "2016-09-14T10:25:48",
+    "open_pays": "731.202 HIVE"
+  },
+  {
+    "current_pays": "5.892 HBD",
+    "date": "2016-09-14T10:24:45",
+    "open_pays": "8.664 HIVE"
+  },
+  {
+    "current_pays": "40.008 HBD",
+    "date": "2016-09-14T10:24:36",
+    "open_pays": "58.835 HIVE"
+  },
+  {
+    "current_pays": "74.379 HBD",
+    "date": "2016-09-14T10:24:24",
+    "open_pays": "109.380 HIVE"
+  },
+  {
+    "current_pays": "57.130 HBD",
+    "date": "2016-09-14T10:24:12",
+    "open_pays": "84.014 HIVE"
+  },
+  {
+    "current_pays": "39.519 HBD",
+    "date": "2016-09-14T10:23:57",
+    "open_pays": "58.116 HIVE"
+  },
+  {
+    "current_pays": "8.092 HBD",
+    "date": "2016-09-14T10:23:51",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "4.363 HBD",
+    "date": "2016-09-14T10:23:45",
+    "open_pays": "6.416 HIVE"
+  },
+  {
+    "current_pays": "11.929 HBD",
+    "date": "2016-09-14T10:23:33",
+    "open_pays": "17.542 HIVE"
+  },
+  {
+    "current_pays": "2.145 HBD",
+    "date": "2016-09-14T10:23:21",
+    "open_pays": "3.154 HIVE"
+  },
+  {
+    "current_pays": "93.783 HBD",
+    "date": "2016-09-14T10:22:06",
+    "open_pays": "137.916 HIVE"
+  },
+  {
+    "current_pays": "135.268 HBD",
+    "date": "2016-09-14T10:21:54",
+    "open_pays": "198.923 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-14T10:21:42",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "54.399 HBD",
+    "date": "2016-09-14T10:21:42",
+    "open_pays": "80.000 HIVE"
+  },
+  {
+    "current_pays": "0.275 HBD",
+    "date": "2016-09-14T10:21:42",
+    "open_pays": "0.406 HIVE"
+  },
+  {
+    "current_pays": "48.754 HBD",
+    "date": "2016-09-14T10:13:30",
+    "open_pays": "72.014 HIVE"
+  },
+  {
+    "current_pays": "0.041 HBD",
+    "date": "2016-09-14T09:59:57",
+    "open_pays": "0.060 HIVE"
+  },
+  {
+    "current_pays": "9.429 HBD",
+    "date": "2016-09-14T09:22:03",
+    "open_pays": "13.927 HIVE"
+  },
+  {
+    "current_pays": "1.792 HIVE",
+    "date": "2016-09-14T09:18:48",
+    "open_pays": "1.182 HBD"
+  },
+  {
+    "current_pays": "0.020 HBD",
+    "date": "2016-09-14T09:04:12",
+    "open_pays": "0.029 HIVE"
+  },
+  {
+    "current_pays": "10.416 HBD",
+    "date": "2016-09-14T09:02:09",
+    "open_pays": "15.385 HIVE"
+  },
+  {
+    "current_pays": "26.105 HBD",
+    "date": "2016-09-14T08:55:18",
+    "open_pays": "38.559 HIVE"
+  },
+  {
+    "current_pays": "25.028 HBD",
+    "date": "2016-09-14T08:55:06",
+    "open_pays": "36.968 HIVE"
+  },
+  {
+    "current_pays": "18.995 HBD",
+    "date": "2016-09-14T08:54:51",
+    "open_pays": "28.057 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:54:39",
+    "open_pays": "9.612 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-14T08:54:18",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:54:18",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "10.416 HBD",
+    "date": "2016-09-14T08:54:06",
+    "open_pays": "15.385 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:54:06",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "5.445 HBD",
+    "date": "2016-09-14T08:53:54",
+    "open_pays": "8.042 HIVE"
+  },
+  {
+    "current_pays": "1.063 HBD",
+    "date": "2016-09-14T08:53:42",
+    "open_pays": "1.570 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:53:27",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:53:15",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:52:57",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:52:42",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:52:30",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:51:51",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "6.508 HBD",
+    "date": "2016-09-14T08:51:39",
+    "open_pays": "9.613 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-14T08:51:24",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "6.372 HBD",
+    "date": "2016-09-14T08:51:24",
+    "open_pays": "9.413 HIVE"
+  },
+  {
+    "current_pays": "0.136 HBD",
+    "date": "2016-09-14T08:47:27",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "5.812 HBD",
+    "date": "2016-09-14T08:47:09",
+    "open_pays": "8.584 HIVE"
+  },
+  {
+    "current_pays": "0.136 HBD",
+    "date": "2016-09-14T08:29:00",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.136 HBD",
+    "date": "2016-09-14T08:28:18",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.395 HBD",
+    "date": "2016-09-14T08:26:54",
+    "open_pays": "0.583 HIVE"
+  },
+  {
+    "current_pays": "0.791 HBD",
+    "date": "2016-09-14T08:26:15",
+    "open_pays": "1.168 HIVE"
+  },
+  {
+    "current_pays": "1.584 HBD",
+    "date": "2016-09-14T08:25:36",
+    "open_pays": "2.339 HIVE"
+  },
+  {
+    "current_pays": "3.170 HBD",
+    "date": "2016-09-14T08:24:54",
+    "open_pays": "4.682 HIVE"
+  },
+  {
+    "current_pays": "4.658 HIVE",
+    "date": "2016-09-14T08:10:42",
+    "open_pays": "3.033 HBD"
+  },
+  {
+    "current_pays": "3.342 HIVE",
+    "date": "2016-09-14T08:10:42",
+    "open_pays": "2.228 HBD"
+  },
+  {
+    "current_pays": "0.112 HIVE",
+    "date": "2016-09-14T08:09:12",
+    "open_pays": "0.076 HBD"
+  },
+  {
+    "current_pays": "1.085 HIVE",
+    "date": "2016-09-14T08:09:12",
+    "open_pays": "0.737 HBD"
+  },
+  {
+    "current_pays": "1.135 HIVE",
+    "date": "2016-09-14T08:08:36",
+    "open_pays": "0.770 HBD"
+  },
+  {
+    "current_pays": "0.565 HIVE",
+    "date": "2016-09-14T08:08:36",
+    "open_pays": "0.384 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T08:03:15",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "4.782 HIVE",
+    "date": "2016-09-14T08:02:57",
+    "open_pays": "3.246 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:58:00",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:57:33",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:57:06",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:56:42",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:56:15",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:55:48",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:55:21",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:54:42",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:54:18",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:53:51",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:53:27",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "9.000 HIVE",
+    "date": "2016-09-14T07:52:57",
+    "open_pays": "6.109 HBD"
+  },
+  {
+    "current_pays": "0.150 HIVE",
+    "date": "2016-09-14T07:51:15",
+    "open_pays": "0.101 HBD"
+  },
+  {
+    "current_pays": "0.161 HIVE",
+    "date": "2016-09-14T07:51:15",
+    "open_pays": "0.110 HBD"
+  },
+  {
+    "current_pays": "2.062 HBD",
+    "date": "2016-09-14T07:46:51",
+    "open_pays": "3.032 HIVE"
+  },
+  {
+    "current_pays": "2.750 HBD",
+    "date": "2016-09-14T07:45:27",
+    "open_pays": "4.044 HIVE"
+  },
+  {
+    "current_pays": "0.379 HBD",
+    "date": "2016-09-14T07:32:30",
+    "open_pays": "0.557 HIVE"
+  },
+  {
+    "current_pays": "0.136 HBD",
+    "date": "2016-09-14T07:31:54",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.171 HBD",
+    "date": "2016-09-14T07:31:15",
+    "open_pays": "0.251 HIVE"
+  },
+  {
+    "current_pays": "0.341 HBD",
+    "date": "2016-09-14T07:30:36",
+    "open_pays": "0.501 HIVE"
+  },
+  {
+    "current_pays": "0.683 HBD",
+    "date": "2016-09-14T07:29:57",
+    "open_pays": "1.004 HIVE"
+  },
+  {
+    "current_pays": "1.368 HBD",
+    "date": "2016-09-14T07:29:18",
+    "open_pays": "2.011 HIVE"
+  },
+  {
+    "current_pays": "2.739 HBD",
+    "date": "2016-09-14T07:28:36",
+    "open_pays": "4.027 HIVE"
+  },
+  {
+    "current_pays": "5.482 HBD",
+    "date": "2016-09-14T07:27:57",
+    "open_pays": "8.061 HIVE"
+  },
+  {
+    "current_pays": "7.312 HBD",
+    "date": "2016-09-14T07:26:36",
+    "open_pays": "10.752 HIVE"
+  },
+  {
+    "current_pays": "0.034 HBD",
+    "date": "2016-09-14T07:21:15",
+    "open_pays": "0.050 HIVE"
+  },
+  {
+    "current_pays": "70.000 HIVE",
+    "date": "2016-09-14T07:15:06",
+    "open_pays": "47.564 HBD"
+  },
+  {
+    "current_pays": "3.280 HIVE",
+    "date": "2016-09-14T06:51:30",
+    "open_pays": "2.228 HBD"
+  },
+  {
+    "current_pays": "0.145 HIVE",
+    "date": "2016-09-14T06:47:15",
+    "open_pays": "0.098 HBD"
+  },
+  {
+    "current_pays": "0.179 HBD",
+    "date": "2016-09-14T06:27:12",
+    "open_pays": "0.263 HIVE"
+  },
+  {
+    "current_pays": "41.000 HBD",
+    "date": "2016-09-14T06:17:00",
+    "open_pays": "60.339 HIVE"
+  },
+  {
+    "current_pays": "0.361 HBD",
+    "date": "2016-09-14T06:14:03",
+    "open_pays": "0.531 HIVE"
+  },
+  {
+    "current_pays": "4.211 HIVE",
+    "date": "2016-09-14T06:13:36",
+    "open_pays": "2.859 HBD"
+  },
+  {
+    "current_pays": "11.591 HIVE",
+    "date": "2016-09-14T06:05:42",
+    "open_pays": "7.870 HBD"
+  },
+  {
+    "current_pays": "0.305 HBD",
+    "date": "2016-09-14T06:04:33",
+    "open_pays": "0.448 HIVE"
+  },
+  {
+    "current_pays": "38.828 HBD",
+    "date": "2016-09-14T05:59:18",
+    "open_pays": "57.142 HIVE"
+  },
+  {
+    "current_pays": "51.621 HBD",
+    "date": "2016-09-14T05:59:18",
+    "open_pays": "75.971 HIVE"
+  },
+  {
+    "current_pays": "20.736 HBD",
+    "date": "2016-09-14T05:50:42",
+    "open_pays": "30.516 HIVE"
+  },
+  {
+    "current_pays": "6.464 HBD",
+    "date": "2016-09-14T05:50:42",
+    "open_pays": "9.513 HIVE"
+  },
+  {
+    "current_pays": "1.006 HBD",
+    "date": "2016-09-14T05:45:09",
+    "open_pays": "1.482 HIVE"
+  },
+  {
+    "current_pays": "0.979 HIVE",
+    "date": "2016-09-14T05:45:06",
+    "open_pays": "0.665 HBD"
+  },
+  {
+    "current_pays": "5.124 HIVE",
+    "date": "2016-09-14T05:43:15",
+    "open_pays": "3.478 HBD"
+  },
+  {
+    "current_pays": "4.207 HBD",
+    "date": "2016-09-14T05:39:33",
+    "open_pays": "6.191 HIVE"
+  },
+  {
+    "current_pays": "6.338 HBD",
+    "date": "2016-09-14T05:33:03",
+    "open_pays": "9.334 HIVE"
+  },
+  {
+    "current_pays": "9.173 HBD",
+    "date": "2016-09-14T05:32:03",
+    "open_pays": "13.510 HIVE"
+  },
+  {
+    "current_pays": "9.706 HIVE",
+    "date": "2016-09-14T05:27:33",
+    "open_pays": "6.212 HBD"
+  },
+  {
+    "current_pays": "44.350 HIVE",
+    "date": "2016-09-14T05:27:33",
+    "open_pays": "28.388 HBD"
+  },
+  {
+    "current_pays": "25.841 HIVE",
+    "date": "2016-09-14T05:27:33",
+    "open_pays": "16.553 HBD"
+  },
+  {
+    "current_pays": "76.770 HIVE",
+    "date": "2016-09-14T05:27:33",
+    "open_pays": "50.000 HBD"
+  },
+  {
+    "current_pays": "9.759 HIVE",
+    "date": "2016-09-14T05:27:33",
+    "open_pays": "6.356 HBD"
+  },
+  {
+    "current_pays": "2.798 HBD",
+    "date": "2016-09-14T05:25:00",
+    "open_pays": "4.296 HIVE"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-14T05:24:48",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "271.481 HBD",
+    "date": "2016-09-14T04:36:09",
+    "open_pays": "417.664 HIVE"
+  },
+  {
+    "current_pays": "2.808 HBD",
+    "date": "2016-09-14T04:35:51",
+    "open_pays": "4.320 HIVE"
+  },
+  {
+    "current_pays": "6.990 HBD",
+    "date": "2016-09-14T04:10:09",
+    "open_pays": "10.753 HIVE"
+  },
+  {
+    "current_pays": "11.172 HBD",
+    "date": "2016-09-14T04:01:33",
+    "open_pays": "17.187 HIVE"
+  },
+  {
+    "current_pays": "69.030 HBD",
+    "date": "2016-09-14T03:51:09",
+    "open_pays": "106.200 HIVE"
+  },
+  {
+    "current_pays": "68.820 HBD",
+    "date": "2016-09-14T03:36:00",
+    "open_pays": "105.876 HIVE"
+  },
+  {
+    "current_pays": "10.771 HBD",
+    "date": "2016-09-14T03:29:54",
+    "open_pays": "16.570 HIVE"
+  },
+  {
+    "current_pays": "0.380 HBD",
+    "date": "2016-09-14T03:24:03",
+    "open_pays": "0.584 HIVE"
+  },
+  {
+    "current_pays": "6.500 HBD",
+    "date": "2016-09-14T03:24:00",
+    "open_pays": "10.000 HIVE"
+  },
+  {
+    "current_pays": "67.600 HBD",
+    "date": "2016-09-14T03:23:18",
+    "open_pays": "104.000 HIVE"
+  },
+  {
+    "current_pays": "0.280 HBD",
+    "date": "2016-09-14T02:55:36",
+    "open_pays": "0.430 HIVE"
+  },
+  {
+    "current_pays": "66.950 HBD",
+    "date": "2016-09-14T02:55:03",
+    "open_pays": "103.000 HIVE"
+  },
+  {
+    "current_pays": "0.091 HBD",
+    "date": "2016-09-14T02:47:15",
+    "open_pays": "0.140 HIVE"
+  },
+  {
+    "current_pays": "4.269 HBD",
+    "date": "2016-09-14T02:32:15",
+    "open_pays": "6.567 HIVE"
+  },
+  {
+    "current_pays": "27.590 HBD",
+    "date": "2016-09-14T02:32:00",
+    "open_pays": "42.446 HIVE"
+  },
+  {
+    "current_pays": "1.906 HBD",
+    "date": "2016-09-14T02:31:39",
+    "open_pays": "2.932 HIVE"
+  },
+  {
+    "current_pays": "65.000 HBD",
+    "date": "2016-09-14T02:30:15",
+    "open_pays": "100.000 HIVE"
+  },
+  {
+    "current_pays": "6.883 HBD",
+    "date": "2016-09-14T02:28:33",
+    "open_pays": "10.589 HIVE"
+  },
+  {
+    "current_pays": "1.508 HBD",
+    "date": "2016-09-14T02:28:15",
+    "open_pays": "2.320 HIVE"
+  },
+  {
+    "current_pays": "100.705 HBD",
+    "date": "2016-09-14T02:27:57",
+    "open_pays": "154.930 HIVE"
+  },
+  {
+    "current_pays": "1.413 HBD",
+    "date": "2016-09-14T02:27:36",
+    "open_pays": "2.173 HIVE"
+  },
+  {
+    "current_pays": "21.787 HBD",
+    "date": "2016-09-14T02:27:15",
+    "open_pays": "33.518 HIVE"
+  },
+  {
+    "current_pays": "1.715 HBD",
+    "date": "2016-09-14T02:26:57",
+    "open_pays": "2.638 HIVE"
+  },
+  {
+    "current_pays": "10.138 HBD",
+    "date": "2016-09-14T02:26:27",
+    "open_pays": "15.597 HIVE"
+  },
+  {
+    "current_pays": "1.830 HBD",
+    "date": "2016-09-14T02:26:09",
+    "open_pays": "2.815 HIVE"
+  },
+  {
+    "current_pays": "1.631 HBD",
+    "date": "2016-09-14T02:25:48",
+    "open_pays": "2.509 HIVE"
+  },
+  {
+    "current_pays": "1.480 HIVE",
+    "date": "2016-09-14T02:20:39",
+    "open_pays": "0.947 HBD"
+  },
+  {
+    "current_pays": "35.559 HBD",
+    "date": "2016-09-14T02:18:45",
+    "open_pays": "54.706 HIVE"
+  },
+  {
+    "current_pays": "0.086 HBD",
+    "date": "2016-09-14T02:18:42",
+    "open_pays": "0.132 HIVE"
+  },
+  {
+    "current_pays": "35.559 HBD",
+    "date": "2016-09-14T02:18:18",
+    "open_pays": "54.706 HIVE"
+  },
+  {
+    "current_pays": "15.739 HBD",
+    "date": "2016-09-14T02:18:03",
+    "open_pays": "24.213 HIVE"
+  },
+  {
+    "current_pays": "6.923 HBD",
+    "date": "2016-09-14T02:12:15",
+    "open_pays": "10.650 HIVE"
+  },
+  {
+    "current_pays": "22.662 HBD",
+    "date": "2016-09-14T02:12:00",
+    "open_pays": "34.864 HIVE"
+  },
+  {
+    "current_pays": "4.557 HBD",
+    "date": "2016-09-14T02:11:36",
+    "open_pays": "7.010 HIVE"
+  },
+  {
+    "current_pays": "17.751 HBD",
+    "date": "2016-09-14T02:11:09",
+    "open_pays": "27.309 HIVE"
+  },
+  {
+    "current_pays": "22.308 HBD",
+    "date": "2016-09-14T02:10:45",
+    "open_pays": "34.320 HIVE"
+  },
+  {
+    "current_pays": "22.308 HBD",
+    "date": "2016-09-14T02:10:21",
+    "open_pays": "34.320 HIVE"
+  },
+  {
+    "current_pays": "22.308 HBD",
+    "date": "2016-09-14T02:09:54",
+    "open_pays": "34.320 HIVE"
+  },
+  {
+    "current_pays": "22.308 HBD",
+    "date": "2016-09-14T02:09:18",
+    "open_pays": "34.320 HIVE"
+  },
+  {
+    "current_pays": "14.776 HBD",
+    "date": "2016-09-14T02:08:48",
+    "open_pays": "22.732 HIVE"
+  },
+  {
+    "current_pays": "3.886 HBD",
+    "date": "2016-09-14T02:08:00",
+    "open_pays": "5.978 HIVE"
+  },
+  {
+    "current_pays": "3.646 HBD",
+    "date": "2016-09-14T02:06:48",
+    "open_pays": "5.609 HIVE"
+  },
+  {
+    "current_pays": "3.066 HBD",
+    "date": "2016-09-14T02:03:18",
+    "open_pays": "4.716 HIVE"
+  },
+  {
+    "current_pays": "6.715 HBD",
+    "date": "2016-09-14T02:00:36",
+    "open_pays": "10.330 HIVE"
+  },
+  {
+    "current_pays": "18.178 HBD",
+    "date": "2016-09-14T01:52:57",
+    "open_pays": "27.966 HIVE"
+  },
+  {
+    "current_pays": "6.823 HBD",
+    "date": "2016-09-14T01:52:57",
+    "open_pays": "10.497 HIVE"
+  },
+  {
+    "current_pays": "6.823 HBD",
+    "date": "2016-09-14T01:51:30",
+    "open_pays": "10.496 HIVE"
+  },
+  {
+    "current_pays": "1.031 HBD",
+    "date": "2016-09-14T01:51:12",
+    "open_pays": "1.587 HIVE"
+  },
+  {
+    "current_pays": "7.417 HBD",
+    "date": "2016-09-14T01:23:54",
+    "open_pays": "11.413 HIVE"
+  },
+  {
+    "current_pays": "1.300 HBD",
+    "date": "2016-09-14T01:23:21",
+    "open_pays": "2.000 HIVE"
+  },
+  {
+    "current_pays": "20.008 HIVE",
+    "date": "2016-09-14T01:17:03",
+    "open_pays": "12.805 HBD"
+  },
+  {
+    "current_pays": "9.992 HIVE",
+    "date": "2016-09-14T01:17:03",
+    "open_pays": "6.395 HBD"
+  },
+  {
+    "current_pays": "4.534 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "2.901 HBD"
+  },
+  {
+    "current_pays": "6.296 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "4.030 HBD"
+  },
+  {
+    "current_pays": "1.283 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "0.822 HBD"
+  },
+  {
+    "current_pays": "4.469 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "2.866 HBD"
+  },
+  {
+    "current_pays": "0.145 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "0.093 HBD"
+  },
+  {
+    "current_pays": "34.924 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "22.700 HBD"
+  },
+  {
+    "current_pays": "6.349 HIVE",
+    "date": "2016-09-14T01:14:09",
+    "open_pays": "4.127 HBD"
+  },
+  {
+    "current_pays": "59.800 HBD",
+    "date": "2016-09-14T01:09:12",
+    "open_pays": "92.000 HIVE"
+  },
+  {
+    "current_pays": "50.000 HIVE",
+    "date": "2016-09-14T01:07:39",
+    "open_pays": "32.499 HBD"
+  },
+  {
+    "current_pays": "100.126 HBD",
+    "date": "2016-09-14T00:53:27",
+    "open_pays": "154.040 HIVE"
+  },
+  {
+    "current_pays": "10.000 HBD",
+    "date": "2016-09-14T00:33:48",
+    "open_pays": "15.384 HIVE"
+  },
+  {
+    "current_pays": "2.937 HBD",
+    "date": "2016-09-14T00:28:42",
+    "open_pays": "4.518 HIVE"
+  },
+  {
+    "current_pays": "18.603 HBD",
+    "date": "2016-09-14T00:26:30",
+    "open_pays": "28.620 HIVE"
+  },
+  {
+    "current_pays": "22.120 HBD",
+    "date": "2016-09-14T00:24:39",
+    "open_pays": "34.030 HIVE"
+  },
+  {
+    "current_pays": "139.766 HBD",
+    "date": "2016-09-14T00:24:03",
+    "open_pays": "215.024 HIVE"
+  },
+  {
+    "current_pays": "32.769 HBD",
+    "date": "2016-09-14T00:23:27",
+    "open_pays": "50.413 HIVE"
+  },
+  {
+    "current_pays": "36.292 HBD",
+    "date": "2016-09-14T00:23:03",
+    "open_pays": "55.833 HIVE"
+  },
+  {
+    "current_pays": "42.715 HBD",
+    "date": "2016-09-14T00:22:36",
+    "open_pays": "65.715 HIVE"
+  },
+  {
+    "current_pays": "47.256 HBD",
+    "date": "2016-09-14T00:22:09",
+    "open_pays": "72.701 HIVE"
+  },
+  {
+    "current_pays": "40.473 HBD",
+    "date": "2016-09-14T00:21:39",
+    "open_pays": "62.266 HIVE"
+  },
+  {
+    "current_pays": "7.258 HBD",
+    "date": "2016-09-14T00:21:15",
+    "open_pays": "11.166 HIVE"
+  },
+  {
+    "current_pays": "6.928 HBD",
+    "date": "2016-09-14T00:20:57",
+    "open_pays": "10.658 HIVE"
+  },
+  {
+    "current_pays": "50.732 HBD",
+    "date": "2016-09-14T00:18:15",
+    "open_pays": "78.049 HIVE"
+  },
+  {
+    "current_pays": "2.606 HBD",
+    "date": "2016-09-14T00:17:45",
+    "open_pays": "4.009 HIVE"
+  },
+  {
+    "current_pays": "1.049 HBD",
+    "date": "2016-09-14T00:17:21",
+    "open_pays": "1.613 HIVE"
+  },
+  {
+    "current_pays": "726.704 HBD",
+    "date": "2016-09-14T00:16:54",
+    "open_pays": "1118.006 HIVE"
+  },
+  {
+    "current_pays": "195.000 HBD",
+    "date": "2016-09-14T00:16:33",
+    "open_pays": "300.000 HIVE"
+  },
+  {
+    "current_pays": "1.263 HBD",
+    "date": "2016-09-14T00:16:09",
+    "open_pays": "1.943 HIVE"
+  },
+  {
+    "current_pays": "2.122 HBD",
+    "date": "2016-09-14T00:15:39",
+    "open_pays": "3.264 HIVE"
+  },
+  {
+    "current_pays": "2.500 HBD",
+    "date": "2016-09-14T00:15:15",
+    "open_pays": "3.846 HIVE"
+  },
+  {
+    "current_pays": "2.500 HBD",
+    "date": "2016-09-14T00:14:48",
+    "open_pays": "3.846 HIVE"
+  },
+  {
+    "current_pays": "4.951 HBD",
+    "date": "2016-09-14T00:14:15",
+    "open_pays": "7.616 HIVE"
+  },
+  {
+    "current_pays": "4.951 HBD",
+    "date": "2016-09-14T00:13:51",
+    "open_pays": "7.616 HIVE"
+  },
+  {
+    "current_pays": "39.381 HBD",
+    "date": "2016-09-14T00:13:18",
+    "open_pays": "60.586 HIVE"
+  },
+  {
+    "current_pays": "3.026 HBD",
+    "date": "2016-09-14T00:12:42",
+    "open_pays": "4.655 HIVE"
+  },
+  {
+    "current_pays": "9.803 HBD",
+    "date": "2016-09-14T00:12:06",
+    "open_pays": "15.081 HIVE"
+  },
+  {
+    "current_pays": "21.787 HBD",
+    "date": "2016-09-14T00:11:39",
+    "open_pays": "33.518 HIVE"
+  },
+  {
+    "current_pays": "3.418 HBD",
+    "date": "2016-09-14T00:11:09",
+    "open_pays": "5.258 HIVE"
+  },
+  {
+    "current_pays": "2.501 HBD",
+    "date": "2016-09-14T00:10:39",
+    "open_pays": "3.847 HIVE"
+  },
+  {
+    "current_pays": "9.868 HBD",
+    "date": "2016-09-14T00:09:36",
+    "open_pays": "15.181 HIVE"
+  },
+  {
+    "current_pays": "14.895 HIVE",
+    "date": "2016-09-14T00:01:24",
+    "open_pays": "9.681 HBD"
+  },
+  {
+    "current_pays": "0.451 HBD",
+    "date": "2016-09-13T23:51:09",
+    "open_pays": "0.693 HIVE"
+  },
+  {
+    "current_pays": "5.683 HIVE",
+    "date": "2016-09-13T23:37:09",
+    "open_pays": "3.693 HBD"
+  },
+  {
+    "current_pays": "54.220 HBD",
+    "date": "2016-09-13T23:34:30",
+    "open_pays": "83.415 HIVE"
+  },
+  {
+    "current_pays": "25.001 HBD",
+    "date": "2016-09-13T23:34:15",
+    "open_pays": "38.463 HIVE"
+  },
+  {
+    "current_pays": "9.604 HBD",
+    "date": "2016-09-13T23:32:06",
+    "open_pays": "14.775 HIVE"
+  },
+  {
+    "current_pays": "9.700 HBD",
+    "date": "2016-09-13T23:31:51",
+    "open_pays": "14.923 HIVE"
+  },
+  {
+    "current_pays": "65.180 HBD",
+    "date": "2016-09-13T23:31:39",
+    "open_pays": "100.276 HIVE"
+  },
+  {
+    "current_pays": "500.000 HBD",
+    "date": "2016-09-13T23:24:42",
+    "open_pays": "769.230 HIVE"
+  },
+  {
+    "current_pays": "345.664 HBD",
+    "date": "2016-09-13T23:20:21",
+    "open_pays": "531.790 HIVE"
+  },
+  {
+    "current_pays": "22.616 HBD",
+    "date": "2016-09-13T23:20:21",
+    "open_pays": "34.795 HIVE"
+  },
+  {
+    "current_pays": "100.000 HBD",
+    "date": "2016-09-13T23:19:24",
+    "open_pays": "153.846 HIVE"
+  },
+  {
+    "current_pays": "4.030 HBD",
+    "date": "2016-09-13T23:18:51",
+    "open_pays": "6.200 HIVE"
+  },
+  {
+    "current_pays": "3.257 HBD",
+    "date": "2016-09-13T23:18:27",
+    "open_pays": "5.010 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T23:18:03",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "3.845 HBD",
+    "date": "2016-09-13T23:17:39",
+    "open_pays": "5.915 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T23:17:18",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T23:16:30",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T23:15:42",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "1.625 HBD",
+    "date": "2016-09-13T23:14:54",
+    "open_pays": "2.500 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T23:14:09",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T23:13:21",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "0.975 HBD",
+    "date": "2016-09-13T23:11:45",
+    "open_pays": "1.500 HIVE"
+  },
+  {
+    "current_pays": "40.625 HBD",
+    "date": "2016-09-13T23:08:12",
+    "open_pays": "62.500 HIVE"
+  },
+  {
+    "current_pays": "1.300 HBD",
+    "date": "2016-09-13T23:03:18",
+    "open_pays": "2.000 HIVE"
+  },
+  {
+    "current_pays": "6.099 HBD",
+    "date": "2016-09-13T23:02:48",
+    "open_pays": "9.383 HIVE"
+  },
+  {
+    "current_pays": "15.876 HBD",
+    "date": "2016-09-13T23:01:36",
+    "open_pays": "24.424 HIVE"
+  },
+  {
+    "current_pays": "7.345 HBD",
+    "date": "2016-09-13T22:59:51",
+    "open_pays": "11.300 HIVE"
+  },
+  {
+    "current_pays": "21.937 HBD",
+    "date": "2016-09-13T22:59:33",
+    "open_pays": "33.749 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T22:59:00",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "41.509 HBD",
+    "date": "2016-09-13T22:58:33",
+    "open_pays": "63.860 HIVE"
+  },
+  {
+    "current_pays": "1.430 HBD",
+    "date": "2016-09-13T22:58:12",
+    "open_pays": "2.200 HIVE"
+  },
+  {
+    "current_pays": "2.275 HBD",
+    "date": "2016-09-13T22:57:27",
+    "open_pays": "3.500 HIVE"
+  },
+  {
+    "current_pays": "3.900 HBD",
+    "date": "2016-09-13T22:56:39",
+    "open_pays": "6.000 HIVE"
+  },
+  {
+    "current_pays": "7.450 HBD",
+    "date": "2016-09-13T22:56:30",
+    "open_pays": "11.461 HIVE"
+  },
+  {
+    "current_pays": "3.120 HBD",
+    "date": "2016-09-13T22:55:54",
+    "open_pays": "4.800 HIVE"
+  },
+  {
+    "current_pays": "0.650 HBD",
+    "date": "2016-09-13T22:55:06",
+    "open_pays": "1.000 HIVE"
+  },
+  {
+    "current_pays": "1.300 HBD",
+    "date": "2016-09-13T22:54:12",
+    "open_pays": "2.000 HIVE"
+  },
+  {
+    "current_pays": "49.560 HBD",
+    "date": "2016-09-13T22:53:45",
+    "open_pays": "76.246 HIVE"
+  },
+  {
+    "current_pays": "0.910 HBD",
+    "date": "2016-09-13T22:53:36",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "0.910 HBD",
+    "date": "2016-09-13T22:52:48",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "2.080 HBD",
+    "date": "2016-09-13T22:52:03",
+    "open_pays": "3.200 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T22:51:15",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "1.885 HBD",
+    "date": "2016-09-13T22:50:27",
+    "open_pays": "2.900 HIVE"
+  },
+  {
+    "current_pays": "2.581 HBD",
+    "date": "2016-09-13T22:50:03",
+    "open_pays": "3.970 HIVE"
+  },
+  {
+    "current_pays": "0.910 HBD",
+    "date": "2016-09-13T22:48:54",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "50.000 HBD",
+    "date": "2016-09-13T22:48:42",
+    "open_pays": "76.923 HIVE"
+  },
+  {
+    "current_pays": "0.130 HBD",
+    "date": "2016-09-13T22:44:27",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.039 HBD",
+    "date": "2016-09-13T22:43:48",
+    "open_pays": "0.061 HIVE"
+  },
+  {
+    "current_pays": "0.999 HIVE",
+    "date": "2016-09-13T22:43:33",
+    "open_pays": "0.643 HBD"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-13T22:43:33",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "88.439 HIVE",
+    "date": "2016-09-13T22:32:03",
+    "open_pays": "56.958 HBD"
+  },
+  {
+    "current_pays": "20.236 HBD",
+    "date": "2016-09-13T22:29:24",
+    "open_pays": "31.132 HIVE"
+  },
+  {
+    "current_pays": "9.969 HBD",
+    "date": "2016-09-13T22:27:15",
+    "open_pays": "15.336 HIVE"
+  },
+  {
+    "current_pays": "20.910 HBD",
+    "date": "2016-09-13T22:26:54",
+    "open_pays": "32.169 HIVE"
+  },
+  {
+    "current_pays": "498.382 HBD",
+    "date": "2016-09-13T22:18:12",
+    "open_pays": "766.741 HIVE"
+  },
+  {
+    "current_pays": "10.061 HBD",
+    "date": "2016-09-13T22:16:15",
+    "open_pays": "15.478 HIVE"
+  },
+  {
+    "current_pays": "2.683 HBD",
+    "date": "2016-09-13T22:14:51",
+    "open_pays": "4.127 HIVE"
+  },
+  {
+    "current_pays": "5.313 HBD",
+    "date": "2016-09-13T22:14:39",
+    "open_pays": "8.173 HIVE"
+  },
+  {
+    "current_pays": "7.850 HBD",
+    "date": "2016-09-13T22:14:24",
+    "open_pays": "12.076 HIVE"
+  },
+  {
+    "current_pays": "3.054 HBD",
+    "date": "2016-09-13T22:14:09",
+    "open_pays": "4.698 HIVE"
+  },
+  {
+    "current_pays": "2.627 HBD",
+    "date": "2016-09-13T22:13:51",
+    "open_pays": "4.041 HIVE"
+  },
+  {
+    "current_pays": "1.564 HBD",
+    "date": "2016-09-13T22:13:30",
+    "open_pays": "2.435 HIVE"
+  },
+  {
+    "current_pays": "6.422 HBD",
+    "date": "2016-09-13T22:13:09",
+    "open_pays": "9.993 HIVE"
+  },
+  {
+    "current_pays": "5.695 HBD",
+    "date": "2016-09-13T22:12:57",
+    "open_pays": "8.861 HIVE"
+  },
+  {
+    "current_pays": "15.300 HBD",
+    "date": "2016-09-13T22:12:45",
+    "open_pays": "23.807 HIVE"
+  },
+  {
+    "current_pays": "3.147 HBD",
+    "date": "2016-09-13T22:12:27",
+    "open_pays": "4.896 HIVE"
+  },
+  {
+    "current_pays": "0.001 HIVE",
+    "date": "2016-09-13T22:12:12",
+    "open_pays": "0.001 HBD"
+  },
+  {
+    "current_pays": "10.070 HBD",
+    "date": "2016-09-13T21:57:15",
+    "open_pays": "15.702 HIVE"
+  },
+  {
+    "current_pays": "2.933 HBD",
+    "date": "2016-09-13T21:56:33",
+    "open_pays": "4.572 HIVE"
+  },
+  {
+    "current_pays": "10.000 HIVE",
+    "date": "2016-09-13T21:56:06",
+    "open_pays": "6.414 HBD"
+  },
+  {
+    "current_pays": "10.198 HIVE",
+    "date": "2016-09-13T21:56:06",
+    "open_pays": "6.541 HBD"
+  },
+  {
+    "current_pays": "3.374 HBD",
+    "date": "2016-09-13T21:53:48",
+    "open_pays": "5.190 HIVE"
+  },
+  {
+    "current_pays": "1.026 HBD",
+    "date": "2016-09-13T21:49:27",
+    "open_pays": "1.578 HIVE"
+  },
+  {
+    "current_pays": "57.668 HBD",
+    "date": "2016-09-13T21:49:09",
+    "open_pays": "88.720 HIVE"
+  },
+  {
+    "current_pays": "11.676 HBD",
+    "date": "2016-09-13T21:46:06",
+    "open_pays": "17.963 HIVE"
+  },
+  {
+    "current_pays": "35.393 HBD",
+    "date": "2016-09-13T21:45:27",
+    "open_pays": "54.450 HIVE"
+  },
+  {
+    "current_pays": "38.479 HBD",
+    "date": "2016-09-13T21:44:48",
+    "open_pays": "59.198 HIVE"
+  },
+  {
+    "current_pays": "148.767 HBD",
+    "date": "2016-09-13T21:44:15",
+    "open_pays": "228.872 HIVE"
+  },
+  {
+    "current_pays": "6.823 HBD",
+    "date": "2016-09-13T21:43:42",
+    "open_pays": "10.497 HIVE"
+  },
+  {
+    "current_pays": "325.000 HBD",
+    "date": "2016-09-13T21:42:51",
+    "open_pays": "500.000 HIVE"
+  },
+  {
+    "current_pays": "20.910 HBD",
+    "date": "2016-09-13T21:42:42",
+    "open_pays": "32.169 HIVE"
+  },
+  {
+    "current_pays": "1.094 HBD",
+    "date": "2016-09-13T21:42:18",
+    "open_pays": "1.683 HIVE"
+  },
+  {
+    "current_pays": "142.786 HBD",
+    "date": "2016-09-13T21:42:15",
+    "open_pays": "219.670 HIVE"
+  },
+  {
+    "current_pays": "1.381 HBD",
+    "date": "2016-09-13T21:41:39",
+    "open_pays": "2.124 HIVE"
+  },
+  {
+    "current_pays": "7.671 HBD",
+    "date": "2016-09-13T21:41:00",
+    "open_pays": "11.801 HIVE"
+  },
+  {
+    "current_pays": "7.316 HBD",
+    "date": "2016-09-13T21:40:33",
+    "open_pays": "11.255 HIVE"
+  },
+  {
+    "current_pays": "50.803 HBD",
+    "date": "2016-09-13T21:40:27",
+    "open_pays": "78.158 HIVE"
+  },
+  {
+    "current_pays": "33.188 HBD",
+    "date": "2016-09-13T21:39:51",
+    "open_pays": "51.058 HIVE"
+  },
+  {
+    "current_pays": "45.954 HBD",
+    "date": "2016-09-13T21:39:21",
+    "open_pays": "70.698 HIVE"
+  },
+  {
+    "current_pays": "2.031 HBD",
+    "date": "2016-09-13T21:38:45",
+    "open_pays": "3.124 HIVE"
+  },
+  {
+    "current_pays": "0.002 HBD",
+    "date": "2016-09-13T21:38:21",
+    "open_pays": "0.003 HIVE"
+  },
+  {
+    "current_pays": "1.645 HBD",
+    "date": "2016-09-13T21:38:09",
+    "open_pays": "2.530 HIVE"
+  },
+  {
+    "current_pays": "1.407 HBD",
+    "date": "2016-09-13T21:37:36",
+    "open_pays": "2.164 HIVE"
+  },
+  {
+    "current_pays": "3.277 HBD",
+    "date": "2016-09-13T21:37:00",
+    "open_pays": "5.041 HIVE"
+  },
+  {
+    "current_pays": "2.469 HBD",
+    "date": "2016-09-13T21:36:27",
+    "open_pays": "3.798 HIVE"
+  },
+  {
+    "current_pays": "15.700 HBD",
+    "date": "2016-09-13T21:36:24",
+    "open_pays": "24.153 HIVE"
+  },
+  {
+    "current_pays": "13.000 HBD",
+    "date": "2016-09-13T21:35:51",
+    "open_pays": "20.000 HIVE"
+  },
+  {
+    "current_pays": "3.502 HBD",
+    "date": "2016-09-13T21:35:12",
+    "open_pays": "5.387 HIVE"
+  },
+  {
+    "current_pays": "32.384 HBD",
+    "date": "2016-09-13T21:34:36",
+    "open_pays": "49.821 HIVE"
+  },
+  {
+    "current_pays": "2.977 HBD",
+    "date": "2016-09-13T21:34:30",
+    "open_pays": "4.580 HIVE"
+  },
+  {
+    "current_pays": "1.386 HBD",
+    "date": "2016-09-13T21:33:54",
+    "open_pays": "2.132 HIVE"
+  },
+  {
+    "current_pays": "1.358 HBD",
+    "date": "2016-09-13T21:33:24",
+    "open_pays": "2.089 HIVE"
+  },
+  {
+    "current_pays": "6.825 HBD",
+    "date": "2016-09-13T21:33:12",
+    "open_pays": "10.500 HIVE"
+  },
+  {
+    "current_pays": "3.250 HBD",
+    "date": "2016-09-13T21:32:54",
+    "open_pays": "5.000 HIVE"
+  },
+  {
+    "current_pays": "4.972 HBD",
+    "date": "2016-09-13T21:32:27",
+    "open_pays": "7.649 HIVE"
+  },
+  {
+    "current_pays": "3.185 HBD",
+    "date": "2016-09-13T21:32:24",
+    "open_pays": "4.900 HIVE"
+  },
+  {
+    "current_pays": "3.471 HBD",
+    "date": "2016-09-13T21:32:21",
+    "open_pays": "5.340 HIVE"
+  },
+  {
+    "current_pays": "1.569 HBD",
+    "date": "2016-09-13T21:31:51",
+    "open_pays": "2.413 HIVE"
+  },
+  {
+    "current_pays": "1.430 HBD",
+    "date": "2016-09-13T21:31:36",
+    "open_pays": "2.200 HIVE"
+  },
+  {
+    "current_pays": "35.147 HBD",
+    "date": "2016-09-13T21:31:15",
+    "open_pays": "54.072 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T21:30:51",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "149.701 HBD",
+    "date": "2016-09-13T21:30:42",
+    "open_pays": "230.309 HIVE"
+  },
+  {
+    "current_pays": "3.907 HBD",
+    "date": "2016-09-13T21:30:24",
+    "open_pays": "6.010 HIVE"
+  },
+  {
+    "current_pays": "14.592 HBD",
+    "date": "2016-09-13T21:30:03",
+    "open_pays": "22.449 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T21:30:03",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "2.609 HBD",
+    "date": "2016-09-13T21:29:24",
+    "open_pays": "4.013 HIVE"
+  },
+  {
+    "current_pays": "2.535 HBD",
+    "date": "2016-09-13T21:29:15",
+    "open_pays": "3.900 HIVE"
+  },
+  {
+    "current_pays": "2.246 HBD",
+    "date": "2016-09-13T21:28:48",
+    "open_pays": "3.455 HIVE"
+  },
+  {
+    "current_pays": "3.510 HBD",
+    "date": "2016-09-13T21:28:30",
+    "open_pays": "5.400 HIVE"
+  },
+  {
+    "current_pays": "3.849 HBD",
+    "date": "2016-09-13T21:28:09",
+    "open_pays": "5.921 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T21:27:42",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "688.266 HBD",
+    "date": "2016-09-13T21:27:33",
+    "open_pays": "1058.870 HIVE"
+  },
+  {
+    "current_pays": "5.833 HBD",
+    "date": "2016-09-13T21:27:30",
+    "open_pays": "8.973 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T21:26:54",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "1.018 HBD",
+    "date": "2016-09-13T21:26:48",
+    "open_pays": "1.566 HIVE"
+  },
+  {
+    "current_pays": "20.998 HBD",
+    "date": "2016-09-13T21:26:15",
+    "open_pays": "32.304 HIVE"
+  },
+  {
+    "current_pays": "50.533 HBD",
+    "date": "2016-09-13T21:26:12",
+    "open_pays": "77.743 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T21:26:09",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "1.880 HBD",
+    "date": "2016-09-13T21:25:33",
+    "open_pays": "2.892 HIVE"
+  },
+  {
+    "current_pays": "1.885 HBD",
+    "date": "2016-09-13T21:25:18",
+    "open_pays": "2.900 HIVE"
+  },
+  {
+    "current_pays": "106.487 HIVE",
+    "date": "2016-09-13T21:25:03",
+    "open_pays": "70.281 HBD"
+  },
+  {
+    "current_pays": "24.000 HIVE",
+    "date": "2016-09-13T21:25:03",
+    "open_pays": "15.840 HBD"
+  },
+  {
+    "current_pays": "10.453 HIVE",
+    "date": "2016-09-13T21:25:03",
+    "open_pays": "6.899 HBD"
+  },
+  {
+    "current_pays": "7.975 HBD",
+    "date": "2016-09-13T20:54:00",
+    "open_pays": "11.476 HIVE"
+  },
+  {
+    "current_pays": "0.362 HBD",
+    "date": "2016-09-13T20:51:30",
+    "open_pays": "0.520 HIVE"
+  },
+  {
+    "current_pays": "69.500 HBD",
+    "date": "2016-09-13T20:36:36",
+    "open_pays": "100.000 HIVE"
+  },
+  {
+    "current_pays": "2.479 HBD",
+    "date": "2016-09-13T20:22:45",
+    "open_pays": "3.566 HIVE"
+  },
+  {
+    "current_pays": "2.363 HBD",
+    "date": "2016-09-13T20:22:33",
+    "open_pays": "3.400 HIVE"
+  },
+  {
+    "current_pays": "18.236 HBD",
+    "date": "2016-09-13T20:22:03",
+    "open_pays": "26.238 HIVE"
+  },
+  {
+    "current_pays": "8.271 HBD",
+    "date": "2016-09-13T20:21:45",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "212.029 HBD",
+    "date": "2016-09-13T20:21:21",
+    "open_pays": "305.078 HIVE"
+  },
+  {
+    "current_pays": "8.271 HBD",
+    "date": "2016-09-13T20:21:00",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "4.405 HBD",
+    "date": "2016-09-13T20:20:36",
+    "open_pays": "6.292 HIVE"
+  },
+  {
+    "current_pays": "1.960 HBD",
+    "date": "2016-09-13T20:20:09",
+    "open_pays": "2.800 HIVE"
+  },
+  {
+    "current_pays": "0.980 HBD",
+    "date": "2016-09-13T20:03:15",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "9.227 HIVE",
+    "date": "2016-09-13T20:01:57",
+    "open_pays": "5.918 HBD"
+  },
+  {
+    "current_pays": "137.050 HBD",
+    "date": "2016-09-13T19:55:54",
+    "open_pays": "195.785 HIVE"
+  },
+  {
+    "current_pays": "7.724 HBD",
+    "date": "2016-09-13T19:55:15",
+    "open_pays": "11.034 HIVE"
+  },
+  {
+    "current_pays": "0.606 HBD",
+    "date": "2016-09-13T19:55:15",
+    "open_pays": "0.866 HIVE"
+  },
+  {
+    "current_pays": "61.951 HBD",
+    "date": "2016-09-13T19:55:15",
+    "open_pays": "88.579 HIVE"
+  },
+  {
+    "current_pays": "8.330 HBD",
+    "date": "2016-09-13T19:55:09",
+    "open_pays": "11.910 HIVE"
+  },
+  {
+    "current_pays": "172.966 HBD",
+    "date": "2016-09-13T19:48:45",
+    "open_pays": "250.675 HIVE"
+  },
+  {
+    "current_pays": "1.725 HBD",
+    "date": "2016-09-13T19:48:21",
+    "open_pays": "2.500 HIVE"
+  },
+  {
+    "current_pays": "2.117 HBD",
+    "date": "2016-09-13T19:48:03",
+    "open_pays": "3.068 HIVE"
+  },
+  {
+    "current_pays": "3.519 HBD",
+    "date": "2016-09-13T19:47:33",
+    "open_pays": "5.100 HIVE"
+  },
+  {
+    "current_pays": "145.019 HBD",
+    "date": "2016-09-13T19:47:21",
+    "open_pays": "210.172 HIVE"
+  },
+  {
+    "current_pays": "8.211 HBD",
+    "date": "2016-09-13T19:46:48",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "3.765 HBD",
+    "date": "2016-09-13T19:46:42",
+    "open_pays": "5.456 HIVE"
+  },
+  {
+    "current_pays": "3.193 HBD",
+    "date": "2016-09-13T19:46:00",
+    "open_pays": "4.627 HIVE"
+  },
+  {
+    "current_pays": "4.899 HBD",
+    "date": "2016-09-13T19:46:00",
+    "open_pays": "7.100 HIVE"
+  },
+  {
+    "current_pays": "15.052 HBD",
+    "date": "2016-09-13T19:32:51",
+    "open_pays": "21.814 HIVE"
+  },
+  {
+    "current_pays": "32.152 HBD",
+    "date": "2016-09-13T19:32:09",
+    "open_pays": "46.597 HIVE"
+  },
+  {
+    "current_pays": "0.001 HBD",
+    "date": "2016-09-13T19:31:30",
+    "open_pays": "0.001 HIVE"
+  },
+  {
+    "current_pays": "12.201 HBD",
+    "date": "2016-09-13T19:31:30",
+    "open_pays": "17.710 HIVE"
+  },
+  {
+    "current_pays": "5.511 HBD",
+    "date": "2016-09-13T19:30:48",
+    "open_pays": "7.998 HIVE"
+  },
+  {
+    "current_pays": "9.117 HBD",
+    "date": "2016-09-13T19:30:09",
+    "open_pays": "13.232 HIVE"
+  },
+  {
+    "current_pays": "6.391 HBD",
+    "date": "2016-09-13T19:28:48",
+    "open_pays": "9.262 HIVE"
+  },
+  {
+    "current_pays": "2.203 HBD",
+    "date": "2016-09-13T19:28:48",
+    "open_pays": "3.194 HIVE"
+  },
+  {
+    "current_pays": "8.014 HBD",
+    "date": "2016-09-13T19:28:06",
+    "open_pays": "11.624 HIVE"
+  },
+  {
+    "current_pays": "11.601 HBD",
+    "date": "2016-09-13T19:27:24",
+    "open_pays": "16.813 HIVE"
+  },
+  {
+    "current_pays": "0.010 HBD",
+    "date": "2016-09-13T19:27:18",
+    "open_pays": "0.014 HIVE"
+  },
+  {
+    "current_pays": "6.065 HBD",
+    "date": "2016-09-13T19:26:45",
+    "open_pays": "8.789 HIVE"
+  },
+  {
+    "current_pays": "3.616 HBD",
+    "date": "2016-09-13T19:26:45",
+    "open_pays": "5.245 HIVE"
+  },
+  {
+    "current_pays": "3.478 HBD",
+    "date": "2016-09-13T19:26:03",
+    "open_pays": "5.044 HIVE"
+  },
+  {
+    "current_pays": "20.796 HBD",
+    "date": "2016-09-13T19:25:24",
+    "open_pays": "30.139 HIVE"
+  },
+  {
+    "current_pays": "0.140 HBD",
+    "date": "2016-09-13T19:21:57",
+    "open_pays": "0.200 HIVE"
+  },
+  {
+    "current_pays": "0.236 HBD",
+    "date": "2016-09-13T19:21:15",
+    "open_pays": "0.337 HIVE"
+  },
+  {
+    "current_pays": "0.472 HBD",
+    "date": "2016-09-13T19:20:00",
+    "open_pays": "0.674 HIVE"
+  },
+  {
+    "current_pays": "0.315 HBD",
+    "date": "2016-09-13T19:19:15",
+    "open_pays": "0.450 HIVE"
+  },
+  {
+    "current_pays": "0.420 HBD",
+    "date": "2016-09-13T19:17:48",
+    "open_pays": "0.600 HIVE"
+  },
+  {
+    "current_pays": "0.561 HBD",
+    "date": "2016-09-13T19:16:24",
+    "open_pays": "0.802 HIVE"
+  },
+  {
+    "current_pays": "0.701 HBD",
+    "date": "2016-09-13T19:14:57",
+    "open_pays": "1.002 HIVE"
+  },
+  {
+    "current_pays": "0.047 HBD",
+    "date": "2016-09-13T19:14:15",
+    "open_pays": "0.067 HIVE"
+  },
+  {
+    "current_pays": "0.093 HBD",
+    "date": "2016-09-13T19:14:15",
+    "open_pays": "0.133 HIVE"
+  },
+  {
+    "current_pays": "1.028 HBD",
+    "date": "2016-09-13T19:13:27",
+    "open_pays": "1.469 HIVE"
+  },
+  {
+    "current_pays": "1.371 HBD",
+    "date": "2016-09-13T19:12:00",
+    "open_pays": "1.959 HIVE"
+  },
+  {
+    "current_pays": "1.828 HBD",
+    "date": "2016-09-13T19:10:36",
+    "open_pays": "2.613 HIVE"
+  },
+  {
+    "current_pays": "2.439 HBD",
+    "date": "2016-09-13T19:09:12",
+    "open_pays": "3.486 HIVE"
+  },
+  {
+    "current_pays": "10.485 HBD",
+    "date": "2016-09-13T19:08:57",
+    "open_pays": "14.978 HIVE"
+  },
+  {
+    "current_pays": "0.305 HBD",
+    "date": "2016-09-13T19:03:12",
+    "open_pays": "0.467 HIVE"
+  },
+  {
+    "current_pays": "0.916 HBD",
+    "date": "2016-09-13T19:02:42",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "0.133 HIVE",
+    "date": "2016-09-13T19:02:33",
+    "open_pays": "0.087 HBD"
+  },
+  {
+    "current_pays": "0.664 HBD",
+    "date": "2016-09-13T18:28:21",
+    "open_pays": "1.022 HIVE"
+  },
+  {
+    "current_pays": "1.820 HBD",
+    "date": "2016-09-13T18:28:09",
+    "open_pays": "2.800 HIVE"
+  },
+  {
+    "current_pays": "6.108 HBD",
+    "date": "2016-09-13T18:28:09",
+    "open_pays": "9.396 HIVE"
+  },
+  {
+    "current_pays": "4.062 HBD",
+    "date": "2016-09-13T18:27:45",
+    "open_pays": "6.249 HIVE"
+  },
+  {
+    "current_pays": "2.015 HBD",
+    "date": "2016-09-13T18:27:21",
+    "open_pays": "3.100 HIVE"
+  },
+  {
+    "current_pays": "6.766 HBD",
+    "date": "2016-09-13T18:27:12",
+    "open_pays": "10.409 HIVE"
+  },
+  {
+    "current_pays": "3.208 HBD",
+    "date": "2016-09-13T18:26:42",
+    "open_pays": "4.935 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T18:26:33",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "191.542 HBD",
+    "date": "2016-09-13T18:26:12",
+    "open_pays": "294.680 HIVE"
+  },
+  {
+    "current_pays": "4.725 HBD",
+    "date": "2016-09-13T18:26:12",
+    "open_pays": "7.275 HIVE"
+  },
+  {
+    "current_pays": "6.825 HBD",
+    "date": "2016-09-13T18:25:48",
+    "open_pays": "10.500 HIVE"
+  },
+  {
+    "current_pays": "10.645 HBD",
+    "date": "2016-09-13T18:25:45",
+    "open_pays": "16.376 HIVE"
+  },
+  {
+    "current_pays": "38.479 HBD",
+    "date": "2016-09-13T18:25:15",
+    "open_pays": "59.198 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T18:25:00",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "5.252 HBD",
+    "date": "2016-09-13T18:24:42",
+    "open_pays": "8.080 HIVE"
+  },
+  {
+    "current_pays": "3466.421 HBD",
+    "date": "2016-09-13T18:24:30",
+    "open_pays": "5332.955 HIVE"
+  },
+  {
+    "current_pays": "5.585 HBD",
+    "date": "2016-09-13T18:24:30",
+    "open_pays": "8.599 HIVE"
+  },
+  {
+    "current_pays": "5.533 HBD",
+    "date": "2016-09-13T18:24:12",
+    "open_pays": "8.512 HIVE"
+  },
+  {
+    "current_pays": "5.525 HBD",
+    "date": "2016-09-13T18:24:12",
+    "open_pays": "8.500 HIVE"
+  },
+  {
+    "current_pays": "12.530 HBD",
+    "date": "2016-09-13T18:23:45",
+    "open_pays": "19.276 HIVE"
+  },
+  {
+    "current_pays": "13.976 HBD",
+    "date": "2016-09-13T18:23:18",
+    "open_pays": "21.501 HIVE"
+  },
+  {
+    "current_pays": "2.338 HBD",
+    "date": "2016-09-13T18:22:45",
+    "open_pays": "3.596 HIVE"
+  },
+  {
+    "current_pays": "598.155 HBD",
+    "date": "2016-09-13T18:22:30",
+    "open_pays": "920.238 HIVE"
+  },
+  {
+    "current_pays": "34.633 HBD",
+    "date": "2016-09-13T18:22:24",
+    "open_pays": "53.281 HIVE"
+  },
+  {
+    "current_pays": "6.602 HBD",
+    "date": "2016-09-13T18:22:24",
+    "open_pays": "10.164 HIVE"
+  },
+  {
+    "current_pays": "31.592 HBD",
+    "date": "2016-09-13T18:22:00",
+    "open_pays": "48.603 HIVE"
+  },
+  {
+    "current_pays": "1115.758 HBD",
+    "date": "2016-09-13T18:21:57",
+    "open_pays": "1716.550 HIVE"
+  },
+  {
+    "current_pays": "1.167 HBD",
+    "date": "2016-09-13T18:21:30",
+    "open_pays": "1.796 HIVE"
+  },
+  {
+    "current_pays": "6.636 HBD",
+    "date": "2016-09-13T18:21:00",
+    "open_pays": "10.217 HIVE"
+  },
+  {
+    "current_pays": "1.315 HBD",
+    "date": "2016-09-13T18:20:27",
+    "open_pays": "2.023 HIVE"
+  },
+  {
+    "current_pays": "2.008 HBD",
+    "date": "2016-09-13T18:19:48",
+    "open_pays": "3.091 HIVE"
+  },
+  {
+    "current_pays": "2.765 HBD",
+    "date": "2016-09-13T18:19:12",
+    "open_pays": "4.257 HIVE"
+  },
+  {
+    "current_pays": "4.450 HBD",
+    "date": "2016-09-13T18:18:33",
+    "open_pays": "6.851 HIVE"
+  },
+  {
+    "current_pays": "5.408 HBD",
+    "date": "2016-09-13T18:18:06",
+    "open_pays": "8.326 HIVE"
+  },
+  {
+    "current_pays": "1.290 HBD",
+    "date": "2016-09-13T18:17:36",
+    "open_pays": "1.986 HIVE"
+  },
+  {
+    "current_pays": "4.203 HBD",
+    "date": "2016-09-13T18:17:06",
+    "open_pays": "6.471 HIVE"
+  },
+  {
+    "current_pays": "3.257 HBD",
+    "date": "2016-09-13T18:16:33",
+    "open_pays": "5.010 HIVE"
+  },
+  {
+    "current_pays": "17.289 HBD",
+    "date": "2016-09-13T18:15:45",
+    "open_pays": "26.598 HIVE"
+  },
+  {
+    "current_pays": "6.373 HBD",
+    "date": "2016-09-13T18:15:06",
+    "open_pays": "9.804 HIVE"
+  },
+  {
+    "current_pays": "259.422 HBD",
+    "date": "2016-09-13T18:14:51",
+    "open_pays": "399.110 HIVE"
+  },
+  {
+    "current_pays": "12.885 HBD",
+    "date": "2016-09-13T18:14:51",
+    "open_pays": "19.838 HIVE"
+  },
+  {
+    "current_pays": "6.373 HBD",
+    "date": "2016-09-13T18:14:51",
+    "open_pays": "9.812 HIVE"
+  },
+  {
+    "current_pays": "3.643 HBD",
+    "date": "2016-09-13T18:14:30",
+    "open_pays": "5.608 HIVE"
+  },
+  {
+    "current_pays": "6.373 HBD",
+    "date": "2016-09-13T18:13:51",
+    "open_pays": "9.812 HIVE"
+  },
+  {
+    "current_pays": "2.223 HBD",
+    "date": "2016-09-13T18:13:15",
+    "open_pays": "3.422 HIVE"
+  },
+  {
+    "current_pays": "0.415 HBD",
+    "date": "2016-09-13T18:12:39",
+    "open_pays": "0.638 HIVE"
+  },
+  {
+    "current_pays": "6.823 HBD",
+    "date": "2016-09-13T18:12:39",
+    "open_pays": "10.497 HIVE"
+  },
+  {
+    "current_pays": "1.990 HBD",
+    "date": "2016-09-13T18:12:27",
+    "open_pays": "3.061 HIVE"
+  },
+  {
+    "current_pays": "0.415 HBD",
+    "date": "2016-09-13T18:12:27",
+    "open_pays": "0.639 HIVE"
+  },
+  {
+    "current_pays": "6.592 HBD",
+    "date": "2016-09-13T18:12:03",
+    "open_pays": "10.149 HIVE"
+  },
+  {
+    "current_pays": "6.045 HBD",
+    "date": "2016-09-13T18:11:39",
+    "open_pays": "9.306 HIVE"
+  },
+  {
+    "current_pays": "0.133 HBD",
+    "date": "2016-09-13T18:11:30",
+    "open_pays": "0.204 HIVE"
+  },
+  {
+    "current_pays": "8.638 HBD",
+    "date": "2016-09-13T18:11:27",
+    "open_pays": "13.299 HIVE"
+  },
+  {
+    "current_pays": "6.592 HBD",
+    "date": "2016-09-13T18:11:27",
+    "open_pays": "10.149 HIVE"
+  },
+  {
+    "current_pays": "2.029 HBD",
+    "date": "2016-09-13T18:10:57",
+    "open_pays": "3.121 HIVE"
+  },
+  {
+    "current_pays": "0.388 HBD",
+    "date": "2016-09-13T18:10:57",
+    "open_pays": "0.597 HIVE"
+  },
+  {
+    "current_pays": "6.435 HBD",
+    "date": "2016-09-13T18:10:54",
+    "open_pays": "9.900 HIVE"
+  },
+  {
+    "current_pays": "6.408 HBD",
+    "date": "2016-09-13T18:10:30",
+    "open_pays": "9.858 HIVE"
+  },
+  {
+    "current_pays": "3.315 HBD",
+    "date": "2016-09-13T18:10:06",
+    "open_pays": "5.100 HIVE"
+  },
+  {
+    "current_pays": "3.319 HBD",
+    "date": "2016-09-13T18:10:03",
+    "open_pays": "5.106 HIVE"
+  },
+  {
+    "current_pays": "6.823 HBD",
+    "date": "2016-09-13T18:09:39",
+    "open_pays": "10.497 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T18:09:18",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "151.954 HBD",
+    "date": "2016-09-13T18:09:18",
+    "open_pays": "233.775 HIVE"
+  },
+  {
+    "current_pays": "8.430 HBD",
+    "date": "2016-09-13T18:09:18",
+    "open_pays": "12.981 HIVE"
+  },
+  {
+    "current_pays": "6.208 HIVE",
+    "date": "2016-09-13T18:09:09",
+    "open_pays": "4.035 HBD"
+  },
+  {
+    "current_pays": "4.643 HBD",
+    "date": "2016-09-13T18:08:51",
+    "open_pays": "7.143 HIVE"
+  },
+  {
+    "current_pays": "7.735 HBD",
+    "date": "2016-09-13T18:08:33",
+    "open_pays": "11.900 HIVE"
+  },
+  {
+    "current_pays": "139.220 HBD",
+    "date": "2016-09-13T18:08:27",
+    "open_pays": "214.184 HIVE"
+  },
+  {
+    "current_pays": "351.536 HIVE",
+    "date": "2016-09-13T18:08:12",
+    "open_pays": "228.499 HBD"
+  },
+  {
+    "current_pays": "10.483 HIVE",
+    "date": "2016-09-13T18:08:12",
+    "open_pays": "6.814 HBD"
+  },
+  {
+    "current_pays": "99.013 HIVE",
+    "date": "2016-09-13T18:08:12",
+    "open_pays": "64.408 HBD"
+  },
+  {
+    "current_pays": "25.105 HIVE",
+    "date": "2016-09-13T18:08:12",
+    "open_pays": "16.351 HBD"
+  },
+  {
+    "current_pays": "6271.501 HBD",
+    "date": "2016-09-13T18:08:00",
+    "open_pays": "9648.464 HIVE"
+  },
+  {
+    "current_pays": "2.239 HBD",
+    "date": "2016-09-13T18:07:42",
+    "open_pays": "3.444 HIVE"
+  },
+  {
+    "current_pays": "1.040 HBD",
+    "date": "2016-09-13T18:07:21",
+    "open_pays": "1.600 HIVE"
+  },
+  {
+    "current_pays": "50.000 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "32.815 HBD"
+  },
+  {
+    "current_pays": "25.000 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "16.500 HBD"
+  },
+  {
+    "current_pays": "2.956 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "1.980 HBD"
+  },
+  {
+    "current_pays": "15.000 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "10.050 HBD"
+  },
+  {
+    "current_pays": "5.000 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "3.350 HBD"
+  },
+  {
+    "current_pays": "0.252 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "0.169 HBD"
+  },
+  {
+    "current_pays": "15.000 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "10.200 HBD"
+  },
+  {
+    "current_pays": "100.489 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "70.342 HBD"
+  },
+  {
+    "current_pays": "57.120 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "40.012 HBD"
+  },
+  {
+    "current_pays": "45.000 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "31.545 HBD"
+  },
+  {
+    "current_pays": "20.256 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "14.200 HBD"
+  },
+  {
+    "current_pays": "10.419 HIVE",
+    "date": "2016-09-13T18:07:12",
+    "open_pays": "7.304 HBD"
+  },
+  {
+    "current_pays": "1.008 HBD",
+    "date": "2016-09-13T18:02:57",
+    "open_pays": "1.400 HIVE"
+  },
+  {
+    "current_pays": "21.126 HIVE",
+    "date": "2016-09-13T17:59:54",
+    "open_pays": "14.893 HBD"
+  },
+  {
+    "current_pays": "9.874 HIVE",
+    "date": "2016-09-13T17:59:54",
+    "open_pays": "6.961 HBD"
+  },
+  {
+    "current_pays": "0.131 HBD",
+    "date": "2016-09-13T17:32:09",
+    "open_pays": "0.180 HIVE"
+  }
+]

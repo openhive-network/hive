@@ -1,0 +1,27 @@
+{
+  "error": {
+    "code": -32003,
+    "data": {
+      "code": 10,
+      "message": "Assert Exception",
+      "name": "assert_exception",
+      "stack": [
+        {
+          "context": {
+            "file": "condenser_api.cpp",
+            "hostname": "",
+            "level": "error",
+            "line": 856,
+            "method": "get_discussions_by_children",
+            "timestamp": "2021-08-16T08:26:55"
+          },
+          "data": {},
+          "format": "false: Supported by hivemind"
+        }
+      ]
+    },
+    "message": "Assert Exception:false: Supported by hivemind"
+  },
+  "id": 1,
+  "jsonrpc": "2.0"
+}

@@ -1,0 +1,28 @@
+---
+  test_name: Hived find_withdraw_vesting_routes
+
+  marks:
+    - patterntest # no order info in APIDOC
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: find_withdraw_vesting_routes
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.find_withdraw_vesting_routes"
+          params: {"account": "gtg", "order": "by_destination"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "find"
+            directory: "database_api_patterns/find_withdraw_vesting_routes"
