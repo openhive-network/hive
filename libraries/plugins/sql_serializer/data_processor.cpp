@@ -46,13 +46,9 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
 
     try
     {
-      FC_ASSERT(_txController == nullptr, "Already filled transaction controller?");
-      auto local_controller = build_own_transaction_controller(psqlUrl);
-
       {
         ilog("${d} data processor is connecting to specified db url: `${url}' ...", ("url", psqlUrl)("d", _description));
         std::unique_lock<std::mutex> lk(_mtx);
-        _txController = local_controller;
         _initialized = true;
         ilog("${d} data processor connected successfully ...", ("d", _description));
         _cv.notify_one();
@@ -86,18 +82,14 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
         {
           data_processing_status_notifier notifier(&_is_processing_data, &_data_processing_mtx, &_data_processing_finished_cv);
 
-          transaction_ptr tx(_txController->openTx());
-          dataProcessor(*dataPtr, *tx);
-          tx->commit();
+          dataProcessor(*dataPtr);
+
           if ( _api_trigger && last_block_num_in_stage )
             _api_trigger->report_complete_thread_stage( last_block_num_in_stage );
         }
 
         dlog("${d} data processor finished processing a data chunk...", ("d", _description));
       }
-
-      local_controller->disconnect();
-      _txController.reset();
     }
     catch(const pqxx::pqxx_exception& ex)
     {
@@ -121,27 +113,6 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
 
 data_processor::~data_processor()
 {
-}
-
-transaction_controller_ptr data_processor::register_transaction_controler(transaction_controller_ptr controller)
-{
-  FC_ASSERT(controller);
-
-  if(_initialized == false)
-  {
-    ilog("Waiting for data_processor `${d}' initialization...", ("d", _description));
-
-    std::unique_lock<std::mutex> lk(_mtx);
-    _cv.wait(lk, [this] { return _initialized.load(); });
-    ilog("data_processor `${d}' initialized - proceeding registration process...", ("d", _description));
-  }
-
-  FC_ASSERT(_txController != nullptr, "No _txController instance for data_processor: `${d}'?", ("d", _description));
-
-  transaction_controller_ptr txController = std::move(_txController);
-  _txController = std::move(controller);
-  
-  return txController;
 }
 
 void data_processor::trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum)
@@ -218,5 +189,44 @@ void data_processor::join()
   ilog("Data processor: ${d} finished execution...", ("d", _description));
 }
 
+queries_commit_data_processor::queries_commit_data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< trigger_synchronous_masive_sync_call > api_trigger ) {
+  auto tx_controller = build_own_transaction_controller( psqlUrl );
+  auto fn_wrapped_with_transaction = [ tx_controller, dataProcessor ]( const data_chunk_ptr& dataPtr ){
+    transaction_ptr tx( tx_controller->openTx() );
+    auto result = dataProcessor( dataPtr, *tx );
+    tx->commit();
+
+    return result;
+  };
+
+  m_wrapped_processor = std::make_unique< data_processor >( psqlUrl, description, fn_wrapped_with_transaction, api_trigger );
+}
+
+queries_commit_data_processor::~queries_commit_data_processor() {
+}
+
+void
+queries_commit_data_processor::trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum) {
+  m_wrapped_processor->trigger( std::move(dataPtr), last_blocknum );
+}
+
+void
+queries_commit_data_processor::complete_data_processing() {
+  m_wrapped_processor->complete_data_processing();
+}
+
+void
+queries_commit_data_processor::cancel() {
+  m_wrapped_processor->cancel();
+}
+void
+queries_commit_data_processor::join() {
+  m_wrapped_processor->join();
+}
+
+void
+queries_commit_data_processor::only_report_batch_finished(uint32_t _block_num ) {
+  m_wrapped_processor->only_report_batch_finished( _block_num );
+}
 
 }}} /// hive::plugins::sql_serializer

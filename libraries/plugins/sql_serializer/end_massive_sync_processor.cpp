@@ -17,7 +17,7 @@ end_massive_sync_processor::end_massive_sync_processor( std::string psqlUrl )
     return data_processor::data_processing_status();
   };
 
-  _data_processor = std::make_unique< data_processor >( psqlUrl, "commiting hive.end_massive_sync", commiting_function, nullptr );
+  _data_processor = std::make_unique< queries_commit_data_processor >(psqlUrl, "commiting hive.end_massive_sync", commiting_function, nullptr );
 }
 
 void
