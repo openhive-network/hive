@@ -182,7 +182,7 @@ using chain::reindex_notification;
         container_data_writer(std::string psqlUrl, const cached_data_t& mainCache, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger ) : _mainCache(mainCache)
 
         {
-          _processor = std::make_unique<data_processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
+          _processor = std::make_unique<queries_commit_data_processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
         }
 
         void trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num)
@@ -197,20 +197,6 @@ using chain::reindex_notification;
           }
 
           FC_ASSERT(data.empty());
-        }
-
-        void register_transaction_controler(transaction_controller_ptr tx_controller)
-        {
-          FC_ASSERT(_prev_tx_controller == nullptr, );
-          _prev_tx_controller = _processor->register_transaction_controler(std::move(tx_controller));
-          FC_ASSERT(_prev_tx_controller != nullptr);
-        }
-
-        void restore_transaction_controller()
-        {
-          FC_ASSERT(_prev_tx_controller != nullptr);
-          _processor->register_transaction_controler(std::move(_prev_tx_controller));
-
         }
 
         void complete_data_processing()
@@ -334,7 +320,7 @@ using chain::reindex_notification;
 
       private:
         const cached_data_t&            _mainCache;
-        std::unique_ptr<data_processor> _processor;
+        std::unique_ptr<queries_commit_data_processor> _processor;
         transaction_controller_ptr      _prev_tx_controller;
       };
 
@@ -664,12 +650,6 @@ using chain::reindex_notification;
           {
 
             init_data_processors();
-
-            /** By default the data_writer class builds a concurrent (owned by given thread) transaction controller.
-                Since after starting up, we don't know which mode should be used, lets switch into LIVE-SYNC (single transaction) mode.
-                Once reindex-start notification will be received, working mode will be switched back to the concurrent transaction controller.
-            */
-            switch_to_single_transaction_controller();
           }
 
           ~sql_serializer_plugin_impl()
@@ -738,7 +718,7 @@ using chain::reindex_notification;
 
             std::string query = std::string("SELECT ") + function_name + "();";
             std::string description = "Query processor: `" + query + "'";
-            data_processor processor( db_url, description, [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+            queries_commit_data_processor processor(db_url, description, [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
                           {
                             ilog("Attempting to execute query: `${query}`...", ("query", query ) );
                             const auto start_time = fc::time_point::now();
@@ -799,7 +779,7 @@ using chain::reindex_notification;
             ilog( "Checking correctness of database..." );
 
             bool is_extension_created = false;
-            data_processor db_checker(
+            queries_commit_data_processor db_checker(
                   db_url
                 , "Check correctness"
                 , [&is_extension_created](const data_chunk_ptr&, transaction& tx) -> data_processing_status {
@@ -824,8 +804,8 @@ using chain::reindex_notification;
             op_sequence_id = 0;
             psql_block_number = 0;
 
-            data_processor block_loader(db_url, "Block loader",
-              [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+            queries_commit_data_processor block_loader(db_url, "Block loader",
+                                                       [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive.blocks hb ORDER BY hb.num DESC LIMIT 1;");
@@ -843,8 +823,8 @@ using chain::reindex_notification;
 
             block_loader.trigger(data_processor::data_chunk_ptr(), 0);
 
-            data_processor sequence_loader(db_url, "Sequence loader",
-              [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+            queries_commit_data_processor sequence_loader(db_url, "Sequence loader",
+                                                          [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
                 data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive.operations ho ORDER BY ho.id DESC LIMIT 1;");
@@ -883,8 +863,6 @@ using chain::reindex_notification;
             _end_massive_sync_processor->join();
           }
 
-          void switch_to_single_transaction_controller();
-          void switch_to_concurrent_transaction_controller();
           void wait_for_data_processing_finish();
 
           void process_cached_data();
@@ -919,23 +897,6 @@ void sql_serializer_plugin_impl::init_data_processors()
   _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer", api_trigger);
 }
 
-void sql_serializer_plugin_impl::switch_to_single_transaction_controller()
-{
-  auto single_tx_controler = build_single_transaction_controller(db_url);
-
-  _block_writer->register_transaction_controler(single_tx_controler);
-  _transaction_writer->register_transaction_controler(single_tx_controler);
-  _transaction_multisig_writer->register_transaction_controler(single_tx_controler);
-  _operation_writer->register_transaction_controler(single_tx_controler);
-}
-
-void sql_serializer_plugin_impl::switch_to_concurrent_transaction_controller()
-{
-  _block_writer->restore_transaction_controller();
-  _transaction_writer->restore_transaction_controller();
-  _transaction_multisig_writer->restore_transaction_controller();
-  _operation_writer->restore_transaction_controller();
-}
 
 void sql_serializer_plugin_impl::wait_for_data_processing_finish()
 {
@@ -1092,8 +1053,6 @@ void sql_serializer_plugin_impl::on_pre_reindex(const reindex_notification& note
   blocks_per_commit = 1'000;
   massive_sync = true;
 
-  switch_to_concurrent_transaction_controller();
-
   ilog("Leaving a reindex init...");
 }
 
@@ -1106,8 +1065,6 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
 
   if(note.last_block_number >= note.max_block_number)
     switch_db_items(true/*mode*/);
-
-  switch_to_single_transaction_controller();
 
   blocks_per_commit = 1;
   massive_sync = false;

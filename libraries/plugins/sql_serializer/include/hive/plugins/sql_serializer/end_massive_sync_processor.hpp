@@ -19,7 +19,7 @@ namespace hive::plugins::sql_serializer {
     void complete_data_processing();
     void join();
   private:
-    std::unique_ptr< data_processor > _data_processor;
+    std::unique_ptr< queries_commit_data_processor > _data_processor;
     uint32_t _block_number;
   };
 
