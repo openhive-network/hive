@@ -182,7 +182,7 @@ using chain::reindex_notification;
         container_data_writer(std::string psqlUrl, const cached_data_t& mainCache, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger ) : _mainCache(mainCache)
 
         {
-          _processor = std::make_unique<data_processor>(psqlUrl, description, flush_data, _api_trigger);
+          _processor = std::make_unique<data_processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
         }
 
         void trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num)
@@ -224,7 +224,7 @@ using chain::reindex_notification;
         }
 
       private:
-        static data_processing_status flush_data(const data_chunk_ptr& dataPtr, transaction& tx)
+        static data_processing_status flush_replayed_data(const data_chunk_ptr& dataPtr, transaction& tx)
         {
           const chunk* holder = static_cast<const chunk*>(dataPtr.get());
           data_processing_status processingStatus;
@@ -259,6 +259,65 @@ using chain::reindex_notification;
           return processingStatus;
 
         }
+
+        static data_processing_status flush_array_live_data(const data_chunk_ptr& dataPtr, transaction& tx)
+        {
+          const chunk* holder = static_cast<const chunk*>(dataPtr.get());
+          data_processing_status processingStatus;
+
+          TupleConverter conv(holder->_mainCache);
+
+          const DataContainer& data = holder->_data;
+
+          FC_ASSERT(data.empty() == false);
+
+          std::string query = "ARRAY[";
+
+          auto dataI = data.cbegin();
+          query += '(' + conv(*dataI) + ")\n";
+
+          for(++dataI; dataI != data.cend(); ++dataI)
+          {
+            query += ",(" + conv(*dataI) + ")\n";
+          }
+
+          query += ']';
+
+          processingStatus.first += data.size();
+          processingStatus.second = true;
+
+          return processingStatus;
+
+        }
+
+        static data_processing_status flush_scalar_live_data(const data_chunk_ptr& dataPtr, transaction& tx)
+        {
+          const chunk* holder = static_cast<const chunk*>(dataPtr.get());
+          data_processing_status processingStatus;
+
+          TupleConverter conv(holder->_mainCache);
+
+          const DataContainer& data = holder->_data;
+
+          FC_ASSERT(data.empty() == false);
+
+          std::string query = "";
+
+          auto dataI = data.cbegin();
+          query += '(' + conv(*dataI) + ")\n";
+
+          for(++dataI; dataI != data.cend(); ++dataI)
+          {
+            query += ",(" + conv(*dataI) + ")\n";
+          }
+
+          processingStatus.first += data.size();
+          processingStatus.second = true;
+
+          return processingStatus;
+
+        }
+
 
         private:
           class chunk : public data_processor::data_chunk
