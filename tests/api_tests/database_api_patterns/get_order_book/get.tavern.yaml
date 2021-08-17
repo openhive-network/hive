@@ -1,0 +1,40 @@
+---
+  test_name: Hived get_order_book
+
+  marks:
+    - patterntest # todo find example with nonempty bids and asks results
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_order_book
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.get_order_book"
+          params: {
+            "limit": 0,
+            "base": {
+              "amount": "1000",
+              "precision": 3,
+              "nai": "@@000000021"
+            },
+            "quote": {
+              "amount": "1",
+              "precision": 3,
+              "nai": "@@000000013"
+            }
+          }
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get"
+            directory: "database_api_patterns/get_order_book"

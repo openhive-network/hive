@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api get_key_references tulpa_memo
+
+  marks:
+    - patterntest # empty - memo keys are not returned
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_key_references tulpa_memo
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_by_key_api.get_key_references"
+          params: {"keys":["STM5VL4YZ1U74VZfdUrSq2Npy4mv2hc7HiBvgkWaV8nwMLT8gjaV4"]}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "tulpa_memo"
+            directory: "account_by_key_api_patterns/get_key_references"

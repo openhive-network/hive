@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api get_account_history filter to withdraw_vesting_operation
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_account_history withdraw_vesting_operation
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"ned","operation_filter_low": 16, "start": 15452, "limit": 2}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "withdraw_vesting_operation"
+            directory: "account_history_api_patterns/get_account_history"

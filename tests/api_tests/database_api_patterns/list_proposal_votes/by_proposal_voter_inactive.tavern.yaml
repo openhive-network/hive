@@ -1,0 +1,29 @@
+---
+  test_name: Hived list_proposal_votes by_proposal_voter_inactive
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: list_proposal_votes by_proposal_voter_inactive
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_proposal_votes"
+          params: {"start":[10], "limit":10, "order":"by_proposal_voter", "order_direction": "ascending", "status": "inactive"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "by_proposal_voter_inactive"
+            directory: "database_api_patterns/list_proposal_votes"
+            ignore_tags: ['total_votes']

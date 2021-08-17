@@ -1,0 +1,220 @@
+{
+  "escrows": [
+    {
+      "agent": "elautomatico",
+      "agent_approved": true,
+      "disputed": false,
+      "escrow_expiration": "2019-06-26T19:08:45",
+      "escrow_id": 5,
+      "from": "loshombresdepaco",
+      "hbd_balance": {
+        "amount": "50",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "2",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 160,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2019-06-25T19:08:45",
+      "to": "biteosdev",
+      "to_approved": true
+    },
+    {
+      "agent": "inconceivable",
+      "agent_approved": true,
+      "disputed": true,
+      "escrow_expiration": "2023-04-25T22:46:26",
+      "escrow_id": 32106521,
+      "from": "markegiles",
+      "hbd_balance": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "2",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 252,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2019-05-16T22:46:26",
+      "to": "disregardfiat",
+      "to_approved": true
+    },
+    {
+      "agent": "dlux-io",
+      "agent_approved": true,
+      "disputed": false,
+      "escrow_expiration": "2020-03-15T20:54:36",
+      "escrow_id": 1238774047,
+      "from": "markegiles",
+      "hbd_balance": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "125",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 276,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2020-03-10T20:54:36",
+      "to": "disregardfiat",
+      "to_approved": true
+    },
+    {
+      "agent": "steemia.pay",
+      "agent_approved": true,
+      "disputed": false,
+      "escrow_expiration": "2018-07-04T19:08:45",
+      "escrow_id": 20180701,
+      "from": "onurozsen",
+      "hbd_balance": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "10",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 118,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2018-07-03T19:08:45",
+      "to": "mecitdeniz",
+      "to_approved": true
+    },
+    {
+      "agent": "ifte",
+      "agent_approved": true,
+      "disputed": false,
+      "escrow_expiration": "2018-05-05T16:50:00",
+      "escrow_id": 40159597,
+      "from": "rrhasnat",
+      "hbd_balance": {
+        "amount": "10",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 41,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "ratification_deadline": "2018-04-08T16:50:00",
+      "to": "codebull",
+      "to_approved": true
+    },
+    {
+      "agent": "mecitdeniz",
+      "agent_approved": true,
+      "disputed": false,
+      "escrow_expiration": "2018-07-01T21:00:00",
+      "escrow_id": 1363420916,
+      "from": "steemia.dev",
+      "hbd_balance": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "5",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 112,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2018-07-01T15:04:00",
+      "to": "steemia.pay",
+      "to_approved": true
+    },
+    {
+      "agent": "mecitdeniz",
+      "agent_approved": true,
+      "disputed": false,
+      "escrow_expiration": "2018-07-01T21:00:00",
+      "escrow_id": 1364655408,
+      "from": "steemia.dev",
+      "hbd_balance": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "4",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 113,
+      "pending_fee": {
+        "amount": "0",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2018-06-30T16:49:00",
+      "to": "steemia.pay",
+      "to_approved": true
+    },
+    {
+      "agent": "smitop",
+      "agent_approved": false,
+      "disputed": false,
+      "escrow_expiration": "2038-01-19T03:14:07",
+      "escrow_id": 12345,
+      "from": "temp",
+      "hbd_balance": {
+        "amount": "0",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive_balance": {
+        "amount": "1",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "id": 143,
+      "pending_fee": {
+        "amount": "1",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "ratification_deadline": "2038-01-19T03:14:06",
+      "to": "guest123",
+      "to_approved": false
+    }
+  ]
+}

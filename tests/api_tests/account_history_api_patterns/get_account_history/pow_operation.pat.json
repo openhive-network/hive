@@ -1,0 +1,144 @@
+{
+  "history": [
+    [
+      0,
+      {
+        "block": 152447,
+        "op": {
+          "type": "pow_operation",
+          "value": {
+            "block_id": "0002537ef28b6258e68882944162060d236e3f36",
+            "nonce": "7375180734000095590",
+            "props": {
+              "account_creation_fee": {
+                "amount": "100000",
+                "nai": "@@000000021",
+                "precision": 3
+              },
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "38c4bdc32a2ffc585f817be42f2c84a6cc29876128791e7b083cc006f1da9cfa",
+              "signature": "2071b73b17987ab392ee8138a6ddf88cd52459e75b596508b349659573db8006ad443e1dbfab563a8cf15074c2b11699b8e6ac0de315d98623306641dbfe016ab7",
+              "work": "0000000635993a69081f52f6401293e2b73b283d37eacc07e0d786fb0107aaef",
+              "worker": "STM6sK2WuCasEYXK5gbVjGQZMdNcTNuFghr9Uj2CAKKdDH6ucVUqu"
+            },
+            "worker_account": "blocktrades"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-03-30T00:04:33",
+        "trx_id": "bdb74f0af41fb6ac1d4745d9f30b50768bd41bfe",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      2,
+      {
+        "block": 162117,
+        "op": {
+          "type": "pow_operation",
+          "value": {
+            "block_id": "000279440012743f7a07fc21dd28ee99c6fbdfbd",
+            "nonce": "7375180734000054237",
+            "props": {
+              "account_creation_fee": {
+                "amount": "100000",
+                "nai": "@@000000021",
+                "precision": 3
+              },
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "58e92f85e1b192de519acdbc0a7e2db4b00c251337065ba34804df83b45e2fc2",
+              "signature": "1f1359b6d99176fdf15d34c51bed54a82a41219125877780dbb665846ac9b0198f3cb77ee24a6e8a13dd27b29985cf63b17b4ee0df3cd5728e670bd8fa0565cb4d",
+              "work": "0000000557dbe6f08635b61eeda17040bcd0675c9c20795617b08f83dc17861d",
+              "worker": "STM6sK2WuCasEYXK5gbVjGQZMdNcTNuFghr9Uj2CAKKdDH6ucVUqu"
+            },
+            "worker_account": "blocktrades"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-03-30T08:12:27",
+        "trx_id": "94adb9e44624372d76ad30d02cd75803a6047bbb",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      3,
+      {
+        "block": 166681,
+        "op": {
+          "type": "pow_operation",
+          "value": {
+            "block_id": "00028b186103b0056ae870f63ade0fd5da6d91f2",
+            "nonce": "7375180734000056486",
+            "props": {
+              "account_creation_fee": {
+                "amount": "100000",
+                "nai": "@@000000021",
+                "precision": 3
+              },
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "221326c2fbeac8cff4a1156f379dbc8e45b0f95fef8e5e0dc077fc5e522e3df7",
+              "signature": "1f77f6112f632b2d92febbab5d8e6c67aed2e77308b482f5554ea44ebfe37d9baf4104499df8850da093e054290712275d5266c55ba7864d0aa7944a875f33d253",
+              "work": "00000003eaf1950c4d98c18a06b2b75743077848091028c366b9d0a40e278ea7",
+              "worker": "STM6sK2WuCasEYXK5gbVjGQZMdNcTNuFghr9Uj2CAKKdDH6ucVUqu"
+            },
+            "worker_account": "blocktrades"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-03-30T12:00:39",
+        "trx_id": "3da25bc97437b4cde990096929c4c6527d1216c6",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      4,
+      {
+        "block": 168925,
+        "op": {
+          "type": "pow_operation",
+          "value": {
+            "block_id": "000293dcd49fd6527b34cedaa7b7e8efdcf2ee44",
+            "nonce": "7375180734000037558",
+            "props": {
+              "account_creation_fee": {
+                "amount": "100000",
+                "nai": "@@000000021",
+                "precision": 3
+              },
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "7ff7894e5bbedd3c9f732a217317213a7446f67f52d4fd4ac38c88e21eb3d1d5",
+              "signature": "1fb7c9a96cd7ac7a82b8ca992be69cebee2cd4e702ff0cc6b9e1fea20035760b097abee0453b305903ca5e79fdc0ec23cb65700c8667a59ce806757c8599bc765a",
+              "work": "0000000df71896f1756d6a3456905da575407b4917d922042f72e076f586a2b4",
+              "worker": "STM6sK2WuCasEYXK5gbVjGQZMdNcTNuFghr9Uj2CAKKdDH6ucVUqu"
+            },
+            "worker_account": "blocktrades"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-03-30T13:52:51",
+        "trx_id": "bb9771712a55e7f230e7164ffe7d753ff9c10c3a",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

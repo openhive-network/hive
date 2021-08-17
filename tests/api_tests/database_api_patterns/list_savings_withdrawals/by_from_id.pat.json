@@ -1,0 +1,69 @@
+{
+  "withdrawals": [
+    {
+      "amount": {
+        "amount": "1000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "complete": "2020-11-08T17:55:03",
+      "from": "hiro-hive",
+      "id": 129417,
+      "memo": "",
+      "request_id": 1604598898,
+      "to": "hiro-hive"
+    },
+    {
+      "amount": {
+        "amount": "115645",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "complete": "2020-11-08T16:38:24",
+      "from": "leyargoz",
+      "id": 129416,
+      "memo": "",
+      "request_id": 1604594291,
+      "to": "leyargoz"
+    },
+    {
+      "amount": {
+        "amount": "4656",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "complete": "2020-11-07T06:18:24",
+      "from": "macchiata",
+      "id": 129413,
+      "memo": "",
+      "request_id": 1604470693,
+      "to": "macchiata"
+    },
+    {
+      "amount": {
+        "amount": "9236",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "complete": "2020-11-06T19:32:48",
+      "from": "marianomariano",
+      "id": 129412,
+      "memo": "",
+      "request_id": 1604431948,
+      "to": "marianomariano"
+    },
+    {
+      "amount": {
+        "amount": "559086",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "complete": "2020-11-09T02:34:00",
+      "from": "yousafharoonkhan",
+      "id": 129418,
+      "memo": "",
+      "request_id": 1604630015,
+      "to": "yousafharoonkhan"
+    }
+  ]
+}

@@ -1,0 +1,504 @@
+{
+  "votes": [
+    {
+      "account": "gtg",
+      "id": 12996,
+      "witness": "abit"
+    },
+    {
+      "account": "gtg",
+      "id": 8153,
+      "witness": "anyx"
+    },
+    {
+      "account": "gtg",
+      "id": 658700,
+      "witness": "arcange"
+    },
+    {
+      "account": "gtg",
+      "id": 660120,
+      "witness": "ats-witness"
+    },
+    {
+      "account": "gtg",
+      "id": 690412,
+      "witness": "ausbitbank"
+    },
+    {
+      "account": "gtg",
+      "id": 16091,
+      "witness": "bhuz"
+    },
+    {
+      "account": "gtg",
+      "id": 8496,
+      "witness": "blocktrades"
+    },
+    {
+      "account": "gtg",
+      "id": 146174,
+      "witness": "drakos"
+    },
+    {
+      "account": "gtg",
+      "id": 655560,
+      "witness": "emrebeyler"
+    },
+    {
+      "account": "gtg",
+      "id": 781135,
+      "witness": "engrave"
+    },
+    {
+      "account": "gtg",
+      "id": 333912,
+      "witness": "followbtcnews"
+    },
+    {
+      "account": "gtg",
+      "id": 20216,
+      "witness": "good-karma"
+    },
+    {
+      "account": "gtg",
+      "id": 4587,
+      "witness": "gtg"
+    },
+    {
+      "account": "gtg",
+      "id": 658665,
+      "witness": "liondani"
+    },
+    {
+      "account": "gtg",
+      "id": 756774,
+      "witness": "mahdiyari"
+    },
+    {
+      "account": "gtg",
+      "id": 765080,
+      "witness": "netuoso"
+    },
+    {
+      "account": "gtg",
+      "id": 756780,
+      "witness": "ocd-witness"
+    },
+    {
+      "account": "gtg",
+      "id": 591860,
+      "witness": "oflyhigh"
+    },
+    {
+      "account": "gtg",
+      "id": 781226,
+      "witness": "pfunk"
+    },
+    {
+      "account": "gtg",
+      "id": 658835,
+      "witness": "pharesim"
+    },
+    {
+      "account": "gtg",
+      "id": 756775,
+      "witness": "quochuy"
+    },
+    {
+      "account": "gtg",
+      "id": 91890,
+      "witness": "riverhead"
+    },
+    {
+      "account": "gtg",
+      "id": 777509,
+      "witness": "roelandp"
+    },
+    {
+      "account": "gtg",
+      "id": 756782,
+      "witness": "smooth.witness"
+    },
+    {
+      "account": "gtg",
+      "id": 591857,
+      "witness": "someguy123"
+    },
+    {
+      "account": "gtg",
+      "id": 702544,
+      "witness": "steempress"
+    },
+    {
+      "account": "gtg",
+      "id": 669261,
+      "witness": "stoodkev"
+    },
+    {
+      "account": "gtg",
+      "id": 374267,
+      "witness": "themarkymark"
+    },
+    {
+      "account": "gtg",
+      "id": 729821,
+      "witness": "therealwolf"
+    },
+    {
+      "account": "gtg",
+      "id": 751774,
+      "witness": "timcliff"
+    },
+    {
+      "account": "gtgoody",
+      "id": 357155,
+      "witness": "gtg"
+    },
+    {
+      "account": "gtmatze",
+      "id": 329570,
+      "witness": "sempervideo"
+    },
+    {
+      "account": "gto92",
+      "id": 781965,
+      "witness": "abit"
+    },
+    {
+      "account": "gto92",
+      "id": 781513,
+      "witness": "aggroed"
+    },
+    {
+      "account": "gto92",
+      "id": 781960,
+      "witness": "anyx"
+    },
+    {
+      "account": "gto92",
+      "id": 781968,
+      "witness": "arcange"
+    },
+    {
+      "account": "gto92",
+      "id": 781958,
+      "witness": "ausbitbank"
+    },
+    {
+      "account": "gto92",
+      "id": 781980,
+      "witness": "bhuz"
+    },
+    {
+      "account": "gto92",
+      "id": 781955,
+      "witness": "blocktrades"
+    },
+    {
+      "account": "gto92",
+      "id": 781971,
+      "witness": "curie"
+    },
+    {
+      "account": "gto92",
+      "id": 781967,
+      "witness": "drakos"
+    },
+    {
+      "account": "gto92",
+      "id": 781969,
+      "witness": "emrebeyler"
+    },
+    {
+      "account": "gto92",
+      "id": 781966,
+      "witness": "followbtcnews"
+    },
+    {
+      "account": "gto92",
+      "id": 781957,
+      "witness": "good-karma"
+    },
+    {
+      "account": "gto92",
+      "id": 781959,
+      "witness": "gtg"
+    },
+    {
+      "account": "gto92",
+      "id": 781979,
+      "witness": "guiltyparties"
+    },
+    {
+      "account": "gto92",
+      "id": 781982,
+      "witness": "holger80"
+    },
+    {
+      "account": "gto92",
+      "id": 781977,
+      "witness": "jesta"
+    },
+    {
+      "account": "gto92",
+      "id": 781978,
+      "witness": "liondani"
+    },
+    {
+      "account": "gto92",
+      "id": 781970,
+      "witness": "lukestokes.mhth"
+    },
+    {
+      "account": "gto92",
+      "id": 781974,
+      "witness": "mahdiyari"
+    },
+    {
+      "account": "gto92",
+      "id": 781981,
+      "witness": "pfunk"
+    },
+    {
+      "account": "gto92",
+      "id": 781964,
+      "witness": "pharesim"
+    },
+    {
+      "account": "gto92",
+      "id": 781973,
+      "witness": "quochuy"
+    },
+    {
+      "account": "gto92",
+      "id": 781972,
+      "witness": "riverhead"
+    },
+    {
+      "account": "gto92",
+      "id": 781956,
+      "witness": "roelandp"
+    },
+    {
+      "account": "gto92",
+      "id": 781961,
+      "witness": "someguy123"
+    },
+    {
+      "account": "gto92",
+      "id": 781512,
+      "witness": "stoodkev"
+    },
+    {
+      "account": "gto92",
+      "id": 781975,
+      "witness": "thecryptodrive"
+    },
+    {
+      "account": "gto92",
+      "id": 781962,
+      "witness": "therealwolf"
+    },
+    {
+      "account": "gto92",
+      "id": 781976,
+      "witness": "timcliff"
+    },
+    {
+      "account": "gto92",
+      "id": 781963,
+      "witness": "yabapmatt"
+    },
+    {
+      "account": "gtown",
+      "id": 772406,
+      "witness": "ausbitbank"
+    },
+    {
+      "account": "gtown",
+      "id": 771276,
+      "witness": "c-squared"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 182422,
+      "witness": "blocktrades"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 183996,
+      "witness": "dragosroua"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 210891,
+      "witness": "gtg"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 182421,
+      "witness": "jesta"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 182420,
+      "witness": "mahdiyari"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 234979,
+      "witness": "prc"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 243487,
+      "witness": "samrg472"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 204404,
+      "witness": "steemitboard"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 379436,
+      "witness": "stoodkev"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 210890,
+      "witness": "timcliff"
+    },
+    {
+      "account": "gtpjoker",
+      "id": 183995,
+      "witness": "utopian-io"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728832,
+      "witness": "aggroed"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728826,
+      "witness": "blocktrades"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728830,
+      "witness": "cervantes"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728824,
+      "witness": "drakos"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728828,
+      "witness": "followbtcnews"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728836,
+      "witness": "netuoso"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728823,
+      "witness": "someguy123"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728833,
+      "witness": "steempeak"
+    },
+    {
+      "account": "gtrodargent",
+      "id": 728829,
+      "witness": "therealwolf"
+    },
+    {
+      "account": "gtrussi",
+      "id": 771108,
+      "witness": "aggroed"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769321,
+      "witness": "arcange"
+    },
+    {
+      "account": "gtrussi",
+      "id": 771809,
+      "witness": "ausbitbank"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769312,
+      "witness": "cervantes"
+    },
+    {
+      "account": "gtrussi",
+      "id": 771810,
+      "witness": "curie"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769315,
+      "witness": "dragosroua"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769316,
+      "witness": "dsound"
+    },
+    {
+      "account": "gtrussi",
+      "id": 771811,
+      "witness": "leofinance"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769313,
+      "witness": "mahdiyari"
+    },
+    {
+      "account": "gtrussi",
+      "id": 436054,
+      "witness": "moisesmcardona"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769322,
+      "witness": "ocd-witness"
+    },
+    {
+      "account": "gtrussi",
+      "id": 765804,
+      "witness": "qurator"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769317,
+      "witness": "roomservice"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769314,
+      "witness": "steemitboard"
+    },
+    {
+      "account": "gtrussi",
+      "id": 769311,
+      "witness": "steempeak"
+    },
+    {
+      "account": "gtrussi",
+      "id": 771107,
+      "witness": "stoodkev"
+    }
+  ]
+}

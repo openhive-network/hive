@@ -1,0 +1,33 @@
+{
+  "history": [
+    [
+      0,
+      {
+        "block": 1364796,
+        "op": {
+          "type": "account_created_operation",
+          "value": {
+            "creator": "steem",
+            "initial_delegation": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "initial_vesting_shares": {
+              "amount": "107211450002",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "new_account_name": "camilla"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-05-11T21:11:09",
+        "trx_id": "f06f79e658cebfca176eaa7f225376c3ad1174d7",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ]
+  ]
+}

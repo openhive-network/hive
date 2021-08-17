@@ -1,0 +1,3447 @@
+[
+  {
+    "blog": "steemit",
+    "comment": {
+      "active_votes": [
+        {
+          "percent": "100",
+          "reputation": 240292002602347,
+          "rshares": 375241,
+          "voter": "dantheman"
+        },
+        {
+          "percent": "10000",
+          "reputation": 190869539046,
+          "rshares": 886132,
+          "voter": "mr11acdee"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 5100,
+          "voter": "steemit78"
+        },
+        {
+          "percent": "10000",
+          "reputation": 85602977273,
+          "rshares": 1259167,
+          "voter": "anonymous"
+        },
+        {
+          "percent": "10000",
+          "reputation": 159370,
+          "rshares": 318519,
+          "voter": "hello"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 153384,
+          "voter": "world"
+        },
+        {
+          "percent": "0",
+          "reputation": 94449026656258,
+          "rshares": -936400,
+          "voter": "ned"
+        },
+        {
+          "percent": "10000",
+          "reputation": 18646364,
+          "rshares": 59412,
+          "voter": "fufubar1"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 14997,
+          "voter": "anonymous1"
+        },
+        {
+          "percent": "100",
+          "reputation": 1993860928264,
+          "rshares": 1441,
+          "voter": "red"
+        },
+        {
+          "percent": "10000",
+          "reputation": 94312688970406,
+          "rshares": 551390835500,
+          "voter": "liondani"
+        },
+        {
+          "percent": "10000",
+          "reputation": 27406317697121,
+          "rshares": 82748,
+          "voter": "roadscape"
+        },
+        {
+          "percent": "100",
+          "reputation": 118819064085695,
+          "rshares": 10772,
+          "voter": "xeroc"
+        },
+        {
+          "percent": "10000",
+          "reputation": 32771884740822,
+          "rshares": 7685088000,
+          "voter": "markopaasila"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11388588016470,
+          "rshares": 454510724,
+          "voter": "tshering-tamang"
+        },
+        {
+          "percent": "10000",
+          "reputation": -1240421481231,
+          "rshares": 681946946,
+          "voter": "romangelsi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4753753353368,
+          "rshares": 504895891,
+          "voter": "dedmatvey"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4604092068298,
+          "rshares": 498863058,
+          "voter": "joelinux"
+        },
+        {
+          "percent": "0",
+          "reputation": 1007246031801,
+          "rshares": 9590417,
+          "voter": "piranhax"
+        },
+        {
+          "percent": "10000",
+          "reputation": -681981461850,
+          "rshares": 473258270,
+          "voter": "ned-reddit-login"
+        },
+        {
+          "percent": "3600",
+          "reputation": 1043419862504,
+          "rshares": 0,
+          "voter": "fernando-sanz"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1185517433922,
+          "rshares": 425903066,
+          "voter": "gekko"
+        },
+        {
+          "percent": "10000",
+          "reputation": -505427556815,
+          "rshares": 381805870,
+          "voter": "gilang-ramadhan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 14430883217,
+          "rshares": 392459059,
+          "voter": "kamvreto"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1591969083452385,
+          "rshares": 422984262,
+          "voter": "acidyo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3148075991236,
+          "rshares": 47179379651,
+          "voter": "tosch"
+        },
+        {
+          "percent": "10000",
+          "reputation": 283933253441837,
+          "rshares": 7831667988,
+          "voter": "klye"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4042732628956,
+          "rshares": 1019950749,
+          "voter": "coar"
+        },
+        {
+          "percent": "1509",
+          "reputation": 8801781140235,
+          "rshares": 1746058458,
+          "voter": "murh"
+        },
+        {
+          "percent": "100",
+          "reputation": 24151212829722,
+          "rshares": 0,
+          "voter": "ashe-oro"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4291149730479,
+          "rshares": 22639073725,
+          "voter": "drinkzya"
+        },
+        {
+          "percent": "10000",
+          "reputation": 26408240002629,
+          "rshares": 0,
+          "voter": "hien-tran"
+        },
+        {
+          "percent": "10000",
+          "reputation": -12409054499907,
+          "rshares": 0,
+          "voter": "noganoo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1013326481658,
+          "rshares": 742566481,
+          "voter": "patrick-g"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2457670192450,
+          "rshares": 40624969,
+          "voter": "ben99"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5852240682118,
+          "rshares": 0,
+          "voter": "tskeene"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1835960725851,
+          "rshares": 1742755097,
+          "voter": "sunshinecrypto"
+        },
+        {
+          "percent": "10000",
+          "reputation": 352970428645376,
+          "rshares": 0,
+          "voter": "roelandp"
+        },
+        {
+          "percent": "10000",
+          "reputation": 60543564391215,
+          "rshares": 0,
+          "voter": "stealthtrader"
+        },
+        {
+          "percent": "10000",
+          "reputation": 356176599126,
+          "rshares": 108855472,
+          "voter": "kingtylervvs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 17498320798649,
+          "rshares": 0,
+          "voter": "picokernel"
+        },
+        {
+          "percent": "10000",
+          "reputation": 229959978079725,
+          "rshares": 0,
+          "voter": "ausbitbank"
+        },
+        {
+          "percent": "10000",
+          "reputation": 18714483502974,
+          "rshares": 485112237,
+          "voter": "marinabogumil"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7005072232924,
+          "rshares": 0,
+          "voter": "sebastien"
+        },
+        {
+          "percent": "10000",
+          "reputation": 987629623608,
+          "rshares": 917398502,
+          "voter": "decrypt"
+        },
+        {
+          "percent": "10000",
+          "reputation": 37145059769006,
+          "rshares": 5067187498,
+          "voter": "senseiteekay"
+        },
+        {
+          "percent": "10000",
+          "reputation": 196800352745,
+          "rshares": 5154897955,
+          "voter": "r33drum"
+        },
+        {
+          "percent": "10000",
+          "reputation": 378844291332,
+          "rshares": 5033902237,
+          "voter": "cryptosi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 56189611335832,
+          "rshares": 1037079223,
+          "voter": "condra"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1844972282153,
+          "rshares": 233032838,
+          "voter": "jearson"
+        },
+        {
+          "percent": "10000",
+          "reputation": 123261195963,
+          "rshares": 240809500,
+          "voter": "tritium"
+        },
+        {
+          "percent": "10000",
+          "reputation": 373877166913597,
+          "rshares": 123321995,
+          "voter": "allmonitors"
+        },
+        {
+          "percent": "10000",
+          "reputation": 29008237643,
+          "rshares": 226074637,
+          "voter": "artjedi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11311191021706,
+          "rshares": 931542394,
+          "voter": "anduweb"
+        },
+        {
+          "percent": "10000",
+          "reputation": 273611816138333,
+          "rshares": 2292983350,
+          "voter": "inertia"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3703778977425,
+          "rshares": 128561059,
+          "voter": "maximkichev"
+        },
+        {
+          "percent": "10000",
+          "reputation": 113908011659,
+          "rshares": 183438273,
+          "voter": "a9inchcock"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1795616951424,
+          "rshares": 266262926,
+          "voter": "desmonid"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1210922323731,
+          "rshares": 71498008,
+          "voter": "madhatting"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4957775761011,
+          "rshares": 23726644841,
+          "voter": "ubg"
+        },
+        {
+          "percent": "10000",
+          "reputation": 15057444088214,
+          "rshares": 3741408303,
+          "voter": "royaltiffany"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4858418486,
+          "rshares": 131577259,
+          "voter": "gribgo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 977136623294522,
+          "rshares": 12371398765,
+          "voter": "deanliu"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2110857461943,
+          "rshares": 28907874049,
+          "voter": "orm"
+        },
+        {
+          "percent": "10000",
+          "reputation": 513405006906,
+          "rshares": 528988007,
+          "voter": "qonq99"
+        },
+        {
+          "percent": "10000",
+          "reputation": 9853253860,
+          "rshares": 129537329,
+          "voter": "rd7783"
+        },
+        {
+          "percent": "10000",
+          "reputation": 100161586091,
+          "rshares": 615020728,
+          "voter": "slava"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5788213054794,
+          "rshares": 0,
+          "voter": "flyboyzombie"
+        },
+        {
+          "percent": "1",
+          "reputation": -2135533532384,
+          "rshares": 0,
+          "voter": "social"
+        },
+        {
+          "percent": "10000",
+          "reputation": 281653583054,
+          "rshares": 100102503,
+          "voter": "sictransitgloria"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1405302097754,
+          "rshares": 95219365,
+          "voter": "curator"
+        },
+        {
+          "percent": "10000",
+          "reputation": -385936503026,
+          "rshares": 232295871,
+          "voter": "dubovoy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 35204206,
+          "rshares": 0,
+          "voter": "solos"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3895922975,
+          "rshares": 0,
+          "voter": "alvintang"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5095600502,
+          "rshares": 96945805,
+          "voter": "creatorgalaxy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3804816886,
+          "rshares": 99813231,
+          "voter": "trigonice29"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3133295975341,
+          "rshares": 0,
+          "voter": "blysards"
+        },
+        {
+          "percent": "10000",
+          "reputation": 76132392265,
+          "rshares": 0,
+          "voter": "nick.kharchenko"
+        },
+        {
+          "percent": "10000",
+          "reputation": 35524530484330,
+          "rshares": 3721016208,
+          "voter": "uwe69"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3240369658,
+          "rshares": 1279854,
+          "voter": "nigmat"
+        },
+        {
+          "percent": "10000",
+          "reputation": 352641672569442,
+          "rshares": 13974353753,
+          "voter": "magicmonk"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4742036843307,
+          "rshares": 4968585456,
+          "voter": "satoshifpv"
+        },
+        {
+          "percent": "10000",
+          "reputation": -5843262501385,
+          "rshares": 1660613178,
+          "voter": "naturalista"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6121114155708,
+          "rshares": 10847083143,
+          "voter": "metrox"
+        },
+        {
+          "percent": "10000",
+          "reputation": 28131790010,
+          "rshares": 18340928,
+          "voter": "bestmalik"
+        },
+        {
+          "percent": "10000",
+          "reputation": 169634730,
+          "rshares": 59563315,
+          "voter": "kolyan31"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6332027618857,
+          "rshares": 710989138,
+          "voter": "romancs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 241302356483,
+          "rshares": 59366614,
+          "voter": "luke490"
+        },
+        {
+          "percent": "10000",
+          "reputation": 137324193,
+          "rshares": 58762473,
+          "voter": "bro66"
+        },
+        {
+          "percent": "10000",
+          "reputation": 387642408233756,
+          "rshares": 201822591,
+          "voter": "future24"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2228947083088,
+          "rshares": 58623688,
+          "voter": "mythras"
+        },
+        {
+          "percent": "10000",
+          "reputation": -1158370380860,
+          "rshares": 56536509,
+          "voter": "imarealboy777"
+        },
+        {
+          "percent": "0",
+          "reputation": -29653420748873,
+          "rshares": 0,
+          "voter": "matrixdweller"
+        },
+        {
+          "percent": "10000",
+          "reputation": -862242552844,
+          "rshares": 48299362,
+          "voter": "smartguylabcoat"
+        },
+        {
+          "percent": "10000",
+          "reputation": 34436412607,
+          "rshares": 59157099,
+          "voter": "mabiturm"
+        },
+        {
+          "percent": "10000",
+          "reputation": -1327285945383,
+          "rshares": 48283979,
+          "voter": "captainamerica"
+        },
+        {
+          "percent": "10000",
+          "reputation": 469950374409,
+          "rshares": 54761612,
+          "voter": "edbriv"
+        },
+        {
+          "percent": "10000",
+          "reputation": 61353484752754,
+          "rshares": 0,
+          "voter": "anarchyhasnogods"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1228277364481,
+          "rshares": 865125771,
+          "voter": "rittr"
+        },
+        {
+          "percent": "10000",
+          "reputation": 136837946011250,
+          "rshares": 0,
+          "voter": "tumutanzi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 416108237939,
+          "rshares": 92614447,
+          "voter": "jelloducky"
+        },
+        {
+          "percent": "10000",
+          "reputation": 21641668306,
+          "rshares": 52740989,
+          "voter": "tcstix"
+        },
+        {
+          "percent": "10000",
+          "reputation": 143728394,
+          "rshares": 49467477,
+          "voter": "friedwater"
+        },
+        {
+          "percent": "10000",
+          "reputation": -32027729845,
+          "rshares": 57366185,
+          "voter": "denisdiaz"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1957696033438,
+          "rshares": 0,
+          "voter": "gbonikz"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20197423275926,
+          "rshares": 132070449,
+          "voter": "loganarchy"
+        },
+        {
+          "percent": "10000",
+          "reputation": -5027605173,
+          "rshares": 48811442,
+          "voter": "love-spirit-nerd"
+        },
+        {
+          "percent": "10000",
+          "reputation": 38373343517335,
+          "rshares": 0,
+          "voter": "darkflame"
+        },
+        {
+          "percent": "10000",
+          "reputation": 28694344106492,
+          "rshares": 0,
+          "voter": "sneak"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48954175480649,
+          "rshares": 0,
+          "voter": "jacobcards"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6900034272,
+          "rshares": 51549585,
+          "voter": "dikanevn"
+        },
+        {
+          "percent": "10000",
+          "reputation": 121015180119970,
+          "rshares": 0,
+          "voter": "shieha"
+        },
+        {
+          "percent": "10000",
+          "reputation": 189415327585,
+          "rshares": 54017869,
+          "voter": "zelious"
+        },
+        {
+          "percent": "0",
+          "reputation": 7439666530016,
+          "rshares": 0,
+          "voter": "allyouneedtoknow"
+        },
+        {
+          "percent": "10000",
+          "reputation": 280674585514224,
+          "rshares": 0,
+          "voter": "justyy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 171005551503977,
+          "rshares": 50129944,
+          "voter": "freebornangel"
+        },
+        {
+          "percent": "10000",
+          "reputation": 35747770521,
+          "rshares": 53196086,
+          "voter": "f1111111"
+        },
+        {
+          "percent": "10000",
+          "reputation": 29087925814502,
+          "rshares": 0,
+          "voter": "anomaly"
+        },
+        {
+          "percent": "10000",
+          "reputation": 182276949970503,
+          "rshares": 52394017140,
+          "voter": "jack8831"
+        },
+        {
+          "percent": "10000",
+          "reputation": 56377206283,
+          "rshares": 0,
+          "voter": "buckland"
+        },
+        {
+          "percent": "10",
+          "reputation": -948627542088,
+          "rshares": 0,
+          "voter": "guest123"
+        },
+        {
+          "percent": "10000",
+          "reputation": 559165550719,
+          "rshares": 0,
+          "voter": "syahhiran"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1256588330819,
+          "rshares": 0,
+          "voter": "rarcntv"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8202257082095,
+          "rshares": 0,
+          "voter": "nataleeoliver"
+        },
+        {
+          "percent": "10000",
+          "reputation": 374029964227311,
+          "rshares": 0,
+          "voter": "goldmatters"
+        },
+        {
+          "percent": "10000",
+          "reputation": 104734123628606,
+          "rshares": 0,
+          "voter": "gamer00"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48134259536775,
+          "rshares": 0,
+          "voter": "curiesea"
+        },
+        {
+          "percent": "10000",
+          "reputation": 338501754215,
+          "rshares": 0,
+          "voter": "missmarzipan"
+        },
+        {
+          "percent": "3000",
+          "reputation": 4741271817501,
+          "rshares": 0,
+          "voter": "thejohalfiles"
+        },
+        {
+          "percent": "10000",
+          "reputation": 9325804713964,
+          "rshares": 0,
+          "voter": "steemwart"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16372175688451,
+          "rshares": 0,
+          "voter": "mapesa"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16302945972,
+          "rshares": 0,
+          "voter": "max-max"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4189940271139,
+          "rshares": 0,
+          "voter": "joshuaatiemo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 47533070564928,
+          "rshares": 0,
+          "voter": "jumaidafajar"
+        },
+        {
+          "percent": "10000",
+          "reputation": 419129457,
+          "rshares": 0,
+          "voter": "leolina1"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10786227734650,
+          "rshares": 0,
+          "voter": "rebatesteem"
+        },
+        {
+          "percent": "10000",
+          "reputation": 23963417769759,
+          "rshares": 0,
+          "voter": "aidancloquell"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8108634791,
+          "rshares": 0,
+          "voter": "rm802"
+        },
+        {
+          "percent": "10000",
+          "reputation": 19259306626624,
+          "rshares": 0,
+          "voter": "krasotka"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5123476713510,
+          "rshares": 0,
+          "voter": "alamyrjunior"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2968937121056,
+          "rshares": 0,
+          "voter": "networker5"
+        },
+        {
+          "percent": "10000",
+          "reputation": 803492751996,
+          "rshares": 0,
+          "voter": "evdoggformayor"
+        },
+        {
+          "percent": "10000",
+          "reputation": 19610705040132,
+          "rshares": 0,
+          "voter": "askari"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5038471003192,
+          "rshares": 0,
+          "voter": "blockrush"
+        },
+        {
+          "percent": "10000",
+          "reputation": 44575515286240,
+          "rshares": 0,
+          "voter": "barvon"
+        },
+        {
+          "percent": "10000",
+          "reputation": 19787083619454,
+          "rshares": 0,
+          "voter": "fajarsdq"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4243903288898,
+          "rshares": 0,
+          "voter": "juandemarte"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10704737102960,
+          "rshares": 0,
+          "voter": "lazarescu.irinel"
+        },
+        {
+          "percent": "10000",
+          "reputation": 14660082985165,
+          "rshares": 0,
+          "voter": "thedeplorable1"
+        },
+        {
+          "percent": "10000",
+          "reputation": 398504517684857,
+          "rshares": 0,
+          "voter": "kalemandra"
+        },
+        {
+          "percent": "5000",
+          "reputation": 32583772981101,
+          "rshares": 0,
+          "voter": "ades"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11856803019184,
+          "rshares": 0,
+          "voter": "rizkiavonna"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8807709091999,
+          "rshares": 0,
+          "voter": "tohamy7"
+        },
+        {
+          "percent": "10000",
+          "reputation": 12325904700970,
+          "rshares": 0,
+          "voter": "justinashby"
+        },
+        {
+          "percent": "10000",
+          "reputation": 65535006526149,
+          "rshares": 0,
+          "voter": "thereikiforest"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1990050986,
+          "rshares": 0,
+          "voter": "serendipitie"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8241421646010,
+          "rshares": 0,
+          "voter": "anwarabdullah"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3968803698350,
+          "rshares": 0,
+          "voter": "rocketbeee"
+        },
+        {
+          "percent": "10000",
+          "reputation": 214940431491515,
+          "rshares": 0,
+          "voter": "ackza"
+        },
+        {
+          "percent": "10000",
+          "reputation": 471040634648,
+          "rshares": 0,
+          "voter": "nilim"
+        },
+        {
+          "percent": "10000",
+          "reputation": 872253711,
+          "rshares": 0,
+          "voter": "renatrazumov"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1163438797757,
+          "rshares": 0,
+          "voter": "jelkasmi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 794094672611,
+          "rshares": 0,
+          "voter": "dimitrya123"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4850148191446,
+          "rshares": 0,
+          "voter": "crawfish37"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48845341788290,
+          "rshares": 0,
+          "voter": "laodr"
+        },
+        {
+          "percent": "10000",
+          "reputation": 43833051603,
+          "rshares": 0,
+          "voter": "lkisaid"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2920705765790,
+          "rshares": 0,
+          "voter": "mikev"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16606765863,
+          "rshares": 0,
+          "voter": "hakan0356"
+        },
+        {
+          "percent": "10000",
+          "reputation": 646119505336,
+          "rshares": 0,
+          "voter": "tasartcraft"
+        },
+        {
+          "percent": "10000",
+          "reputation": 190033440499,
+          "rshares": 0,
+          "voter": "urmokas"
+        },
+        {
+          "percent": "10000",
+          "reputation": 45652148998,
+          "rshares": 0,
+          "voter": "michael-fagundes"
+        },
+        {
+          "percent": "0",
+          "reputation": 4386202992,
+          "rshares": 0,
+          "voter": "kalamur"
+        },
+        {
+          "percent": "0",
+          "reputation": 409566886382,
+          "rshares": 0,
+          "voter": "abhinavsharma"
+        },
+        {
+          "percent": "10000",
+          "reputation": 62721105887,
+          "rshares": 0,
+          "voter": "contentguy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 22746586322771,
+          "rshares": 0,
+          "voter": "globocop"
+        },
+        {
+          "percent": "10000",
+          "reputation": 29870130383591,
+          "rshares": 0,
+          "voter": "hafizul"
+        },
+        {
+          "percent": "10000",
+          "reputation": 215512501868,
+          "rshares": 0,
+          "voter": "hothelp1by1"
+        },
+        {
+          "percent": "10000",
+          "reputation": 14801286947008,
+          "rshares": 0,
+          "voter": "vannfrik"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5975764175706,
+          "rshares": 0,
+          "voter": "manuel78"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1330728109592,
+          "rshares": 0,
+          "voter": "brado"
+        },
+        {
+          "percent": "10000",
+          "reputation": 18181019075,
+          "rshares": 0,
+          "voter": "strateg"
+        },
+        {
+          "percent": "0",
+          "reputation": 7196763893,
+          "rshares": 0,
+          "voter": "quinsmacqueen"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1092260798193,
+          "rshares": 0,
+          "voter": "brucebrownftw"
+        },
+        {
+          "percent": "10000",
+          "reputation": 512087953369,
+          "rshares": 0,
+          "voter": "mrstaf"
+        },
+        {
+          "percent": "10000",
+          "reputation": 769439802936,
+          "rshares": 0,
+          "voter": "avvah"
+        },
+        {
+          "percent": "100",
+          "reputation": 833020053165265,
+          "rshares": 0,
+          "voter": "stackin"
+        },
+        {
+          "percent": "10000",
+          "reputation": 765950713270,
+          "rshares": 0,
+          "voter": "laloelectrix"
+        },
+        {
+          "percent": "10000",
+          "reputation": 298990380256,
+          "rshares": 0,
+          "voter": "heejaekim"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11555767777330,
+          "rshares": 0,
+          "voter": "thethreehugs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 333248577305,
+          "rshares": 0,
+          "voter": "otitrader"
+        },
+        {
+          "percent": "10000",
+          "reputation": 518563532954882,
+          "rshares": 0,
+          "voter": "clixmoney"
+        },
+        {
+          "percent": "10000",
+          "reputation": 622097727947,
+          "rshares": 0,
+          "voter": "tryword"
+        },
+        {
+          "percent": "10000",
+          "reputation": -634870987521,
+          "rshares": 0,
+          "voter": "dioneaguiar"
+        },
+        {
+          "percent": "10000",
+          "reputation": 679438518,
+          "rshares": 0,
+          "voter": "yann.moalic"
+        },
+        {
+          "percent": "10000",
+          "reputation": 35047304553654,
+          "rshares": 0,
+          "voter": "shaunf"
+        },
+        {
+          "percent": "10000",
+          "reputation": 788462040366,
+          "rshares": 0,
+          "voter": "cleemit"
+        },
+        {
+          "percent": "10000",
+          "reputation": 671261891680,
+          "rshares": 0,
+          "voter": "deeluvli1"
+        },
+        {
+          "percent": "10000",
+          "reputation": 78049643501,
+          "rshares": 0,
+          "voter": "noval"
+        },
+        {
+          "percent": "10000",
+          "reputation": 71053914235,
+          "rshares": 0,
+          "voter": "pixzelplethora"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11535312131,
+          "rshares": 0,
+          "voter": "smart3dweb"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2521246416524,
+          "rshares": 0,
+          "voter": "joey-cryptoboy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 367893852,
+          "rshares": 0,
+          "voter": "mateorite"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5888846795,
+          "rshares": 0,
+          "voter": "somaflaco"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2152941530718,
+          "rshares": 0,
+          "voter": "enki74"
+        },
+        {
+          "percent": "10000",
+          "reputation": 110560203334,
+          "rshares": 0,
+          "voter": "jungleebitcoin"
+        },
+        {
+          "percent": "10000",
+          "reputation": -69319092879,
+          "rshares": 0,
+          "voter": "correctdrop"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2058050404764,
+          "rshares": 0,
+          "voter": "clintjunior"
+        },
+        {
+          "percent": "10000",
+          "reputation": 951539942306,
+          "rshares": 0,
+          "voter": "tediursa24"
+        },
+        {
+          "percent": "10000",
+          "reputation": 62289248493193,
+          "rshares": 0,
+          "voter": "mxzn"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1030198306829,
+          "rshares": 0,
+          "voter": "hgmsilvergold"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1049729257309,
+          "rshares": 0,
+          "voter": "antares007"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "tridenspoon333"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6633483148,
+          "rshares": 0,
+          "voter": "vipek1996"
+        },
+        {
+          "percent": "10000",
+          "reputation": 59521008461,
+          "rshares": 0,
+          "voter": "prima-nia"
+        },
+        {
+          "percent": "10000",
+          "reputation": 51310500722,
+          "rshares": 0,
+          "voter": "redris"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1162151678669,
+          "rshares": 0,
+          "voter": "savetheanimals"
+        },
+        {
+          "percent": "10000",
+          "reputation": 63411784193,
+          "rshares": 0,
+          "voter": "tarunmewara"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 110711587046355,
+          "rshares": 0,
+          "voter": "overkillcoin"
+        },
+        {
+          "percent": "10000",
+          "reputation": 228450255458,
+          "rshares": 0,
+          "voter": "tuakanamorgan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 69653104045391,
+          "rshares": 0,
+          "voter": "anacristinasilva"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20798619412,
+          "rshares": 0,
+          "voter": "filmonaut"
+        },
+        {
+          "percent": "-100",
+          "reputation": 3899813800176,
+          "rshares": 0,
+          "voter": "firstamendment"
+        },
+        {
+          "percent": "10000",
+          "reputation": 68635880449,
+          "rshares": 0,
+          "voter": "timcrypto"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20302398026168,
+          "rshares": 0,
+          "voter": "cryptotem"
+        },
+        {
+          "percent": "10000",
+          "reputation": 697958030131,
+          "rshares": 0,
+          "voter": "mikej"
+        },
+        {
+          "percent": "10000",
+          "reputation": 47552691317,
+          "rshares": 0,
+          "voter": "hwrs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1877811371,
+          "rshares": 0,
+          "voter": "sinai770judea"
+        },
+        {
+          "percent": "10000",
+          "reputation": 33832199316,
+          "rshares": 0,
+          "voter": "tuneralliance"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2837751128,
+          "rshares": 0,
+          "voter": "zeji"
+        },
+        {
+          "percent": "10000",
+          "reputation": 17435334887,
+          "rshares": 0,
+          "voter": "ricoalfianda"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2001092299106,
+          "rshares": 0,
+          "voter": "satfit"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10806312348321,
+          "rshares": 0,
+          "voter": "machhour"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3405952535,
+          "rshares": 0,
+          "voter": "bitgenio"
+        },
+        {
+          "percent": "10000",
+          "reputation": 12976028341,
+          "rshares": 0,
+          "voter": "ahmedmansi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4101813308863,
+          "rshares": 0,
+          "voter": "theoccultcorner"
+        },
+        {
+          "percent": "10000",
+          "reputation": 284852594097573,
+          "rshares": 0,
+          "voter": "reseller"
+        },
+        {
+          "percent": "10000",
+          "reputation": 65572893861,
+          "rshares": 0,
+          "voter": "ainsleyjo1952"
+        },
+        {
+          "percent": "10000",
+          "reputation": -26425603909,
+          "rshares": 0,
+          "voter": "novi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6247941147391,
+          "rshares": 0,
+          "voter": "androsform"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4409923662602,
+          "rshares": 0,
+          "voter": "jooyoung"
+        },
+        {
+          "percent": "10000",
+          "reputation": 418242269128,
+          "rshares": 0,
+          "voter": "dobro88888888"
+        },
+        {
+          "percent": "10000",
+          "reputation": 278893346456,
+          "rshares": 0,
+          "voter": "ghaaspur"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1464464526853,
+          "rshares": 0,
+          "voter": "xodyd2da"
+        },
+        {
+          "percent": "10000",
+          "reputation": 184717254436,
+          "rshares": 0,
+          "voter": "trisun"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 17362709009463,
+          "rshares": 0,
+          "voter": "tngflx"
+        },
+        {
+          "percent": "10000",
+          "reputation": 303115312,
+          "rshares": 0,
+          "voter": "karaban"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1884358880088,
+          "rshares": 0,
+          "voter": "empath"
+        },
+        {
+          "percent": "0",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "pcbildrnoob"
+        },
+        {
+          "percent": "10000",
+          "reputation": 181401000658,
+          "rshares": 0,
+          "voter": "joecaffeine"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7029528119,
+          "rshares": 0,
+          "voter": "laolballs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2498676417,
+          "rshares": 0,
+          "voter": "braamsteyn7777"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1343359566195,
+          "rshares": 0,
+          "voter": "udibekwe"
+        },
+        {
+          "percent": "10000",
+          "reputation": 331933685755,
+          "rshares": 0,
+          "voter": "jackolanternbob"
+        },
+        {
+          "percent": "10000",
+          "reputation": 273201532417,
+          "rshares": 0,
+          "voter": "rondoncr"
+        },
+        {
+          "percent": "10000",
+          "reputation": 104746597592,
+          "rshares": 0,
+          "voter": "doubledeeyt"
+        },
+        {
+          "percent": "10000",
+          "reputation": 9745075470775,
+          "rshares": 0,
+          "voter": "joshvel"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20289419458,
+          "rshares": 0,
+          "voter": "lembach3d"
+        },
+        {
+          "percent": "10000",
+          "reputation": 72792921653,
+          "rshares": 0,
+          "voter": "vulturestkn"
+        },
+        {
+          "percent": "10000",
+          "reputation": -11092548376,
+          "rshares": 0,
+          "voter": "darknessprincess"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20447544397525,
+          "rshares": 0,
+          "voter": "misrori"
+        },
+        {
+          "percent": "10000",
+          "reputation": 463841238681,
+          "rshares": 0,
+          "voter": "afrikanprince"
+        },
+        {
+          "percent": "10000",
+          "reputation": 104517401250678,
+          "rshares": 0,
+          "voter": "jjprac"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3091902701938,
+          "rshares": 0,
+          "voter": "ayuwandira"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8898324586,
+          "rshares": 0,
+          "voter": "ilicoin"
+        },
+        {
+          "percent": "10000",
+          "reputation": 28866926271333,
+          "rshares": 0,
+          "voter": "pkvlogs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 251946106284,
+          "rshares": 0,
+          "voter": "bitstudio"
+        },
+        {
+          "percent": "-1000",
+          "reputation": 1980506790459,
+          "rshares": 0,
+          "voter": "taintedblood"
+        },
+        {
+          "percent": "10000",
+          "reputation": 682770422710,
+          "rshares": 0,
+          "voter": "epsicktick"
+        },
+        {
+          "percent": "10000",
+          "reputation": 153975992,
+          "rshares": 0,
+          "voter": "csggene3"
+        },
+        {
+          "percent": "10000",
+          "reputation": 40104351499,
+          "rshares": 0,
+          "voter": "tothemoonin2017"
+        },
+        {
+          "percent": "10000",
+          "reputation": 92327401387,
+          "rshares": 0,
+          "voter": "geek4geek"
+        },
+        {
+          "percent": "2500",
+          "reputation": 26703458140145,
+          "rshares": 0,
+          "voter": "kharrazi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 926393237238,
+          "rshares": 0,
+          "voter": "zufrizal"
+        },
+        {
+          "percent": "10000",
+          "reputation": 255497876975,
+          "rshares": 0,
+          "voter": "academix87"
+        },
+        {
+          "percent": "500",
+          "reputation": 19153420107615,
+          "rshares": 0,
+          "voter": "planetenamek"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16306785801,
+          "rshares": 0,
+          "voter": "muliaeko"
+        },
+        {
+          "percent": "10000",
+          "reputation": 231215767703,
+          "rshares": 0,
+          "voter": "boyjack"
+        },
+        {
+          "percent": "10000",
+          "reputation": 439350325,
+          "rshares": 0,
+          "voter": "jatniel"
+        },
+        {
+          "percent": "10000",
+          "reputation": 967027557509,
+          "rshares": 0,
+          "voter": "juanangel40bcn"
+        },
+        {
+          "percent": "10000",
+          "reputation": 26077885556,
+          "rshares": 0,
+          "voter": "jodywrites"
+        },
+        {
+          "percent": "10000",
+          "reputation": 810135688569,
+          "rshares": 0,
+          "voter": "permatek"
+        },
+        {
+          "percent": "10000",
+          "reputation": 780337768524,
+          "rshares": 0,
+          "voter": "cyberspace"
+        },
+        {
+          "percent": "10000",
+          "reputation": 679018914115,
+          "rshares": 0,
+          "voter": "fareehasheharyar"
+        },
+        {
+          "percent": "10000",
+          "reputation": 47525279939,
+          "rshares": 0,
+          "voter": "saynie"
+        },
+        {
+          "percent": "10000",
+          "reputation": 713624891901,
+          "rshares": 0,
+          "voter": "plainoldme"
+        },
+        {
+          "percent": "10000",
+          "reputation": 235305836617,
+          "rshares": 0,
+          "voter": "razaqbarry"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1209731503393,
+          "rshares": 0,
+          "voter": "antoniokarteli"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8248374211806,
+          "rshares": 0,
+          "voter": "dream.trip"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3411826005,
+          "rshares": 0,
+          "voter": "reinhardbaust"
+        },
+        {
+          "percent": "10000",
+          "reputation": 438679075638,
+          "rshares": 0,
+          "voter": "newpioneer"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6994381548,
+          "rshares": 0,
+          "voter": "melvinbonner"
+        },
+        {
+          "percent": "10000",
+          "reputation": -43699775080,
+          "rshares": 0,
+          "voter": "zulfahmi2141"
+        },
+        {
+          "percent": "10000",
+          "reputation": 171438113871,
+          "rshares": 0,
+          "voter": "maninjapan1989"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3240603415894,
+          "rshares": 0,
+          "voter": "andravasko"
+        },
+        {
+          "percent": "10000",
+          "reputation": 17563933807813,
+          "rshares": 0,
+          "voter": "gilma"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48066228162,
+          "rshares": 0,
+          "voter": "tom74"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1256083697451,
+          "rshares": 0,
+          "voter": "josephfugata"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4526614988,
+          "rshares": 0,
+          "voter": "bitcointauji"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4230071570826,
+          "rshares": 0,
+          "voter": "gray00"
+        },
+        {
+          "percent": "10000",
+          "reputation": -14848685118,
+          "rshares": 0,
+          "voter": "divyang101"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48110734587913,
+          "rshares": 0,
+          "voter": "bahagia-arbi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4877222464,
+          "rshares": 0,
+          "voter": "bhim"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5585491362,
+          "rshares": 0,
+          "voter": "bickell"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48474751589,
+          "rshares": 0,
+          "voter": "tfpostman"
+        },
+        {
+          "percent": "10000",
+          "reputation": -21112938149,
+          "rshares": 0,
+          "voter": "anujkumar"
+        },
+        {
+          "percent": "5100",
+          "reputation": 140482604041851,
+          "rshares": 0,
+          "voter": "fbslo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20091098175,
+          "rshares": 0,
+          "voter": "renijuliani"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8320716127,
+          "rshares": 0,
+          "voter": "setio"
+        },
+        {
+          "percent": "10000",
+          "reputation": 15427543916099,
+          "rshares": 0,
+          "voter": "mooncryption"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2434330471487,
+          "rshares": 0,
+          "voter": "shintamonica"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3916912866701,
+          "rshares": 0,
+          "voter": "caratzky"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10808960235,
+          "rshares": 0,
+          "voter": "komrad"
+        },
+        {
+          "percent": "10000",
+          "reputation": 253303445,
+          "rshares": 0,
+          "voter": "therivernile"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "deep.gohil"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1706636906846,
+          "rshares": 0,
+          "voter": "thomasduder"
+        },
+        {
+          "percent": "10000",
+          "reputation": 93431455759,
+          "rshares": 0,
+          "voter": "sensistar"
+        },
+        {
+          "percent": "10000",
+          "reputation": 105915849604,
+          "rshares": 0,
+          "voter": "abdelone"
+        },
+        {
+          "percent": "10000",
+          "reputation": 13504938371,
+          "rshares": 0,
+          "voter": "gegec"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8475559512816,
+          "rshares": 0,
+          "voter": "ambmicheal"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "rincewind"
+        },
+        {
+          "percent": "10000",
+          "reputation": 22668422039138,
+          "rshares": 0,
+          "voter": "alishannoor"
+        },
+        {
+          "percent": "10000",
+          "reputation": 31250011559,
+          "rshares": 0,
+          "voter": "ahhjoeinhk"
+        },
+        {
+          "percent": "10000",
+          "reputation": 22161276554,
+          "rshares": 0,
+          "voter": "kalhiade"
+        },
+        {
+          "percent": "10000",
+          "reputation": 26067838103,
+          "rshares": 0,
+          "voter": "faridrizkia"
+        },
+        {
+          "percent": "10000",
+          "reputation": 489008294936,
+          "rshares": 0,
+          "voter": "teamslovenia"
+        },
+        {
+          "percent": "10000",
+          "reputation": 86080771148846,
+          "rshares": 0,
+          "voter": "xiaoshancun"
+        },
+        {
+          "percent": "10000",
+          "reputation": 18812216005,
+          "rshares": 0,
+          "voter": "mikewebb274"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16886517518,
+          "rshares": 0,
+          "voter": "andrath"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5010654057,
+          "rshares": 0,
+          "voter": "torosan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 69430737377176,
+          "rshares": 0,
+          "voter": "ghayas"
+        },
+        {
+          "percent": "10000",
+          "reputation": 48988494748523,
+          "rshares": 0,
+          "voter": "krevasilis"
+        },
+        {
+          "percent": "100",
+          "reputation": 3541438533225,
+          "rshares": 0,
+          "voter": "koinbot"
+        },
+        {
+          "percent": "10000",
+          "reputation": 118599105990,
+          "rshares": 0,
+          "voter": "synergy-now"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1046602731199,
+          "rshares": 0,
+          "voter": "steemblogs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2042790257,
+          "rshares": 0,
+          "voter": "tujuhpelita"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4224359059633,
+          "rshares": 0,
+          "voter": "palani"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2505286236282,
+          "rshares": 0,
+          "voter": "as-i-see-it"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1338831844783,
+          "rshares": 0,
+          "voter": "heyeshuang"
+        },
+        {
+          "percent": "10000",
+          "reputation": 12195267435725,
+          "rshares": 0,
+          "voter": "arslan786"
+        },
+        {
+          "percent": "10000",
+          "reputation": 192390896224,
+          "rshares": 0,
+          "voter": "cgf117"
+        },
+        {
+          "percent": "10000",
+          "reputation": 153970191181,
+          "rshares": 0,
+          "voter": "amazingtech100"
+        },
+        {
+          "percent": "0",
+          "reputation": 7500168684837,
+          "rshares": 0,
+          "voter": "dreamm"
+        },
+        {
+          "percent": "10000",
+          "reputation": -4012528688,
+          "rshares": 0,
+          "voter": "sweetssssj"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2017956520,
+          "rshares": 0,
+          "voter": "ceikdo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 484759901457,
+          "rshares": 0,
+          "voter": "sunsquall"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7998705639,
+          "rshares": 0,
+          "voter": "muhammadilyas93"
+        },
+        {
+          "percent": "10000",
+          "reputation": 17253145691864,
+          "rshares": 0,
+          "voter": "cre47iv3"
+        },
+        {
+          "percent": "10000",
+          "reputation": 517045098554,
+          "rshares": 0,
+          "voter": "joao-cacador"
+        },
+        {
+          "percent": "3554",
+          "reputation": 77468752355,
+          "rshares": 0,
+          "voter": "jamsphonna"
+        },
+        {
+          "percent": "-1000",
+          "reputation": 38277242620416,
+          "rshares": 0,
+          "voter": "abbak7"
+        },
+        {
+          "percent": "10000",
+          "reputation": 148461146192759,
+          "rshares": 0,
+          "voter": "thelifeofjord"
+        },
+        {
+          "percent": "10000",
+          "reputation": 146985742512,
+          "rshares": 0,
+          "voter": "utpoldebnath"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1245938181729,
+          "rshares": 0,
+          "voter": "sagorkhan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2662968641,
+          "rshares": 0,
+          "voter": "shivpremi"
+        },
+        {
+          "percent": "100",
+          "reputation": 19827334573854,
+          "rshares": 0,
+          "voter": "shabbirahmad"
+        },
+        {
+          "percent": "10000",
+          "reputation": 973118905183,
+          "rshares": 0,
+          "voter": "ibeljr"
+        },
+        {
+          "percent": "10000",
+          "reputation": 104339117366,
+          "rshares": 0,
+          "voter": "umelard"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7224362399,
+          "rshares": 0,
+          "voter": "stijndehaan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 876649496170,
+          "rshares": 0,
+          "voter": "iamericmorrison"
+        },
+        {
+          "percent": "10000",
+          "reputation": 25932272878,
+          "rshares": 0,
+          "voter": "shiningstar"
+        },
+        {
+          "percent": "1",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "steemprojects1"
+        },
+        {
+          "percent": "5",
+          "reputation": 9266029,
+          "rshares": 0,
+          "voter": "steemprojects2"
+        },
+        {
+          "percent": "10000",
+          "reputation": 65386511489,
+          "rshares": 0,
+          "voter": "stuvi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11082705516,
+          "rshares": 0,
+          "voter": "zia161"
+        },
+        {
+          "percent": "10000",
+          "reputation": 141349312842,
+          "rshares": 0,
+          "voter": "arslanq"
+        },
+        {
+          "percent": "10000",
+          "reputation": 32936031613,
+          "rshares": 0,
+          "voter": "kevca16"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5869816453,
+          "rshares": 0,
+          "voter": "mcreg"
+        },
+        {
+          "percent": "10000",
+          "reputation": 9096688109,
+          "rshares": 0,
+          "voter": "waheebisb"
+        },
+        {
+          "percent": "10000",
+          "reputation": 171248220741,
+          "rshares": 0,
+          "voter": "rizaokur"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2133047242401,
+          "rshares": 0,
+          "voter": "seanstein"
+        },
+        {
+          "percent": "10000",
+          "reputation": 434406231937,
+          "rshares": 0,
+          "voter": "piszozo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 986078901143,
+          "rshares": 0,
+          "voter": "vicmariki"
+        },
+        {
+          "percent": "500",
+          "reputation": 827618875719,
+          "rshares": 0,
+          "voter": "contribution"
+        },
+        {
+          "percent": "10000",
+          "reputation": 46928324502,
+          "rshares": 0,
+          "voter": "oep"
+        },
+        {
+          "percent": "10000",
+          "reputation": 49540970,
+          "rshares": 0,
+          "voter": "akshitgrover"
+        },
+        {
+          "percent": "10000",
+          "reputation": 409917207,
+          "rshares": 0,
+          "voter": "jackson12"
+        },
+        {
+          "percent": "10000",
+          "reputation": 138377365150,
+          "rshares": 0,
+          "voter": "dtldesign"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3025934704561,
+          "rshares": 0,
+          "voter": "h4ck3rm1k3st33m"
+        },
+        {
+          "percent": "10000",
+          "reputation": 514137420082,
+          "rshares": 0,
+          "voter": "smokeasare165"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1455841681924,
+          "rshares": 0,
+          "voter": "tinoschloegl"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1047625818,
+          "rshares": 0,
+          "voter": "liftu"
+        },
+        {
+          "percent": "10000",
+          "reputation": 434522490493,
+          "rshares": 0,
+          "voter": "atul8888"
+        },
+        {
+          "percent": "10000",
+          "reputation": 299446985155,
+          "rshares": 0,
+          "voter": "goroshkodo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 27330270603,
+          "rshares": 0,
+          "voter": "tarmizislow"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2026188411,
+          "rshares": 0,
+          "voter": "nurmasyithah"
+        },
+        {
+          "percent": "10000",
+          "reputation": 18518523717,
+          "rshares": 0,
+          "voter": "ritikagupta"
+        },
+        {
+          "percent": "10000",
+          "reputation": 22655162330,
+          "rshares": 0,
+          "voter": "anniemohler"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6151477307370,
+          "rshares": 0,
+          "voter": "olaivart"
+        },
+        {
+          "percent": "10000",
+          "reputation": 226477842496,
+          "rshares": 0,
+          "voter": "thedrewshow"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "alpha27"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4015949422,
+          "rshares": 0,
+          "voter": "adventuretours"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2380429434957,
+          "rshares": 0,
+          "voter": "advexon"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6428962492377,
+          "rshares": 0,
+          "voter": "cloudconnect"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1902528118381,
+          "rshares": 0,
+          "voter": "ontheverge"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4317696913,
+          "rshares": 0,
+          "voter": "celsomichida"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3759225279,
+          "rshares": 0,
+          "voter": "cannan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1523709091079,
+          "rshares": 0,
+          "voter": "cloudbuster"
+        },
+        {
+          "percent": "10000",
+          "reputation": 162480613274,
+          "rshares": 0,
+          "voter": "adrienoor"
+        },
+        {
+          "percent": "10000",
+          "reputation": -563072732957,
+          "rshares": 0,
+          "voter": "hussnain"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1467929911,
+          "rshares": 0,
+          "voter": "shanloth"
+        },
+        {
+          "percent": "10000",
+          "reputation": 9015395877,
+          "rshares": 0,
+          "voter": "samirnyaupane"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10694759666,
+          "rshares": 0,
+          "voter": "slackeramericana"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3120106738222,
+          "rshares": 0,
+          "voter": "thabiggdogg"
+        },
+        {
+          "percent": "10000",
+          "reputation": 385781825940,
+          "rshares": 0,
+          "voter": "gilnambatac"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7962135395,
+          "rshares": 0,
+          "voter": "withgraham"
+        },
+        {
+          "percent": "10000",
+          "reputation": 26222775057,
+          "rshares": 0,
+          "voter": "sephirot"
+        },
+        {
+          "percent": "10000",
+          "reputation": 66854446738,
+          "rshares": 0,
+          "voter": "coffeeman"
+        },
+        {
+          "percent": "10000",
+          "reputation": 41501057693,
+          "rshares": 0,
+          "voter": "stefunniy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7789392208,
+          "rshares": 0,
+          "voter": "ghanexs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1911567894442,
+          "rshares": 0,
+          "voter": "razipelangi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 565179863478,
+          "rshares": 0,
+          "voter": "dreamdiary"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3923276788526,
+          "rshares": 0,
+          "voter": "crypto4euro"
+        },
+        {
+          "percent": "10000",
+          "reputation": 13170123102,
+          "rshares": 0,
+          "voter": "rtsampa"
+        },
+        {
+          "percent": "10000",
+          "reputation": -753792225902,
+          "rshares": 0,
+          "voter": "mahi2raj"
+        },
+        {
+          "percent": "10000",
+          "reputation": -635713021405,
+          "rshares": 0,
+          "voter": "danyflores"
+        },
+        {
+          "percent": "10000",
+          "reputation": 177948427330,
+          "rshares": 0,
+          "voter": "oraclefrequency"
+        },
+        {
+          "percent": "10000",
+          "reputation": 26337803094,
+          "rshares": 0,
+          "voter": "kartikohri1712"
+        },
+        {
+          "percent": "10000",
+          "reputation": 275419252617,
+          "rshares": 0,
+          "voter": "cryptoaltcoin"
+        },
+        {
+          "percent": "10000",
+          "reputation": 279405739464,
+          "rshares": 0,
+          "voter": "einarscorner"
+        },
+        {
+          "percent": "10000",
+          "reputation": 718488845398,
+          "rshares": 0,
+          "voter": "dudithedoctor"
+        },
+        {
+          "percent": "100",
+          "reputation": 343541613992585,
+          "rshares": 0,
+          "voter": "dirapa"
+        },
+        {
+          "percent": "10000",
+          "reputation": 406981083,
+          "rshares": 0,
+          "voter": "arfouche"
+        },
+        {
+          "percent": "10000",
+          "reputation": 425592459004,
+          "rshares": 0,
+          "voter": "kristenbruce"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3013400348,
+          "rshares": 0,
+          "voter": "okclear"
+        },
+        {
+          "percent": "10000",
+          "reputation": 103041707769806,
+          "rshares": 0,
+          "voter": "mysearchisover"
+        },
+        {
+          "percent": "10000",
+          "reputation": 30569702809,
+          "rshares": 0,
+          "voter": "dropd"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16046862173,
+          "rshares": 0,
+          "voter": "rulilesmana"
+        },
+        {
+          "percent": "10000",
+          "reputation": 794249759,
+          "rshares": 0,
+          "voter": "cryptomaniac6"
+        },
+        {
+          "percent": "10000",
+          "reputation": 119507852,
+          "rshares": 0,
+          "voter": "kim3ra"
+        },
+        {
+          "percent": "10000",
+          "reputation": 26898775193091,
+          "rshares": 0,
+          "voter": "movement19"
+        },
+        {
+          "percent": "10000",
+          "reputation": 367997243259,
+          "rshares": 0,
+          "voter": "aacr07"
+        },
+        {
+          "percent": "10000",
+          "reputation": 347931912166,
+          "rshares": 0,
+          "voter": "layra"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7443820021,
+          "rshares": 0,
+          "voter": "vardhanbtc"
+        },
+        {
+          "percent": "10000",
+          "reputation": 64251297055,
+          "rshares": 0,
+          "voter": "azeemprime"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "dbnx"
+        },
+        {
+          "percent": "10000",
+          "reputation": 7922356058897,
+          "rshares": 0,
+          "voter": "shredz7"
+        },
+        {
+          "percent": "10000",
+          "reputation": 94969491,
+          "rshares": 0,
+          "voter": "bitstreamgains"
+        },
+        {
+          "percent": "10000",
+          "reputation": -19669107258,
+          "rshares": 0,
+          "voter": "hendrimaca"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1495750112002,
+          "rshares": 0,
+          "voter": "aan01"
+        },
+        {
+          "percent": "10000",
+          "reputation": 250338481362,
+          "rshares": 0,
+          "voter": "successmindset"
+        },
+        {
+          "percent": "10000",
+          "reputation": 583567123463302,
+          "rshares": 0,
+          "voter": "hatu"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6911078301,
+          "rshares": 0,
+          "voter": "khabirulhafiz"
+        },
+        {
+          "percent": "10000",
+          "reputation": -726440779532,
+          "rshares": 0,
+          "voter": "yady"
+        },
+        {
+          "percent": "10000",
+          "reputation": -1578132601,
+          "rshares": 0,
+          "voter": "samsonjura1"
+        },
+        {
+          "percent": "10000",
+          "reputation": 71411614402,
+          "rshares": 0,
+          "voter": "ambitiouslife"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1392741879,
+          "rshares": 0,
+          "voter": "whyse"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3874452762,
+          "rshares": 0,
+          "voter": "skyflow"
+        },
+        {
+          "percent": "10000",
+          "reputation": 739229350399,
+          "rshares": 0,
+          "voter": "kimtoma"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1748289895691,
+          "rshares": 0,
+          "voter": "asherunderwood"
+        },
+        {
+          "percent": "10000",
+          "reputation": 38452448274,
+          "rshares": 0,
+          "voter": "lorden"
+        },
+        {
+          "percent": "10000",
+          "reputation": 73325782068,
+          "rshares": 0,
+          "voter": "juicyvegandwarf"
+        },
+        {
+          "percent": "10000",
+          "reputation": -149922805,
+          "rshares": 0,
+          "voter": "ushan007"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2662993712,
+          "rshares": 0,
+          "voter": "ihsan6837"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2316420258,
+          "rshares": 0,
+          "voter": "suryarose"
+        },
+        {
+          "percent": "10000",
+          "reputation": 24621699124,
+          "rshares": 0,
+          "voter": "sol7142"
+        },
+        {
+          "percent": "10000",
+          "reputation": 23722141431,
+          "rshares": 0,
+          "voter": "fikrialoy"
+        },
+        {
+          "percent": "10000",
+          "reputation": -166535280,
+          "rshares": 0,
+          "voter": "mr-lahey"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11981081855,
+          "rshares": 0,
+          "voter": "mahsabmirza"
+        },
+        {
+          "percent": "1000",
+          "reputation": 4557349567330,
+          "rshares": 0,
+          "voter": "pwangdu"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2002379332,
+          "rshares": 0,
+          "voter": "salda"
+        },
+        {
+          "percent": "10000",
+          "reputation": 157642435260,
+          "rshares": 0,
+          "voter": "muzzlealem"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2218652752433,
+          "rshares": 0,
+          "voter": "pakjos"
+        },
+        {
+          "percent": "10000",
+          "reputation": 28204184034,
+          "rshares": 0,
+          "voter": "mhdfadhal"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "dannykastner"
+        },
+        {
+          "percent": "10000",
+          "reputation": 66912417582,
+          "rshares": 0,
+          "voter": "ibul11"
+        },
+        {
+          "percent": "10000",
+          "reputation": 665118181066,
+          "rshares": 0,
+          "voter": "nigtroy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11349258518,
+          "rshares": 0,
+          "voter": "uripsurya"
+        },
+        {
+          "percent": "10000",
+          "reputation": 53385326,
+          "rshares": 0,
+          "voter": "jazman.zhens"
+        },
+        {
+          "percent": "10000",
+          "reputation": 47266392264,
+          "rshares": 0,
+          "voter": "intervote"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1242404669,
+          "rshares": 0,
+          "voter": "mahend"
+        },
+        {
+          "percent": "10000",
+          "reputation": 695858497,
+          "rshares": 0,
+          "voter": "anandasungkar"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1370538027,
+          "rshares": 0,
+          "voter": "homeless.global"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1731294599,
+          "rshares": 0,
+          "voter": "intansteemityes"
+        },
+        {
+          "percent": "10000",
+          "reputation": 43971275379,
+          "rshares": 0,
+          "voter": "perminus-gaita"
+        },
+        {
+          "percent": "10000",
+          "reputation": 14890860265,
+          "rshares": 0,
+          "voter": "phost"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2221096395269,
+          "rshares": 0,
+          "voter": "debart"
+        },
+        {
+          "percent": "10000",
+          "reputation": 139124119367,
+          "rshares": 0,
+          "voter": "blurrydude"
+        },
+        {
+          "percent": "10000",
+          "reputation": 27178121277927,
+          "rshares": 0,
+          "voter": "tsnaks"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11437207523627,
+          "rshares": 0,
+          "voter": "legendchew"
+        },
+        {
+          "percent": "100",
+          "reputation": 180887712001,
+          "rshares": 0,
+          "voter": "cryptonegocios"
+        },
+        {
+          "percent": "10000",
+          "reputation": 101139191212,
+          "rshares": 0,
+          "voter": "alexcozzy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 42167305,
+          "rshares": 0,
+          "voter": "joe.ster"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2959195565,
+          "rshares": 0,
+          "voter": "pandu13"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2413876943,
+          "rshares": 0,
+          "voter": "sasakhan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 270169809,
+          "rshares": 0,
+          "voter": "faisalyus"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20397543141918,
+          "rshares": 0,
+          "voter": "sawyn"
+        },
+        {
+          "percent": "10000",
+          "reputation": 135832376,
+          "rshares": 0,
+          "voter": "diegocedenno"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3390855600076,
+          "rshares": 0,
+          "voter": "calebotamus"
+        },
+        {
+          "percent": "10000",
+          "reputation": 16375701,
+          "rshares": 0,
+          "voter": "lsanneh78128"
+        },
+        {
+          "percent": "10000",
+          "reputation": 99196394608,
+          "rshares": 0,
+          "voter": "nazaruddin885"
+        },
+        {
+          "percent": "10000",
+          "reputation": 6004774856238,
+          "rshares": 0,
+          "voter": "chaseburnett"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1304920063150,
+          "rshares": 0,
+          "voter": "sisirhasan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 139033616025,
+          "rshares": 0,
+          "voter": "donyanyo"
+        },
+        {
+          "percent": "10000",
+          "reputation": 675965273965,
+          "rshares": 0,
+          "voter": "oregontravel"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 27409393057658,
+          "rshares": 0,
+          "voter": "luegenbaron"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1242095462,
+          "rshares": 0,
+          "voter": "edkrassenstein"
+        },
+        {
+          "percent": "10000",
+          "reputation": -8656090342,
+          "rshares": 0,
+          "voter": "munawirawin"
+        },
+        {
+          "percent": "10000",
+          "reputation": 52015121371,
+          "rshares": 0,
+          "voter": "salgetra"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 35525970129140,
+          "rshares": 0,
+          "voter": "zaxan"
+        },
+        {
+          "percent": "10000",
+          "reputation": 12448009637,
+          "rshares": 0,
+          "voter": "rollings"
+        },
+        {
+          "percent": "10000",
+          "reputation": 56810129135,
+          "rshares": 0,
+          "voter": "kyle07"
+        },
+        {
+          "percent": "10000",
+          "reputation": -56633199769,
+          "rshares": 0,
+          "voter": "pchanger"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2220689763292,
+          "rshares": 0,
+          "voter": "uncleboy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5944210218,
+          "rshares": 0,
+          "voter": "alfhi"
+        },
+        {
+          "percent": "0",
+          "reputation": 93270469,
+          "rshares": 0,
+          "voter": "htetmyathtut"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1535119282990,
+          "rshares": 0,
+          "voter": "trisolaran"
+        },
+        {
+          "percent": "10000",
+          "reputation": 9054698465381,
+          "rshares": 0,
+          "voter": "arafs"
+        },
+        {
+          "percent": "10000",
+          "reputation": 250332631092,
+          "rshares": 0,
+          "voter": "abysoyjoy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2482350646,
+          "rshares": 0,
+          "voter": "stylo419"
+        },
+        {
+          "percent": "10000",
+          "reputation": 25427769512752,
+          "rshares": 0,
+          "voter": "cookntell"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2640884245,
+          "rshares": 0,
+          "voter": "rakkarage"
+        },
+        {
+          "percent": "10000",
+          "reputation": 319261957505,
+          "rshares": 0,
+          "voter": "grasozauru"
+        },
+        {
+          "percent": "10000",
+          "reputation": 83917984354,
+          "rshares": 0,
+          "voter": "norabx"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10639158327880,
+          "rshares": 0,
+          "voter": "joyvancouver"
+        },
+        {
+          "percent": "10000",
+          "reputation": 55079152062,
+          "rshares": 0,
+          "voter": "antchatz"
+        },
+        {
+          "percent": "10000",
+          "reputation": 25167381987,
+          "rshares": 0,
+          "voter": "tutchpa"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 53337322068101,
+          "rshares": 0,
+          "voter": "cosmophobia"
+        },
+        {
+          "percent": "6600",
+          "reputation": 38003370,
+          "rshares": 0,
+          "voter": "rajaji"
+        },
+        {
+          "percent": "10000",
+          "reputation": 60057862,
+          "rshares": 0,
+          "voter": "liqquid"
+        },
+        {
+          "percent": "10000",
+          "reputation": 11764005733,
+          "rshares": 0,
+          "voter": "aceh-post"
+        },
+        {
+          "percent": "10000",
+          "reputation": 76704499,
+          "rshares": 0,
+          "voter": "dannanares"
+        },
+        {
+          "percent": "10000",
+          "reputation": 338705120185,
+          "rshares": 0,
+          "voter": "husana"
+        },
+        {
+          "percent": "10000",
+          "reputation": 145628145437,
+          "rshares": 0,
+          "voter": "davidmichael"
+        },
+        {
+          "percent": "10000",
+          "reputation": 249434026,
+          "rshares": 0,
+          "voter": "wprpn"
+        },
+        {
+          "percent": "10000",
+          "reputation": 488997421,
+          "rshares": 0,
+          "voter": "datuparulas17"
+        },
+        {
+          "percent": "10000",
+          "reputation": 28432163,
+          "rshares": 0,
+          "voter": "trie"
+        },
+        {
+          "percent": "-10000",
+          "reputation": -74205049136,
+          "rshares": 0,
+          "voter": "chirstonawba"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1427580552,
+          "rshares": 0,
+          "voter": "sulaiman86"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4717350663803,
+          "rshares": 0,
+          "voter": "electronicsworld"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "engrravijain"
+        },
+        {
+          "percent": "10000",
+          "reputation": 32836973991,
+          "rshares": 0,
+          "voter": "alfredolopez1980"
+        },
+        {
+          "percent": "10000",
+          "reputation": 842214722281,
+          "rshares": 0,
+          "voter": "gustavomonraz"
+        },
+        {
+          "percent": "10000",
+          "reputation": 10653163880,
+          "rshares": 0,
+          "voter": "tahoorsaleem"
+        },
+        {
+          "percent": "10000",
+          "reputation": 758939022885,
+          "rshares": 0,
+          "voter": "starfinger13"
+        },
+        {
+          "percent": "10000",
+          "reputation": 397930184267,
+          "rshares": 0,
+          "voter": "conscalisthenics"
+        },
+        {
+          "percent": "10000",
+          "reputation": 719725316,
+          "rshares": 0,
+          "voter": "syd44723"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4455302617675,
+          "rshares": 0,
+          "voter": "sutter"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4264322585,
+          "rshares": 0,
+          "voter": "samsonite18654"
+        },
+        {
+          "percent": "10000",
+          "reputation": 3068512069,
+          "rshares": 0,
+          "voter": "iqra.naz"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4540320429,
+          "rshares": 0,
+          "voter": "drezz"
+        },
+        {
+          "percent": "10000",
+          "reputation": -15883346236,
+          "rshares": 0,
+          "voter": "cutelace"
+        },
+        {
+          "percent": "10000",
+          "reputation": -30938089449,
+          "rshares": 0,
+          "voter": "chirstonawba5"
+        },
+        {
+          "percent": "8500",
+          "reputation": 281899083684,
+          "rshares": 0,
+          "voter": "devkapoor423"
+        },
+        {
+          "percent": "10000",
+          "reputation": 30199308052561,
+          "rshares": 0,
+          "voter": "blanchy"
+        },
+        {
+          "percent": "10000",
+          "reputation": 15551598,
+          "rshares": 0,
+          "voter": "rakeshban357"
+        },
+        {
+          "percent": "10000",
+          "reputation": 187417680256,
+          "rshares": 0,
+          "voter": "douglasjames"
+        },
+        {
+          "percent": "10000",
+          "reputation": 152403944888,
+          "rshares": 0,
+          "voter": "michaelabbas"
+        },
+        {
+          "percent": "10000",
+          "reputation": 718164361629,
+          "rshares": 0,
+          "voter": "gonewithwind"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4968746857731,
+          "rshares": 0,
+          "voter": "snow.owl"
+        },
+        {
+          "percent": "10000",
+          "reputation": 71132023,
+          "rshares": 0,
+          "voter": "tonthatthienvu"
+        },
+        {
+          "percent": "10000",
+          "reputation": 510851312,
+          "rshares": 0,
+          "voter": "strangeworldnews"
+        },
+        {
+          "percent": "10000",
+          "reputation": 4525252411,
+          "rshares": 0,
+          "voter": "dogra"
+        },
+        {
+          "percent": "10000",
+          "reputation": 20782653433,
+          "rshares": 0,
+          "voter": "umairx97"
+        },
+        {
+          "percent": "10000",
+          "reputation": -22287440682,
+          "rshares": 0,
+          "voter": "coolpeopleifb"
+        },
+        {
+          "percent": "10000",
+          "reputation": 292028647126,
+          "rshares": 0,
+          "voter": "gabu01"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1135378766699,
+          "rshares": 0,
+          "voter": "magicalbot"
+        },
+        {
+          "percent": "10000",
+          "reputation": 790439385274,
+          "rshares": 0,
+          "voter": "f21steem"
+        },
+        {
+          "percent": "10000",
+          "reputation": 0,
+          "rshares": 0,
+          "voter": "hoobit"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2699259380,
+          "rshares": 0,
+          "voter": "ivancraigcaine"
+        },
+        {
+          "percent": "10000",
+          "reputation": 5570673069,
+          "rshares": 0,
+          "voter": "kranko"
+        },
+        {
+          "percent": "10000",
+          "reputation": 2037695796,
+          "rshares": 0,
+          "voter": "successinwork"
+        },
+        {
+          "percent": "0",
+          "reputation": 4245375856,
+          "rshares": 0,
+          "voter": "abfelix96"
+        },
+        {
+          "percent": "0",
+          "reputation": 7200884,
+          "rshares": 0,
+          "voter": "maldonadog"
+        },
+        {
+          "percent": "-10000",
+          "reputation": 152903685005,
+          "rshares": 0,
+          "voter": "drakeler"
+        },
+        {
+          "percent": "10000",
+          "reputation": 1069695515,
+          "rshares": 0,
+          "voter": "cyrex88"
+        },
+        {
+          "percent": "10000",
+          "reputation": 218299278813,
+          "rshares": 0,
+          "voter": "rikyu"
+        },
+        {
+          "percent": "10000",
+          "reputation": 8359148,
+          "rshares": 0,
+          "voter": "krimimimi"
+        },
+        {
+          "percent": "10000",
+          "reputation": 208431577,
+          "rshares": 0,
+          "voter": "johannav"
+        }
+      ],
+      "author": "steemit",
+      "author_reputation": 12944616889,
+      "beneficiaries": [],
+      "body": "Steemit is a social media platform where anyone can earn STEEM points by posting. The more people who like a post, the more STEEM the poster earns. Anyone can sell their STEEM for cash or vest it to boost their voting power.",
+      "body_length": 224,
+      "cashout_time": "1969-12-31T23:59:59",
+      "category": "meta",
+      "children": 430,
+      "created": "2016-03-30T18:30:18",
+      "curator_payout_value": "0.756 HBD",
+      "depth": 0,
+      "json_metadata": "",
+      "last_payout": "2016-08-24T19:59:42",
+      "last_update": "2016-03-30T18:30:18",
+      "max_accepted_payout": "1000000.000 HBD",
+      "net_rshares": 830053779138,
+      "parent_author": "",
+      "parent_permlink": "meta",
+      "pending_payout_value": "0.000 HBD",
+      "percent_hbd": 10000,
+      "permlink": "firstpost",
+      "post_id": 1,
+      "promoted": "0.000 HBD",
+      "replies": [],
+      "root_title": "Welcome to Steem!",
+      "title": "Welcome to Steem!",
+      "total_payout_value": "0.942 HBD",
+      "url": "/meta/@steemit/firstpost"
+    },
+    "entry_id": 0,
+    "reblogged_on": "1970-01-01T00:00:00"
+  }
+]

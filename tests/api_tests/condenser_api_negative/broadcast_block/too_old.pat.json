@@ -1,0 +1,37 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "data": {
+          "head": 48419865,
+          "item->num": 1,
+          "max_size": 16
+        },
+        "format": "item->num > std::max<int64_t>( 0, int64_t(_head->num) - (_max_size) ): attempting to push a block that is too old"
+      },
+      {
+        "data": {},
+        "format": ""
+      },
+      {
+        "data": {
+          "new_block": {
+            "extensions": [],
+            "previous": "0000000000000000000000000000000000000000",
+            "timestamp": "1970-01-01T00:00:00",
+            "transaction_merkle_root": "0000000000000000000000000000000000000000",
+            "transactions": [],
+            "witness": "",
+            "witness_signature": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+          }
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "Assert Exception:item->num > std::max<int64_t>( 0, int64_t(_head->num) - (_max_size) ): attempting to push a block that is too old"
+}

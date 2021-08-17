@@ -1,0 +1,174 @@
+{
+  "proposals": [
+    {
+      "creator": "gtg",
+      "daily_pay": {
+        "amount": "240000000000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2029-12-31T23:59:59",
+      "id": 0,
+      "permlink": "steemdao",
+      "proposal_id": 0,
+      "receiver": "steem.dao",
+      "start_date": "2019-08-27T00:00:00",
+      "status": "active",
+      "subject": "Return Proposal",
+      "total_votes": "43478088660480248"
+    },
+    {
+      "creator": "guiltyparties",
+      "daily_pay": {
+        "amount": "5000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-05-20T19:03:24",
+      "id": 110,
+      "permlink": "spaminator-server-and-tech-only-funding-proposal",
+      "proposal_id": 110,
+      "receiver": "spaminator",
+      "start_date": "2020-05-20T19:03:09",
+      "status": "active",
+      "subject": "Spaminator Server and Tech-Only Funding Proposal",
+      "total_votes": "44987409421993639"
+    },
+    {
+      "creator": "hivebuzz",
+      "daily_pay": {
+        "amount": "125000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-12-31T23:59:59",
+      "id": 109,
+      "permlink": "proposal-2020",
+      "proposal_id": 109,
+      "receiver": "hivechain.app",
+      "start_date": "2020-05-18T00:00:00",
+      "status": "active",
+      "subject": "The Hive Gamification Proposal",
+      "total_votes": "55578131748605777"
+    },
+    {
+      "creator": "hiveio",
+      "daily_pay": {
+        "amount": "4750000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-11-22T00:00:00",
+      "id": 133,
+      "permlink": "airdrop-vested-funds-distribution-round-corrections",
+      "proposal_id": 133,
+      "receiver": "blocktrades",
+      "start_date": "2020-10-23T00:00:00",
+      "status": "active",
+      "subject": "Airdrop VESTS/HP:  non DHF funds held in trust used to repay up-front correction",
+      "total_votes": "61554270390462427"
+    },
+    {
+      "creator": "hivewatchers",
+      "daily_pay": {
+        "amount": "65000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-07-31T12:04:39",
+      "id": 124,
+      "permlink": "hivewatchers-dhf-proposal",
+      "proposal_id": 124,
+      "receiver": "hivewatchers",
+      "start_date": "2020-08-01T12:04:22",
+      "status": "active",
+      "subject": "Hivewatchers Operational Proposal",
+      "total_votes": "45629422178662771"
+    },
+    {
+      "creator": "howo",
+      "daily_pay": {
+        "amount": "275000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-04-24T00:00:00",
+      "id": 97,
+      "permlink": "proposal-core-blockchain-development-testing-and-documentation",
+      "proposal_id": 97,
+      "receiver": "howo",
+      "start_date": "2020-04-24T00:00:00",
+      "status": "active",
+      "subject": "Core blockchain development, testing and documentation",
+      "total_votes": "61566453325336830"
+    },
+    {
+      "creator": "imwatsi",
+      "daily_pay": {
+        "amount": "150000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2020-12-14T00:00:00",
+      "id": 132,
+      "permlink": "support-imwatsi-projects",
+      "proposal_id": 132,
+      "receiver": "imwatsi",
+      "start_date": "2020-10-15T00:00:00",
+      "status": "active",
+      "subject": "Support @imwatsi's projects",
+      "total_votes": "8620418637495196"
+    },
+    {
+      "creator": "inertia",
+      "daily_pay": {
+        "amount": "3500",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2021-04-01T00:00:00",
+      "id": 87,
+      "permlink": "proposal-banjo",
+      "proposal_id": 87,
+      "receiver": "inertia",
+      "start_date": "2020-04-01T00:00:00",
+      "status": "active",
+      "subject": "Banjo Hosting",
+      "total_votes": "46188252985066378"
+    },
+    {
+      "creator": "jack-the-ripper",
+      "daily_pay": {
+        "amount": "999999999999999000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2037-12-31T00:00:00",
+      "id": 116,
+      "permlink": "the-goyim-do-not-know",
+      "proposal_id": 116,
+      "receiver": "jack-the-ripper",
+      "start_date": "2020-05-31T00:00:00",
+      "status": "active",
+      "subject": "the goyim do not know",
+      "total_votes": 0
+    },
+    {
+      "creator": "jack-the-ripper",
+      "daily_pay": {
+        "amount": "999999999999999000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "end_date": "2037-05-31T00:00:00",
+      "id": 117,
+      "permlink": "the-goyim-know",
+      "proposal_id": 117,
+      "receiver": "null",
+      "start_date": "2020-05-31T00:00:00",
+      "status": "active",
+      "subject": "the goyim know",
+      "total_votes": 0
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+---
+  test_name: Hived get_account_references
+
+  marks:
+    - patterntest
+    - xfail # false: condenser_api::get_account_references --- Needs to be refactored for Hive.
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_account_references
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_account_references"
+          params: []
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "get"
+            directory: "condenser_api_patterns/get_account_references"

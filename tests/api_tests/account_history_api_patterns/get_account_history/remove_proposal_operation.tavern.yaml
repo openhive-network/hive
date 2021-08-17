@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api remove_proposal_operation
+
+  marks:
+    - patterntest # no noempty result in 5mln blocks
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api remove_proposal_operation
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"blocktrades", "operation_filter_low": 70368744177664, "start": 1000, "limit": 1000}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "remove_proposal_operation"
+            directory: "account_history_api_patterns/get_account_history"

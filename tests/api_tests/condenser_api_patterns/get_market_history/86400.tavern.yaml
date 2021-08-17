@@ -1,0 +1,28 @@
+---
+  test_name: Hived get_market_history
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_market_history
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_market_history"
+          params: [86400,"2016-03-01T00:00:00","2017-03-02T00:00:00"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "86400"
+            directory: "condenser_api_patterns/get_market_history"

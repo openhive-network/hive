@@ -1,0 +1,12 @@
+{
+  "block_id": "000f4240e8f91385f7bff8f5aeebddc9b14e4281",
+  "extensions": [],
+  "previous": "000f423f974857674873d93d1909e0eeb7e4916e",
+  "signing_key": "STM67P2LhV4FCvk2y6sQjNTnp6b1MVTKnftw2mLE2Vxf89Vdn7xYG",
+  "timestamp": "2016-04-29T04:12:00",
+  "transaction_ids": [],
+  "transaction_merkle_root": "0000000000000000000000000000000000000000",
+  "transactions": [],
+  "witness": "abit",
+  "witness_signature": "1f72bd3f4b06e7dc6b156729f0fd7873163814972eecea9d77cb29bae11d0fea3865c814d11a58e818c2494ce19f4c3d4c3e17eab3b1465ebccb102c52c56472c0"
+}

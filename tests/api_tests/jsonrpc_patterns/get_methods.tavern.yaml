@@ -1,0 +1,27 @@
+---
+  test_name: Hived jsonrpc get_methods
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../common.yaml
+
+  stages:
+    - name: jsonrpc get_methods
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "jsonrpc.get_methods"
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get_methods"
+            directory: "jsonrpc_patterns"

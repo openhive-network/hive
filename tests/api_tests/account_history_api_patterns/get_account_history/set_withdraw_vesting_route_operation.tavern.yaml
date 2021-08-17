@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api get_account_history filter to set_withdraw_vesting_route_operation
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_account_history set_withdraw_vesting_route_operation
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"aizen24","operation_filter_low": 1048576,"start": 251,"limit": 8}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "set_withdraw_vesting_route_operation"
+            directory: "account_history_api_patterns/get_account_history"

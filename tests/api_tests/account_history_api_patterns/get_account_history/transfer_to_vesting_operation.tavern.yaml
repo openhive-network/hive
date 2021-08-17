@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api get_account_history filter to transfer_to_vesting_operation
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_account_history transfer_to_vesting_operation
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"blocktrades","operation_filter_low": 8, "start": 206067, "limit": 18}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "transfer_to_vesting_operation"
+            directory: "account_history_api_patterns/get_account_history"

@@ -1,0 +1,35 @@
+---
+  test_name: Hived database_api.verify_signatures
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: database_api.verify_signatures
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.verify_signatures"
+          params: {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "signatures": [ ],
+            "required_owner": [ ],
+            "required_active": [ ],
+            "required_posting": [ ],
+            "required_other": [ ]
+          }
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "true"
+            directory: "database_api_patterns/verify_signatures"

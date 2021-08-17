@@ -1,0 +1,30 @@
+---
+  test_name: Hived get_blog_entries
+
+  marks:
+    - patterntest
+    - xfail # some pat parameters disappear
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_blog_entries
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_blog_entries"
+          params: ["gtg",0,100]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "gtg"
+            directory: "condenser_api_patterns/get_blog_entries"
+            ignore_tags: ['entry_id','permlink','reblogged_on']

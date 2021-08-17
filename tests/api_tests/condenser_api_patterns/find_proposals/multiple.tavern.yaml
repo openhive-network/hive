@@ -1,0 +1,29 @@
+---
+  test_name: Hived account_history_api find_proposals multiple
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api find_proposals multiple
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.find_proposals"
+          params: [[0,2,21,22]]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "multiple"
+            directory: "condenser_api_patterns/find_proposals"
+            ignore_tags: ['total_votes']

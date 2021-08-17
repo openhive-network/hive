@@ -1,0 +1,27 @@
+{
+  "error": {
+    "code": -32003,
+    "data": {
+      "code": 10,
+      "message": "Assert Exception",
+      "name": "assert_exception",
+      "stack": [
+        {
+          "context": {
+            "file": "condenser_api.cpp",
+            "hostname": "",
+            "level": "error",
+            "line": 312,
+            "method": "get_reward_fund",
+            "timestamp": "2021-08-16T08:27:00"
+          },
+          "data": {},
+          "format": "fund != nullptr: Invalid reward fund name"
+        }
+      ]
+    },
+    "message": "Assert Exception:fund != nullptr: Invalid reward fund name"
+  },
+  "id": 1,
+  "jsonrpc": "2.0"
+}

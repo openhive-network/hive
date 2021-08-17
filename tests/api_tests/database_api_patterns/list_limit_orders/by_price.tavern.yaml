@@ -1,0 +1,29 @@
+---
+  test_name: Hived list_limit_orders
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: list_limit_orders
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_limit_orders"
+          params: {"start":[{"base": {"amount": "85405", "precision": 3, "nai": "@@000000021"}, "quote": {"amount": "17192", "precision": 3, "nai": "@@000000013"}}, 0], "limit":10, "order":"by_price"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "by_price"
+            directory: "database_api_patterns/list_limit_orders"
+            ignore_tags: ['orders']

@@ -1,0 +1,29 @@
+---
+  test_name: Hived get_current_median_history_price
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_current_median_history_price
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_current_median_history_price"
+          params: []
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get"
+            directory: "condenser_api_patterns/get_current_median_history_price"
+            ignore_tags: ["base","quote"]

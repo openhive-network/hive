@@ -1,0 +1,38 @@
+---
+  test_name: Hived condenser_api.get_required_signatures
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: condenser_api.get_required_signatures
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_required_signatures"
+          params: [
+            {
+              "ref_block_num": 0,
+              "ref_block_prefix": 0,
+              "expiration": "1970-01-01T00:00:00",
+              "operations": [ ],
+              "extensions": [ ],
+              "signatures": [ ]
+            },
+            [ ]
+          ]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get"
+            directory: "condenser_api_patterns/get_required_signatures"

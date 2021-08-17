@@ -1,0 +1,110 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 4030200,
+    "message": "transaction tapos exception",
+    "name": "transaction_tapos_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 4233,
+          "method": "_apply_transaction",
+          "timestamp": "2020-11-09T10:59:05"
+        },
+        "data": {
+          "tapos_block_summary": 3191012121,
+          "trx.ref_block_prefix": 276291495
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 4269,
+          "method": "_apply_transaction",
+          "timestamp": "2020-11-09T10:59:05"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2020-11-05T12:58:10",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "request_account_recovery_operation",
+                "value": {
+                  "account_to_recover": "tulpa",
+                  "extensions": [],
+                  "new_owner_authority": {
+                    "account_auths": [],
+                    "key_auths": [
+                      [
+                        "STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS",
+                        1
+                      ]
+                    ],
+                    "weight_threshold": 1
+                  },
+                  "recovery_account": "nalesnik"
+                }
+              }
+            ],
+            "ref_block_num": 55551,
+            "ref_block_prefix": 276291495,
+            "signatures": [
+              "204f2dc529f3e884a77ee3e849d0f8c03ff9ec0d9af08894427d15c74eea4dcead50bc2bd23ac188cfb5975acc5a89cb1df1474e42d47d54ac993ed240fdb3f955"
+            ]
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 1176,
+          "method": "push_transaction",
+          "timestamp": "2020-11-09T10:59:05"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2020-11-05T12:58:10",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "request_account_recovery_operation",
+                "value": {
+                  "account_to_recover": "tulpa",
+                  "extensions": [],
+                  "new_owner_authority": {
+                    "account_auths": [],
+                    "key_auths": [
+                      [
+                        "STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS",
+                        1
+                      ]
+                    ],
+                    "weight_threshold": 1
+                  },
+                  "recovery_account": "nalesnik"
+                }
+              }
+            ],
+            "ref_block_num": 55551,
+            "ref_block_prefix": 276291495,
+            "signatures": [
+              "204f2dc529f3e884a77ee3e849d0f8c03ff9ec0d9af08894427d15c74eea4dcead50bc2bd23ac188cfb5975acc5a89cb1df1474e42d47d54ac993ed240fdb3f955"
+            ]
+          }
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "transaction tapos exception:"
+}

@@ -1,0 +1,148 @@
+{
+  "history": [
+    [
+      205196,
+      {
+        "block": 4982094,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "quigua",
+            "body": "At first, I couldn't see more than 4 points at the same time. But, then I follow all points with the eyes making a circle pattern during 15 seconds, and surprising!. I can see the 12 points, and now I can not see the blinking points again. That is  really crazy...",
+            "json_metadata": "{\"tags\":[\"optical\"]}",
+            "parent_author": "blocktrades",
+            "parent_permlink": "re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t034947752z",
+            "permlink": "re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t044305573z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-15T04:43:09",
+        "trx_id": "40ae1f796b8d0409a799fe62b3b423972b83c9e5",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ],
+    [
+      205222,
+      {
+        "block": 4982610,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "blocktrades",
+            "body": "I tried that same pattern, but the most I could see was 4 at a time. So now I wonder, is your brain remembering what it saw and assuming it's still there, or is there enough information that your brain is now better able to interpret what it's seeing in your peripheral vision...",
+            "json_metadata": "{\"tags\":[\"optical\"]}",
+            "parent_author": "quigua",
+            "parent_permlink": "re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t044305573z",
+            "permlink": "re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t050900278z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-15T05:08:57",
+        "trx_id": "e363ad2c2c7e8aab96952e772446b177e7ee1624",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      205229,
+      {
+        "block": 4982731,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "blocktrades",
+            "body": "Hmm, it may be an actual function of my weak vision. When I get further from the screen, it gets hard for me to see any of the dots. So next I tried to get very close to the screen (normally I keep my monitor pretty far away) and I was able to see about 8 of them at once. I'm guessing having a smaller monitor might help too, based on the article, since I suppose they would be less in  our peripheral vision then.",
+            "json_metadata": "{\"tags\":[\"optical\"]}",
+            "parent_author": "quigua",
+            "parent_permlink": "re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t044305573z",
+            "permlink": "re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t051505312z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-15T05:15:00",
+        "trx_id": "e1a1c74b9c999a20381d4eafefd3ad0f4467a0cc",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      205261,
+      {
+        "block": 4983394,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "quigua",
+            "body": "I am not sure, but it is not funny anymore because I see the 12 points every time. Maybe my brain just recorded the pattern and remember it. I can not switch back again.\nAlso is truth that I work with crystal simetry  pattern daily, so, maybe my brain is trained to see patterns and keep it. Also, in this occasion, I knew what was looking for...\nThis make me think how different we perceive the universe around us... Even when everybody is seeing the same thing...",
+            "json_metadata": "{\"tags\":[\"optical\"]}",
+            "parent_author": "blocktrades",
+            "parent_permlink": "re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t050900278z",
+            "permlink": "re-blocktrades-re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t054809925z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-15T05:48:12",
+        "trx_id": "5824e046a9235be9ba99440e3e8eb99860e8a63a",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      205902,
+      {
+        "block": 4995964,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "piedpiper",
+            "body": "It just occurred to me that witness updates like this could make for interesting video material. Maybe a segment in our SteemSmart show?",
+            "json_metadata": "{\"tags\":[\"witness-category\"]}",
+            "parent_author": "blocktrades",
+            "parent_permlink": "witness-report-for-blocktrades-for-last-week-of-august",
+            "permlink": "re-blocktrades-witness-report-for-blocktrades-for-last-week-of-august-20160915t161707257z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-15T16:18:12",
+        "trx_id": "3ae419f4d37860c7d2dabec530ccf3ad79e79784",
+        "trx_in_block": 2,
+        "virtual_op": 0
+      }
+    ],
+    [
+      206145,
+      {
+        "block": 4999840,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "blocktrades",
+            "body": "When will the t-shirt ship?",
+            "json_metadata": "{\"tags\":[\"steem\"]}",
+            "parent_author": "cryptojoy.com",
+            "parent_permlink": "help-steem-buy-steemit-apparel-day-2",
+            "permlink": "re-cryptojoycom-help-steem-buy-steemit-apparel-day-2-20160915t193858376z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-15T19:38:48",
+        "trx_id": "ef94aba27f9875d6da33b26dae44ee63f06f89a2",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

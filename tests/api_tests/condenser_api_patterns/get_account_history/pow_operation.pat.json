@@ -1,0 +1,36 @@
+[
+  [
+    0,
+    {
+      "block": 2794856,
+      "op": [
+        "pow",
+        {
+          "block_id": "002aa567ccf390d2cc68306123b0d6fe9dba5cb8",
+          "nonce": "2194496385481149070",
+          "props": {
+            "account_creation_fee": {
+              "amount": "1",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "hbd_interest_rate": 1000,
+            "maximum_block_size": 131072
+          },
+          "work": {
+            "input": "851c610d1495b7019601e2188f1597f4b1804e7b29d0edd5fcbb078da714789d",
+            "signature": "203e847f9bc84c89cf89c1ac0afb9f5b405a408a46268f16f17bad2c001a0746e22715822421918be92d99ab1b0a9dd249ae3185ffe78bfb7c970cac7d58a7f237",
+            "work": "00000016a6ea16fb3a956ce4743157b15c49616fdef2a84f6c22224bf05348b1",
+            "worker": "STM5F9tCbND6zWPwksy1rEN24WjPiQWSU2vwGgegQVjAcYDe1zTWi"
+          },
+          "worker_account": "gtg"
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-06-30T17:22:18",
+      "trx_id": "486b5caec9fd094ec21144c67ecef12aa15c8f4f",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    }
+  ]
+]

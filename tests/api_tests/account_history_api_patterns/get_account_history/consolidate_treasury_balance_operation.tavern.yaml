@@ -1,0 +1,29 @@
+---
+  test_name: Hived account_history_api consolidate_treasury_balance_operation
+
+  marks:
+    - patterntest # virtual
+      # no noempty results
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api consolidate_treasury_balance_operation
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"blocktrades", "operation_filter_high": 32, "start": 1000, "limit": 1000}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "consolidate_treasury_balance_operation"
+            directory: "account_history_api_patterns/get_account_history"

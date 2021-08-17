@@ -1,0 +1,20 @@
+{
+  "funds": [
+    {
+      "author_reward_curve": "convergent_linear",
+      "content_constant": "2000000000000",
+      "curation_reward_curve": "convergent_square_root",
+      "id": 0,
+      "last_update": "2020-11-03T13:35:54",
+      "name": "post",
+      "percent_content_rewards": 10000,
+      "percent_curation_rewards": 5000,
+      "recent_claims": "431626607096840681",
+      "reward_balance": {
+        "amount": "899951863",
+        "nai": "@@000000021",
+        "precision": 3
+      }
+    }
+  ]
+}

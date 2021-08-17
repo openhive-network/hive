@@ -1,0 +1,12 @@
+{
+  "hbd_volume": {
+    "amount": "1692845",
+    "nai": "@@000000013",
+    "precision": 3
+  },
+  "hive_volume": {
+    "amount": "12676495",
+    "nai": "@@000000021",
+    "precision": 3
+  }
+}

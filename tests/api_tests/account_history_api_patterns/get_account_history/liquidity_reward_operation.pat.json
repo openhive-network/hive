@@ -1,0 +1,165 @@
+{
+  "history": [
+    [
+      15232,
+      {
+        "block": 2937600,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T17:10:30",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      15342,
+      {
+        "block": 2938800,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T18:10:39",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      15457,
+      {
+        "block": 2940000,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T19:10:48",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      15577,
+      {
+        "block": 2941200,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T20:11:00",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      15701,
+      {
+        "block": 2942400,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T21:11:09",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      15812,
+      {
+        "block": 2943600,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T22:14:09",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      15915,
+      {
+        "block": 2944800,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-05T23:14:39",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ]
+  ]
+}

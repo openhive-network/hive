@@ -1,0 +1,28 @@
+---
+  test_name: Hived account_history_api get_transaction
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api get_transaction
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_account_history"
+          params: ["murdock1",100,100,131072]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "delete_comment_operation"
+            directory: "condenser_api_patterns/get_account_history"

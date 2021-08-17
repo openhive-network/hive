@@ -1,0 +1,82 @@
+[
+  [
+    3,
+    {
+      "block": 2797050,
+      "op": [
+        "vote",
+        {
+          "author": "pfunk",
+          "permlink": "guide-maximize-your-mining-hashrate-in-windows-by-mining-steem-in-a-vm",
+          "voter": "gtg",
+          "weight": 10000
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-06-30T19:12:21",
+      "trx_id": "e0cd24f9aba3b668b1443786bee3891f644ff23f",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    }
+  ],
+  [
+    5,
+    {
+      "block": 2797188,
+      "op": [
+        "vote",
+        {
+          "author": "pfunk",
+          "permlink": "security-b-sides-msp-2016-information-security-conference-day-1-opening-keynote-notes-and-recap",
+          "voter": "gtg",
+          "weight": 10000
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-06-30T19:19:15",
+      "trx_id": "be93d0b153a5b9a12547180a1d88f2aad1669754",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    }
+  ],
+  [
+    7,
+    {
+      "block": 2797362,
+      "op": [
+        "vote",
+        {
+          "author": "pfunk",
+          "permlink": "lets-discuss-verification-of-user-accounts-posting-previous-work-to-prevent-impersonation",
+          "voter": "gtg",
+          "weight": 10000
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-06-30T19:27:57",
+      "trx_id": "c7a8b59428f96adc3245345bd4fd7c587aad3383",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    }
+  ],
+  [
+    9,
+    {
+      "block": 2797645,
+      "op": [
+        "vote",
+        {
+          "author": "zajac",
+          "permlink": "hi-steemit-people-lets-waste-some-time-together-",
+          "voter": "gtg",
+          "weight": 10000
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-06-30T19:42:09",
+      "trx_id": "f98b305720148c4b37b19c1c7616ad9057e46c32",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    }
+  ]
+]

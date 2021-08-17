@@ -1,0 +1,23 @@
+{
+  "history": [
+    [
+      595,
+      {
+        "block": 2111808,
+        "op": {
+          "type": "ineffective_delete_comment_operation",
+          "value": {
+            "author": "jsc",
+            "permlink": "re-vadimberkut8-just-test-20160603t163718014z"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-06T21:38:54",
+        "trx_id": "3461cfaabbf36ed0571d71008ee20ba4ae74400d",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ]
+  ]
+}

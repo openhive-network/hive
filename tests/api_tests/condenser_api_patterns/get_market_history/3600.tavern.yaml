@@ -1,0 +1,28 @@
+---
+  test_name: Hived get_market_history
+
+  marks:
+    - patterntest # this works only for new data from less than eight months before now
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_market_history
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_market_history"
+          params: [3600,"2019-04-03T00:00:00","2031-09-06T00:00:00"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "3600"
+            directory: "condenser_api_patterns/get_market_history"

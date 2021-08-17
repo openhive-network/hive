@@ -1,0 +1,68 @@
+---
+  test_name: Hivemind condenser_api.get_block multiple tests
+
+  marks:
+    - patterntest
+    - parametrize:
+        key: block_id
+        vals:
+          - 10
+          - 100
+          - 1000
+          - 10000
+          - 200000
+          - 5000000
+          - 4788663
+          - 5119170
+          - 5211007
+          - 43176948
+          - 43177127
+          - 43177128
+          - 43177933
+          - 43177934
+          - 43182320
+          - 43184379
+          - 43186963
+          - 44238919
+          - 44647676
+          - 44976482
+          - 45144817
+          - 48207066
+          - 48332524
+          - 48454760
+          - 48456274
+          - 48456450
+          - 48538351
+          - 48538352
+          - 48538362
+          - 48538363
+          - 48538364
+          - 48539058
+          - 48539128
+          - 48539125
+          - 48539381
+          - 48539731
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_block multiple tests
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_block"
+          params: ["{block_id}"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "4788663"
+            directory: "condenser_api_patterns/get_block"
+

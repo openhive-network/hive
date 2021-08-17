@@ -1,0 +1,182 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 3030000,
+    "message": "missing required posting authority",
+    "name": "tx_missing_posting_auth",
+    "stack": [
+      {
+        "context": {
+          "file": "transaction_util.hpp",
+          "hostname": "",
+          "level": "error",
+          "line": 58,
+          "method": "verify_authority",
+          "timestamp": "2020-11-05T12:51:07"
+        },
+        "data": {
+          "active": {
+            "account_auths": [],
+            "key_auths": [
+              [
+                "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
+                1
+              ]
+            ],
+            "weight_threshold": 1
+          },
+          "id": "hiveio",
+          "owner": {
+            "account_auths": [],
+            "key_auths": [
+              [
+                "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
+                1
+              ]
+            ],
+            "weight_threshold": 1
+          },
+          "posting": {
+            "account_auths": [
+              [
+                "threespeak",
+                1
+              ],
+              [
+                "vimm.app",
+                1
+              ]
+            ],
+            "key_auths": [
+              [
+                "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
+                1
+              ]
+            ],
+            "weight_threshold": 1
+          }
+        },
+        "format": "Missing Posting Authority ${id}"
+      },
+      {
+        "context": {
+          "file": "transaction_util.hpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 103,
+          "method": "verify_authority",
+          "timestamp": "2020-11-05T12:51:07"
+        },
+        "data": {
+          "auth_containers": [
+            {
+              "type": "vote_operation",
+              "value": {
+                "author": "alice",
+                "permlink": "a-post-by-alice",
+                "voter": "hiveio",
+                "weight": 10000
+              }
+            }
+          ],
+          "sigs": []
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "transaction.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 232,
+          "method": "verify_authority",
+          "timestamp": "2020-11-05T12:51:07"
+        },
+        "data": {
+          "*this": {
+            "expiration": "2016-03-24T18:00:21",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "vote_operation",
+                "value": {
+                  "author": "alice",
+                  "permlink": "a-post-by-alice",
+                  "voter": "hiveio",
+                  "weight": 10000
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 2181793527,
+            "signatures": []
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 4269,
+          "method": "_apply_transaction",
+          "timestamp": "2020-11-05T12:51:07"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2016-03-24T18:00:21",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "vote_operation",
+                "value": {
+                  "author": "alice",
+                  "permlink": "a-post-by-alice",
+                  "voter": "hiveio",
+                  "weight": 10000
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 2181793527,
+            "signatures": []
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 1176,
+          "method": "push_transaction",
+          "timestamp": "2020-11-05T12:51:07"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2016-03-24T18:00:21",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "vote_operation",
+                "value": {
+                  "author": "alice",
+                  "permlink": "a-post-by-alice",
+                  "voter": "hiveio",
+                  "weight": 10000
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 2181793527,
+            "signatures": []
+          }
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "missing required posting authority:Missing Posting Authority hiveio"
+}

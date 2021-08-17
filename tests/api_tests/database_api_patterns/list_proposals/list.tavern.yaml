@@ -1,0 +1,29 @@
+---
+  test_name: Hived list_proposals
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: list_proposals
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_proposals"
+          params: {"start":["gtg"], "limit":10, "order":"by_creator", "order_direction": "ascending", "status": "all"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "list"
+            directory: "database_api_patterns/list_proposals"
+            ignore_tags: ["proposals"]

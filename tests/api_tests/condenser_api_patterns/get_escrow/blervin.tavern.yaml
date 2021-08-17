@@ -1,0 +1,28 @@
+---
+  test_name: Hived get_escrow blervin
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_escrow
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_escrow"
+          params: ["blervin", 4]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "blervin"
+            directory: "condenser_api_patterns/get_escrow"

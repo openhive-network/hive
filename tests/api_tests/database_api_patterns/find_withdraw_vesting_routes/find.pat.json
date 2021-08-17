@@ -1,0 +1,11 @@
+{
+  "routes": [
+    {
+      "auto_vest": false,
+      "from_account": "thefault",
+      "id": 43763,
+      "percent": 1000,
+      "to_account": "gtg"
+    }
+  ]
+}

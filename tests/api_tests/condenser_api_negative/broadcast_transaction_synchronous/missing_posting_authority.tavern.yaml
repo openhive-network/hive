@@ -1,0 +1,43 @@
+---
+  test_name: Hived broadcast_transaction_synchronous
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: broadcast_transaction_synchronous
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.broadcast_transaction_synchronous"
+          params: [
+            {
+              "ref_block_prefix": 2181793527,
+              "expiration":"2016-03-24T18:00:21",
+              "operations":[
+                [
+                    "vote",
+                    {"voter":"hiveio","author":"alice","permlink":"a-post-by-alice","weight":10000}
+                ]
+              ],
+              "extensions":[],
+              "signatures":[]
+            }
+          ]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "missing_posting_authority"
+            directory: "condenser_api_negative/broadcast_transaction_synchronous"
+            error_response: true
+            ignore_tags: ['context']

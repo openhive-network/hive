@@ -1,0 +1,29 @@
+---
+  test_name: Hived account_history_api ineffective_delete_comment_operation
+
+  marks:
+    - patterntest # virtual
+    # next and last one is 791 of the same account
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: account_history_api ineffective_delete_comment_operation
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"jsc", "operation_filter_high": 128, "start": 595, "limit": 2}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "ineffective_delete_comment_operation"
+            directory: "account_history_api_patterns/get_account_history"

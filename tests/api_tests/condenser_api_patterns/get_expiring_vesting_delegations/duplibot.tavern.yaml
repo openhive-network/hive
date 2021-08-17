@@ -1,0 +1,28 @@
+---
+  test_name: Hived get_expiring_vesting_delegations duplibot
+
+  marks:
+    - patterntest # test only if there is result - hard to test real data as expiring delegations change over time
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: get_expiring_vesting_delegations
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_expiring_vesting_delegations"
+          params: ["duplibot", "1970-01-01T00:00:00"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            method: "duplibot"
+            directory: "condenser_api_patterns/get_expiring_vesting_delegations"

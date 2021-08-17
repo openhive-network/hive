@@ -1,0 +1,19 @@
+{
+  "resource_pool": {
+    "resource_execution_time": {
+      "pool": "6057282463215"
+    },
+    "resource_history_bytes": {
+      "pool": "22463766995"
+    },
+    "resource_market_bytes": {
+      "pool": 1973880191
+    },
+    "resource_new_accounts": {
+      "pool": 25422973
+    },
+    "resource_state_bytes": {
+      "pool": "19664382436260"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+---
+  test_name: Hived condenser_api.get_savings_withdraw_to
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml #todo find account with savings withraw to
+
+  stages:
+    - name: condenser_api.get_savings_withdraw_to
+      request:
+        url: "{service.url:s}"
+        method: POST
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_savings_withdraw_to"
+          params: ["gtg"]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            method: "get"
+            directory: "condenser_api_patterns/get_savings_withdraw_to"

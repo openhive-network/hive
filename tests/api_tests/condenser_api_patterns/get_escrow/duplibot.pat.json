@@ -1,0 +1,15 @@
+{
+  "agent": "monstersescrow",
+  "agent_approved": true,
+  "disputed": false,
+  "escrow_expiration": "2018-06-26T20:25:45",
+  "escrow_id": 13,
+  "from": "duplibot",
+  "hbd_balance": "0.010 HBD",
+  "hive_balance": "0.000 HIVE",
+  "id": 104,
+  "pending_fee": "0.000 HBD",
+  "ratification_deadline": "2018-06-26T19:25:45",
+  "to": "blervin",
+  "to_approved": true
+}
