@@ -595,7 +595,6 @@ namespace chain {
       int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
 
       void perform_vesting_share_split( uint32_t magnitude );
-      void retally_comment_children();
       void retally_witness_votes();
       void retally_witness_vote_counts( bool force = false );
       void retally_liquidity_weight();
