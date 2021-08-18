@@ -1,3 +1,5 @@
+#pragma once
+
 #include <functional>
 #include <mutex>
 #include <unordered_map>
