@@ -2,6 +2,7 @@
 
 #include <hive/plugins/sql_serializer/table_data_writer.h>
 #include <hive/plugins/sql_serializer/data_2_sql_tuple_base.h>
+#include <hive/plugins/sql_serializer/tables_descriptions.h>
 
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
@@ -169,102 +170,6 @@ using chain::reindex_notification;
       };
       using cached_containter_t = std::unique_ptr<cached_data_t>;
 
-
-
-
-
-      struct hive_blocks
-      {
-        typedef block_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data) const
-          {
-            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," +
-              escape_raw(data.prev_hash) + ", '" + data.created_at.to_iso_string() + '\'';
-          }
-        };
-      };
-
-      const char hive_blocks::TABLE[] = "hive.blocks";
-      const char hive_blocks::COLS[] = "num, hash, prev, created_at";
-
-      struct hive_transactions
-      {
-        typedef transaction_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data) const
-          {
-            return std::to_string(data.block_number) + "," + escape_raw(data.hash) + "," + std::to_string(data.trx_in_block) + "," +
-                   std::to_string(data.ref_block_num) + "," + std::to_string(data.ref_block_prefix) + ",'" + data.expiration.to_iso_string() + "'," + escape_raw(data.signature);
-          }
-        };
-      };
-
-      const char hive_transactions::TABLE[] = "hive.transactions";
-      const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block, ref_block_num, ref_block_prefix, expiration, signature";
-
-      struct hive_transactions_multisig
-      {
-        typedef transaction_multisig_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data) const
-          {
-            return escape_raw(data.hash) + "," + escape_raw(data.signature);
-          }
-        };
-      };
-
-      const char hive_transactions_multisig::TABLE[] = "hive.transactions_multisig";
-      const char hive_transactions_multisig::COLS[] = "trx_hash, signature";
-
-      struct hive_operations
-      {
-        typedef operation_data_container_t container_t;
-
-        static const char TABLE[];
-        static const char COLS[];
-
-        struct data2sql_tuple : public data2_sql_tuple_base
-        {
-          using data2_sql_tuple_base::data2_sql_tuple_base;
-
-          std::string operator()(typename container_t::const_reference data) const
-          {
-            // deserialization
-            fc::variant opVariant;
-            fc::to_variant(data.op, opVariant);
-            fc::string deserialized_op = fc::json::to_string(opVariant);
-
-            return std::to_string(data.operation_id) + ',' + std::to_string(data.block_number) + ',' +
-              std::to_string(data.trx_in_block) + ',' + std::to_string(data.op_in_trx) + ',' +
-              std::to_string(data.op.which()) + ',' + escape(deserialized_op);
-          }
-        };
-      };
-
-      const char hive_operations::TABLE[] = "hive.operations";
-      const char hive_operations::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body";
 
       using block_data_container_t_writer = table_data_writer<hive_blocks>;
       using transaction_data_container_t_writer = table_data_writer<hive_transactions>;
