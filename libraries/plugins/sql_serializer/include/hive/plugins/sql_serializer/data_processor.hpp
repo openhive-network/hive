@@ -24,9 +24,7 @@ public:
   class data_chunk
   {
   public:
-    virtual std::string generate_code(size_t* processedItem) const = 0;
-    
-    virtual ~data_chunk() {}
+    virtual ~data_chunk() = default;
   };
 
   using transaction_ptr = transaction_controller::transaction_ptr;
