@@ -1,7 +1,11 @@
 stages:
-- build
-- test
-- package
+  - build
+  - test
+  - package
+  - replay
+  - deploy
+  - stop
+  - clean
 
 variables:
   GIT_DEPTH: 1
@@ -322,3 +326,231 @@ package_consensus_node:
   tags:
     - public-runner-docker
 
+.prepare make:
+  image: ubuntu:20.04
+  before_script:
+    - 'which ssh-agent || ( apt-get update -qq && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - chmod 700 ${DEPLOY_SSH_KEY}
+    - ssh-add ${DEPLOY_SSH_KEY}
+    - mkdir -p artifacts
+    - mkdir -p ~/.ssh
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+make replay:
+  stage: replay
+  needs:
+    job: package_consensus_node
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - mkdir -p replay_logs
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ./ciscripts/make_replay.sh ${DEPLOY_CONFIG_INI} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:~
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE  "/bin/bash ./make_replay.sh ${CI_COMMIT_SHORT_SHA} ${STOP_REPLAY_AT_BLOCK}"
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:{${CI_COMMIT_SHORT_SHA}.replay.log,${CI_COMMIT_SHORT_SHA}.replay/{*.tgz,config.ini}} replay_logs/ || true
+  artifacts:
+    paths:
+      - replay_logs
+    expire_in: 1 week
+  tags:
+    - vdeploy
+
+#^ developer test1 environment, used ports: 8090/2001
+deploy_8090_dev_test:
+  stage: deploy
+  needs:
+    job: make replay
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ./ciscripts/make_deploy.sh ${DEPLOY_CONFIG_INI} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:~
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE CI_REGISTRY=$CI_REGISTRY STOP_REPLAY_AT_BLOCK=$STOP_REPLAY_AT_BLOCK "/bin/bash make_deploy.sh 'START' 8090 ${CI_COMMIT_SHORT_SHA}"
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8090_dev.log deploy.log || true
+  artifacts:
+    paths:
+      - deploy.log
+    expire_in: 1 week
+  tags:
+    - vdeploy
+  environment:
+    name: 8090_dev_test
+    url: http://${DEPLOY_DOCKER_HOST}:8090
+    on_stop: stop_deploy_8090_dev_test
+
+stop_deploy_8090_dev_test:
+  stage: stop
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    job: deploy_8090_dev_test
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8090_dev_dir/blockchain/replay.log replay.log || true
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE "/bin/bash make_deploy.sh 'STOP' 8090 ${CI_COMMIT_SHORT_SHA}"
+  artifacts:
+    paths:
+      - replay.log
+  tags:
+    - vdeploy
+  environment:
+    name: 8090_dev_test
+    action: stop
+
+#^ developer test2 environment, used ports: 8092/2003
+deploy_8092_dev_test:
+  stage: deploy
+  needs:
+    job: make replay
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ./ciscripts/make_deploy.sh ${DEPLOY_CONFIG_INI} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:~
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE CI_REGISTRY=$CI_REGISTRY STOP_REPLAY_AT_BLOCK=$STOP_REPLAY_AT_BLOCK "/bin/bash make_deploy.sh 'START' 8092 ${CI_COMMIT_SHORT_SHA}"
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8092_dev.log deploy.log || true
+  artifacts:
+    paths:
+      - deploy.log
+    expire_in: 1 week
+  tags:
+    - vdeploy
+  environment:
+    name: 8092_dev_test
+    url: http://${DEPLOY_DOCKER_HOST}:8092
+    on_stop: stop_deploy_8092_dev_test
+
+stop_deploy_8092_dev_test:
+  stage: stop
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    job: deploy_8092_dev_test
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8092_dev_dir/blockchain/replay.log replay.log || true
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE "/bin/bash make_deploy.sh 'STOP' 8092 ${CI_COMMIT_SHORT_SHA}"
+  artifacts:
+    paths:
+      - replay.log
+  tags:
+    - vdeploy
+  environment:
+    name: 8092_dev_test
+    action: stop
+
+#^ developer test3 environment, used ports: 8094/2005
+deploy_8094_dev_test:
+  stage: deploy
+  needs:
+    job: make replay
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ./ciscripts/make_deploy.sh ${DEPLOY_CONFIG_INI} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:~
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE CI_REGISTRY=$CI_REGISTRY STOP_REPLAY_AT_BLOCK=$STOP_REPLAY_AT_BLOCK "/bin/bash make_deploy.sh 'START' 8094 ${CI_COMMIT_SHORT_SHA}"
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8094_dev.log deploy.log || true
+  artifacts:
+    paths:
+      - deploy.log
+    expire_in: 1 week
+  tags:
+    - vdeploy
+  environment:
+    name: 8094_dev_test
+    url: http://${DEPLOY_DOCKER_HOST}:8094
+    on_stop: stop_deploy_8094_dev_test
+
+stop_deploy_8094_dev_test:
+  stage: stop
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    job: deploy_8094_dev_test
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8094_dev_dir/blockchain/replay.log replay.log || true
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE "/bin/bash make_deploy.sh 'STOP' 8094 ${CI_COMMIT_SHORT_SHA}"
+  artifacts:
+    paths:
+      - replay.log
+  tags:
+    - vdeploy
+  environment:
+    name: 8094_dev_test
+    action: stop
+
+#^ developer test4 environment, used ports: 8096/2007
+deploy_8096_dev_test:
+  stage: deploy
+  needs:
+    job: make replay
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ./ciscripts/make_deploy.sh ${DEPLOY_CONFIG_INI} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:~
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE CI_REGISTRY=$CI_REGISTRY STOP_REPLAY_AT_BLOCK=$STOP_REPLAY_AT_BLOCK "/bin/bash make_deploy.sh 'START' 8096 ${CI_COMMIT_SHORT_SHA}"
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8096_dev.log deploy.log || true
+  artifacts:
+    paths:
+      - deploy.log
+    expire_in: 1 week
+  tags:
+    - vdeploy
+  environment:
+    name: 8096_dev_test
+    url: http://${DEPLOY_DOCKER_HOST}:8096
+    on_stop: stop_deploy_8096_dev_test
+
+stop_deploy_8096_dev_test:
+  stage: stop
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    job: deploy_8096_dev_test
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:deploy_8096_dev_dir/blockchain/replay.log replay.log || true
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_USER=$CI_REGISTRY_USER CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD CI_REGISTRY=$CI_REGISTRY CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE "/bin/bash make_deploy.sh 'STOP' 8096 ${CI_COMMIT_SHORT_SHA}"
+  artifacts:
+    paths:
+      - replay.log
+  tags:
+    - vdeploy
+  environment:
+    name: 8096_dev_test
+    action: stop
+
+make clean:
+  stage: clean
+  needs:
+    - job: make replay
+  rules:
+  - if: $CI_COMMIT_REF_NAME =~ /^v.*$/
+    when: manual
+  extends: .prepare make
+  script:
+    - scp -P${DEPLOY_DOCKER_HOST_SSH_PORT} ./ciscripts/make_clean.sh ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST}:~
+    - ssh -tt ${DEPLOY_SSH_USER}@${DEPLOY_DOCKER_HOST} -p ${DEPLOY_DOCKER_HOST_SSH_PORT} CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE "/bin/bash ./make_clean.sh ${CI_COMMIT_SHORT_SHA}"
+  tags:
+    - vdeploy
