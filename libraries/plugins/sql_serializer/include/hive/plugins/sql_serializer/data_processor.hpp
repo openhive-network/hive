@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/plugins/sql_serializer/transaction_controllers.hpp>
-#include <hive/plugins/sql_serializer/trigger_synchronous_masive_sync_call.hpp>
+#include <hive/plugins/sql_serializer/block_num_rendezvous_trigger.hpp>
 
 #include <fc/optional.hpp>
 
@@ -35,7 +35,7 @@ public:
   typedef std::pair<size_t, bool> data_processing_status;
   typedef std::function<data_processing_status(const data_chunk_ptr& dataPtr)> data_processing_fn;
 
-  data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< trigger_synchronous_masive_sync_call > api_trigger );
+  data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger );
   ~data_processor();
 
   data_processor(data_processor&&) = delete;
@@ -69,7 +69,7 @@ public:
 
     size_t _total_processed_records;
 
-    std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger;
+    std::shared_ptr< block_num_rendezvous_trigger > _api_trigger;
 };
 
 
@@ -83,7 +83,7 @@ class queries_commit_data_processor
     /// pairs number of produced chunks and write status
     typedef std::pair<size_t, bool> data_processing_status;
 
-    queries_commit_data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< trigger_synchronous_masive_sync_call > api_trigger );
+    queries_commit_data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger );
     ~queries_commit_data_processor();
 
     queries_commit_data_processor(data_processor&&) = delete;
