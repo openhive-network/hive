@@ -343,11 +343,6 @@ using chain::reindex_notification;
               ("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
-          void trigger_data_flush(hive_blocks::container_t& data);
-          void trigger_data_flush(hive_transactions::container_t& data);
-          void trigger_data_flush(hive_transactions_multisig::container_t& data);
-          void trigger_data_flush(hive_operations::container_t& data);
-
           void init_data_processors();
           void join_data_processors() { _dumper->join(); }
 
@@ -366,8 +361,6 @@ using chain::reindex_notification;
 
             ilog("Done, cleanup complete");
           }
-
-          void commit_massive_sync( int block_num );
         };
 
 void sql_serializer_plugin_impl::init_data_processors()
@@ -566,11 +559,6 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
 
   return false;
 }
-
-void sql_serializer_plugin_impl::commit_massive_sync(int block_num) {
-
-}
-
       } // namespace detail
 
       sql_serializer_plugin::sql_serializer_plugin() {}
