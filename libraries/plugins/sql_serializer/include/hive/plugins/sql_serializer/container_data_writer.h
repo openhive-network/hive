@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/plugins/sql_serializer/trigger_synchronous_masive_sync_call.hpp>
+#include <hive/plugins/sql_serializer/block_num_rendezvous_trigger.hpp>
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
 #include <fc/exception/exception.hpp>
@@ -19,7 +19,7 @@ namespace hive::plugins::sql_serializer {
     class container_data_writer
       {
       public:
-        container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger );
+        container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< block_num_rendezvous_trigger > _api_trigger );
 
         void trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num);
         void complete_data_processing();
@@ -50,7 +50,7 @@ namespace hive::plugins::sql_serializer {
 
   template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
   inline
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger )
+  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< block_num_rendezvous_trigger > _api_trigger )
   {
     _processor = std::make_unique<queries_commit_data_processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
   }

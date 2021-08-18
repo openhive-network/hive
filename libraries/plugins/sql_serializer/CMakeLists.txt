@@ -13,7 +13,7 @@ IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
                data_processor.cpp
                transaction_controllers.cpp
                end_massive_sync_processor.cpp
-               trigger_synchronous_masive_sync_call.cpp
+          block_num_rendezvous_trigger.cpp
                data_2_sql_tuple_base.cpp
                reindex_data_dumper.cpp
                tables_descriptions.cpp

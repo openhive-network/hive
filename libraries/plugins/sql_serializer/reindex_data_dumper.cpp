@@ -4,10 +4,10 @@ namespace hive::plugins::sql_serializer {
   reindex_data_dumper::reindex_data_dumper( const std::string& db_url ) {
     _end_massive_sync_processor = std::make_unique< end_massive_sync_processor >( db_url );
     constexpr auto NUMBER_OF_PROCESSORS_THREADS = 4;
-    auto execute_end_massive_sync_callback = [this](trigger_synchronous_masive_sync_call::BLOCK_NUM _block_num ){
+    auto execute_end_massive_sync_callback = [this](block_num_rendezvous_trigger::BLOCK_NUM _block_num ){
       _end_massive_sync_processor->trigger_block_number( _block_num );
     };
-    auto api_trigger = std::make_shared< trigger_synchronous_masive_sync_call >( NUMBER_OF_PROCESSORS_THREADS, execute_end_massive_sync_callback );
+    auto api_trigger = std::make_shared< block_num_rendezvous_trigger >( NUMBER_OF_PROCESSORS_THREADS, execute_end_massive_sync_callback );
 
     _block_writer = std::make_unique<block_data_container_t_writer>(db_url, "Block data writer", api_trigger);
     _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, "Transaction data writer", api_trigger);
