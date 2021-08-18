@@ -30,7 +30,7 @@ private:
   std::condition_variable* _notifier;
 };
 
-data_processor::data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger) :
+data_processor::data_processor( std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger) :
   _description(std::move(description)),
   _cancel(false),
   _continue(true),
@@ -40,14 +40,14 @@ data_processor::data_processor(std::string psqlUrl, std::string description, dat
   _total_processed_records(0),
   _api_trigger( api_trigger )
 {
-  auto body = [this, psqlUrl, dataProcessor]() -> void
+  auto body = [this, dataProcessor]() -> void
   {
     ilog("Entering data processor thread: ${d}", ("d", _description));
 
     try
     {
       {
-        ilog("${d} data processor is connecting to specified db url: `${url}' ...", ("url", psqlUrl)("d", _description));
+        ilog("${d} data processor is connecting ...",("d", _description));
         std::unique_lock<std::mutex> lk(_mtx);
         _initialized = true;
         ilog("${d} data processor connected successfully ...", ("d", _description));
@@ -199,7 +199,7 @@ queries_commit_data_processor::queries_commit_data_processor(std::string psqlUrl
     return result;
   };
 
-  m_wrapped_processor = std::make_unique< data_processor >( psqlUrl, description, fn_wrapped_with_transaction, api_trigger );
+  m_wrapped_processor = std::make_unique< data_processor >( description, fn_wrapped_with_transaction, api_trigger );
 }
 
 queries_commit_data_processor::~queries_commit_data_processor() {
@@ -226,6 +226,48 @@ queries_commit_data_processor::join() {
 
 void
 queries_commit_data_processor::only_report_batch_finished(uint32_t _block_num ) {
+  m_wrapped_processor->only_report_batch_finished( _block_num );
+}
+
+string_data_processor::string_data_processor(
+    callback string_callback
+  , std::string description
+  , data_processing_fn dataProcessor
+  , std::shared_ptr< block_num_rendezvous_trigger > api_trigger
+)
+{
+  auto fn_wrapped_with_transaction = [ string_callback, dataProcessor ]( const data_chunk_ptr& dataPtr ){
+    auto result = dataProcessor( dataPtr, string_callback );
+    return result;
+  };
+
+  m_wrapped_processor = std::make_unique< data_processor >( description, fn_wrapped_with_transaction, api_trigger );
+}
+
+string_data_processor::~string_data_processor() {
+}
+
+void
+string_data_processor::trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum) {
+  m_wrapped_processor->trigger( std::move(dataPtr), last_blocknum );
+}
+
+void
+string_data_processor::complete_data_processing() {
+  m_wrapped_processor->complete_data_processing();
+}
+
+void
+string_data_processor::cancel() {
+  m_wrapped_processor->cancel();
+}
+void
+string_data_processor::join() {
+  m_wrapped_processor->join();
+}
+
+void
+string_data_processor::only_report_batch_finished(uint32_t _block_num ) {
   m_wrapped_processor->only_report_batch_finished( _block_num );
 }
 

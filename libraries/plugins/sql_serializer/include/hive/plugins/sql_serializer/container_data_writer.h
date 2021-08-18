@@ -5,6 +5,8 @@
 
 #include <fc/exception/exception.hpp>
 
+#include <type_traits>
+
 namespace hive::plugins::sql_serializer {
   /**
    * @brief Common implementation of data writer to be used for all SQL entities.
@@ -15,11 +17,25 @@ namespace hive::plugins::sql_serializer {
    *                        std::string(pqxx::work& tx, typename DataContainer::const_reference)
    *
   */
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
+  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST, typename Processor = queries_commit_data_processor >
     class container_data_writer
       {
       public:
-        container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< block_num_rendezvous_trigger > _api_trigger );
+        container_data_writer(
+            std::string psqlUrl
+          , std::string description
+          , std::shared_ptr< block_num_rendezvous_trigger > _api_trigger
+        ) {
+          _processor = std::make_unique<Processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
+        }
+
+        container_data_writer(
+            std::function< void(std::string&&) > string_callback
+          , std::string description
+          , std::shared_ptr< block_num_rendezvous_trigger > _api_trigger
+        ) {
+          _processor = std::make_unique<Processor>(string_callback, description, flush_scalar_live_data, _api_trigger);
+        }
 
         void trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num);
         void complete_data_processing();
@@ -30,34 +46,26 @@ namespace hive::plugins::sql_serializer {
         using data_chunk_ptr = data_processor::data_chunk_ptr;
 
         static data_processing_status flush_replayed_data(const data_chunk_ptr& dataPtr, transaction& tx);
-        static data_processing_status flush_array_live_data(const data_chunk_ptr& dataPtr, transaction& tx);
-        static data_processing_status flush_scalar_live_data(const data_chunk_ptr& dataPtr, transaction& tx);
+        static data_processing_status flush_scalar_live_data(const data_chunk_ptr& dataPtr, std::function< void(std::string&&) > callback);
 
 
       private:
         class chunk : public data_processor::data_chunk
           {
           public:
-            chunk( DataContainer&& data) : _data(std::move(data)) {}
+            chunk( DataContainer&& data ) : _data(std::move(data)) {}
             ~chunk() = default;
 
             DataContainer _data;
           };
 
       private:
-        std::unique_ptr<queries_commit_data_processor> _processor;
+        std::unique_ptr< Processor > _processor;
       };
 
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
-  inline
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< block_num_rendezvous_trigger > _api_trigger )
-  {
-    _processor = std::make_unique<queries_commit_data_processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
-  }
-
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
+  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST, typename Processor>
   inline void
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num)
+  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num)
   {
     if(data.empty() == false)
     {
@@ -71,23 +79,23 @@ namespace hive::plugins::sql_serializer {
     FC_ASSERT(data.empty());
   }
 
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
+  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST, typename Processor>
   inline void
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::complete_data_processing()
+  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::complete_data_processing()
   {
     _processor->complete_data_processing();
   }
 
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
+  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST, typename Processor>
   inline void
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::join()
+  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::join()
   {
     _processor->join();
   }
 
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
-  inline typename container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::data_processing_status
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::flush_replayed_data(const data_chunk_ptr& dataPtr, transaction& tx)
+  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST, typename Processor>
+  inline typename container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::data_processing_status
+  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::flush_replayed_data(const data_chunk_ptr& dataPtr, transaction& tx)
   {
     const chunk* holder = static_cast<const chunk*>(dataPtr.get());
     data_processing_status processingStatus;
@@ -123,41 +131,9 @@ namespace hive::plugins::sql_serializer {
 
   }
 
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
-  inline typename container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::data_processing_status
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::flush_array_live_data(const data_chunk_ptr& dataPtr, transaction& tx)
-  {
-    const chunk* holder = static_cast<const chunk*>(dataPtr.get());
-    data_processing_status processingStatus;
-
-    TupleConverter conv;
-
-    const DataContainer& data = holder->_data;
-
-    FC_ASSERT(data.empty() == false);
-
-    std::string query = "ARRAY[";
-
-    auto dataI = data.cbegin();
-    query += '(' + conv(*dataI) + ")\n";
-
-    for(++dataI; dataI != data.cend(); ++dataI)
-    {
-      query += ",(" + conv(*dataI) + ")\n";
-    }
-
-    query += ']';
-
-    processingStatus.first += data.size();
-    processingStatus.second = true;
-
-    return processingStatus;
-
-  }
-
-  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST>
-  inline typename container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::data_processing_status
-  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST >::flush_scalar_live_data(const data_chunk_ptr& dataPtr, transaction& tx)
+  template <class DataContainer, class TupleConverter, const char* const TABLE_NAME, const char* const COLUMN_LIST, typename Processor>
+  inline typename container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::data_processing_status
+  container_data_writer<DataContainer, TupleConverter, TABLE_NAME, COLUMN_LIST, Processor >::flush_scalar_live_data(const data_chunk_ptr& dataPtr, std::function< void(std::string&&) > callback)
   {
     const chunk* holder = static_cast<const chunk*>(dataPtr.get());
     data_processing_status processingStatus;
@@ -177,6 +153,8 @@ namespace hive::plugins::sql_serializer {
     {
       query += ",(" + conv(*dataI) + ")\n";
     }
+
+    callback( std::move(query) );
 
     processingStatus.first += data.size();
     processingStatus.second = true;
