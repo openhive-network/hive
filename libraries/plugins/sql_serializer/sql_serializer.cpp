@@ -179,8 +179,7 @@ using chain::reindex_notification;
       class container_data_writer
       {
       public:
-        container_data_writer(std::string psqlUrl, const cached_data_t& mainCache, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger ) : _mainCache(mainCache)
-
+        container_data_writer(std::string psqlUrl, std::string description, std::shared_ptr< trigger_synchronous_masive_sync_call > _api_trigger )
         {
           _processor = std::make_unique<queries_commit_data_processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
         }
@@ -189,7 +188,7 @@ using chain::reindex_notification;
         {
           if(data.empty() == false)
           {
-            _processor->trigger(std::make_unique<chunk>(_mainCache, std::move(data)), last_block_num);
+            _processor->trigger(std::make_unique<chunk>(std::move(data)), last_block_num);
             if(wait_for_data_completion)
               _processor->complete_data_processing();
           } else {
@@ -215,7 +214,7 @@ using chain::reindex_notification;
           const chunk* holder = static_cast<const chunk*>(dataPtr.get());
           data_processing_status processingStatus;
 
-          TupleConverter conv(holder->_mainCache);
+          TupleConverter conv;
 
           const DataContainer& data = holder->_data;
 
@@ -251,7 +250,7 @@ using chain::reindex_notification;
           const chunk* holder = static_cast<const chunk*>(dataPtr.get());
           data_processing_status processingStatus;
 
-          TupleConverter conv(holder->_mainCache);
+          TupleConverter conv;
 
           const DataContainer& data = holder->_data;
 
@@ -281,7 +280,7 @@ using chain::reindex_notification;
           const chunk* holder = static_cast<const chunk*>(dataPtr.get());
           data_processing_status processingStatus;
 
-          TupleConverter conv(holder->_mainCache);
+          TupleConverter conv;
 
           const DataContainer& data = holder->_data;
 
@@ -309,17 +308,15 @@ using chain::reindex_notification;
           class chunk : public data_processor::data_chunk
           {
           public:
-            chunk(const cached_data_t& mainCache, DataContainer&& data) : _data(std::move(data)), _mainCache(mainCache) {}
+            chunk( DataContainer&& data) : _data(std::move(data)) {}
             virtual ~chunk() {}
 
             virtual std::string generate_code(size_t* processedItem) const override { return std::string(); }
 
             DataContainer _data;
-            const cached_data_t& _mainCache;
           };
 
       private:
-        const cached_data_t&            _mainCache;
         std::unique_ptr<queries_commit_data_processor> _processor;
         transaction_controller_ptr      _prev_tx_controller;
       };
@@ -330,7 +327,7 @@ using chain::reindex_notification;
 
           struct data2_sql_tuple_base
           {
-          explicit data2_sql_tuple_base(const cached_data_t& mainCache) : _mainCache(mainCache) {}
+          explicit data2_sql_tuple_base(){}
 
           protected:
               std::string escape(const std::string& source) const
@@ -351,7 +348,6 @@ using chain::reindex_notification;
                   return "NULL";
               }
 
-              const cached_data_t& _mainCache;
           private:
 
               fc::string escape_sql(const std::string &text) const
@@ -884,17 +880,16 @@ using chain::reindex_notification;
 
 void sql_serializer_plugin_impl::init_data_processors()
 {
-  const auto& mainCache = *currently_caching_data.get();
   _end_massive_sync_processor = std::make_unique< end_massive_sync_processor >( db_url );
   constexpr auto NUMBER_OF_PROCESSORS_THREADS = 4;
   auto execute_end_massive_sync_callback = [this](trigger_synchronous_masive_sync_call::BLOCK_NUM _block_num ){
     _end_massive_sync_processor->trigger_block_number( _block_num );
   };
   auto api_trigger = std::make_shared< trigger_synchronous_masive_sync_call >( NUMBER_OF_PROCESSORS_THREADS, execute_end_massive_sync_callback );
-  _block_writer = std::make_unique<block_data_container_t_writer>(db_url, mainCache, "Block data writer", api_trigger);
-  _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, mainCache, "Transaction data writer", api_trigger);
-  _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, mainCache, "Transaction multisig data writer", api_trigger);
-  _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, mainCache, "Operation data writer", api_trigger);
+  _block_writer = std::make_unique<block_data_container_t_writer>(db_url, "Block data writer", api_trigger);
+  _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, "Transaction data writer", api_trigger);
+  _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, "Transaction multisig data writer", api_trigger);
+  _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, "Operation data writer", api_trigger);
 }
 
 
