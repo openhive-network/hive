@@ -2,6 +2,7 @@
 
 #include <hive/plugins/sql_serializer/cached_data.h>
 #include <hive/plugins/sql_serializer/reindex_data_dumper.h>
+#include <hive/plugins/sql_serializer/livesync_data_dumper.h>
 
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
@@ -138,8 +139,7 @@ using chain::reindex_notification;
               chain_db{_chain_db},
               main_plugin{_main_plugin}
           {
-
-            init_data_processors();
+            _dumper = std::make_unique< livesync_data_dumper >( url );
           }
 
           ~sql_serializer_plugin_impl()
@@ -169,7 +169,7 @@ using chain::reindex_notification;
           boost::signals2::connection _on_starting_reindex;
           boost::signals2::connection _on_finished_reindex;
 
-          std::unique_ptr< reindex_data_dumper > _dumper;
+          std::unique_ptr< data_dumper > _dumper;
 
           std::string db_url;
           hive::chain::database& chain_db;
@@ -182,14 +182,11 @@ using chain::reindex_notification;
           uint32_t psql_index_threshold = 0;
           uint32_t head_block_number = 0;
 
-          uint32_t blocks_per_commit = 1;
           int64_t block_vops = 0;
           int64_t op_sequence_id = 0; 
 
           cached_containter_t currently_caching_data;
           stats_group current_stats;
-
-          bool massive_sync = false;
 
           void log_statistics()
           {
@@ -343,7 +340,6 @@ using chain::reindex_notification;
               ("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
-          void init_data_processors();
           void join_data_processors() { _dumper->join(); }
 
           void wait_for_data_processing_finish();
@@ -362,12 +358,6 @@ using chain::reindex_notification;
             ilog("Done, cleanup complete");
           }
         };
-
-void sql_serializer_plugin_impl::init_data_processors()
-{
-  _dumper = std::make_unique< reindex_data_dumper >( db_url );
-}
-
 
 void sql_serializer_plugin_impl::wait_for_data_processing_finish()
 {
@@ -457,7 +447,7 @@ void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& n
   block_vops = 0;
   _last_block_num = note.block_num;
 
-  if(note.block_num % blocks_per_commit == 0)
+  if(note.block_num % _dumper->blocks_per_flush() == 0)
   {
     process_cached_data();
   }
@@ -517,8 +507,7 @@ void sql_serializer_plugin_impl::on_pre_reindex(const reindex_notification& note
   if(_on_pre_apply_block_con.connected())
     chain::util::disconnect_signal(_on_pre_apply_block_con);
 
-  blocks_per_commit = 1'000;
-  massive_sync = true;
+  _dumper = std::make_unique< reindex_data_dumper >( db_url );
 
   ilog("Leaving a reindex init...");
 }
@@ -533,8 +522,7 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
   if(note.last_block_number >= note.max_block_number)
     switch_db_items(true/*mode*/);
 
-  blocks_per_commit = 1;
-  massive_sync = false;
+  _dumper = std::make_unique< livesync_data_dumper >( db_url );
 }
 
 void sql_serializer_plugin_impl::process_cached_data()
