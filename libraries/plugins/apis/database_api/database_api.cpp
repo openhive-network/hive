@@ -19,24 +19,25 @@ namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
 {
-  total_vote_weight = cc.total_vote_weight;
-  reward_weight = cc.reward_weight;
+  total_vote_weight = cc.get_total_vote_weight();
+  reward_weight = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
   total_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
   curator_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
   author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
-  net_votes = cc.net_votes;
-  active = cc.active;
+  net_votes = cc.get_net_votes();
+  active = cc.get_last_activity_time();
   last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist after HF19
-  net_rshares = cc.net_rshares;
-  abs_rshares = cc.abs_rshares;
-  vote_rshares = cc.vote_rshares;
+  net_rshares = cc.get_net_rshares();
+  abs_rshares = 0; // value was only used for comments created before HF6 (and to recognize that there are votes)
+  vote_rshares = cc.get_vote_rshares();
   children_abs_rshares = 0; // value not accumulated after HF17
-  cashout_time = cc.cashout_time;
+  cashout_time = cc.get_cashout_time();
   max_cashout_time = time_point_sec::maximum(); // since HF17 it is the only possible value
-  max_accepted_payout = cc.max_accepted_payout;
-  percent_hbd = cc.percent_hbd;
-  allow_votes = cc.allow_votes;
-  allow_curation_rewards = cc.allow_curation_rewards;
+  max_accepted_payout = cc.get_max_accepted_payout();
+  percent_hbd = cc.get_percent_hbd();
+  allow_votes = cc.allows_votes();
+  allow_curation_rewards = cc.allows_curation_rewards();
+  was_voted_on = cc.has_votes();
 }
 
 
