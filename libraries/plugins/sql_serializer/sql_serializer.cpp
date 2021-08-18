@@ -1,14 +1,11 @@
 #include <hive/plugins/sql_serializer/sql_serializer_plugin.hpp>
 
-#include <hive/plugins/sql_serializer/table_data_writer.h>
-#include <hive/plugins/sql_serializer/data_2_sql_tuple_base.h>
-#include <hive/plugins/sql_serializer/tables_descriptions.h>
+#include <hive/plugins/sql_serializer/cached_data.h>
+#include <hive/plugins/sql_serializer/reindex_data_dumper.h>
 
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
 #include <hive/plugins/sql_serializer/sql_serializer_objects.hpp>
-
-#include <hive/plugins/sql_serializer/end_massive_sync_processor.hpp>
 
 #include <hive/chain/util/impacted.hpp>
 
@@ -132,45 +129,9 @@ using chain::reindex_notification;
       using data_processing_status = data_processor::data_processing_status;
       using data_chunk_ptr = data_processor::data_chunk_ptr;
 
-      struct cached_data_t
-      {
-
-        hive_blocks::container_t blocks;
-        hive_transactions::container_t transactions;
-        hive_transactions_multisig::container_t transactions_multisig;
-        hive_operations::container_t operations;
-
-        size_t total_size;
-
-        explicit cached_data_t(const size_t reservation_size) : total_size{ 0ul }
-        {
-          blocks.reserve(reservation_size);
-          transactions.reserve(reservation_size);
-          transactions_multisig.reserve(reservation_size);
-          operations.reserve(reservation_size);
-        }
-
-        ~cached_data_t()
-        {
-          ilog(
-          "blocks: ${b} trx: ${t} operations: ${o} total size: ${ts}...",
-          ("b", blocks.size() )
-          ("t", transactions.size() )
-          ("o", operations.size() )
-          ("ts", total_size )
-          );
-        }
-
-      };
-      using cached_containter_t = std::unique_ptr<cached_data_t>;
-
       class sql_serializer_plugin_impl final
         {
         public:
-          using block_data_container_t_writer = table_data_writer<hive_blocks>;
-          using transaction_data_container_t_writer = table_data_writer<hive_transactions>;
-          using transaction_multisig_data_container_t_writer = table_data_writer<hive_transactions_multisig>;
-          using operation_data_container_t_writer = table_data_writer<hive_operations>;
 
           sql_serializer_plugin_impl(const std::string &url, hive::chain::database& _chain_db, const sql_serializer_plugin& _main_plugin) 
             : db_url{url},
@@ -208,11 +169,7 @@ using chain::reindex_notification;
           boost::signals2::connection _on_starting_reindex;
           boost::signals2::connection _on_finished_reindex;
 
-          std::unique_ptr<block_data_container_t_writer> _block_writer;
-          std::unique_ptr<transaction_data_container_t_writer> _transaction_writer;
-          std::unique_ptr<transaction_multisig_data_container_t_writer> _transaction_multisig_writer;
-          std::unique_ptr<operation_data_container_t_writer> _operation_writer;
-          std::unique_ptr<end_massive_sync_processor> _end_massive_sync_processor;
+          std::unique_ptr< reindex_data_dumper > _dumper;
 
           std::string db_url;
           hive::chain::database& chain_db;
@@ -386,20 +343,8 @@ using chain::reindex_notification;
               ("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
-          void trigger_data_flush(hive_blocks::container_t& data);
-          void trigger_data_flush(hive_transactions::container_t& data);
-          void trigger_data_flush(hive_transactions_multisig::container_t& data);
-          void trigger_data_flush(hive_operations::container_t& data);
-
           void init_data_processors();
-          void join_data_processors()
-          {
-            _block_writer->join();
-            _transaction_writer->join();
-            _transaction_multisig_writer->join();
-            _operation_writer->join();
-            _end_massive_sync_processor->join();
-          }
+          void join_data_processors() { _dumper->join(); }
 
           void wait_for_data_processing_finish();
 
@@ -416,32 +361,17 @@ using chain::reindex_notification;
 
             ilog("Done, cleanup complete");
           }
-
-          void commit_massive_sync( int block_num );
         };
 
 void sql_serializer_plugin_impl::init_data_processors()
 {
-  _end_massive_sync_processor = std::make_unique< end_massive_sync_processor >( db_url );
-  constexpr auto NUMBER_OF_PROCESSORS_THREADS = 4;
-  auto execute_end_massive_sync_callback = [this](trigger_synchronous_masive_sync_call::BLOCK_NUM _block_num ){
-    _end_massive_sync_processor->trigger_block_number( _block_num );
-  };
-  auto api_trigger = std::make_shared< trigger_synchronous_masive_sync_call >( NUMBER_OF_PROCESSORS_THREADS, execute_end_massive_sync_callback );
-  _block_writer = std::make_unique<block_data_container_t_writer>(db_url, "Block data writer", api_trigger);
-  _transaction_writer = std::make_unique<transaction_data_container_t_writer>(db_url, "Transaction data writer", api_trigger);
-  _transaction_multisig_writer = std::make_unique<transaction_multisig_data_container_t_writer>(db_url, "Transaction multisig data writer", api_trigger);
-  _operation_writer = std::make_unique<operation_data_container_t_writer>(db_url, "Operation data writer", api_trigger);
+  _dumper = std::make_unique< reindex_data_dumper >( db_url );
 }
 
 
 void sql_serializer_plugin_impl::wait_for_data_processing_finish()
 {
-  _block_writer->complete_data_processing();
-  _transaction_writer->complete_data_processing();
-  _transaction_multisig_writer->complete_data_processing();
-  _operation_writer->complete_data_processing();
-  _end_massive_sync_processor->complete_data_processing();
+  _dumper->wait_for_data_processing_finish();
 }
 
 void sql_serializer_plugin_impl::connect_signals()
@@ -495,7 +425,7 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
 
   const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
-  detail::cached_containter_t& cdtf = currently_caching_data; // alias
+  cached_containter_t& cdtf = currently_caching_data; // alias
 
   ++op_sequence_id;
 
@@ -607,36 +537,9 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
   massive_sync = false;
 }
 
-
-void sql_serializer_plugin_impl::trigger_data_flush(hive_blocks::container_t& data)
-{
-  _block_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
-}
-
-void sql_serializer_plugin_impl::trigger_data_flush(hive_transactions::container_t& data)
-{
-  _transaction_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
-}
-
-void sql_serializer_plugin_impl::trigger_data_flush(hive_transactions_multisig::container_t& data)
-{
-  _transaction_multisig_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
-}
-
-void sql_serializer_plugin_impl::trigger_data_flush(hive_operations::container_t& data)
-{
-  _operation_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
-}
-
 void sql_serializer_plugin_impl::process_cached_data()
 {  
-  auto* data = currently_caching_data.get();
-
-  trigger_data_flush(data->blocks);
-  trigger_data_flush(data->operations);
-
-  trigger_data_flush(data->transactions);
-  trigger_data_flush(data->transactions_multisig);
+  _dumper->trigger_data_flush( *currently_caching_data, _last_block_num );
 }
 
 bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
@@ -656,11 +559,6 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
 
   return false;
 }
-
-void sql_serializer_plugin_impl::commit_massive_sync(int block_num) {
-
-}
-
       } // namespace detail
 
       sql_serializer_plugin::sql_serializer_plugin() {}
@@ -685,7 +583,7 @@ void sql_serializer_plugin_impl::commit_massive_sync(int block_num) {
         // settings
         my->psql_index_threshold = options["psql-index-threshold"].as<uint32_t>();
 
-        my->currently_caching_data = std::make_unique<detail::cached_data_t>( default_reservation_size );
+        my->currently_caching_data = std::make_unique<cached_data_t>( default_reservation_size );
 
         // signals
         my->connect_signals();

@@ -15,6 +15,8 @@ IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
                end_massive_sync_processor.cpp
                trigger_synchronous_masive_sync_call.cpp
                data_2_sql_tuple_base.cpp
+               reindex_data_dumper.cpp
+               tables_descriptions.cpp
                ${HEADERS}
               )
 ELSE()
