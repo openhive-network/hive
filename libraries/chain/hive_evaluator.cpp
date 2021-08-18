@@ -625,19 +625,19 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
   const auto& comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
   if( comment_cashout )
-    FC_ASSERT( comment_cashout->children == 0, "Cannot delete a comment with replies." );
+    FC_ASSERT( !comment_cashout->has_replies(), "Cannot delete a comment with replies." );
 
   //if( _db.has_hardfork( HIVE_HARDFORK_0_19__876 ) )
   /*
     Before `HF19`: `comment_cashout` exists for sure -  following assertion always is true
     After  `HF19`: when `comment_cashout` doesn't exist( it's possible ), then assertion should be triggered
   */
-  FC_ASSERT( comment_cashout );
+  FC_ASSERT( comment_cashout, "Cannot delete comment after payout." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_19__977 ) )
-    FC_ASSERT( comment_cashout->net_rshares <= 0, "Cannot delete a comment with net positive votes." );
+    FC_ASSERT( comment_cashout->get_net_rshares() <= 0, "Cannot delete a comment with net positive votes." );
 
-  if( comment_cashout->net_rshares > 0 )
+  if( comment_cashout->get_net_rshares() > 0 )
   {
     _db.push_virtual_operation( ineffective_delete_comment_operation( o.author, o.permlink ) );
     return;
@@ -653,17 +653,14 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
     _db.remove(cur_vote);
   }
 
-  /// this loop can be skiped for validate-only nodes as it is merely gathering stats for indices
-  if( _db.has_hardfork( HIVE_HARDFORK_0_6__80 ) && !comment.is_root() )
+  if( !comment.is_root() )
   {
     const comment_cashout_object* parent = _db.find_comment_cashout( _db.get_comment( comment.get_parent_id() ) );
-    auto now = _db.head_block_time();
     if( parent )
     {
       _db.modify( *parent, [&]( comment_cashout_object& p )
       {
-        p.children--;
-        p.active = now;
+        p.on_reply( _db.head_block_time(), true );
       } );
     }
   }
@@ -689,7 +686,7 @@ struct comment_options_extension_visitor
 #ifdef HIVE_ENABLE_SMT
   void operator()( const allowed_vote_assets& va) const
   {
-    FC_ASSERT( _c.abs_rshares == 0, "Comment must not have been voted on before specifying allowed vote assets." );
+    FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying allowed vote assets." );
     auto remaining_asset_number = SMT_MAX_VOTABLE_ASSETS;
     FC_ASSERT( remaining_asset_number > 0 );
     _db.modify( _c, [&]( comment_cashout_object& c )
@@ -710,8 +707,8 @@ struct comment_options_extension_visitor
 
   void operator()( const comment_payout_beneficiaries& cpb ) const
   {
-    FC_ASSERT( _c.beneficiaries.size() == 0, "Comment already has beneficiaries specified." );
-    FC_ASSERT( _c.abs_rshares == 0, "Comment must not have been voted on before specifying beneficiaries." );
+    FC_ASSERT( _c.get_beneficiaries().size() == 0, "Comment already has beneficiaries specified." );
+    FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying beneficiaries." );
 
     _db.modify( _c, [&]( comment_cashout_object& c )
     {
@@ -719,7 +716,7 @@ struct comment_options_extension_visitor
       {
         auto acc = _db.find< account_object, by_name >( b.account );
         FC_ASSERT( acc != nullptr, "Beneficiary \"${a}\" must exist.", ("a", b.account) );
-        c.beneficiaries.push_back( b );
+        c.add_beneficiary( *acc, b.weight );
       }
     });
   }
@@ -741,19 +738,17 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
     return;
   }
 
-  if( !o.allow_curation_rewards || !o.allow_votes || o.max_accepted_payout < comment_cashout->max_accepted_payout )
-    FC_ASSERT( comment_cashout->abs_rshares == 0, "One of the included comment options requires the comment to have no rshares allocated to it." );
+  if( !o.allow_curation_rewards || !o.allow_votes || o.max_accepted_payout < comment_cashout->get_max_accepted_payout() )
+    FC_ASSERT( !comment_cashout->has_votes(), "One of the included comment options requires the comment to have no rshares allocated to it." );
 
-  FC_ASSERT( comment_cashout->allow_curation_rewards >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
-  FC_ASSERT( comment_cashout->allow_votes >= o.allow_votes, "Voting cannot be re-enabled." );
-  FC_ASSERT( comment_cashout->max_accepted_payout >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
-  FC_ASSERT( comment_cashout->percent_hbd >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
+  FC_ASSERT( comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
+  FC_ASSERT( comment_cashout->allows_votes() >= o.allow_votes, "Voting cannot be re-enabled." );
+  FC_ASSERT( comment_cashout->get_max_accepted_payout() >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
+  FC_ASSERT( comment_cashout->get_percent_hbd() >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
 
-  _db.modify( *comment_cashout, [&]( comment_cashout_object& c ) {
-      c.max_accepted_payout    = o.max_accepted_payout;
-      c.percent_hbd            = o.percent_hbd;
-      c.allow_votes            = o.allow_votes;
-      c.allow_curation_rewards = o.allow_curation_rewards;
+  _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
+  {
+    c.configure_options( o.percent_hbd, o.max_accepted_payout, o.allow_votes, o.allow_curation_rewards );
   });
 
   for( auto& e : o.extensions )
@@ -859,13 +854,13 @@ void comment_evaluator::do_apply( const comment_operation& o )
     else
       cashout_time = fc::time_point_sec::maximum();
 
-    _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time, reward_weight );
+    _db.create< comment_cashout_object >( new_comment, auth, o.permlink, _now, cashout_time );
     if( !_db.has_hardfork( HIVE_HARDFORK_0_19 ) )
     {
       fc::optional< std::reference_wrapper< const comment_cashout_ex_object > > parent_comment_cashout_ex;
       if( parent )
         parent_comment_cashout_ex = *( _db.find_comment_cashout_ex( *parent ) );
-      _db.create< comment_cashout_ex_object >( new_comment, parent_comment_cashout_ex );
+      _db.create< comment_cashout_ex_object >( new_comment, parent_comment_cashout_ex, reward_weight );
     }
 
     if( parent )
@@ -875,8 +870,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       {
         _db.modify( *parent_cashout, [&]( comment_cashout_object& p )
         {
-          p.children++;
-          p.active = _now;
+          p.on_reply( _now );
         } );
       }
     }
@@ -919,7 +913,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       _db.modify( *comment_cashout, [&]( comment_cashout_object& com )
       {
-        com.active = _now;
+        com.on_edit( _now );
       });
     }
 
@@ -1427,7 +1421,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( comment_cashout )
   {
-    if( o.weight > 0 ) FC_ASSERT( comment_cashout->allow_votes, "Votes are not allowed on the comment." );
+    if( o.weight > 0 ) FC_ASSERT( comment_cashout->allows_votes(), "Votes are not allowed on the comment." );
   }
 
   if( !comment_cashout || ( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) &&
@@ -1490,7 +1484,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( rshares > previous_vote_rshares )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _now < comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
+        FC_ASSERT( _now < comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
         FC_ASSERT( _now < _db.calculate_discussion_payout_time( comment, *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
     }
@@ -1504,7 +1498,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   } );
 
   /// if the current net_rshares is less than 0, the post is getting 0 rewards so it is not factored into total rshares^2
-  fc::uint128_t old_rshares = std::max( comment_cashout->net_rshares.value, int64_t( 0 ) );
+  fc::uint128_t old_rshares = std::max( comment_cashout->get_net_rshares(), int64_t( 0 ) );
   const auto* comment_cashout_ex = _db.find_comment_cashout_ex( comment );
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_17__769 ) )
@@ -1519,12 +1513,12 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       auto old_root_abs_rshares = root_cashout_ex->get_children_abs_rshares();
       _db.modify( *root_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
       {
-        c_ex.add_abs_rshares( abs_rshares );
+        c_ex.accumulate_children_abs_rshares( abs_rshares );
       } );
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && root_cashout_ex->was_paid() )
       {
-        c.cashout_time = root_cashout_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW;
+        c.set_cashout_time( root_cashout_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW );
       }
       else
       {
@@ -1543,7 +1537,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
           avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / root_cashout_ex->get_children_abs_rshares();
         }
-        c.cashout_time = fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), root_cashout_ex->get_max_cashout_time().sec_since_epoch() ) );
+        c.set_cashout_time( fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), root_cashout_ex->get_max_cashout_time().sec_since_epoch() ) ) );
       }
 
       if( root_cashout_ex->get_max_cashout_time() == fc::time_point_sec::maximum() )
@@ -1561,21 +1555,22 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
     FC_ASSERT( abs_rshares > 0, "Cannot vote with 0 rshares." );
 
-    auto old_vote_rshares = comment_cashout->vote_rshares;
+    auto old_vote_rshares = comment_cashout->get_vote_rshares();
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
-      c.net_rshares += rshares;
-      c.abs_rshares += abs_rshares;
-      if( rshares > 0 )
-        c.vote_rshares += rshares;
-      if( rshares > 0 )
-        c.net_votes++;
-      else
-        c.net_votes--;
+      c.on_vote( o.weight );
+      c.accumulate_vote_rshares( rshares, rshares > 0 ? rshares : 0 );
     });
+    if( comment_cashout_ex )
+    {
+      _db.modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
+      {
+        c_ex.accumulate_abs_rshares( abs_rshares );
+      } );
+    }
 
-    fc::uint128_t new_rshares = std::max( comment_cashout->net_rshares.value, int64_t(0));
+    fc::uint128_t new_rshares = std::max( comment_cashout->get_net_rshares(), int64_t(0));
 
     /// calculate rshares2 value
     new_rshares = util::evaluate_reward_curve( new_rshares );
@@ -1603,7 +1598,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     **/
     uint64_t vote_weight = 0;
     {
-      bool curation_reward_eligible = rshares > 0 && comment_cashout->allow_curation_rewards;
+      bool curation_reward_eligible = rshares > 0 && comment_cashout->allows_curation_rewards();
       if( curation_reward_eligible && comment_cashout_ex )
         curation_reward_eligible = !comment_cashout_ex->was_paid();
       if( curation_reward_eligible && _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
@@ -1614,7 +1609,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         if( comment_cashout->get_creation_time() < fc::time_point_sec(HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME) )
         {
           u512 rshares3(rshares);
-          u256 total2( comment_cashout->abs_rshares.value );
+          u256 total2( comment_cashout_ex->get_abs_rshares() );
 
           if( !_db.has_hardfork( HIVE_HARDFORK_0_1 ) )
           {
@@ -1633,20 +1628,20 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             const auto& reward_fund = _db.get_reward_fund();
             auto curve = !_db.has_hardfork( HIVE_HARDFORK_0_19__1052 ) && comment_cashout->get_creation_time() > HIVE_HF_19_SQRT_PRE_CALC
                       ? curve_id::square_root : reward_fund.curation_reward_curve;
-            uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
-            uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
+            uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ).to_uint64();
+            uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->get_vote_rshares(), curve, reward_fund.content_constant ).to_uint64();
             vote_weight = new_weight - old_weight;
           }
           else if ( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
           {
-            uint64_t old_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( old_vote_rshares.value ) ) / ( two_s + old_vote_rshares.value ) ).to_uint64();
-            uint64_t new_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( comment_cashout->vote_rshares.value ) ) / ( two_s + comment_cashout->vote_rshares.value ) ).to_uint64();
+            uint64_t old_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( old_vote_rshares ) ) / ( two_s + old_vote_rshares ) ).to_uint64();
+            uint64_t new_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( comment_cashout->get_vote_rshares() ) ) / ( two_s + comment_cashout->get_vote_rshares() ) ).to_uint64();
             vote_weight = new_weight - old_weight;
           }
           else
           {
-            uint64_t old_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * old_vote_rshares.value ) ) / ( two_s + ( 1000000 * old_vote_rshares.value ) ) ).to_uint64();
-            uint64_t new_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * comment_cashout->vote_rshares.value ) ) / ( two_s + ( 1000000 * comment_cashout->vote_rshares.value ) ) ).to_uint64();
+            uint64_t old_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * old_vote_rshares ) ) / ( two_s + ( 1000000 * old_vote_rshares ) ) ).to_uint64();
+            uint64_t new_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * comment_cashout->get_vote_rshares() ) ) / ( two_s + ( 1000000 * comment_cashout->get_vote_rshares() ) ) ).to_uint64();
             vote_weight = new_weight - old_weight;
           }
         }
@@ -1672,14 +1667,14 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     {
       _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
       {
-        c.total_vote_weight += max_vote_weight;
+        c.accumulate_vote_weight( max_vote_weight );
       });
     }
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__774) )
       _db.adjust_rshares2( old_rshares, new_rshares );
 
-    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->total_vote_weight ) );
+    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
   }
   else // edit of existing vote
   {
@@ -1690,28 +1685,19 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
-      c.net_rshares -= itr->get_rshares();
-      c.net_rshares += rshares;
-      c.abs_rshares += abs_rshares;
-
-      /// TODO: figure out how to handle remove a vote (rshares == 0 )
-      if( rshares > 0 && itr->get_rshares() < 0 )
-        c.net_votes += 2;
-      else if( rshares > 0 && itr->get_rshares() == 0 )
-        c.net_votes += 1;
-      else if( rshares == 0 && itr->get_rshares() < 0 )
-        c.net_votes += 1;
-      else if( rshares == 0 && itr->get_rshares() > 0 )
-        c.net_votes -= 1;
-      else if( rshares < 0 && itr->get_rshares() == 0 )
-        c.net_votes -= 1;
-      else if( rshares < 0 && itr->get_rshares() > 0 )
-        c.net_votes -= 2;
-
-      c.total_vote_weight -= itr->get_weight();
+      c.on_vote( o.weight, itr->get_vote_percent() );
+      c.accumulate_vote_rshares( rshares - itr->get_rshares(), 0 );
+      c.accumulate_vote_weight( -itr->get_weight() );
     } );
+    if( comment_cashout_ex )
+    {
+      _db.modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
+      {
+        c_ex.accumulate_abs_rshares( abs_rshares );
+      } );
+    }
 
-    fc::uint128_t new_rshares = std::max( comment_cashout->net_rshares.value, int64_t( 0 ) );
+    fc::uint128_t new_rshares = std::max( comment_cashout->get_net_rshares(), int64_t( 0 ) );
 
     /// calculate rshares2 value
     new_rshares = util::evaluate_reward_curve( new_rshares );
@@ -1722,7 +1708,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.set( _now, o.weight, 0, rshares );
     } );
 
-    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, 0, rshares, comment_cashout->total_vote_weight ) );
+    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, 0, rshares, comment_cashout->get_total_vote_weight() ) );
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__774) )
       _db.adjust_rshares2( old_rshares, new_rshares );
@@ -1741,7 +1727,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( comment_cashout )
   {
-    if( o.weight > 0 ) FC_ASSERT( comment_cashout->allow_votes, "Votes are not allowed on the comment." );
+    if( o.weight > 0 ) FC_ASSERT( comment_cashout->allows_votes(), "Votes are not allowed on the comment." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( comment, *comment_cashout ) == fc::time_point_sec::maximum() )
@@ -1750,7 +1736,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
   auto _now = _db.head_block_time();
-  FC_ASSERT( _now < comment_cashout->cashout_time, "Comment is actively being rewarded. Cannot vote on comment." );
+  FC_ASSERT( _now < comment_cashout->get_cashout_time(), "Comment is actively being rewarded. Cannot vote on comment." );
   if( !_db.has_hardfork( HIVE_HARDFORK_1_26_NO_VOTE_COOLDOWN ) )
     FC_ASSERT( ( _now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
 
@@ -1825,7 +1811,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   abs_rshares -= HIVE_VOTE_DUST_THRESHOLD;
   abs_rshares = std::max( int64_t(0), abs_rshares );
 
-  uint32_t cashout_delta = ( comment_cashout->cashout_time - _now ).to_seconds();
+  uint32_t cashout_delta = ( comment_cashout->get_cashout_time() - _now ).to_seconds();
 
   if( cashout_delta < HIVE_UPVOTE_LOCKOUT_SECONDS )
   {
@@ -1866,18 +1852,12 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( itr == comment_vote_idx.end() ) // new vote
   {
-    auto old_vote_rshares = comment_cashout->vote_rshares;
+    auto old_vote_rshares = comment_cashout->get_vote_rshares();
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
-      c.net_rshares += rshares;
-      c.abs_rshares += abs_rshares;
-      if( rshares > 0 )
-        c.vote_rshares += rshares;
-      if( rshares > 0 )
-        c.net_votes++;
-      else
-        c.net_votes--;
+      c.on_vote( o.weight, 0, abs_rshares != 0 || _db.has_hardfork( HIVE_HARDFORK_1_26_DUST_VOTE_FIX ) );
+      c.accumulate_vote_rshares( rshares, rshares > 0 ? rshares : 0 );
     });
 
     uint64_t max_vote_weight = 0;
@@ -1902,7 +1882,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     **/
     uint64_t vote_weight = 0;
     {
-      bool curation_reward_eligible = rshares > 0 && comment_cashout->allow_curation_rewards &&
+      bool curation_reward_eligible = rshares > 0 && comment_cashout->allows_curation_rewards() &&
                                       ( _db.get_curation_rewards_percent() > 0 );
 
       if( curation_reward_eligible )
@@ -1910,8 +1890,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         // cv.weight = W(R_1) - W(R_0)
         const auto& reward_fund = _db.get_reward_fund();
         auto curve = reward_fund.curation_reward_curve;
-        uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
-        uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->vote_rshares.value, curve, reward_fund.content_constant ).to_uint64();
+        uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ).to_uint64();
+        uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->get_vote_rshares(), curve, reward_fund.content_constant ).to_uint64();
 
         if( old_weight < new_weight ) // old_weight > new_weight should never happen, but == is ok
         {
@@ -1959,35 +1939,19 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     {
       _db.modify( *comment_cashout, [&]( comment_cashout_object& cc )
       {
-        cc.total_vote_weight += max_vote_weight;
+        cc.accumulate_vote_weight( max_vote_weight );
       });
     }
 
-    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->total_vote_weight ) );
+    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
   }
   else // edit of existing vote
   {
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
-      c.net_rshares -= itr->get_rshares();
-      c.net_rshares += rshares;
-      c.abs_rshares += abs_rshares;
-
-      /// TODO: figure out how to handle remove a vote (rshares == 0 )
-      if( rshares > 0 && itr->get_rshares() < 0 )
-        c.net_votes += 2;
-      else if( rshares > 0 && itr->get_rshares() == 0 )
-        c.net_votes += 1;
-      else if( rshares == 0 && itr->get_rshares() < 0 )
-        c.net_votes += 1;
-      else if( rshares == 0 && itr->get_rshares() > 0 )
-        c.net_votes -= 1;
-      else if( rshares < 0 && itr->get_rshares() == 0 )
-        c.net_votes -= 1;
-      else if( rshares < 0 && itr->get_rshares() > 0 )
-        c.net_votes -= 2;
-
-      c.total_vote_weight -= itr->get_weight();
+      c.on_vote( o.weight, itr->get_vote_percent(), abs_rshares != 0 || _db.has_hardfork( HIVE_HARDFORK_1_26_DUST_VOTE_FIX ) );
+      c.accumulate_vote_rshares( rshares - itr->get_rshares(), 0 );
+      c.accumulate_vote_weight( -itr->get_weight() );
     });
 
     _db.modify( *itr, [&]( comment_vote_object& cv )
@@ -1995,7 +1959,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       cv.set( _now, o.weight, 0, rshares );
     });
 
-    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, 0, rshares, comment_cashout->total_vote_weight ) );
+    _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, 0, rshares, comment_cashout->get_total_vote_weight() ) );
   }
 }
 
