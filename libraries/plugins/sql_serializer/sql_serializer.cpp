@@ -49,12 +49,6 @@ using chain::reindex_notification;
       return op.visit(v);
     }
 
-    typedef std::vector<PSQL::processing_objects::process_block_t> block_data_container_t;
-    typedef std::vector<PSQL::processing_objects::process_transaction_t> transaction_data_container_t;
-    typedef std::vector<PSQL::processing_objects::process_transaction_multisig_t> transaction_multisig_data_container_t;
-    typedef std::vector<PSQL::processing_objects::process_operation_t> operation_data_container_t;
-
-
       using num_t = std::atomic<uint64_t>;
       using duration_t = fc::microseconds;
       using stat_time_t = std::atomic<duration_t>;
@@ -141,10 +135,10 @@ using chain::reindex_notification;
       struct cached_data_t
       {
 
-        block_data_container_t blocks;
-        transaction_data_container_t transactions;
-        transaction_multisig_data_container_t transactions_multisig;
-        operation_data_container_t operations;
+        hive_blocks::container_t blocks;
+        hive_transactions::container_t transactions;
+        hive_transactions_multisig::container_t transactions_multisig;
+        hive_operations::container_t operations;
 
         size_t total_size;
 
@@ -507,10 +501,10 @@ using chain::reindex_notification;
               ("s", op_sequence_id + 1)("pbn", psql_block_number));
           }
 
-          void trigger_data_flush(block_data_container_t& data);
-          void trigger_data_flush(transaction_data_container_t& data);
-          void trigger_data_flush(transaction_multisig_data_container_t& data);
-          void trigger_data_flush(operation_data_container_t& data);
+          void trigger_data_flush(hive_blocks::container_t& data);
+          void trigger_data_flush(hive_transactions::container_t& data);
+          void trigger_data_flush(hive_transactions_multisig::container_t& data);
+          void trigger_data_flush(hive_operations::container_t& data);
 
           void init_data_processors();
           void join_data_processors()
@@ -729,22 +723,22 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
 }
 
 
-void sql_serializer_plugin_impl::trigger_data_flush(block_data_container_t& data)
+void sql_serializer_plugin_impl::trigger_data_flush(hive_blocks::container_t& data)
 {
   _block_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
-void sql_serializer_plugin_impl::trigger_data_flush(transaction_data_container_t& data)
+void sql_serializer_plugin_impl::trigger_data_flush(hive_transactions::container_t& data)
 {
   _transaction_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
-void sql_serializer_plugin_impl::trigger_data_flush(transaction_multisig_data_container_t& data)
+void sql_serializer_plugin_impl::trigger_data_flush(hive_transactions_multisig::container_t& data)
 {
   _transaction_multisig_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
 
-void sql_serializer_plugin_impl::trigger_data_flush(operation_data_container_t& data)
+void sql_serializer_plugin_impl::trigger_data_flush(hive_operations::container_t& data)
 {
   _operation_writer->trigger(std::move(data), massive_sync == false, _last_block_num);
 }
