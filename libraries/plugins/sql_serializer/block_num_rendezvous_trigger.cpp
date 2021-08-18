@@ -1,9 +1,9 @@
-#include "hive/plugins/sql_serializer/trigger_synchronous_masive_sync_call.hpp"
+#include "hive/plugins/sql_serializer/block_num_rendezvous_trigger.hpp"
 
 #include "fc/exception/exception.hpp"
 
 namespace hive::plugins::sql_serializer {
-  trigger_synchronous_masive_sync_call::trigger_synchronous_masive_sync_call( uint32_t _number_of_threads, TRIGGERRED_FUNCTION _triggered_function )
+  block_num_rendezvous_trigger::block_num_rendezvous_trigger( uint32_t _number_of_threads, TRIGGERRED_FUNCTION _triggered_function )
   : m_number_of_threads( _number_of_threads )
   , m_triggered_function( _triggered_function )
   {
@@ -18,7 +18,7 @@ namespace hive::plugins::sql_serializer {
 
 
   void
-  trigger_synchronous_masive_sync_call::report_complete_thread_stage( BLOCK_NUM _stage_block_num ) {
+  block_num_rendezvous_trigger::report_complete_thread_stage( BLOCK_NUM _stage_block_num ) {
     std::lock_guard< std::mutex > lock( m_mutex );
     if ( m_already_commited_blocks >= _stage_block_num )
       return;
@@ -40,6 +40,6 @@ namespace hive::plugins::sql_serializer {
       return;
     }
 
-    ++m_completed_threads[ _stage_block_num ];
+    ++stage_it->second;
   }
 } // namespace hive::plugins::sql_serializer

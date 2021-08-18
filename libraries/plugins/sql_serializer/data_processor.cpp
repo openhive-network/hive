@@ -30,7 +30,7 @@ private:
   std::condition_variable* _notifier;
 };
 
-data_processor::data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< trigger_synchronous_masive_sync_call > api_trigger) :
+data_processor::data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger) :
   _description(std::move(description)),
   _cancel(false),
   _continue(true),
@@ -189,7 +189,7 @@ void data_processor::join()
   ilog("Data processor: ${d} finished execution...", ("d", _description));
 }
 
-queries_commit_data_processor::queries_commit_data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< trigger_synchronous_masive_sync_call > api_trigger ) {
+queries_commit_data_processor::queries_commit_data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger ) {
   auto tx_controller = build_own_transaction_controller( psqlUrl );
   auto fn_wrapped_with_transaction = [ tx_controller, dataProcessor ]( const data_chunk_ptr& dataPtr ){
     transaction_ptr tx( tx_controller->openTx() );
