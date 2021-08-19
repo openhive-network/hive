@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hive/plugins/sql_serializer/data_dumper.h>
+
 #include <hive/plugins/sql_serializer/table_data_writer.h>
 #include <hive/plugins/sql_serializer/tables_descriptions.h>
 #include <hive/plugins/sql_serializer/data_processor.hpp>
@@ -13,7 +15,7 @@
 namespace hive::plugins::sql_serializer {
   class transaction_controller;
 
-  class livesync_data_dumper {
+  class livesync_data_dumper : public data_dumper {
   public:
     livesync_data_dumper( std::string db_url );
 
@@ -23,9 +25,9 @@ namespace hive::plugins::sql_serializer {
     livesync_data_dumper& operator=(livesync_data_dumper&&) = delete;
     livesync_data_dumper& operator=(livesync_data_dumper&) = delete;
 
-    void trigger_data_flush( cached_data_t& cached_data, int last_block_num );
-    void join();
-    void wait_for_data_processing_finish();
+    void trigger_data_flush( cached_data_t& cached_data, int last_block_num ) override;
+    void join() override;
+    void wait_for_data_processing_finish() override;
   private:
     // [TODO] move to separated class
     std::string block;
