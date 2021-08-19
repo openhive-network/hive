@@ -22,11 +22,14 @@ namespace hive::plugins::sql_serializer {
     transactions_controller = build_own_transaction_controller( db_url );
     constexpr auto NUMBER_OF_PROCESSORS_THREADS = 4;
     auto execute_push_block = [this](block_num_rendezvous_trigger::BLOCK_NUM _block_num ){
-      auto transaction = transactions_controller->openTx();
-      transaction->exec(
-        "SELECT hive.push_block(" + block + ",ARRAY[" + transactions + "],ARRAY[" + transactions_multisig + "],ARRAY[" + operations + "])"
-      );
-      transaction->commit();
+      if ( !block.empty() ) {
+        auto transaction = transactions_controller->openTx();
+        transaction->exec(
+            "SELECT hive.push_block(" + block + ",ARRAY[" + transactions + "],ARRAY[" + transactions_multisig + "],ARRAY[" + operations + "])"
+            );
+        transaction->commit();
+      }
+      block.clear(); transactions.clear(); transactions_multisig.clear(); operations.clear();
     };
     auto api_trigger = std::make_shared< block_num_rendezvous_trigger >( NUMBER_OF_PROCESSORS_THREADS, execute_push_block );
 
@@ -48,7 +51,6 @@ namespace hive::plugins::sql_serializer {
     _transaction_writer->join();
     _transaction_multisig_writer->join();
     _operation_writer->join();
-    _end_massive_sync_processor->join();
   }
 
   void livesync_data_dumper::wait_for_data_processing_finish()
@@ -57,7 +59,6 @@ namespace hive::plugins::sql_serializer {
     _transaction_writer->complete_data_processing();
     _transaction_multisig_writer->complete_data_processing();
     _operation_writer->complete_data_processing();
-    _end_massive_sync_processor->complete_data_processing();
   }
 } // namespace hive::plugins::sql_serializer
 

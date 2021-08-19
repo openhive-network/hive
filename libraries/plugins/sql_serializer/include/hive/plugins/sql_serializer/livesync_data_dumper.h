@@ -6,7 +6,6 @@
 #include <hive/plugins/sql_serializer/tables_descriptions.h>
 #include <hive/plugins/sql_serializer/data_processor.hpp>
 
-#include <hive/plugins/sql_serializer/end_massive_sync_processor.hpp>
 #include <hive/plugins/sql_serializer/cached_data.h>
 
 #include <memory>
@@ -19,7 +18,7 @@ namespace hive::plugins::sql_serializer {
   public:
     livesync_data_dumper( std::string db_url );
 
-    ~livesync_data_dumper() = default;
+    ~livesync_data_dumper() { join(); }
     livesync_data_dumper(livesync_data_dumper&) = delete;
     livesync_data_dumper(livesync_data_dumper&&) = delete;
     livesync_data_dumper& operator=(livesync_data_dumper&&) = delete;
@@ -28,6 +27,7 @@ namespace hive::plugins::sql_serializer {
     void trigger_data_flush( cached_data_t& cached_data, int last_block_num ) override;
     void join() override;
     void wait_for_data_processing_finish() override;
+    uint32_t blocks_per_flush() const override { return 1; }
   private:
     // [TODO] move to separated class
     std::string block;
@@ -46,7 +46,6 @@ namespace hive::plugins::sql_serializer {
     std::unique_ptr< transaction_data_container_t_writer > _transaction_writer;
     std::unique_ptr< transaction_multisig_data_container_t_writer > _transaction_multisig_writer;
     std::unique_ptr< operation_data_container_t_writer > _operation_writer;
-    std::unique_ptr<end_massive_sync_processor> _end_massive_sync_processor;
   };
 
 } // namespace hive::plugins::sql_serializer
