@@ -139,7 +139,7 @@ using chain::reindex_notification;
               chain_db{_chain_db},
               main_plugin{_main_plugin}
           {
-            _dumper = std::make_unique< livesync_data_dumper >( url );
+            _dumper = std::make_unique< livesync_data_dumper >( url, main_plugin, chain_db );
           }
 
           ~sql_serializer_plugin_impl()
@@ -522,7 +522,7 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
   if(note.last_block_number >= note.max_block_number)
     switch_db_items(true/*mode*/);
 
-  _dumper = std::make_unique< livesync_data_dumper >( db_url );
+  _dumper = std::make_unique< livesync_data_dumper >( db_url, main_plugin, chain_db );
 }
 
 void sql_serializer_plugin_impl::process_cached_data()
