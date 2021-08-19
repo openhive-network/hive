@@ -353,6 +353,7 @@ namespace chain {
       void notify_post_apply_block( const block_notification& note );
       void notify_fail_apply_block( const block_notification& note );
       void notify_irreversible_block( uint32_t block_num );
+      void notify_switch_fork( uint32_t block_num );
       void notify_pre_apply_transaction( const transaction_notification& note );
       void notify_post_apply_transaction( const transaction_notification& note );
 
@@ -362,6 +363,7 @@ namespace chain {
       using apply_transaction_handler_t = std::function< void(const transaction_notification&) >;
       using apply_block_handler_t = std::function< void(const block_notification&) >;
       using irreversible_block_handler_t = std::function< void(uint32_t) >;
+      using switch_fork_handler_t = std::function< void(uint32_t) >;
       using reindex_handler_t = std::function< void(const reindex_notification&) >;
       using generate_optional_actions_handler_t = std::function< void(const generate_optional_actions_notification&) >;
       using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
@@ -397,6 +399,7 @@ namespace chain {
       boost::signals2::connection add_post_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_generate_optional_actions_handler ( const generate_optional_actions_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
@@ -828,6 +831,8 @@ namespace chain {
       fc::signal<void(const block_notification&)>           _pre_apply_block_signal;
 
       fc::signal<void(uint32_t)>                            _on_irreversible_block;
+
+      fc::signal<void(uint32_t)>                            _switch_fork_signal;
 
       /**
         *  This signal is emitted after all operations and virtual operation for a

@@ -1144,6 +1144,8 @@ bool database::_push_block(const signed_block& new_block)
         while( head_block_id() != branches.second.back()->data.previous )
           pop_block();
 
+        notify_switch_fork( branches.second.back()->data.block_num() );
+
         // push all blocks on the new fork
         for( auto ritr = branches.first.rbegin(); ritr != branches.first.rend(); ++ritr )
         {
@@ -1413,6 +1415,11 @@ void database::notify_pre_apply_block( const block_notification& note )
 void database::notify_irreversible_block( uint32_t block_num )
 {
   HIVE_TRY_NOTIFY( _on_irreversible_block, block_num )
+}
+
+void database::notify_switch_fork( uint32_t block_num )
+{
+  HIVE_TRY_NOTIFY( _switch_fork_signal, block_num )
 }
 
 void database::notify_post_apply_block( const block_notification& note )
@@ -4816,6 +4823,12 @@ boost::signals2::connection database::add_irreversible_block_handler( const irre
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl(_on_irreversible_block, func, plugin, group, "<-irreversible");
+}
+
+boost::signals2::connection database::add_switch_fork_handler( const switch_fork_handler_t& func,
+                                                                      const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl(_switch_fork_signal, func, plugin, group, "<-switch_fork");
 }
 
 boost::signals2::connection database::add_pre_reindex_handler(const reindex_handler_t& func,
