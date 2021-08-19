@@ -522,8 +522,7 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
   if(note.last_block_number >= note.max_block_number)
     switch_db_items(true/*mode*/);
 
-  auto dumper = std::make_unique< livesync_data_dumper >( db_url );
-  _dumper = std::move( dumper );
+  _dumper = std::make_unique< livesync_data_dumper >( db_url );
 }
 
 void sql_serializer_plugin_impl::process_cached_data()

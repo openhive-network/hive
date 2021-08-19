@@ -6,7 +6,7 @@ namespace hive::plugins::sql_serializer {
   const char hive_blocks::COLS[] = "num, hash, prev, created_at";
 
   const char hive_transactions::TABLE[] = "hive.transactions";
-  const char hive_transactions::COLS[] = "block_num, trx_hash, trx_in_block, ref_block_num, ref_block_prefix, expiration, signature";
+  const char hive_transactions::COLS[] = "block_num, trx_in_block, trx_hash, ref_block_num, ref_block_prefix, expiration, signature";
 
   const char hive_transactions_multisig::TABLE[] = "hive.transactions_multisig";
   const char hive_transactions_multisig::COLS[] = "trx_hash, signature";

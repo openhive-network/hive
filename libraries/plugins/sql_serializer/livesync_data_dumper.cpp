@@ -24,9 +24,14 @@ namespace hive::plugins::sql_serializer {
     auto execute_push_block = [this](block_num_rendezvous_trigger::BLOCK_NUM _block_num ){
       if ( !block.empty() ) {
         auto transaction = transactions_controller->openTx();
-        transaction->exec(
-            "SELECT hive.push_block(" + block + ",ARRAY[" + transactions + "],ARRAY[" + transactions_multisig + "],ARRAY[" + operations + "])"
-            );
+
+        std::string block_to_dump = block + "::hive.blocks";
+        std::string transactions_to_dump = "ARRAY[" + transactions + "]::hive.transactions[]";
+        std::string signatures_to_dump = "ARRAY[" + transactions_multisig + "]::hive.transactions_multisig[]";
+        std::string operations_to_dump = operations.empty() ? "null" : "ARRAY[" + operations + "]::hive.operations[]";
+        std::string sql_command = "SELECT hive.push_block(" + block + "," + transactions_to_dump + "," + signatures_to_dump + "," + operations_to_dump + ")";
+
+        transaction->exec( sql_command );
         transaction->commit();
       }
       block.clear(); transactions.clear(); transactions_multisig.clear(); operations.clear();
@@ -44,6 +49,11 @@ namespace hive::plugins::sql_serializer {
     _operation_writer->trigger( std::move( cached_data.operations ), false, last_block_num );
     _transaction_writer->trigger( std::move( cached_data.transactions ), false, last_block_num);
     _transaction_multisig_writer->trigger( std::move( cached_data.transactions_multisig ), false, last_block_num );
+
+    _block_writer->complete_data_processing();
+    _operation_writer->complete_data_processing();
+    _transaction_writer->complete_data_processing();
+    _transaction_multisig_writer->complete_data_processing();
   }
 
   void livesync_data_dumper::join() {
