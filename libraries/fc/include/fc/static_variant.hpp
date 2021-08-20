@@ -16,6 +16,26 @@
 
 namespace fc {
 
+template< typename static_variant >
+struct serialization_functor
+{
+  bool operator()( const fc::variant& v, static_variant& s ) const
+  {
+    return false;
+  }
+};
+
+template< typename static_variant >
+struct variant_creator_functor
+{
+  template<typename T>
+  variant operator()( const T& v ) const
+  {
+    auto name = trim_typename_namespace( fc::get_typename< T >::name() );
+    return mutable_variant_object( "type", name )( "value", v );
+  }
+};
+
 // Implementation details, the user should not import this:
 namespace impl {
 
@@ -371,6 +391,7 @@ struct visitor {
     typedef Result result_type;
 };
 
+   template< typename static_variant >
    struct from_static_variant
    {
       variant& var;
@@ -379,8 +400,7 @@ struct visitor {
       typedef void result_type;
       template<typename T> void operator()( const T& v )const
       {
-         auto name = trim_typename_namespace( fc::get_typename< T >::name() );
-         var = mutable_variant_object( "type", name )( "value", v );
+        var = variant_creator_functor< static_variant >()( v );
       }
    };
 
@@ -398,7 +418,7 @@ struct visitor {
 
    template<typename... T> void to_variant( const fc::static_variant<T...>& s, fc::variant& v )
    {
-      s.visit( from_static_variant( v ) );
+      s.visit( from_static_variant< fc::static_variant<T...> >( v ) );
    }
 
    struct get_static_variant_name
@@ -430,6 +450,9 @@ struct visitor {
          }
          return name_map;
       }();
+
+      if( serialization_functor< fc::static_variant<T...> >()( v, s ) )
+        return;
 
       FC_ASSERT( v.is_object(), "Input data have to treated as object." );
       auto v_object = v.get_object();

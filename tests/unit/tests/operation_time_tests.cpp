@@ -1836,7 +1836,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
 BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 {
-  using hive::plugins::condenser_api::legacy_asset;
+  using hive::protocol::legacy_asset;
 
   try
   {
@@ -2689,7 +2689,6 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     sign( tx, bob_private_key );
     db->push_transaction( tx, 0 );
 
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->last_payout == fc::time_point_sec::min() );
     BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time != fc::time_point_sec::min() );
     BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time != fc::time_point_sec::maximum() );
 

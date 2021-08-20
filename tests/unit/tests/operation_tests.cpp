@@ -531,7 +531,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( bob_comment_cashout->abs_rshares.value == 0 );
     BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
-    BOOST_REQUIRE( bob_comment.get_root_id() == alice_comment.get_id() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test Sam posting a comment on Bob's comment" );
@@ -561,7 +560,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( sam_comment_cashout->net_rshares.value == 0 );
     BOOST_REQUIRE( sam_comment_cashout->abs_rshares.value == 0 );
     BOOST_REQUIRE( sam_comment_cashout->cashout_time == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
-    BOOST_REQUIRE( sam_comment.get_root_id() == alice_comment.get_id() );
     validate_database();
 
     generate_blocks( 60 * 5 / HIVE_BLOCK_INTERVAL + 1 );
@@ -971,7 +969,6 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_TEST_MESSAGE( "--- Test nested voting on nested comments" );
 
-      old_abs_rshares = new_alice_comment_cashout->children_abs_rshares.value;
       int64_t regenerated_power = (HIVE_100_PERCENT * ( db->head_block_time() - db->get_account( "alice").last_vote_time ).to_seconds() ) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
       int64_t used_power = ( get_voting_power( db->get_account( "alice" ) ) + regenerated_power + max_vote_denom - 1 ) / max_vote_denom;
 

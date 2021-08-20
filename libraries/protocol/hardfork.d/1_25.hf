@@ -1,9 +1,11 @@
 #ifndef HIVE_HARDFORK_1_25
 #define HIVE_HARDFORK_1_25 25
 
-long next_hf_time();
-
-#define HIVE_HARDFORK_1_25_TIME next_hf_time()
+#ifdef IS_TEST_NET
+#define HIVE_HARDFORK_1_25_TIME 1622808000 // Friday, 4 June 2021 12:00:00
+#else
+#define HIVE_HARDFORK_1_25_TIME 1625061600 // Wednesday, 30 June 2021 14:00:00
+#endif /// IS_TEST_NET
 
 #define HIVE_HARDFORK_1_25_VERSION hardfork_version( 1, 25 )
 

@@ -15,6 +15,13 @@ using protocol::transaction_id_type;
 using protocol::public_key_type;
 using plugins::json_rpc::void_type;
 
+enum class withdraw_route_type
+{
+  incoming,
+  outgoing,
+  all
+};
+
 enum sort_order_type
 {
   by_name,
@@ -38,9 +45,7 @@ enum sort_order_type
   by_conversion_date,
   by_cashout_time,
   by_permlink,
-  by_root,
   by_parent,
-  by_author_last_update,
   by_comment_voter,
   by_voter_comment,
   by_price,
@@ -694,6 +699,8 @@ struct is_known_transaction_return
 FC_REFLECT( hive::plugins::database_api::get_version_return,
         (blockchain_version)(hive_revision)(fc_revision)(chain_id) )
 
+FC_REFLECT_ENUM( hive::plugins::database_api::withdraw_route_type, (incoming)(outgoing)(all) )
+
 FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_name)
   (by_proxy)
@@ -716,9 +723,7 @@ FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_conversion_date)
   (by_cashout_time)
   (by_permlink)
-  (by_root)
   (by_parent)
-  (by_author_last_update)
   (by_comment_voter)
   (by_voter_comment)
   (by_price)

@@ -201,7 +201,7 @@ hived_options_tests:
     when: always
     expire_in: 1 week
 
-create_account_tests:
+cli_wallet_extended_tests:
   stage: test
   extends: .test_tools_based
   needs:
@@ -210,11 +210,11 @@ create_account_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - pip3 install pytest
-    - cd tests/functional/python_tests/create_account_tests
+    - cd tests/functional/python_tests/cli_wallet_extended_tests
     - pytest --junitxml="./report.xml"
   artifacts:
     reports:
-      junit: tests/functional/python_tests/create_account_tests/report.xml
+      junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
   tags:
     - public-runner-docker
 

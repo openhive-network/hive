@@ -17,6 +17,7 @@ using namespace hive::chain;
 
 struct api_reward_fund_object
 {
+  api_reward_fund_object() {};
   api_reward_fund_object( const reward_fund_object& o, const database& db ):
     id( o.get_id() ),
     name( o.name ),
@@ -141,6 +142,7 @@ struct api_vesting_delegation_expiration_object
 
 struct api_convert_request_object
 {
+  api_convert_request_object() {}
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
     owner( db.get_account( o.get_owner() ).get_name() ),
@@ -158,6 +160,7 @@ struct api_convert_request_object
 
 struct api_collateralized_convert_request_object
 {
+  api_collateralized_convert_request_object() {}
   api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
     id( o.get_id() ),
     owner( db.get_account( o.get_owner() ).get_name() ),
@@ -199,6 +202,7 @@ struct api_limit_order_object
     for_sale( o.for_sale ),
     sell_price( o.sell_price )
   {}
+  api_limit_order_object() {}
 
   limit_order_id_type id;
   time_point_sec      created;
@@ -371,21 +375,21 @@ struct api_comment_object
     {
       total_vote_weight       = cc->total_vote_weight;
       reward_weight           = cc->reward_weight;
-      total_payout_value      = cc->total_payout_value;
-      curator_payout_value    = cc->curator_payout_value;
+      total_payout_value      = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+      curator_payout_value    = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->net_votes;
       active                  = cc->active;
-      last_payout             = cc->last_payout;
+      last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
       children                = cc->children;
       net_rshares             = cc->net_rshares;
       abs_rshares             = cc->abs_rshares;
       vote_rshares            = cc->vote_rshares;
-      children_abs_rshares    = cc->children_abs_rshares;
+      children_abs_rshares    = 0; // value not accumulated after HF17
       created                 = cc->get_creation_time();
       last_update             = active;
       cashout_time            = cc->cashout_time;
-      max_cashout_time        = cc->max_cashout_time;
+      max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
       max_accepted_payout     = cc->max_accepted_payout;
       percent_hbd             = cc->percent_hbd;
       allow_votes             = cc->allow_votes;

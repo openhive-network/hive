@@ -60,6 +60,7 @@ void initialize_core_indexes( database& db )
   HIVE_ADD_CORE_INDEX(db, proposal_index);
   HIVE_ADD_CORE_INDEX(db, proposal_vote_index);
   HIVE_ADD_CORE_INDEX(db, comment_cashout_index);
+  HIVE_ADD_CORE_INDEX(db, comment_cashout_ex_index);
   HIVE_ADD_CORE_INDEX(db, recurrent_transfer_index);
 }
 

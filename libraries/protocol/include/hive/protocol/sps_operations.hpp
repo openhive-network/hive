@@ -1,6 +1,6 @@
 #pragma once
 #include <hive/protocol/base.hpp>
-
+#include <hive/protocol/operation_util.hpp>
 #include <hive/protocol/asset.hpp>
 
 
@@ -159,6 +159,31 @@ namespace fc {
   }
   
 }
+
+namespace fc
+{
+  using hive::protocol::update_proposal_extension;
+  template<>
+  struct serialization_functor< update_proposal_extension >
+  {
+    bool operator()( const fc::variant& v, update_proposal_extension& s ) const
+    {
+      return extended_serialization_functor< update_proposal_extension >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< update_proposal_extension >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< update_proposal_extension >().create( v );
+    }
+  };
+}
+
+FC_REFLECT_TYPENAME( hive::protocol::update_proposal_extension )
 
 FC_REFLECT( hive::protocol::create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(extensions) )
 FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions))

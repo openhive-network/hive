@@ -14,9 +14,9 @@
 using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef HIVE_ENABLE_SMT
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 26, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 27, 0) )
 #else
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 25, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 26, 0) )
 #endif
 
 #define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
@@ -70,7 +70,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 ///                               LIVE HIVE NETWORK (MainNet)                                   ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 25, 0) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 26, 0) )
 
 #define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define OLD_CHAIN_ID                          fc::sha256()

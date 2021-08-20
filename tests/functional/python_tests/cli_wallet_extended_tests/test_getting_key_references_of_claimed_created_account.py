@@ -1,17 +1,12 @@
 # This is a regression test for problem described in following issue:
 # https://gitlab.syncad.com/hive/hive/-/issues/113
 
-from test_tools import Account, Asset, logger
+from test_tools import Account, logger, Asset
+from utilities import send_with_args_and_assert_result
 
-
-def test_getting_key_references_of_claimed_created_account(world):
-    init_node = world.create_init_node()
-    init_node.run()
-
-    wallet = init_node.attach_wallet()
-
+def test_getting_key_references_of_claimed_created_account(node, wallet):
     logger.info('Waiting until initminer will be able to create account...')
-    init_node.wait_number_of_blocks(30)
+    node.wait_number_of_blocks(30)
 
     account = Account('alice')
     key = account.public_key
@@ -20,5 +15,4 @@ def test_getting_key_references_of_claimed_created_account(world):
         'initminer', account.name, Asset.Test(0), 'memo', '{}', key, key, key, key
     )
 
-    response = init_node.api.condenser.get_key_references([account.public_key])
-    assert response['result'] == [[account.name]]
+    send_with_args_and_assert_result(node.api.condenser.get_key_references, [account.public_key], [[account.name]])

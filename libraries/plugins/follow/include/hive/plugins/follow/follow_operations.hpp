@@ -1,5 +1,6 @@
 #pragma once
 #include <hive/protocol/base.hpp>
+#include <hive/protocol/operation_util.hpp>
 
 #include <hive/chain/evaluator.hpp>
 
@@ -43,6 +44,29 @@ HIVE_DEFINE_PLUGIN_EVALUATOR( follow_plugin, follow_plugin_operation, follow );
 HIVE_DEFINE_PLUGIN_EVALUATOR( follow_plugin, follow_plugin_operation, reblog );
 
 } } } // hive::plugins::follow
+
+namespace fc
+{
+  using hive::plugins::follow::follow_plugin_operation;
+  template<>
+  struct serialization_functor< follow_plugin_operation >
+  {
+    bool operator()( const fc::variant& v, follow_plugin_operation& s ) const
+    {
+      return extended_serialization_functor< follow_plugin_operation >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< follow_plugin_operation >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< follow_plugin_operation >().create( v );
+    }
+  };
+}
 
 FC_REFLECT( hive::plugins::follow::follow_operation, (follower)(following)(what) )
 FC_REFLECT( hive::plugins::follow::reblog_operation, (account)(author)(permlink) )
