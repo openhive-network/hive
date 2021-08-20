@@ -99,7 +99,7 @@ namespace hive { namespace converter {
   {
     if( !converter.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
     {
-      uint32_t rand_offset = converter.get_current_block().id()._hash[ 4 ] % 86400;
+      uint32_t rand_offset = converter.get_mainnet_head_block_id()._hash[ 4 ] % 86400;
       op.expiration = std::min( op.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
     }
 
@@ -275,6 +275,8 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
+   this->mainnet_head_block_id = _signed_block.previous;
+
     current_block_ptr = &_signed_block;
 
     check_for_hardfork( _signed_block );
@@ -341,6 +343,11 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
     return _signed_block.id();
+  }
+
+  const hp::block_id_type& blockchain_converter::get_mainnet_head_block_id()const
+  {
+    return mainnet_head_block_id;
   }
 
   void blockchain_converter::sign_transaction( hp::signed_transaction& trx )const
