@@ -108,7 +108,7 @@ namespace hive { namespace converter {
 
   const hp::pow_operation& convert_operations_visitor::operator()( hp::pow_operation& op )const
   {
-    op.block_id = previous_block_id;
+    op.block_id = converter.get_current_block().previous;
 
     converter.add_pow_key( op.worker_account, op.work.worker );
 
@@ -124,7 +124,7 @@ namespace hive { namespace converter {
 
     auto& prev_block = op.work.which() ? op.work.get< hp::equihash_pow >().prev_block : op.work.get< hp::pow2 >().input.prev_block;
 
-    prev_block = previous_block_id;
+    prev_block = converter.get_current_block().previous;
 
     return op;
   }
@@ -288,9 +288,11 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
     else
       trx_time += HIVE_BLOCK_INTERVAL; // Apply min expiration time and then increase this value to avoid trx id duplication
 
+    _signed_block.previous = previous_block_id;
+
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, previous_block_id ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
@@ -299,8 +301,6 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
       transaction_itr->expiration = trx_time;
       trx_time += 1;
     }
-
-    _signed_block.previous = previous_block_id;
 
     switch( _signed_block.transactions.size() )
     {
