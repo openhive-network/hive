@@ -233,53 +233,31 @@ namespace hive { namespace converter {
 #  define HIVE_BC_HARDFORKS_1_STOP HIVE_NUM_HARDFORKS
 #endif
 
-#ifdef  HIVE_HARDFORK_1_25_TIME // XXX: Should it really be initially next_hf_time()?
-#  undef  HIVE_HARDFORK_1_25_TIME
-#  define HIVE_HARDFORK_1_25_TIME 1625061600
-#endif
-
 #ifndef HIVE_BC_HF_N_CASE_MACRO
-#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) \
-  BOOST_PP_IF( BOOST_PP_AND( BOOST_PP_EQUAL( data, 0 ), BOOST_PP_EQUAL( n, 18 ) ), \
-               /* Duplicate case HIVE_HARDFORK_0_18_TIME */,                       \
-               case ( HIVE_HARDFORK_ ##data ## _ ##n ## _TIME ):                   \
-              )
+#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.timestamp.sec_since_epoch() >= HIVE_HARDFORK_ ##data ## _ ##n ## _TIME \
+                                                        && current_hardfork < n ) { ++current_hardfork; \
+std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n'; }
 #endif
 
 #ifndef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
-#  define HIVE_BC_HF_ALL_CASE_MACRO_LOOP(z, n, data)                           \
-  BOOST_PP_REPEAT_FROM_TO( HIVE_BC_HARDFORKS_ ##n ## _START,                   \
+#  define HIVE_BC_HF_ALL_CASE_MACRO_LOOP(z, n, data) \
+  BOOST_PP_REPEAT_FROM_TO( HIVE_BC_HARDFORKS_ ##n ## _START, \
                            BOOST_PP_ADD( 1, HIVE_BC_HARDFORKS_ ##n ## _STOP ), \
-                           HIVE_BC_HF_N_CASE_MACRO,                            \
-                           n                                                   \
-                          )
+                           HIVE_BC_HF_N_CASE_MACRO, \
+                           n \
+                           )
 #endif
 
-#ifndef HIVE_BC_HF_ALL_CASE_MACRO
-#  define HIVE_BC_HF_ALL_CASE_MACRO \
+#ifndef HIVE_BC_HF_ALL_CASE_MACRO()
+#  define HIVE_BC_HF_ALL_CASE_MACRO() \
+  if(false){} /* For else ifs */ \
   BOOST_PP_REPEAT( HIVE_BC_HARDFORKS_MAJOR_SIZE, HIVE_BC_HF_ALL_CASE_MACRO_LOOP, )
-#endif
-
-#ifndef HIVE_BC_HF_ALL_CASE_MACRO_START
-#  define HIVE_BC_HF_ALL_CASE_MACRO_START( data_to_compare ) \
-  switch( data_to_compare )                                  \
-  {                                                          \
-    HIVE_BC_HF_ALL_CASE_MACRO
-#endif
-
-#ifndef HIVE_BC_HF_ALL_CASE_MACRO_END
-#  define HIVE_BC_HF_ALL_CASE_MACRO_END() \
-    default: break;                       \
-  }
 #endif
 
   void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
   {
-    // Expands to the switch statement that increments current_hardfork every time _signed_block.timestamp equals to the original timestamp of the hardfork
-    HIVE_BC_HF_ALL_CASE_MACRO_START( _signed_block.timestamp.sec_since_epoch() );
-      ++current_hardfork;
-      // std::cout << "\nGot hardfork: " << current_hardfork << " in block " << _signed_block.block_num() << '\n';
-    HIVE_BC_HF_ALL_CASE_MACRO_END();
+    // Expands to the if/elses that increment current_hardfork every time _signed_block.timestamp equals to the original timestamp of the hardfork
+    HIVE_BC_HF_ALL_CASE_MACRO();
   }
 
 // Cleanup defines
@@ -291,8 +269,6 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_N_CASE_MACRO
 #undef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
 #undef HIVE_BC_HF_ALL_CASE_MACRO
-#undef HIVE_BC_HF_ALL_CASE_MACRO_START
-#undef HIVE_BC_HF_ALL_CASE_MACRO_END
 
 #undef HIVE_HARDFORK_1_25_TIME
 #define HIVE_HARDFORK_1_25_TIME next_hf_time()
@@ -410,7 +386,7 @@ namespace hive { namespace converter {
 
   void blockchain_converter::add_account( const hp::account_name_type& acc )
   {
-    if( has_hardfork( HIVE_HARDFORK_0_17__770 ) )
+    if( !has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       accounts.insert( acc );
     else if( accounts.size() )
       accounts.clear(); // Free some space
