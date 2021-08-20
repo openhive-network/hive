@@ -327,7 +327,11 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_BLOCKCHAIN_PRECISION_DIGITS      3
 #define HIVE_MAX_INSTANCE_ID                  (uint64_t(-1)>>16)
 /** NOTE: making this a power of 2 (say 2^15) would greatly accelerate fee calcs */
-#define HIVE_MAX_AUTHORITY_MEMBERSHIP         40
+#ifndef HIVE_CONVERTER_BUILD
+#  define HIVE_MAX_AUTHORITY_MEMBERSHIP       40
+#else
+#  define HIVE_MAX_AUTHORITY_MEMBERSHIP       41 /* 40 + second auth */
+#endif
 #define HIVE_MAX_ASSET_WHITELIST_AUTHORITIES  10
 #define HIVE_MAX_URL_LENGTH                   127
 
