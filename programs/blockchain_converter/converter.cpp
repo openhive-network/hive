@@ -179,7 +179,7 @@ namespace hive { namespace converter {
           {
             // std::cout << "Worker: " << worker_index << " just got a new job. Trx index: " << local_trx.first << ". Signing... ";
             while( ! shared_signatures_stack_out.push( std::make_pair( local_trx.first,
-              get_second_authority_key( authority::owner ).sign_compact( local_trx.second->sig_digest( get_chain_id() ) )
+              get_second_authority_key( authority::owner ).sign_compact( local_trx.second->sig_digest( get_chain_id() ), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical )
               ) ) ) continue;
             // std::cout << "Done.\n";
           }
@@ -248,7 +248,7 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
                            )
 #endif
 
-#ifndef HIVE_BC_HF_ALL_CASE_MACRO()
+#ifndef HIVE_BC_HF_ALL_CASE_MACRO
 #  define HIVE_BC_HF_ALL_CASE_MACRO() \
   if(false){} /* For else ifs */ \
   BOOST_PP_REPEAT( HIVE_BC_HARDFORKS_MAJOR_SIZE, HIVE_BC_HF_ALL_CASE_MACRO_LOOP, )
@@ -356,13 +356,13 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
     {
       if( trx.signatures.size() > 1 )
         trx.signatures.clear();
-      trx.signatures[ 0 ] = get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ) ); // XXX: All operations are being signed using the owner key of the 2nd authority
+      trx.signatures[ 0 ] = get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical ); // XXX: All operations are being signed using the owner key of the 2nd authority
     }
   }
 
   void blockchain_converter::sign_header( hp::signed_block_header& _signed_header )
   {
-    _signed_header.sign( _private_key );
+    _signed_header.sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
