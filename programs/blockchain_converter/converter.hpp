@@ -48,8 +48,8 @@ namespace hive { namespace converter {
     boost::lockfree::stack< sig_stack_in_type >  shared_signatures_stack_in;  // pair< trx index in block, signed transaction ptr to convert >
     boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
 
-    std::atomic_bool     signers_exit;
-    std::atomic_uint32_t current_hardfork;
+    std::atomic_bool        signers_exit;
+    std::atomic< uint32_t > current_hardfork;
 
     mutable std::mutex second_auth_mutex;
 
