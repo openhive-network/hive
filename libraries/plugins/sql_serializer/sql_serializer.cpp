@@ -139,6 +139,7 @@ using chain::reindex_notification;
               chain_db{_chain_db},
               main_plugin{_main_plugin}
           {
+            FC_ASSERT( is_database_correct(), "SQL database is in invalid state" );
             _dumper = std::make_unique< livesync_data_dumper >( url, main_plugin, chain_db );
           }
 
@@ -244,8 +245,6 @@ using chain::reindex_notification;
           void init_database(bool freshDb, uint32_t max_block_number )
           {
             head_block_number = max_block_number;
-
-            FC_ASSERT( is_database_correct(), "Database is in invalid state" );
 
             load_initial_db_data();
 
