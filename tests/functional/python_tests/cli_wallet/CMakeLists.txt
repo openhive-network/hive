@@ -1,5 +1,0 @@
-IF ( BUILD_HIVE_TESTNET )
-  ADD_PYTEST_TEST_GROUP( )
-ELSE ( BUILD_HIVE_TESTNET )
-    MESSAGE ( STATUS "cli_wallet functional tests skipped: BUILD_HIVE_TESTNET is required" )
-ENDIF ( BUILD_HIVE_TESTNET )
