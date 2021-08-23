@@ -146,6 +146,24 @@ list_proposals_tests:
   tags:
     - public-runner-docker
 
+.test_tools_based:
+  variables:
+    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
+    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
+  before_script:
+    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - export NUMBER_OF_PROCESSES=$(nproc)
+    - pip3 install requests pytest pytest-xdist
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+    - "**/generated_during_*"
+    - "**/generated_by_package_fixtures"
+    when: always
+    expire_in: 1 week
+
 cli_wallet_tests:
   stage: test
   extends: .test_tools_based
@@ -178,24 +196,6 @@ hived_tests:
     reports:
       junit: tests/functional/python_tests/hived/report.xml
 
-.test_tools_based:
-  variables:
-    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
-    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
-    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
-    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
-  before_script:
-    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
-    - export NUMBER_OF_PROCESSES=$(nproc)
-    - pip3 install requests pytest pytest-xdist
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    paths:
-    - "**/generated_during_*"
-    - "**/generated_by_package_fixtures"
-    when: always
-    expire_in: 1 week
-
 cli_wallet_extended_tests:
   stage: test
   extends: .test_tools_based
@@ -209,8 +209,6 @@ cli_wallet_extended_tests:
   artifacts:
     reports:
       junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
-    - cd tests/functional/python_tests/create_account_tests
-    - pytest
   tags:
     - public-runner-docker
 
