@@ -55,5 +55,4 @@ ENDMACRO( ADD_PYTEST_TEST_GROUP )
 # Add here directories with subsets of tests
 ADD_SUBDIRECTORY ( dhf_tests )
 ADD_SUBDIRECTORY ( hived )
-ADD_SUBDIRECTORY ( cli_wallet )
 
