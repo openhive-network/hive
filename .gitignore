@@ -109,3 +109,6 @@ advanced_benchmark.json
 r_advanced_benchmark.json
 *.log
 *.norm
+
+# pyrest tests
+*.out.json
