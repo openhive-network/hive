@@ -41,11 +41,8 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
   assert result_sell[0]['orderid'] == 1
   assert result_sell[0]['seller'] == user.name
   assert result_sell[0]['for_sale'] == AMOUNT_TO_SELL_1.amount
-  assert result_sell[0]['real_price'] == '100.00000000000000000'
   assert result_sell[0]['sell_price']['base'] == AMOUNT_TO_SELL_1
   assert result_sell[0]['sell_price']['quote'] == MIN_TO_RECEIVE_1
-  assert not result_sell[0]['rewarded']
-
 
 
   logger.info( f"testing buy order: {AMOUNT_TO_SELL_2} for {MIN_TO_RECEIVE_2} created by user {user.name}" )
@@ -62,10 +59,8 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
   assert result_buy[1]['orderid'] == 2
   assert result_buy[1]['seller'] == user.name
   assert result_buy[1]['for_sale'] == AMOUNT_TO_SELL_2.amount
-  assert result_buy[1]['real_price'] == '0.01000000000000000'
   assert result_buy[1]['sell_price']['base'] == AMOUNT_TO_SELL_2
   assert result_buy[1]['sell_price']['quote'] == MIN_TO_RECEIVE_2
-  assert not result_buy[1]['rewarded']
 
 def test_create_recurent_transfer(wallet : Wallet, funded_account : funded_account_info, creator : Account):
   receiver = funded_account.account
@@ -94,7 +89,7 @@ def test_create_recurent_transfer(wallet : Wallet, funded_account : funded_accou
   assert recurrent_transfers_before_count + 1 == recurrent_transfers_after_count
   assert recurrent_transfer['from'] == creator.name
   assert recurrent_transfer['to'] == receiver.name
-  assert recurrent_transfer['amount']['amount'] == str(AMOUNT.amount)
+  assert recurrent_transfer['amount'] == AMOUNT
   assert recurrent_transfer['memo'] == MEMO
   assert recurrent_transfer['recurrence'] == RECURRENCE
   assert recurrent_transfer['consecutive_failures'] == 0
