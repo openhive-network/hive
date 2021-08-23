@@ -17,7 +17,7 @@ if( HIVE_STATIC_BUILD )
       hive_chain
       hive_protocol
       sql_hive_utilities
-      ${CMAKE_DL_LIBS}hive_apphive_app
+      ${CMAKE_DL_LIBS}
       ${PLATFORM_SPECIFIC_LIBS}
       ${BROTLI_LIBRARIES}
    )
