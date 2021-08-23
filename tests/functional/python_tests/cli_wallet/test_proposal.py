@@ -57,7 +57,7 @@ def test_create_proposal_fail_negative_payment(wallet : Wallet, funded_account :
 
   assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
-def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
+def test_update_proposal_xxx(wallet : Wallet, funded_account : funded_account_info):
   from datetime import datetime as date_type
   def check_is_proposal_update_exists(block_number : int, end_date : date_type) -> bool:
     from time import sleep
@@ -80,7 +80,7 @@ def test_update_proposal(wallet : Wallet, funded_account : funded_account_info):
 
     op = response['result'][0]['op']
     extensions = op[1]['extensions'][0]
-    return extensions[0] == 1 and extensions[1]['end_date'] == end_date
+    return extensions[0] == 'update_proposal_end_date' and extensions[1]['end_date'] == end_date
 
   author = funded_account.account
   current_daily_pay = Asset.Tbd(10)
