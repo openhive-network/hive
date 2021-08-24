@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>

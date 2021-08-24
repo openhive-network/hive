@@ -15,7 +15,11 @@ LIST(APPEND BOOST_COMPONENTS thread
                              unit_test_framework
                              locale)
 
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+if( BUILD_SHARED_LIBS )
+  SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" )
+else()
+  SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+endif()
 
 IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
