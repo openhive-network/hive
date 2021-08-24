@@ -270,9 +270,6 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 #undef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
 #undef HIVE_BC_HF_ALL_CASE_MACRO
 
-#undef HIVE_HARDFORK_1_25_TIME
-#define HIVE_HARDFORK_1_25_TIME next_hf_time()
-
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
    this->mainnet_head_block_id = _signed_block.previous;
