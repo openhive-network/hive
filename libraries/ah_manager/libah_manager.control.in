@@ -1,0 +1,5 @@
+# ah_manager psql extension
+comment = 'An extension to support filling of account history tables'
+default_version = @HIVE_GIT_REVISION_SHA@
+relocatable = false
+schema = hive
