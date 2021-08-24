@@ -216,11 +216,11 @@ void webserver_plugin_impl::start_webserver()
         }
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
 
-        hive::notify( "webserver_configuration",
+        hive::notify( "webserver listening",
       // {
           "type", "WS",
-          "listening_address", ws_endpoint->address().to_string(),
-          "listening_port", ws_endpoint->port()
+          "address", ws_endpoint->address().to_string(),
+          "port", ws_endpoint->port()
       // }
       );
 
@@ -255,11 +255,11 @@ void webserver_plugin_impl::start_webserver()
         update_http_endpoint();
         ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
 
-        hive::notify( "webserver_configuration",
+        hive::notify( "webserver listening",
         // {
             "type", "HTTP",
-            "listening_address", http_endpoint->address().to_string(),
-            "listening_port", http_endpoint->port()
+            "address", http_endpoint->address().to_string(),
+            "port", http_endpoint->port()
         // }
         );
 
