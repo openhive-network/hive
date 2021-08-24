@@ -143,7 +143,7 @@ namespace appbase {
 
       void generate_interrupt_request()
       {
-        hive::notify_hived_status("exitting");
+        hive::notify_hived_status("interrupted");
         _is_interrupt_request = true;
       }
 

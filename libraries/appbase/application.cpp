@@ -1,4 +1,3 @@
-#include <hive/utilities/notifications.hpp>
 #include <appbase/application.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -234,7 +233,6 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
   {
     set_program_options();
     bpo::store( bpo::parse_command_line( argc, argv, my->_app_options ), my->_args );
-    hive::utilities::notifications::process_program_options(my->_args);
 
     if( my->_args.count( "help" ) ) {
       cout << my->_app_options << "\n";
