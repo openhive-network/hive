@@ -28,7 +28,7 @@ namespace hive
 
       bool check_is_flag_set(const boost::program_options::variables_map &args);
       void add_program_options(boost::program_options::options_description &options);
-      void process_program_options(const boost::program_options::variables_map &args);
+      void setup_notifications(const boost::program_options::variables_map &args);
 
       namespace detail
       {

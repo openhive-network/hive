@@ -21,25 +21,25 @@ bool check_is_flag_set(const boost::program_options::variables_map &args)
 
 void add_program_options(boost::program_options::options_description& options)
 {
-options.add_options()(
-  get_flag(),
-  boost::program_options::value< std::vector<fc::string> >()->multitoken(),
-  "list of addresses, that will receive notification about in-chain events"
-);
+  options.add_options()(
+    get_flag(),
+    boost::program_options::value< std::vector<fc::string> >()->multitoken(),
+    "list of addresses, that will receive notification about in-chain events"
+  );
 }
 
-void process_program_options(const boost::program_options::variables_map &args)
+void setup_notifications(const boost::program_options::variables_map &args)
 {
-if( !check_is_flag_set(args) ) return;
-const auto& address_pool = args[ get_flag() ].as<std::vector<fc::string>>();
+  if( !check_is_flag_set(args) ) return;
+  const auto& address_pool = args[ get_flag() ].as<std::vector<fc::string>>();
 
-std::vector<fc::ip::endpoint> epool;
-epool.reserve(address_pool.size());
+  std::vector<fc::ip::endpoint> epool;
+  epool.reserve(address_pool.size());
 
-for(const fc::string& x : address_pool)
-  epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
+  for(const fc::string& x : address_pool)
+    epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
 
-hive::utilities::notifications::get_notification_handler_instance().setup(epool);
+  hive::utilities::notifications::get_notification_handler_instance().setup(epool);
 }
 
 namespace detail
