@@ -183,7 +183,9 @@ hived_tests:
   stage: test
   extends: .test_tools_based
   variables:
-    HIVED_MAINNET_ADDRESS: "http://192.168.6.136:8091"
+    # HIVED_MAINNET_PROTOCOL: "http"
+    HIVED_MAINNET_ADDRESS: "192.168.6.136"
+    HIVED_MAINNET_PORT: "8091"
   needs:
     - job: testnet_node_build
       artifacts: true

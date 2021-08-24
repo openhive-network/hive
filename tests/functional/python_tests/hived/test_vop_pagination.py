@@ -1,5 +1,6 @@
-from test_tools import World, logger
+from netifaces import interfaces, ifaddresses, AF_INET
 from test_tools.private.remote_node import RemoteNode
+from test_tools import World, logger
 from pytest import fixture
 from os import getenv
 
@@ -9,18 +10,32 @@ BLOCK_MAX = 3000000
 BLOCK_MIN = BLOCK_MAX - ( BLOCKS_PER_STEP * STEPS )
 
 
-@fixture
+@fixture(scope='session')
 def main_net(world : World) -> RemoteNode:
-  REMOTE_NODE_URL = getenv('HIVED_MAINNET_ADDRESS')
-  if REMOTE_NODE_URL is None: 
-    REMOTE_NODE_URL = 'http://192.168.6.136:8091'
-  assert REMOTE_NODE_URL is not None
-  return world.create_remote_node(REMOTE_NODE_URL)
+  # If someone needs https
+  HIVED_MAINNET_PROTOCOL = getenv('HIVED_MAINNET_PROTOCOL')
+  if HIVED_MAINNET_PROTOCOL is None:
+    HIVED_MAINNET_PROTOCOL = 'http'
+
+  HIVED_MAINNET_ADDRESS = getenv('HIVED_MAINNET_ADDRESS')
+  HIVED_MAINNET_PORT = getenv('HIVED_MAINNET_PORT')
+  assert HIVED_MAINNET_ADDRESS is not None
+  assert HIVED_MAINNET_PORT is not None
+
+  # https://www.delftstack.com/howto/python/get-ip-address-python/#use-the-netifaces-module-to-get-the-local-ip-address-in-python
+  for iface_name in interfaces():
+    if HIVED_MAINNET_ADDRESS in [i['addr'] for i in ifaddresses(iface_name).setdefault(AF_INET, [{'addr':'No IP addr'}] )]:
+      logger.debug('detected localhost!')
+      HIVED_MAINNET_ADDRESS = '127.0.0.1'
+      break
+
+  FULL_ADDRESS = f'{HIVED_MAINNET_PROTOCOL}://{HIVED_MAINNET_ADDRESS}:{HIVED_MAINNET_PORT}'
+  logger.debug(f'connecting to mainnet node: {FULL_ADDRESS}')
+  return world.create_remote_node(FULL_ADDRESS)
 
 @fixture
 def block_range():
   return range(BLOCK_MIN, BLOCK_MAX, BLOCKS_PER_STEP)
-
 
 # class that compressing vop
 class compressed_vop:
