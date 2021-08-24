@@ -658,6 +658,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 }
 
 void chain_plugin::plugin_initialize(const variables_map& options) {
+  hive::utilities::notifications::process_program_options(options);
   my->shared_memory_dir = app().data_dir() / "blockchain";
 
   if( options.count("shared-file-dir") )
