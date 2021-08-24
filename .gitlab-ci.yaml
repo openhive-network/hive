@@ -191,6 +191,7 @@ hived_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
+    - pip3 install netifaces
     - cd tests/functional/python_tests/hived
     - pytest --junitxml="./report.xml"
   tags:
