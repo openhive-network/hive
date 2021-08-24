@@ -44,7 +44,12 @@ namespace hive { namespace chain {
       bool is_root() const { return parent_comment == comment_id_type::null_id(); }
 
       //returns comment depth (distance to root)
-      uint16_t get_depth() const { return depth; }
+      inline uint16_t get_depth() const {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+        return depth;
+        #pragma GCC diagnostic pop
+        }
 
     private:
       comment_id_type parent_comment;
