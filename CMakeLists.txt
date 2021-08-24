@@ -43,7 +43,21 @@ LIST(APPEND BOOST_COMPONENTS thread
                              context
                              locale
                              coroutine)
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+if( BUILD_SHARED_LIBS )
+  SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" )
+else()
+  SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+endif()
+
+OPTION( BUILD_SHARED_LIBS "Build source for shared library (ON OR OFF)" OFF )
+MESSAGE( STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}" )
+if( BUILD_SHARED_LIBS  )
+  MESSAGE( STATUS "     " )
+  MESSAGE( STATUS "             CONFIGURING FOR SHARED LIBRARY             " )
+  MESSAGE( STATUS "     " )
+  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_SHARED_LIBS" )
+  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DBUILD_SHARED_LIBS" )
+endif()
 
 OPTION( BUILD_HIVE_TESTNET "Build source for test network (ON OR OFF)" OFF )
 MESSAGE( STATUS "BUILD_HIVE_TESTNET: ${BUILD_HIVE_TESTNET}" )

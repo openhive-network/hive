@@ -1,5 +1,5 @@
 
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
@@ -16,8 +16,6 @@
 
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
-
-#include <hive/plugins/condenser_api/condenser_api.hpp>
 
 #include <appbase/application.hpp>
 
@@ -83,7 +81,7 @@ using hive::protocol::signed_transaction;
 using hive::chain::operation_notification;
 using hive::chain::transaction_id_type;
 
-using hive::plugins::condenser_api::legacy_asset;
+using hive::protocol::legacy_asset;
 using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;

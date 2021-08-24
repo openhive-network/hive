@@ -1,5 +1,5 @@
 
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <hive/plugins/transaction_status/transaction_status_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>

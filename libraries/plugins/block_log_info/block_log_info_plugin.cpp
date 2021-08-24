@@ -1,5 +1,5 @@
 
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <hive/plugins/block_log_info/block_log_info_plugin.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
