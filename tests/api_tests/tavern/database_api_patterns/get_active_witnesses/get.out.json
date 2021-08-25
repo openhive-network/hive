@@ -1,25 +1,29 @@
 {
-  "witnesses": [
-    "rabbit-70",
-    "kushed",
-    "delegate.lafona",
-    "wackou",
-    "complexring",
-    "jesta",
-    "xeldal",
-    "riverhead",
-    "clayop",
-    "steemed",
-    "smooth.witness",
-    "ihashfury",
-    "joseph",
-    "datasecuritynode",
-    "boatymcboatface",
-    "steemychicken1",
-    "roadscape",
-    "pharesim",
-    "abit",
-    "blocktrades",
-    "arhag"
-  ]
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "witnesses": [
+      "blocktrades",
+      "themarkymark",
+      "abit",
+      "steempeak",
+      "roelandp",
+      "someguy123",
+      "satren",
+      "anyx",
+      "arcange",
+      "gtg",
+      "therealwolf",
+      "ausbitbank",
+      "pharesim",
+      "ocd-witness",
+      "yabapmatt",
+      "good-karma",
+      "cervantes",
+      "followbtcnews",
+      "steempress",
+      "emrebeyler",
+      "stoodkev"
+    ]
+  }
 }

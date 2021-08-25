@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api get_key_references tulpa_owner
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api get_key_references tulpa_owner
+    - name: test
       request:
         url: "{service.url:s}"
         method: POST
@@ -23,6 +23,3 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "tulpa_owner"
-            directory: "account_by_key_api_patterns/get_key_references"
