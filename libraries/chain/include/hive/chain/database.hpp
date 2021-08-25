@@ -767,6 +767,11 @@ namespace chain {
         return _hardfork_versions;
       }
 
+      fc::time_point_sec get_current_blockchain_time() const
+      {
+        return get_dynamic_global_properties().time + fc::seconds( time_offset.sec_since_epoch() );
+      }
+
     private:
 
       std::unique_ptr< database_impl > _my;

@@ -345,13 +345,13 @@ namespace detail {
         
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+        ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+        ilog("Not producing block because it isn't my turn");
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+        ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
@@ -378,8 +378,8 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
-    fc::time_point now_fine = fc::time_point::now();
-    fc::time_point_sec now = now_fine + fc::microseconds( 500000 );
+    fc::time_point now_fine = _db.get_current_blockchain_time();
+    fc::time_point_sec now = now_fine + fc::microseconds( 500'000 );
 
     // If the next block production opportunity is in the present or future, we're synced.
     if( !_production_enabled )
@@ -446,6 +446,7 @@ namespace detail {
       private_key_itr->second,
       _production_skip_flags
       );
+    ilog( "block_num: ${block_num}, slot: ${slot}", ("block_num", block.block_num())("slot", slot));
     capture("n", block.block_num())("t", block.timestamp)("c", now);
 
     appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );

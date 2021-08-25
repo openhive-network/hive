@@ -60,6 +60,7 @@ namespace hive { namespace chain {
       uint32_t          head_block_number = 0;
       block_id_type     head_block_id;
       time_point_sec    time = HIVE_GENESIS_TIME;
+      time_point_sec    time_offset{};  //< TODO: make it ONLY in testnet. too dangerous
       account_name_type current_witness; //< TODO: replace with account_id_type
 
       /**
@@ -200,6 +201,7 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (head_block_number)
           (head_block_id)
           (time)
+          (time_offset)
           (current_witness)
           (total_pow)
           (num_pow_witnesses)

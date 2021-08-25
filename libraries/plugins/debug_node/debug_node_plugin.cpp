@@ -220,6 +220,7 @@ void debug_node_plugin::debug_generate_blocks(
   chain::database& db = database();
   witness::block_producer bp( db );
   uint32_t slot = args.miss_blocks+1, produced = 0;
+  const auto& dgpo = db.get_dynamic_global_properties();
   while( produced < args.count )
   {
     uint32_t new_slot = args.miss_blocks+1;
@@ -250,6 +251,7 @@ void debug_node_plugin::debug_generate_blocks(
     }
 
     bp.generate_block( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    db.modify( dgpo, []( hive::chain::dynamic_global_property_object& dgpo ) { dgpo.time_offset += HIVE_BLOCK_INTERVAL; } );
     ++produced;
     slot = new_slot;
   }
