@@ -181,6 +181,8 @@ using chain::reindex_notification;
           uint32_t last_skipped_block = 0;
           uint32_t psql_block_number = 0;
           uint32_t psql_index_threshold = 0;
+          uint32_t psql_transactions_threads_number = 2;
+          uint32_t psql_operations_threads_number = 5;
           uint32_t head_block_number = 0;
 
           int64_t block_vops = 0;
@@ -506,7 +508,7 @@ void sql_serializer_plugin_impl::on_pre_reindex(const reindex_notification& note
   if(_on_pre_apply_block_con.connected())
     chain::util::disconnect_signal(_on_pre_apply_block_con);
 
-  _dumper = std::make_unique< reindex_data_dumper >( db_url );
+  _dumper = std::make_unique< reindex_data_dumper >( db_url, psql_operations_threads_number, psql_transactions_threads_number );
 
   ilog("Leaving a reindex init...");
 }
@@ -555,7 +557,9 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
       void sql_serializer_plugin::set_program_options(appbase::options_description &cli, appbase::options_description &cfg)
       {
         cfg.add_options()("psql-url", boost::program_options::value<string>(), "postgres connection string")
-                         ("psql-index-threshold", appbase::bpo::value<uint32_t>()->default_value( 1'000'000 ), "indexes/constraints will be recreated if `psql_block_number + psql_index_threshold >= head_block_number`");
+                         ("psql-index-threshold", appbase::bpo::value<uint32_t>()->default_value( 1'000'000 ), "indexes/constraints will be recreated if `psql_block_number + psql_index_threshold >= head_block_number`")
+                         ("psql-operations-threads-number", appbase::bpo::value<uint32_t>()->default_value( 5 ), "number of threads which dump operations to database during reindexing")
+                         ("psql-transactions-threads-number", appbase::bpo::value<uint32_t>()->default_value( 2 ), "number of threads which dump transactions to database during reindexing");
       }
 
       void sql_serializer_plugin::plugin_initialize(const boost::program_options::variables_map &options)
@@ -569,6 +573,8 @@ bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
 
         // settings
         my->psql_index_threshold = options["psql-index-threshold"].as<uint32_t>();
+        my->psql_operations_threads_number = options["psql-operations-threads-number"].as<uint32_t>();
+        my->psql_transactions_threads_number = options["psql-transactions-threads-number"].as<uint32_t>();
 
         my->currently_caching_data = std::make_unique<cached_data_t>( default_reservation_size );
 
