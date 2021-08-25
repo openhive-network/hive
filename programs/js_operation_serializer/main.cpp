@@ -21,7 +21,7 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   * THE SOFTWARE.
   */
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 #include <hive/protocol/protocol.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <fc/smart_ref_impl.hpp>

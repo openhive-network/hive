@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <fc/fixed_string.hpp>
 

@@ -1,4 +1,4 @@
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 #include <hive/chain/util/smt_token.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #ifdef HIVE_ENABLE_SMT

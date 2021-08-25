@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #define HIVE_ACCOUNT_HISTORY_PLUGIN_NAME "account_history"

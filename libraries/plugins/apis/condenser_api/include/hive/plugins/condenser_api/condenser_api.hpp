@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/block_api/block_api.hpp>

@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 #include <fc/time.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
