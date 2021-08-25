@@ -24,114 +24,14 @@ extern "C"
 #include <utils/builtins.h>
 #include <utils/array.h>
 #include <utils/lsyscache.h>
+#include <funcapi.h>
 
 #pragma pop_macro("elog")
 
 PG_MODULE_MAGIC;
 
-// PG_FUNCTION_INFO_V1(my_test);
-// PG_FUNCTION_INFO_V1(my_test2);
-// PG_FUNCTION_INFO_V1(my_test3);
-// PG_FUNCTION_INFO_V1(my_test4);
-// PG_FUNCTION_INFO_V1(my_test5);
+PG_FUNCTION_INFO_V1(get_impacted_accounts_array);
 PG_FUNCTION_INFO_V1(get_impacted_accounts);
-
-// Datum my_test(PG_FUNCTION_ARGS)
-// {
-//     int32 arg = PG_GETARG_INT32(0);
-
-//     PG_RETURN_INT32(arg + 13);
-// }
-
-// Datum my_test2(PG_FUNCTION_ARGS)
-// {
-//     text* arg = PG_GETARG_TEXT_PP(0);
-
-//     PG_RETURN_TEXT_P(arg);
-// }
-
-// Datum my_test3(PG_FUNCTION_ARGS)
-// {
-//     ArrayType  *result;
-//     Oid         element_type = get_fn_expr_argtype(fcinfo->flinfo, 0);
-//     Datum       element;
-//     bool        isnull;
-//     int16       typlen;
-//     bool        typbyval;
-//     char        typalign;
-//     int         ndims;
-//     int         dims[MAXDIM];
-//     int         lbs[MAXDIM];
-
-//     if (!OidIsValid(element_type))
-//         elog(ERROR, "could not determine data type of input");
-
-//     /* get the provided element, being careful in case it's NULL */
-//     isnull = PG_ARGISNULL(0);
-//     if (isnull)
-//         element = (Datum) 0;
-//     else
-//         element = PG_GETARG_DATUM(0);
-
-//     /* we have one dimension */
-//     ndims = 1;
-//     /* and one element */
-//     dims[0] = 1;
-//     /* and lower bound is 1 */
-//     lbs[0] = 1;
-
-//     /* get required info about the element type */
-//     get_typlenbyvalalign(element_type, &typlen, &typbyval, &typalign);
-
-//     /* now build the array */
-//     result = construct_md_array(&element, &isnull, ndims, dims, lbs,
-//                                 element_type, typlen, typbyval, typalign);
-
-//     PG_RETURN_ARRAYTYPE_P(result);
-// }
-
-// Datum my_test4(PG_FUNCTION_ARGS)
-// {
-//     Datum       elements[4];
-//     ArrayType   *array;
-
-//     int16 typlen;
-//     bool typbyval;
-//     char typalign;
-
-//     int i;
-
-//     for (i = 0; i < 4; i++)
-//         elements[i] = i + 10;
-
-//     get_typlenbyvalalign(INT8OID, &typlen, &typbyval, &typalign);
-//     array = construct_array(elements, 4, INT8OID, typlen, typbyval, typalign);
-
-//     PG_RETURN_POINTER(array);
-// }
-
-// Datum my_test5(PG_FUNCTION_ARGS)
-// {
-//     Datum*     elements;
-//     ArrayType* array;
-
-//     int16 typlen;
-//     bool typbyval;
-//     char typalign;
-
-//     int i;
-//     int nr_elements = 12;
-
-//     elements = (Datum*) palloc( sizeof(Datum) * nr_elements );
-
-//     for (i = 0; i < nr_elements; i++)
-//         elements[i] = i + 200;
-
-//     get_typlenbyvalalign(INT8OID, &typlen, &typbyval, &typalign);
-//     array = construct_array(elements, nr_elements, INT8OID, typlen, typbyval, typalign);
-
-//     PG_RETURN_POINTER(array);
-// }
 
 flat_set<account_name_type> get_accounts( const std::string& operation_body )
 {
@@ -144,7 +44,7 @@ flat_set<account_name_type> get_accounts( const std::string& operation_body )
   return _impacted;
 }
 
-Datum get_impacted_accounts(PG_FUNCTION_ARGS)
+Datum get_impacted_accounts_array(PG_FUNCTION_ARGS)
 {
   int16 typlen  = 0;
   bool typbyval = 0;
@@ -187,6 +87,100 @@ Datum get_impacted_accounts(PG_FUNCTION_ARGS)
   catch(...)
   {
     PG_RETURN_POINTER( _construct_array() );
+  }
+}
+
+Datum get_impacted_accounts(PG_FUNCTION_ARGS)
+{
+  FuncCallContext*  funcctx   = nullptr;
+
+  try
+  {
+    int call_cntr = 0;
+    int max_calls = 0;
+
+    static Datum _empty = CStringGetTextDatum("");
+    Datum current_account = _empty;
+
+    bool _first_call = SRF_IS_FIRSTCALL();
+    /* stuff done only on the first call of the function */
+    if( _first_call )
+    {
+        MemoryContext   oldcontext;
+
+        /* create a function context for cross-call persistence */
+        funcctx = SRF_FIRSTCALL_INIT();
+
+        /* switch to memory context appropriate for multiple function calls */
+        oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+
+        /* total number of tuples to be returned */
+        VarChar* _arg0 = (VarChar*)PG_GETARG_VARCHAR_P(0);
+        char* _op_body = (char*)VARDATA(_arg0);
+
+        flat_set<account_name_type> _accounts = get_accounts( _op_body );
+
+        funcctx->max_calls = _accounts.size();
+        funcctx->user_fctx = nullptr;
+
+        if( !_accounts.empty() )
+        {
+          auto itr = _accounts.begin();
+          string _str = *(itr);
+          current_account = CStringGetTextDatum( _str.c_str() );
+
+          if( _accounts.size() > 1 )
+          {
+            Datum** _buffer = ( Datum** )palloc( sizeof( Datum* ) );
+            for( size_t i = 1; i < _accounts.size(); ++i )
+            {
+              ++itr;
+              _str = *(itr);
+
+              _buffer[i - 1] = ( Datum* )palloc( sizeof( Datum ) );;
+              *( _buffer[i - 1] ) = CStringGetTextDatum( _str.c_str() );
+            }
+            funcctx->user_fctx = _buffer;
+          }
+        }
+
+        MemoryContextSwitchTo(oldcontext);
+    }
+
+    /* stuff done on every call of the function */
+    funcctx = SRF_PERCALL_SETUP();
+
+    call_cntr = funcctx->call_cntr;
+    max_calls = funcctx->max_calls;
+
+    if( call_cntr < max_calls )    /* do when there is more left to send */
+    {
+      if( !_first_call )
+      {
+        Datum** _buffer = ( Datum** )funcctx->user_fctx;
+        current_account = *( _buffer[ call_cntr - 1 ] );
+      }
+
+      SRF_RETURN_NEXT(funcctx, current_account );
+    }
+    else    /* do when there is no more left */
+    {
+      if( funcctx->user_fctx )
+      {
+        Datum** _buffer = ( Datum** )funcctx->user_fctx;
+
+        for( auto i = 0; i < max_calls - 1; ++i )
+          pfree( _buffer[i] );
+
+        pfree( _buffer );
+      }
+
+      SRF_RETURN_DONE(funcctx);
+    }
+  }
+  catch(...)
+  {
+    SRF_RETURN_DONE(funcctx);
   }
 }
 
