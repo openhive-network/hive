@@ -146,12 +146,20 @@ flat_set<account_name_type> get_accounts( const std::string& operation_body )
 
 Datum get_impacted_accounts(PG_FUNCTION_ARGS)
 {
-    Datum*     result = nullptr;
-    ArrayType* array  = nullptr;
+  int16 typlen  = 0;
+  bool typbyval = 0;
+  char typalign = 0;
 
-    int16 typlen  = 0;
-    bool typbyval = 0;
-    char typalign = 0;
+  get_typlenbyvalalign(TEXTOID, &typlen, &typbyval, &typalign);
+
+  auto _construct_array = [&typlen, &typbyval, &typalign]( Datum* result = nullptr, int32_t size = 0 )
+  {
+    return construct_array(result, size, TEXTOID, typlen, typbyval, typalign);
+  };
+
+  try
+  {
+    Datum*     result = nullptr;
 
     VarChar* _arg0 = (VarChar*)PG_GETARG_VARCHAR_P(0);
     char* _op_body = (char*)VARDATA(_arg0);
@@ -160,7 +168,7 @@ Datum get_impacted_accounts(PG_FUNCTION_ARGS)
 
     if( _accounts.empty() )
     {
-      PG_RETURN_POINTER(array);
+      PG_RETURN_POINTER( _construct_array() );
     }
 
     auto _size = _accounts.size();
@@ -174,10 +182,12 @@ Datum get_impacted_accounts(PG_FUNCTION_ARGS)
       result[ cnt++ ] = CStringGetTextDatum( _str.c_str() );
     }
 
-    get_typlenbyvalalign(TEXTOID, &typlen, &typbyval, &typalign);
-    array = construct_array(result, _size, TEXTOID, typlen, typbyval, typalign);
-
-    PG_RETURN_POINTER(array);
+    PG_RETURN_POINTER( _construct_array(result, _size) );
+  }
+  catch(...)
+  {
+    PG_RETURN_POINTER( _construct_array() );
+  }
 }
 
 }
