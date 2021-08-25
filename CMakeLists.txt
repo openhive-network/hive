@@ -43,7 +43,7 @@ LIST(APPEND BOOST_COMPONENTS thread
                              context
                              locale
                              coroutine)
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" )
 
 OPTION( BUILD_SHARED_LIBS "BUILD_SHARED_LIBS (ON OR OFF)" OFF )
 MESSAGE( STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}" )
