@@ -5,7 +5,7 @@ add_library( statsd_plugin
              utility.cpp
              ${HEADERS} )
 
-target_link_libraries( statsd_plugin chain_plugin )
+target_link_libraries( statsd_plugin chainbase appbase )
 target_include_directories( statsd_plugin PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if( CLANG_TIDY_EXE )
