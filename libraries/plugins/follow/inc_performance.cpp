@@ -1,4 +1,4 @@
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <hive/plugins/follow/inc_performance.hpp>
 
