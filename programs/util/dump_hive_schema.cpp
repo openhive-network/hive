@@ -1,5 +1,5 @@
 #include <hive/protocol/types_fwd.hpp>
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/hive_fwd.hpp>
 
 #include <hive/schema/schema.hpp>
 #include <hive/schema/schema_impl.hpp>
