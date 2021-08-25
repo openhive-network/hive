@@ -21,6 +21,8 @@ namespace hive::plugins::sql_serializer {
     class container_data_writer
       {
       public:
+        using DataContainerType = DataContainer;
+
         container_data_writer(
             std::string psqlUrl
           , std::string description
