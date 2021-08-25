@@ -35,7 +35,7 @@ SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread date_time system filesystem program_options serialization chrono unit_test_framework context locale iostreams)
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" )
 
 IF( ECC_IMPL STREQUAL openssl )
   SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
@@ -94,8 +94,8 @@ else ( MSVC )
 
     ExternalProject_Get_Property(project_secp256k1 binary_dir)
 
-    add_library(secp256k1 STATIC IMPORTED)
-    set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
+    add_library(secp256k1 SHARED IMPORTED)
+    set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_SHARED_LIBRARY_SUFFIX})
     set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
     add_dependencies(secp256k1 project_secp256k1)
 endif ( MSVC )
@@ -256,7 +256,7 @@ list(APPEND sources ${fc_headers})
 add_subdirectory( vendor/websocketpp )
 add_subdirectory( vendor/equihash )
 
-setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
+setup_library( fc SOURCES ${sources} LIBRARY_TYPE SHARED DONT_INSTALL_LIBRARY )
 
 # begin readline stuff
 find_package(Curses)
