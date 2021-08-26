@@ -10,7 +10,7 @@
   stages:
     - name: find_decline_voting_rights_requests
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

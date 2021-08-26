@@ -3,6 +3,7 @@
 
   marks:
     - patterntest
+    # "Unknown error - parsing rpc message failed"
 
   includes:
     - !include ../../common.yaml
@@ -10,7 +11,7 @@
   stages:
     - name: rc_api.get_resource_params
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

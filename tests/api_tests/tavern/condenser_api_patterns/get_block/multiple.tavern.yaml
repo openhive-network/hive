@@ -49,7 +49,7 @@
   stages:
     - name: get_block multiple tests
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json
@@ -63,6 +63,6 @@
         verify_response_with:
           function: validate_response:has_valid_response
           extra_kwargs:
-            method: "4788663"
+            method: "multiple"
             directory: "condenser_api_patterns/get_block"
 

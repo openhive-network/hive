@@ -10,7 +10,7 @@
   stages:
     - name: reputation_api.get_account_reputations
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

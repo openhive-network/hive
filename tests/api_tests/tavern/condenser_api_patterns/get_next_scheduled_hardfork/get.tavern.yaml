@@ -10,7 +10,7 @@
   stages:
     - name: get_next_scheduled_hardfork
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

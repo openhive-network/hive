@@ -10,7 +10,7 @@
   stages:
     - name: account_history_api limit_order create and cancel
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json
