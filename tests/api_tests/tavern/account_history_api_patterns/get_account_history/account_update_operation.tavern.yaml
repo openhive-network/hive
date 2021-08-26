@@ -10,7 +10,7 @@
   stages:
     - name: account_history_api get_account_history account_update_operation
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

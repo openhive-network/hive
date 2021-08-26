@@ -10,7 +10,7 @@
   stages:
     - name: account_history_api enum_virtual_ops first 100k blocks
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

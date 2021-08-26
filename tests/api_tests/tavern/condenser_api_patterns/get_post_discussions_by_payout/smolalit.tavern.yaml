@@ -3,6 +3,8 @@
 
   marks:
     - patterntest
+    - xfail
+    # "false: Supported by hivemind"
 
   includes:
     - !include ../../common.yaml
@@ -10,7 +12,7 @@
   stages:
     - name: get_post_discussions_by_payout
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

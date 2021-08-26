@@ -3,7 +3,8 @@
 
   marks:
     - patterntest
-    - xfail #follow_api_plugin not enabled.
+    - xfail # follow_api_plugin not enabled. 
+    # "false: Supported by hivemind"
 
   includes:
     - !include ../../common.yaml
@@ -11,7 +12,7 @@
   stages:
     - name: get_blog
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

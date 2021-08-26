@@ -11,7 +11,7 @@
   stages:
     - name: condenser_api.get_recovery_request
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

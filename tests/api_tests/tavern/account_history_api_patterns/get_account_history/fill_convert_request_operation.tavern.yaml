@@ -3,6 +3,9 @@
 
   marks:
     - patterntest # virtual
+    # "total_processed_items < 2000: Could not find filtered operation in ${total_processed_items} operations, to continue searching, set start=${sequence}."
+    # "Assert Exception:total_processed_items < 2000: Could not find filtered operation in 2000 operations, to continue searching, set start=2218."
+
 
   includes:
     - !include ../../common.yaml
@@ -10,7 +13,7 @@
   stages:
     - name: account_history_api fill_convert_request_operation
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

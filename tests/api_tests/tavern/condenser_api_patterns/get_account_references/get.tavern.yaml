@@ -11,7 +11,7 @@
   stages:
     - name: get_account_references
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

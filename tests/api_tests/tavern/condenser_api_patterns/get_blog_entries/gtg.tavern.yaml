@@ -4,6 +4,7 @@
   marks:
     - patterntest
     - xfail # some pat parameters disappear
+    # "_follow_api: follow_api_plugin not enabled."
 
   includes:
     - !include ../../common.yaml
@@ -11,7 +12,7 @@
   stages:
     - name: get_blog_entries
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

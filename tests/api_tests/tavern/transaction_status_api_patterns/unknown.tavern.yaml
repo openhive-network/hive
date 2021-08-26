@@ -10,7 +10,7 @@
   stages:
     - name: transaction_status_api.find_transaction unknown
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

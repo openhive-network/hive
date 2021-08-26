@@ -4,6 +4,7 @@
   marks:
     - patterntest
     - xfail # _tags_api: tags_api_plugin not enabled.
+    # "false: Supported by hivemind"
 
   includes:
     - !include ../../common.yaml
@@ -11,7 +12,7 @@
   stages:
     - name: get_discussions_by_cashout
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

@@ -4,13 +4,14 @@
   marks:
     - patterntest
     - xfail # tags_api_plugin not enabled.
+    
   includes:
     - !include ../../common.yaml
 
   stages:
     - name: condenser_api.get_tags_used_by_author
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

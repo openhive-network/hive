@@ -61,13 +61,14 @@ set -e
 
 pip3 install tox --user
 
-export HIVEMIND_URL=$1
+export HIVEMIND_ADDRESS=$1
+export HIVEMIND_PORT=$2
 if [ -z "$TAVERN_DIR" ]
 then
   export TAVERN_DIR="$(realpath ./tests/api_tests/tavern/)"
 fi
-echo "Attempting to start tests on hived instance listening on: $HIVEMIND_URL"
+echo "Attempting to start tests on hivemind instance listening on: $HIVEMIND_ADDRESS port: $HIVEMIND_PORT"
 
-echo "Additional test options: ${@:2}"
+echo "Additional test options: ${@:3}"
 
-tox -- -W ignore::pytest.PytestDeprecationWarning --workers auto --tests-per-worker auto -p no:logging ${@:2}
+tox -- -W ignore::pytest.PytestDeprecationWarning --workers auto --tests-per-worker auto -p no:logging ${@:3}

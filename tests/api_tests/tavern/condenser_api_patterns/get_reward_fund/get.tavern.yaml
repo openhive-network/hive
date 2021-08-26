@@ -3,6 +3,7 @@
 
   marks:
     - patterntest
+    # "fund != nullptr: Invalid reward fund name"
 
   includes:
     - !include ../../common.yaml
@@ -10,7 +11,7 @@
   stages:
     - name: condenser_api.get_reward_fund
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json

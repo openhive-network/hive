@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api get_key_references
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,9 +8,9 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api get_key_references
+    - name: test
       request:
-        url: "{service.url:s}"
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
           content-type: application/json
