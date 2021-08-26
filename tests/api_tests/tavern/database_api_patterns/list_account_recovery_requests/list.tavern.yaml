@@ -23,6 +23,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:has_valid_response
-          extra_kwargs:
-            method: "list"
-            directory: "database_api_patterns/list_account_recovery_requests"
+          

@@ -36,9 +36,7 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:compare_response_with_pattern
+          function: validate_response:compare_response_with_pattern          
           extra_kwargs:
-            method: "transaction_tapos_exception"
-            directory: "condenser_api_negative/broadcast_transaction"
             error_response: true
             ignore_tags: ['stack']

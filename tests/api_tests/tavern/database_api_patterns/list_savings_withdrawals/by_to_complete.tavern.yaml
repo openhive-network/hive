@@ -23,7 +23,5 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "by_to_complete"
-            directory: "database_api_patterns/list_savings_withdrawals"
+          
             ignore_tags: ['withdrawals']

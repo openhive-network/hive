@@ -23,6 +23,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:has_valid_response
-          extra_kwargs:
-            method: "proposal_all"
-            directory: "condenser_api_patterns/list_proposal_votes"
+          

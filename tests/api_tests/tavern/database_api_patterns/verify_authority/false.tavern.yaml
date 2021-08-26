@@ -32,6 +32,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "false"
-            directory: "database_api_patterns/verify_authority"
+          

@@ -23,7 +23,5 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "by_next_vesting_withdrawal"
-            directory: "database_api_patterns/list_accounts"
+          
             ignore_tags: ['accounts']

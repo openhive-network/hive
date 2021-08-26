@@ -35,9 +35,7 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:compare_response_with_pattern
+          function: validate_response:compare_response_with_pattern        
           extra_kwargs:
-            method: "missing_posting_authority"
-            directory: "condenser_api_negative/broadcast_transaction_synchronous"
             error_response: true
             ignore_tags: ['context']

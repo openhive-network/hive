@@ -23,7 +23,5 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "multiple"
-            directory: "rc_api_patterns/find_rc_accounts"
+          
             ignore_tags: ["max_rc","max_rc_creation_adjustment","rc_manabar"]

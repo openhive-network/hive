@@ -28,6 +28,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "multiple"
-            directory: "account_by_key_api_patterns/get_key_references"
+          
