@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api get_transaction
+  test_name: Hived
 
   marks:
     - patterntest # not found under 5 mil
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api get_transaction
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

@@ -1,5 +1,5 @@
 ---
-  test_name: Hived condenser_api.list_proposal_votes
+  test_name: Hived
 
   marks:
     - patterntest # why it list active instead of expired?
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: condenser_api.list_proposal_votes
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

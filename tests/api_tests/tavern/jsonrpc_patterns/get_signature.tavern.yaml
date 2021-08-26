@@ -1,5 +1,5 @@
 ---
-  test_name: Hived jsonrpc get_signature
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../common.yaml
 
   stages:
-    - name: jsonrpc get_signature
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

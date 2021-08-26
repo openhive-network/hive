@@ -1,5 +1,5 @@
 ---
-  test_name: Hived find_vesting_delegation_expirations
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: find_vesting_delegation_expirations
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

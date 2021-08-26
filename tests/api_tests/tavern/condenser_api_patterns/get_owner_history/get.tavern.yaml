@@ -1,5 +1,5 @@
 ---
-  test_name: Hived get_owner_history
+  test_name: Hived
 
   marks:
     - patterntest #todo find is there any owner history?
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: get_owner_history
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

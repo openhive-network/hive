@@ -1,5 +1,5 @@
 ---
-  test_name: Hived transaction_status_api.find_transaction within_irreversible_block
+  test_name: Hived
 
   marks:
     - patterntest # works on fullsync
@@ -9,7 +9,7 @@
     - !include ../common.yaml
 
   stages:
-    - name: transaction_status_api.find_transaction within_irreversible_block
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

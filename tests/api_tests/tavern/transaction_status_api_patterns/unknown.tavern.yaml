@@ -1,5 +1,5 @@
 ---
-  test_name: Hived transaction_status_api.find_transaction unknown
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../common.yaml
 
   stages:
-    - name: transaction_status_api.find_transaction unknown
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

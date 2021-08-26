@@ -1,5 +1,5 @@
 ---
-  test_name: Hived rc_api.get_resource_params
+  test_name: Hived
 
   marks:
     - patterntest
@@ -9,7 +9,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: rc_api.get_resource_params
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

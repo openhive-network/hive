@@ -1,5 +1,5 @@
 ---
-  test_name: Hived get_discussions_by_children
+  test_name: Hived
 
   marks:
     - patterntest
@@ -10,7 +10,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: get_discussions_by_children
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

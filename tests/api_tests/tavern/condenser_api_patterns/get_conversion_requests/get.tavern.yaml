@@ -1,5 +1,5 @@
 ---
-  test_name: Hived get_conversion_requests
+  test_name: Hived
 
   marks:
     - patterntest # as conversions requests change over time, it tests only if API is called
@@ -9,7 +9,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: get_conversion_requests
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

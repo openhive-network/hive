@@ -1,5 +1,5 @@
 ---
-  test_name: Hived find_withdraw_vesting_routes
+  test_name: Hived
 
   marks:
     - patterntest # no order info in APIDOC
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: find_withdraw_vesting_routes
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
