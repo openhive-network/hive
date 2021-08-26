@@ -3,21 +3,21 @@
 # this script will run tavern test versus hivemind instance at address and port
 # specified in command line args.
 
-# basic call is: ./run_tests.sh address port
-# example: ./run_tests.sh 127.0.0.1 8080
+# basic call is: ./scripts/run_tests.sh address port
+# example: ./scripts/run_tests.sh localhost 8091
 
 # additionaly one can pass parameters to underlying pytest framework
-# example: ./run_tests.sh 127.0.0.1 8080 -m failing
+# example: ./scripts/run_tests.sh localhost 8091 -m failing
 # above will run only tests marked as failing
 
 # you can also specify tests from given file:
-# example: ./run_tests.sh localhost 8080 test_database_api_patterns.tavern.yaml
+# example: ./scripts/run_tests.sh localhost 8091 databse_api_patterns/find_account_revovery_requests/empty.tavern.yaml
 
 # or combine all options
-# ./run_tests.sh localhost 8080 test_database_api_patterns.tavern.yaml -m failing
+# ./scripts/run_tests.sh localhost 8091 databse_api_patterns/find_account_revovery_requests/ -m failing
 
 function display_usage {
-  echo "Usage: $0 hivemind_address:hivemind_port [test options]"
+  echo "Usage: $0 hived_address:hived_port [test options]"
 }
 
 function check_port {
@@ -67,7 +67,7 @@ if [ -z "$TAVERN_DIR" ]
 then
   export TAVERN_DIR="$(realpath ./tests/api_tests/tavern/)"
 fi
-echo "Attempting to start tests on hivemind instance listening on: $HIVEMIND_ADDRESS port: $HIVEMIND_PORT"
+echo "Attempting to start tests on hived instance listening on: $HIVEMIND_ADDRESS port: $HIVEMIND_PORT"
 
 echo "Additional test options: ${@:3}"
 
