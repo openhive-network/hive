@@ -1,5 +1,5 @@
 ---
-  test_name: Hived get_account_votes
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: get_account_votes
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

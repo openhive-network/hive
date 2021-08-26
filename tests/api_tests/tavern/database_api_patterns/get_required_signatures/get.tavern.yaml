@@ -1,5 +1,5 @@
 ---
-  test_name: Hived get_required_signatures
+  test_name: Hived
 
   marks:
     - patterntest # todo find example with required keys
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: get_required_signatures
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

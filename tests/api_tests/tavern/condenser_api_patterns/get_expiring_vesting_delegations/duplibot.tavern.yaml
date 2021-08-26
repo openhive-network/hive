@@ -1,5 +1,5 @@
 ---
-  test_name: Hived get_expiring_vesting_delegations duplibot
+  test_name: Hived
 
   marks:
     - patterntest # test only if there is result - hard to test real data as expiring delegations change over time
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: get_expiring_vesting_delegations
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

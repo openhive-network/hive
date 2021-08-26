@@ -1,5 +1,5 @@
 ---
-  test_name: Hived find_owner_histories
+  test_name: Hived
 
   marks:
     - patterntest # todo add tests with nonempty owner_auths
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: find_owner_histories
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

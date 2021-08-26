@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api ineffective_delete_comment_operation
+  test_name: Hived
 
   marks:
     - patterntest # virtual
@@ -9,7 +9,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api ineffective_delete_comment_operation
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

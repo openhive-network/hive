@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api pow and custom operations
+  test_name: Hived
 
   marks:
     - patterntest # account with only 102 operations
@@ -9,7 +9,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api pow with custom ops
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

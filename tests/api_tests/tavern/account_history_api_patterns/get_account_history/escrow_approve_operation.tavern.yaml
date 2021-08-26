@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api escrow_approve_operation
+  test_name: Hived
 
   marks:
     - patterntest # no noempty result in 5mln blocks
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api escrow_approve_operation
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

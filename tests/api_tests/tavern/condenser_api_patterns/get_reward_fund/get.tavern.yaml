@@ -1,5 +1,5 @@
 ---
-  test_name: Hived condenser_api.get_reward_fund
+  test_name: Hived
 
   marks:
     - patterntest
@@ -9,7 +9,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: condenser_api.get_reward_fund
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

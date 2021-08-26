@@ -1,5 +1,5 @@
 ---
-  test_name: Hived condenser_api.verify_account_authority Missing Active Authority
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: condenser_api.verify_account_authority Missing Active Authority
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

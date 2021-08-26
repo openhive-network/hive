@@ -1,5 +1,5 @@
 ---
-  test_name: Hived condenser_api.get_witnesses_by_vote
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: condenser_api.get_witnesses_by_vote
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

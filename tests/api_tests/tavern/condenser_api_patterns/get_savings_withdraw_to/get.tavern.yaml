@@ -1,5 +1,5 @@
 ---
-  test_name: Hived condenser_api.get_savings_withdraw_to
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml #todo find account with savings withraw to
 
   stages:
-    - name: condenser_api.get_savings_withdraw_to
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST

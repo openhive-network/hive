@@ -1,5 +1,5 @@
 ---
-  test_name: Hived account_history_api get_account_history filter to vote_operation
+  test_name: Hived
 
   marks:
     - patterntest
@@ -8,7 +8,7 @@
     - !include ../../common.yaml
 
   stages:
-    - name: account_history_api get_account_history vote_operation
+    - name: test
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
