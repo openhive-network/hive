@@ -197,13 +197,29 @@ using chain::reindex_notification;
             current_stats.reset();
           }
 
-          void switch_db_items( bool mode, const std::string& function_name, const std::string& objects_name ) const
+          auto get_switch_indexes_function( const std::string& query, bool mode, const std::string& objects_name ) {
+              auto function = [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+              {
+                ilog("Attempting to execute query: `${query}`...", ("query", query ) );
+                const auto start_time = fc::time_point::now();
+                tx.exec( query );
+                ilog(
+                  "${mode} of ${mod_type} done in ${time} ms",
+                  ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 )
+                  );
+                return data_processing_status();
+              };
+
+              return function;
+          }
+
+          std::unique_ptr<queries_commit_data_processor> switch_db_items(bool mode, const std::string& sql_function_call, const std::string& objects_name ) const
           {
             ilog("${mode} ${objects_name}...", ("objects_name", objects_name )("mode", ( mode ? "Creating" : "Dropping" ) ) );
 
-            std::string query = std::string("SELECT ") + function_name + "();";
+            std::string query = std::string("SELECT ") + sql_function_call + ";";
             std::string description = "Query processor: `" + query + "'";
-            queries_commit_data_processor processor(db_url, description, [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+            auto processor=std::make_unique< queries_commit_data_processor >(db_url, description, [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
                           {
                             ilog("Attempting to execute query: `${query}`...", ("query", query ) );
                             const auto start_time = fc::time_point::now();
@@ -212,13 +228,12 @@ using chain::reindex_notification;
                               "${mode} of ${mod_type} done in ${time} ms",
                               ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 )
                             );
+                            ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
                             return data_processing_status();
                           } , nullptr);
 
-            processor.trigger(data_processor::data_chunk_ptr(), 0);
-            processor.join();
-
-            ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
+            processor->trigger(data_processor::data_chunk_ptr(), 0);
+            return processor;
           }
 
           void switch_db_items( bool create ) const
@@ -230,11 +245,33 @@ using chain::reindex_notification;
 
               if(create)
               {
-                switch_db_items(create, "hive.enable_indexes_of_irreversible", "enable indexes" );
+                auto restore_blocks_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.blocks' )", "enable indexes" );
+                auto restore_transactions_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.transactions' )", "enable indexes" );
+                auto restore_transactions_sigs_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.transactions_multisig' )", "enable indexes" );
+                auto restore_operations_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.operations' )", "enable indexes" );
+                restore_blocks_idxs->join();
+                restore_transactions_idxs->join();
+                restore_transactions_sigs_idxs->join();
+                restore_operations_idxs->join();
+
+                ilog( "All irreversible blocks tables indexes are re-created" );
+
+                auto restore_blocks_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.blocks' )", "enable indexes" );
+                auto restore_transactions_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.transactions' )", "enable indexes" );
+                auto restore_transactions_sigs_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.transactions_multisig' )", "enable indexes" );
+                auto restore_operations_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.operations' )", "enable indexes" );
+                restore_blocks_fks->join();
+                restore_transactions_fks->join();
+                restore_transactions_sigs_fks->join();
+                restore_operations_fks->join();
+
+                ilog( "All irreversible blocks tables foreighn keys are re-created" );
               }
               else
               {
-                switch_db_items(create, "hive.disable_indexes_of_irreversible", "disable indexes" );
+                auto processor = switch_db_items(create, "hive.disable_indexes_of_irreversible()", "disable indexes" );
+                processor->join();
+                ilog( "All irreversible blocks tables indexes and foreighn keys are dropped" );
               }
             }
             else
