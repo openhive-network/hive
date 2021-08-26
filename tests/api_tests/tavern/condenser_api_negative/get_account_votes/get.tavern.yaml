@@ -24,7 +24,5 @@
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
-            method: "get"
-            directory: "condenser_api_negative/get_account_votes"
             error_response: true
             ignore_tags: ['context']

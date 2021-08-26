@@ -23,6 +23,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "get_transaction"
-            directory: "account_history_api_patterns/get_transaction"
+          

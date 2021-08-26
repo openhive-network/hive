@@ -24,6 +24,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:has_valid_response
-          extra_kwargs:
-            method: "duplibot"
-            directory: "condenser_api_patterns/get_feed_entries"
+          

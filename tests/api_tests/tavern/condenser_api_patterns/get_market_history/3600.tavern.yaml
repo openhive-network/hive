@@ -23,6 +23,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:has_valid_response
-          extra_kwargs:
-            method: "3600"
-            directory: "condenser_api_patterns/get_market_history"
+          

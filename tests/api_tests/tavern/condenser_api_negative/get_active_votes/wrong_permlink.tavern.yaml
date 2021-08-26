@@ -22,9 +22,7 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:compare_response_with_pattern
+          function: validate_response:compare_response_with_pattern        
           extra_kwargs:
-            method: "wrong_permlink"
-            directory: "condenser_api_negative/get_active_votes"
             error_response: true
             ignore_tags: ["timestamp"]

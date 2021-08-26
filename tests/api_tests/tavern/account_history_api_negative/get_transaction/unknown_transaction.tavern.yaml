@@ -23,8 +23,7 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
+          
           extra_kwargs:
-            method: "unknown_transaction"
-            directory: "account_history_api_negative/get_transaction"
             error_response: true
             ignore_tags: ['context']

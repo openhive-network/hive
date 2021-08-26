@@ -24,6 +24,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "consolidate_treasury_balance_operation"
-            directory: "account_history_api_patterns/get_account_history"
+          

@@ -23,7 +23,5 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            method: "hive_test"
-            directory: "database_api_patterns/list_decline_voting_rights_requests"
+          
             ignore_tags: ['requests'] # as requests stays active for 30 days, only posibility to test is to use block limit
