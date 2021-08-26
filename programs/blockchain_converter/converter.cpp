@@ -112,6 +112,8 @@ namespace hive { namespace converter {
 
     converter.add_pow_key( op.worker_account, op.work.worker );
 
+    op.work.worker = converter.get_witness_key().get_public_key();
+
     return op;
   }
 
@@ -120,7 +122,10 @@ namespace hive { namespace converter {
     const auto& input = op.work.which() ? op.work.get< hp::equihash_pow >().input : op.work.get< hp::pow2 >().input;
 
     if( op.new_owner_key.valid() )
+    {
       converter.add_pow_key( input.worker_account, *op.new_owner_key );
+      *op.new_owner_key = converter.get_witness_key().get_public_key();
+    }
 
     auto& prev_block = op.work.which() ? op.work.get< hp::equihash_pow >().prev_block : op.work.get< hp::pow2 >().input.prev_block;
 
@@ -156,12 +161,16 @@ namespace hive { namespace converter {
   {
     op.props.maximum_block_size = HIVE_SOFT_MAX_BLOCK_SIZE;
 
+    op.block_signing_key = converter.get_witness_key().get_public_key();
+
     return op;
   }
 
   const hp::witness_set_properties_operation& convert_operations_visitor::operator()( hp::witness_set_properties_operation& op )const
   {
     op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
+
+    op.props[ "key" ] = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key() );
 
     return op;
   }
