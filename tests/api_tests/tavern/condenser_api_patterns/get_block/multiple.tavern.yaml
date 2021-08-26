@@ -1,5 +1,5 @@
 ---
-  test_name: Hivemind condenser_api.get_block multiple tests
+  test_name: Hived
 
   marks:
     - patterntest
