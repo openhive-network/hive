@@ -62,12 +62,6 @@ struct ah_query
     return boost::str( boost::format( src ) % arg % arg2 % arg3 );
   }
 
-  template<typename T1, typename T2, typename T3, typename T4>
-  string format( const string& src, const T1& arg, const T2& arg2, const T3& arg3, const T4& arg4 )
-  {
-    return boost::str( boost::format( src ) % arg % arg2 % arg3 % arg4 );
-  }
-
   string create_full_query( const string& q_parts0, const string& q_parts1, const string& q_parts2 )
   {
     return q_parts0 + q_parts1 + q_parts2;
@@ -184,28 +178,6 @@ class ah_loader
       return _val;
     }
 
-    void execute_query( const std::vector< string >& queries, const ah_query::part_query_type& q_parts )
-    {
-      if( is_interrupted() )
-        return;
-
-      if( queries.empty() )
-        return;
-
-      uint64_t cnt = 0;
-      string _total_query;
-
-      for( auto& query : queries )
-      {
-        _total_query += ( cnt ? "," : "" ) + query;
-        ++cnt;
-      }
-
-      _total_query = query.create_full_query( q_parts[0], _total_query, q_parts[2] );
-
-      exec( _total_query );
-    }
-
     ah_loader()
     : interrupted( false ), query( application_context )
     {
@@ -250,8 +222,6 @@ class ah_loader
         {
           string tables_query    = read_file( args.schema_path / "ah_schema_tables.sql" );
           string functions_query = read_file( args.schema_path / "ah_schema_functions.sql" );
-
-          tables_query = query.format( tables_query, application_context, application_context, application_context, application_context );
 
           if( is_interrupted() )
             return;
