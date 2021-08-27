@@ -3,6 +3,7 @@
 
   marks:
     - patterntest
+    - xfail
     # "fund != nullptr: Invalid reward fund name"
 
   includes:
@@ -23,5 +24,5 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:has_valid_response
+          function: validate_response:compare_response_with_pattern
           
