@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     BOOST_TEST_MESSAGE( "--- Testing: undo_key_collision" );
 
     const auto& fake_account_object = db->create< account_object >( "fake" );
-    fc::optional< std::reference_wrapper< const comment_object > > fake_parent_comment;
+    const comment_object* fake_parent_comment = nullptr;
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
   try
   {
     const auto& fake_account_object = db->create< account_object >( "fake" );
-    fc::optional< std::reference_wrapper< const comment_object > > fake_parent_comment;
+    const comment_object* fake_parent_comment = nullptr;
 
     BOOST_TEST_MESSAGE( "--- Testing: undo_different_indexes" );
 
