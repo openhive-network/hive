@@ -3,6 +3,7 @@
 
   marks:
     - patterntest
+    - xfail
     - parametrize:
         key: block_id
         vals:

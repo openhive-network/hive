@@ -3,7 +3,6 @@
 
   marks:
     - patterntest
-    - xfail # should return false?
     
   includes:
     - !include ../../common.yaml

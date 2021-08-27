@@ -1,344 +1,692 @@
 {
+  "current_max_history": {
+    "base": "0.720 HBD",
+    "quote": "1.000 HIVE"
+  },
   "current_median_history": {
-    "base": "0.134 HBD",
+    "base": "0.637 HBD",
+    "quote": "1.000 HIVE"
+  },
+  "current_min_history": {
+    "base": "0.553 HBD",
     "quote": "1.000 HIVE"
   },
   "id": 0,
+  "market_median_history": {
+    "base": "0.637 HBD",
+    "quote": "1.000 HIVE"
+  },
   "price_history": [
     {
-      "base": "0.142 HBD",
+      "base": "0.643 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.142 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.142 HBD",
+      "base": "0.689 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.142 HBD",
+      "base": "0.681 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.142 HBD",
+      "base": "0.654 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.140 HBD",
+      "base": "0.641 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.140 HBD",
+      "base": "0.642 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.142 HBD",
+      "base": "0.631 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.141 HBD",
+      "base": "0.626 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.142 HBD",
+      "base": "0.628 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.141 HBD",
+      "base": "0.621 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.141 HBD",
+      "base": "0.595 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.141 HBD",
+      "base": "0.586 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.138 HBD",
+      "base": "0.602 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.621 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.136 HBD",
+      "base": "0.621 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.621 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.621 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.647 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.643 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.635 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.622 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.629 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.637 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.137 HBD",
+      "base": "0.638 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.136 HBD",
+      "base": "0.637 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.636 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.637 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.638 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.636 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.640 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.662 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.666 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.662 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.662 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.662 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.667 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.717 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.136 HBD",
+      "base": "0.710 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.706 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.708 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.136 HBD",
+      "base": "0.708 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.135 HBD",
+      "base": "0.706 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.695 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.688 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.670 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.661 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.661 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.134 HBD",
+      "base": "0.670 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.131 HBD",
+      "base": "0.671 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.131 HBD",
+      "base": "0.671 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.130 HBD",
+      "base": "0.692 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.130 HBD",
+      "base": "0.718 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.129 HBD",
+      "base": "0.718 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.128 HBD",
+      "base": "0.718 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.127 HBD",
+      "base": "0.719 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.126 HBD",
+      "base": "0.716 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.126 HBD",
+      "base": "0.716 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.126 HBD",
+      "base": "0.719 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.126 HBD",
+      "base": "0.719 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.125 HBD",
+      "base": "0.718 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.125 HBD",
+      "base": "0.716 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.124 HBD",
+      "base": "0.718 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.124 HBD",
+      "base": "0.716 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.124 HBD",
+      "base": "0.716 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.124 HBD",
+      "base": "0.713 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.124 HBD",
+      "base": "0.716 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.720 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.122 HBD",
+      "base": "0.691 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.670 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.122 HBD",
+      "base": "0.658 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.658 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.648 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.648 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.648 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.648 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.644 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.123 HBD",
+      "base": "0.637 HBD",
       "quote": "1.000 HIVE"
     },
     {
-      "base": "0.122 HBD",
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.648 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.638 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.638 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.637 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.650 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.638 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.638 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.638 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.632 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.633 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.630 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.630 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.630 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.630 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.640 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.630 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.617 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.605 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.605 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.618 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.619 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.608 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.606 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.600 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.600 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.590 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.589 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.599 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.589 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.594 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.586 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.585 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.583 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.581 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.582 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.581 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.580 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.580 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.580 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.578 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.578 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.577 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.577 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.577 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.577 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.576 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.567 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.567 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.570 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.570 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.567 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.569 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.569 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.555 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.553 HBD",
+      "quote": "1.000 HIVE"
+    },
+    {
+      "base": "0.553 HBD",
       "quote": "1.000 HIVE"
     }
   ]

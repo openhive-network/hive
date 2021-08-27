@@ -2,7 +2,8 @@
   test_name: Hived
 
   marks:
-    - patterntest
+    - patterntest # null
+    - xfail
 
   includes:
     - !include ../../common.yaml
@@ -22,5 +23,5 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:has_valid_response
+          function: validate_response:compare_response_with_pattern
           

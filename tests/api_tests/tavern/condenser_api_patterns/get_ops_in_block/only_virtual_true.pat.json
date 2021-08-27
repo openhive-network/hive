@@ -2,6 +2,26 @@
   {
     "block": 2797050,
     "op": [
+      "effective_comment_vote",
+      {
+        "author": "pfunk",
+        "pending_payout": "812.683 HBD",
+        "permlink": "guide-maximize-your-mining-hashrate-in-windows-by-mining-steem-in-a-vm",
+        "rshares": 27547358,
+        "total_vote_weight": "20780999058208",
+        "voter": "gtg",
+        "weight": 0
+      }
+    ],
+    "op_in_trx": 0,
+    "timestamp": "2016-06-30T19:12:21",
+    "trx_id": "e0cd24f9aba3b668b1443786bee3891f644ff23f",
+    "trx_in_block": 0,
+    "virtual_op": 1
+  },
+  {
+    "block": 2797050,
+    "op": [
       "producer_reward",
       {
         "producer": "roadscape",
