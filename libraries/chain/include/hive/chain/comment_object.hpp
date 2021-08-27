@@ -30,7 +30,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       comment_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _author, const std::string& _permlink,
-        fc::optional< std::reference_wrapper< const comment_object > > _parent_comment );
+       const comment_object* _parent_comment );
 
       //returns comment identification hash
       const author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
@@ -61,16 +61,16 @@ namespace hive { namespace chain {
   template< typename Allocator >
   inline comment_object::comment_object( allocator< Allocator > a, uint64_t _id,
     const account_object& _author, const std::string& _permlink,
-    fc::optional< std::reference_wrapper< const comment_object > > _parent_comment
+    const comment_object* _parent_comment
   )
     : id ( _id )
   {
     author_and_permlink_hash = compute_author_and_permlink_hash( _author.get_id(), _permlink );
 
-    if ( _parent_comment.valid() )
+    if ( _parent_comment != nullptr )
     {
-      parent_comment = ( *_parent_comment ).get().get_id();
-      depth = ( *_parent_comment ).get().get_depth() + 1;
+      parent_comment = _parent_comment->get_id();
+      depth = _parent_comment->get_depth() + 1;
     }
     else
     {

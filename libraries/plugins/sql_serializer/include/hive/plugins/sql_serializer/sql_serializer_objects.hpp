@@ -158,7 +158,7 @@ namespace hive
         {
           fc::string ss;
           fun(ss);
-          return std::move(ss);
+          return ss;
         }
 
 
