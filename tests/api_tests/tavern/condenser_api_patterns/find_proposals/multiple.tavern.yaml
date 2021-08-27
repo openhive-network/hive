@@ -24,4 +24,4 @@
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
-            ignore_tags: "total_votes"
+            ignore_tags: ['total_votes']
