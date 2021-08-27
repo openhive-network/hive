@@ -3,8 +3,6 @@
 
 #include <hive/sql_utilities/transaction_controllers.hpp>
 
-#include <hive/chain/util/impacted.hpp>
-
 #include <fc/string.hpp>
 #include <fc/variant.hpp>
 #include <fc/static_variant.hpp>
@@ -24,7 +22,6 @@
 
 namespace bpo = boost::program_options;
 
-using hive::protocol::account_name_type;
 using fc::string;
 
 using hive::utilities::transaction_controller;
@@ -32,26 +29,11 @@ using hive::utilities::transaction_controller_ptr;
 
 using transaction_ptr = transaction_controller::transaction_ptr;
 
-struct account_info
-{
-  account_info( uint64_t _id, uint64_t _operation_count ) : id( _id ), operation_count( _operation_count ) {}
-
-  static uint64_t next_account_id;
-
-  uint64_t id;
-  uint64_t operation_count;
-};
-
-uint64_t account_info::next_account_id = 0;
-
 struct ah_query
 {
   using part_query_type = std::array<string, 3>;
 
   const string application_context;
-
-  string accounts;
-  string account_ops;
 
   string create_context;
   string detach_context;
@@ -60,10 +42,7 @@ struct ah_query
 
   string next_block;
 
-  string get_bodies;
-
-  part_query_type insert_into_accounts;
-  part_query_type insert_into_account_ops;
+  string query_executor;
 
   template<typename T>
   string format( const string& src, const T& arg )
@@ -83,6 +62,12 @@ struct ah_query
     return boost::str( boost::format( src ) % arg % arg2 % arg3 );
   }
 
+  template<typename T1, typename T2, typename T3, typename T4>
+  string format( const string& src, const T1& arg, const T2& arg2, const T3& arg3, const T4& arg4 )
+  {
+    return boost::str( boost::format( src ) % arg % arg2 % arg3 % arg4 );
+  }
+
   string create_full_query( const string& q_parts0, const string& q_parts1, const string& q_parts2 )
   {
     return q_parts0 + q_parts1 + q_parts2;
@@ -90,9 +75,6 @@ struct ah_query
 
   ah_query( const string& _application_context ) : application_context( _application_context )
   {
-    accounts        = "SELECT id, name FROM accounts;";
-    account_ops     = "SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;";
-
     create_context  = format( "SELECT * FROM hive.app_create_context('%s');", application_context );
     detach_context  = format( "SELECT * FROM hive.app_context_detach('%s');", application_context );
     attach_context  = "SELECT * FROM hive.app_context_attach('%s', %d);";
@@ -100,17 +82,7 @@ struct ah_query
 
     next_block      = format( "SELECT * FROM hive.app_next_block('%s');", application_context );
 
-    get_bodies      = "SELECT id, body FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d;";
-
-    FC_ASSERT( insert_into_accounts.size() == 3 );
-    insert_into_accounts[0] = " INSERT INTO public.accounts( id, name ) VALUES";
-    insert_into_accounts[1] = " ( %d, '%s')";
-    insert_into_accounts[2] = " ;";
-
-    FC_ASSERT( insert_into_account_ops.size() == 3 );
-    insert_into_account_ops[0] = " INSERT INTO public.account_operations( account_id, account_op_seq_no, operation_id ) VALUES";
-    insert_into_account_ops[1] = " ( %d, %d, %d )";
-    insert_into_account_ops[2] = " ;";
+    query_executor  = "SELECT * FROM public.fill_accounts_operations( %d, %d );";
   }
 };
 
@@ -129,18 +101,11 @@ class ah_loader
 
   private:
 
-    using account_cache_t = std::map<string, account_info>;
-
     std::atomic_bool interrupted;
 
     args_container args;
 
     const string application_context = "account_history";
-
-    std::vector< string > accounts_queries;
-    std::vector< string > account_ops_queries;
-
-    account_cache_t account_cache;
 
     ah_query query;
 
@@ -206,53 +171,6 @@ class ah_loader
       return false;
     }
 
-    void import_accounts()
-    {
-      if( is_interrupted() )
-        return;
-
-      pqxx::result _accounts = exec( query.accounts );
-
-      for( const auto& _record : _accounts )
-      {
-        uint64_t _id  = _record["id"].as<uint64_t>();
-        string _name  = _record["name"].as<string>();
-
-        if( _id > account_info::next_account_id )
-          account_info::next_account_id = _id;
-
-        account_cache.emplace( _name, account_info( _id, 0 ) );
-      }
-
-      if( account_info::next_account_id )
-        ++account_info::next_account_id;
-    }
-
-    void import_account_operations()
-    {
-      if( is_interrupted() )
-        return;
-
-      pqxx::result _account_ops = exec( query.account_ops );
-
-      for( const auto& _record : _account_ops )
-      {
-        string _name              = _record["name"].as<string>();
-        uint64_t _operation_count = _record["operation_count"].as<uint64_t>();
-
-        auto found = account_cache.find( _name );
-        FC_ASSERT( found != account_cache.end() );
-
-        found->second.operation_count = _operation_count;
-      }
-    }
-
-    void import_initial_data()
-    {
-      import_accounts();
-      import_account_operations();
-    }
-
     bool context_exists()
     {
       if( is_interrupted() )
@@ -264,29 +182,6 @@ class ah_loader
       get_single_value( _res, _val );
 
       return _val;
-    }
-
-    void gather_part_of_queries( uint64_t operation_id, const string& account_name )
-    {
-      auto found = account_cache.find( account_name );
-
-      auto _next_account_id = account_info::next_account_id;
-      uint64_t _op_cnt = 0;
-
-      if( found == account_cache.end() )
-      {
-        account_cache.emplace( account_name, account_info( _next_account_id, 1 ) );
-        accounts_queries.emplace_back( query.format( query.insert_into_accounts[1], _next_account_id, account_name ) );
-
-        ++account_info::next_account_id;
-      }
-      else
-      {
-        ++( found->second.operation_count );
-        _op_cnt = found->second.operation_count;
-      }
-
-      account_ops_queries.emplace_back( query.format( query.insert_into_account_ops[1], _next_account_id, _op_cnt, operation_id ) );
     }
 
     void execute_query( const std::vector< string >& queries, const ah_query::part_query_type& q_parts )
@@ -309,15 +204,6 @@ class ah_loader
       _total_query = query.create_full_query( q_parts[0], _total_query, q_parts[2] );
 
       exec( _total_query );
-    }
-
-    void execute_queries()
-    {
-      execute_query( accounts_queries, query.insert_into_accounts );
-      execute_query( account_ops_queries, query.insert_into_account_ops );
-
-      accounts_queries.clear();
-      account_ops_queries.clear();
     }
 
     ah_loader()
@@ -365,7 +251,7 @@ class ah_loader
           string tables_query    = read_file( args.schema_path / "ah_schema_tables.sql" );
           string functions_query = read_file( args.schema_path / "ah_schema_functions.sql" );
 
-          tables_query = query.format( tables_query, application_context, application_context );
+          tables_query = query.format( tables_query, application_context, application_context, application_context, application_context );
 
           if( is_interrupted() )
             return;
@@ -380,9 +266,22 @@ class ah_loader
           exec( functions_query );
         }
 
-        import_initial_data();
-
         finish_trx();
+      }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("AH loader detected SQL execution failure: ${e}", ("e", ex.base().what()));
+        finish_trx( true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("AH loader execution failed: ${e}", ("e", ex.what()));
+        finish_trx( true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("AH loader execution failed: ${e}", ("e", ex.what()));
+        finish_trx( true/*force_rollback*/ );
       }
       catch(...)
       {
@@ -397,33 +296,8 @@ class ah_loader
 
       dlog("Processed blocks: ${fb} - ${lb}", ("fb", first_block)("lb", last_block) );
 
-      string _query = query.format( query.get_bodies, first_block, last_block );
-      pqxx::result _blocks_ops = exec( _query );
-
-      if( !_blocks_ops.empty() )
-      {
-        dlog("Found ${s} operations", ("s", _blocks_ops.size()) );
-        for( const auto& _record : _blocks_ops )
-        {
-          uint64_t _operation_id  = _record[0].as<uint64_t>();
-          string _op_body         = _record[1].as<string>();
-
-          hive::protocol::operation _op;
-          from_variant( fc::json::from_string( _op_body ), _op );
-
-          flat_set<account_name_type> impacted;
-          hive::app::operation_get_impacted_accounts( _op, impacted );
-
-          string n;
-          _op.visit( fc::get_static_variant_name( n ) );
-
-          for( auto& account_name : impacted )
-          {
-            gather_part_of_queries( _operation_id, account_name );
-          }
-        }
-        execute_queries();
-      }
+      string _query = query.format( query.query_executor, first_block, last_block );
+      exec( _query );
     }
 
     bool process()
