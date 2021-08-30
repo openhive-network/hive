@@ -38,7 +38,7 @@ data_processor::data_processor( std::string description, data_processing_fn data
   _finished(false),
   _is_processing_data( false ),
   _total_processed_records(0),
-  _api_trigger( api_trigger )
+  _randezvous_trigger( api_trigger )
 {
   auto body = [this, dataProcessor]() -> void
   {
@@ -84,8 +84,8 @@ data_processor::data_processor( std::string description, data_processing_fn data
 
           dataProcessor(*dataPtr);
 
-          if ( _api_trigger && last_block_num_in_stage )
-            _api_trigger->report_complete_thread_stage( last_block_num_in_stage );
+          if ( _randezvous_trigger && last_block_num_in_stage )
+            _randezvous_trigger->report_complete_thread_stage( last_block_num_in_stage );
         }
 
         dlog("${d} data processor finished processing a data chunk...", ("d", _description));
@@ -145,9 +145,9 @@ void data_processor::trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum)
 
 void
 data_processor::only_report_batch_finished( uint32_t block_num ) {
-  if ( _api_trigger ) {
+  if ( _randezvous_trigger ) {
     ilog( "${i} commited by ${d}",("i", block_num )("d", _description) );
-    _api_trigger->report_complete_thread_stage( block_num );
+    _randezvous_trigger->report_complete_thread_stage( block_num );
   }
 }
 
