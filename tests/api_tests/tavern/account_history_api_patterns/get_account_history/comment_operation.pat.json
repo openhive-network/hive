@@ -1,145 +1,145 @@
 {
   "history": [
     [
-      205196,
+      205300,
       {
-        "block": 4982094,
+        "block": 4768346,
         "op": {
           "type": "comment_operation",
           "value": {
-            "author": "quigua",
-            "body": "At first, I couldn't see more than 4 points at the same time. But, then I follow all points with the eyes making a circle pattern during 15 seconds, and surprising!. I can see the 12 points, and now I can not see the blinking points again. That is  really crazy...",
-            "json_metadata": "{\"tags\":[\"optical\"]}",
-            "parent_author": "blocktrades",
-            "parent_permlink": "re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t034947752z",
-            "permlink": "re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t044305573z",
+            "author": "blocktrades",
+            "body": "Beyond that, let's just add more reasons for people to participate on the platform, regardless of their SP.",
+            "json_metadata": "{\"tags\":[\"steem\"]}",
+            "parent_author": "timcliff",
+            "parent_permlink": "re-ned-re-nextgencrypto-re-ned-increasing-curation-demand-for-steem-power-and-community-interaction-20160907t165805379z",
+            "permlink": "re-timcliff-re-ned-re-nextgencrypto-re-ned-increasing-curation-demand-for-steem-power-and-community-interaction-20160907t174828393z",
             "title": ""
           }
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-09-15T04:43:09",
-        "trx_id": "40ae1f796b8d0409a799fe62b3b423972b83c9e5",
+        "timestamp": "2016-09-07T17:48:24",
+        "trx_id": "193a5839cb6717c2463feb2983c6fcadb5745731",
+        "trx_in_block": 7,
+        "virtual_op": 0
+      }
+    ],
+    [
+      205919,
+      {
+        "block": 4779547,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "blocktrades",
+            "body": "From the samples in your post, your artwork is incredible. I don't think you're acting irresponsibly.",
+            "json_metadata": "{\"tags\":[\"life\"]}",
+            "parent_author": "kommienezuspadt",
+            "parent_permlink": "when-does-pursuing-your-dreams-become-irresponsible",
+            "permlink": "re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t030916390z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-08T03:09:12",
+        "trx_id": "3cae51f967b3f4674393a3e40a5c74504fbb3753",
         "trx_in_block": 1,
         "virtual_op": 0
       }
     ],
     [
-      205222,
+      205959,
       {
-        "block": 4982610,
+        "block": 4780186,
         "op": {
           "type": "comment_operation",
           "value": {
-            "author": "blocktrades",
-            "body": "I tried that same pattern, but the most I could see was 4 at a time. So now I wonder, is your brain remembering what it saw and assuming it's still there, or is there enough information that your brain is now better able to interpret what it's seeing in your peripheral vision...",
-            "json_metadata": "{\"tags\":[\"optical\"]}",
-            "parent_author": "quigua",
-            "parent_permlink": "re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t044305573z",
-            "permlink": "re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t050900278z",
-            "title": ""
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-15T05:08:57",
-        "trx_id": "e363ad2c2c7e8aab96952e772446b177e7ee1624",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
-      205229,
-      {
-        "block": 4982731,
-        "op": {
-          "type": "comment_operation",
-          "value": {
-            "author": "blocktrades",
-            "body": "Hmm, it may be an actual function of my weak vision. When I get further from the screen, it gets hard for me to see any of the dots. So next I tried to get very close to the screen (normally I keep my monitor pretty far away) and I was able to see about 8 of them at once. I'm guessing having a smaller monitor might help too, based on the article, since I suppose they would be less in  our peripheral vision then.",
-            "json_metadata": "{\"tags\":[\"optical\"]}",
-            "parent_author": "quigua",
-            "parent_permlink": "re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t044305573z",
-            "permlink": "re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t051505312z",
-            "title": ""
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-15T05:15:00",
-        "trx_id": "e1a1c74b9c999a20381d4eafefd3ad0f4467a0cc",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
-      205261,
-      {
-        "block": 4983394,
-        "op": {
-          "type": "comment_operation",
-          "value": {
-            "author": "quigua",
-            "body": "I am not sure, but it is not funny anymore because I see the 12 points every time. Maybe my brain just recorded the pattern and remember it. I can not switch back again.\nAlso is truth that I work with crystal simetry  pattern daily, so, maybe my brain is trained to see patterns and keep it. Also, in this occasion, I knew what was looking for...\nThis make me think how different we perceive the universe around us... Even when everybody is seeing the same thing...",
-            "json_metadata": "{\"tags\":[\"optical\"]}",
+            "author": "gardenofeden",
+            "body": "Agreed ~ stellar work!",
+            "json_metadata": "{\"tags\":[\"life\"]}",
             "parent_author": "blocktrades",
-            "parent_permlink": "re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t050900278z",
-            "permlink": "re-blocktrades-re-quigua-re-blocktrades-re-ilovesteemit-can-you-see-all-twelve-dots-in-this-image-nope-you-cannot-20160915t054809925z",
+            "parent_permlink": "re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t030916390z",
+            "permlink": "re-blocktrades-re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t034110282z",
             "title": ""
           }
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-09-15T05:48:12",
-        "trx_id": "5824e046a9235be9ba99440e3e8eb99860e8a63a",
-        "trx_in_block": 0,
+        "timestamp": "2016-09-08T03:41:09",
+        "trx_id": "d68484b901523cbe7ca8bcfc4129e9c579234a1a",
+        "trx_in_block": 1,
         "virtual_op": 0
       }
     ],
     [
-      205902,
+      205978,
       {
-        "block": 4995964,
+        "block": 4780379,
         "op": {
           "type": "comment_operation",
           "value": {
-            "author": "piedpiper",
-            "body": "It just occurred to me that witness updates like this could make for interesting video material. Maybe a segment in our SteemSmart show?",
-            "json_metadata": "{\"tags\":[\"witness-category\"]}",
+            "author": "kommienezuspadt",
+            "body": "Thanks so much @blocktrades, and thank you for the upvote! I appreciate the encouragement.",
+            "json_metadata": "{\"tags\":[\"life\"],\"users\":[\"blocktrades\"]}",
             "parent_author": "blocktrades",
-            "parent_permlink": "witness-report-for-blocktrades-for-last-week-of-august",
-            "permlink": "re-blocktrades-witness-report-for-blocktrades-for-last-week-of-august-20160915t161707257z",
+            "parent_permlink": "re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t030916390z",
+            "permlink": "re-blocktrades-re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t035054292z",
             "title": ""
           }
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-09-15T16:18:12",
-        "trx_id": "3ae419f4d37860c7d2dabec530ccf3ad79e79784",
-        "trx_in_block": 2,
+        "timestamp": "2016-09-08T03:50:54",
+        "trx_id": "83788ba216ff55b6ae83767bd69d8ccc3e413160",
+        "trx_in_block": 1,
         "virtual_op": 0
       }
     ],
     [
-      206145,
+      206038,
       {
-        "block": 4999840,
+        "block": 4781372,
         "op": {
           "type": "comment_operation",
           "value": {
             "author": "blocktrades",
-            "body": "When will the t-shirt ship?",
-            "json_metadata": "{\"tags\":[\"steem\"]}",
-            "parent_author": "cryptojoy.com",
-            "parent_permlink": "help-steem-buy-steemit-apparel-day-2",
-            "permlink": "re-cryptojoycom-help-steem-buy-steemit-apparel-day-2-20160915t193858376z",
+            "body": "When I was 12 I used to play D&D and sometimes we would bet with our gold. I came up with a betting system where I would bet on near 50/50 odds games like a coin toss against another player, and each time I lost, I would double my bet. I played around with the math and I figured out that I could get my odds of winning this way up to 99.99% before too long. But it took a few empirical tests to figure out why this wasn't such a great system...",
+            "json_metadata": "{\"tags\":[\"finance\"]}",
+            "parent_author": "jdbertron",
+            "parent_permlink": "how-hard-is-it-going-to-be-part-2",
+            "permlink": "re-jdbertron-how-hard-is-it-going-to-be-part-2-20160908t044038866z",
             "title": ""
           }
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-09-15T19:38:48",
-        "trx_id": "ef94aba27f9875d6da33b26dae44ee63f06f89a2",
+        "timestamp": "2016-09-08T04:40:33",
+        "trx_id": "6da5552e116d4ba575e5b44e9a3bd6a9550120f7",
+        "trx_in_block": 1,
+        "virtual_op": 0
+      }
+    ],
+    [
+      206043,
+      {
+        "block": 4781397,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "blocktrades",
+            "body": "@@ -9,9 +9,9 @@\n as 1\n-2\n+3\n  I u\n",
+            "json_metadata": "{\"tags\":[\"finance\"]}",
+            "parent_author": "jdbertron",
+            "parent_permlink": "how-hard-is-it-going-to-be-part-2",
+            "permlink": "re-jdbertron-how-hard-is-it-going-to-be-part-2-20160908t044038866z",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-08T04:41:48",
+        "trx_id": "68754616a940f3ef07c4af1559c196380ccaca18",
         "trx_in_block": 1,
         "virtual_op": 0
       }

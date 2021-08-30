@@ -1,26 +1,43 @@
 {
   "history": [
     [
-      8115,
+      8109,
       {
-        "block": 2893044,
+        "block": 2889020,
         "op": {
-          "type": "interest_operation",
+          "type": "comment_reward_operation",
           "value": {
-            "interest": {
-              "amount": "247",
+            "author": "xeroc",
+            "author_rewards": 1180546,
+            "beneficiary_payout_value": {
+              "amount": "0",
               "nai": "@@000000013",
               "precision": 3
             },
-            "owner": "xeroc"
+            "curator_payout_value": {
+              "amount": "48752",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "payout": {
+              "amount": "308473",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "python-libs-now-know-how-to-create-new-accounts",
+            "total_payout_value": {
+              "amount": "259720",
+              "nai": "@@000000013",
+              "precision": 3
+            }
           }
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-04T03:42:21",
-        "trx_id": "f9e46925b19db80ab57f2e5824b02eae3392133a",
-        "trx_in_block": 2,
-        "virtual_op": 1
+        "timestamp": "2016-07-04T00:00:06",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 35084
       }
     ]
   ]

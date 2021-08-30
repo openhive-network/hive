@@ -1,7 +1,7 @@
 {
   "history": [
     [
-      229,
+      233,
       {
         "block": 3155225,
         "op": {
@@ -22,7 +22,7 @@
       }
     ],
     [
-      233,
+      237,
       {
         "block": 3339107,
         "op": {
@@ -43,7 +43,7 @@
       }
     ],
     [
-      237,
+      241,
       {
         "block": 3354142,
         "op": {
@@ -64,7 +64,7 @@
       }
     ],
     [
-      240,
+      244,
       {
         "block": 3354503,
         "op": {
@@ -85,7 +85,7 @@
       }
     ],
     [
-      241,
+      245,
       {
         "block": 3354601,
         "op": {
@@ -106,7 +106,7 @@
       }
     ],
     [
-      242,
+      246,
       {
         "block": 3389889,
         "op": {
@@ -127,7 +127,7 @@
       }
     ],
     [
-      243,
+      247,
       {
         "block": 3389890,
         "op": {
@@ -143,27 +143,6 @@
         "operation_id": 0,
         "timestamp": "2016-07-21T13:55:57",
         "trx_id": "e45e2c2ec28ad63dca4a30e07a51a67e5e5a0daf",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
-      251,
-      {
-        "block": 3758898,
-        "op": {
-          "type": "set_withdraw_vesting_route_operation",
-          "value": {
-            "auto_vest": false,
-            "from_account": "aizen24",
-            "percent": 10000,
-            "to_account": "aizensou"
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-08-03T11:54:33",
-        "trx_id": "e16da854a387b2284cf645426d841d567ea9aaa2",
         "trx_in_block": 0,
         "virtual_op": 0
       }

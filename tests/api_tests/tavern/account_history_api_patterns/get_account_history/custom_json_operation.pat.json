@@ -1,7 +1,30 @@
 {
   "history": [
     [
-      2960,
+      2287,
+      {
+        "block": 3168479,
+        "op": {
+          "type": "custom_json_operation",
+          "value": {
+            "id": "follow",
+            "json": "{\"follower\":\"jsc\",\"following\":\"sergei\",\"what\":[\"ignore\"]}",
+            "required_auths": [],
+            "required_posting_auths": [
+              "jsc"
+            ]
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-13T18:20:57",
+        "trx_id": "057e1088250510e656f5c9a0dfbc1c2c80f8e40f",
+        "trx_in_block": 3,
+        "virtual_op": 0
+      }
+    ],
+    [
+      2967,
       {
         "block": 3537570,
         "op": {
@@ -24,7 +47,7 @@
       }
     ],
     [
-      2961,
+      2968,
       {
         "block": 3537571,
         "op": {
@@ -47,7 +70,7 @@
       }
     ],
     [
-      2962,
+      2969,
       {
         "block": 3545428,
         "op": {
@@ -70,7 +93,7 @@
       }
     ],
     [
-      2977,
+      2984,
       {
         "block": 3574031,
         "op": {
@@ -93,7 +116,7 @@
       }
     ],
     [
-      3027,
+      3034,
       {
         "block": 3624783,
         "op": {
@@ -116,7 +139,7 @@
       }
     ],
     [
-      3028,
+      3035,
       {
         "block": 3624784,
         "op": {
@@ -139,7 +162,7 @@
       }
     ],
     [
-      3029,
+      3036,
       {
         "block": 3625087,
         "op": {
@@ -162,7 +185,7 @@
       }
     ],
     [
-      3030,
+      3037,
       {
         "block": 3625088,
         "op": {
@@ -185,7 +208,7 @@
       }
     ],
     [
-      3031,
+      3038,
       {
         "block": 3625281,
         "op": {
@@ -208,7 +231,7 @@
       }
     ],
     [
-      3054,
+      3061,
       {
         "block": 3645302,
         "op": {
@@ -231,7 +254,7 @@
       }
     ],
     [
-      3055,
+      3062,
       {
         "block": 3645312,
         "op": {
@@ -254,7 +277,7 @@
       }
     ],
     [
-      3147,
+      3154,
       {
         "block": 3674919,
         "op": {
@@ -277,7 +300,7 @@
       }
     ],
     [
-      3284,
+      3291,
       {
         "block": 3764002,
         "op": {
@@ -300,7 +323,7 @@
       }
     ],
     [
-      3318,
+      3325,
       {
         "block": 3909295,
         "op": {
@@ -323,7 +346,7 @@
       }
     ],
     [
-      3356,
+      3363,
       {
         "block": 4001223,
         "op": {
@@ -341,29 +364,6 @@
         "operation_id": 0,
         "timestamp": "2016-08-11T23:01:24",
         "trx_id": "4756949250f9db61a531f3c2e95abf0eb8ce5b19",
-        "trx_in_block": 4,
-        "virtual_op": 0
-      }
-    ],
-    [
-      3590,
-      {
-        "block": 4595203,
-        "op": {
-          "type": "custom_json_operation",
-          "value": {
-            "id": "follow",
-            "json": "[\"follow\",{\"follower\":\"jsc\",\"following\":\"jamesc\",\"what\":[\"blog\"]}]",
-            "required_auths": [],
-            "required_posting_auths": [
-              "jsc"
-            ]
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-01T17:08:00",
-        "trx_id": "2fd47d659c7ec04554fa08a13397802277e41596",
         "trx_in_block": 4,
         "virtual_op": 0
       }
