@@ -5,21 +5,21 @@
         "account_auths": [],
         "key_auths": [
           [
-            "STM4vuEE8F2xyJhwiNCnHxjUVLNXxdFXtVxgghBq5LVLt49zLKLRX",
+            "STM8NWQYG4BvjGNu8zqqV9fbR7aSCZHcxkVib41PYnpGmPRe6BHVG",
             1
           ]
         ],
         "weight_threshold": 1
       },
       "balance": {
-        "amount": "0",
+        "amount": "4931334",
         "nai": "@@000000021",
         "precision": 3
       },
       "can_vote": true,
       "comment_count": 0,
       "created": "2016-06-30T17:22:18",
-      "curation_rewards": 19888,
+      "curation_rewards": 31313441,
       "delayed_votes": [],
       "delegated_vesting_shares": {
         "amount": "0",
@@ -27,34 +27,32 @@
         "precision": 6
       },
       "downvote_manabar": {
-        "current_mana": 0,
-        "last_update_time": 1467307338
+        "current_mana": "273530224878956",
+        "last_update_time": 1604415435
       },
-      "governance_vote_expiration_ts": "2022-09-24T12:54:48",
       "hbd_balance": {
-        "amount": "3465",
+        "amount": "34",
         "nai": "@@000000013",
         "precision": 3
       },
-      "hbd_last_interest_payment": "2016-09-09T17:18:09",
-      "hbd_seconds": "0",
-      "hbd_seconds_last_update": "2016-09-09T17:18:09",
+      "hbd_last_interest_payment": "2020-10-15T08:47:24",
+      "hbd_seconds": "34197489",
+      "hbd_seconds_last_update": "2020-11-02T21:26:36",
       "id": 14007,
       "is_smt": false,
-      "json_metadata": "",
+      "json_metadata": "{\"profile\": {\"witness_description\": \"Gandalf the Grey, Steem Pressure, improving Steem infrastructure.\", \"about\": \"IT Wizard, Steem Witness\", \"profile_image\": \"https://grey.house/img/grey_4.jpg\", \"name\": \"Gandalf the Grey\", \"location\": \"Steem\"}}",
       "last_account_recovery": "2016-07-21T21:48:03",
-      "last_account_update": "2016-07-21T21:48:06",
-      "last_owner_update": "2016-07-21T21:48:03",
-      "last_post": "2016-09-15T18:43:51",
-      "last_post_edit": "2016-09-15T18:43:51",
-      "last_root_post": "2016-08-21T12:29:18",
-      "last_vote_time": "2016-09-15T19:46:21",
+      "last_account_update": "2020-03-30T23:03:33",
+      "last_owner_update": "2017-03-21T18:37:42",
+      "last_post": "2020-10-31T10:01:00",
+      "last_post_edit": "2020-10-31T10:01:00",
+      "last_root_post": "2020-09-13T20:16:51",
+      "last_vote_time": "2020-11-03T07:44:21",
       "lifetime_vote_count": 0,
       "memo_key": "STM4uD3dfLvbz7Tkd7of4K9VYGnkgrY5BHSQt52vE52CBL5qBfKHN",
       "mined": true,
       "name": "gtg",
       "next_vesting_withdrawal": "1969-12-31T23:59:59",
-      "open_recurrent_transfers": 0,
       "owner": {
         "account_auths": [],
         "key_auths": [
@@ -65,12 +63,12 @@
         ],
         "weight_threshold": 1
       },
-      "pending_claimed_accounts": 0,
+      "pending_claimed_accounts": 12253,
       "pending_transfers": 0,
       "post_bandwidth": 10000,
-      "post_count": 51,
+      "post_count": 5591,
       "post_voting_power": {
-        "amount": "17579100476774",
+        "amount": "1094120899515828",
         "nai": "@@000000037",
         "precision": 6
       },
@@ -84,21 +82,21 @@
         ],
         "weight_threshold": 1
       },
-      "posting_json_metadata": "",
-      "posting_rewards": 1972916,
+      "posting_json_metadata": "{\"profile\":{\"witness_description\":\"Gandalf the Grey, Building Hive.\",\"about\":\"IT Wizard, Hive Witness\",\"profile_image\":\"https://grey.house/img/grey_4.jpg\",\"name\":\"Gandalf the Grey\",\"location\":\"Hive\",\"version\":2}}",
+      "posting_rewards": 13408349,
       "proxied_vsf_votes": [
-        "30348411941678",
-        "498714253762",
-        0,
+        "4739506886835332",
+        "39346232851810",
+        214349887,
         0
       ],
       "proxy": "",
       "received_vesting_shares": {
-        "amount": "0",
+        "amount": "8629626789290",
         "nai": "@@000000037",
         "precision": 6
       },
-      "recovery_account": "steem",
+      "recovery_account": "roelandp",
       "reset_account": "null",
       "reward_hbd_balance": {
         "amount": "0",
@@ -136,7 +134,7 @@
       "savings_withdraw_requests": 0,
       "to_withdraw": 0,
       "vesting_shares": {
-        "amount": "17579100476774",
+        "amount": "1085491272726538",
         "nai": "@@000000037",
         "precision": 6
       },
@@ -146,26 +144,26 @@
         "precision": 6
       },
       "voting_manabar": {
-        "current_mana": 9908,
-        "last_update_time": 1473968781
+        "current_mana": "1094120899515828",
+        "last_update_time": 1604415435
       },
       "withdraw_routes": 0,
       "withdrawn": 0,
-      "witnesses_voted_for": 20
+      "witnesses_voted_for": 29
     },
     {
       "active": {
         "account_auths": [],
         "key_auths": [
           [
-            "STM5jZtLoV8YbxCxr4imnbWn61zMB24wwonpnVhfXRmv7j6fk3dTH",
+            "STM82eDD3wQbA5e11D8ovC4MWkPwW1fG3ipSD2ksLJAJwFnV38E9j",
             1
           ]
         ],
         "weight_threshold": 1
       },
       "balance": {
-        "amount": "4778859891",
+        "amount": "1",
         "nai": "@@000000021",
         "precision": 3
       },
@@ -181,38 +179,36 @@
       },
       "downvote_manabar": {
         "current_mana": 0,
-        "last_update_time": 1458838821
+        "last_update_time": 1586315814
       },
-      "governance_vote_expiration_ts": "2022-07-25T16:01:24",
       "hbd_balance": {
-        "amount": "70337438",
+        "amount": "0",
         "nai": "@@000000013",
         "precision": 3
       },
-      "hbd_last_interest_payment": "2016-09-12T19:16:48",
-      "hbd_seconds": "8923940509188",
-      "hbd_seconds_last_update": "2016-09-14T11:25:21",
+      "hbd_last_interest_payment": "2020-03-20T14:00:00",
+      "hbd_seconds": "0",
+      "hbd_seconds_last_update": "2020-03-20T14:00:00",
       "id": 28,
       "is_smt": false,
       "json_metadata": "",
       "last_account_recovery": "1970-01-01T00:00:00",
-      "last_account_update": "2016-07-15T13:56:18",
-      "last_owner_update": "2016-07-15T13:56:18",
+      "last_account_update": "2020-02-12T20:46:39",
+      "last_owner_update": "2020-02-12T20:46:39",
       "last_post": "2016-03-30T18:30:18",
       "last_post_edit": "2016-03-30T18:30:18",
       "last_root_post": "2016-03-30T18:30:18",
-      "last_vote_time": "1970-01-01T00:00:00",
+      "last_vote_time": "2016-12-04T23:10:57",
       "lifetime_vote_count": 0,
-      "memo_key": "STM5jZtLoV8YbxCxr4imnbWn61zMB24wwonpnVhfXRmv7j6fk3dTH",
+      "memo_key": "STM82eDD3wQbA5e11D8ovC4MWkPwW1fG3ipSD2ksLJAJwFnV38E9j",
       "mined": true,
       "name": "steemit",
-      "next_vesting_withdrawal": "2016-09-19T00:37:21",
-      "open_recurrent_transfers": 0,
+      "next_vesting_withdrawal": "1969-12-31T23:59:59",
       "owner": {
         "account_auths": [],
         "key_auths": [
           [
-            "STM7kyb6WK6Sg9Eu4uu7WGqjYdqJzdBeKEWVDaDEKsgvhvESJZ1vM",
+            "STM82eDD3wQbA5e11D8ovC4MWkPwW1fG3ipSD2ksLJAJwFnV38E9j",
             1
           ]
         ],
@@ -223,7 +219,7 @@
       "post_bandwidth": 0,
       "post_count": 1,
       "post_voting_power": {
-        "amount": "225671901920188893",
+        "amount": "0",
         "nai": "@@000000037",
         "precision": 6
       },
@@ -231,7 +227,7 @@
         "account_auths": [],
         "key_auths": [
           [
-            "STM5jZtLoV8YbxCxr4imnbWn61zMB24wwonpnVhfXRmv7j6fk3dTH",
+            "STM82eDD3wQbA5e11D8ovC4MWkPwW1fG3ipSD2ksLJAJwFnV38E9j",
             1
           ]
         ],
@@ -240,12 +236,12 @@
       "posting_json_metadata": "",
       "posting_rewards": 3548,
       "proxied_vsf_votes": [
-        "23077504682",
+        "14385189584",
         0,
         0,
         0
       ],
-      "proxy": "",
+      "proxy": "dev365",
       "received_vesting_shares": {
         "amount": "0",
         "nai": "@@000000037",
@@ -285,25 +281,25 @@
       },
       "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
       "savings_hbd_seconds": "0",
-      "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+      "savings_hbd_seconds_last_update": "2020-03-20T14:00:00",
       "savings_withdraw_requests": 0,
-      "to_withdraw": "257910734535923078",
+      "to_withdraw": 0,
       "vesting_shares": {
-        "amount": "225671901920188893",
+        "amount": "0",
         "nai": "@@000000037",
         "precision": 6
       },
       "vesting_withdraw_rate": {
-        "amount": "2479910908999260",
+        "amount": "0",
         "nai": "@@000000037",
         "precision": 6
       },
       "voting_manabar": {
-        "current_mana": 10000,
-        "last_update_time": 1458838821
+        "current_mana": 0,
+        "last_update_time": 1586315814
       },
       "withdraw_routes": 0,
-      "withdrawn": "32238841816990380",
+      "withdrawn": 0,
       "witnesses_voted_for": 0
     }
   ]

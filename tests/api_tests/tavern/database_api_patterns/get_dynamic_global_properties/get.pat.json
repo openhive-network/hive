@@ -1,81 +1,88 @@
 {
-  "available_account_subsidies": 19483647,
-  "content_reward_percent": 6500,
-  "current_aslot": 48525337,
+  "available_account_subsidies": 157691079,
+  "content_reward_percent": 7500,
+  "current_aslot": 5044547,
   "current_hbd_supply": {
-    "amount": "4707354988",
+    "amount": "2413759427",
     "nai": "@@000000013",
     "precision": 3
   },
+  "current_remove_threshold": 200,
   "current_supply": {
-    "amount": "373074530855",
+    "amount": "157464400971",
     "nai": "@@000000021",
     "precision": 3
   },
-  "current_witness": "steempress",
-  "delegation_return_period": 432000,
-  "downvote_pool_percent": 2500,
-  "hbd_interest_rate": 0,
+  "current_witness": "ihashfury",
+  "delegation_return_period": 604800,
+  "downvote_pool_percent": 0,
+  "early_voting_seconds": 0,
+  "hbd_interest_rate": 1000,
   "hbd_print_rate": 10000,
-  "hbd_start_percent": 900,
-  "hbd_stop_percent": 1000,
-  "head_block_id": "02e1fcf0bf63b69cb08cfbff8bec012bde66ff6e",
-  "head_block_number": 48364784,
+  "hbd_start_percent": 200,
+  "hbd_stop_percent": 500,
+  "head_block_id": "004c4b40245ffb07380a393fb2b3d841b76cdaec",
+  "head_block_number": 5000000,
   "id": 0,
   "init_hbd_supply": {
     "amount": "0",
     "nai": "@@000000013",
     "precision": 3
   },
-  "last_budget_time": "2020-11-03T13:29:15",
-  "last_irreversible_block_num": 48364769,
+  "last_budget_time": "2016-03-24T16:00:00",
+  "last_irreversible_block_num": 4999980,
+  "max_consecutive_recurrent_transfer_failures": 10,
+  "max_open_recurrent_transfers": 255,
+  "max_recurrent_transfer_end_date": 730,
   "maximum_block_size": 65536,
-  "next_daily_maintenance_time": "2020-11-03T19:31:27",
-  "next_maintenance_time": "2020-11-03T14:29:15",
-  "num_pow_witnesses": 172,
-  "participation_count": 126,
+  "mid_voting_seconds": 0,
+  "min_recurrent_transfers_recurrence": 24,
+  "next_daily_maintenance_time": "2016-03-24T16:00:00",
+  "next_maintenance_time": "2016-03-24T16:00:00",
+  "num_pow_witnesses": 97,
+  "participation_count": 121,
   "pending_rewarded_vesting_hive": {
-    "amount": "387300465",
-    "nai": "@@000000021",
-    "precision": 3
-  },
-  "pending_rewarded_vesting_shares": {
-    "amount": "766339515720832",
-    "nai": "@@000000037",
-    "precision": 6
-  },
-  "recent_slots_filled": "329648542954504393975233478415163064319",
-  "required_actions_partition_percent": 0,
-  "reverse_auction_seconds": 300,
-  "sps_fund_percent": 1000,
-  "sps_interval_ledger": {
-    "amount": "12180",
-    "nai": "@@000000013",
-    "precision": 3
-  },
-  "time": "2020-11-03T13:46:51",
-  "total_pow": 514415,
-  "total_reward_fund_hive": {
     "amount": "0",
     "nai": "@@000000021",
     "precision": 3
   },
-  "total_reward_shares2": "0",
+  "pending_rewarded_vesting_shares": {
+    "amount": "0",
+    "nai": "@@000000037",
+    "precision": 6
+  },
+  "recent_slots_filled": "255209179042255236190010672587206549503",
+  "required_actions_partition_percent": 0,
+  "reverse_auction_seconds": 1800,
+  "sps_fund_percent": 0,
+  "sps_interval_ledger": {
+    "amount": "0",
+    "nai": "@@000000013",
+    "precision": 3
+  },
+  "time": "2016-09-15T19:47:21",
+  "total_pow": 238139,
+  "total_reward_fund_hive": {
+    "amount": "66003975",
+    "nai": "@@000000021",
+    "precision": 3
+  },
+  "total_reward_shares2": "763454540462239354401757185454",
   "total_vesting_fund_hive": {
-    "amount": "140141176196",
+    "amount": "149190428013",
     "nai": "@@000000021",
     "precision": 3
   },
   "total_vesting_shares": {
-    "amount": "269042226719460737",
+    "amount": "448144916705468383",
     "nai": "@@000000037",
     "precision": 6
   },
   "vesting_reward_percent": 1500,
   "virtual_supply": {
-    "amount": "414008052489",
+    "amount": "161253662237",
     "nai": "@@000000021",
     "precision": 3
   },
-  "vote_power_reserve_rate": 10
+  "vote_power_reserve_rate": 40
 }

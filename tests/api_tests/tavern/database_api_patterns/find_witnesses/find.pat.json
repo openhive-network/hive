@@ -1,13 +1,13 @@
 {
   "witnesses": [
     {
-      "available_witness_account_subsidies": 1762117,
+      "available_witness_account_subsidies": 0,
       "created": "1970-01-01T00:00:00",
-      "hardfork_time_vote": "2020-10-06T14:00:00",
-      "hardfork_version_vote": "1.24.0",
+      "hardfork_time_vote": "2016-08-15T14:00:00",
+      "hardfork_version_vote": "0.13.0",
       "hbd_exchange_rate": {
         "base": {
-          "amount": "113",
+          "amount": "578",
           "nai": "@@000000013",
           "precision": 3
         },
@@ -18,9 +18,9 @@
         }
       },
       "id": 9493,
-      "last_aslot": 48525814,
-      "last_confirmed_block_num": 48365255,
-      "last_hbd_exchange_update": "2020-11-03T13:34:54",
+      "last_aslot": 5044400,
+      "last_confirmed_block_num": 4999861,
+      "last_hbd_exchange_update": "2016-09-15T05:23:51",
       "last_work": "0000000048bf77f525731f28db7c1aa9ad853a475ccc78e71ea952a7782e5459",
       "owner": "gtg",
       "pow_worker": 0,
@@ -32,17 +32,17 @@
         },
         "account_subsidy_budget": 797,
         "account_subsidy_decay": 347321,
-        "hbd_interest_rate": 0,
+        "hbd_interest_rate": 1000,
         "maximum_block_size": 65536
       },
-      "running_version": "1.24.2",
-      "signing_key": "STM6Ydeb8rrVXvc6Lsx8Cj2ECYgCiYWNQnRSUzNeyv7PjXEXJnwQp",
-      "total_missed": 609,
-      "url": "https://gtg.openhive.network",
-      "virtual_last_update": "576891526263721218165224696",
-      "virtual_position": "150454264018648816202513961339466092809",
-      "virtual_scheduled_time": "576892990694560862899898622",
-      "votes": "129625857202202337"
+      "running_version": "0.13.0",
+      "signing_key": "STM6GmnhcBN9DxmFcj1e423Q2RkFYStUgSotviptAMSdy74eHQSYM",
+      "total_missed": 1,
+      "url": "https://steemit.com/witness-category/@gtg/witness-gtg",
+      "virtual_last_update": "109365512737828348123165341",
+      "virtual_position": "119445661624739888994961491644708048164",
+      "virtual_scheduled_time": "109369350128850966698038402",
+      "votes": "57548658449068633"
     }
   ]
 }
