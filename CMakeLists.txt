@@ -162,7 +162,11 @@ SET( CLANG_TIDY_IGNORED
 )
 
 if( NOT CLANG_TIDY_EXE )
-   message( STATUS "clang-tidy not found" )
+  IF( HIVE_LINT )
+    message( ERROR "Clang tidy tool is not found, but is required by enabled HIVE_LINT option")
+  else()
+    message( STATUS "clang-tidy not found" )
+  endif()
 elseif( VERSION LESS 3.6 )
    messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
 else()
