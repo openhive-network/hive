@@ -26,17 +26,17 @@ namespace hive::plugins::sql_serializer {
         container_data_writer(
             std::string psqlUrl
           , std::string description
-          , std::shared_ptr< block_num_rendezvous_trigger > _api_trigger
+          , std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger
         ) {
-          _processor = std::make_unique<Processor>(psqlUrl, description, flush_replayed_data, _api_trigger);
+          _processor = std::make_unique<Processor>(psqlUrl, description, flush_replayed_data, _randezvous_trigger);
         }
 
         container_data_writer(
             std::function< void(std::string&&) > string_callback
           , std::string description
-          , std::shared_ptr< block_num_rendezvous_trigger > _api_trigger
+          , std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger
         ) {
-          _processor = std::make_unique<Processor>(string_callback, description, flush_scalar_live_data, _api_trigger);
+          _processor = std::make_unique<Processor>(string_callback, description, flush_scalar_live_data, _randezvous_trigger);
         }
 
         void trigger(DataContainer&& data, bool wait_for_data_completion, uint32_t last_block_num);

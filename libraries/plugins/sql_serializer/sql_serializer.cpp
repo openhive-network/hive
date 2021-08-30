@@ -219,14 +219,14 @@ using chain::reindex_notification;
 
             std::string query = std::string("SELECT ") + sql_function_call + ";";
             std::string description = "Query processor: `" + query + "'";
-            auto processor=std::make_unique< queries_commit_data_processor >(db_url, description, [query, &objects_name, mode](const data_chunk_ptr&, transaction& tx) -> data_processing_status
+            auto processor=std::make_unique< queries_commit_data_processor >(db_url, description, [query, &objects_name, mode, description](const data_chunk_ptr&, transaction& tx) -> data_processing_status
                           {
                             ilog("Attempting to execute query: `${query}`...", ("query", query ) );
                             const auto start_time = fc::time_point::now();
                             tx.exec( query );
                             ilog(
-                              "${mode} of ${mod_type} done in ${time} ms",
-                              ("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 )
+                              "${d} ${mode} of ${mod_type} done in ${time} ms",
+                              ("d", description)("mode", (mode ? "Creating" : "Saving and dropping")) ("mod_type", objects_name) ("time", (fc::time_point::now() - start_time).count() / 1000.0 )
                             );
                             ilog("The ${objects_name} have been ${mode}...", ("objects_name", objects_name )("mode", ( mode ? "created" : "dropped" ) ) );
                             return data_processing_status();
@@ -246,10 +246,12 @@ using chain::reindex_notification;
               if(create)
               {
                 auto restore_blocks_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.blocks' )", "enable indexes" );
+                auto restore_irreversible_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.irreversible_data' )", "enable indexes" );
                 auto restore_transactions_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.transactions' )", "enable indexes" );
                 auto restore_transactions_sigs_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.transactions_multisig' )", "enable indexes" );
                 auto restore_operations_idxs = switch_db_items( create, "hive.restore_indexes_constraints( 'hive.operations' )", "enable indexes" );
                 restore_blocks_idxs->join();
+                restore_irreversible_idxs->join();
                 restore_transactions_idxs->join();
                 restore_transactions_sigs_idxs->join();
                 restore_operations_idxs->join();
@@ -257,10 +259,12 @@ using chain::reindex_notification;
                 ilog( "All irreversible blocks tables indexes are re-created" );
 
                 auto restore_blocks_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.blocks' )", "enable indexes" );
+                auto restore_irreversible_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.irreversible_data' )", "enable indexes" );
                 auto restore_transactions_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.transactions' )", "enable indexes" );
                 auto restore_transactions_sigs_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.transactions_multisig' )", "enable indexes" );
                 auto restore_operations_fks = switch_db_items( create, "hive.restore_foreign_keys( 'hive.operations' )", "enable indexes" );
                 restore_blocks_fks->join();
+                restore_irreversible_fks->join();
                 restore_transactions_fks->join();
                 restore_transactions_sigs_fks->join();
                 restore_operations_fks->join();
