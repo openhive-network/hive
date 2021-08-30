@@ -10,9 +10,9 @@
           "file": "database.cpp",
           "hostname": "",
           "level": "warn",
-          "line": 790,
+          "line": 828,
           "method": "get_comment",
-          "timestamp": "2021-08-30T10:11:05"
+          "timestamp": "2020-11-25T13:32:56"
         },
         "data": {
           "author": 14007,
@@ -26,9 +26,9 @@
           "file": "database.cpp",
           "hostname": "",
           "level": "warn",
-          "line": 800,
+          "line": 838,
           "method": "get_comment",
-          "timestamp": "2021-08-30T10:11:05"
+          "timestamp": "2020-11-25T13:32:56"
         },
         "data": {
           "author": "gtg",

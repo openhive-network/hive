@@ -1,27 +1,23 @@
 {
-  "error": {
-    "code": -32003,
-    "data": {
-      "code": 10,
-      "message": "Assert Exception",
-      "name": "assert_exception",
-      "stack": [
-        {
-          "context": {
-            "file": "condenser_api.cpp",
-            "hostname": "",
-            "level": "error",
-            "line": 841,
-            "method": "get_discussions_by_active",
-            "timestamp": "2021-08-16T08:26:54"
-          },
-          "data": {},
-          "format": "false: Supported by hivemind"
-        }
-      ]
-    },
-    "message": "Assert Exception:false: Supported by hivemind"
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "condenser_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 841,
+          "method": "get_discussions_by_active",
+          "timestamp": "2021-08-30T10:22:19"
+        },
+        "data": {},
+        "format": "false: Supported by hivemind"
+      }
+    ]
   },
-  "id": 1,
-  "jsonrpc": "2.0"
+  "message": "Assert Exception:false: Supported by hivemind"
 }
