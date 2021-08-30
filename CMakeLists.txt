@@ -163,7 +163,7 @@ SET( CLANG_TIDY_IGNORED
 
 if( NOT CLANG_TIDY_EXE )
   IF( HIVE_LINT )
-    message( ERROR "Clang tidy tool is not found, but is required by enabled HIVE_LINT option")
+    message( FATAL_ERROR  "Clang tidy tool is not found, but is required by enabled HIVE_LINT option")
   else()
     message( STATUS "clang-tidy not found" )
   endif()
