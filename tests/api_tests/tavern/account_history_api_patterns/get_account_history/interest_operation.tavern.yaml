@@ -3,6 +3,7 @@
 
   marks:
     - patterntest # virtual
+    # should give interest operation not comment reward op
 
   includes:
     - !include ../../common.yaml

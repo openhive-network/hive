@@ -4,6 +4,7 @@
   marks:
     - patterntest # virtual
       # no noempty results
+      # should return []
 
   includes:
     - !include ../../common.yaml

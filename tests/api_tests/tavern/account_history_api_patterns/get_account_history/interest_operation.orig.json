@@ -1,0 +1,27 @@
+{
+  "history": [
+    [
+      8115,
+      {
+        "block": 2893044,
+        "op": {
+          "type": "interest_operation",
+          "value": {
+            "interest": {
+              "amount": "247",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "owner": "xeroc"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T03:42:21",
+        "trx_id": "f9e46925b19db80ab57f2e5824b02eae3392133a",
+        "trx_in_block": 2,
+        "virtual_op": 1
+      }
+    ]
+  ]
+}
