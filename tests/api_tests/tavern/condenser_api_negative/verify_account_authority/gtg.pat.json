@@ -12,14 +12,14 @@
           "level": "error",
           "line": 88,
           "method": "verify_authority",
-          "timestamp": "2020-10-30T12:35:56"
+          "timestamp": "2021-08-30T10:50:05"
         },
         "data": {
           "auth": {
             "account_auths": [],
             "key_auths": [
               [
-                "STM8NWQYG4BvjGNu8zqqV9fbR7aSCZHcxkVib41PYnpGmPRe6BHVG",
+                "STM4vuEE8F2xyJhwiNCnHxjUVLNXxdFXtVxgghBq5LVLt49zLKLRX",
                 1
               ]
             ],
@@ -46,7 +46,7 @@
           "level": "warn",
           "line": 103,
           "method": "verify_authority",
-          "timestamp": "2020-10-30T12:35:56"
+          "timestamp": "2021-08-30T10:50:05"
         },
         "data": {
           "auth_containers": [
@@ -75,7 +75,7 @@
           "level": "warn",
           "line": 232,
           "method": "verify_authority",
-          "timestamp": "2020-10-30T12:35:56"
+          "timestamp": "2021-08-30T10:50:05"
         },
         "data": {
           "*this": {

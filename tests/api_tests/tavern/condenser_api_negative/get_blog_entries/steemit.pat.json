@@ -1,9 +1,22 @@
-[
-  {
-    "author": "steemit",
-    "blog": "steemit",
-    "entry_id": 0,
-    "permlink": "firstpost",
-    "reblogged_on": "1970-01-01T00:00:00"
-  }
-]
+{
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "condenser_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 1040,
+          "method": "get_blog_entries"
+        },
+        "data": {},
+        "format": "_follow_api: follow_api_plugin not enabled."
+      }
+    ]
+  },
+  "message": "Assert Exception:_follow_api: follow_api_plugin not enabled."
+}
