@@ -14,7 +14,7 @@ namespace hive::plugins::sql_serializer {
       chunks_for_writers_splitter( uint8_t number_of_writers,
                                      std::string psqlUrl
                                    , std::string description
-                                   , std::shared_ptr< block_num_rendezvous_trigger > _api_trigger
+                                   , std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger
                                    );
       ~chunks_for_writers_splitter() = default;
 
@@ -37,14 +37,14 @@ namespace hive::plugins::sql_serializer {
         uint8_t number_of_writers
       , std::string psqlUrl
       , std::string description
-      , std::shared_ptr< block_num_rendezvous_trigger > _api_trigger
+      , std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger
   )
   : _description( std::move(description) )
   {
     FC_ASSERT( number_of_writers > 0 );
     for ( auto writer_num = 0; writer_num < number_of_writers; ++writer_num ) {
       auto writer_description = _description + "_" + std::to_string( writer_num );
-      writers.emplace_back( psqlUrl, writer_description, _api_trigger );
+      writers.emplace_back( psqlUrl, writer_description, _randezvous_trigger );
     }
   }
 

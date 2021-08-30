@@ -69,7 +69,7 @@ public:
 
     size_t _total_processed_records;
 
-    std::shared_ptr< block_num_rendezvous_trigger > _api_trigger;
+    std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger;
 };
 
 
