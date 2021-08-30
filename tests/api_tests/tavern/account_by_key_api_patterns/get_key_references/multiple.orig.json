@@ -12,16 +12,19 @@
       "grumpymutt",
       "hsbc",
       "jpmorgan",
-      "ned",
       "ned-scott",
       "softbank",
-      "steem",
       "steemit1",
       "troller",
       "ukon",
       "walmart"
     ],
-    [],
+    [
+      "ben",
+      "bitdev100",
+      "buysbd",
+      "imadev"
+    ],
     [
       "silver"
     ]
