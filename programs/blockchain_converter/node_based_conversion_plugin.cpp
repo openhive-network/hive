@@ -44,6 +44,7 @@ namespace hive { namespace converter { namespace plugins { namespace node_based_
 namespace detail {
 
   using hive::plugins::condenser_api::legacy_signed_transaction;
+  using hive::plugins::condenser_api::legacy_signed_block;
 
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
@@ -264,7 +265,7 @@ namespace detail {
 
       input_con.get_socket().close();
 
-      return var_obj["result"].get_object()["block"].template as< hp::signed_block >();
+      return var_obj["result"].get_object()["block"].template as< legacy_signed_block >();
     } FC_CAPTURE_AND_RETHROW( (num) )
   }
 
@@ -307,7 +308,7 @@ namespace detail {
     if( result_offset + 1 > block_buf.size() || result_offset + 1 == 0 )
       return fc::optional< hp::signed_block >();
 
-    return block_buf.at( result_offset ).template as< hp::signed_block >();
+    return block_buf.at( result_offset ).template as< legacy_signed_block >();
   }
 
   void node_based_conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id )
