@@ -298,7 +298,11 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
-   this->mainnet_head_block_id = _signed_block.previous;
+    if( mainnet_head_block_id == hp::block_id_type{} ) // Check for all the hardforks if mainnet_head_block_id is not yet assigned
+      for( int i = 0; i < HIVE_NUM_HARDFORKS; ++i )
+        check_for_hardfork( _signed_block );
+
+    this->mainnet_head_block_id = _signed_block.previous;
 
     current_block_ptr = &_signed_block;
 
