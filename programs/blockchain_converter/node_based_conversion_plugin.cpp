@@ -226,10 +226,11 @@ namespace detail {
       ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error on localhost
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-#define HIVE_CONVERTER_DEBUG_TRANSMIT // TODO: Remove before merge
+// #define HIVE_CONVERTER_DEBUG_TRANSMIT // TODO: Remove before merge
 #ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
-      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
 #endif
 
       output_con.get_socket().close();
@@ -257,8 +258,9 @@ namespace detail {
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
       FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
 
-      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
 
       if( !var_obj["result"].get_object().contains("block") )
         return fc::optional< hp::signed_block >();
@@ -293,9 +295,10 @@ namespace detail {
         // TODO: Move to boost to support chunked transfer encoding in responses
         FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
 
-        fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
-        FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
-        FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", &*reply.body.begin()) );
+        std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+        fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+        FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+        FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", str_reply) );
 
         block_buffer_obj = var_obj;
 
@@ -324,9 +327,10 @@ namespace detail {
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
       FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
 
-      fc::variant_object var_obj = fc::json::from_string( &*reply.body.begin() ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", &*reply.body.begin()) );
-      FC_ASSERT( var_obj["result"].get_object().contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("body", &*reply.body.begin()) );
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+      FC_ASSERT( var_obj["result"].get_object().contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("body", str_reply) );
 
       const auto& chain_id_str = var_obj["result"].get_object()["HIVE_CHAIN_ID"].as_string();
       hp::chain_id_type remote_chain_id;
