@@ -1,6 +1,7 @@
 import pytest
 
 from test_tools import automatic_tests_configuration, constants, World
+from test_tools.private.scope.scope_fixtures import *  # pylint: disable=wildcard-import, unused-wildcard-import
 
 
 @pytest.fixture(autouse=True)
