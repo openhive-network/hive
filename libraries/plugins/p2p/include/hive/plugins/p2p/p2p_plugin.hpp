@@ -53,6 +53,7 @@ public:
   void add_node(const fc::ip::endpoint& endpoint);
   void set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers);
   std::vector< api_peer_status > get_connected_peers();
+  void update_refresh_rate( const fc::microseconds delay = fc::microseconds::maximum() );
 
 
 private:

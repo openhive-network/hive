@@ -455,6 +455,7 @@ namespace graphene { namespace net {
 
       fc::future<void>     _terminate_inactive_connections_loop_done;
       uint8_t _recent_block_interval_in_seconds; // a cached copy of the block interval, to avoid a thread hop to the blockchain to get the current value
+      fc::microseconds _requestet_refresh_time = fc::microseconds::maximum();
 
       std::string          _user_agent_string;
       /** _node_public_key is a key automatically generated when the client is first run, stored in
@@ -1234,8 +1235,8 @@ namespace graphene { namespace net {
         if (!_items_to_fetch_updated)
         {
           _retrigger_fetch_item_loop_promise = fc::promise<void>::ptr(new fc::promise<void>("graphene::net::retrigger_fetch_item_loop"));
-          fc::microseconds time_until_retrigger = fc::microseconds::maximum();
-          if (next_peer_unblocked_time != fc::time_point::maximum())
+          fc::microseconds time_until_retrigger = _requestet_refresh_time;
+          if (time_until_retrigger != fc::microseconds::maximum() && next_peer_unblocked_time != fc::time_point::maximum())
             time_until_retrigger = next_peer_unblocked_time - fc::time_point::now();
           try
           {
@@ -5425,6 +5426,11 @@ namespace graphene { namespace net {
   void node::close()
   {
     INVOKE_IN_IMPL(close);
+  }
+
+  void graphene::net::node::update_refresh_rate(const fc::microseconds delay)
+  {
+    this->my->_requestet_refresh_time = delay;
   }
 
   struct simulated_network::node_info

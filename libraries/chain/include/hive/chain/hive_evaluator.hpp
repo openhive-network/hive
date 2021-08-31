@@ -69,5 +69,6 @@ HIVE_DEFINE_EVALUATOR(update_proposal)
 HIVE_DEFINE_EVALUATOR( update_proposal_votes )
 HIVE_DEFINE_EVALUATOR( remove_proposal )
 HIVE_DEFINE_EVALUATOR( recurrent_transfer )
+HIVE_DEFINE_EVALUATOR( debug )
 
 } } // hive::chain

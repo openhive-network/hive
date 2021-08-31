@@ -432,6 +432,7 @@ struct count_operation_visitor
   void operator()( const system_warning_operation& ) const {}
   void operator()( const fill_recurrent_transfer_operation& ) const {}
   void operator()( const failed_recurrent_transfer_operation& ) const {}
+  void operator()( const debug_operation& ) const {}
 
   // Optional Actions
 #ifdef IS_TEST_NET

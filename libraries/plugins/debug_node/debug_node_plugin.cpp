@@ -1,5 +1,7 @@
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
+#include <hive/plugins/witness/witness_plugin.hpp>
+#include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
 #include <hive/chain/witness_objects.hpp>
 
@@ -27,11 +29,60 @@ class debug_node_plugin_impl
 
     chain::database&                          _db;
     boost::signals2::connection               _post_apply_block_conn;
+    boost::signals2::connection               _debug_conn;
+    void on_post_apply_block( const chain::block_notification& note );
+    void on_debug( const chain::debug_notification& note );
+
+  private:
+
+    fc::time_point_sec                        fast_forward_stop_point;
+    static fc::time_point_sec get_time_null_value() { return fc::time_point_sec::min(); }
 };
 
 debug_node_plugin_impl::debug_node_plugin_impl() :
-  _db( appbase::app().get_plugin< chain::chain_plugin >().db() ) {}
+  _db( appbase::app().get_plugin< chain::chain_plugin >().db() ),
+  fast_forward_stop_point{get_time_null_value()} {}
 debug_node_plugin_impl::~debug_node_plugin_impl() {}
+
+  void debug_node_plugin_impl::on_post_apply_block( const chain::block_notification& note )
+  {
+    try
+    {
+  #ifdef IS_TEST_NET
+      if(this->fast_forward_stop_point != get_time_null_value())
+      {
+        if(note.block.timestamp >= this->fast_forward_stop_point)
+        {
+          this->fast_forward_stop_point = get_time_null_value();
+          const fc::microseconds new_offset = note.block.timestamp - fc::time_point::now();
+          // static_cast<fc::time_point_sec>(fc::time_point::now());
+          this->_db.modify(this->_db.get_dynamic_global_properties(), [&](auto& gdpo){
+            gdpo.block_time_offset = new_offset;
+          });
+
+          chain::debug_notification out_note{get_time_null_value()};
+          this->_db.notify_debug( out_note );
+
+          ilog("finished fast-forwarding at block with date ${bdate} with offset ${offset}",
+              ("bdate", note.block.timestamp)
+              ("offset", new_offset)
+          );
+        } else {
+          this->_db.modify(this->_db.get_dynamic_global_properties(), [](auto& gdpo){
+            gdpo.block_time_offset += fc::seconds(HIVE_BLOCK_INTERVAL);
+          });
+        }
+      }
+  #endif
+    }
+    FC_LOG_AND_RETHROW();
+  }
+
+  void debug_node_plugin_impl::on_debug(const chain::debug_notification &note)
+  {
+    if(note.new_fast_forward != get_time_null_value())
+      this->fast_forward_stop_point = note.new_fast_forward;
+  }
 
 }
 
@@ -68,8 +119,13 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
   }
 
   // connect needed signals
+  my->_db.activate_debug();
+
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
-    [this](const chain::block_notification& note){ on_post_apply_block(note); }, *this, 0 );
+    [this](const chain::block_notification& note){ my->on_post_apply_block(note); }, *this, 0 );
+
+  my->_debug_conn = my->_db.add_debug_handler(
+    [this](const chain::debug_notification& note ) { my->on_debug(note); }, *this, 0);
 }
 
 void debug_node_plugin::plugin_startup()
@@ -265,30 +321,9 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   uint32_t skip
 )
 {
-  chain::database& db = database();
-
-  if( db.head_block_time() >= head_block_time )
-    return 0;
-
-  uint32_t new_blocks = 0;
-
-  if( generate_sparsely )
-  {
-    new_blocks += debug_generate_blocks( debug_key, 1, skip );
-    auto slots_to_miss = db.get_slot_at_time( head_block_time );
-    if( slots_to_miss > 1 )
-    {
-      slots_to_miss--;
-      new_blocks += debug_generate_blocks( debug_key, 1, skip, slots_to_miss );
-    }
-  }
-  else
-  {
-    while( db.head_block_time() < head_block_time )
-      new_blocks += debug_generate_blocks( debug_key, 1 );
-  }
-
-  return new_blocks;
+  appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().update_refresh_rate( fc::milliseconds(5) );
+  appbase::app().get_plugin<hive::plugins::witness::witness_plugin>().forward(debug_key, head_block_time);
+  return 0;
 }
 
 void debug_node_plugin::apply_debug_updates()
@@ -305,15 +340,6 @@ void debug_node_plugin::apply_debug_updates()
     update( db );
 }
 
-void debug_node_plugin::on_post_apply_block( const chain::block_notification& note )
-{
-  try
-  {
-  if( !_debug_updates.empty() )
-    apply_debug_updates();
-  }
-  FC_LOG_AND_RETHROW()
-}
 
 /*void debug_node_plugin::set_json_object_stream( const std::string& filename )
 {
@@ -354,6 +380,7 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
 void debug_node_plugin::plugin_shutdown()
 {
   chain::util::disconnect_signal( my->_post_apply_block_conn );
+  chain::util::disconnect_signal( my->_debug_conn );
   /*if( _json_object_stream )
   {
     _json_object_stream->close();

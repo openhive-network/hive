@@ -57,6 +57,7 @@ public:
   virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
   virtual void plugin_startup() override;
   virtual void plugin_shutdown() override;
+  void forward(const chain::account_name_type& invoker, const fc::time_point_sec untill);
 
 private:
   std::unique_ptr< detail::witness_plugin_impl > my;
