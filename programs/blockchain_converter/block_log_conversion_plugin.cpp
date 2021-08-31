@@ -98,6 +98,7 @@ namespace detail {
 
       while( !chain_id_match && it_block_num >= 1 )
       {
+        if( appbase::app().is_interrupt_request() ) break;
         fc::optional< hp::signed_block > block = log_out.read_block_by_num( it_block_num );
         FC_ASSERT( block.valid(), "unable to read block", ("block_num", it_block_num) );
 
