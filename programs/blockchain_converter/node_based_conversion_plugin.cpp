@@ -143,8 +143,9 @@ namespace detail {
     fc::optional< hp::signed_block > block;
 
     hp::block_id_type last_block_id;
-    while( start_block_num > 1 && !block.valid() ) // Get last block id from the remote if start_block_num is not a genesis block
+    while( start_block_num > 1 && !block.valid() ) // TODO: Get last block from the remote dynamic global props and remove -R option from converter
     {
+      if( appbase::app().is_interrupt_request() ) break;
       block = receive_uncached( start_block_num - 1 );
       if( block.valid() )
       {
