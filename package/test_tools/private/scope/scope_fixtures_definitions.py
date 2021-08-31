@@ -3,18 +3,22 @@ from typing import Optional
 
 import pytest
 
-from test_tools.private.scope import current_scope
+from test_tools.private.scope import current_scope, ScopedCurrentDirectory
 
 
 @pytest.fixture(autouse=True, scope='function')
 def function_scope(request):
     with current_scope.create_new_scope(f'function: {__get_function_name(request)}'):
+        ScopedCurrentDirectory(__get_directory_for_function(request))
+
         yield
 
 
 @pytest.fixture(autouse=True, scope='module')
 def module_scope(request):
     with current_scope.create_new_scope(f'module: {__get_module_name(request)}'):
+        ScopedCurrentDirectory(__get_directory_for_module(request))
+
         yield
 
 
@@ -26,6 +30,8 @@ def package_scope(request):
         yield
     else:
         with current_scope.create_new_scope(f'package: {__get_package_name(request)}'):
+            ScopedCurrentDirectory(__get_directory_for_package(request))
+
             yield
 
 
@@ -37,9 +43,26 @@ def __get_package_name(request) -> str:
     return __get_pytest_package_object(request).name
 
 
+def __get_directory_for_package(request) -> Path:
+    return Path(__get_pytest_package_object(request).fspath).parent / 'generated_by_package_fixtures'
+
+
+def __get_directory_for_module(request):
+    assert request.scope == 'module'
+    module_name = Path(request.module.__file__).stem
+    module_directory = Path(request.module.__file__).parent
+    return module_directory / f'generated_during_{module_name}'
+
+
 def __get_module_name(request) -> str:
     assert request.scope == 'module'
     return Path(request.module.__file__).stem
+
+
+def __get_directory_for_function(request):
+    assert request.scope == 'function'
+    function_name = request.function.__name__
+    return current_scope.context.get_current_directory() / function_name
 
 
 def __get_function_name(request) -> str:

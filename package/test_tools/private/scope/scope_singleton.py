@@ -4,6 +4,7 @@ import warnings
 
 from test_tools.private.scope.scope import Scope
 from test_tools.private.utilities.disabled_keyboard_interrupt import DisabledKeyboardInterrupt
+from test_tools.private.utilities.tests_type import is_manual_test
 
 if TYPE_CHECKING:
     from test_tools.private.scope import ScopedObject
@@ -70,3 +71,8 @@ class ScopesStack:
 
 
 current_scope = ScopesStack()
+
+if is_manual_test():
+    # Break import-cycle
+    from test_tools.private.scope.scoped_current_directory import ScopedCurrentDirectory
+    ScopedCurrentDirectory(current_scope.context.get_current_directory())
