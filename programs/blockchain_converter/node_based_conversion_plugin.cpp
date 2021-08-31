@@ -250,8 +250,8 @@ namespace detail {
     {
       open( input_con, input_url );
 
-      auto reply = input_con.request( "POST", input_url,
-          "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
+      auto reply = input_con.request( "POST", input_url, // XXX: Move to block_api - fix deserialization
+          "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.get_block\",\"params\":[" + std::to_string( num ) + "],\"id\":1}"
           /*,{ { "Content-Type", "application/json" } } */
       );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
