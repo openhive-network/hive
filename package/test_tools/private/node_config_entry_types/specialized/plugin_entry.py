@@ -7,8 +7,8 @@ class Plugin(Untouched):
         'block_api', 'block_data_export', 'block_log_info', 'chain', 'chain_api', 'comment_cashout_logging',
         'condenser_api', 'database_api', 'debug_node', 'debug_node_api', 'follow', 'follow_api', 'json_rpc',
         'market_history', 'market_history_api', 'network_broadcast_api', 'network_node_api', 'p2p', 'rc', 'rc_api',
-        'reputation', 'reputation_api', 'rewards_api', 'state_snapshot', 'stats_export', 'statsd', 'tags',
-        'tags_api', 'transaction_status', 'transaction_status_api', 'wallet_bridge_api', 'webserver', 'witness',
+        'reputation', 'reputation_api', 'rewards_api', 'sql_serializer', 'state_snapshot', 'stats_export', 'statsd',
+        'tags', 'tags_api', 'transaction_status', 'transaction_status_api', 'wallet_bridge_api', 'webserver', 'witness',
     ]
 
     @classmethod

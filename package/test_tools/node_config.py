@@ -98,6 +98,8 @@ class NodeConfig:
         self.witness = List(String, single_line=False)
         self.private_key = List(Untouched, single_line=False)
         self.witness_skip_enforce_bandwidth = Untouched()  # Set correct type
+        self.psql_url = Untouched()
+        self.psql_index_threshold = Integer()
 
     def __setattr__(self, key, value):
         entries = self.__get_entries()
