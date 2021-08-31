@@ -18,10 +18,10 @@
         json:
           jsonrpc: "2.0"
           id: 1
-          method: "rc_api.get_resource_pool"
+          method: "rc_api.get_resource_params"
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
-            ignore_tags: ["pool"]
+            error_response: true
