@@ -125,6 +125,7 @@ database::database()
 database::~database()
 {
   clear_pending();
+  chain::util::disconnect_signal( this->_debug_signal_handle );
 }
 
 void database::open( const open_args& args )
@@ -1448,6 +1449,13 @@ void database::notify_load_snapshot_data_supplement(const load_snapshot_suppleme
 void database::notify_comment_reward(const comment_reward_notification& note)
 {
   HIVE_TRY_NOTIFY(_comment_reward_signal, note) 
+}
+
+void database::notify_debug(const debug_notification& note)
+{
+#ifdef IS_TEST_NET
+  HIVE_TRY_NOTIFY(_debug_signal, note) 
+#endif
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -3708,6 +3716,7 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
+  _my->_evaluator_registry.register_evaluator< debug_evaluator                          >();
 
 
 #ifdef IS_TEST_NET
@@ -4856,6 +4865,11 @@ boost::signals2::connection database::add_snapshot_supplement_handler(const load
 boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl(_comment_reward_signal, func, plugin, group, "->comment_reward");
+}
+
+boost::signals2::connection database::add_debug_handler(const debug_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl(_debug_signal, func, plugin, group, "->debug");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const
@@ -6772,6 +6786,16 @@ void database::remove_expired_governance_votes()
       break;
     }
   }
+}
+
+void database::activate_debug()
+{
+  this->_debug_signal_handle = this->_debug_signal.connect(-1, [&](const auto& note) { handle_debug_signal(note); });
+}
+
+void database::handle_debug_signal(const debug_notification &note)
+{
+  this->fast_forward_state = (note.new_fast_forward != fc::time_point_sec::min());
 }
 
 } } //hive::chain

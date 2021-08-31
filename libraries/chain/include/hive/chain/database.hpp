@@ -368,10 +368,12 @@ namespace chain {
       using prepare_snapshot_data_supplement_handler_t = std::function < void(const prepare_snapshot_supplement_notification&) >;
       using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
       using comment_reward_notification_handler_t = std::function < void(const comment_reward_notification&) >;
+      using debug_notification_handler_t = std::function < void(const debug_notification&) >;
 
       void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
       void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
       void notify_comment_reward(const comment_reward_notification& note);
+      void notify_debug(const debug_notification& note);
 
     private:
       template <typename TSignal,
@@ -422,6 +424,8 @@ namespace chain {
       boost::signals2::connection add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       boost::signals2::connection add_comment_reward_handler            (const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+
+      boost::signals2::connection add_debug_handler                     (const debug_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       //////////////////// db_witness_schedule.cpp ////////////////////
 
@@ -767,6 +771,19 @@ namespace chain {
         return _hardfork_versions;
       }
 
+      fc::time_point_sec get_block_producer_time() const 
+      {
+        return fc::time_point::now() + get_dynamic_global_properties().get_block_time_offset();
+      }
+
+      bool is_fast_forward_state() const
+      {
+        return fast_forward_state;
+      }
+
+      void activate_debug();
+      void handle_debug_signal(const debug_notification& note);
+
     private:
 
       std::unique_ptr< database_impl > _my;
@@ -801,6 +818,7 @@ namespace chain {
       uint16_t                      _shared_file_scale_rate = 0;
 
       bool                          snapshot_loaded = false;
+      bool                          fast_forward_state = false;
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;
@@ -900,6 +918,12 @@ namespace chain {
       ///  Emitted when rewards for author and curators are paid out.
       /// </summary>
       fc::signal<void(const comment_reward_notification&)>          _comment_reward_signal;
+
+      /// <summary>
+      ///  Emitted when debug_operation is applied.
+      /// </summary>
+      fc::signal<void(const debug_notification&)>          _debug_signal;
+      boost::signals2::connection                          _debug_signal_handle;
   };
 
   struct reindex_notification

@@ -215,6 +215,7 @@ namespace graphene { namespace net {
         void      set_node_delegate( node_delegate* del );
 
         void      load_configuration( const fc::path& configuration_directory );
+        void      update_refresh_rate( const fc::microseconds delay = fc::microseconds::maximum() );
 
         virtual void      listen_to_p2p_network();
         virtual void      connect_to_p2p_network();

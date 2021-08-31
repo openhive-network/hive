@@ -350,7 +350,8 @@ void chain_plugin_impl::start_write_processing()
           wlog("Checking for new P2P data once per ${t} seconds...", ("t", HIVE_BLOCK_INTERVAL));
         }
 
-        boost::this_thread::sleep_for(boost::chrono::seconds(HIVE_BLOCK_INTERVAL));
+        if(!db.is_fast_forward_state())
+          boost::this_thread::sleep_for(boost::chrono::seconds(HIVE_BLOCK_INTERVAL));
       }
     }
 
@@ -888,7 +889,8 @@ bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type&
 
 void chain_plugin::check_time_in_block( const hive::chain::signed_block& block )
 {
-  time_point_sec now = fc::time_point::now();
+  if(db().is_fast_forward_state()) return;
+  time_point_sec now = this->db().get_block_producer_time();
 
   uint64_t max_accept_time = now.sec_since_epoch();
   max_accept_time += my->allow_future_time;

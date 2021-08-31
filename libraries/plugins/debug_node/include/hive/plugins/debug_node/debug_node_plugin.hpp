@@ -103,8 +103,6 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     bool logging = true;
 
   private:
-    void on_post_apply_block( const hive::chain::block_notification& note );
-
     void apply_debug_updates();
 
     std::map<protocol::public_key_type, fc::ecc::private_key> _private_keys;

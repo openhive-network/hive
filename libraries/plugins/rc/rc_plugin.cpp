@@ -176,6 +176,11 @@ struct get_resource_user_visitor
 
   get_resource_user_visitor() {}
 
+  account_name_type operator()( const debug_operation& op )const
+  {
+    return op.invoker;
+  }
+
   account_name_type operator()( const witness_set_properties_operation& op )const
   {
     return op.owner;

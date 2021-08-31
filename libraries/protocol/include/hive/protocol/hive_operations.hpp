@@ -1121,6 +1121,27 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
   };
 
+
+  /**
+   * @ingroup operations 
+   * 
+   * @brief Informs all nodes, how long blocks should be produed with full speed
+   */
+  struct debug_operation : public base_operation
+  {
+    static const char* error_message_not_supported;
+
+    account_name_type invoker;
+
+    // untill this time point generate blocks with full speed
+    time_point_sec untill;
+
+    void validate()const;
+    // explicit debug_operation(time_point_sec i_untill = time_point_sec{}) : untill{i_untill} {}
+    void get_required_active_authorities( flat_set<account_name_type>& names) const {}
+    void get_required_owner_authorities( flat_set<account_name_type>& names) const {names.insert(invoker);}
+  };
+
   } } // hive::protocol
 
 
@@ -1236,3 +1257,4 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+FC_REFLECT( hive::protocol::debug_operation, (invoker)(untill) );

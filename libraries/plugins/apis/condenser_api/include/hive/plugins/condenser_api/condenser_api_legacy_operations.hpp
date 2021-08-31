@@ -1398,6 +1398,24 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t          executions = 0;
   };
 
+  struct legacy_debug_operation
+  {
+    legacy_debug_operation() {}
+    legacy_debug_operation( const debug_operation& op ) :
+      invoker{ op.invoker }, untill{ op.untill } {}
+
+    operator debug_operation()const
+    {
+      debug_operation op{};
+      op.invoker = invoker;
+      op.untill = untill;
+      return op;
+    }
+
+    account_name_type invoker;
+    time_point_sec untill;
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -1483,7 +1501,8 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_ineffective_delete_comment_operation,
         legacy_recurrent_transfer_operation,
         legacy_fill_recurrent_transfer_operation,
-        legacy_failed_recurrent_transfer_operation
+        legacy_failed_recurrent_transfer_operation,
+        legacy_debug_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1804,6 +1823,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const debug_operation& op )const
+    {
+      l_op = legacy_debug_operation( op );
+      return true;
+    }
+
     // Should only be SMT ops
     template< typename T >
     bool operator()( const T& )const { return false; }
@@ -2040,6 +2065,11 @@ struct convert_from_legacy_operation_visitor
     return operation( recurrent_transfer_operation( op ) );
   }
 
+  operation operator()( const legacy_debug_operation& op )const
+  {
+    return operation( debug_operation( op ) );
+  }
+
   template< typename T >
   operation operator()( const T& t )const
   {
@@ -2253,5 +2283,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (accou
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_debug_operation, (invoker)(untill) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

@@ -181,6 +181,19 @@ namespace hive { namespace chain {
 #ifdef HIVE_ENABLE_SMT
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 #endif
+
+      fc::microseconds get_block_time_offset() const
+      {
+#ifdef IS_TEST_NET
+        return block_time_offset;
+      }
+
+      fc::microseconds block_time_offset{ 0 };
+#else
+        return fc::microseconds();
+      }
+#endif
+
     CHAINBASE_UNPACK_CONSTRUCTOR(dynamic_global_property_object);
   };
 
@@ -243,6 +256,9 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (min_recurrent_transfers_recurrence)
 #ifdef HIVE_ENABLE_SMT
           (smt_creation_fee)
+#endif
+#ifdef IS_TEST_NET
+          (block_time_offset)
 #endif
         )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::dynamic_global_property_object, hive::chain::dynamic_global_property_index )

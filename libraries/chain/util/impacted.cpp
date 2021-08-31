@@ -199,6 +199,11 @@ struct get_impacted_account_visitor
       _impacted.insert( op.to );
   }
 
+  void operator()( const debug_operation& op ) const
+  {
+    _impacted.insert( op.invoker );
+  }
+
   // vops
 
   void operator()( const author_reward_operation& op )

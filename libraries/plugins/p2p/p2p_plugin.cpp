@@ -112,6 +112,7 @@ public:
   virtual graphene::net::item_hash_t get_head_block_id() const override;
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
+  void update_refresh_rate( const fc::microseconds delay = fc::microseconds::maximum() );
 
   fc::optional<fc::ip::endpoint> endpoint;
   vector<fc::ip::endpoint> seeds;
@@ -507,6 +508,11 @@ void p2p_plugin_impl::error_encountered( const string& message, const fc::oexcep
   // notify GUI or something cool
 }
 
+void p2p_plugin_impl::update_refresh_rate(fc::microseconds delay)
+{
+    node->update_refresh_rate(delay);
+}
+
 fc::time_point_sec p2p_plugin_impl::get_blockchain_now()
 { try {
   return fc::time_point::now();
@@ -750,6 +756,11 @@ std::vector< api_peer_status > p2p_plugin::get_connected_peers()
   for (const graphene::net::peer_status& peer : connected_peers)
     api_connected_peers.emplace_back(peer.version, peer.host, peer.info);
   return api_connected_peers;
+}
+
+void p2p_plugin::update_refresh_rate(fc::microseconds delay)
+{
+  my->update_refresh_rate(delay);
 }
 
 } } } // namespace hive::plugins::p2p

@@ -86,6 +86,8 @@ namespace hive { namespace protocol {
         smt_contribute_operation, // last_pre_smt + 6
 #endif
 
+        debug_operation, // last_post_smt + 1
+
         /// virtual operations below this point
         fill_convert_request_operation, // last_regular + 1
         author_reward_operation, // last_regular + 2

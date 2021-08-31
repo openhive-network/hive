@@ -66,4 +66,9 @@ struct comment_reward_notification
   share_type curation_tokens;
 };
 
+struct debug_notification
+{
+  fc::time_point_sec new_fast_forward;
+};
+
 } }
