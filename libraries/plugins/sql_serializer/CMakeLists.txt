@@ -2,11 +2,11 @@ file(GLOB HEADERS "include/hive/plugins/sql_serializer/*.hpp")
 
 find_package(PostgreSQL 10.0)
 
-IF (PostgreSQL_FOUND)
-  MESSAGE (STATUS "Found PostgreSQL installation.")
+FIND_LIBRARY(PQXX_LIB pqxx)
+FIND_LIBRARY(PQ_LIB pq)
 
-  FIND_LIBRARY(PQXX_LIB pqxx)
-  FIND_LIBRARY(PQ_LIB pq)
+IF (PostgreSQL_FOUND && PQXX_LIB && PQ_LIB)
+  MESSAGE (STATUS "Found PostgreSQL installation.")
 
   ADD_LIBRARY( sql_serializer_plugin
                sql_serializer.cpp
@@ -20,6 +20,8 @@ ELSE()
                fake_sql_serializer.cpp
                ${HEADERS}
               )
+  set (PQXX_LIB "")
+  set (PostgreSQL_LIBRARIES "")
 ENDIF()
 
 target_link_libraries( sql_serializer_plugin chain_plugin hive_chain hive_protocol  ${PQXX_LIB} ${PostgreSQL_LIBRARIES} )
