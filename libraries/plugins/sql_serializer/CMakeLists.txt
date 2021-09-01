@@ -5,7 +5,7 @@ find_package(PostgreSQL 10.0)
 FIND_LIBRARY(PQXX_LIB pqxx)
 FIND_LIBRARY(PQ_LIB pq)
 
-IF (PostgreSQL_FOUND && PQXX_LIB && PQ_LIB)
+IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
   MESSAGE (STATUS "Found PostgreSQL installation.")
 
   ADD_LIBRARY( sql_serializer_plugin
