@@ -1,7 +1,7 @@
 {
   "history": [
     [
-      3768,
+      3220,
       {
         "block": 2889020,
         "op": {
@@ -10,7 +10,6 @@
             "comment_author": "abit",
             "comment_permlink": "abit-first-post",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3386877857",
               "nai": "@@000000037",
@@ -27,7 +26,7 @@
       }
     ],
     [
-      3769,
+      3221,
       {
         "block": 2889020,
         "op": {
@@ -36,7 +35,6 @@
             "comment_author": "abit",
             "comment_permlink": "abit-witness-post",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "36810703386",
               "nai": "@@000000037",
@@ -53,7 +51,7 @@
       }
     ],
     [
-      3770,
+      3222,
       {
         "block": 2889020,
         "op": {
@@ -62,7 +60,6 @@
             "comment_author": "abit",
             "comment_permlink": "abit-witness-post-re3",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3659084423",
               "nai": "@@000000037",
@@ -79,7 +76,7 @@
       }
     ],
     [
-      3771,
+      3223,
       {
         "block": 2889020,
         "op": {
@@ -88,7 +85,6 @@
             "comment_author": "abit",
             "comment_permlink": "abit-witness-post-re3-re1",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "335023466",
               "nai": "@@000000037",
@@ -105,7 +101,7 @@
       }
     ],
     [
-      3772,
+      3224,
       {
         "block": 2889020,
         "op": {
@@ -114,7 +110,6 @@
             "comment_author": "abit",
             "comment_permlink": "come-on-miners",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3454929498",
               "nai": "@@000000037",
@@ -131,7 +126,7 @@
       }
     ],
     [
-      3773,
+      3225,
       {
         "block": 2889020,
         "op": {
@@ -140,7 +135,6 @@
             "comment_author": "abit",
             "comment_permlink": "re-masteryoda-test-post-test-20160612t105535643z",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3821361415",
               "nai": "@@000000037",
@@ -157,7 +151,7 @@
       }
     ],
     [
-      3774,
+      3226,
       {
         "block": 2889020,
         "op": {
@@ -166,7 +160,6 @@
             "comment_author": "mummyimperfect",
             "comment_permlink": "8-weeks-ive-become-one-with-the-sofa-9th-jan-2016",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "942253499",
               "nai": "@@000000037",
@@ -183,7 +176,7 @@
       }
     ],
     [
-      3775,
+      3227,
       {
         "block": 2889020,
         "op": {
@@ -192,7 +185,6 @@
             "comment_author": "gavvet",
             "comment_permlink": "how-to-defeat-a-bot-add-a-little-chaos",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "34277088420",
               "nai": "@@000000037",
@@ -209,7 +201,7 @@
       }
     ],
     [
-      3776,
+      3228,
       {
         "block": 2889020,
         "op": {
@@ -218,7 +210,6 @@
             "comment_author": "alyssas",
             "comment_permlink": "re-liondani-re-alyssas-re-abit-ned-started-voting-randomly-on-new-posts-20160602t152250745z",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3821361415",
               "nai": "@@000000037",
@@ -235,7 +226,7 @@
       }
     ],
     [
-      3777,
+      3229,
       {
         "block": 2889020,
         "op": {
@@ -244,7 +235,6 @@
             "comment_author": "oholiab",
             "comment_permlink": "vrhackspace-proof-of-concept",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "1245868516",
               "nai": "@@000000037",
@@ -261,7 +251,7 @@
       }
     ],
     [
-      3778,
+      3230,
       {
         "block": 2889020,
         "op": {
@@ -270,7 +260,6 @@
             "comment_author": "nanzo-scoop",
             "comment_permlink": "an-idiots-to-what-the-dollar-figure-against-your-post-means-i-think",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "5250445889",
               "nai": "@@000000037",
@@ -287,7 +276,7 @@
       }
     ],
     [
-      3779,
+      3231,
       {
         "block": 2889020,
         "op": {
@@ -296,7 +285,6 @@
             "comment_author": "gregory-f",
             "comment_permlink": "clueless-users-guide-to-upgrading-to-version-0",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "25456548715",
               "nai": "@@000000037",
@@ -313,7 +301,7 @@
       }
     ],
     [
-      3780,
+      3232,
       {
         "block": 2889020,
         "op": {
@@ -322,7 +310,6 @@
             "comment_author": "liondani",
             "comment_permlink": "re-tuck-fheman-re-galina-hello-im-galina-and-you--20160610t154341363z",
             "curator": "adm",
-            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3774248740",
               "nai": "@@000000037",

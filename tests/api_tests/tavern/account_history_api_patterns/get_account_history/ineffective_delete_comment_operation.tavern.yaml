@@ -4,7 +4,6 @@
   marks:
     - patterntest # virtual
     # next and last one is 791 of the same account
-    - xfail # why does it move? can't find proper result
 
   includes:
     - !include ../../common.yaml
@@ -20,7 +19,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.get_account_history"
-          params: {"account":"jsc", "operation_filter_high": 128, "start": 595, "limit": 2}
+          params: {"account":"jsc", "operation_filter_high": 512, "start": 600, "limit": 2}
       response:
         status_code: 200
         verify_response_with:
