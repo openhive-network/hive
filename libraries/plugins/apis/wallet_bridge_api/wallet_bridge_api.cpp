@@ -306,7 +306,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
   const auto arg_keys = args.get_array()[0].get_array();
   vector<protocol::public_key_type> keys;
   keys.reserve(arg_keys.size());
-  for (const auto arg : arg_keys)
+  for (const auto& arg : arg_keys)
     keys.push_back(arg.as<protocol::public_key_type>());
 
   return _account_by_key_api->get_key_references( {keys} );

@@ -143,11 +143,6 @@ class wallet_api
       */
     vector< account_name_type > get_active_witnesses()const;
 
-    /** Returns the state info associated with the URL (obsolete)
-      * 
-      */
-    condenser_api::state get_state( string url );
-
     /** Returns vesting withdraw routes for an account.
       *
       * @param account Account to query routes
@@ -175,17 +170,6 @@ class wallet_api
       * @returns a sorted list of account names
       */
     vector< account_name_type > list_accounts(const string& lowerbound, uint32_t limit);
-
-    /** Returns the blockchain's rapidly-changing properties.
-      *
-      * The returned object contains information that changes every block interval
-      * such as the head block number, current witness, etc.
-      *
-      * @see \c get_global_properties() for less-frequently changing properties
-      *
-      * @returns the dynamic global properties
-      */
-    condenser_api::extended_dynamic_global_properties get_dynamic_global_properties() const;
 
     /** Returns information about the given account.
       *
@@ -1340,7 +1324,7 @@ class wallet_api
       * Find proposal with given id
       * @param _ids - array with ids of wanted proposals to be founded.
       */
-    serializer_wrapper<vector< database_api::api_proposal_object >> find_proposals( vector< database_api::api_id_type > proposal_ids );
+    serializer_wrapper<vector< database_api::api_proposal_object >> find_proposals( const vector< database_api::api_id_type >& proposal_ids );
 
     /**
       * List proposal votes

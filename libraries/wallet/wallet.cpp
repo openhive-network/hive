@@ -878,7 +878,6 @@ public:
         for( const auto& o : orders )
         {
           ss << ' ' << setw( 10 ) << o.orderid;
-          ss << ' ' << setw( 12 ) << o.real_price;
           ss << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
           ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
           ss << "\n";
@@ -1223,7 +1222,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::sign_transaction(
 
 serializer_wrapper<operation> wallet_api::get_prototype_operation(const string& operation_name)
 {
-  return { my->get_prototype_operation( std::move(operation_name) ) };
+  return { my->get_prototype_operation( operation_name ) };
 }
 
 string wallet_api::help()const
@@ -2816,9 +2815,9 @@ serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list
   return { my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals };
 }
 
-serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( vector< database_api::api_id_type > proposal_ids )
+serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( const vector< database_api::api_id_type >& proposal_ids )
 {
-  return { my->_remote_wallet_bridge_api->find_proposals( {variant(std::move( proposal_ids ))}, LOCK ).proposals };
+  return { my->_remote_wallet_bridge_api->find_proposals( {variant( proposal_ids )}, LOCK ).proposals };
 }
 
 serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api::list_proposal_votes(
