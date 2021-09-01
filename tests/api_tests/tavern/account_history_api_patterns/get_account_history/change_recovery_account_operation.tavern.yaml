@@ -19,7 +19,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.get_account_history"
-          params: {"account":"barrie", "operation_filter_low": 67108864, "start": 90, "limit": 1}
+          params: {"account":"barrie", "operation_filter_low": 4096, "start": 1, "limit": 1}
       response:
         status_code: 200
         verify_response_with:

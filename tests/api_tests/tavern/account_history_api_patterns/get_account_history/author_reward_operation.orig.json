@@ -1,7 +1,7 @@
 {
   "history": [
     [
-      18087,
+      18069,
       {
         "block": 3426457,
         "op": {
@@ -23,7 +23,6 @@
               "nai": "@@000000021",
               "precision": 3
             },
-            "payout_must_be_claimed": false,
             "permlink": "this-piston-rocks-public-steem-steem-api-for-piston-users-and-developers",
             "vesting_payout": {
               "amount": "29859881",
@@ -41,7 +40,7 @@
       }
     ],
     [
-      18100,
+      18082,
       {
         "block": 3426576,
         "op": {
@@ -63,7 +62,6 @@
               "nai": "@@000000021",
               "precision": 3
             },
-            "payout_must_be_claimed": false,
             "permlink": "changelog-python-steem-0-2rc1",
             "vesting_payout": {
               "amount": "34124528",
@@ -81,7 +79,7 @@
       }
     ],
     [
-      18203,
+      18185,
       {
         "block": 3427233,
         "op": {
@@ -103,7 +101,6 @@
               "nai": "@@000000021",
               "precision": 3
             },
-            "payout_must_be_claimed": false,
             "permlink": "python-steem-0-1",
             "vesting_payout": {
               "amount": "34115256",
@@ -121,7 +118,7 @@
       }
     ],
     [
-      18621,
+      18603,
       {
         "block": 3431278,
         "op": {
@@ -143,7 +140,6 @@
               "nai": "@@000000021",
               "precision": 3
             },
-            "payout_must_be_claimed": false,
             "permlink": "steem-api",
             "vesting_payout": {
               "amount": "25551869",
@@ -161,7 +157,7 @@
       }
     ],
     [
-      18952,
+      18934,
       {
         "block": 3436603,
         "op": {
@@ -183,7 +179,6 @@
               "nai": "@@000000021",
               "precision": 3
             },
-            "payout_must_be_claimed": false,
             "permlink": "re-thecryptodrive-steemit-whales-stockpile-sp-government-spending-analogy-and-the-solution-revealed-20160722t051308630z",
             "vesting_payout": {
               "amount": "1279569822",

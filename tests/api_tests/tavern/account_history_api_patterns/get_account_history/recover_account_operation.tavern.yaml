@@ -3,7 +3,6 @@
 
   marks:
     - patterntest
-    - xfail # why does it move? can't find proper result
     
   includes:
     - !include ../../common.yaml
@@ -19,7 +18,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.get_account_history"
-          params: {"account":"gtg", "operation_filter_low": 33554432, "start": 376, "limit": 1}
+          params: {"account":"gtg", "operation_filter_low": 33554432, "start": 1000, "limit": 1}
       response:
         status_code: 200
         verify_response_with:
