@@ -261,7 +261,7 @@ public:
       ++suffix;
       dest_path = destination_filename + "-" + std::to_string( suffix ) + _wallet_filename_extension;
     }
-    wlog( "backing up wallet ${src} to ${dest}",
+    wlog( "Backing up wallet ${src} to ${dest}",
         ("src", src_path)
         ("dest", dest_path) );
 
@@ -351,7 +351,7 @@ public:
     }
     catch( fc::exception& )
     {
-      result["server"] = "could not retrieve server version information";
+      result["server"] = "Could not retrieve server version information";
     }
 
     return result;
@@ -439,7 +439,7 @@ public:
     if( wallet_filename == "" )
       wallet_filename = _wallet_filename;
 
-    wlog( "saving wallet to file ${fn}", ("fn", wallet_filename) );
+    wlog( "Saving wallet to file ${fn}", ("fn", wallet_filename) );
 
     string data = fc::json::to_pretty_string( _wallet );
     try
@@ -799,7 +799,7 @@ public:
       }
       catch (const fc::exception& e)
       {
-        elog("Caught exception while broadcasting tx ${id}:  ${e}", ("id", tx.id().str())("e", e.to_detail_string()) );
+        elog("Caught exception while broadcasting tx ${id}: ${e}", ("id", tx.id().str())("e", e.to_detail_string()) );
         throw;
       }
     }
@@ -831,13 +831,13 @@ public:
         total_hive += a.balance;
         total_vest += a.vesting_shares;
         total_hbd  += a.hbd_balance;
-        out << std::left << std::setw( 17 ) << std::string(a.name)
+        out << std::left << std::setw(17) << std::string(a.name)
             << std::right << std::setw(18) << hive::protocol::legacy_asset::from_asset(a.balance).to_string() <<" "
             << std::right << std::setw(26) << hive::protocol::legacy_asset::from_asset(a.vesting_shares).to_string() <<" "
             << std::right << std::setw(16) << hive::protocol::legacy_asset::from_asset(a.hbd_balance).to_string() <<"\n";
       }
-      out << "-------------------------------------------------------------------------\n";
-        out << std::left << std::setw( 17 ) << "TOTAL"
+      out << "-------------------------------------------------------------------------------\n";
+        out << std::left << std::setw(17) << "TOTAL"
             << std::right << std::setw(18) << hive::protocol::legacy_asset::from_asset(total_hive).to_string() <<" "
             << std::right << std::setw(26) << hive::protocol::legacy_asset::from_asset(total_vest).to_string() <<" "
             << std::right << std::setw(16) << hive::protocol::legacy_asset::from_asset(total_hbd).to_string() <<"\n";
@@ -846,22 +846,22 @@ public:
     m["get_account_history"] = []( variant result, const fc::variants& a )
     {
       std::stringstream ss;
-      ss << std::left << std::setw( 5 )  << "#" << " ";
+      ss << std::left << std::setw( 8 )  << "#" << " ";
       ss << std::left << std::setw( 10 ) << "BLOCK #" << " ";
-      ss << std::left << std::setw( 15 ) << "TRX ID" << " ";
+      ss << std::left << std::setw( 50 ) << "TRX ID" << " ";
       ss << std::left << std::setw( 20 ) << "OPERATION" << " ";
       ss << std::left << std::setw( 50 ) << "DETAILS" << "\n";
-      ss << "-------------------------------------------------------------------------------\n";
+      ss << "---------------------------------------------------------------------------------------------------\n";
       const auto& results = result.get_array();
       for( const auto& item : results )
       {
-        ss << std::left << std::setw(5) << item.get_array()[0].as_string() << " ";
+        ss << std::left << std::setw(8) << item.get_array()[0].as_string() << " ";
         const auto& op = item.get_array()[1].get_object();
         ss << std::left << std::setw(10) << op["block"].as_string() << " ";
-        ss << std::left << std::setw(15) << op["trx_id"].as_string() << " ";
+        ss << std::left << std::setw(50) << op["trx_id"].as_string() << " ";
         const auto& opop = op["op"].get_object();
         ss << std::left << std::setw(20) << opop["type"].as_string() << " ";
-        ss << std::left << std::setw(50) << fc::json::to_string(opop["value"]) << "\n ";
+        ss << std::left << std::setw(50) << fc::json::to_string(opop["value"]) << "\n";
       }
       return ss.str();
     };
@@ -871,14 +871,14 @@ public:
 
         ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
         ss << ' ' << setw( 10 ) << "Order #";
-        ss << ' ' << setw( 10 ) << "Price";
-        ss << ' ' << setw( 10 ) << "Quantity";
+        ss << ' ' << setw( 12 ) << "Price";
+        ss << ' ' << setw( 14 ) << "Quantity";
         ss << ' ' << setw( 10 ) << "Type";
-        ss << "\n=====================================================================================================\n";
+        ss << "\n===============================================================================\n";
         for( const auto& o : orders )
         {
           ss << ' ' << setw( 10 ) << o.orderid;
-          ss << ' ' << setw( 10 ) << hive::protocol::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
+          ss << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
           ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
           ss << "\n";
         }
@@ -889,21 +889,21 @@ public:
       std::stringstream ss;
       asset bid_sum = asset( 0, HBD_SYMBOL );
       asset ask_sum = asset( 0, HBD_SYMBOL );
-      int spacing = 24;
+      int spacing = 16;
 
       ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
 
       ss << ' ' << setw( ( spacing * 4 ) + 6 ) << "Bids" << "Asks\n"
         << ' '
         << setw( spacing + 3 ) << "Sum(HBD)"
-        << setw( spacing + 1) << "HBD"
+        << setw( spacing + 1 ) << "HBD"
         << setw( spacing + 1 ) << "HIVE"
         << setw( spacing + 1 ) << "Price"
         << setw( spacing + 1 ) << "Price"
         << setw( spacing + 1 ) << "HIVE "
         << setw( spacing + 1 ) << "HBD " << "Sum(HBD)"
-        << "\n====================================================================================================="
-        << "|=====================================================================================================\n";
+        << "\n====================================================================="
+        << "|=====================================================================\n";
 
       for( size_t i = 0; i < orders.bids.size() || i < orders.asks.size(); i++ )
       {
@@ -945,16 +945,16 @@ public:
       auto routes = result.as< vector< database_api::api_withdraw_vesting_route_object > >();
       std::stringstream ss;
 
-      ss << ' ' << std::left << std::setw( 20 ) << "From";
-      ss << ' ' << std::left << std::setw( 20 ) << "To";
+      ss << ' ' << std::left << std::setw( 18 ) << "From";
+      ss << ' ' << std::left << std::setw( 18 ) << "To";
       ss << ' ' << std::right << std::setw( 8 ) << "Percent";
       ss << ' ' << std::right << std::setw( 9 ) << "Auto-Vest";
-      ss << "\n==============================================================\n";
+      ss << "\n=========================================================\n";
 
       for( auto& r : routes )
       {
-        ss << ' ' << std::left << std::setw( 20 ) << std::string( r.from_account );
-        ss << ' ' << std::left << std::setw( 20 ) << std::string( r.to_account );
+        ss << ' ' << std::left << std::setw( 18 ) << std::string( r.from_account );
+        ss << ' ' << std::left << std::setw( 18 ) << std::string( r.to_account );
         ss << ' ' << std::right << std::setw( 8 ) << std::setprecision( 2 ) << std::fixed << double( r.percent ) / 100;
         ss << ' ' << std::right << std::setw( 9 ) << ( r.auto_vest ? "true" : "false" ) << std::endl;
       }
@@ -1222,7 +1222,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::sign_transaction(
 
 serializer_wrapper<operation> wallet_api::get_prototype_operation(const string& operation_name)
 {
-  return { my->get_prototype_operation( std::move(operation_name) ) };
+  return { my->get_prototype_operation( operation_name ) };
 }
 
 string wallet_api::help()const
@@ -2815,9 +2815,9 @@ serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list
   return { my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals };
 }
 
-serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( vector< database_api::api_id_type > proposal_ids )
+serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( const vector< database_api::api_id_type >& proposal_ids )
 {
-  return { my->_remote_wallet_bridge_api->find_proposals( {variant(std::move( proposal_ids ))}, LOCK ).proposals };
+  return { my->_remote_wallet_bridge_api->find_proposals( {variant( proposal_ids )}, LOCK ).proposals };
 }
 
 serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api::list_proposal_votes(
