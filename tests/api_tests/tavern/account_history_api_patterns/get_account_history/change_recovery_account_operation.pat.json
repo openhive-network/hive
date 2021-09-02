@@ -1,23 +1,23 @@
 {
   "history": [
     [
-      90,
+      1566,
       {
-        "block": 3291975,
+        "block": 4150072,
         "op": {
-          "type": "change_recovery_account_operation",
+          "type": "changed_recovery_account_operation",
           "value": {
-            "account_to_recover": "barrie",
-            "extensions": [],
-            "new_recovery_account": "boombastic"
+            "account": "barrie",
+            "new_recovery_account": "boombastic",
+            "old_recovery_account": "boombastic"
           }
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-18T03:38:33",
-        "trx_id": "f1a629b702ed5552959f5a629d37314e1da2e80c",
-        "trx_in_block": 0,
-        "virtual_op": 0
+        "timestamp": "2016-08-17T03:38:33",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
       }
     ]
   ]
