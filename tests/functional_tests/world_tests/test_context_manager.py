@@ -1,11 +1,11 @@
 import pytest
 
-from test_tools import automatic_tests_configuration, World
+from test_tools import World
+from test_tools.private.scope import context
 
 
-def test_explicit_close_call(request):
-    directory = automatic_tests_configuration.get_preferred_directory(request)
-    with World(directory=directory) as world:
+def test_explicit_close_call():
+    with World(directory=context.get_current_directory()) as world:
         node = world.create_init_node()
         node.run()
 
@@ -19,8 +19,7 @@ def test_entering_context_manager_scope_twice(world):
             pass
 
 
-def test_closing_without_entering_context_manager_scope(request):
-    directory = automatic_tests_configuration.get_preferred_directory(request)
-    world = World(directory=directory)
+def test_closing_without_entering_context_manager_scope():
+    world = World(directory=context.get_current_directory())
     with pytest.raises(RuntimeError):
         world.close()
