@@ -9,13 +9,18 @@
 
 namespace hive { namespace converter { namespace plugins {
 
-  using hive::protocol::chain_id_type;
-  using hive::protocol::private_key_type;
+  namespace hp = hive::protocol;
+  using hp::chain_id_type;
+  using hp::private_key_type;
 
   class conversion_plugin_impl {
+  protected:
+    blockchain_converter converter;
+
+    void add_initminer_second_authority_trx_to_block( hp::signed_block& block )const;
+
   public:
     uint32_t log_per_block = 0, log_specific = 0;
-    blockchain_converter converter;
 
     conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id, size_t signers_size )
       : converter( _private_key, chain_id, signers_size ) {}
@@ -24,9 +29,9 @@ namespace hive { namespace converter { namespace plugins {
 
     /// If use_private is set to true then private keys of the second authority will be same as the given private key
     void set_wifs( bool use_private = false, const std::string& _owner = "", const std::string& _active = "", const std::string& _posting = "" );
-    void set_logging( uint32_t log_per_block = 0, uint32_t log_specific = 0 );
-    void add_initminer_second_authority_trx_to_block( hp::signed_block& block );
     void print_wifs()const;
+
+    const blockchain_converter& get_converter()const;
   };
 
 } } } // hive::converter::plugins

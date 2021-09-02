@@ -393,7 +393,8 @@ namespace detail {
           options["block-buffer-size"].as< size_t >(), options["use-now-time"].as< bool >()
         );
 
-    my->set_logging( options["log-per-block"].as< uint32_t >(), options["log-specific"].as< uint32_t >() );
+    my->log_per_block = options["log-per-block"].as< uint32_t >();
+    my->log_specific = options["log-specific"].as< uint32_t >();
 
     my->set_wifs( options.count("use-same-key"), options["owner-key"].as< std::string >(), options["active-key"].as< std::string >(), options["posting-key"].as< std::string >() );
   }
