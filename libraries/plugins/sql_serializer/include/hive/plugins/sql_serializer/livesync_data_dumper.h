@@ -43,9 +43,15 @@ namespace hive::plugins::sql_serializer {
 
   private:
     using block_data_container_t_writer = table_data_writer<hive_blocks, string_data_processor>;
-    using transaction_data_container_t_writer = table_data_writer<hive_transactions, string_data_processor>;
+    using transaction_data_container_t_writer = table_data_writer<
+        hive_transactions< std::vector<PSQL::processing_objects::process_transaction_t> >
+      , string_data_processor
+    >;
     using transaction_multisig_data_container_t_writer = table_data_writer<hive_transactions_multisig, string_data_processor>;
-    using operation_data_container_t_writer = table_data_writer<hive_operations, string_data_processor>;
+    using operation_data_container_t_writer = table_data_writer<
+        hive_operations< std::vector<PSQL::processing_objects::process_operation_t> >
+      , string_data_processor
+    >;
 
     std::unique_ptr< block_data_container_t_writer > _block_writer;
     std::unique_ptr< transaction_data_container_t_writer > _transaction_writer;

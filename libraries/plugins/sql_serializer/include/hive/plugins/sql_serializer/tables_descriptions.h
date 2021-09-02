@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/plugins/sql_serializer/sql_serializer_objects.hpp>
+#include <hive/plugins/sql_serializer/data_container_view.h>
 #include <hive/plugins/sql_serializer/data_2_sql_tuple_base.h>
 
 #include <fc/io/json.hpp>
@@ -26,9 +27,10 @@ namespace hive::plugins::sql_serializer {
       };
     };
 
+  template< typename Container >
   struct hive_transactions
     {
-    using container_t = std::vector<PSQL::processing_objects::process_transaction_t>;
+    using container_t = Container;//container_view< std::vector<PSQL::processing_objects::process_transaction_t> >;
 
     static const char TABLE[];
     static const char COLS[];
@@ -63,9 +65,11 @@ namespace hive::plugins::sql_serializer {
       };
     };
 
+  template< typename Container >
   struct hive_operations
     {
-    using container_t = std::vector<PSQL::processing_objects::process_operation_t>;
+    using container_t =  Container;
+      //container_view< std::vector<PSQL::processing_objects::process_operation_t> >;
 
     static const char TABLE[];
     static const char COLS[];

@@ -7,9 +7,9 @@ namespace hive::plugins::sql_serializer {
     {
 
     hive_blocks::container_t blocks;
-    hive_transactions::container_t transactions;
+    std::vector<PSQL::processing_objects::process_transaction_t> transactions;
     hive_transactions_multisig::container_t transactions_multisig;
-    hive_operations::container_t operations;
+    std::vector<PSQL::processing_objects::process_operation_t> operations;
 
     size_t total_size;
 
