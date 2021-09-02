@@ -24,7 +24,7 @@ namespace hive::plugins::sql_serializer {
       chunks_for_writers_splitter& operator=( chunks_for_writers_splitter& ) = delete;
       chunks_for_writers_splitter& operator=( chunks_for_writers_splitter&& ) = delete;
 
-      void trigger( typename TableWriter::DataContainerType&& data, uint32_t last_block_num );
+      void trigger( typename TableWriter::DataContainerType::container&& data, uint32_t last_block_num );
       void join();
       void complete_data_processing();
     private:
@@ -51,20 +51,21 @@ namespace hive::plugins::sql_serializer {
 
   template< typename TableWriter >
   inline void
-  chunks_for_writers_splitter< TableWriter >::trigger( typename TableWriter::DataContainerType&& data, uint32_t last_block_num ) {
-    uint32_t length_of_batch = std::ceil( data.size() / double( writers.size() ) );
+  chunks_for_writers_splitter< TableWriter >::trigger( typename TableWriter::DataContainerType::container&& data, uint32_t last_block_num ) {
+    auto data_ptr = std::make_shared< typename TableWriter::DataContainerType::container >( std::move(data) );
+    uint32_t length_of_batch = std::ceil( data_ptr->size() / double( writers.size() ) );
     uint32_t writer_num = 0;
     for ( auto& writer : writers ) {
-      typename TableWriter::DataContainerType batch(
-          data.begin() + writer_num * length_of_batch
-          ,  ( ( ( writer_num + 1 ) * length_of_batch ) < data.size() )
-             ? data.begin() + ( writer_num + 1 ) * length_of_batch
-             : data.end()
-      );
+      auto begin_range_it = data_ptr->begin() + writer_num * length_of_batch;
+      auto end_range_it = ( ( ( writer_num + 1 ) * length_of_batch ) < data_ptr->size() )
+        ? data_ptr->begin() + ( writer_num + 1 ) * length_of_batch
+        : data_ptr->end()
+      ;
+
+      typename TableWriter::DataContainerType batch( data_ptr, begin_range_it, end_range_it );
       writer.trigger( std::move(batch), false, last_block_num );
       ++writer_num;
     }
-    data.clear();
   }
 
   template< typename TableWriter >

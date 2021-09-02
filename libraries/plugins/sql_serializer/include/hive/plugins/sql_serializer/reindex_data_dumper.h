@@ -30,9 +30,25 @@ namespace hive::plugins::sql_serializer {
     uint32_t blocks_per_flush() const override { return 1000; }
   private:
     using block_data_container_t_writer = table_data_writer<hive_blocks>;
-    using transaction_data_container_t_writer = chunks_for_writers_splitter< table_data_writer<hive_transactions> >;
+    using transaction_data_container_t_writer = chunks_for_writers_splitter<
+      table_data_writer<
+        hive_transactions<
+          container_view<
+            std::vector<PSQL::processing_objects::process_transaction_t>
+          >
+        >
+      >
+    >;
     using transaction_multisig_data_container_t_writer = table_data_writer<hive_transactions_multisig>;
-    using operation_data_container_t_writer = chunks_for_writers_splitter< table_data_writer<hive_operations> >;
+    using operation_data_container_t_writer = chunks_for_writers_splitter<
+      table_data_writer<
+        hive_operations<
+          container_view<
+            std::vector<PSQL::processing_objects::process_operation_t>
+          >
+        >
+      >
+    >;
 
     std::unique_ptr< block_data_container_t_writer > _block_writer;
     std::unique_ptr< transaction_data_container_t_writer > _transaction_writer;
