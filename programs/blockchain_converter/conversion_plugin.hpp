@@ -25,6 +25,7 @@ namespace hive { namespace converter { namespace plugins {
     /// If use_private is set to true then private keys of the second authority will be same as the given private key
     void set_wifs( bool use_private = false, const std::string& _owner = "", const std::string& _active = "", const std::string& _posting = "" );
     void set_logging( uint32_t log_per_block = 0, uint32_t log_specific = 0 );
+    void add_initminer_second_authority_trx_to_block( hp::signed_block& block );
     void print_wifs()const;
   };
 
