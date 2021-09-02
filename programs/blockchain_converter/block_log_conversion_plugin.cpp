@@ -45,7 +45,7 @@ namespace detail {
   public:
     block_log log_in, log_out;
 
-    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID, size_t signers_size = 1 )
+    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1 )
       : conversion_plugin_impl( _private_key, chain_id, signers_size ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;

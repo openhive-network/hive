@@ -50,8 +50,8 @@ namespace detail {
   public:
 
     node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
-      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id = HIVE_CHAIN_ID,
-      size_t signers_size = 1, size_t block_buffer_size = 1000, bool use_now_time = false );
+      const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id,
+      size_t signers_size, size_t block_buffer_size, bool use_now_time );
 
     void open( fc::http::connection& con, const fc::url& url );
     void close();
@@ -390,7 +390,7 @@ namespace detail {
     my = std::make_unique< detail::node_based_conversion_plugin_impl >(
           options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >(),
           *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >(),
-          options["block-buffer-size"].as< size_t >()
+          options["block-buffer-size"].as< size_t >(), options["use-now-time"].as< bool >()
         );
 
     my->set_logging( options["log-per-block"].as< uint32_t >(), options["log-specific"].as< uint32_t >() );
