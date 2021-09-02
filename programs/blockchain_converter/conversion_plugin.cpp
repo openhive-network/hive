@@ -44,13 +44,7 @@ namespace hive { namespace converter { namespace plugins {
     converter.set_second_authority_key( *_posting_key, authority::posting );
   }
 
-  void conversion_plugin_impl::set_logging( uint32_t log_per_block, uint32_t log_specific )
-  {
-    this->log_per_block = log_per_block;
-    this->log_specific = log_specific;
-  }
-
-  void conversion_plugin_impl::add_initminer_second_authority_trx_to_block( hp::signed_block& block )
+  void conversion_plugin_impl::add_initminer_second_authority_trx_to_block( hp::signed_block& block )const
   {
     // Add 2nd auth
     hp::account_update_operation uop;
@@ -81,6 +75,11 @@ namespace hive { namespace converter { namespace plugins {
       << "Owner:   " << key_to_wif( converter.get_second_authority_key( authority::owner ) ) << '\n'
       << "Active:  " << key_to_wif( converter.get_second_authority_key( authority::active ) ) << '\n'
       << "Posting: " << key_to_wif( converter.get_second_authority_key( authority::posting ) ) << '\n';
+  }
+
+  const blockchain_converter& conversion_plugin_impl::get_converter()const
+  {
+    return converter;
   }
 
 } } } // hive::converter::plugins

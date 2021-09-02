@@ -231,7 +231,8 @@ namespace detail {
 
     my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >() );
 
-    my->set_logging( options["log-per-block"].as< uint32_t >(), options["log-specific"].as< uint32_t >() );
+    my->log_per_block = options["log-per-block"].as< uint32_t >();
+    my->log_specific = options["log-specific"].as< uint32_t >();
 
     my->set_wifs( options.count("use-same-key"), options["owner-key"].as< std::string >(), options["active-key"].as< std::string >(), options["posting-key"].as< std::string >() );
 
