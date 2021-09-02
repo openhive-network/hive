@@ -53,9 +53,8 @@ int main( int argc, char** argv )
       ("active-key,A", bpo::value< std::string >()->default_value( "" ), "Active key of the second authority")
       ("posting-key,P", bpo::value< std::string >()->default_value( "" ), "Posting key of the second authority")
       ("use-same-key,U", "Use given private key as the owner, active and posting keys if not specified")
-      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "Resume conversion from the given block number (works only with the node_based_conversion plugin)")
+      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "Resume conversion from the given block number (works only with the node_based_conversion plugin)") // TODO: Remove
       ("stop-block,S", bpo::value< uint32_t >()->default_value( 0 ), "Stop conversion at the given block number")
-      ("use-now-time,T", bpo::bool_switch()->default_value( false ), "Set expiration time of the transactions to the current system time (works only with the node_based_conversion plugin)")
       ("jobs,j", bpo::value< size_t >()->default_value( 1 ), "Allow N jobs at once to sign transactions");
       bpo::options_description source_opts{"Source options"};
         source_opts.add_options()
@@ -69,7 +68,7 @@ int main( int argc, char** argv )
     bc_converter_app.register_plugin< node_based_conversion_plugin >();
     bc_converter_app.register_plugin< block_log_conversion_plugin >();
 
-    bc_converter_app.set_default_plugins< block_log_conversion_plugin >();
+    bc_converter_app.set_default_plugins< block_log_conversion_plugin >(); // XXX: No plugins should be default in this tool
 
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );
