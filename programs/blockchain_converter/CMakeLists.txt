@@ -4,6 +4,10 @@ if( NOT HIVE_CONVERTER_BUILD )
 
 else()
 
+  if( BUILD_HIVE_TESTNET )
+    message( WARNING "This tool is not intended to be used in testnet" )
+  endif()
+
   add_executable( blockchain_converter main.cpp converter.cpp conversion_plugin.cpp block_log_conversion_plugin.cpp node_based_conversion_plugin.cpp )
 
   FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS atomic )
