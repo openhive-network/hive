@@ -42,7 +42,9 @@ Signing transactions takes relatively large amount of time, so this tool enables
 Normally it uses only 1 signing thread. If you want to set it to more, use `jobs` option and specify the number of signing threads.
 
 ### Stopping and resuming the conversion
-If you want to stop the conversion at specific block, you have to provide the `stop-block` option. If you want to resume it later, converter automatically retrieves the last block number.
+If you want to stop the conversion at specific block, you have to provide the `stop-block` option.
+If you want to resume it later, converter will automatically retrieve the last block number if `resume-block` option has not been specified or is equal to 0.
+If you are using [blog_log_conversion plugin](#blog_log_conversion) this value will be equal to the last block in the output block log + 1 and if you are using [node_based_conversion plugin](#node_based_conversion) it will be equal to the last head_block_number retrieved from the database_api.get_dynamic_global_properties output node API call + 1.
 
 Note: If you stop the conversion before hardfork 17, it will most propably corrupt the converter state and you will be unable to resume the conversion if you want the block_log to be valid. If you stop it before hardfork 17 and want to resume, you will have to restart the conversion from the beginning.
 
