@@ -1,6 +1,6 @@
 #include "hive/plugins/sql_serializer/end_massive_sync_processor.hpp"
 
-#include "hive/plugins/sql_serializer/data_processor.hpp"
+#include <hive/plugins/sql_serializer/queries_commit_data_processor.h>
 
 #include <cassert>
 #include <string>

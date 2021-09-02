@@ -18,6 +18,8 @@ IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
                reindex_data_dumper.cpp
                tables_descriptions.cpp
                livesync_data_dumper.cpp
+               queries_commit_data_processor.cpp
+               string_data_processor.cpp
                ${HEADERS}
               )
 ELSE()

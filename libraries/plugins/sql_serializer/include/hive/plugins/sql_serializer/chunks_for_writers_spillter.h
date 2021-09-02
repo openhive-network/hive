@@ -11,11 +11,12 @@ namespace hive::plugins::sql_serializer {
   class chunks_for_writers_splitter
     {
     public:
-      chunks_for_writers_splitter( uint8_t number_of_writers,
-                                     std::string psqlUrl
-                                   , std::string description
-                                   , std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger
-                                   );
+      chunks_for_writers_splitter(
+         uint8_t number_of_writers
+       , std::string psqlUrl
+       , std::string description
+       , std::shared_ptr< block_num_rendezvous_trigger > _randezvous_trigger
+       );
       ~chunks_for_writers_splitter() = default;
 
       chunks_for_writers_splitter( chunks_for_writers_splitter& ) = delete;

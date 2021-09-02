@@ -1,10 +1,9 @@
 #pragma once
 
-#include "data_processor.hpp"
-
 #include <memory>
 
 namespace hive::plugins::sql_serializer {
+  class queries_commit_data_processor;
 
   class end_massive_sync_processor
   {
