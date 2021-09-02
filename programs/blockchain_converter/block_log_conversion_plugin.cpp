@@ -73,17 +73,23 @@ namespace detail {
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
     // Automatically set start_block_num if not set
-    if( !log_out.head() ) // If output block log does not exist start from the beginning
+    if( log_out.head() )
+    {
+      if( !start_block_num ) // If output block log exists than continue
+        start_block_num = log_out.head()->block_num() + 1;
+      else if( start_block_num != log_out.head()->block_num() + 1 )
+        wlog( "Continue block ${cbn} mismatch with out head block: ${obn} in block log conversion plugin. Make sure you know what you are doing.",
+            ("obn",log_out.head()->block_num())("cbn",start_block_num-1)
+          );
+    }
+    else if( !start_block_num )
+    {
       start_block_num = 1;
-    else if( !start_block_num ) // If output block log exists than continue
-      start_block_num = log_out.head()->block_num() + 1;
-    else
-      FC_ASSERT( start_block_num == log_out.head()->block_num() + 1,
-        "Resume block should be equal to the head block number of the output block log + 1", ("out_head_block",log_out.head()->block_num())("start_block_num",start_block_num) );
+    }
 
     hp::block_id_type last_block_id;
 
-    if( start_block_num > 1 ) // continuing conversion
+    if( start_block_num > 1 && log_out.head() ) // continuing conversion
     {
       FC_ASSERT( start_block_num <= log_in.head()->block_num(), "cannot resume conversion from a block that is not in the block_log",
         ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->block_num()) );
@@ -135,6 +141,7 @@ namespace detail {
       FC_ASSERT( chain_id_match, "Previous output block log chain id does not match the specified one or the owner key of the 2nd authority has changed",
         ("chain_id", converter.get_chain_id())("owner_key", key_to_wif(converter.get_second_authority_key( hp::authority::owner ))) );
     }
+    std::cout << "Chain id match\n";
 
     if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
       stop_block_num = log_in.head()->block_num();

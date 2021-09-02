@@ -66,6 +66,7 @@ namespace detail {
     const fc::variants& get_block_buffer()const;
 
     void validate_chain_id( const hp::chain_id_type& chain_id );
+    uint32_t get_output_head_block_num();
 
     fc::http::connection input_con;
     fc::url              input_url;
@@ -135,15 +136,20 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    validate_chain_id( converter.get_chain_id() );
 
     if( !start_block_num )
-      start_block_num = 1;
+      start_block_num = get_output_head_block_num() + 1;
+
+    std::cout << "Continuing conversion from the block with number " << start_block_num
+                << "\nValidating the chain id...\n";
+
+    validate_chain_id( converter.get_chain_id() );
+    std::cout << "Chain id match\n";
 
     fc::optional< hp::signed_block > block;
 
     hp::block_id_type last_block_id;
-    while( start_block_num > 1 && !block.valid() ) // TODO: Get last block from the remote dynamic global props and remove -R option from converter
+    while( start_block_num > 1 && !block.valid() )
     {
       if( appbase::app().is_interrupt_request() ) break;
       block = receive_uncached( start_block_num - 1 );
@@ -352,6 +358,30 @@ namespace detail {
 
       output_con.get_socket().close();
     } FC_CAPTURE_AND_RETHROW( (chain_id) )
+  }
+
+  uint32_t node_based_conversion_plugin_impl::get_output_head_block_num()
+  {
+    try
+    {
+      open( output_con, output_url );
+
+      auto reply = output_con.request( "POST", output_url,
+        "{\"jsonrpc\":\"2.0\",\"method\":\"database_api.get_dynamic_global_properties\",\"id\":1}"
+        /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+      FC_ASSERT( var_obj["result"].get_object().contains("head_block_number"), "No head_block_number in JSON response", ("body", str_reply) );
+
+      output_con.get_socket().close();
+
+      return var_obj["result"].get_object()["head_block_number"].as_uint64();
+    } FC_CAPTURE_AND_RETHROW()
   }
 
 } // detail
