@@ -2,6 +2,7 @@ import atexit
 from typing import List, Optional, TYPE_CHECKING
 import warnings
 
+from test_tools.private.logger.logger_wrapper import LoggerWrapper
 from test_tools.private.scope.context_internal_interface import ContextInternalInterface
 from test_tools.private.scope.scope import Scope
 from test_tools.private.utilities.disabled_keyboard_interrupt import DisabledKeyboardInterrupt
@@ -34,6 +35,9 @@ class ScopesStack:
     def __init__(self):
         self.__scopes_stack: List['__NamedScope'] = []
         self.create_new_scope('root')
+
+        root_scope = self.__current_scope
+        root_scope.context.set_logger(LoggerWrapper('root', parent=None))
 
         atexit.register(self.__terminate)
 
@@ -78,3 +82,6 @@ if is_manual_test():
     # Break import-cycle
     from test_tools.private.scope.scoped_current_directory import ScopedCurrentDirectory
     ScopedCurrentDirectory(current_scope.context.get_current_directory())
+
+    root_logger = current_scope.context.get_logger()
+    current_scope.context.set_logger(root_logger.create_child_logger('main'))

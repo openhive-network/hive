@@ -22,3 +22,6 @@ class ContextInternalInterface:
     def get_current_directory(self) -> 'Path':
         assert self.__current_directory.exists()
         return self.__current_directory
+
+    def get_logger(self):
+        return self.__context.get_logger()

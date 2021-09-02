@@ -12,6 +12,7 @@ from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
+from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.node_message import NodeMessage
 from test_tools.private.snapshot import Snapshot
 from test_tools.private.wait_for import wait_for
@@ -153,6 +154,7 @@ class Node:
         self.__name = name
         self.directory = Path(directory).joinpath(self.__name).absolute()
         self.__produced_files = False
+        self.__logger = logger.create_child_logger(f'{self.__creator}.{self.__name}')
 
         self.__executable = self.__Executable()
         self.__process = self.__Process(self, self.directory, self.__executable, self.__logger)

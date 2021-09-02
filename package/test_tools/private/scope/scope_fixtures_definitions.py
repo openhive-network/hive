@@ -4,12 +4,19 @@ from typing import Optional
 import pytest
 
 from test_tools.private.scope import current_scope, ScopedCurrentDirectory
+from test_tools.private.logger.module_logger import ModuleLogger
+from test_tools.private.logger.package_logger import PackageLogger
 
 
 @pytest.fixture(autouse=True, scope='function')
 def function_scope(request):
     with current_scope.create_new_scope(f'function: {__get_function_name(request)}'):
         ScopedCurrentDirectory(__get_directory_for_function(request))
+
+        current_logger = current_scope.context.get_logger()
+        function_logger = current_logger.create_child_logger(__get_logger_name(request))
+        function_logger.log_to_file()
+        current_scope.context.set_logger(function_logger)
 
         yield
 
@@ -18,6 +25,10 @@ def function_scope(request):
 def module_scope(request):
     with current_scope.create_new_scope(f'module: {__get_module_name(request)}'):
         ScopedCurrentDirectory(__get_directory_for_module(request))
+
+        current_logger = current_scope.context.get_logger()
+        module_logger = current_logger.create_child_logger(__get_logger_name(request), child_type=ModuleLogger)
+        current_scope.context.set_logger(module_logger)
 
         yield
 
@@ -31,6 +42,11 @@ def package_scope(request):
     else:
         with current_scope.create_new_scope(f'package: {__get_package_name(request)}'):
             ScopedCurrentDirectory(__get_directory_for_package(request))
+
+            current_logger = current_scope.context.get_logger()
+            package_logger = current_logger.create_child_logger(__get_logger_name(request), child_type=PackageLogger)
+            package_logger.log_to_file()
+            current_scope.context.set_logger(package_logger)
 
             yield
 
@@ -81,3 +97,18 @@ def __get_pytest_package_object(request) -> Optional[pytest.Package]:
         pytest_scope = pytest_scope.parent
 
     return None
+
+
+def __get_logger_name(request):
+    if request.scope == 'function':
+        return request.node.name
+
+    if request.scope == 'module':
+        path = Path(request.node.name)
+        path_without_extension = str(path.parent.joinpath(path.stem))
+        return path_without_extension.replace('/', '.')
+
+    if request.scope == 'package':
+        return __get_package_name(request)
+
+    assert False, "Shouldn't be ever reached"

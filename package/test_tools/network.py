@@ -3,6 +3,7 @@ from shutil import rmtree
 
 from test_tools import constants
 from test_tools.wallet import Wallet
+from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.nodes_creator import NodesCreator
 
 
@@ -17,6 +18,7 @@ class Network(NodesCreator):
         self.__connect_with_network = None
         self.disconnected_networks = []
         self.__clean_up_policy: constants.NetworkCleanUpPolicy = None
+        self.logger = logger.create_child_logger(str(self))
 
     def __str__(self):
         return self.name

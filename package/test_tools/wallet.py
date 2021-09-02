@@ -8,6 +8,7 @@ import warnings
 from test_tools import communication, paths_to_executables
 from test_tools.account import Account
 from test_tools.exceptions import CommunicationError
+from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.wait_for import wait_for
 
 
@@ -451,6 +452,7 @@ class Wallet:
         self.stdout_file = None
         self.stderr_file = None
         self.process = None
+        self.logger = logger.create_child_logger(f'{self.creator}.{self.name}')
 
     def __str__(self):
         return f'{self.creator}::{self.name}'

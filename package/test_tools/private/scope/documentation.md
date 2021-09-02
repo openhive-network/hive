@@ -12,6 +12,7 @@ This package introduces guarantee, that for each `ScopedObject` created in scope
 
 Each scope provides access to predefined information. For now user code can get access to:
 - directory, where files should be created
+- logger, which should be used to register logs
 
 Above list is open and can be extended in the future.
 
