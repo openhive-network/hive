@@ -46,6 +46,15 @@ class LoggerWrapper:
     def info(self, message, stacklevel=0):
         self.internal_logger.info(message, extra=self.capture_call_place(stacklevel + 1))
 
+    def warning(self, message, stacklevel=0):
+        self.internal_logger.warning(message, extra=self.capture_call_place(stacklevel + 1))
+
+    def error(self, message, stacklevel=0):
+        self.internal_logger.error(message, extra=self.capture_call_place(stacklevel + 1))
+
+    def critical(self, message, stacklevel=0):
+        self.internal_logger.critical(message, extra=self.capture_call_place(stacklevel + 1))
+
     @staticmethod
     def capture_call_place(stack_frames_above):
         # When Python 3.8+ will be available use stacklevel keyword argument instead below hacking

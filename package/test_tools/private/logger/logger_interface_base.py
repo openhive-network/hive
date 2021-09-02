@@ -22,3 +22,12 @@ class LoggerInterfaceBase:
 
     def info(self, message: str):
         self._logger.info(f'{self.__message_prefix}{message}', stacklevel=self.__BELOW_CALLER_STACK_FRAME)
+
+    def warning(self, message: str):
+        self._logger.warning(f'{self.__message_prefix}{message}', stacklevel=self.__BELOW_CALLER_STACK_FRAME)
+
+    def error(self, message: str):
+        self._logger.error(f'{self.__message_prefix}{message}', stacklevel=self.__BELOW_CALLER_STACK_FRAME)
+
+    def critical(self, message: str):
+        self._logger.critical(f'{self.__message_prefix}{message}', stacklevel=self.__BELOW_CALLER_STACK_FRAME)
