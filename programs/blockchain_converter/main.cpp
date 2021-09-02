@@ -68,8 +68,6 @@ int main( int argc, char** argv )
     bc_converter_app.register_plugin< node_based_conversion_plugin >();
     bc_converter_app.register_plugin< block_log_conversion_plugin >();
 
-    bc_converter_app.set_default_plugins< block_log_conversion_plugin >(); // XXX: No plugins should be default in this tool
-
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );
 
