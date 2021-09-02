@@ -8,7 +8,6 @@ import warnings
 from test_tools import communication, paths_to_executables
 from test_tools.account import Account
 from test_tools.exceptions import CommunicationError
-from test_tools.private.logger_singleton import logger
 from test_tools.private.wait_for import wait_for
 
 
@@ -452,7 +451,6 @@ class Wallet:
         self.stdout_file = None
         self.stderr_file = None
         self.process = None
-        self.logger = logger.getLogger(f'{__name__}.{self.creator}.{self.name}')
 
     def __str__(self):
         return f'{self.creator}::{self.name}'

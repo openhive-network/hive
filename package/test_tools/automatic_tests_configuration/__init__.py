@@ -1,2 +1,0 @@
-from test_tools.automatic_tests_configuration.configure_test_tools_paths import configure_test_tools_paths
-from test_tools.automatic_tests_configuration.configure_test_tools_paths import get_preferred_directory

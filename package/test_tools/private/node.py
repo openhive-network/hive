@@ -7,7 +7,7 @@ import signal
 import subprocess
 import weakref
 
-from test_tools import communication, constants, logger, network, paths_to_executables
+from test_tools import communication, constants, network, paths_to_executables
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
@@ -153,7 +153,6 @@ class Node:
         self.__name = name
         self.directory = Path(directory).joinpath(self.__name).absolute()
         self.__produced_files = False
-        self.__logger = logger.getLogger(f'{self.__creator}.{self.__name}')
 
         self.__executable = self.__Executable()
         self.__process = self.__Process(self, self.directory, self.__executable, self.__logger)
