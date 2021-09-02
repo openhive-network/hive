@@ -36,7 +36,7 @@ Note: url should have format: `http://ip-or-host:port`. If you want to use defau
 Another note: This conversion tool currently does not support `https` protocol and chunked transfer encoding in API node answers
 
 ### Multithreading support
-Signing transactions takes a decent amount of time, so this tool enables multithreading support.
+Signing transactions takes relatively large amount of time, so this tool enables multithreading support.
 Normally it uses only 1 signing thread. If you want to set it to more, use `jobs` option and specify the number of signing threads.
 
 ### Stopping and resuming the conversion
