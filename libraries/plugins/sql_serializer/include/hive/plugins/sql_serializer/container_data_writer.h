@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/plugins/sql_serializer/block_num_rendezvous_trigger.hpp>
-#include <hive/plugins/sql_serializer/data_processor.hpp>
+#include <hive/plugins/sql_serializer/queries_commit_data_processor.h>
 
 #include <fc/exception/exception.hpp>
 

@@ -4,7 +4,7 @@
 
 #include <hive/plugins/sql_serializer/table_data_writer.h>
 #include <hive/plugins/sql_serializer/tables_descriptions.h>
-#include <hive/plugins/sql_serializer/data_processor.hpp>
+#include <hive/plugins/sql_serializer/string_data_processor.h>
 
 #include <hive/plugins/sql_serializer/cached_data.h>
 
