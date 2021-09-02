@@ -16,7 +16,9 @@ In order for program to work properly you have to specify the input and output s
 You will also have to specify the `chain-id` and `private-key` option, where private key is your block signing key and chain id is your altered chain id to be used when signing transactions.
 
 ### Second authority
-You can optionally specify the `owner`, `active` and `posting` second authority private keys. If you will not provide them or if you will use `use-same-key` option, they will default to the provided `private-key`. If you are not sure what keys are being used as a second authority keys, they will be printed after the conversion.
+You can optionally specify the `owner`, `active` and `posting` second authority private keys. If you will not provide them, they will be auto generated.
+
+Note: If you use `use-same-key` option, second authority keys will default to the provided `private-key`. If you are not sure which keys are being used as a second authority keys, they will be printed after the conversion.
 
 ### Plugins
 You can choose plugin by passing `plugin` option to the converter
