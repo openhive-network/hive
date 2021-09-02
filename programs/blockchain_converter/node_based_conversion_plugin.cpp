@@ -359,7 +359,8 @@ namespace detail {
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
   {
     cfg.add_options()
-      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Block buffer size" );
+      ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Block buffer size" )
+      ( "use-now-time,T", bpo::bool_switch()->default_value( false ), "Set expiration time of the transactions to the current system time (works only with the node_based_conversion plugin)" );
   }
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
