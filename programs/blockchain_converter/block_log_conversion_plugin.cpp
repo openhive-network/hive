@@ -144,6 +144,9 @@ namespace detail {
       fc::optional< hp::signed_block > block = log_in.read_block_by_num( start_block_num );
       FC_ASSERT( block.valid(), "unable to read block", ("block_num", start_block_num) );
 
+      if( start_block_num == 1 )
+        conversion_plugin_impl::add_initminer_second_authority_trx_to_block( *block );
+
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
         fc::json json_block;
