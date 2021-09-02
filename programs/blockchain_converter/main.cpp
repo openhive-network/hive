@@ -53,7 +53,7 @@ int main( int argc, char** argv )
       ("active-key,A", bpo::value< std::string >()->default_value( "" ), "Active key of the second authority")
       ("posting-key,P", bpo::value< std::string >()->default_value( "" ), "Posting key of the second authority")
       ("use-same-key,U", "Use given private key as the owner, active and posting keys if not specified")
-      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "Resume conversion from the given block number (works only with the node_based_conversion plugin)") // TODO: Remove
+      ("resume-block,R", bpo::value< uint32_t >()->default_value( 0 ), "Resume conversion from the given block number")
       ("stop-block,S", bpo::value< uint32_t >()->default_value( 0 ), "Stop conversion at the given block number")
       ("jobs,j", bpo::value< size_t >()->default_value( 1 ), "Allow N jobs at once to sign transactions");
       bpo::options_description source_opts{"Source options"};
