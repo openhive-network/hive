@@ -136,7 +136,6 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-
     if( !start_block_num )
       start_block_num = get_output_head_block_num() + 1;
 
@@ -272,12 +271,12 @@ namespace detail {
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
       FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
 
-      if( !var_obj["result"].get_object().contains("block") )
+      if( !var_obj["result"].get_object().contains("previous") )
         return fc::optional< hp::signed_block >();
 
       input_con.get_socket().close();
 
-      return var_obj["result"].get_object()["block"].template as< legacy_signed_block >();
+      return var_obj["result"].template as< legacy_signed_block >();
     } FC_CAPTURE_AND_RETHROW( (num) )
   }
 
