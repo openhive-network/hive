@@ -18,7 +18,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.get_account_history"
-          params: {"account":"blocktrades","operation_filter_low": 8, "start": 206067, "limit": 18}
+          params: {"account":"blocktrades","operation_filter_high": 8192, "start": 210000, "limit": 17}
       response:
         status_code: 200
         verify_response_with:
