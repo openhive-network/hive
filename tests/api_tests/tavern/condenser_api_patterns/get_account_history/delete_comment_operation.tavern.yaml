@@ -18,7 +18,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "condenser_api.get_account_history"
-          params: ["murdock1",100,100,131072]
+          params: ["jsc",3556,6,131072]
       response:
         status_code: 200
         verify_response_with:
