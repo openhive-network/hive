@@ -1,0 +1,22 @@
+{
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "condenser_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 364,
+          "method": "get_account_references"
+        },
+        "data": {},
+        "format": "false: condenser_api::get_account_references --- Needs to be refactored for Hive."
+      }
+    ]
+  },
+  "message": "Assert Exception:false: condenser_api::get_account_references --- Needs to be refactored for Hive."
+}
