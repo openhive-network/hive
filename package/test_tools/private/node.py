@@ -134,6 +134,8 @@ class Node:
                 self.__process.wait()
                 self.__logger.warning('Process was force-closed with SIGKILL, because didn\'t close before timeout')
 
+            self.__process = None
+
         def close_opened_files(self):
             for name, file in self.__files.items():
                 if file is not None:
