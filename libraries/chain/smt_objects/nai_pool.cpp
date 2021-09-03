@@ -1,4 +1,4 @@
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/protocol/asset_symbol.hpp>
 #include <hive/chain/smt_objects.hpp>

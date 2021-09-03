@@ -1,5 +1,5 @@
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <hive/protocol/required_automated_actions.hpp>
 

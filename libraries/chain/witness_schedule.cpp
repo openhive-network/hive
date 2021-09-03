@@ -1,5 +1,5 @@
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_schedule.hpp>

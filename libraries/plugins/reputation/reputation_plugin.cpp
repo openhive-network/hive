@@ -1,5 +1,5 @@
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <hive/plugins/reputation/reputation_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>

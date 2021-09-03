@@ -1,6 +1,6 @@
 #pragma once
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <chainbase/chainbase.hpp>
 #include <chainbase/util/object_id_serialization.hpp>

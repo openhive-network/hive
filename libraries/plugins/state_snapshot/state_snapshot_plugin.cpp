@@ -1,4 +1,4 @@
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
