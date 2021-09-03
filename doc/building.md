@@ -26,7 +26,7 @@ We ship a Dockerfile.  This builds both common node type binaries.
 
     git clone https://github.com/openhive-network/hive
     cd hive
-    docker build -t hiveio/hive .
+    docker build -t hiveio/hive --target=consensus_node .
 
 ## Building on Ubuntu 18.04/20.04
 
