@@ -246,7 +246,7 @@ class Node:
         wait_for(self.__is_live, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
-    def _send(self, method, params=None, jsonrpc='2.0', id_=1):
+    def send(self, method, params=None, jsonrpc='2.0', id_=1):
         if self.config.webserver_http_endpoint is None:
             raise Exception('Webserver http endpoint is unknown')
 
