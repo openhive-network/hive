@@ -20,7 +20,7 @@ from test_tools.wallet import Wallet
 
 
 class Node:
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
     # This pylint warning is right, but this refactor has low priority. Will be done later...
 
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
