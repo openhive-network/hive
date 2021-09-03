@@ -1,15 +1,3 @@
 {
-  "delegations": [
-    {
-      "delegatee": "tipu",
-      "delegator": "n0name",
-      "id": 990911,
-      "min_delegation_time": "2018-07-09T08:46:48",
-      "vesting_shares": {
-        "amount": "19540889639798",
-        "nai": "@@000000037",
-        "precision": 6
-      }
-    }
-  ]
+  "delegations": []
 }

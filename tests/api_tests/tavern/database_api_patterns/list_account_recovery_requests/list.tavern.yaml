@@ -2,7 +2,7 @@
   test_name: Hived
 
   marks:
-    - patterntest # empty results, is it should be like that?
+    - patterntest
 
   includes:
     - !include ../../common.yaml

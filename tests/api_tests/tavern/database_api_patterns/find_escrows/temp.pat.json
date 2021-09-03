@@ -1,31 +1,3 @@
 {
-  "escrows": [
-    {
-      "agent": "smitop",
-      "agent_approved": false,
-      "disputed": false,
-      "escrow_expiration": "2038-01-19T03:14:07",
-      "escrow_id": 12345,
-      "from": "temp",
-      "hbd_balance": {
-        "amount": "0",
-        "nai": "@@000000013",
-        "precision": 3
-      },
-      "hive_balance": {
-        "amount": "1",
-        "nai": "@@000000021",
-        "precision": 3
-      },
-      "id": 143,
-      "pending_fee": {
-        "amount": "1",
-        "nai": "@@000000021",
-        "precision": 3
-      },
-      "ratification_deadline": "2038-01-19T03:14:06",
-      "to": "guest123",
-      "to_approved": false
-    }
-  ]
+  "escrows": []
 }
