@@ -1,21 +1,19 @@
 import pytest
 
-from test_tools import Account, Asset, automatic_tests_configuration, constants, logger, World
+from test_tools import Account, Asset, constants, logger, World
+from test_tools.private.scope import context
 
 
 @pytest.fixture(scope="package")
-def world_with_witnesses(request):
+def world_with_witnesses():
     """
     Fixture consists of world with 1 init node, 8 witness nodes and 2 api nodes.
     After fixture creation there are 21 active witnesses, and last irreversible block
     is behind head block like in real network.
     """
 
-    automatic_tests_configuration.configure_test_tools_paths(request)
-
     logger.info('Preparing fixture world_with_witnesses')
-    directory = automatic_tests_configuration.get_preferred_directory(request)
-    with World(directory=directory) as world:
+    with World(directory=context.get_current_directory()) as world:
         world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
         alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
