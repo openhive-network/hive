@@ -102,7 +102,8 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 {
-  return { _debug_node.debug_generate_blocks_until( args.invoker, args.invoker_private_key, args.fast_forwarding_end_date ) };
+  _debug_node.debug_generate_blocks_until( args.invoker, args.invoker_private_key, args.fast_forwarding_end_date );
+  return void_type{};
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_pop_block )
