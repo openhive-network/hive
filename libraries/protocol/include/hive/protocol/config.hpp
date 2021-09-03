@@ -27,13 +27,13 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           configuration_data.get_hive_cashout_window_seconds()
+#define HIVE_CASHOUT_WINDOW_SECONDS           (configuration_data.get_hive_cashout_window_seconds())
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days
 #define HIVE_MAX_CASHOUT_WINDOW_SECONDS       (60*60*24) /// 1 day
 #define HIVE_UPVOTE_LOCKOUT_HF7               (fc::minutes(1))
-#define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*5)    /// 5 minutes
+#define HIVE_UPVOTE_LOCKOUT_SECONDS           (configuration_data.get_hive_upvote_lockout_seconds())
 #define HIVE_UPVOTE_LOCKOUT_HF17              (fc::minutes(5))
 
 
@@ -63,6 +63,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*1) /// 1 day
 #define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       ((HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)/30)  /// We want to have at most 30 entries in the account's delayed voting collection (similary to mainnet)
 
+#define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 (configuration_data.get_hive_reverse_auction_window_seconds())
+#define HIVE_EARLY_VOTING_SECONDS_HF25           (configuration_data.get_hive_early_voting_seconds())
+#define HIVE_MID_VOTING_SECONDS_HF25             (configuration_data.get_hive_mid_voting_seconds())
 
 #else // IS LIVE HIVE NETWORK
 
@@ -111,6 +114,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
 #define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
 
+#define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 0              /// disabled
+#define HIVE_EARLY_VOTING_SECONDS_HF25           (24 * 60 * 60) /// 24 hours
+#define HIVE_MID_VOTING_SECONDS_HF25             (48 * 60 * 60) /// 48 hours
 
 #endif
 
@@ -164,8 +170,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
-#define HIVE_EARLY_VOTING_SECONDS_HF25 (24*60*60) /// 24 hours
-#define HIVE_MID_VOTING_SECONDS_HF25 (48*60*60) /// 48 hours
 #define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
