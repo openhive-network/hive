@@ -32,6 +32,7 @@ class debug_node_plugin_impl
     boost::signals2::connection               _debug_conn;
     void on_post_apply_block( const chain::block_notification& note );
     void on_debug( const chain::debug_notification& note );
+    void push_debug_transaction(const hive::protocol::private_key_type& signee, const hive::protocol::debug_operation &op);
 
   private:
 
@@ -84,6 +85,20 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
       this->fast_forward_stop_point = note.new_fast_forward;
   }
 
+}
+
+void debug_node_plugin_impl::push_debug_transaction(
+  const hive::protocol::private_key_type& invoker_key,
+  const hive::protocol::debug_operation &op
+)
+{
+  hive::protocol::signed_transaction tx;
+  tx.expiration = _db.head_block_time() + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION / 2);
+
+  tx.operations.push_back( op );
+  tx.sign(invoker_key, _db.get_chain_id(), fc::ecc::fc_canonical);
+
+  _db.push_transaction(tx);
 }
 
 debug_node_plugin::debug_node_plugin() {}
@@ -314,15 +329,12 @@ void debug_node_plugin::debug_generate_blocks(
   return;
 }
 
-uint32_t debug_node_plugin::debug_generate_blocks_until(
-  const std::string& debug_key,
-  const fc::time_point_sec& head_block_time,
-  bool generate_sparsely,
-  uint32_t skip
-)
+void debug_node_plugin::debug_generate_blocks_until( const fc::string& invoker, const fc::string& invoker_private_key, const fc::time_point_sec fast_forwarding_end_date )
 {
-  appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().update_refresh_rate( fc::milliseconds(5) );
-  appbase::app().get_plugin<hive::plugins::witness::witness_plugin>().forward(debug_key, head_block_time);
+  FC_ASSERT( head_block_time > _db.head_block_time() );
+  hive::protocol::debug_operation op{ invoker, fast_forwarding_end_date };
+  push_debug_transaction( *hive::utilities::wif_to_key(invoker_private_key), op );
+  appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().update_refresh_rate( fc::milliseconds(1) );
   return 0;
 }
 

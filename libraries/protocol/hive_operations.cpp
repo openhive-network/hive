@@ -750,12 +750,10 @@ namespace hive { namespace protocol {
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 
-  const char * debug_operation::error_message_not_supported = "debug_operation is available only in testnet!";
-
   void debug_operation::validate()const
   { try {
 #ifndef IS_TEST_NET
-    FC_ASSERT( false, "debug_operation::error_message_not_supported" );
+    FC_ASSERT( false, "debug_operation is available only in testnet!" );
 #endif // !IS_TEST_NET
 
     validate_account_name( invoker );

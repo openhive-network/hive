@@ -29,12 +29,12 @@ struct debug_push_blocks_return
 
 struct debug_generate_blocks_until_args
 {
-  std::string                               debug_key;
-  fc::time_point_sec                        head_block_time;
-  bool                                      generate_sparsely = true;
+  std::string                               invoker;
+  std::string                               invoker_private_key;
+  fc::time_point_sec                        fast_forwarding_end_date;
 };
 
-typedef debug_push_blocks_return debug_generate_blocks_until_return;
+typedef void_type debug_generate_blocks_until_return;
 
 typedef void_type debug_pop_block_args;
 
@@ -118,7 +118,7 @@ FC_REFLECT( hive::plugins::debug_node::debug_push_blocks_return,
         (blocks) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
-        (debug_key)(head_block_time)(generate_sparsely) )
+        (invoker)(invoker_private_key)(fast_forwarding_end_date) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return,
         (block) )

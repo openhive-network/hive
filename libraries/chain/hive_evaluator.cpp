@@ -3181,7 +3181,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 void debug_evaluator::do_apply( const debug_operation& op ) 
 {
 #ifndef IS_TEST_NET
-  FC_ASSERT( false, "debug_operation::error_message_not_supported" );
+  FC_ASSERT( false, "debug_operation is available only in testnet!" );
 #endif // !IS_TEST_NET
   FC_ASSERT( _db.head_block_time() < op.untill );
 
