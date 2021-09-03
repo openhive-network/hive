@@ -25,8 +25,6 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     
     public:
 
-      void reset() { *this = configuration(); }
-
       /** Sets cashout related values (relative to comment creation time):
       * [0 .. reverse auction)
       * [reverse auction .. early voting)

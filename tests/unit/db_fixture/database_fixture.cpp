@@ -198,7 +198,6 @@ curation_database_fixture::curation_database_fixture( uint16_t shared_file_size_
 
 curation_database_fixture::~curation_database_fixture()
 {
-  configuration_data.reset();
 }
 
 cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_in_mb )
@@ -210,7 +209,6 @@ cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_i
 
 cluster_database_fixture::~cluster_database_fixture()
 {
-  configuration_data.reset();
 }
 
 void cluster_database_fixture::execute_24( content_method content )
