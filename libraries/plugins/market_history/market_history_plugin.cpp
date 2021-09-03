@@ -1,5 +1,5 @@
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 

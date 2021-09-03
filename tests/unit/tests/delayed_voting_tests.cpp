@@ -2,7 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>

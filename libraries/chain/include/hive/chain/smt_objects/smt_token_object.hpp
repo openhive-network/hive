@@ -1,6 +1,6 @@
 #pragma once
 
-#include <chainbase/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/smt_operations.hpp>
 
