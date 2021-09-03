@@ -1,6 +1,6 @@
 #include <hive/plugins/sql_serializer/tables_descriptions.h>
 
-namespace hive::plugins::sql_serializer {
+namespace hive{ namespace plugins{ namespace sql_serializer {
 
   const char hive_blocks::TABLE[] = "hive.blocks";
   const char hive_blocks::COLS[] = "num, hash, prev, created_at";
@@ -19,6 +19,6 @@ namespace hive::plugins::sql_serializer {
 
   template<> const char  hive_operations< std::vector<PSQL::processing_objects::process_operation_t> >::TABLE[] = "hive.operations";
   template<> const char  hive_operations< std::vector<PSQL::processing_objects::process_operation_t> >::COLS[] = "id, block_num, trx_in_block, op_pos, op_type_id, body";
-} // namespace hive::plugins::sql_serializer
+}}} // namespace hive::plugins::sql_serializer
 
 

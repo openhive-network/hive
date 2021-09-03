@@ -1,11 +1,11 @@
 #include <hive/plugins/sql_serializer/string_data_processor.h>
 
-namespace hive::plugins::sql_serializer {
+namespace hive{ namespace plugins{ namespace sql_serializer {
 
   string_data_processor::string_data_processor(
-      callback string_callback
+      const callback& string_callback
     , std::string description
-    , data_processing_fn dataProcessor
+    , const data_processing_fn& dataProcessor
     , std::shared_ptr< block_num_rendezvous_trigger > api_trigger
     )
     {
@@ -44,5 +44,4 @@ namespace hive::plugins::sql_serializer {
     m_wrapped_processor->only_report_batch_finished( _block_num );
   }
 
-} // namespace hive::plugins::sql_serializer
-
+}}} // namespace hive::plugins::sql_serializer

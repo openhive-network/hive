@@ -30,7 +30,7 @@ private:
   std::condition_variable* _notifier;
 };
 
-data_processor::data_processor( std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger) :
+data_processor::data_processor( std::string description, const data_processing_fn& dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger) :
   _description(std::move(description)),
   _cancel(false),
   _continue(true),
@@ -38,7 +38,7 @@ data_processor::data_processor( std::string description, data_processing_fn data
   _finished(false),
   _is_processing_data( false ),
   _total_processed_records(0),
-  _randezvous_trigger( api_trigger )
+  _randezvous_trigger( std::move( api_trigger ) )
 {
   auto body = [this, dataProcessor]() -> void
   {

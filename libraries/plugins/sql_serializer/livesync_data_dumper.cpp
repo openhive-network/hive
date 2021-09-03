@@ -3,9 +3,9 @@
 
 #include <hive/chain/database.hpp>
 
-namespace hive::plugins::sql_serializer {
+namespace hive{ namespace plugins{ namespace sql_serializer {
   livesync_data_dumper::livesync_data_dumper(
-      std::string db_url
+      const std::string& db_url
     , const appbase::abstract_plugin& plugin
     , hive::chain::database& chain_db
     ) {
@@ -64,7 +64,7 @@ namespace hive::plugins::sql_serializer {
   livesync_data_dumper::~livesync_data_dumper() {
     _on_irreversible_block_conn.disconnect();
     _on_switch_fork_conn.disconnect();
-    join();
+    livesync_data_dumper::join();
   }
 
   void livesync_data_dumper::trigger_data_flush( cached_data_t& cached_data, int last_block_num ) {
@@ -107,6 +107,6 @@ namespace hive::plugins::sql_serializer {
     transaction->exec( command );
     transaction->commit();
   }
-} // namespace hive::plugins::sql_serializer
+}}} // namespace hive::plugins::sql_serializer
 
 
