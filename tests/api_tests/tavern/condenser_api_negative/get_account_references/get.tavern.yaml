@@ -3,7 +3,6 @@
 
   marks:
     - patterntest
-    - xfail # false: condenser_api::get_account_references --- Needs to be refactored for Hive.
 
   includes:
     - !include ../../common.yaml
@@ -23,6 +22,7 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:compare_response_with_patterns
+          function: validate_response:compare_response_with_pattern
           extra_kwargs:
+            error_response: true
             ignore_tags: ['timestamp']         
