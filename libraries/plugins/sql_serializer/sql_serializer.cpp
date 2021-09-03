@@ -32,7 +32,6 @@
 namespace hive
 {
 using chain::block_notification;
-using chain::transaction_notification;
 using chain::operation_notification;
 using chain::reindex_notification;
 
@@ -50,11 +49,6 @@ using chain::reindex_notification;
       using num_t = std::atomic<uint64_t>;
       using duration_t = fc::microseconds;
       using stat_time_t = std::atomic<duration_t>;
-
-      inline void operator+=( stat_time_t& atom, const duration_t& dur )
-      {
-        atom.store( atom.load() + dur );
-      }
 
       struct stat_t
       {
@@ -121,8 +115,6 @@ using chain::reindex_notification;
       using namespace hive::plugins::sql_serializer::PSQL;
 
       constexpr size_t default_reservation_size{ 16'000u };
-      constexpr size_t max_tuples_count{ 1'000 };
-      constexpr size_t max_data_length{ 16*1024*1024 }; 
 
       namespace detail
       {
@@ -317,7 +309,6 @@ using chain::reindex_notification;
                   db_url
                 , "Check correctness"
                 , [&is_extension_created](const data_chunk_ptr&, transaction& tx) -> data_processing_status {
-                    data_processing_status processingStatus;
                     pqxx::result data = tx.exec("select 1 as _result from pg_extension where extname='hive_fork_manager';");
                     is_extension_created = !data.empty();
                     return data_processing_status();
@@ -341,7 +332,6 @@ using chain::reindex_notification;
             queries_commit_data_processor block_loader(db_url, "Block loader",
                                                        [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
-                data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT hb.num AS _max_block FROM hive.blocks hb ORDER BY hb.num DESC LIMIT 1;");
                 if( !data.empty() )
                 {
@@ -360,7 +350,6 @@ using chain::reindex_notification;
             queries_commit_data_processor sequence_loader(db_url, "Sequence loader",
                                                           [this](const data_chunk_ptr&, transaction& tx) -> data_processing_status
               {
-                data_processing_status processingStatus;
                 pqxx::result data = tx.exec("SELECT ho.id AS _max FROM hive.operations ho ORDER BY ho.id DESC LIMIT 1;");
                 if( !data.empty() )
                 {

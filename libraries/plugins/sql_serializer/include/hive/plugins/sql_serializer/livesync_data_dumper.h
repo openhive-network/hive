@@ -22,9 +22,9 @@ namespace hive::chain {
 namespace hive::plugins::sql_serializer {
   class transaction_controller;
 
-  class livesync_data_dumper : public data_dumper {
+  class livesync_data_dumper final : public data_dumper {
   public:
-    livesync_data_dumper( std::string db_url, const appbase::abstract_plugin& plugin, hive::chain::database& chain_db );
+    livesync_data_dumper( const std::string& db_url, const appbase::abstract_plugin& plugin, hive::chain::database& chain_db );
 
     ~livesync_data_dumper();
     livesync_data_dumper(livesync_data_dumper&) = delete;

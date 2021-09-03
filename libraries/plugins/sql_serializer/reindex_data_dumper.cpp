@@ -1,6 +1,6 @@
 #include <hive/plugins/sql_serializer/reindex_data_dumper.h>
 
-namespace hive::plugins::sql_serializer {
+namespace hive{ namespace plugins{ namespace sql_serializer {
   reindex_data_dumper::reindex_data_dumper( const std::string& db_url, uint32_t operations_threads, uint32_t transactions_threads ) {
     ilog( "Starting reindexing dump to database with ${o} operations and ${t} transactions threads", ("o", operations_threads )("t", transactions_threads) );
     _end_massive_sync_processor = std::make_unique< end_massive_sync_processor >( db_url );
@@ -44,6 +44,6 @@ namespace hive::plugins::sql_serializer {
 
     _end_massive_sync_processor->complete_data_processing();
   }
-} // namespace hive::plugins::sql_serializer
+}}} // namespace hive::plugins::sql_serializer
 
 

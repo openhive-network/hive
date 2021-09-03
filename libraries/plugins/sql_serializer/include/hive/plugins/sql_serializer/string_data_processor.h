@@ -21,9 +21,9 @@ namespace hive::plugins::sql_serializer {
       typedef std::pair<size_t, bool> data_processing_status;
 
       string_data_processor(
-        callback string_callback
+          const callback& string_callback
         , std::string description
-        , data_processing_fn dataProcessor
+        , const data_processing_fn& dataProcessor
         , std::shared_ptr< block_num_rendezvous_trigger > api_trigger
         );
       ~string_data_processor();

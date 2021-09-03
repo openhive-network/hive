@@ -13,7 +13,7 @@ namespace hive::plugins::sql_serializer {
       /// pairs number of produced chunks and write status
       typedef std::pair<size_t, bool> data_processing_status;
 
-      queries_commit_data_processor(std::string psqlUrl, std::string description, data_processing_fn dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger );
+      queries_commit_data_processor( const std::string& psqlUrl, std::string description, const data_processing_fn& dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger );
       ~queries_commit_data_processor();
 
       queries_commit_data_processor(data_processor&&) = delete;

@@ -1,7 +1,7 @@
 #include <hive/plugins/sql_serializer/data_2_sql_tuple_base.h>
 
 
-namespace hive::plugins::sql_serializer {
+namespace hive{ namespace plugins{ namespace sql_serializer {
   std::string
   data2_sql_tuple_base::escape(const std::string& source) const
   {
@@ -87,5 +87,5 @@ namespace hive::plugins::sql_serializer {
     ret += '\'';
     return ret;
   }
-} // namespace hive::plugins::sql_serializer
+}}} // namespace hive::plugins::sql_serializer
 

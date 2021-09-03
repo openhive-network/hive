@@ -2,10 +2,10 @@
 
 #include "fc/exception/exception.hpp"
 
-namespace hive::plugins::sql_serializer {
+namespace hive { namespace plugins { namespace sql_serializer {
   block_num_rendezvous_trigger::block_num_rendezvous_trigger( uint32_t _number_of_threads, TRIGGERRED_FUNCTION _triggered_function )
   : m_number_of_threads( _number_of_threads )
-  , m_triggered_function( _triggered_function )
+  , m_triggered_function( std::move( _triggered_function ) )
   {
     if ( m_number_of_threads < 1 ) {
       FC_THROW( "Incorrect number of threads" );
@@ -42,4 +42,4 @@ namespace hive::plugins::sql_serializer {
 
     ++stage_it->second;
   }
-} // namespace hive::plugins::sql_serializer
+}}} // namespace hive::plugins::sql_serializer
