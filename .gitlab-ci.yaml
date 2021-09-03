@@ -197,7 +197,7 @@ hived_options_tests:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
     - "**/generated_during_*"
-    - "**/generated_by_fixture_*"
+    - "**/generated_by_package_fixtures"
     when: always
     expire_in: 1 week
 
