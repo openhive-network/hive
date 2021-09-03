@@ -36,13 +36,11 @@ class debug_node_plugin_impl
 
   private:
 
-    fc::time_point_sec                        fast_forward_stop_point;
     static fc::time_point_sec get_time_null_value() { return fc::time_point_sec::min(); }
 };
 
 debug_node_plugin_impl::debug_node_plugin_impl() :
-  _db( appbase::app().get_plugin< chain::chain_plugin >().db() ),
-  fast_forward_stop_point{get_time_null_value()} {}
+  _db( appbase::app().get_plugin< chain::chain_plugin >().db() ) {}
 debug_node_plugin_impl::~debug_node_plugin_impl() {}
 
   void debug_node_plugin_impl::on_post_apply_block( const chain::block_notification& note )
@@ -50,15 +48,15 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
     try
     {
   #ifdef IS_TEST_NET
-      if(this->fast_forward_stop_point != get_time_null_value())
+      const auto& fast_forward_stop_point = _db.get_dynamic_global_properties().get_debug_properties().fast_forward_stop_point;
+      if(fast_forward_stop_point != get_time_null_value())
       {
-        if(note.block.timestamp >= this->fast_forward_stop_point)
+        if(note.block.timestamp >= fast_forward_stop_point)
         {
-          this->fast_forward_stop_point = get_time_null_value();
           const fc::microseconds new_offset = note.block.timestamp - fc::time_point::now();
-          // static_cast<fc::time_point_sec>(fc::time_point::now());
           this->_db.modify(this->_db.get_dynamic_global_properties(), [&](auto& gdpo){
-            gdpo.block_time_offset = new_offset;
+            gdpo.get_debug_properties().fast_forward_stop_point = get_time_null_value();
+            gdpo.get_debug_properties().block_time_offset = new_offset;
           });
 
           chain::debug_notification out_note{get_time_null_value()};
@@ -70,7 +68,7 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
           );
         } else {
           this->_db.modify(this->_db.get_dynamic_global_properties(), [](auto& gdpo){
-            gdpo.block_time_offset += fc::seconds(HIVE_BLOCK_INTERVAL);
+            gdpo.get_debug_properties().block_time_offset += fc::seconds(HIVE_BLOCK_INTERVAL);
           });
         }
       }
@@ -81,10 +79,15 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
 
   void debug_node_plugin_impl::on_debug(const chain::debug_notification &note)
   {
+#ifdef IS_TEST_NET
     if(note.new_fast_forward != get_time_null_value())
-      this->fast_forward_stop_point = note.new_fast_forward;
+    {
+      this->_db.modify(this->_db.get_dynamic_global_properties(), [&](auto& gdpo){
+        gdpo.get_debug_properties().fast_forward_stop_point = note.new_fast_forward;
+      });
+    }
+#endif
   }
-
 }
 
 void debug_node_plugin_impl::push_debug_transaction(
@@ -133,8 +136,6 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
     _edit_scripts.insert( _edit_scripts.end(), scripts.begin(), scripts.end() );
   }
 
-  // connect needed signals
-  my->_db.activate_debug();
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [this](const chain::block_notification& note){ my->on_post_apply_block(note); }, *this, 0 );

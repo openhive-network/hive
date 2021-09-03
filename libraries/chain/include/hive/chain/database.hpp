@@ -773,16 +773,13 @@ namespace chain {
 
       fc::time_point_sec get_block_producer_time() const 
       {
-        return fc::time_point::now() + get_dynamic_global_properties().get_block_time_offset();
+        return fc::time_point::now() + get_dynamic_global_properties().get_debug_properties().block_time_offset;
       }
 
       bool is_fast_forward_state() const
       {
-        return fast_forward_state;
+        return get_dynamic_global_properties().get_debug_properties().fast_forward_stop_point != fc::time_point_sec::min();
       }
-
-      void activate_debug();
-      void handle_debug_signal(const debug_notification& note);
 
     private:
 
@@ -818,7 +815,6 @@ namespace chain {
       uint16_t                      _shared_file_scale_rate = 0;
 
       bool                          snapshot_loaded = false;
-      bool                          fast_forward_state = false;
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;
@@ -923,7 +919,6 @@ namespace chain {
       ///  Emitted when debug_operation is applied.
       /// </summary>
       fc::signal<void(const debug_notification&)>          _debug_signal;
-      boost::signals2::connection                          _debug_signal_handle;
   };
 
   struct reindex_notification

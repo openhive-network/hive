@@ -432,11 +432,9 @@ namespace detail {
 
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
     // we must control the witness scheduled to produce the next block.
+    capture("scheduled_witness", scheduled_witness);
     if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
-    {
-      capture("scheduled_witness", scheduled_witness);
       return block_production_condition::not_my_turn;
-    }
 
     fc::time_point_sec scheduled_time = _db.get_slot_time( slot );
     chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;

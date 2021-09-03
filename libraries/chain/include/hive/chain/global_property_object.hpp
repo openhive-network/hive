@@ -12,6 +12,12 @@ namespace hive { namespace chain {
   using hive::protocol::asset;
   using hive::protocol::price;
 
+  struct debug_global_properties_t
+  {
+    fc::microseconds block_time_offset = 0;
+    fc::time_point_sec fast_forward_stop_point = fc::time_point_sec::min();
+  };
+
   /**
     * @class dynamic_global_property_object
     * @brief Maintains global state information
@@ -182,15 +188,20 @@ namespace hive { namespace chain {
       asset smt_creation_fee = asset( 1000, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 #endif
 
-      fc::microseconds get_block_time_offset() const
+      const debug_global_properties_t& get_debug_properties() const
       {
 #ifdef IS_TEST_NET
-        return block_time_offset;
+        return debug_properties;
       }
 
-      fc::microseconds block_time_offset{ 0 };
+      debug_global_properties_t& get_debug_properties() 
+      {
+        return debug_properties;
+      }
+
+      debug_global_properties_t debug_properties;
 #else
-        return fc::microseconds();
+        return debug_global_properties_t{};
       }
 #endif
 
@@ -208,6 +219,7 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
+FC_REFLECT( hive::chain::debug_global_properties_t, (block_time_offset)(is_fast_forward_state)(fast_forward_stop_point) );
 FC_REFLECT( hive::chain::dynamic_global_property_object,
           (id)
           (head_block_number)
@@ -258,7 +270,7 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (smt_creation_fee)
 #endif
 #ifdef IS_TEST_NET
-          (block_time_offset)
+          (debug_properties)
 #endif
         )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::dynamic_global_property_object, hive::chain::dynamic_global_property_index )
