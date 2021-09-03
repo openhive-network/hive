@@ -501,11 +501,11 @@ class Wallet:
         self.stdout_file = open(self.get_stdout_file_path(), 'w')
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
-        if not self.connected_node._is_ws_listening():
+        if not self.connected_node.is_ws_listening():
             self.logger.info(f'Waiting for node {self.connected_node} to listen...')
 
         timeout -= wait_for(
-            self.connected_node._is_ws_listening,
+            self.connected_node.is_ws_listening,
             timeout=timeout,
             timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
         )
@@ -515,7 +515,7 @@ class Wallet:
         self.process = subprocess.Popen(
             [
                 str(self.executable_file_path),
-                '-s', f'ws://{self.connected_node._get_ws_endpoint()}',
+                '-s', f'ws://{self.connected_node.get_ws_endpoint()}',
                 '-d',
                 '-H', f'0.0.0.0:{self.http_server_port}',
                 '--rpc-http-allowip', '192.168.10.10',

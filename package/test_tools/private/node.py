@@ -202,7 +202,7 @@ class Node:
     def __is_http_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for http requests' in line)
 
-    def _is_ws_listening(self):
+    def is_ws_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
 
     def __is_live(self):
@@ -245,7 +245,7 @@ class Node:
         wait_for(self.__is_p2p_plugin_started, timeout=timeout,
                  timeout_error_message=f'Waiting too long for start of {self} p2p plugin')
 
-    def _wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
+    def wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         wait_for(self.__is_live, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
@@ -396,7 +396,7 @@ class Node:
 
         self.__produced_files = True
         if wait_for_live:
-            self._wait_for_live(timeout)
+            self.wait_for_live(timeout)
 
         self.__log_run_summary()
 
@@ -459,7 +459,7 @@ class Node:
         if self.config.webserver_ws_endpoint is None:
             self.config.webserver_ws_endpoint = '0.0.0.0:0'
 
-    def _get_p2p_endpoint(self):
+    def get_p2p_endpoint(self):
         self._wait_for_p2p_plugin_start()
         with open(self.__process.get_stderr_file_path()) as output:
             for line in output:
@@ -477,7 +477,7 @@ class Node:
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
         return None
 
-    def _get_ws_endpoint(self):
+    def get_ws_endpoint(self):
         self.__wait_for_http_listening()
         with open(self.__process.get_stderr_file_path()) as output:
             for line in output:

@@ -37,7 +37,7 @@ class Network(NodesCreator):
             self.network_to_connect_with = None
             nodes_connecting_to_seed = self._nodes
 
-        endpoint = seed_node._get_p2p_endpoint()
+        endpoint = seed_node.get_p2p_endpoint()
 
         for node in nodes_connecting_to_seed:
             node.config.p2p_seed_node.append(endpoint)
@@ -110,7 +110,7 @@ class Network(NodesCreator):
 
     def wait_for_live_on_all_nodes(self):
         for node in self._nodes:
-            node._wait_for_live()
+            node.wait_for_live()
 
     def set_clean_up_policy(self, policy: constants.NetworkCleanUpPolicy):
         self.__clean_up_policy = policy
