@@ -14,7 +14,7 @@ namespace hive { namespace chain {
 
   struct debug_global_properties_t
   {
-    fc::microseconds block_time_offset = 0;
+    fc::microseconds block_time_offset{0};
     fc::time_point_sec fast_forward_stop_point = fc::time_point_sec::min();
   };
 
@@ -219,7 +219,7 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::debug_global_properties_t, (block_time_offset)(is_fast_forward_state)(fast_forward_stop_point) );
+FC_REFLECT( hive::chain::debug_global_properties_t, (block_time_offset)(fast_forward_stop_point) );
 FC_REFLECT( hive::chain::dynamic_global_property_object,
           (id)
           (head_block_number)
