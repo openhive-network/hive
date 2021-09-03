@@ -86,7 +86,7 @@ namespace detail {
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
 
-    time_point_sec current_time() const;
+    time_point_sec get_time_for_next_block() const;
     void forward(const account_name_type& invoker, const fc::time_point_sec& untill);
   };
 
@@ -389,35 +389,9 @@ namespace detail {
     return result;
   }
 
-  void witness_plugin_impl::forward(const chain::account_name_type& invoker, const fc::time_point_sec& untill)
-  {
-    FC_ASSERT( !_private_keys.empty() );
-
-    signed_transaction tx;
-    tx.expiration = _db.head_block_time() + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION / 2);
-
-    debug_operation op;
-    op.untill = untill;
-
-    auto signer = *_private_keys.begin();
-    for(const auto& w : _db.get_index<chain::witness_index, chain::by_id>())
-    {
-      if(w.signing_key == signer.first)
-      {
-        op.invoker = w.owner;
-        break;
-      }
-    }
-
-    tx.operations.push_back( op );
-    tx.sign(signer.second, _db.get_chain_id(), fc::ecc::fc_canonical);
-
-    if( _witnesses.find(_db.get_scheduled_witness(0)) != _witnesses.end() ) _db.push_transaction(tx);
-    else appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_transaction(tx);
-  }
 
 
-  time_point_sec witness_plugin_impl::current_time() const
+  time_point_sec witness_plugin_impl::get_time_for_next_block() const
   {
     if(!_db.is_fast_forward_state())
       return _db.get_block_producer_time();
@@ -427,7 +401,7 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
-    fc::time_point_sec now = current_time() + fc::microseconds( 500'000 );
+    fc::time_point_sec now = get_time_for_next_block() + fc::microseconds( 500'000 );
 
     // If the next block production opportunity is in the present or future, we're synced.
     if( !_production_enabled )
@@ -457,10 +431,12 @@ namespace detail {
     assert( now > _db.head_block_time() );
 
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
-    capture("scheduled_witness", scheduled_witness);
     // we must control the witness scheduled to produce the next block.
     if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
+    {
+      capture("scheduled_witness", scheduled_witness);
       return block_production_condition::not_my_turn;
+    }
 
     fc::time_point_sec scheduled_time = _db.get_slot_time( slot );
     chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
@@ -574,11 +550,6 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   HIVE_ADD_PLUGIN_INDEX(my->_db, witness_custom_op_index);
 
 } FC_LOG_AND_RETHROW() }
-
-void witness_plugin::forward(const chain::account_name_type& invoker, const fc::time_point_sec untill)
-{
-  this->my->forward( invoker, untill );
-}
 
 void witness_plugin::plugin_startup()
 { try {

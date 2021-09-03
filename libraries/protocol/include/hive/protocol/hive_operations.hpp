@@ -1129,8 +1129,6 @@ namespace hive { namespace protocol {
    */
   struct debug_operation : public base_operation
   {
-    static const char* error_message_not_supported;
-
     account_name_type invoker;
 
     // untill this time point generate blocks with full speed
