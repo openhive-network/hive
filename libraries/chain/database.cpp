@@ -6256,7 +6256,7 @@ void database::apply_hardfork( uint32_t hardfork )
       });
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.reverse_auction_seconds = 0;
+        gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25;
         gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
         gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
       });

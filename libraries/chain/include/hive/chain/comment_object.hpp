@@ -193,10 +193,10 @@ namespace hive { namespace chain {
           --net_votes;
       }
       //acumulates rshares of a vote
-      void accumulate_vote_rshares( int64_t _net_rshares, int64_t _vote_rshares )
+      void accumulate_vote_rshares( int64_t _net_rshares, int64_t _positive_rshares )
       {
         net_rshares += _net_rshares;
-        vote_rshares += _vote_rshares;
+        vote_rshares += _positive_rshares;
       }
       //accumulates weight of the vote used later to split curation rewards
       void accumulate_vote_weight( int64_t vote_weight )

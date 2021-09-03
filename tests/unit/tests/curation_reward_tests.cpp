@@ -143,21 +143,21 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 struct curation_rewards_handler
 {
-  const uint32_t seven_days                 = 60*60*24*7;
-
-  bool prepare                              = true;
+  const uint32_t cashout_time               = 60 * 60 * 24 * 7; // 7 days - HF25 mainnet value
 
   /*
     early window(24 hours)                  <0;86400)
     mid window(24 hours from 24 hours)      <86400;259200)
     late window(until 7 days from 48 hours) <259200;604800)
+      note that late window also contains 12h upvote lockout that we want to avoid since it would make it hard
+      to compare vote power and rewards for votes cast within that extra-late window
+      therefore votes must be limited not to 604800 cashout but 604800-12*3600=561600
   */
   const int32_t early_window                = 86400;
   const int32_t mid_window                  = 259200;
+  const int32_t late_window                 = 561600;
 
   static const uint32_t default_amount      = 1'000'000;
-
-  configuration                             configuration_data_copy;
 
   std::vector<curve_printer>                curve_printers;
 
@@ -174,24 +174,8 @@ struct curation_rewards_handler
 
   boost::signals2::connection               _comment_reward_con;
 
-  void preparation( bool enter )
-  {
-    if( !prepare )
-      return;
-
-    if( enter )
-    {
-      configuration_data_copy = configuration_data;
-      configuration_data.set_hive_cashout_window_seconds( seven_days );/*7 days like in mainnet*/
-    }
-    else
-    {
-      configuration_data = configuration_data_copy;
-    }
-  }
-
-  curation_rewards_handler( clean_database_fixture& _test_object, chain::database& _db, bool _prepare = true )
-  : prepare( _prepare ), test_object( _test_object ), db( _db )
+  curation_rewards_handler( clean_database_fixture& _test_object, chain::database& _db )
+  : test_object( _test_object ), db( _db )
   {
     create_printer();
 
@@ -202,13 +186,10 @@ struct curation_rewards_handler
       },
       appbase::app().get_plugin< hive::plugins::debug_node::debug_node_plugin >()
     );
-
-    preparation( true/*enter*/ );
   }
 
   ~curation_rewards_handler()
   {
-    preparation( false/*enter*/ );
     chain::util::disconnect_signal( _comment_reward_con );
   }
 
@@ -518,12 +499,11 @@ struct curation_rewards_handler
 
     auto _time = db.head_block_time();
     uint64_t _seconds = static_cast<uint64_t>( ( _time - curve_printers[ comment_idx ].start_time ).to_seconds() );
-    _seconds += HIVE_BLOCK_INTERVAL;
 
     _seconds += back_offset_blocks * HIVE_BLOCK_INTERVAL;
 
-    if( seven_days > _seconds )
-      test_object.generate_blocks( _time + fc::seconds( seven_days - _seconds ) );
+    if( cashout_time > _seconds )
+      test_object.generate_blocks( _time + fc::seconds( cashout_time - _seconds ) );
   }
 
   share_type calculate_reward()
@@ -556,7 +536,7 @@ struct curation_rewards_handler
 
 };
 
-BOOST_FIXTURE_TEST_SUITE( curation_reward_tests, clean_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( curation_reward_tests, curation_database_fixture )
 
 void basic_test_impl(
                       const std::string& test_name,
@@ -582,9 +562,9 @@ void basic_test_impl(
   std::string permlink  = "somethingpermlink";
 
   crh.prepare_comment( permlink, author_number );
+  const auto creation_time = mgr_test.db->head_block_time();
+  crh.set_start_time( creation_time );
   mgr_test.generate_block();
-
-  crh.set_start_time( mgr_test.db->head_block_time() );
 
   if( offset.valid() )
     mgr_test.generate_blocks( mgr_test.db->head_block_time() + fc::seconds( *offset ) );
@@ -595,8 +575,21 @@ void basic_test_impl(
 
   size_t vote_counter = 0;
   crh.voting( vote_counter, author_number, permlink, early_votes_time );
+  BOOST_REQUIRE(mgr_test.db->head_block_time() < creation_time + fc::seconds(crh.early_window)); //too many early voters?
+  if( !mid_votes_time.empty() )
+  {
+    mgr_test.generate_blocks( creation_time + fc::seconds( crh.early_window ) );
+    mid_votes_time.front() = 0;
+  }
   crh.voting( vote_counter, author_number, permlink, mid_votes_time );
+  BOOST_REQUIRE( mgr_test.db->head_block_time() < creation_time + fc::seconds( crh.mid_window ) ); //too many mid voters?
+  if( !late_votes_time.empty() )
+  {
+    mgr_test.generate_blocks( creation_time + fc::seconds( crh.mid_window ) );
+    late_votes_time.front() = 0;
+  }
   crh.voting( vote_counter, author_number, permlink, late_votes_time );
+  BOOST_REQUIRE( mgr_test.db->head_block_time() < creation_time + fc::seconds( crh.late_window ) ); //too many late voters?
   crh.make_payment();
 
   reward_stat::rewards_stats early_stats;
@@ -604,6 +597,9 @@ void basic_test_impl(
   reward_stat::rewards_stats late_stats;
 
   crh.curation_gathering( early_stats, mid_stats, late_stats );
+  BOOST_REQUIRE_EQUAL(early_stats.size(), early.nr_voters);
+  BOOST_REQUIRE_EQUAL( mid_stats.size(), mid.nr_voters );
+  BOOST_REQUIRE_EQUAL( late_stats.size(), late.nr_voters );
 
   auto cmp = [ reward ]( const reward_stat::rewards_stats& stats_a, const reward_stat::rewards_stats& stats_b, uint32_t factor )
   {
@@ -673,9 +669,9 @@ BOOST_AUTO_TEST_CASE( basic_test_v0 )
 
     basic_test_impl( "00.content_format.time:curation_reward.csv",
                       *this,
-                      window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
-                      window_input_data{ 39/*nr_voters*/, 4480/*interval*/  , _a }/*mid*/,
-                      window_input_data{ 95/*nr_voters*/, 4480/*interval*/  , _a }/*late*/, 645/*reward*/ );
+                      window_input_data{ 44/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
+                      window_input_data{ 38/*nr_voters*/, 4480/*interval*/  , _a }/*mid*/,
+                      window_input_data{ 77/*nr_voters*/, 3925/*interval*/  , _a }/*late*/, 645/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -690,8 +686,8 @@ BOOST_AUTO_TEST_CASE( basic_test_v1 )
 
     basic_test_impl( "01.content_format.time:curation_reward.csv",
                       *this,
-                      window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
-                      window_input_data{ 39/*nr_voters*/, 4479/*interval*/  , _a }/*mid*/,
+                      window_input_data{ 44/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
+                      window_input_data{ 20/*nr_voters*/, 4479/*interval*/  , _a }/*mid*/,
                       window_input_data()/*late*/, 760/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
@@ -707,8 +703,8 @@ BOOST_AUTO_TEST_CASE( basic_test_v2 )
 
     basic_test_impl( "02.content_format.time:curation_reward.csv",
                       *this,
-                      window_input_data{ 25/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
-                      window_input_data{ 134/*nr_voters*/, 1930/*interval*/ , _a }/*mid*/,
+                      window_input_data{ 69/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
+                      window_input_data{ 90/*nr_voters*/, 1930/*interval*/ , _a }/*mid*/,
                       window_input_data()/*late*/, 411/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
@@ -743,7 +739,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v4 )
                       *this,
                       window_input_data()/*early*/,
                       window_input_data{ 50/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/, 25*3600/*offset*/ );
+                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -777,7 +773,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v6 )
                       *this,
                       window_input_data()/*early*/,
                       window_input_data{ 50/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/, 25*3600/*offset*/ );
+                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -796,7 +792,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v7 )
                       *this,
                       window_input_data{ 1/*nr_voters*/, 12/*interval*/, _a }/*early*/,
                       window_input_data{ 49/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 1579/*reward*/, 24*3600 - 90/*offset*/ );
+                      window_input_data()/*late*/, 1579/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -815,7 +811,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v8 )
                       *this,
                       window_input_data{ 5/*nr_voters*/, 12/*interval*/, _a }/*early*/,
                       window_input_data{ 45/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 1464/*reward*/, 24*3600 - 90/*offset*/ );
+                      window_input_data()/*late*/, 1464/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -891,9 +887,8 @@ BOOST_AUTO_TEST_CASE( one_vote_for_comment )
 
     for( uint32_t i = 0 ; i < 3; ++i )
       crh.prepare_comment( permlink, i/*author_number*/ );
-    generate_block();
-
     crh.set_start_time( db->head_block_time() );
+    generate_block();
 
     //Every comment has only 1 vote, but votes are created in different windows.
     size_t vote_counter = 0;
@@ -966,9 +961,8 @@ BOOST_AUTO_TEST_CASE( two_votes_for_comment )
 
     for( uint32_t i = 0 ; i < 3; ++i )
       crh.prepare_comment( permlink, i/*author_number*/ );
-    generate_block();
-
     crh.set_start_time( db->head_block_time() );
+    generate_block();
 
     /*
       Every comment has only 2 votes in different windows.
@@ -1093,9 +1087,8 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
 
       crh.prepare_comment( permlink, 0/*author_number*/ );
       crh.prepare_comment( permlink, 1/*author_number*/ );
-      executor->generate_block();
-
       crh.set_start_time( executor->db->head_block_time() );
+      executor->generate_block();
 
       const uint32_t nr_votes_first = 75;
       const uint32_t nr_votes_second = 1;
@@ -1369,8 +1362,8 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       std::string permlink  = "somethingpermlink";
 
       crh.prepare_comment( permlink, 0/*author_number*/ );
-      executor->generate_block();
       crh.set_start_time( executor->db->head_block_time() );
+      executor->generate_block();
 
       //All votes( for both comments ) are in the same block.
       for( uint32_t i = 0; i < nr_votes_first; ++i )
@@ -1382,8 +1375,8 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       executor->generate_blocks( increasing_rewards_factor );
 
       crh.prepare_comment( permlink, 1/*author_number*/ );
-      executor->generate_block();
       crh.set_start_time( executor->db->head_block_time(), 1/*comment_idx*/ );
+      executor->generate_block();
 
       //All votes( for both comments ) are in the same block.
       for( uint32_t i = 0; i < nr_votes_second; ++i )
@@ -1631,9 +1624,8 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
       std::string permlink  = "somethingpermlink";
 
       crh.prepare_comment( permlink, 0/*author_number*/ );
-      executor->generate_block();
-
       crh.set_start_time( executor->db->head_block_time() );
+      executor->generate_block();
 
       crh.voting( vote_counter, 0/*author_number*/, permlink, { vote_01_time } );
       crh.make_payment( 1/*back_offset_blocks*/ );
@@ -1825,9 +1817,8 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
       std::string permlink  = "somethingpermlink";
 
       crh.prepare_comment( permlink, 0/*author_number*/ );
-      executor->generate_block();
-
       crh.set_start_time( executor->db->head_block_time() );
+      executor->generate_block();
 
       crh.voting( vote_counter, 0/*author_number*/, permlink, { vote_01_time } );
       crh.make_payment( 1/*back_offset_blocks*/ );
@@ -2017,9 +2008,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
       std::string permlink  = "somethingpermlink";
 
       crh.prepare_comment( permlink, 0/*author_number*/ );
-      executor->generate_block();
-
       crh.set_start_time( executor->db->head_block_time() );
+      executor->generate_block();
 
       crh.voting( vote_counter, 0/*author_number*/, permlink, { vote_01_time } );
       crh.voting( vote_counter, 0/*author_number*/, permlink, { 0 } );
