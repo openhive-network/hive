@@ -14,7 +14,6 @@ class Network(NodesCreator):
         self.name = name
         self._directory = Path(directory).joinpath(self.name).absolute()
         self.__wallets = []
-        self.is_running = False
         self.__connect_with_network = None
         self.disconnected_networks = []
         self.__clean_up_policy: constants.NetworkCleanUpPolicy = None
@@ -43,8 +42,6 @@ class Network(NodesCreator):
         for node in nodes_connecting_to_seed:
             node.config.p2p_seed_node.append(endpoint)
             node.run(wait_for_live=wait_for_live)
-
-        self.is_running = True
 
     def handle_final_cleanup(self, *, default_policy: constants.NetworkCleanUpPolicy):
         policy = default_policy if self.__clean_up_policy is None else self.__clean_up_policy
@@ -75,7 +72,7 @@ class Network(NodesCreator):
         if len(self._nodes) == 0 or len(network.nodes()) == 0:
             raise Exception('Unable to connect empty network')
 
-        if not self.is_running:
+        if not any(node.is_running() for node in self._nodes):
             if any(node.is_able_to_produce_blocks() for node in self._nodes):
                 network.__connect_with_network = self
             else:
