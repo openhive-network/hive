@@ -13,6 +13,9 @@ from test_tools.private.wait_for import wait_for
 
 
 class Wallet:
+    # pylint: disable=too-many-instance-attributes
+    # This pylint warning is right, but this refactor has low priority. Will be done later...
+
     class __Api:
         # pylint: disable=invalid-name, too-many-arguments, too-many-public-methods
         # Wallet api is out of TestTools control

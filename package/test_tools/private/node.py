@@ -20,6 +20,9 @@ from test_tools.wallet import Wallet
 
 
 class Node:
+    # pylint: disable=too-many-instance-attributes
+    # This pylint warning is right, but this refactor has low priority. Will be done later...
+
     __DEFAULT_WAIT_FOR_LIVE_TIMEOUT = 20
 
     class __Executable:
