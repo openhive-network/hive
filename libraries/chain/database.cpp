@@ -125,7 +125,6 @@ database::database()
 database::~database()
 {
   clear_pending();
-  chain::util::disconnect_signal( this->_debug_signal_handle );
 }
 
 void database::open( const open_args& args )
@@ -6787,16 +6786,5 @@ void database::remove_expired_governance_votes()
     }
   }
 }
-
-void database::activate_debug()
-{
-  this->_debug_signal_handle = this->_debug_signal.connect(-1, [&](const auto& note) { handle_debug_signal(note); });
-}
-
-void database::handle_debug_signal(const debug_notification &note)
-{
-  this->fast_forward_state = (note.new_fast_forward != fc::time_point_sec::min());
-}
-
 } } //hive::chain
 
