@@ -192,6 +192,7 @@ hived_options_tests:
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - export NUMBER_OF_PROCESSES=$(nproc)
     - pip3 install requests
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -209,9 +210,9 @@ cli_wallet_extended_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest
+    - pip3 install pytest pytest-xdist
     - cd tests/functional/python_tests/cli_wallet_extended_tests
-    - pytest --junitxml="./report.xml"
+    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   artifacts:
     reports:
       junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
@@ -260,9 +261,9 @@ test_tools_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - pip3 install pytest
+    - pip3 install pytest pytest-xdist
     - cd tests/test_tools/tests
-    - pytest --junitxml="./report.xml"
+    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   artifacts:
     reports:
       junit: tests/test_tools/tests/report.xml
