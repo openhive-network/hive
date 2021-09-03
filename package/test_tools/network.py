@@ -14,7 +14,7 @@ class Network(NodesCreator):
         self.name = name
         self._directory = Path(directory).joinpath(self.name).absolute()
         self.__wallets = []
-        self.__connect_with_network = None
+        self.network_to_connect_with = None
         self.disconnected_networks = []
         self.__clean_up_policy: constants.NetworkCleanUpPolicy = None
         self.logger = logger.create_child_logger(str(self))
@@ -28,13 +28,13 @@ class Network(NodesCreator):
 
         self._directory.mkdir(parents=True)
 
-        if self.__connect_with_network is None:
+        if self.network_to_connect_with is None:
             seed_node = self._nodes[0]
             seed_node.run(wait_for_live=wait_for_live)
             nodes_connecting_to_seed = self._nodes[1:]
         else:
-            seed_node = self.__connect_with_network.nodes()[0]
-            self.__connect_with_network = None
+            seed_node = self.network_to_connect_with.nodes()[0]
+            self.network_to_connect_with = None
             nodes_connecting_to_seed = self._nodes
 
         endpoint = seed_node._get_p2p_endpoint()
@@ -74,9 +74,9 @@ class Network(NodesCreator):
 
         if not any(node.is_running() for node in self._nodes):
             if any(node.is_able_to_produce_blocks() for node in self._nodes):
-                network.__connect_with_network = self
+                network.network_to_connect_with = self
             else:
-                self.__connect_with_network = network
+                self.network_to_connect_with = network
             return
 
         if network not in self.disconnected_networks:
