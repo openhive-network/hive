@@ -1,14 +1,3 @@
 {
-  "delegations": [
-    {
-      "delegator": "nalesnik",
-      "expiration": "2020-11-08T14:23:33",
-      "id": 4718518,
-      "vesting_shares": {
-        "amount": "761349766845",
-        "nai": "@@000000037",
-        "precision": 6
-      }
-    }
-  ]
+  "delegations": []
 }

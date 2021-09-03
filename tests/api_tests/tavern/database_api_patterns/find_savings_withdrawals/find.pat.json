@@ -1,17 +1,3 @@
 {
-  "withdrawals": [
-    {
-      "amount": {
-        "amount": "10000",
-        "nai": "@@000000021",
-        "precision": 3
-      },
-      "complete": "2020-11-06T14:28:39",
-      "from": "nalesnik",
-      "id": 129411,
-      "memo": "",
-      "request_id": 1604413712,
-      "to": "nalesnik"
-    }
-  ]
+  "withdrawals": []
 }
