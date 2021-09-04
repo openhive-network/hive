@@ -429,7 +429,7 @@ struct supplement_operations_visitor
       return; //estimated payout was already calculated
 
     const auto* cashout = _db.find_comment_cashout( _db.get_comment( op.author, op.permlink ) );
-    if( cashout == nullptr || cashout->net_rshares.value <= 0 )
+    if( cashout == nullptr || cashout->get_net_rshares() <= 0 )
       return; //voting can happen even after cashout; there will be no new payout though
 
     const auto& props = _db.get_dynamic_global_properties();
@@ -453,12 +453,12 @@ struct supplement_operations_visitor
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       {
         pot = rf->reward_balance;
-        vshares = chain::util::evaluate_reward_curve( cashout->net_rshares.value, rf->author_reward_curve, rf->content_constant );
+        vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares(), rf->author_reward_curve, rf->content_constant );
       }
       else
       {
         pot = props.total_reward_fund_hive;
-        vshares = chain::util::evaluate_reward_curve( cashout->net_rshares.value );
+        vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares() );
       }
 
       if( !hist.current_median_history.is_null() )

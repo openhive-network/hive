@@ -99,7 +99,7 @@ namespace detail {
 #ifdef HIVE_ENABLE_SMT
     void operator()( const allowed_vote_assets& va) const
     {
-      FC_TODO("To be implemented  suppport for allowed_vote_assets");
+      FC_TODO("To be implemented support for allowed_vote_assets");
     }
 #endif
 

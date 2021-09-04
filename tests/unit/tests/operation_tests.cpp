@@ -485,14 +485,13 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( alice_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "alice" ), "lorem" ) );
     BOOST_REQUIRE( alice_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( alice_comment_cashout->get_comment_id(), alice_comment.get_id() );
-    BOOST_CHECK_EQUAL( alice_comment_cashout->author_id, get_account_id( op.author ) );
-    BOOST_CHECK_EQUAL( to_string( alice_comment_cashout->permlink ), "lorem" );
+    BOOST_CHECK_EQUAL( alice_comment_cashout->get_author_id(), get_account_id( op.author ) );
+    BOOST_CHECK_EQUAL( to_string( alice_comment_cashout->get_permlink() ), "lorem" );
     BOOST_REQUIRE( alice_comment.is_root() );
-    BOOST_REQUIRE( alice_comment_cashout->active == db->head_block_time() );
+    BOOST_REQUIRE( alice_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( alice_comment_cashout->get_creation_time() == db->head_block_time() );
-    BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == 0 );
-    BOOST_REQUIRE( alice_comment_cashout->abs_rshares.value == 0 );
-    BOOST_REQUIRE( alice_comment_cashout->cashout_time == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
+    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == 0 );
+    BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
 
     validate_database();
 
@@ -523,14 +522,13 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_CHECK_EQUAL( bob_comment.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( get_account_id( "bob" ), "ipsum" ) );
     BOOST_REQUIRE( bob_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( bob_comment_cashout->get_comment_id(), bob_comment.get_id() );
-    BOOST_CHECK_EQUAL( bob_comment_cashout->author_id, get_account_id( "bob" ) );
-    BOOST_CHECK_EQUAL( to_string( bob_comment_cashout->permlink ), "ipsum" );
+    BOOST_CHECK_EQUAL( bob_comment_cashout->get_author_id(), get_account_id( "bob" ) );
+    BOOST_CHECK_EQUAL( to_string( bob_comment_cashout->get_permlink() ), "ipsum" );
     BOOST_REQUIRE( bob_comment.get_parent_id() == alice_comment.get_id() );
-    BOOST_REQUIRE( bob_comment_cashout->active == db->head_block_time() );
+    BOOST_REQUIRE( bob_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( bob_comment_cashout->get_creation_time() == db->head_block_time() );
-    BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == 0 );
-    BOOST_REQUIRE( bob_comment_cashout->abs_rshares.value == 0 );
-    BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+    BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == 0 );
+    BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test Sam posting a comment on Bob's comment" );
@@ -552,14 +550,13 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( sam_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( sam_comment_cashout->get_comment_id(), sam_comment.get_id() );
-    BOOST_CHECK_EQUAL( sam_comment_cashout->author_id, get_account_id( "sam" ) );
-    BOOST_CHECK_EQUAL( to_string( sam_comment_cashout->permlink ), "dolor" );
+    BOOST_CHECK_EQUAL( sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
+    BOOST_CHECK_EQUAL( to_string( sam_comment_cashout->get_permlink() ), "dolor" );
     BOOST_REQUIRE( sam_comment.get_parent_id() == bob_comment.get_id() );
-    BOOST_REQUIRE( sam_comment_cashout->active == db->head_block_time() );
+    BOOST_REQUIRE( sam_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( sam_comment_cashout->get_creation_time() == db->head_block_time() );
-    BOOST_REQUIRE( sam_comment_cashout->net_rshares.value == 0 );
-    BOOST_REQUIRE( sam_comment_cashout->abs_rshares.value == 0 );
-    BOOST_REQUIRE( sam_comment_cashout->cashout_time == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+    BOOST_REQUIRE( sam_comment_cashout->get_net_rshares() == 0 );
+    BOOST_REQUIRE( sam_comment_cashout->get_cashout_time() == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     validate_database();
 
     generate_blocks( 60 * 5 / HIVE_BLOCK_INTERVAL + 1 );
@@ -577,8 +574,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
     db->modify( *mod_sam_comment_cashout, [&]( comment_cashout_object& com )
     {
-      com.net_rshares = 10;
-      com.abs_rshares = 10;
+      com.accumulate_vote_rshares( -com.get_net_rshares() + 10, 0 ); //com.net_rshares = 10;
     });
 
     db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& o)
@@ -599,12 +595,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_REQUIRE( mod_sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( mod_sam_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_comment_id(), mod_sam_comment.get_id() );
-    BOOST_CHECK_EQUAL( mod_sam_comment_cashout->author_id, get_account_id( "sam" ) );
-    BOOST_CHECK_EQUAL( to_string( mod_sam_comment_cashout->permlink ), "dolor" );
+    BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
+    BOOST_CHECK_EQUAL( to_string( mod_sam_comment_cashout->get_permlink() ), "dolor" );
     BOOST_REQUIRE( mod_sam_comment.get_parent_id() == mod_bob_comment.get_id() );
-    BOOST_REQUIRE( mod_sam_comment_cashout->active == db->head_block_time() );
+    BOOST_REQUIRE( mod_sam_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_creation_time() == created );
-    BOOST_REQUIRE( mod_sam_comment_cashout->cashout_time == mod_sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+    BOOST_REQUIRE( mod_sam_comment_cashout->get_cashout_time() == mod_sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test comment edit rate limit" );
@@ -860,8 +856,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
       BOOST_REQUIRE( alice.last_vote_time == db->head_block_time() );
-      BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
-      BOOST_REQUIRE( alice_comment_cashout->cashout_time == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+      BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr->get_rshares() == ( old_mana - alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
@@ -898,15 +894,15 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
       itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice.get_id() ) );
 
-      BOOST_REQUIRE( bob_comment_cashout->net_rshares.value == ( old_manabar.current_mana - db->get_account( "alice" ).voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
-      BOOST_REQUIRE( bob_comment_cashout->cashout_time == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == ( old_manabar.current_mana - db->get_account( "alice" ).voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+      BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
 
-      BOOST_TEST_MESSAGE( "--- Test payout time extension on vote" );
+      BOOST_TEST_MESSAGE( "--- Test payout time extension on vote" ); // such feature was scrapped with HF17
 
       old_mana = VOTING_MANABAR( "bob" ).current_mana;
-      auto old_abs_rshares = db->find_comment_cashout( db->get_comment( "alice", string( "foo" ) ) )->abs_rshares.value;
+      auto old_net_rshares = db->find_comment_cashout( db->get_comment( "alice", string( "foo" ) ) )->get_net_rshares();
 
       generate_blocks( db->head_block_time() + fc::seconds( ( HIVE_CASHOUT_WINDOW_SECONDS / 2 ) ), true );
 
@@ -927,8 +923,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       itr = vote_idx.find( boost::make_tuple( new_alice_comment.get_id(), new_bob.get_id() ) );
 
-      BOOST_REQUIRE( new_alice_comment_cashout->net_rshares.value == old_abs_rshares + ( old_mana - new_bob.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
-      BOOST_REQUIRE( new_alice_comment_cashout->cashout_time == new_alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_alice_comment_cashout->get_net_rshares() == old_net_rshares + ( old_mana - new_bob.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
+      BOOST_REQUIRE( new_alice_comment_cashout->get_cashout_time() == new_alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
 
@@ -938,7 +934,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       const auto& new_bob_comment = db->get_comment( "bob", string( "foo" ) );
       const comment_cashout_object* new_bob_comment_cashout = db->find_comment_cashout( new_bob_comment );
 
-      old_abs_rshares = new_bob_comment_cashout->abs_rshares.value;
+      old_net_rshares = new_bob_comment_cashout->get_net_rshares();
 
       old_manabar = VOTING_MANABAR( "sam" );
       params.max_mana = util::get_effective_vesting_shares( db->get_account( "sam" ) );
@@ -961,9 +957,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
       int64_t sam_weight = old_downvote_manabar.current_mana - DOWNVOTE_MANABAR( "sam" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
-      BOOST_REQUIRE( new_bob_comment_cashout->net_rshares.value == old_abs_rshares - sam_weight );
-      BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares.value == old_abs_rshares + sam_weight );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_net_rshares() == old_net_rshares - sam_weight );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_cashout_time() == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( itr != vote_idx.end() );
       validate_database();
 
@@ -998,7 +993,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       {
         auto* alice_cashout = db->find_comment_cashout( db->get_comment( "alice", string( "foo" ) ) );
-        BOOST_REQUIRE( alice_cashout->cashout_time == alice_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+        BOOST_REQUIRE( alice_cashout->get_cashout_time() == alice_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       }
 
       validate_database();
@@ -1010,8 +1005,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       auto& new_alice = db->get_account( "alice" );
       auto alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
       auto old_vote_rshares = alice_bob_vote->get_rshares();
-      auto old_net_rshares = new_bob_comment_cashout->net_rshares.value;
-      old_abs_rshares = new_bob_comment_cashout->abs_rshares.value;
+      old_net_rshares = new_bob_comment_cashout->get_net_rshares();
       used_power = ( ( HIVE_1_PERCENT * 25 * ( get_voting_power( new_alice ) ) / HIVE_100_PERCENT ) + max_vote_denom - 1 ) / max_vote_denom;
       auto alice_voting_power = get_voting_power( new_alice ) - used_power;
 
@@ -1032,9 +1026,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       new_rshares = old_manabar.current_mana - VOTING_MANABAR( "alice" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
-      BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares + new_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares + new_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_net_rshares() == old_net_rshares - old_vote_rshares + new_rshares );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_cashout_time() == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( alice_bob_vote->get_rshares() == new_rshares );
       BOOST_REQUIRE( alice_bob_vote->get_last_update() == db->head_block_time() );
       BOOST_REQUIRE( alice_bob_vote->get_vote_percent() == op.weight );
@@ -1045,8 +1038,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
       old_vote_rshares = new_rshares;
-      old_net_rshares = new_bob_comment_cashout->net_rshares.value;
-      old_abs_rshares = new_bob_comment_cashout->abs_rshares.value;
+      old_net_rshares = new_bob_comment_cashout->get_net_rshares();
       used_power = ( uint64_t( HIVE_1_PERCENT ) * 75 * uint64_t( alice_voting_power ) ) / HIVE_100_PERCENT;
       used_power = ( used_power + max_vote_denom - 1 ) / max_vote_denom;
       alice_voting_power -= used_power;
@@ -1069,9 +1061,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       new_rshares = old_downvote_manabar.current_mana - DOWNVOTE_MANABAR( "alice" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
-      BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares - new_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares + new_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_net_rshares() == old_net_rshares - old_vote_rshares - new_rshares );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_cashout_time() == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( alice_bob_vote->get_rshares() == -1 * new_rshares );
       BOOST_REQUIRE( alice_bob_vote->get_last_update() == db->head_block_time() );
       BOOST_REQUIRE( alice_bob_vote->get_vote_percent() == op.weight );
@@ -1082,8 +1073,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
       old_vote_rshares = alice_bob_vote->get_rshares();
-      old_net_rshares = new_bob_comment_cashout->net_rshares.value;
-      old_abs_rshares = new_bob_comment_cashout->abs_rshares.value;
+      old_net_rshares = new_bob_comment_cashout->get_net_rshares();
 
       op.weight = 0;
       tx.operations.clear();
@@ -1093,9 +1083,8 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       db->push_transaction( tx, 0 );
       alice_bob_vote = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_alice.get_id() ) );
 
-      BOOST_REQUIRE( new_bob_comment_cashout->net_rshares == old_net_rshares - old_vote_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->abs_rshares == old_abs_rshares );
-      BOOST_REQUIRE( new_bob_comment_cashout->cashout_time == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_net_rshares() == old_net_rshares - old_vote_rshares );
+      BOOST_REQUIRE( new_bob_comment_cashout->get_cashout_time() == new_bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
       BOOST_REQUIRE( alice_bob_vote->get_rshares() == 0 );
       BOOST_REQUIRE( alice_bob_vote->get_last_update() == db->head_block_time() );
       BOOST_REQUIRE( alice_bob_vote->get_vote_percent() == op.weight );
@@ -1130,8 +1119,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
         const auto& bob_comment = db->get_comment( "bob", string( "foo" ) );
         const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
 
-        old_net_rshares = bob_comment_cashout->net_rshares.value;
-        old_abs_rshares = bob_comment_cashout->abs_rshares.value;
+        old_net_rshares = bob_comment_cashout->get_net_rshares();
       }
 
       op.weight = -1 * HIVE_100_PERCENT;
@@ -1146,8 +1134,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
         const auto& bob_comment = db->get_comment( "bob", string( "foo" ) );
         const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( bob_comment );
         const auto& alice = db->get_account( "alice" );
-        BOOST_REQUIRE( bob_comment_cashout->net_rshares == old_net_rshares - alice_weight + HIVE_VOTE_DUST_THRESHOLD );
-        BOOST_REQUIRE( bob_comment_cashout->abs_rshares == old_abs_rshares + alice_weight - HIVE_VOTE_DUST_THRESHOLD );
+        BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == old_net_rshares - alice_weight + HIVE_VOTE_DUST_THRESHOLD );
         BOOST_REQUIRE( alice_bob_vote->get_rshares() == -1 * ( alice_weight - HIVE_VOTE_DUST_THRESHOLD ) );
         BOOST_REQUIRE( alice_bob_vote->get_last_update() == db->head_block_time() );
         BOOST_REQUIRE( alice_bob_vote->get_vote_percent() == op.weight );
@@ -1158,7 +1145,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       BOOST_TEST_MESSAGE( "--- Test reduced effectiveness when increasing rshares within lockout period" );
 
-      generate_blocks( fc::time_point_sec( ( new_bob_comment_cashout->cashout_time - HIVE_UPVOTE_LOCKOUT_HF17 ).sec_since_epoch() + HIVE_BLOCK_INTERVAL ), true );
+      generate_blocks( fc::time_point_sec( ( new_bob_comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17 ).sec_since_epoch() + HIVE_BLOCK_INTERVAL ), true );
 
       old_manabar = VOTING_MANABAR( "dave" );
       params.max_mana = util::get_effective_vesting_shares( db->get_account( "dave" ) );
@@ -1212,6 +1199,251 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       validate_database();
       */
     }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( vote_weights )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: vote_weights" );
+
+    // test one vote with the same power per one comment in each of possible vote windows:
+    // - right with comment itself => this is not tested because since HF25 there is no "reverse_auction_seconds penalty"
+    //   for early voting and it would not be possible to have exactly the same vote power after such vote edit
+    //   because mana would not have time to regenerate between vote and revote
+    // - [0 .. early_voting_seconds)
+    // - [early_voting_seconds .. early_voting_seconds+mid_voting_seconds)
+    // - [early_voting_seconds+mid_voting_seconds .. cashout-HIVE_UPVOTE_LOCKOUT_SECONDS)
+    // - [cashout-HIVE_UPVOTE_LOCKOUT_SECONDS .. cashout)
+
+    ACTORS(
+      ( author0 ) ( voter0 ) ( author1 ) ( voter1 ) ( author2 ) ( voter2 ) ( author3 ) ( voter3 ) //pattern upvoters
+      ( author4 ) ( voter4 ) ( author5 ) ( voter5 ) ( author6 ) ( voter6 ) ( author7 ) ( voter7 ) //pattern downvoters
+      ( author01 ) ( voter01 ) ( author11 ) ( voter11 ) ( author21 ) ( voter21 ) ( author31 ) ( voter31 ) //upvote from small to pattern
+      ( author41 ) ( voter41 ) ( author51 ) ( voter51 ) ( author61 ) ( voter61 ) ( author71 ) ( voter71 ) //downvote from small to pattern
+      ( author02 ) ( voter02 ) ( author12 ) ( voter12 ) ( author22 ) ( voter22 ) ( author32 ) ( voter32 ) //upvote from big to pattern
+      ( author42 ) ( voter42 ) ( author52 ) ( voter52 ) ( author62 ) ( voter62 ) ( author72 ) ( voter72 ) //downvote from big to pattern
+      ( author03 ) ( voter03 ) ( author13 ) ( voter13 ) ( author23 ) ( voter23 ) ( author33 ) ( voter33 ) //upvote from big downvote to pattern
+      ( author43 ) ( voter43 ) ( author53 ) ( voter53 ) ( author63 ) ( voter63 ) ( author73 ) ( voter73 ) //downvote from big upvote to pattern
+      ( author04 ) ( voter04 ) ( author14 ) ( voter14 ) ( author24 ) ( voter24 ) ( author34 ) ( voter34 ) //upvote from big downvote to zero
+      ( author44 ) ( voter44 ) ( author54 ) ( voter54 ) ( author64 ) ( voter64 ) ( author74 ) ( voter74 ) //downvote from big upvote to zero
+    )
+    generate_block();
+
+    // values must be small enough so mana has time to regenerate after initial vote before first edit
+    const int16_t PAT_UPVOTE_PERCENT = 3 * HIVE_1_PERCENT; // 3%
+    const int16_t PAT_DOWNVOTE_PERCENT = -3 * HIVE_1_PERCENT; // -3%
+    const int16_t SMALL_UPVOTE_PERCENT = 1 * HIVE_1_PERCENT; // 1%
+    const int16_t SMALL_DOWNVOTE_PERCENT = -1 * HIVE_1_PERCENT; // -1%
+    const int16_t BIG_UPVOTE_PERCENT = 5 * HIVE_1_PERCENT; // 5%
+    const int16_t BIG_DOWNVOTE_PERCENT = -5 * HIVE_1_PERCENT; // -5%
+
+    struct TActor
+    {
+      const char* name;
+      fc::ecc::private_key key;
+    };
+    TActor voters[] = {
+      {"voter0",voter0_private_key}, {"voter1",voter1_private_key}, {"voter2",voter2_private_key}, {"voter3",voter3_private_key},
+      {"voter4",voter4_private_key}, {"voter5",voter5_private_key}, {"voter6",voter6_private_key}, {"voter7",voter7_private_key},
+      {"voter01",voter01_private_key}, {"voter11",voter11_private_key}, {"voter21",voter21_private_key}, {"voter31",voter31_private_key},
+      {"voter41",voter41_private_key}, {"voter51",voter51_private_key}, {"voter61",voter61_private_key}, {"voter71",voter71_private_key},
+      {"voter02",voter02_private_key}, {"voter12",voter12_private_key}, {"voter22",voter22_private_key}, {"voter32",voter32_private_key},
+      {"voter42",voter42_private_key}, {"voter52",voter52_private_key}, {"voter62",voter62_private_key}, {"voter72",voter72_private_key},
+      {"voter03",voter03_private_key}, {"voter13",voter13_private_key}, {"voter23",voter23_private_key}, {"voter33",voter33_private_key},
+      {"voter43",voter43_private_key}, {"voter53",voter53_private_key}, {"voter63",voter63_private_key}, {"voter73",voter73_private_key},
+      {"voter04",voter04_private_key}, {"voter14",voter14_private_key}, {"voter24",voter24_private_key}, {"voter34",voter34_private_key},
+      {"voter44",voter44_private_key}, {"voter54",voter54_private_key}, {"voter64",voter64_private_key}, {"voter74",voter74_private_key}
+    };
+    TActor authors[] = {
+      {"author0",author0_private_key}, {"author1",author1_private_key}, {"author2",author2_private_key}, {"author3",author3_private_key},
+      {"author4",author4_private_key}, {"author5",author5_private_key}, {"author6",author6_private_key}, {"author7",author7_private_key},
+      {"author01",author01_private_key}, {"author11",author11_private_key}, {"author21",author21_private_key}, {"author31",author31_private_key},
+      {"author41",author41_private_key}, {"author51",author51_private_key}, {"author61",author61_private_key}, {"author71",author71_private_key},
+      {"author02",author02_private_key}, {"author12",author12_private_key}, {"author22",author22_private_key}, {"author32",author32_private_key},
+      {"author42",author42_private_key}, {"author52",author52_private_key}, {"author62",author62_private_key}, {"author72",author72_private_key},
+      {"author03",author03_private_key}, {"author13",author13_private_key}, {"author23",author23_private_key}, {"author33",author33_private_key},
+      {"author43",author43_private_key}, {"author53",author53_private_key}, {"author63",author63_private_key}, {"author73",author73_private_key},
+      {"author04",author04_private_key}, {"author14",author14_private_key}, {"author24",author24_private_key}, {"author34",author34_private_key},
+      {"author44",author44_private_key}, {"author54",author54_private_key}, {"author64",author64_private_key}, {"author74",author74_private_key}
+    };
+
+    for( auto& voter : voters )
+      vest( HIVE_INIT_MINER_NAME, voter.name, ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    comment_operation comment_op;
+    comment_op.permlink = "permlink";
+    comment_op.parent_permlink = "test";
+    comment_op.title = "test";
+    comment_op.body = "text";
+    for( auto& author : authors )
+    {
+      comment_op.author = author.name;
+      push_transaction( comment_op, author.key );
+    }
+
+    vote_operation vote_op;
+    vote_op.permlink = "permlink";
+    int i;
+    const auto& VOTE = [&]( int i )
+    {
+      vote_op.voter = voters[i].name;
+      vote_op.author = authors[i].name;
+      push_transaction( vote_op, voters[i].key );
+    };
+    vote_op.weight = SMALL_UPVOTE_PERCENT; //initial small upvote
+    for( i = 8; i < 12; ++i )
+      VOTE( i );
+    vote_op.weight = SMALL_DOWNVOTE_PERCENT; //initial small downvote
+    for( i = 12; i < 16; ++i )
+      VOTE( i );
+    vote_op.weight = BIG_UPVOTE_PERCENT; //initial big upvote
+    for( i = 16; i < 20; ++i )
+      VOTE( i );
+    vote_op.weight = BIG_DOWNVOTE_PERCENT; //initial big downvote
+    for( i = 20; i < 24; ++i )
+      VOTE( i );
+    vote_op.weight = BIG_DOWNVOTE_PERCENT; //initial big downvote
+    for( i = 24; i < 28; ++i )
+      VOTE( i );
+    vote_op.weight = BIG_UPVOTE_PERCENT; //initial big upvote
+    for( i = 28; i < 32; ++i )
+      VOTE( i );
+    vote_op.weight = BIG_DOWNVOTE_PERCENT; //initial big downvote
+    for( i = 32; i < 36; ++i )
+      VOTE( i );
+    vote_op.weight = BIG_UPVOTE_PERCENT; //initial big upvote
+    for( i = 36; i < 40; ++i )
+      VOTE( i );
+    static_assert( sizeof( voters ) == 40 * sizeof( TActor ) );
+
+    generate_block();
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    fc::time_point_sec creation_time, cashout_time;
+    {
+      const auto& comment = db->get_comment( "author0", string( "permlink" ) );
+      const auto* cashout = db->find_comment_cashout( comment );
+      creation_time = cashout->get_creation_time();
+      cashout_time = cashout->get_cashout_time();
+    }
+
+    //votes in early window
+    generate_blocks( creation_time + fc::seconds( dgpo.early_voting_seconds - 6 ), false );
+    vote_op.weight = PAT_UPVOTE_PERCENT; //pattern vote and vote edits into pattern upvote
+    for( auto i : { 0,8,16,24 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 32 );
+    vote_op.weight = PAT_DOWNVOTE_PERCENT; //pattern vote and vote edits into pattern downvote
+    for( auto i : { 4,12,20,28 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 36 );
+    generate_block();
+
+    //votes in mid window
+    generate_blocks( creation_time + fc::seconds( dgpo.early_voting_seconds + dgpo.mid_voting_seconds / 2 ), false );
+    vote_op.weight = PAT_UPVOTE_PERCENT; //pattern vote and edits into pattern upvote
+    for( auto i : { 1,9,17,25 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 33 );
+    vote_op.weight = PAT_DOWNVOTE_PERCENT; //pattern vote and vote edits into pattern downvote
+    for( auto i : { 5,13,21,29 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 37 );
+    generate_block();
+
+    //votes in late window
+    generate_blocks( cashout_time - fc::seconds( HIVE_UPVOTE_LOCKOUT_SECONDS + 6 ), false );
+    vote_op.weight = PAT_UPVOTE_PERCENT; //pattern vote and vote edits into pattern upvote
+    for( auto i : { 2,10,18,26 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 34 );
+    vote_op.weight = PAT_DOWNVOTE_PERCENT; //pattern vote and vote edits into pattern downvote
+    for( auto i : { 6,14,22,30 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 38 );
+    generate_block();
+
+    //votes in upvote lockout (that is also within late window)
+    generate_blocks( cashout_time - fc::seconds( HIVE_UPVOTE_LOCKOUT_SECONDS / 2 ), false );
+    vote_op.weight = PAT_UPVOTE_PERCENT; //pattern vote and vote edits into pattern upvote
+    for( auto i : { 3,11,19,27 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 35 );
+    vote_op.weight = PAT_DOWNVOTE_PERCENT; //pattern vote and vote edits into pattern downvote
+    for( auto i : { 7,15,23,31 } )
+      VOTE( i );
+    vote_op.weight = 0; //vote deleted
+    VOTE( 39 );
+    generate_block();
+
+    const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
+    std::vector<const hive::chain::comment_object*> commentObjs;
+    std::vector<const hive::chain::account_object*> voterObjs;
+    std::vector<const hive::chain::comment_vote_object*> voteObjs;
+    for( i = 0; i < 40; ++i )
+    {
+      const auto& comment = db->get_comment( authors[i].name, string( "permlink" ) );
+      commentObjs.emplace_back( &comment );
+      const auto& cashout = *( db->find_comment_cashout( comment ) );
+      const auto& voter = db->get_account( voters[i].name );
+      voterObjs.emplace_back( &voter );
+      const auto& vote = *( vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) ) );
+      voteObjs.emplace_back( &vote );
+      BOOST_REQUIRE_EQUAL( vote.get_weight(), cashout.get_total_vote_weight() );
+    }
+
+    for( auto i : { 8,16,24 } ) //upvotes edited in early window are the same as early window pattern
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[0]->get_weight() );
+    for( auto i : { 12,20,28 } ) //downvotes edited in early window are the same as early window pattern
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[4]->get_weight() );
+    for( auto i : { 9,17,25 } ) //upvotes edited in mid window are the same as mid window pattern
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[1]->get_weight() );
+    for( auto i : { 13,21,29 } ) //downvotes edited in mid window are the same as mid window pattern
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[5]->get_weight() );
+    for( auto i : { 10,18,26 } ) //upvotes edited in late window are the same as late window pattern
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[2]->get_weight() );
+    for( auto i : { 14,22,30 } ) //downvotes edited in late window are the same as late window pattern
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[6]->get_weight() );
+    for( auto i : { 11,19,27 } ) //upvotes edited in lockout window are the same as lockout window pattern (only because the same block)
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[3]->get_weight() );
+    for( auto i : { 15,23,31 } ) //downvotes edited in lockout window are the same as lockout window pattern (only because the same block)
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), voteObjs[7]->get_weight() );
+    for( i = 32; i < 40; ++i ) //deleted votes have zero weight
+      BOOST_REQUIRE_EQUAL( voteObjs[i]->get_weight(), 0 );
+    
+    generate_blocks( cashout_time, false );
+
+    for( auto i : { 8,16,24 } ) //upvotes edited in early window have the same rewards as early window pattern
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[0]->get_vest_rewards().amount.value );
+    for( auto i : { 4,12,20,28 } ) //downvotes have no rewards
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+    for( auto i : { 9,17,25 } ) //upvotes edited in mid window have the same rewards as mid window pattern
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[1]->get_vest_rewards().amount.value );
+    for( auto i : { 5,13,21,29 } ) //downvotes have no rewards
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+    for( auto i : { 10,18,26 } ) //upvotes edited in late window have the same rewards as late window pattern
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[2]->get_vest_rewards().amount.value );
+    for( auto i : { 6,14,22,30 } ) //downvotes have no rewards
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+    for( auto i : { 11,19,27 } ) //upvotes edited in lockout window have the same rewards as lockout window pattern (only because the same block)
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[3]->get_vest_rewards().amount.value );
+    for( auto i : { 7,15,23,31 } ) //downvotes have no rewards
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+    for( i = 32; i < 40; ++i ) //deleted votes have no rewards
+      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }
@@ -7716,7 +7948,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     auto& alice_comment = db->get_comment( "alice", string( "foo" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( alice_comment );
     auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_acc.get_id() ) );
-    BOOST_REQUIRE( alice_comment_cashout->net_rshares.value == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
+    BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( itr->get_rshares() == old_manabar.current_mana - db->get_account( "bob" ).voting_manabar.current_mana - HIVE_VOTE_DUST_THRESHOLD );
 
     generate_block();
@@ -8154,7 +8386,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     sign( tx, bob_private_key );
     db->push_transaction( tx, 0 );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time - HIVE_BLOCK_INTERVAL );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
 
     db_plugin->debug_update( [=]( database& db )
     {
