@@ -1,7 +1,7 @@
 *****Installation of 'ah_manager' extension*****
 1. cmake -DBUILD_SHARED_LIBS=ON
 2. make ah_manager
-3. cd libraries/ah_manager
+3. cd build/libraries/ah_manager
 4. sudo make install
 
 *****Creating of extension in postgres database*****
