@@ -20,13 +20,14 @@ IF (PostgreSQL_FOUND)
   FIND_LIBRARY(PQ_LIB pq)
 
   ADD_LIBRARY(  ah_manager
+		SHARED
                 utilities.cpp
                 ${HEADERS} )
 ELSE()
   MESSAGE (WARNING "No PostgreSQL installation found.")
 ENDIF()
 
-target_link_libraries( ah_manager hive_chain fc ${PQXX_LIB} ${PostgreSQL_LIBRARIES} )
+target_link_libraries( ah_manager PUBLIC hive_chain fc ${PQXX_LIB} ${PostgreSQL_LIBRARIES} )
 target_include_directories( ah_manager
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
                             PRIVATE "${PostgreSQL_INCLUDE_DIRS}"
