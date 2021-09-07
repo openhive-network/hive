@@ -27,7 +27,7 @@
 #include <iostream>
 #include <iterator>
 
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/io/stdio.hpp>

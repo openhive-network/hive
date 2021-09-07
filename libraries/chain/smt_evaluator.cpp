@@ -1,4 +1,4 @@
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>

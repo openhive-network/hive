@@ -1,6 +1,6 @@
 
 #pragma once
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <fc/variant_object.hpp>

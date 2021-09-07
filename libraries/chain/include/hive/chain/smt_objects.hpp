@@ -1,5 +1,5 @@
 #pragma once
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/smt_objects/smt_token_object.hpp>
 #include <hive/chain/smt_objects/account_balance_object.hpp>
 #include <hive/chain/smt_objects/smt_market_maker.hpp>

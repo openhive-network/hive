@@ -1,4 +1,4 @@
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/sps_operations.hpp>
 

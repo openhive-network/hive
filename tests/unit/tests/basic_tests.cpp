@@ -24,7 +24,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/protocol/protocol.hpp>
