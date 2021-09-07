@@ -29,7 +29,7 @@ In the `input` option you have to specify path to a non-empty input original blo
 
 #### node_based_conversion
 node_based_conversion plugin relies on the remote nodes.
-In the `input` option you have to specify an url to the original input mainnet node and in the `output` option you should specify an url to the node with altered chain. If you are converting old transactions, use `use-now-time` option in order to alter the expiration time of the transactions to the current timestamp for nodes to accept them.
+In the `input` option you have to specify an url to the original input mainnet node (make sure that node uses block API and database API) and in the `output` option you should specify an url to the node with altered chain (make sure that node uses condenser API). If you are converting old transactions, use `use-now-time` option in order to alter the expiration time of the transactions to the current timestamp for nodes to accept them.
 
 This retrieves blocks from the remote and holds them in the block buffer. You can specify the block buffer size with the `block-buffer-size` option, which defaults to 1000.
 
