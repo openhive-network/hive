@@ -20,7 +20,6 @@ IF (PostgreSQL_FOUND)
   FIND_LIBRARY(PQ_LIB pq)
 
   ADD_LIBRARY(  ah_manager
-		SHARED
                 utilities.cpp
                 ${HEADERS} )
 ELSE()
