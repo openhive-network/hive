@@ -4,7 +4,7 @@ struct votable_asset_info_v1;
 } }
 
 #include <hive/protocol/types_fwd.hpp>
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/schema/schema.hpp>
 #include <hive/schema/schema_impl.hpp>

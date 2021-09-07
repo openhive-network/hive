@@ -1,6 +1,6 @@
 #pragma once
 
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/asset_symbol.hpp>
 

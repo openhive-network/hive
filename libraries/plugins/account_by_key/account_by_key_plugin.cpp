@@ -1,5 +1,5 @@
 
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_plugin.hpp>
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>

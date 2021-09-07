@@ -4,7 +4,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>

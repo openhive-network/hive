@@ -1,4 +1,4 @@
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/key_conversion.hpp>

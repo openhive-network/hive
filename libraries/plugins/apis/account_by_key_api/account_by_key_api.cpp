@@ -1,4 +1,4 @@
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api.hpp>

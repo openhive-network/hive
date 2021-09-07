@@ -1,7 +1,7 @@
 #if defined IS_TEST_NET && defined HIVE_ENABLE_SMT
 #include <boost/test/unit_test.hpp>
 
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 

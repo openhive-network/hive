@@ -1,5 +1,5 @@
 #pragma once
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <hive/chain/generic_custom_operation_interpreter.hpp>

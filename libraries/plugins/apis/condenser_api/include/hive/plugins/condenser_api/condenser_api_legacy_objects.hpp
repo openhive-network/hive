@@ -1,5 +1,5 @@
 #pragma once
-#include <chainbase/forward_declarations.hpp>
+#include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
 
 #include <hive/plugins/block_api/block_api_objects.hpp>
