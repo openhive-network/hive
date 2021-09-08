@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS public.get_ops_in_block;
-CREATE FUNCTION public.get_ops_in_block( in _BLOCK_NUM INT, in _ONLY_VIRTUAL BOOLEAN, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION public.get_ops_in_block( in _BLOCK_NUM INT, in _ONLY_VIRTUAL BOOLEAN, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _trx_in_block BIGINT,
@@ -60,8 +59,7 @@ END
 $function$
 language plpgsql STABLE;
 
-DROP FUNCTION IF EXISTS public.get_transaction;
-CREATE FUNCTION public.get_transaction( in _TRX_HASH BYTEA, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION public.get_transaction( in _TRX_HASH BYTEA, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _ref_block_num INT,
     _ref_block_prefix BIGINT,
@@ -78,7 +76,7 @@ DECLARE
   __multisig_number SMALLINT;
 BEGIN
 
-  SELECT * INTO __result FROM hive.account_history_transactions_view WHERE ht.trx_hash = _TRX_HASH;
+  SELECT * INTO __result FROM hive.account_history_transactions_view ht WHERE ht.trx_hash = _TRX_HASH;
   IF NOT _INCLUDE_REVERSIBLE AND __result.block_num > hive.app_get_irreversible_block( 'account_history' ) THEN
     RETURN QUERY SELECT
       NULL::INT,
@@ -96,20 +94,18 @@ BEGIN
 
   RETURN QUERY
     SELECT
-      ht.ref_block_num _ref_block_num,
-      ht.ref_block_prefix _ref_block_prefix,
+      __result.ref_block_num _ref_block_num,
+      __result.ref_block_prefix _ref_block_prefix,
       '2016-06-20T19:34:09' _expiration,--lack of data
-      ht.block_num _block_num,
-      ht.trx_in_block _trx_in_block,
-      encode(ht.signature, 'escape') _signature,
-      __multisig_number
-    FROM __result ht;
+      __result.block_num _block_num,
+      __result.trx_in_block _trx_in_block,
+      encode(__result.signature, 'escape') _signature,
+      __multisig_number;
 END
 $function$
 language plpgsql STABLE;
 
-DROP FUNCTION IF EXISTS public.get_multi_signatures_in_transaction;
-CREATE FUNCTION public.get_multi_signatures_in_transaction( in _TRX_HASH BYTEA )
+CREATE OR REPLACE FUNCTION public.get_multi_signatures_in_transaction( in _TRX_HASH BYTEA )
 RETURNS TABLE(
     _signature TEXT
 )
@@ -126,8 +122,7 @@ END
 $function$
 language plpgsql STABLE;
 
-DROP FUNCTION IF EXISTS public.get_ops_in_transaction;
-CREATE FUNCTION public.get_ops_in_transaction( in _BLOCK_NUM INT, in _TRX_IN_BLOCK INT )
+CREATE OR REPLACE FUNCTION public.get_ops_in_transaction( in _BLOCK_NUM INT, in _TRX_IN_BLOCK INT )
 RETURNS TABLE(
     _value TEXT
 )
@@ -145,8 +140,7 @@ END
 $function$
 language plpgsql STABLE;
 
-DROP FUNCTION IF EXISTS public.enum_virtual_ops;
-CREATE FUNCTION public.enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION public.enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
@@ -189,15 +183,15 @@ BEGIN
     SELECT
       (
         CASE
-        WHEN ht.trx_hash IS NULL THEN '0000000000000000000000000000000000000000'
-        ELSE encode( ht.trx_hash, 'escape')
+        WHEN T2.trx_hash IS NULL THEN '0000000000000000000000000000000000000000'
+        ELSE encode( T2.trx_hash, 'escape')
         END
       ) _trx_id,
       T.block_num _block,
       (
         CASE
-        WHEN ht.trx_in_block IS NULL THEN 4294967295
-        ELSE ht.trx_in_block
+        WHEN T2.trx_in_block IS NULL THEN 4294967295
+        ELSE T2.trx_in_block
         END
       ) _trx_in_block,
       T.op_pos _op_in_trx,
@@ -221,13 +215,19 @@ BEGIN
           LIMIT _LIMIT + 1
       ) T
       JOIN hive.account_history_blocks_view hb ON hb.num = T.block_num
-      LEFT JOIN hive.account_history_transactions_view ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block;
+      LEFT JOIN
+      (
+        SELECT block_num, trx_in_block, trx_hash
+        FROM hive.account_history_transactions_view ht
+        WHERE ht.block_num >= _BLOCK_RANGE_BEGIN AND ht.block_num < _BLOCK_RANGE_END
+      )T2 ON T.block_num = T2.block_num AND T.trx_in_block = T2.trx_in_block
+      WHERE hb.num >= _BLOCK_RANGE_BEGIN AND hb.num < _BLOCK_RANGE_END;
 END
 $function$
 language plpgsql STABLE;
 
-DROP FUNCTION IF EXISTS public.ah_get_account_history;
-CREATE FUNCTION public.ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _START INT, _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
+
+CREATE OR REPLACE FUNCTION public.ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _START INT, _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
