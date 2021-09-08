@@ -11,6 +11,10 @@
 #include <csignal>
 #include <atomic>
 
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+
 #include <thread>
 #include <future>
 
@@ -35,7 +39,8 @@ struct range
   uint64_t high = 0;
 };
 
-using ranges_type = std::vector<range>;
+using ranges_type       = std::vector<range>;
+using block_ranges_type = std::queue<range>;
 
 struct account_op
 {
@@ -43,6 +48,7 @@ struct account_op
   string name;
 };
 using account_ops_type = std::list< account_op >;
+using received_items_type = std::list<account_ops_type>;
 
 struct account_info
 {
@@ -130,6 +136,44 @@ struct args_container
   uint32_t  nr_threads_send     = 0;
 };
 
+template<typename T>
+class thread_queue
+{
+  private:
+
+    std::mutex mx;
+    std::condition_variable cv;
+
+    std::queue<T> data;
+
+  public:
+
+  void emplace( T&& obj )
+  {
+    std::lock_guard<std::mutex> lock( mx );
+
+    data.emplace( obj );
+
+    cv.notify_one();
+  }
+
+  T get()
+  {
+    std::unique_lock<std::mutex> lock( mx );
+
+    while( data.empty() )
+    {
+      cv.wait( lock );
+    }
+
+    T val = data.front();
+    data.pop();
+
+    return val;
+  }
+
+};
+
 class ah_loader
 {
   public:
@@ -149,11 +193,16 @@ class ah_loader
     std::vector< string > accounts_queries;
     std::vector< string > account_ops_queries;
 
+    bool finished = false;
+    thread_queue<received_items_type> queue;
+
     account_cache_t account_cache;
 
     ah_query query;
 
     transaction_controller_ptr tx_controller;
+
+    block_ranges_type block_ranges;
 
     string read_file( const fc::path& path )
     {
@@ -383,6 +432,21 @@ class ah_loader
 
         finish_trx( trx );
       }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.base().what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
       catch(...)
       {
         finish_trx( trx, true/*force_rollback*/ );
@@ -419,7 +483,7 @@ class ah_loader
       return ranges;
     }
 
-    account_ops_type worker_receive_1_thread( uint64_t first_block, uint64_t last_block )
+    account_ops_type worker_receive_internal( uint64_t first_block, uint64_t last_block )
     {
       account_ops_type _items;
 
@@ -443,6 +507,21 @@ class ah_loader
 
         finish_trx( trx );
       }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.base().what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
       catch(...)
       {
         finish_trx( trx, true/*force_rollback*/ );
@@ -453,7 +532,7 @@ class ah_loader
 
     void worker_receive( uint64_t first_block, uint64_t last_block, std::promise<account_ops_type> result_promise )
     {
-      account_ops_type _items = worker_receive_1_thread( first_block, last_block );
+      account_ops_type _items = worker_receive_internal( first_block, last_block );
 
       result_promise.set_value( _items );
     }
@@ -470,47 +549,77 @@ class ah_loader
 
         finish_trx( trx );
       }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.base().what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
       catch(...)
       {
         finish_trx( trx, true/*force_rollback*/ );
       }
     }
 
-    void receive( uint64_t first_block, uint64_t last_block )
+    void receive_internal( uint64_t first_block, uint64_t last_block )
     {
-      if( args.nr_threads_receive == 1 )
+      ranges_type _ranges = prepare_ranges( first_block, last_block, args.nr_threads_receive );
+
+      using promise_type = std::promise<account_ops_type>;
+      using future_type = std::future<account_ops_type>;
+
+      std::list<std::thread> threads_receive;
+      std::list<promise_type> promises{ _ranges.size() };
+      std::list<future_type> futures;
+      uint32_t _cnt = 0;
+      for( auto& promise : promises )
       {
-        account_ops_type _items = worker_receive_1_thread( first_block, last_block );
-        for( auto& item : _items )
-          gather_part_of_queries( item.op_id, item.name );
+        futures.emplace_back( promise.get_future() );
+        threads_receive.emplace_back( std::move( std::thread( &ah_loader::worker_receive, this, _ranges[_cnt].low, _ranges[_cnt].high, std::move( promise ) ) ) );
+        ++_cnt;
       }
-      else
+
+      for( auto& thread : threads_receive )
+        thread.join();
+
+      received_items_type _buffer;
+      for( auto& future : futures )
       {
-        ranges_type _ranges = prepare_ranges( first_block, last_block, args.nr_threads_receive );
+        account_ops_type _items = future.get();
+        _buffer.emplace_back( _items );
+      }
+      queue.emplace( std::move( _buffer ) );
+    }
 
-        using promise_type = std::promise<account_ops_type>;
-        using future_type = std::future<account_ops_type>;
+    void receive()
+    {
+      while( !block_ranges.empty() )
+      {
+        auto _item = block_ranges.front();
+        block_ranges.pop();
 
-        std::list<std::thread> threads_receive;
-        std::list<promise_type> promises{ _ranges.size() };
-        std::list<future_type> futures;
-        uint32_t _cnt = 0;
-        for( auto& promise : promises )
-        {
-          futures.emplace_back( promise.get_future() );
-          threads_receive.emplace_back( std::move( std::thread( &ah_loader::worker_receive, this, _ranges[_cnt].low, _ranges[_cnt].high, std::move( promise ) ) ) );
-          ++_cnt;
-        }
+        receive_internal( _item.low, _item.high );
+      }
 
-        for( auto& thread : threads_receive )
-          thread.join();
+      finished = true;
+    }
 
-        for( auto& future : futures )
-        {
-          account_ops_type _items = future.get();
-          for( auto& item : _items )
-            gather_part_of_queries( item.op_id, item.name );
-        }
+    void prepare_sql()
+    {
+      auto received_items_type = queue.get();
+      for( auto& items : received_items_type )
+      {
+        for( auto& item : items )
+          gather_part_of_queries( item.op_id, item.name );
       }
     }
 
@@ -545,22 +654,49 @@ class ah_loader
       account_ops_queries.clear();
     }
 
-    void process( uint64_t first_block, uint64_t last_block )
+    void send()
+    {
+      while( !finished )
+      {
+        if( is_interrupted() )
+          return;
+
+        prepare_sql();
+
+        if( is_interrupted() )
+          return;
+
+        send_accounts();
+
+        if( is_interrupted() )
+          return;
+
+        send_account_operations();
+      }
+    }
+
+    void work()
     {
       if( is_interrupted() )
         return;
 
-      receive( first_block, last_block );
+      std::thread thread_receive( &ah_loader::receive, this );
 
-      if( is_interrupted() )
-        return;
+      send();
 
-      send_accounts();
+      thread_receive.join();
+    }
 
-      if( is_interrupted() )
-        return;
+    void fill_block_ranges( uint64_t first_block, uint64_t last_block )
+    {
+      uint64_t _last_block = first_block;
 
-      send_account_operations();
+      while( _last_block != last_block )
+      {
+        _last_block = std::min( _last_block + args.flush_size, last_block );
+        block_ranges.emplace( range{ first_block, _last_block } );
+        first_block = _last_block + 1;
+      }
     }
 
     bool process()
@@ -598,25 +734,15 @@ class ah_loader
           exec( trx, query.detach_context );
           finish_trx( trx );
 
+          fill_block_ranges( _first_block, _last_block );
+          work();
+
           if( _last_block - _first_block > 0 )
           {
-            uint64_t __last_block = _first_block;
-
-            while( __last_block != _last_block )
-            {
-              __last_block = std::min( __last_block + args.flush_size, _last_block );
-              process( _first_block, __last_block );
-              _first_block = __last_block + 1;
-            }
-
             trx = tx_controller->openTx();
-            auto _attach_context_query  = query.format( query.attach_context, application_context, __last_block );
+            auto _attach_context_query  = query.format( query.attach_context, application_context, _last_block );
             exec( trx, _attach_context_query );
             finish_trx( trx );
-          }
-          else
-          {
-            process( _first_block, _last_block );
           }
         }
         else
@@ -624,10 +750,24 @@ class ah_loader
           return true;
         }
       }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.base().what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
       catch(...)
       {
         finish_trx( trx, true/*force_rollback*/ );
-        return true;
       }
 
       return false;
