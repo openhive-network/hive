@@ -780,7 +780,10 @@ namespace chain {
 
       bool is_fast_forward_state() const
       {
-        return get_dynamic_global_properties().get_debug_properties().fast_forward_stop_point != fc::time_point_sec::min();
+        const auto& dgp = get_dynamic_global_properties();
+        const auto& gdp = dgp.get_debug_properties();
+        return gdp.fast_forward_stop_point != fc::time_point::min() &&
+          dgp.current_aslot >= gdp.start_from_aslot;
       }
 
     private:

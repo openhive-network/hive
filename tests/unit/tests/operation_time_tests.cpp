@@ -2792,7 +2792,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     BOOST_TEST_MESSAGE( "Generating blocks up to comment payout" );
 
-    db_plugin->debug_generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
+   //  db_plugin->debug_generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
 
     auto& gpo = db->get_dynamic_global_properties();
 

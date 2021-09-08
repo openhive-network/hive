@@ -1402,18 +1402,22 @@ namespace hive { namespace plugins { namespace condenser_api {
   {
     legacy_debug_operation() {}
     legacy_debug_operation( const debug_operation& op ) :
-      invoker{ op.invoker }, untill{ op.untill } {}
+      invoker{ op.invoker }, untill{ op.untill }, blocks_per_witness{ op.blocks_per_witness }, start_from_aslot{ op.start_from_aslot } {}
 
     operator debug_operation()const
     {
       debug_operation op{};
       op.invoker = invoker;
       op.untill = untill;
+      op.blocks_per_witness = blocks_per_witness;
+      op.start_from_aslot = start_from_aslot;
       return op;
     }
 
     account_name_type invoker;
     time_point_sec untill;
+    uint64_t blocks_per_witness;
+    uint64_t start_from_aslot;
   };
 
   typedef fc::static_variant<
@@ -2283,6 +2287,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (accou
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_debug_operation, (invoker)(untill) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_debug_operation, (invoker)(untill)(blocks_per_witness)(start_from_aslot) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

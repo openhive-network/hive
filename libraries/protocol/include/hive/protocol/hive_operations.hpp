@@ -1133,6 +1133,8 @@ namespace hive { namespace protocol {
 
     // untill this time point generate blocks with full speed
     time_point_sec untill;
+    size_t blocks_per_witness;
+    size_t start_from_aslot;
 
     void validate()const;
     // explicit debug_operation(time_point_sec i_untill = time_point_sec{}) : untill{i_untill} {}
@@ -1255,4 +1257,4 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
-FC_REFLECT( hive::protocol::debug_operation, (invoker)(untill) );
+FC_REFLECT( hive::protocol::debug_operation, (invoker)(untill)(blocks_per_witness)(start_from_aslot) );

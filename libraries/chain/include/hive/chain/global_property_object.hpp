@@ -14,8 +14,10 @@ namespace hive { namespace chain {
 
   struct debug_global_properties_t
   {
-    fc::microseconds block_time_offset{0};
-    fc::time_point_sec fast_forward_stop_point = fc::time_point_sec::min();
+    fc::microseconds      block_time_offset{0};
+    fc::time_point_sec    fast_forward_stop_point{fc::time_point_sec::min()};
+    uint64_t              blocks_per_witness{1};
+    uint64_t              start_from_aslot{std::numeric_limits<uint64_t>::max()};
   };
 
   /**
@@ -201,7 +203,8 @@ namespace hive { namespace chain {
 
       debug_global_properties_t debug_properties;
 #else
-        return debug_global_properties_t{};
+        static const debug_global_properties_t props{};
+        return props;
       }
 #endif
 
@@ -219,7 +222,7 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::debug_global_properties_t, (block_time_offset)(fast_forward_stop_point) );
+FC_REFLECT( hive::chain::debug_global_properties_t, (block_time_offset)(fast_forward_stop_point)(blocks_per_witness) );
 FC_REFLECT( hive::chain::dynamic_global_property_object,
           (id)
           (head_block_number)

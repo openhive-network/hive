@@ -1472,6 +1472,10 @@ account_name_type database::get_scheduled_witness( uint32_t slot_num )const
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
   const witness_schedule_object& wso = get_witness_schedule_object();
   uint64_t current_aslot = dpo.current_aslot + slot_num;
+#ifdef IS_TEST_NET
+  if( is_fast_forward_state() && ( slot_num == 0 || current_aslot >= dpo.get_debug_properties().start_from_aslot ) )
+    current_aslot -= current_aslot % dpo.get_debug_properties().blocks_per_witness;
+#endif
   return wso.current_shuffled_witnesses[ current_aslot % wso.num_scheduled_witnesses ];
 }
 

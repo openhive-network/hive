@@ -3128,9 +3128,11 @@ void debug_evaluator::do_apply( const debug_operation& op )
 #ifndef IS_TEST_NET
   FC_ASSERT( false, "debug_operation is available only in testnet!" );
 #endif // !IS_TEST_NET
-  FC_ASSERT( _db.head_block_time() < op.untill );
 
-  debug_notification note{op.untill};
+  FC_ASSERT( _db.head_block_time() < op.untill );
+  FC_ASSERT( op.blocks_per_witness > 0 );
+
+  debug_notification note{op.untill, op.blocks_per_witness, op.start_from_aslot};
   _db.notify_debug( note );
 }
 } } // hive::chain

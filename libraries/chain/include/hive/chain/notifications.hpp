@@ -68,7 +68,9 @@ struct comment_reward_notification
 
 struct debug_notification
 {
-  fc::time_point_sec new_fast_forward;
+  fc::time_point_sec  new_fast_forward;
+  uint64_t            blocks_per_witness;
+  uint64_t            start_from_aslot;
 };
 
 } }

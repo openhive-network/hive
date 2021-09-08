@@ -510,6 +510,7 @@ void p2p_plugin_impl::error_encountered( const string& message, const fc::oexcep
 
 void p2p_plugin_impl::update_refresh_rate(fc::microseconds delay)
 {
+  if(node)
     node->update_refresh_rate(delay);
 }
 
