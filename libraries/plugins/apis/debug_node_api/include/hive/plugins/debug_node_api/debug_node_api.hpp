@@ -32,6 +32,7 @@ struct debug_generate_blocks_until_args
   std::string                               invoker;
   std::string                               invoker_private_key;
   fc::time_point_sec                        fast_forwarding_end_date;
+  size_t                                    blocks_per_witness;
 };
 
 typedef void_type debug_generate_blocks_until_return;
@@ -118,7 +119,7 @@ FC_REFLECT( hive::plugins::debug_node::debug_push_blocks_return,
         (blocks) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
-        (invoker)(invoker_private_key)(fast_forwarding_end_date) )
+        (invoker)(invoker_private_key)(fast_forwarding_end_date)(blocks_per_witness ) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return,
         (block) )

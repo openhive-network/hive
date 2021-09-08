@@ -90,7 +90,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     void debug_generate_blocks_until(
       const fc::string& invoker,
       const fc::string& invoker_private_key,
-      const fc::time_point_sec fast_forwarding_end_date
+      const fc::time_point_sec fast_forwarding_end_date,
+      const size_t blocks_per_witness
       );
 
     void set_json_object_stream( const std::string& filename );

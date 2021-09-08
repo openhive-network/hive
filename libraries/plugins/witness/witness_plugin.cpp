@@ -307,8 +307,17 @@ namespace detail {
     if (time_to_sleep < minmum_sleep_time)
       time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
 
-    if(_db.is_fast_forward_state() && _db.get_witness_schedule_object().num_scheduled_witnesses == 1)
-      time_to_sleep = minmum_sleep_time;
+    if(_db.is_fast_forward_state())
+    {
+      const account_name_type& current_wit = _db.get_scheduled_witness(0);
+      if(
+        _db.get_witness_schedule_object().num_scheduled_witnesses == 1 || 
+        (
+          _witnesses.find(current_wit) != _witnesses.end() &&
+          current_wit  == _db.get_scheduled_witness(1)
+        )
+      ) time_to_sleep = minmum_sleep_time;
+    }
 
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this ) );

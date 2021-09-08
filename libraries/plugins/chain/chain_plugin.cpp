@@ -889,11 +889,14 @@ bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type&
 
 void chain_plugin::check_time_in_block( const hive::chain::signed_block& block )
 {
-  if(db().is_fast_forward_state()) return;
+  if(db().get_dynamic_global_properties().get_debug_properties().block_time_offset.count() > 0l) return;
   time_point_sec now = this->db().get_block_producer_time();
 
   uint64_t max_accept_time = now.sec_since_epoch();
   max_accept_time += my->allow_future_time;
+
+  if( block.timestamp.sec_since_epoch() > max_accept_time )
+    ilog("max_accepted_time: ${mat}, block_timestamp: ${bt}", ("mat", max_accept_time)("bt", block.timestamp.sec_since_epoch()));
   FC_ASSERT( block.timestamp.sec_since_epoch() <= max_accept_time );
 }
 

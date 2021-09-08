@@ -28,9 +28,11 @@ class debug_node_plugin_impl
     virtual ~debug_node_plugin_impl();
 
     chain::database&                          _db;
+    boost::signals2::connection               _pre_apply_block_conn;
     boost::signals2::connection               _post_apply_block_conn;
     boost::signals2::connection               _debug_conn;
     void on_post_apply_block( const chain::block_notification& note );
+    void on_pre_apply_block( const chain::block_notification& note );
     void on_debug( const chain::debug_notification& note );
     void push_debug_transaction(const hive::protocol::private_key_type& signee, const hive::protocol::debug_operation &op);
 
@@ -43,33 +45,43 @@ debug_node_plugin_impl::debug_node_plugin_impl() :
   _db( appbase::app().get_plugin< chain::chain_plugin >().db() ) {}
 debug_node_plugin_impl::~debug_node_plugin_impl() {}
 
+  void debug_node_plugin_impl::on_pre_apply_block( const chain::block_notification& note )
+  {
+#ifdef IS_TEST_NET
+  // const auto& dgpo = _db.get_dynamic_global_properties();
+  // if(dgpo.get_debug_properties().fast_forward_stop_point != get_time_null_value())
+    // _db.modify(dgpo, [](auto& gpo){ gpo.get_debug_properties().is_fast_forward_state = true; });
+#endif
+  }
+
   void debug_node_plugin_impl::on_post_apply_block( const chain::block_notification& note )
   {
     try
     {
   #ifdef IS_TEST_NET
-      const auto& fast_forward_stop_point = _db.get_dynamic_global_properties().get_debug_properties().fast_forward_stop_point;
-      if(fast_forward_stop_point != get_time_null_value())
+      if(_db.is_fast_forward_state())
       {
-        if(note.block.timestamp >= fast_forward_stop_point)
+        if(note.block.timestamp >= _db.get_dynamic_global_properties().get_debug_properties().fast_forward_stop_point)
         {
           const fc::microseconds new_offset = note.block.timestamp - fc::time_point::now();
+          ilog("switching off debug properties");
           this->_db.modify(this->_db.get_dynamic_global_properties(), [&](auto& gdpo){
             gdpo.get_debug_properties().fast_forward_stop_point = get_time_null_value();
             gdpo.get_debug_properties().block_time_offset = new_offset;
+            gdpo.get_debug_properties().blocks_per_witness = 1;
+            gdpo.get_debug_properties().start_from_aslot = std::numeric_limits<uint64_t>::max();
           });
-
-          chain::debug_notification out_note{get_time_null_value()};
-          this->_db.notify_debug( out_note );
 
           ilog("finished fast-forwarding at block with date ${bdate} with offset ${offset}",
               ("bdate", note.block.timestamp)
               ("offset", new_offset)
           );
         } else {
+          ilog("increasing block_time_offset");
           this->_db.modify(this->_db.get_dynamic_global_properties(), [](auto& gdpo){
             gdpo.get_debug_properties().block_time_offset += fc::seconds(HIVE_BLOCK_INTERVAL);
           });
+          // appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().update_refresh_rate();
         }
       }
   #endif
@@ -80,12 +92,18 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
   void debug_node_plugin_impl::on_debug(const chain::debug_notification &note)
   {
 #ifdef IS_TEST_NET
+    ilog("got `on_debug` signal");
     if(note.new_fast_forward != get_time_null_value())
     {
+      ilog("updating debug properties");
       this->_db.modify(this->_db.get_dynamic_global_properties(), [&](auto& gdpo){
         gdpo.get_debug_properties().fast_forward_stop_point = note.new_fast_forward;
+        gdpo.get_debug_properties().blocks_per_witness = note.blocks_per_witness;
+        gdpo.get_debug_properties().start_from_aslot = note.start_from_aslot;
       });
+      // delay_to_set = fc::milliseconds(1);
     }
+
 #endif
   }
 
@@ -95,11 +113,14 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
   )
   {
     hive::protocol::signed_transaction tx;
-    tx.expiration = this->_db.head_block_time() + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION / 2);
+    tx.expiration = this->_db.head_block_time() + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - 1);
 
     tx.operations.push_back( op );
     tx.sign(invoker_key, _db.get_chain_id(), fc::ecc::fc_canonical);
 
+    ilog("pushing transaction with debug operation");
+    // auto& chain = appbase::app().get_plugin<plugins::chain::chain_plugin>();
+    // chain.accept_transaction(tx);
     _db.push_transaction(tx);
   }
 }
@@ -140,111 +161,18 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [this](const chain::block_notification& note){ my->on_post_apply_block(note); }, *this, 0 );
 
+  my->_pre_apply_block_conn = my->_db.add_pre_apply_block_handler(
+    [this](const chain::block_notification& note){ my->on_pre_apply_block(note); }, *this, 0 );
+
   my->_debug_conn = my->_db.add_debug_handler(
     [this](const chain::debug_notification& note ) { my->on_debug(note); }, *this, 0);
 }
 
 void debug_node_plugin::plugin_startup()
 {
-  /*for( const std::string& fn : _edit_scripts )
-  {
-    std::shared_ptr< fc::ifstream > stream = std::make_shared< fc::ifstream >( fc::path(fn) );
-    fc::buffered_istream bstream(stream);
-    fc::variant v = fc::json::from_stream( bstream, fc::json::strict_parser );
-    load_debug_updates( v.get_object() );
-  }*/
 }
 
 chain::database& debug_node_plugin::database() { return my->_db; }
-
-/*
-void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool logging )
-{
-  static const uint8_t
-    db_action_nil = 0,
-    db_action_create = 1,
-    db_action_write = 2,
-    db_action_update = 3,
-    db_action_delete = 4,
-    db_action_set_hardfork = 5;
-  if( logging ) wlog( "debug_apply_update:  ${o}", ("o", vo) );
-
-  // "_action" : "create"   object must not exist, unspecified fields take defaults
-  // "_action" : "write"    object may exist, is replaced entirely, unspecified fields take defaults
-  // "_action" : "update"   object must exist, unspecified fields don't change
-  // "_action" : "delete"   object must exist, will be deleted
-
-  // if _action is unspecified:
-  // - delete if object contains only ID field
-  // - otherwise, write
-
-  graphene::db2::generic_id oid;
-  uint8_t action = db_action_nil;
-  auto it_id = vo.find("id");
-  FC_ASSERT( it_id != vo.end() );
-
-  from_variant( it_id->value(), oid );
-  action = ( vo.size() == 1 ) ? db_action_delete : db_action_write;
-
-  from_variant( vo["id"], oid );
-  if( vo.size() == 1 )
-    action = db_action_delete;
-
-  fc::mutable_variant_object mvo( vo );
-  mvo( "id", oid );
-  auto it_action = vo.find("_action" );
-  if( it_action != vo.end() )
-  {
-    const std::string& str_action = it_action->value().get_string();
-    if( str_action == "create" )
-      action = db_action_create;
-    else if( str_action == "write" )
-      action = db_action_write;
-    else if( str_action == "update" )
-      action = db_action_update;
-    else if( str_action == "delete" )
-      action = db_action_delete;
-    else if( str_action == "set_hardfork" )
-      action = db_action_set_hardfork;
-  }
-
-  switch( action )
-  {
-    case db_action_create:
-
-      idx.create( [&]( object& obj )
-      {
-        idx.object_from_variant( vo, obj );
-      } );
-
-      FC_ASSERT( false );
-      break;
-    case db_action_write:
-      db.modify( db.get_object( oid ), [&]( graphene::db::object& obj )
-      {
-        idx.object_default( obj );
-        idx.object_from_variant( vo, obj );
-      } );
-      FC_ASSERT( false );
-      break;
-    case db_action_update:
-      db.modify_variant( oid, mvo );
-      break;
-    case db_action_delete:
-      db.remove_object( oid );
-      break;
-    case db_action_set_hardfork:
-      {
-        uint32_t hardfork_id;
-        from_variant( vo[ "hardfork_id" ], hardfork_id );
-        db.set_hardfork( hardfork_id, false );
-      }
-      break;
-    default:
-      FC_ASSERT( false );
-  }
-}
-*/
 
 uint32_t debug_node_plugin::debug_generate_blocks(
   const std::string& debug_key,
@@ -330,76 +258,34 @@ void debug_node_plugin::debug_generate_blocks(
   return;
 }
 
-void debug_node_plugin::debug_generate_blocks_until( const fc::string& invoker, const fc::string& invoker_private_key, const fc::time_point_sec fast_forwarding_end_date )
+void debug_node_plugin::debug_generate_blocks_until( const fc::string& invoker, const fc::string& invoker_private_key, const fc::time_point_sec fast_forwarding_end_date, const size_t blocks_per_witness )
 {
   FC_ASSERT( fast_forwarding_end_date > this->my->_db.head_block_time() );
   hive::protocol::debug_operation op{};
+
   op.invoker = invoker;
   op.untill = fast_forwarding_end_date;
+  op.blocks_per_witness = blocks_per_witness;
+  op.start_from_aslot = my->_db.get_dynamic_global_properties().current_aslot + my->_db.get_witness_schedule_object().num_scheduled_witnesses;
+
   my->push_debug_transaction( *hive::utilities::wif_to_key(invoker_private_key), op );
-  appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().update_refresh_rate( fc::milliseconds(1) );
 }
 
 void debug_node_plugin::apply_debug_updates()
 {
-  // this was a method on database in Graphene
   chain::database& db = database();
   chain::block_id_type head_id = db.head_block_id();
   auto it = _debug_updates.find( head_id );
   if( it == _debug_updates.end() )
     return;
-  //for( const fc::variant_object& update : it->second )
-  //   debug_apply_update( db, update, logging );
   for( auto& update : it->second )
     update( db );
 }
-
-
-/*void debug_node_plugin::set_json_object_stream( const std::string& filename )
-{
-  if( _json_object_stream )
-  {
-    _json_object_stream->close();
-    _json_object_stream.reset();
-  }
-  _json_object_stream = std::make_shared< std::ofstream >( filename );
-}*/
-
-/*void debug_node_plugin::flush_json_object_stream()
-{
-  if( _json_object_stream )
-    _json_object_stream->flush();
-}*/
-
-/*void debug_node_plugin::save_debug_updates( fc::mutable_variant_object& target )
-{
-  for( const std::pair< chain::block_id_type, std::vector< fc::variant_object > >& update : _debug_updates )
-  {
-    fc::variant v;
-    fc::to_variant( update.second, v );
-    target.set( update.first.str(), v );
-  }
-}*/
-
-/*void debug_node_plugin::load_debug_updates( const fc::variant_object& target )
-{
-  for( auto it=target.begin(); it != target.end(); ++it)
-  {
-    std::vector< fc::variant_object > o;
-    fc::from_variant(it->value(), o);
-    _debug_updates[ chain::block_id_type( it->key() ) ] = o;
-  }
-}*/
 
 void debug_node_plugin::plugin_shutdown()
 {
   chain::util::disconnect_signal( my->_post_apply_block_conn );
   chain::util::disconnect_signal( my->_debug_conn );
-  /*if( _json_object_stream )
-  {
-    _json_object_stream->close();
-    _json_object_stream.reset();
-  }*/
   return;
 }
 
