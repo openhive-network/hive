@@ -116,12 +116,12 @@ struct ah_query
     get_bodies      = "SELECT id, get_impacted_accounts(body) FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d;";
 
     FC_ASSERT( insert_into_accounts.size() == 3 );
-    insert_into_accounts[0] = " INSERT INTO public.accounts( id, name ) VALUES";
+    insert_into_accounts[0] = "INSERT INTO public.accounts( id, name ) VALUES";
     insert_into_accounts[1] = " ( %d, '%s')";
     insert_into_accounts[2] = " ;";
 
     FC_ASSERT( insert_into_account_ops.size() == 3 );
-    insert_into_account_ops[0] = " INSERT INTO public.account_operations( account_id, account_op_seq_no, operation_id ) VALUES";
+    insert_into_account_ops[0] = "INSERT INTO public.account_operations( account_id, account_op_seq_no, operation_id ) VALUES";
     insert_into_account_ops[1] = " ( %d, %d, %d )";
     insert_into_account_ops[2] = " ;";
   }
@@ -141,12 +141,24 @@ class thread_queue
 {
   private:
 
+    bool finished = false;
+
     std::mutex mx;
     std::condition_variable cv;
 
     std::queue<T> data;
 
   public:
+
+  void set_finished()
+  {
+    finished = true;
+  }
+
+  bool is_finished()
+  {
+    return finished && data.empty();
+  }
 
   void emplace( T&& obj )
   {
@@ -193,7 +205,6 @@ class ah_loader
     std::vector< string > accounts_queries;
     std::vector< string > account_ops_queries;
 
-    bool finished = false;
     thread_queue<received_items_type> queue;
 
     account_cache_t account_cache;
@@ -223,7 +234,7 @@ class ah_loader
       pqxx::result res = trx->exec( _query );
 
       auto end = std::chrono::high_resolution_clock::now();
-      dlog("query time[ms]: ${time}\n", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      dlog("query time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
 
       return res;
     }
@@ -237,13 +248,13 @@ class ah_loader
       {
         dlog("Rollback..." );
         trx->rollback();
-        dlog("Rollback finished..." );
+        dlog("Rollback finished...\n" );
       }
       else
       {
         dlog("Commit..." );
         trx->commit();
-        dlog("Commit finished..." );
+        dlog("Commit finished...\n" );
       }
       trx.reset();
     }
@@ -491,7 +502,7 @@ class ah_loader
 
       try
       {
-        dlog("SELECT `ops/accounts`: from ${f} block to ${l} block", ("f", first_block)("l", last_block) );
+        dlog("Receiving impacted accounts: from ${f} block to ${l} block", ("f", first_block)("l", last_block) );
 
         string _query = query.format( query.get_bodies, first_block, last_block );
         pqxx::result _result = exec( trx, _query );
@@ -537,7 +548,7 @@ class ah_loader
       result_promise.set_value( _items );
     }
 
-    void worker_send( uint64_t first_element, uint64_t last_element )
+    void send_internal( uint64_t first_element, uint64_t last_element )
     {
       transaction_ptr trx = tx_controller->openTx();
 
@@ -594,8 +605,7 @@ class ah_loader
       received_items_type _buffer;
       for( auto& future : futures )
       {
-        account_ops_type _items = future.get();
-        _buffer.emplace_back( _items );
+        _buffer.emplace_back( future.get() );
       }
       queue.emplace( std::move( _buffer ) );
     }
@@ -610,17 +620,24 @@ class ah_loader
         receive_internal( _item.low, _item.high );
       }
 
-      finished = true;
+      queue.set_finished();
     }
 
     void prepare_sql()
     {
-      auto received_items_type = queue.get();
-      for( auto& items : received_items_type )
+      uint32_t _cnt = 0;
+
+      auto received_items = queue.get();
+
+      for( auto& items : received_items )
       {
+        dlog("SQL preparation: nr: ${n} size: ${s}", ("n", _cnt)("s", items.size()) );
+        ++_cnt;
+ 
         for( auto& item : items )
           gather_part_of_queries( item.op_id, item.name );
       }
+      dlog("SQL preparation: size: ${s}", ("s", account_ops_queries.size()) );
     }
 
     void send_accounts()
@@ -633,30 +650,13 @@ class ah_loader
 
     void send_account_operations()
     {
-      if( args.nr_threads_send == 1 )
-      {
-        worker_send( 0, account_ops_queries.size() - 1 );
-      }
-      else
-      {
-        ranges_type _ranges = prepare_ranges( 0, account_ops_queries.size() - 1, args.nr_threads_send );
-
-        std::list<std::thread> threads_send;
-        for( auto& range : _ranges )
-        {
-          threads_send.emplace_back( std::move( std::thread( &ah_loader::worker_send, this, range.low, range.high ) ) );
-        }
-
-        for( auto& thread : threads_send )
-          thread.join();
-      }
-
+      send_internal( 0, account_ops_queries.size() - 1 );
       account_ops_queries.clear();
     }
 
     void send()
     {
-      while( !finished )
+      while( !queue.is_finished() )
       {
         if( is_interrupted() )
           return;
