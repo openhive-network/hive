@@ -222,7 +222,12 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::debug_global_properties_t, (block_time_offset)(fast_forward_stop_point)(blocks_per_witness) );
+FC_REFLECT( hive::chain::debug_global_properties_t, 
+          (block_time_offset)
+          (fast_forward_stop_point)
+          (blocks_per_witness)
+          );
+
 FC_REFLECT( hive::chain::dynamic_global_property_object,
           (id)
           (head_block_number)
