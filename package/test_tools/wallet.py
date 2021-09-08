@@ -518,7 +518,6 @@ class Wallet:
                 '-s', f'ws://{self.connected_node.get_ws_endpoint()}',
                 '-d',
                 '-H', f'0.0.0.0:{self.http_server_port}',
-                '--rpc-http-allowip', '192.168.10.10',
                 '--rpc-http-allowip=127.0.0.1'
             ],
             cwd=self.directory,
