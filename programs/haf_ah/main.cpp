@@ -644,7 +644,23 @@ class ah_loader
 
     void send_account_operations()
     {
-      send_internal( 0, account_ops_queries.size() - 1 );
+      // if( args.nr_threads_send == 1 )
+      // {
+        send_internal( 0, account_ops_queries.size() - 1 );
+      // }
+      // else
+      // {
+      //   ranges_type _ranges = prepare_ranges( 0, account_ops_queries.size() - 1, args.nr_threads_send );
+
+      //   std::list<std::thread> threads_send;
+      //   for( auto& range : _ranges )
+      //   {
+      //     threads_send.emplace_back( std::move( std::thread( &ah_loader::send_internal, this, range.low, range.high ) ) );
+      //   }
+
+      //   for( auto& thread : threads_send )
+      //     thread.join();
+      // }
       account_ops_queries.clear();
     }
 
@@ -675,10 +691,10 @@ class ah_loader
         return;
 
       std::thread thread_receive( &ah_loader::receive, this );
-
-      send();
+      std::thread thread_send( &ah_loader::send, this );
 
       thread_receive.join();
+      thread_send.join();
     }
 
     void fill_block_ranges( uint64_t first_block, uint64_t last_block )
