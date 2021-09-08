@@ -625,19 +625,13 @@ class ah_loader
 
     void prepare_sql()
     {
-      uint32_t _cnt = 0;
-
       auto received_items = queue.get();
 
       for( auto& items : received_items )
       {
-        dlog("SQL preparation: nr: ${n} size: ${s}", ("n", _cnt)("s", items.size()) );
-        ++_cnt;
- 
         for( auto& item : items )
           gather_part_of_queries( item.op_id, item.name );
       }
-      dlog("SQL preparation: size: ${s}", ("s", account_ops_queries.size()) );
     }
 
     void send_accounts()
