@@ -543,9 +543,91 @@ class ah_loader
 
     void worker_receive( uint64_t first_block, uint64_t last_block, std::promise<account_ops_type> result_promise )
     {
-      account_ops_type _items = worker_receive_internal( first_block, last_block );
+      result_promise.set_value( std::move( worker_receive_internal( first_block, last_block ) ) );
+    }
 
-      result_promise.set_value( _items );
+    void receive_internal( uint64_t first_block, uint64_t last_block )
+    {
+      auto start = std::chrono::high_resolution_clock::now();
+
+      ranges_type _ranges = prepare_ranges( first_block, last_block, args.nr_threads_receive );
+
+      using promise_type = std::promise<account_ops_type>;
+      using future_type = std::future<account_ops_type>;
+
+      std::list<std::thread> threads_receive;
+      std::list<promise_type> promises{ _ranges.size() };
+      std::list<future_type> futures;
+      uint32_t _cnt = 0;
+      for( auto& promise : promises )
+      {
+        futures.emplace_back( promise.get_future() );
+        threads_receive.emplace_back( std::move( std::thread( &ah_loader::worker_receive, this, _ranges[_cnt].low, _ranges[_cnt].high, std::move( promise ) ) ) );
+        ++_cnt;
+      }
+
+      auto end = std::chrono::high_resolution_clock::now();
+      dlog("prepare-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      start = std::chrono::high_resolution_clock::now();
+
+      received_items_type _buffer;
+      for( auto& future : futures )
+      {
+        _buffer.emplace_back( future.get() );
+      }
+
+      end = std::chrono::high_resolution_clock::now();
+      dlog("buffer-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      start = std::chrono::high_resolution_clock::now();
+
+      queue.emplace( std::move( _buffer ) );
+
+      end = std::chrono::high_resolution_clock::now();
+      dlog("queue-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      start = std::chrono::high_resolution_clock::now();
+
+      for( auto& thread : threads_receive )
+        thread.join();
+
+      end = std::chrono::high_resolution_clock::now();
+      dlog("join-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+    }
+
+    void receive()
+    {
+      while( !block_ranges.empty() )
+      {
+        auto start = std::chrono::high_resolution_clock::now();
+
+        auto _item = block_ranges.front();
+        block_ranges.pop();
+
+        receive_internal( _item.low, _item.high );
+
+        auto end = std::chrono::high_resolution_clock::now();
+        dlog("receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+      }
+
+      queue.set_finished();
+    }
+
+    void prepare_sql()
+    {
+      auto received_items = queue.get();
+
+      for( auto& items : received_items )
+      {
+        for( auto& item : items )
+          gather_part_of_queries( item.op_id, item.name );
+      }
+    }
+
+    void send_accounts()
+    {
+      transaction_ptr trx = tx_controller->openTx();
+      execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
+      accounts_queries.clear();
+      finish_trx( trx );
     }
 
     void send_internal( uint64_t first_element, uint64_t last_element )
@@ -581,67 +663,6 @@ class ah_loader
       }
     }
 
-    void receive_internal( uint64_t first_block, uint64_t last_block )
-    {
-      ranges_type _ranges = prepare_ranges( first_block, last_block, args.nr_threads_receive );
-
-      using promise_type = std::promise<account_ops_type>;
-      using future_type = std::future<account_ops_type>;
-
-      std::list<std::thread> threads_receive;
-      std::list<promise_type> promises{ _ranges.size() };
-      std::list<future_type> futures;
-      uint32_t _cnt = 0;
-      for( auto& promise : promises )
-      {
-        futures.emplace_back( promise.get_future() );
-        threads_receive.emplace_back( std::move( std::thread( &ah_loader::worker_receive, this, _ranges[_cnt].low, _ranges[_cnt].high, std::move( promise ) ) ) );
-        ++_cnt;
-      }
-
-      for( auto& thread : threads_receive )
-        thread.join();
-
-      received_items_type _buffer;
-      for( auto& future : futures )
-      {
-        _buffer.emplace_back( future.get() );
-      }
-      queue.emplace( std::move( _buffer ) );
-    }
-
-    void receive()
-    {
-      while( !block_ranges.empty() )
-      {
-        auto _item = block_ranges.front();
-        block_ranges.pop();
-
-        receive_internal( _item.low, _item.high );
-      }
-
-      queue.set_finished();
-    }
-
-    void prepare_sql()
-    {
-      auto received_items = queue.get();
-
-      for( auto& items : received_items )
-      {
-        for( auto& item : items )
-          gather_part_of_queries( item.op_id, item.name );
-      }
-    }
-
-    void send_accounts()
-    {
-      transaction_ptr trx = tx_controller->openTx();
-      execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
-      accounts_queries.clear();
-      finish_trx( trx );
-    }
-
     void send_account_operations()
     {
       // if( args.nr_threads_send == 1 )
@@ -668,6 +689,8 @@ class ah_loader
     {
       while( !queue.is_finished() )
       {
+        auto start = std::chrono::high_resolution_clock::now();
+
         if( is_interrupted() )
           return;
 
@@ -682,6 +705,9 @@ class ah_loader
           return;
 
         send_account_operations();
+
+        auto end = std::chrono::high_resolution_clock::now();
+        dlog("send time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
       }
     }
 
