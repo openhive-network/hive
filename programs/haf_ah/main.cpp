@@ -211,7 +211,7 @@ class ah_loader
 
     ah_query query;
 
-    transaction_controller_ptr tx_controller;
+    std::vector< transaction_controller_ptr > tx_controllers;
 
     block_ranges_type block_ranges;
 
@@ -397,7 +397,12 @@ class ah_loader
     void init( const args_container& _args )
     {
       args = _args;
-      tx_controller = hive::utilities::build_single_transaction_controller( args.url );
+
+      //Here is `+1` because for sending it's necessary to have an additional connection.
+      for( uint32_t i = 0; i < args.nr_threads_receive + 1; ++i )
+      {
+        tx_controllers.emplace_back( hive::utilities::build_own_transaction_controller( args.url ) );
+      }
     }
 
     void interrupt()
@@ -416,11 +421,11 @@ class ah_loader
       if( is_interrupted() )
         return;
 
-      transaction_ptr trx = tx_controller->openTx();
+      FC_ASSERT( tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ tx_controllers.size() - 1 ]->openTx();
+
       try
       {
-        FC_ASSERT( tx_controller );
-
         if( !context_exists( trx ) )
         {
           string tables_query    = read_file( args.schema_path / "ah_schema_tables.sql" );
@@ -494,11 +499,12 @@ class ah_loader
       return ranges;
     }
 
-    account_ops_type worker_receive_internal( uint64_t first_block, uint64_t last_block )
+    account_ops_type worker_receive_internal( uint32_t index, uint64_t first_block, uint64_t last_block )
     {
       account_ops_type _items;
 
-      transaction_ptr trx = tx_controller->openTx();
+      FC_ASSERT( index < tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ index ]->openTx();
 
       try
       {
@@ -541,9 +547,9 @@ class ah_loader
       return _items;
     }
 
-    void worker_receive( uint64_t first_block, uint64_t last_block, std::promise<account_ops_type> result_promise )
+    void worker_receive( uint32_t index, uint64_t first_block, uint64_t last_block, std::promise<account_ops_type> result_promise )
     {
-      result_promise.set_value( std::move( worker_receive_internal( first_block, last_block ) ) );
+      result_promise.set_value( std::move( worker_receive_internal( index, first_block, last_block ) ) );
     }
 
     void receive_internal( uint64_t first_block, uint64_t last_block )
@@ -558,12 +564,12 @@ class ah_loader
       std::list<std::thread> threads_receive;
       std::list<promise_type> promises{ _ranges.size() };
       std::list<future_type> futures;
-      uint32_t _cnt = 0;
+      uint32_t _idx = 0;
       for( auto& promise : promises )
       {
         futures.emplace_back( promise.get_future() );
-        threads_receive.emplace_back( std::move( std::thread( &ah_loader::worker_receive, this, _ranges[_cnt].low, _ranges[_cnt].high, std::move( promise ) ) ) );
-        ++_cnt;
+        threads_receive.emplace_back( std::move( std::thread( &ah_loader::worker_receive, this, _idx, _ranges[_idx].low, _ranges[_idx].high, std::move( promise ) ) ) );
+        ++_idx;
       }
 
       auto end = std::chrono::high_resolution_clock::now();
@@ -624,7 +630,9 @@ class ah_loader
 
     void send_accounts()
     {
-      transaction_ptr trx = tx_controller->openTx();
+      FC_ASSERT( tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ tx_controllers.size() - 1 ]->openTx();
+
       execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
       accounts_queries.clear();
       finish_trx( trx );
@@ -632,7 +640,8 @@ class ah_loader
 
     void send_internal( uint64_t first_element, uint64_t last_element )
     {
-      transaction_ptr trx = tx_controller->openTx();
+      FC_ASSERT( tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ tx_controllers.size() - 1 ]->openTx();
 
       try
       {
@@ -665,23 +674,7 @@ class ah_loader
 
     void send_account_operations()
     {
-      // if( args.nr_threads_send == 1 )
-      // {
-        send_internal( 0, account_ops_queries.size() - 1 );
-      // }
-      // else
-      // {
-      //   ranges_type _ranges = prepare_ranges( 0, account_ops_queries.size() - 1, args.nr_threads_send );
-
-      //   std::list<std::thread> threads_send;
-      //   for( auto& range : _ranges )
-      //   {
-      //     threads_send.emplace_back( std::move( std::thread( &ah_loader::send_internal, this, range.low, range.high ) ) );
-      //   }
-
-      //   for( auto& thread : threads_send )
-      //     thread.join();
-      // }
+      send_internal( 0, account_ops_queries.size() - 1 );
       account_ops_queries.clear();
     }
 
@@ -746,9 +739,12 @@ class ah_loader
         uint64_t _first_block = 0;
         uint64_t _last_block  = 0;
 
-        FC_ASSERT( tx_controller );
 
+        FC_ASSERT( tx_controllers.size() );
+        transaction_controller_ptr tx_controller = tx_controllers[ tx_controllers.size() - 1 ];
+      
         trx = tx_controller->openTx();
+
         pqxx::result _range_blocks = exec( trx, query.next_block );
         finish_trx( trx );
 
