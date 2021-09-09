@@ -19,14 +19,14 @@ class NodesCreator:
         self._directory: Path = None  # Should be overriden by derived class
         self._nodes = []
 
-    def create_init_node(self, name='InitNode'):
+    def create_init_node(self, name='InitNode') -> Node:
         """Creates node which is ready to produce blocks"""
         node = self.create_witness_node(name, witnesses=['initminer'])
         node.config.enable_stale_production = True
         node.config.required_participation = 0
         return node
 
-    def create_witness_node(self, name=None, *, witnesses=None):
+    def create_witness_node(self, name=None, *, witnesses=None) -> Node:
         node = self.__create_node_preconfigured_for_tests(name, default_name='WitnessNode')
         assert 'witness' in node.config.plugin
 
@@ -48,18 +48,18 @@ class NodesCreator:
 
         return node
 
-    def create_api_node(self, name=None):
+    def create_api_node(self, name=None) -> Node:
         node = self.__create_node_preconfigured_for_tests(name, default_name='ApiNode')
         node.config.plugin.remove('witness')
         return node
 
-    def __create_node_preconfigured_for_tests(self, name, *, default_name):
+    def __create_node_preconfigured_for_tests(self, name, *, default_name) -> Node:
         node = self.create_raw_node(name, default_name=default_name)
         self.__enable_all_api_plugins(node)
         node.config.shared_file_size = '128M'
         return node
 
-    def create_raw_node(self, name=None, *, default_name='RawNode'):
+    def create_raw_node(self, name=None, *, default_name='RawNode') -> Node:
         if name is not None:
             self._children_names.register_name(name)
         else:
