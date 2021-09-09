@@ -1,6 +1,7 @@
 import inspect
 import logging
 from pathlib import Path
+import sys
 from typing import Optional
 
 
@@ -19,6 +20,7 @@ class LoggerWrapper:
 
         self.internal_logger.setLevel(level)
         self.__file_handler: Optional[logging.FileHandler] = None
+        self.__stream_handler: Optional[logging.StreamHandler] = None
 
     def __repr__(self):
         return f'<LoggerWrapper: {self.internal_logger.name}>'
@@ -39,6 +41,12 @@ class LoggerWrapper:
         # Break import-cycle
         from test_tools.private.scope import context  # pylint: disable=import-outside-toplevel
         self.set_file_handler(context.get_current_directory().joinpath('last_run.log'))
+
+    def log_to_stdout(self):
+        self.__stream_handler = logging.StreamHandler(sys.stdout)
+        self.__stream_handler.setFormatter(self.__FORMATTER)
+        self.__stream_handler.setLevel(logging.INFO)
+        logging.root.addHandler(self.__stream_handler)
 
     def debug(self, message, stacklevel=0):
         self.internal_logger.debug(message, extra=self.capture_call_place(stacklevel + 1))

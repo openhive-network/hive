@@ -37,7 +37,9 @@ class ScopesStack:
         self.create_new_scope('root')
 
         root_scope = self.__current_scope
-        root_scope.context.set_logger(LoggerWrapper('root', parent=None))
+        logger = LoggerWrapper('root', parent=None)
+        logger.log_to_stdout()
+        root_scope.context.set_logger(logger)
 
         atexit.register(self.__terminate)
 
