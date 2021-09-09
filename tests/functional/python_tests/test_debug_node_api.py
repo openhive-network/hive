@@ -58,14 +58,14 @@ def fast_forward(node : Node, blocks : int, account : Account):
 	new_tm = tm + timedelta(seconds=(blocks * 3))
 	logger.info(f"forwarding with account: {account.name}")
 	logger.info(f"forwarding {blocks} blocks...")
-	node.api.debug_node.debug_generate_blocks_until( invoker=account.name, invoker_private_key=account.private_key, fast_forwarding_end_date=format_datetime(new_tm), blocks_per_witness=100 )
+	node.api.debug_node.debug_generate_blocks_until( invoker=account.name, invoker_private_key=account.private_key, fast_forwarding_end_date=format_datetime(new_tm), blocks_per_witness=1 )
 
 def measure_bps(node):
 	_, bn_before = log_stats(node)
-	logger.info("5 seconds...")
-	sleep(5)
+	logger.info("1 seconds...")
+	sleep(1)
 	_, bn_after = log_stats(node)
-	logger.info(f"currently: {(bn_after-bn_before) / 5.0} bps")
+	logger.info(f"currently: {(bn_after-bn_before) / 1.0} bps")
 
 def test_forwarding_blocks(world : World):
 	updated_conf(world)

@@ -1,4 +1,6 @@
 #pragma once
+#include <fc/reflect/reflect.hpp>
+
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
@@ -63,3 +65,15 @@ private:
 };
 
 } } } // hive::plugins::witness
+
+FC_REFLECT_ENUM( hive::plugins::witness::block_production_condition::block_production_condition_enum,
+                 (produced)
+                 (not_synced)
+                 (not_my_turn)
+                 (not_time_yet)
+                 (no_private_key)
+                 (low_participation)
+                 (lag)
+                 (consecutive)
+                 (wait_for_genesis)
+                 (exception_producing_block) );

@@ -23,7 +23,7 @@
 
 #define DISTANCE_CALC_PRECISION (10000)
 #define BLOCK_PRODUCING_LAG_TIME (750)
-#define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (200000)
+#define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (2000)
 #define DEFAULT_WITNESS_PARTICIPATION (33)
 
 
@@ -337,6 +337,7 @@ namespace detail {
     try
     {
       result = maybe_produce_block(capture);
+      elog("MAYBE PRODUCE BLOCK: ${i}", ("i", result));
     }
     catch( const fc::canceled_exception& )
     {
@@ -411,6 +412,7 @@ namespace detail {
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
     fc::time_point_sec now = get_time_for_next_block() + fc::microseconds( 500'000 );
+    elog("at time ${t}", ("t", now));
 
     // If the next block production opportunity is in the present or future, we're synced.
     if( !_production_enabled )
@@ -423,9 +425,11 @@ namespace detail {
 
     // is anyone scheduled to produce now or one second in the future?
     uint32_t slot = _db.get_slot_at_time( now );
+    elog("at slot ${t}", ("t", slot));
     if( slot == 0 )
     {
       capture("next_time", _db.get_slot_time(1));
+      elog("next_time: ${t}", ("t", _db.get_slot_time(1)));
       return block_production_condition::not_time_yet;
     }
 
@@ -442,6 +446,7 @@ namespace detail {
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
     // we must control the witness scheduled to produce the next block.
     capture("scheduled_witness", scheduled_witness);
+    elog("scheduled_witness: ${w}", ("w", scheduled_witness));
     if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
       return block_production_condition::not_my_turn;
 
