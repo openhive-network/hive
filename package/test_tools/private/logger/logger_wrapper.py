@@ -5,6 +5,8 @@ from typing import Optional
 
 
 class LoggerWrapper:
+    __FORMATTER = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s (%(file_name)s:%(line_number)s)')
+
     def __init__(self, name, *, parent: Optional['LoggerWrapper'], level=logging.DEBUG, propagate=True):
         self.parent = parent
 
@@ -16,7 +18,7 @@ class LoggerWrapper:
             self.internal_logger.propagate = propagate
 
         self.internal_logger.setLevel(level)
-        self.__file_handler = None
+        self.__file_handler: Optional[logging.FileHandler] = None
 
     def __repr__(self):
         return f'<LoggerWrapper: {self.internal_logger.name}>'
@@ -28,10 +30,8 @@ class LoggerWrapper:
         return child_type(name, parent=self)
 
     def set_file_handler(self, path):
-        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s (%(file_name)s:%(line_number)s)')
-
         self.__file_handler = logging.FileHandler(path, mode='w')
-        self.__file_handler.setFormatter(formatter)
+        self.__file_handler.setFormatter(self.__FORMATTER)
         self.__file_handler.setLevel(logging.DEBUG)
         self.internal_logger.addHandler(self.__file_handler)
 
