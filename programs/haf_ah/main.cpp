@@ -398,8 +398,8 @@ class ah_loader
     {
       args = _args;
 
-      //Here is `+1` because for sending it's necessary to have an additional connection.
-      for( uint32_t i = 0; i < args.nr_threads_receive + 1; ++i )
+      //Here is `+2` because for sending it's necessary to have an additional connections.
+      for( uint32_t i = 0; i < args.nr_threads_receive + 2; ++i )
       {
         tx_controllers.emplace_back( hive::utilities::build_own_transaction_controller( args.url ) );
       }
@@ -628,20 +628,20 @@ class ah_loader
       }
     }
 
-    void send_accounts()
+    void send_accounts( uint32_t index )
     {
-      FC_ASSERT( tx_controllers.size() );
-      transaction_ptr trx = tx_controllers[ tx_controllers.size() - 1 ]->openTx();
+      FC_ASSERT( index < tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ index ]->openTx();
 
       execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
       accounts_queries.clear();
       finish_trx( trx );
     }
 
-    void send_internal( uint64_t first_element, uint64_t last_element )
+    void send_internal( uint32_t index, uint64_t first_element, uint64_t last_element )
     {
-      FC_ASSERT( tx_controllers.size() );
-      transaction_ptr trx = tx_controllers[ tx_controllers.size() - 1 ]->openTx();
+      FC_ASSERT( index < tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ index ]->openTx();
 
       try
       {
@@ -672,9 +672,9 @@ class ah_loader
       }
     }
 
-    void send_account_operations()
+    void send_account_operations( uint32_t index )
     {
-      send_internal( 0, account_ops_queries.size() - 1 );
+      send_internal( index, 0, account_ops_queries.size() - 1 );
       account_ops_queries.clear();
     }
 
@@ -692,12 +692,13 @@ class ah_loader
         if( is_interrupted() )
           return;
 
-        send_accounts();
+        FC_ASSERT( tx_controllers.size() > 2 );
 
-        if( is_interrupted() )
-          return;
+        std::thread thread_accounts( &ah_loader::send_accounts, this, tx_controllers.size() - 1 );
+        std::thread thread_account_operations( &ah_loader::send_account_operations, this, tx_controllers.size() - 2 );
 
-        send_account_operations();
+        thread_accounts.join();
+        thread_account_operations.join();
 
         auto end = std::chrono::high_resolution_clock::now();
         dlog("send time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
