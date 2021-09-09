@@ -10,7 +10,7 @@ import json
 
 
 from test_tools.paths_to_executables import set_path_of
-set_path_of('hived', '/home/raidg/hive/build_no_prof/programs/hived/hived')
+# set_path_of('hived', '/home/raidg/hive/build_no_prof/programs/hived/hived')
 # node.set_executable_file_path('/home/raidg/hive/build_no_prof/programs/hived/hived')
 
 def updated_conf( world : World ):
