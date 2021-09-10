@@ -558,8 +558,6 @@ class ah_loader
 
     void receive_internal( uint64_t first_block, uint64_t last_block )
     {
-      auto start = std::chrono::high_resolution_clock::now();
-
       ranges_type _ranges = prepare_ranges( first_block, last_block, args.nr_threads_receive );
 
       using promise_type = std::promise<account_ops_type>;
@@ -576,31 +574,16 @@ class ah_loader
         ++_idx;
       }
 
-      auto end = std::chrono::high_resolution_clock::now();
-      dlog("prepare-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
-      start = std::chrono::high_resolution_clock::now();
-
       received_items_type _buffer;
       for( auto& future : futures )
       {
         _buffer.emplace_back( future.get() );
       }
 
-      end = std::chrono::high_resolution_clock::now();
-      dlog("buffer-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
-      start = std::chrono::high_resolution_clock::now();
-
       queue.emplace( std::move( _buffer ) );
-
-      end = std::chrono::high_resolution_clock::now();
-      dlog("queue-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
-      start = std::chrono::high_resolution_clock::now();
 
       for( auto& thread : threads_receive )
         thread.join();
-
-      end = std::chrono::high_resolution_clock::now();
-      dlog("join-receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
     }
 
     void receive()
