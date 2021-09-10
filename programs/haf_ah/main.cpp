@@ -175,7 +175,12 @@ class thread_queue
 
     while( data.empty() )
     {
+      auto start = std::chrono::high_resolution_clock::now();
+
       cv.wait( lock );
+
+      auto end = std::chrono::high_resolution_clock::now();
+      dlog("queue waiting time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
     }
 
     T val = data.front();
@@ -248,13 +253,13 @@ class ah_loader
       {
         dlog("Rollback..." );
         trx->rollback();
-        dlog("Rollback finished...\n" );
+        dlog("Rollback finished..." );
       }
       else
       {
         dlog("Commit..." );
         trx->commit();
-        dlog("Commit finished...\n" );
+        dlog("Commit finished..." );
       }
       trx.reset();
     }
@@ -398,8 +403,7 @@ class ah_loader
     {
       args = _args;
 
-      //Here is `+2` because for sending it's necessary to have an additional connections.
-      for( uint32_t i = 0; i < args.nr_threads_receive + 2; ++i )
+      for( uint32_t i = 0; i < args.nr_threads_receive + args.nr_threads_send + 1; ++i )
       {
         tx_controllers.emplace_back( hive::utilities::build_own_transaction_controller( args.url ) );
       }
@@ -633,12 +637,37 @@ class ah_loader
       FC_ASSERT( index < tx_controllers.size() );
       transaction_ptr trx = tx_controllers[ index ]->openTx();
 
-      execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
-      accounts_queries.clear();
-      finish_trx( trx );
+      try
+      {
+        dlog("INSERT INTO to `accounts`: ${n} records", ("n", accounts_queries.size()) );
+
+        execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
+        finish_trx( trx );
+
+        accounts_queries.clear();
+      }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.base().what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(...)
+      {
+        finish_trx( trx, true/*force_rollback*/ );
+      }
     }
 
-    void send_internal( uint32_t index, uint64_t first_element, uint64_t last_element )
+    void worker_send( uint32_t index, uint64_t first_element, uint64_t last_element )
     {
       FC_ASSERT( index < tx_controllers.size() );
       transaction_ptr trx = tx_controllers[ index ]->openTx();
@@ -672,9 +701,21 @@ class ah_loader
       }
     }
 
-    void send_account_operations( uint32_t index )
+    void send_account_operations()
     {
-      send_internal( index, 0, account_ops_queries.size() - 1 );
+      ranges_type _ranges = prepare_ranges( 0, account_ops_queries.size() - 1, args.nr_threads_send );
+
+      std::list<std::thread> threads_send;
+      uint32_t _idx = args.nr_threads_receive;
+      for( auto& range : _ranges )
+      {
+        threads_send.emplace_back( std::move( std::thread( &ah_loader::worker_send, this, _idx, range.low, range.high ) ) );
+        ++_idx;
+      }
+
+      for( auto& thread : threads_send )
+        thread.join();
+
       account_ops_queries.clear();
     }
 
@@ -692,10 +733,8 @@ class ah_loader
         if( is_interrupted() )
           return;
 
-        FC_ASSERT( tx_controllers.size() > 2 );
-
         std::thread thread_accounts( &ah_loader::send_accounts, this, tx_controllers.size() - 1 );
-        std::thread thread_account_operations( &ah_loader::send_account_operations, this, tx_controllers.size() - 2 );
+        std::thread thread_account_operations( &ah_loader::send_account_operations, this );
 
         thread_accounts.join();
         thread_account_operations.join();
