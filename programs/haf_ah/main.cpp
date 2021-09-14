@@ -150,39 +150,62 @@ class thread_queue
 {
   private:
 
-    bool finished = false;
+    const uint32_t max_size = 100;
+
+    std::atomic_bool finished;
 
     std::mutex mx;
     std::condition_variable cv;
 
-    std::queue<T> data;
+    std::queue<T> q;
 
   public:
+
+  thread_queue(): finished( false )
+  {
+
+  }
 
   void set_finished()
   {
     finished = true;
+
+    cv.notify_one();
   }
 
   bool is_finished()
   {
-    return finished && data.empty();
+    return finished && q.empty();
+  }
+
+  bool is_full()
+  {
+    return q.size() == max_size;
   }
 
   void emplace( T&& obj )
   {
     std::lock_guard<std::mutex> lock( mx );
 
-    data.emplace( obj );
+    q.emplace( obj );
 
     cv.notify_one();
   }
 
-  T get()
+  T get( bool& is_empty )
   {
+    is_empty = false;
+
     std::unique_lock<std::mutex> lock( mx );
 
-    while( data.empty() )
+    if( is_finished() )
+    {
+      dlog("queue get() - is finished");
+      is_empty = true;
+      return T();
+    }
+
+    while( q.empty() )
     {
       auto start = std::chrono::high_resolution_clock::now();
 
@@ -192,8 +215,15 @@ class thread_queue
       dlog("queue waiting time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
     }
 
-    T val = data.front();
-    data.pop();
+    if( q.empty() )
+    {
+      dlog("queue get() - is empty");
+      is_empty = true;
+      return T();
+    }
+
+    T val = q.front();
+    q.pop();
 
     return val;
   }
@@ -660,23 +690,28 @@ class ah_loader
     {
       while( !block_ranges.empty() )
       {
-        auto start = std::chrono::high_resolution_clock::now();
+        if( !queue.is_full() )
+        {
+          auto start = std::chrono::high_resolution_clock::now();
 
-        auto _item = block_ranges.front();
-        block_ranges.pop();
+          auto _item = block_ranges.front();
+          block_ranges.pop();
 
-        receive_internal( _item.low, _item.high );
+          receive_internal( _item.low, _item.high );
 
-        auto end = std::chrono::high_resolution_clock::now();
-        dlog("receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+          auto end = std::chrono::high_resolution_clock::now();
+          dlog("receive time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
+        }
+        else
+          dlog("queue is full");
       }
 
       queue.set_finished();
     }
 
-    uint64_t prepare_sql()
+    uint64_t prepare_sql( bool& is_empty )
     {
-      received_items_block_type received_items_block = queue.get();
+      received_items_block_type received_items_block = queue.get( is_empty );
 
       for( auto& items : received_items_block.second )
       {
@@ -818,7 +853,10 @@ class ah_loader
         if( is_interrupted() )
           return;
 
-        uint64_t _last_block_num = prepare_sql();
+        bool is_empty = false;
+        uint64_t _last_block_num = prepare_sql( is_empty );
+        if( is_empty )
+          continue;
 
         if( is_interrupted() )
           return;
