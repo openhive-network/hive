@@ -271,12 +271,12 @@ namespace detail {
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
       FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
 
-      if( !var_obj["result"].get_object().contains("previous") )
+      if( !var_obj["result"].get_object().contains("block") )
         return fc::optional< hp::signed_block >();
 
       input_con.get_socket().close();
 
-      return var_obj["result"].template as< api_signed_block_object >();
+      return var_obj["result"].get_object()["block"].template as< api_signed_block_object >();
     } FC_CAPTURE_AND_RETHROW( (num) )
   }
 
