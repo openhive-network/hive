@@ -936,7 +936,7 @@ class ah_loader
 
           fill_block_ranges( _first_block, _last_block );
 
-          if( _last_block - _first_block > 0 )
+          if( _last_block - _first_block > 0 )//massive
           {
             trx = tx_controller->openTx();
             detach_context( trx );
@@ -948,12 +948,13 @@ class ah_loader
             attach_context( trx, _last_block );
             finish_trx( trx );
           }
+          else//live
+          {
+            work();
+          }
+          return false;
         }
-        else
-        {
-          work();
-          return true;
-        }
+        return true;
       }
       catch(const pqxx::pqxx_exception& ex)
       {
