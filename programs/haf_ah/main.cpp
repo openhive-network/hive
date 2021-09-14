@@ -49,6 +49,7 @@ struct account_op
 };
 using account_ops_type = std::list< account_op >;
 using received_items_type = std::list<account_ops_type>;
+using received_items_block_type = std::pair<uint64_t, received_items_type>;
 
 struct account_info
 {
@@ -75,6 +76,10 @@ struct ah_query
   string detach_context;
   string attach_context;
   string check_context;
+
+  string context_is_attached;
+  string context_detached_save_block_num;
+  string context_detached_get_block_num;
 
   string next_block;
 
@@ -110,6 +115,10 @@ struct ah_query
     detach_context  = format( "SELECT * FROM hive.app_context_detach('%s');", application_context );
     attach_context  = "SELECT * FROM hive.app_context_attach('%s', %d);";
     check_context   = format( "SELECT * FROM hive.app_context_exists('%s');", application_context );
+
+    context_is_attached             = format( "SELECT * FROM hive.app_context_is_attached('%s')", application_context );
+    context_detached_save_block_num = "SELECT * FROM hive.app_context_detached_save_block_num('%s', %d)";
+    context_detached_get_block_num  = format( "SELECT * FROM hive.app_context_detached_get_block_num('%s')", application_context );
 
     next_block      = format( "SELECT * FROM hive.app_next_block('%s');", application_context );
 
@@ -210,7 +219,7 @@ class ah_loader
     std::vector< string > accounts_queries;
     std::vector< string > account_ops_queries;
 
-    thread_queue<received_items_type> queue;
+    thread_queue<received_items_block_type> queue;
 
     account_cache_t account_cache;
 
@@ -267,12 +276,19 @@ class ah_loader
     template<typename T>
     bool get_single_value( const pqxx::result& res, T& _return ) const
     {
+      _return = T();
+
       if( res.size() == 1 )
       {
         auto _res = res.at(0);
         if( _res.size() == 1 )
         {
-          _return = _res.at(0).as<T>();
+          auto _val = _res.at(0);
+
+          if( _val.is_null() )
+            return false;
+
+          _return = _val.as<T>();
           return true;
         }
       }
@@ -326,17 +342,69 @@ class ah_loader
       import_account_operations( trx );
     }
 
-    bool context_exists( transaction_ptr& trx )
+    template<typename T>
+    T execute_query( transaction_ptr& trx, const std::string& query )
     {
       if( is_interrupted() )
-        return false;
+        return T();
 
-      bool _val = false;
+      T _val = T();
 
-      pqxx::result _res = exec( trx, query.check_context );
+      pqxx::result _res = exec( trx, query );
       get_single_value( _res, _val );
 
       return _val;
+    }
+
+    bool context_exists( transaction_ptr& trx )
+    {
+      return execute_query<bool>( trx, query.check_context );
+    }
+
+    bool context_is_attached( transaction_ptr& trx )
+    {
+      return execute_query<bool>( trx, query.context_is_attached );
+    }
+
+    uint64_t context_detached_get_block_num( transaction_ptr& trx )
+    {
+      uint64_t _result = execute_query<uint64_t>( trx, query.context_detached_get_block_num );
+      //Here is problem, when a value of `detached_block_num` == NULL
+      //Issues 13,14 should be earlier solved
+      return _result + 2;
+    }
+
+    void switch_context_internal( transaction_ptr& trx, bool force_attach, uint64_t last_block = 0 )
+    {
+      bool _is_attached = context_is_attached( trx );
+
+      if( _is_attached == force_attach )
+        return;
+
+      if( force_attach )
+      {
+        if( last_block == 0 )
+        {
+          last_block = context_detached_get_block_num( trx );
+        }
+
+        auto _attach_context_query  = query.format( query.attach_context, application_context, last_block );
+        exec( trx, _attach_context_query );
+      }
+      else
+      {
+        exec( trx, query.detach_context );
+      }
+    }
+
+    void attach_context( transaction_ptr& trx, uint64_t last_block = 0 )
+    {
+      switch_context_internal( trx, true/*force_attach*/, last_block );
+    }
+
+    void detach_context( transaction_ptr& trx )
+    {
+      switch_context_internal( trx, false/*force_attach*/ );
     }
 
     void gather_part_of_queries( uint64_t operation_id, const string& account_name )
@@ -574,13 +642,15 @@ class ah_loader
         ++_idx;
       }
 
-      received_items_type _buffer;
+      received_items_block_type _result;
+      _result.first = last_block;
+
       for( auto& future : futures )
       {
-        _buffer.emplace_back( future.get() );
+        _result.second.emplace_back( future.get() );
       }
 
-      queue.emplace( std::move( _buffer ) );
+      queue.emplace( std::move( _result ) );
 
       for( auto& thread : threads_receive )
         thread.join();
@@ -604,15 +674,17 @@ class ah_loader
       queue.set_finished();
     }
 
-    void prepare_sql()
+    uint64_t prepare_sql()
     {
-      auto received_items = queue.get();
+      received_items_block_type received_items_block = queue.get();
 
-      for( auto& items : received_items )
+      for( auto& items : received_items_block.second )
       {
         for( auto& item : items )
           gather_part_of_queries( item.op_id, item.name );
       }
+
+      return received_items_block.first;
     }
 
     void send_accounts( uint32_t index )
@@ -702,6 +774,41 @@ class ah_loader
       account_ops_queries.clear();
     }
 
+    void save_detached_block_num( uint32_t index, uint64_t block_num )
+    {
+      FC_ASSERT( index < tx_controllers.size() );
+      transaction_ptr trx = tx_controllers[ index ]->openTx();
+
+      try
+      {
+        dlog("Saving detached block number: ${b}", ("b", block_num) );
+
+        string _query = query.format( query.context_detached_save_block_num, query.application_context, block_num );
+        exec( trx, _query );
+
+        finish_trx( trx );
+      }
+      catch(const pqxx::pqxx_exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.base().what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const fc::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(const std::exception& ex)
+      {
+        elog("Error: ${e}", ("e", ex.what()));
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+      catch(...)
+      {
+        finish_trx( trx, true/*force_rollback*/ );
+      }
+    }
+
     void send()
     {
       while( !queue.is_finished() )
@@ -711,16 +818,20 @@ class ah_loader
         if( is_interrupted() )
           return;
 
-        prepare_sql();
+        uint64_t _last_block_num = prepare_sql();
 
         if( is_interrupted() )
           return;
 
-        std::thread thread_accounts( &ah_loader::send_accounts, this, tx_controllers.size() - 1 );
+        auto last_controller_index = tx_controllers.size() - 1;
+
+        std::thread thread_accounts( &ah_loader::send_accounts, this, last_controller_index );
         std::thread thread_account_operations( &ah_loader::send_account_operations, this );
 
         thread_accounts.join();
         thread_account_operations.join();
+
+        save_detached_block_num( last_controller_index, _last_block_num );
 
         auto end = std::chrono::high_resolution_clock::now();
         dlog("send time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
@@ -767,7 +878,7 @@ class ah_loader
         transaction_controller_ptr tx_controller = tx_controllers[ tx_controllers.size() - 1 ];
       
         trx = tx_controller->openTx();
-
+        attach_context( trx );
         pqxx::result _range_blocks = exec( trx, query.next_block );
         finish_trx( trx );
 
@@ -785,23 +896,24 @@ class ah_loader
             _last_block   = record[1].as<uint64_t>();
           }
 
-          trx = tx_controller->openTx();
-          exec( trx, query.detach_context );
-          finish_trx( trx );
-
           fill_block_ranges( _first_block, _last_block );
-          work();
 
           if( _last_block - _first_block > 0 )
           {
             trx = tx_controller->openTx();
-            auto _attach_context_query  = query.format( query.attach_context, application_context, _last_block );
-            exec( trx, _attach_context_query );
+            detach_context( trx );
+            finish_trx( trx );
+
+            work();
+
+            trx = tx_controller->openTx();
+            attach_context( trx, _last_block );
             finish_trx( trx );
           }
         }
         else
         {
+          work();
           return true;
         }
       }
