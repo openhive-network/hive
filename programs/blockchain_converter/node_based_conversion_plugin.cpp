@@ -44,7 +44,7 @@ namespace hive { namespace converter { namespace plugins { namespace node_based_
 namespace detail {
 
   using hive::plugins::condenser_api::legacy_signed_transaction;
-  using hive::plugins::condenser_api::legacy_signed_block;
+  using hive::plugins::block_api::api_signed_block_object;
 
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
@@ -261,7 +261,7 @@ namespace detail {
       open( input_con, input_url );
 
       auto reply = input_con.request( "POST", input_url, // XXX: Move to block_api - fix deserialization
-          "{\"jsonrpc\":\"2.0\",\"method\":\"condenser_api.get_block\",\"params\":[" + std::to_string( num ) + "],\"id\":1}"
+          "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
           /*,{ { "Content-Type", "application/json" } } */
       );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
@@ -276,7 +276,7 @@ namespace detail {
 
       input_con.get_socket().close();
 
-      return var_obj["result"].template as< legacy_signed_block >();
+      return var_obj["result"].template as< api_signed_block_object >();
     } FC_CAPTURE_AND_RETHROW( (num) )
   }
 
@@ -320,7 +320,7 @@ namespace detail {
     if( result_offset + 1 > block_buf.size() || result_offset + 1 == 0 )
       return fc::optional< hp::signed_block >();
 
-    return block_buf.at( result_offset ).template as< legacy_signed_block >();
+    return block_buf.at( result_offset ).template as< api_signed_block_object >();
   }
 
   void node_based_conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id )
