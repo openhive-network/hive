@@ -91,6 +91,10 @@ data_processor::data_processor( std::string description, const data_processing_f
         dlog("${d} data processor finished processing a data chunk...", ("d", _description));
       }
     }
+    catch(const pqxx::sql_error& ex)
+    {
+      elog("Data processor ${d} detected SQL statement execution failure. Failing statement: `${q}', SQLState: ${s}.", ("d", _description)("q", ex.query())("s", ex.sqlstate()));
+    }
     catch(const pqxx::pqxx_exception& ex)
     {
       elog("Data processor ${d} detected SQL execution failure: ${e}", ("d", _description)("e", ex.base().what()));

@@ -437,7 +437,7 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
 {
   if(chain_db.is_producing())
   {
-    ilog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
+    dlog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
     return;
   }
 

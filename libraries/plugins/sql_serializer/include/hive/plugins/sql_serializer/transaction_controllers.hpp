@@ -35,7 +35,7 @@ public:
 
 typedef std::shared_ptr<transaction_controller> transaction_controller_ptr;
 
-transaction_controller_ptr build_own_transaction_controller(const std::string& dbUrl);
+transaction_controller_ptr build_own_transaction_controller(const std::string& dbUrl, const std::string& description);
 transaction_controller_ptr build_single_transaction_controller(const std::string& dbUrl);
 
 }}} /// hive::plugins::sql_serializer
