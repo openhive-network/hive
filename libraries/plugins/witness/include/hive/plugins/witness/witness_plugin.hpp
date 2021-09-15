@@ -7,6 +7,8 @@
 
 #include <appbase/application.hpp>
 
+#include <fc/reflect/reflect.hpp>
+
 #define HIVE_WITNESS_PLUGIN_NAME "witness"
 
 #define RESERVE_RATIO_PRECISION ((int64_t)10000)
@@ -31,7 +33,8 @@ namespace block_production_condition
     lag = 6,
     consecutive = 7,
     wait_for_genesis = 8,
-    exception_producing_block = 9
+    exception_producing_block = 9,
+    debug_stop = 10
   };
 }
 
@@ -57,9 +60,24 @@ public:
   virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
   virtual void plugin_startup() override;
   virtual void plugin_shutdown() override;
+  bool set_debug_stop_production(bool next);
 
 private:
   std::unique_ptr< detail::witness_plugin_impl > my;
 };
 
 } } } // hive::plugins::witness
+
+
+FC_REFLECT_ENUM( hive::plugins::witness::block_production_condition::block_production_condition_enum,
+                 (produced)
+                 (not_synced)
+                 (not_my_turn)
+                 (not_time_yet)
+                 (no_private_key)
+                 (low_participation)
+                 (lag)
+                 (consecutive)
+                 (wait_for_genesis)
+                 (exception_producing_block)
+                 (debug_stop) );

@@ -183,7 +183,7 @@ void data_processor::join()
 
   ilog("Waiting for data processor: ${d} worker thread finish...", ("d", _description));
 
-  if(_finished == false && _worker.joinable())
+  if(_worker.joinable())
     _worker.join();
 
   ilog("Data processor: ${d} finished execution...", ("d", _description));
