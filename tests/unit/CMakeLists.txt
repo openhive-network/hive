@@ -249,6 +249,8 @@ add_boost_test( chain_test
    serialization_tests/extended_private_key_type_test
    serialization_tests/extended_public_key_type_test
    serialization_tests/version_test
+   serialization_tests/comment_options_extension_legacy_test
+   serialization_tests/comment_options_extension_legacy_new
    serialization_tests/hardfork_version_test
    serialization_tests/min_block_size
    serialization_tests/legacy_signed_transaction
