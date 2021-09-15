@@ -2054,12 +2054,6 @@ namespace fc {
 void to_variant( const hive::plugins::condenser_api::legacy_operation&, fc::variant& );
 void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_operation& );
 
-void to_variant( const hive::plugins::condenser_api::legacy_comment_options_extensions&, fc::variant& );
-void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_comment_options_extensions& );
-
-void to_variant( const hive::plugins::condenser_api::legacy_pow2_work&, fc::variant& );
-void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_pow2_work& );
-
 struct from_old_static_variant
 {
   variant& var;
