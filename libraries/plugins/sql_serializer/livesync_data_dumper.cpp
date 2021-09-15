@@ -25,7 +25,7 @@ namespace hive{ namespace plugins{ namespace sql_serializer {
       _operations = std::move( _text );
     };
 
-    transactions_controller = build_own_transaction_controller( db_url );
+    transactions_controller = build_own_transaction_controller( db_url, "Livesync dumper" );
     constexpr auto NUMBER_OF_PROCESSORS_THREADS = 4;
     auto execute_push_block = [this](block_num_rendezvous_trigger::BLOCK_NUM _block_num ){
       if ( !_block.empty() ) {
