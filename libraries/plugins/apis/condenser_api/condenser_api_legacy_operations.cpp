@@ -101,24 +101,4 @@ void from_variant( const fc::variant& var, hive::plugins::condenser_api::legacy_
   vo.visit( fc::to_static_variant( ar[1] ) );
 }
 
-void to_variant( const hive::plugins::condenser_api::legacy_comment_options_extensions& sv, fc::variant& v )
-{
-  old_sv_to_variant( sv, v );
-}
-
-void from_variant( const fc::variant& v, hive::plugins::condenser_api::legacy_comment_options_extensions& sv )
-{
-  old_sv_from_variant( v, sv );
-}
-
-void to_variant( const hive::plugins::condenser_api::legacy_pow2_work& sv, fc::variant& v )
-{
-  old_sv_to_variant( sv, v );
-}
-
-void from_variant( const fc::variant& v, hive::plugins::condenser_api::legacy_pow2_work& sv )
-{
-  old_sv_from_variant( v, sv );
-}
-
 } // fc
