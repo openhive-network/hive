@@ -524,7 +524,7 @@ class Node:
         self.__process.close()
 
     def handle_final_cleanup(self, *, default_policy: constants.NodeCleanUpPolicy):
-        self.__process.close()
+        self.close()
         self.__process.close_opened_files()
         self.__remove_files(default_policy=default_policy)
 
