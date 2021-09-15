@@ -495,6 +495,73 @@ BOOST_AUTO_TEST_CASE( version_test )
   FC_LOG_AND_RETHROW();
 }
 
+namespace
+{
+  const comment_options_extension& get_sample_comment_options_extension()
+  {
+    static comment_options_extension coe = comment_payout_beneficiaries{ { beneficiary_route_type( OBSOLETE_TREASURY_ACCOUNT, HIVE_100_PERCENT ) } };
+
+    return coe;
+  }
+
+  comment_options_extension serialize_comment_options_extension_from_json_string( const std::string& json_str, bool legacy_enabled = false )
+  {
+    // Save old legacy value in order to restore it later
+    const bool old_legacy = dynamic_serializer::legacy_enabled;
+    const auto restore_old_legacy = [&] { dynamic_serializer::legacy_enabled = old_legacy; };
+
+    dynamic_serializer::legacy_enabled = legacy_enabled;
+
+    // Try serializing
+    comment_options_extension coe;
+    try
+    {
+      coe = fc::json::from_string( json_str ).as< comment_options_extension >();
+    }
+    FC_CAPTURE_CALL_LOG_AND_RETHROW( (restore_old_legacy), () );
+
+    restore_old_legacy();
+
+    return coe;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( comment_options_extension_legacy_test )
+{
+  try
+  {
+    const auto& coe = get_sample_comment_options_extension();
+
+    comment_options_extension coe2 = serialize_comment_options_extension_from_json_string(
+      "[0,{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}]", // condenser_api output
+      true // Enable legacy
+    );
+
+    // Check static_variant index
+    BOOST_REQUIRE( coe.which() == coe2.which() );
+    BOOST_CHECK_NO_THROW( coe.get< comment_payout_beneficiaries >() );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( comment_options_extension_new_test )
+{
+  try
+  {
+    const auto& coe = get_sample_comment_options_extension();
+
+    comment_options_extension coe2 = serialize_comment_options_extension_from_json_string(
+      "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}}", // block_api output
+      false // Disable legacy
+    );
+
+    // Check static_variant index
+    BOOST_REQUIRE( coe.which() == coe2.which() );
+    BOOST_CHECK_NO_THROW( coe.get< comment_payout_beneficiaries >() );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
 BOOST_AUTO_TEST_CASE( hardfork_version_test )
 {
   try
