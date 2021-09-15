@@ -499,30 +499,16 @@ namespace
 {
   const comment_options_extension& get_sample_comment_options_extension()
   {
-    static comment_options_extension coe = comment_payout_beneficiaries{ { beneficiary_route_type( OBSOLETE_TREASURY_ACCOUNT, HIVE_100_PERCENT ) } };
+    static const comment_options_extension coe = comment_payout_beneficiaries{ { beneficiary_route_type( OBSOLETE_TREASURY_ACCOUNT, HIVE_100_PERCENT ) } };
 
     return coe;
   }
 
-  comment_options_extension serialize_comment_options_extension_from_json_string( const std::string& json_str, bool legacy_enabled = false )
+  const pow2_work& get_sample_pow2_work()
   {
-    // Save old legacy value in order to restore it later
-    const bool old_legacy = dynamic_serializer::legacy_enabled;
-    const auto restore_old_legacy = [&] { dynamic_serializer::legacy_enabled = old_legacy; };
+    static const pow2_work work = pow2{ { "alice", block_id_type{ "0" } } };
 
-    dynamic_serializer::legacy_enabled = legacy_enabled;
-
-    // Try serializing
-    comment_options_extension coe;
-    try
-    {
-      coe = fc::json::from_string( json_str ).as< comment_options_extension >();
-    }
-    FC_CAPTURE_CALL_LOG_AND_RETHROW( (restore_old_legacy), () );
-
-    restore_old_legacy();
-
-    return coe;
+    return work;
   }
 }
 
@@ -532,14 +518,13 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_legacy_test )
   {
     const auto& coe = get_sample_comment_options_extension();
 
-    comment_options_extension coe2 = serialize_comment_options_extension_from_json_string(
-      "[0,{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}]", // condenser_api output
-      true // Enable legacy
-    );
+    comment_options_extension coe2 = fc::json::from_string(
+      "[0,{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}]" // condenser_api output
+    ).as< comment_options_extension >();
 
     // Check static_variant index
     BOOST_REQUIRE( coe.which() == coe2.which() );
-    BOOST_CHECK_NO_THROW( coe.get< comment_payout_beneficiaries >() );
+    BOOST_CHECK_NO_THROW( coe2.get< comment_payout_beneficiaries >() );
   }
   FC_LOG_AND_RETHROW();
 }
@@ -550,14 +535,47 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_new_test )
   {
     const auto& coe = get_sample_comment_options_extension();
 
-    comment_options_extension coe2 = serialize_comment_options_extension_from_json_string(
-      "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}}", // block_api output
-      false // Disable legacy
-    );
+    comment_options_extension coe2 = fc::json::from_string(
+      "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}}" // block_api output
+    ).as< comment_options_extension >();
 
     // Check static_variant index
     BOOST_REQUIRE( coe.which() == coe2.which() );
-    BOOST_CHECK_NO_THROW( coe.get< comment_payout_beneficiaries >() );
+    BOOST_CHECK_NO_THROW( coe2.get< comment_payout_beneficiaries >() );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( pow2_work_legacy_test )
+{
+  try
+  {
+    const auto& work = get_sample_pow2_work();
+
+    pow2_work work2 = fc::json::from_string(
+      "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"0\",\"nonce\":0},\"pow_summary\":0}]" // condenser_api output
+    ).as< pow2_work >();
+
+    // Check static_variant index
+    BOOST_REQUIRE( work.which() == work2.which() );
+    BOOST_CHECK_NO_THROW( work2.get< pow2 >() );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( pow2_work_new_test )
+{
+  try
+  {
+    const auto& work = get_sample_pow2_work();
+
+    pow2_work work2 = fc::json::from_string(
+      "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"0\",\"nonce\":0},\"pow_summary\":0}}" // block_api output
+    ).as< pow2_work >();
+
+    // Check static_variant index
+    BOOST_REQUIRE( work.which() == work2.which() );
+    BOOST_CHECK_NO_THROW( work2.get< pow2 >() );
   }
   FC_LOG_AND_RETHROW();
 }
