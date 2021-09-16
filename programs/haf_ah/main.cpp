@@ -890,6 +890,12 @@ class ah_loader
 
     void fill_block_ranges( uint64_t first_block, uint64_t last_block )
     {
+      if( first_block == last_block )
+      {
+        block_ranges.emplace( range{ first_block, last_block } );
+        return;
+      }
+
       uint64_t _last_block = first_block;
 
       while( _last_block != last_block )
