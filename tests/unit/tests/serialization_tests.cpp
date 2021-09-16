@@ -497,18 +497,37 @@ BOOST_AUTO_TEST_CASE( version_test )
 
 namespace
 {
+  using hive::plugins::condenser_api::legacy_operation;
+
   const comment_options_extension& get_sample_comment_options_extension()
   {
-    static const comment_options_extension coe = comment_payout_beneficiaries{ { beneficiary_route_type( OBSOLETE_TREASURY_ACCOUNT, HIVE_100_PERCENT ) } };
+    static const comment_options_extension sample_coe = comment_payout_beneficiaries{ { beneficiary_route_type( "alice", HIVE_100_PERCENT ) } };
 
-    return coe;
+    return sample_coe;
   }
 
   const pow2_work& get_sample_pow2_work()
   {
-    static const pow2_work work = pow2{ { "alice", block_id_type{ "0" } } };
+    static const pow2_work sample_work = pow2{ { "alice", block_id_type{ "abcdef" }, 1050 } };
 
-    return work;
+    return sample_work;
+  }
+
+  const legacy_operation& get_sample_legacy_operation()
+  {
+    static const legacy_operation sample_op = legacy_transfer_operation{ "alice", "bob", { 1234 }, "test" };
+
+    return sample_op;
+  }
+
+  template< typename... Ts >
+  void test_static_variant_same( const fc::static_variant< Ts... >& sv1, const fc::static_variant< Ts... >& sv2 )
+  {
+    // Check static_variant index (do not waste time on hashing if variants are already holding different data)
+    BOOST_REQUIRE( sv1.which() == sv2.which() );
+
+    // Check if comment_options_extension hashes match
+    BOOST_REQUIRE( fc::sha256::hash( sv1 ) == fc::sha256::hash( sv2 ) );
   }
 }
 
@@ -516,15 +535,15 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_legacy_test )
 {
   try
   {
-    const auto& coe = get_sample_comment_options_extension();
+    comment_options_extension coe;
 
-    comment_options_extension coe2 = fc::json::from_string(
-      "[0,{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}]" // condenser_api output
-    ).as< comment_options_extension >();
+    BOOST_CHECK_NO_THROW(
+      coe = fc::json::from_string(
+        "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]" // condenser_api output
+      ).as< comment_options_extension >();
+    );
 
-    // Check static_variant index
-    BOOST_REQUIRE( coe.which() == coe2.which() );
-    BOOST_CHECK_NO_THROW( coe2.get< comment_payout_beneficiaries >() );
+    test_static_variant_same( get_sample_comment_options_extension(), coe );
   }
   FC_LOG_AND_RETHROW();
 }
@@ -533,15 +552,15 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_new_test )
 {
   try
   {
-    const auto& coe = get_sample_comment_options_extension();
+    comment_options_extension coe;
 
-    comment_options_extension coe2 = fc::json::from_string(
-      "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"steem.dao\",\"weight\":100}]}}" // block_api output
-    ).as< comment_options_extension >();
+    BOOST_CHECK_NO_THROW(
+      coe = fc::json::from_string(
+        "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}}" // block_api output
+      ).as< comment_options_extension >();
+    );
 
-    // Check static_variant index
-    BOOST_REQUIRE( coe.which() == coe2.which() );
-    BOOST_CHECK_NO_THROW( coe2.get< comment_payout_beneficiaries >() );
+    test_static_variant_same( get_sample_comment_options_extension(), coe );
   }
   FC_LOG_AND_RETHROW();
 }
@@ -550,15 +569,15 @@ BOOST_AUTO_TEST_CASE( pow2_work_legacy_test )
 {
   try
   {
-    const auto& work = get_sample_pow2_work();
+    pow2_work work;
 
-    pow2_work work2 = fc::json::from_string(
-      "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"0\",\"nonce\":0},\"pow_summary\":0}]" // condenser_api output
-    ).as< pow2_work >();
+    BOOST_CHECK_NO_THROW(
+      work = fc::json::from_string(
+        "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}]" // condenser_api output
+      ).as< pow2_work >();
+    );
 
-    // Check static_variant index
-    BOOST_REQUIRE( work.which() == work2.which() );
-    BOOST_CHECK_NO_THROW( work2.get< pow2 >() );
+    test_static_variant_same( get_sample_pow2_work(), work );
   }
   FC_LOG_AND_RETHROW();
 }
@@ -567,15 +586,50 @@ BOOST_AUTO_TEST_CASE( pow2_work_new_test )
 {
   try
   {
-    const auto& work = get_sample_pow2_work();
+    pow2_work work;
 
-    pow2_work work2 = fc::json::from_string(
-      "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"0\",\"nonce\":0},\"pow_summary\":0}}" // block_api output
-    ).as< pow2_work >();
+    BOOST_CHECK_NO_THROW(
+      work = fc::json::from_string(
+        "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}}" // block_api output
+      ).as< pow2_work >();
+    );
 
-    // Check static_variant index
-    BOOST_REQUIRE( work.which() == work2.which() );
-    BOOST_CHECK_NO_THROW( work2.get< pow2 >() );
+    test_static_variant_same( get_sample_pow2_work(), work );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+// Differs from legacy_operation_test by testing both serialization types (legacy and new) and does not pack full ops into the signed trx
+BOOST_AUTO_TEST_CASE( legacy_operation_legacy_test )
+{
+  try
+  {
+    legacy_operation op;
+
+    BOOST_CHECK_NO_THROW(
+      op = fc::json::from_string(
+        "[2,{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 HIVE\",\"memo\":\"test\"}]" // condenser_api output
+      ).as< legacy_operation >();
+    );
+
+    test_static_variant_same( get_sample_legacy_operation(), op );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( legacy_operation_new_test )
+{
+  try
+  {
+    legacy_operation op;
+
+    BOOST_CHECK_NO_THROW(
+      op = fc::json::from_string(
+        "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021"\"},\"memo\":\"test\"}}" // block_api output
+      ).as< legacy_operation >();
+    );
+
+    test_static_variant_same( get_sample_legacy_operation(), op );
   }
   FC_LOG_AND_RETHROW();
 }
