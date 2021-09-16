@@ -497,29 +497,6 @@ BOOST_AUTO_TEST_CASE( version_test )
 
 namespace
 {
-  using hive::plugins::condenser_api::legacy_operation;
-
-  const comment_options_extension& get_sample_comment_options_extension()
-  {
-    static const comment_options_extension sample_coe = comment_payout_beneficiaries{ { beneficiary_route_type( "alice", HIVE_100_PERCENT ) } };
-
-    return sample_coe;
-  }
-
-  const pow2_work& get_sample_pow2_work()
-  {
-    static const pow2_work sample_work = pow2{ { "alice", block_id_type{ "abcdef" }, 1050 } };
-
-    return sample_work;
-  }
-
-  const legacy_operation& get_sample_legacy_operation()
-  {
-    static const legacy_operation sample_op = legacy_transfer_operation{ "alice", "bob", { 1234 }, "test" };
-
-    return sample_op;
-  }
-
   template< typename... Ts >
   void test_static_variant_same( const fc::static_variant< Ts... >& sv1, const fc::static_variant< Ts... >& sv2 )
   {
@@ -531,105 +508,74 @@ namespace
   }
 }
 
-BOOST_AUTO_TEST_CASE( comment_options_extension_legacy_test )
+BOOST_AUTO_TEST_CASE( comment_options_extension_test )
 {
   try
   {
-    comment_options_extension coe;
+    comment_options_extension coe_legacy, coe_new;
 
     BOOST_CHECK_NO_THROW(
-      coe = fc::json::from_string(
+      coe_legacy = fc::json::from_string(
         "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]" // condenser_api output
       ).as< comment_options_extension >();
     );
 
-    test_static_variant_same( get_sample_comment_options_extension(), coe );
-  }
-  FC_LOG_AND_RETHROW();
-}
-
-BOOST_AUTO_TEST_CASE( comment_options_extension_new_test )
-{
-  try
-  {
-    comment_options_extension coe;
-
     BOOST_CHECK_NO_THROW(
-      coe = fc::json::from_string(
+      coe_new = fc::json::from_string(
         "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}}" // block_api output
       ).as< comment_options_extension >();
     );
 
-    test_static_variant_same( get_sample_comment_options_extension(), coe );
+    test_static_variant_same( coe_legacy, coe_new );
   }
   FC_LOG_AND_RETHROW();
 }
 
-BOOST_AUTO_TEST_CASE( pow2_work_legacy_test )
+BOOST_AUTO_TEST_CASE( pow2_work_test )
 {
   try
   {
-    pow2_work work;
+    pow2_work work_legacy, work_new;
 
     BOOST_CHECK_NO_THROW(
-      work = fc::json::from_string(
+      work_legacy = fc::json::from_string(
         "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}]" // condenser_api output
       ).as< pow2_work >();
     );
 
-    test_static_variant_same( get_sample_pow2_work(), work );
-  }
-  FC_LOG_AND_RETHROW();
-}
-
-BOOST_AUTO_TEST_CASE( pow2_work_new_test )
-{
-  try
-  {
-    pow2_work work;
-
     BOOST_CHECK_NO_THROW(
-      work = fc::json::from_string(
+      work_new = fc::json::from_string(
         "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}}" // block_api output
       ).as< pow2_work >();
     );
 
-    test_static_variant_same( get_sample_pow2_work(), work );
+    test_static_variant_same( work_legacy, work_new );
   }
   FC_LOG_AND_RETHROW();
 }
 
-// Differs from legacy_operation_test by testing both serialization types (legacy and new) and does not pack full ops into the signed trx
-BOOST_AUTO_TEST_CASE( legacy_operation_legacy_test )
+BOOST_AUTO_TEST_CASE( legacy_operation_test )
 {
   try
   {
-    legacy_operation op;
+    using hive::plugins::condenser_api::legacy_operation;
+
+    legacy_operation op_legacy, op_new;
 
     BOOST_CHECK_NO_THROW(
-      op = fc::json::from_string(
-        "[2,{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 HIVE\",\"memo\":\"test\"}]" // condenser_api output
+      op_legacy = fc::json::from_string(
+        "[2,{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]" // condenser_api output
       ).as< legacy_operation >();
     );
 
-    test_static_variant_same( get_sample_legacy_operation(), op );
-  }
-  FC_LOG_AND_RETHROW();
-}
-
-BOOST_AUTO_TEST_CASE( legacy_operation_new_test )
-{
-  try
-  {
-    legacy_operation op;
-
     BOOST_CHECK_NO_THROW(
-      op = fc::json::from_string(
-        "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021"\"},\"memo\":\"test\"}}" // block_api output
+      op_new = fc::json::from_string(
+        // TODO: Auto new serialization of asset: "{\"type\":\"legacy_transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}" // block_api output
+        "{\"type\":\"legacy_transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}}" // block_api output
       ).as< legacy_operation >();
     );
 
-    test_static_variant_same( get_sample_legacy_operation(), op );
+    test_static_variant_same( op_legacy, op_new );
   }
   FC_LOG_AND_RETHROW();
 }
@@ -752,17 +698,6 @@ BOOST_AUTO_TEST_CASE( static_variant_json_test )
     HIVE_REQUIRE_THROW( from_variant( fc::json::from_string( json_str ), op ), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW();
-}
-
-BOOST_AUTO_TEST_CASE( legacy_operation_test )
-{
-  try
-  {
-    auto v = fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" );
-    auto ls = v.as< hive::plugins::condenser_api::legacy_signed_transaction >();
-    // not throwing an error here is success
-  }
-  FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_CASE( asset_symbol_type_test )
