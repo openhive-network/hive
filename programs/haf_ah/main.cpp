@@ -936,7 +936,10 @@ class ah_loader
           const auto& record = _range_blocks[0];
 
           if( record[0].is_null() || record[1].is_null() )
+          {
+            dlog("Values in range blocks have NULL");
             return true;
+          }
           else
           {
             _first_block  = record[0].as<uint64_t>();
@@ -967,6 +970,9 @@ class ah_loader
           }
           return false;
         }
+        else
+          dlog("Range blocks is returned empty");
+
         return true;
       }
       catch(const pqxx::pqxx_exception& ex)
