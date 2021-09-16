@@ -15,3 +15,6 @@ class NotSupported(Exception):
 
 class ParseError(Exception):
     pass
+
+class NameAlreadyInUse(Exception):
+    pass

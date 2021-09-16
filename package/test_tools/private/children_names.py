@@ -1,8 +1,7 @@
+from test_tools.exceptions import NameAlreadyInUse
+
+
 class NameBaseNotSet(Exception):
-    pass
-
-
-class NameAlreadyInUse(Exception):
     pass
 
 
