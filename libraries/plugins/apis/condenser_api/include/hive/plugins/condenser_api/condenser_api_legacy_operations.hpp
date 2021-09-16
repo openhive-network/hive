@@ -2156,6 +2156,27 @@ const variant_object& vo;                                                       
 TYPE& val;                                                                         \
 };                                                                                 \
                                                                                    \
+
+  using hive::plugins::condenser_api::legacy_operation;
+  template<>
+  struct serialization_functor< legacy_operation >
+  {
+    bool operator()( const fc::variant& v, legacy_operation& s ) const
+    {
+      return extended_serialization_functor< legacy_operation >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< legacy_operation >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< legacy_operation >().create( v );
+    }
+  };
+
 }
 
 FC_REFLECT( hive::plugins::condenser_api::api_chain_properties,
