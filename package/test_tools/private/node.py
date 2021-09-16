@@ -167,7 +167,7 @@ class Node:
         self.config = create_default_config()
 
     def __str__(self):
-        return f'{self.__creator}::{self.__name}' if isinstance(self.__creator, network.Network) else self.__name
+        return f'{self.__creator}.{self.__name}' if isinstance(self.__creator, network.Network) else self.__name
 
     def __get_config_file_path(self):
         return self.directory / 'config.ini'
