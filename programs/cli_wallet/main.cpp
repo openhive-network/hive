@@ -86,6 +86,7 @@ int main( int argc, char** argv )
     boost::program_options::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
+      ("offline,o", "Run the wallet in offline mode.")
       ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")

@@ -227,12 +227,9 @@ class wallet_api_impl
 public:
   wallet_api& self;
   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api )
-    : self( s ), _remote_wallet_bridge_api(remote_api)
+    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api)
   {
     init_prototype_ops();
-
-    _wallet.ws_server = initial_data.ws_server;
-    _hive_chain_id = hive_chain_id;
   }
 
   virtual ~wallet_api_impl()
