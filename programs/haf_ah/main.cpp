@@ -240,6 +240,8 @@ class ah_loader
 
     using account_cache_t = std::map<string, account_info>;
 
+    bool is_massive = true;
+
     std::atomic_bool interrupted;
 
     args_container args;
@@ -575,7 +577,7 @@ class ah_loader
     {
       FC_ASSERT( threads > 0 && threads <= 64 );
 
-      if( threads == 1 )
+      if( threads == 1 || !is_massive )
       {
         return { range{ low_value, high_value } };
       }
@@ -869,7 +871,8 @@ class ah_loader
         thread_accounts.join();
         thread_account_operations.join();
 
-        save_detached_block_num( last_controller_index, _last_block_num );
+        if( is_massive )
+          save_detached_block_num( last_controller_index, _last_block_num );
 
         auto end = std::chrono::high_resolution_clock::now();
         dlog("send time[ms]: ${time}", ( "time", std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() ));
@@ -940,9 +943,13 @@ class ah_loader
             _last_block   = record[1].as<uint64_t>();
           }
 
+          dlog("first block: ${fb} last block: ${lb}", ( "fb", _first_block )( "lb", _last_block ));
+
           fill_block_ranges( _first_block, _last_block );
 
-          if( _last_block - _first_block > 0 )//massive
+          is_massive = _last_block - _first_block > 0;
+
+          if( is_massive )
           {
             trx = tx_controller->openTx();
             detach_context( trx );
@@ -954,7 +961,7 @@ class ah_loader
             attach_context( trx, _last_block );
             finish_trx( trx );
           }
-          else//live
+          else
           {
             work();
           }
