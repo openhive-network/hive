@@ -525,7 +525,7 @@ class ah_loader
       if( is_interrupted() )
         return;
 
-      FC_ASSERT( tx_controllers.size() );
+      FC_ASSERT( !tx_controllers.empty() );
       transaction_ptr trx = tx_controllers[ tx_controllers.size() - 1 ]->openTx();
 
       try
@@ -598,6 +598,7 @@ class ah_loader
           ranges[i].high  = ranges[i].low + _size;
         }
       }
+      FC_ASSERT( !ranges.empty() );
       ranges[ranges.size() - 1].high = high_value;
 
       return ranges;
@@ -659,6 +660,7 @@ class ah_loader
     void receive_internal( uint64_t first_block, uint64_t last_block )
     {
       ranges_type _ranges = prepare_ranges( first_block, last_block, args.nr_threads_receive );
+      FC_ASSERT( !_ranges.empty() );
 
       using promise_type = std::promise<account_ops_type>;
       using future_type = std::future<account_ops_type>;
@@ -731,6 +733,11 @@ class ah_loader
 
       try
       {
+        if( accounts_queries.empty() )
+        {
+          dlog("Lack of accounts" );
+          return;
+        }
         dlog("INSERT INTO to `accounts`: ${n} records", ("n", accounts_queries.size()) );
 
         execute_query( trx, accounts_queries, 0, accounts_queries.size() - 1, query.insert_into_accounts );
@@ -795,7 +802,14 @@ class ah_loader
 
     void send_account_operations()
     {
+      if( account_ops_queries.empty() )
+      {
+        dlog("Lack of operations" );
+        return;
+      }
+
       ranges_type _ranges = prepare_ranges( 0, account_ops_queries.size() - 1, args.nr_threads_send );
+      FC_ASSERT( !_ranges.empty() );
 
       std::list<std::thread> threads_send;
       uint32_t _idx = args.nr_threads_receive;
@@ -863,6 +877,7 @@ class ah_loader
         if( is_interrupted() )
           return;
 
+        FC_ASSERT( !tx_controllers.empty() );
         auto last_controller_index = tx_controllers.size() - 1;
 
         std::thread thread_accounts( &ah_loader::send_accounts, this, last_controller_index );
@@ -921,7 +936,7 @@ class ah_loader
         uint64_t _last_block  = 0;
 
 
-        FC_ASSERT( tx_controllers.size() );
+        FC_ASSERT( !tx_controllers.empty() );
         transaction_controller_ptr tx_controller = tx_controllers[ tx_controllers.size() - 1 ];
       
         trx = tx_controller->openTx();
