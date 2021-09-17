@@ -585,7 +585,8 @@ class Wallet:
 
     def __close_opened_files(self):
         for file in [self.stdout_file, self.stderr_file]:
-            file.close()
+            if file is not None:
+                file.close()
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
