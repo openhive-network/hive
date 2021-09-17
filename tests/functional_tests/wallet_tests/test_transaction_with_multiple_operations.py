@@ -1,13 +1,13 @@
 import pytest
 
-from test_tools import Asset
+from test_tools import Asset, Wallet
 
 
 def test_sending_transaction_with_multiple_operations(world):
     node = world.create_init_node()
     node.run()
 
-    wallet = node.attach_wallet()
+    wallet = Wallet(attach_to=node)
 
     accounts_and_balances = {
         'first': Asset.Test(100),
@@ -29,7 +29,7 @@ def test_sending_transaction_with_multiple_operations_without_broadcast(world):
     node = world.create_init_node()
     node.run()
 
-    wallet = node.attach_wallet()
+    wallet = Wallet(attach_to=node)
     with wallet.in_single_transaction(broadcast=False) as transaction:
         wallet.api.create_account('initminer', 'alice', '{}')
 
@@ -49,7 +49,7 @@ def test_setting_broadcast_when_building_transaction(world):
     node = world.create_init_node()
     node.run()
 
-    wallet = node.attach_wallet()
+    wallet = Wallet(attach_to=node)
 
     with wallet.in_single_transaction():
         with pytest.raises(RuntimeError):
@@ -60,7 +60,7 @@ def test_getting_response(world):
     node = world.create_init_node()
     node.run()
 
-    wallet = node.attach_wallet()
+    wallet = Wallet(attach_to=node)
 
     with wallet.in_single_transaction() as transaction:
         wallet.api.create_account('initminer', 'alice', '{}')

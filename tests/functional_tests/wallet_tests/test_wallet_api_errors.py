@@ -1,5 +1,6 @@
 import pytest
 
+from test_tools import Wallet
 from test_tools.exceptions import CommunicationError
 
 
@@ -8,7 +9,7 @@ def wallet(world):
     init_node = world.create_init_node()
     init_node.run()
 
-    return init_node.attach_wallet()
+    return Wallet(attach_to=init_node)
 
 
 def test_if_raise_when_parameters_are_bad(wallet):

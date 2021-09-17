@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Account
+from test_tools import Account, Wallet
 
 
 def test_init_node_startup(world):
@@ -99,7 +99,7 @@ def test_exit_before_synchronization(world):
 
 
 def make_transaction_for_test(node):
-    wallet = node.attach_wallet()
+    wallet = Wallet(attach_to=node)
     wallet.api.create_account('initminer', 'alice', '{}')
 
 
