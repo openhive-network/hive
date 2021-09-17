@@ -1,18 +1,22 @@
-from pathlib import Path
 import re
 import shutil
 import signal
 import subprocess
+from typing import Optional, TYPE_CHECKING
 import warnings
 
 from test_tools import communication, paths_to_executables
 from test_tools.account import Account
 from test_tools.exceptions import CommunicationError
 from test_tools.private.logger.logger_internal_interface import logger
+from test_tools.private.scope import context, ScopedObject
 from test_tools.private.wait_for import wait_for
 
+if TYPE_CHECKING:
+    from test_tools.private.node import Node
 
-class Wallet:
+
+class Wallet(ScopedObject):
     # pylint: disable=too-many-instance-attributes
     # This pylint warning is right, but this refactor has low priority. Will be done later...
 
@@ -442,23 +446,31 @@ class Wallet:
         def withdraw_vesting(self, from_, vesting_shares, broadcast=None):
             return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast)
 
-    def __init__(self, name, creator, directory=Path()):
+    def __init__(self, *, attach_to: Optional['Node']):
+        super().__init__()
+
         self.api = Wallet.__Api(self)
         self.http_server_port = None
-        self.connected_node = None
+        self.connected_node: Optional['Node'] = attach_to
         self.password = None
 
-        self.creator = creator
-        self.name = name
-        self.directory = directory / self.name
+        if self.connected_node:
+            self.name = context.names.register_numbered_name(f'{self.connected_node}.Wallet')
+            self.directory = self.connected_node.directory.parent / self.name
+        else:
+            self.name = context.names.register_numbered_name('Wallet')
+            self.directory = context.get_current_directory() / self.name
+
         self.executable_file_path = None
         self.stdout_file = None
         self.stderr_file = None
         self.process = None
-        self.logger = logger.create_child_logger(f'{self.creator}.{self.name}')
+        self.logger = logger.create_child_logger(self.name)
+
+        self.run(timeout=15)
 
     def __str__(self):
-        return f'{self.creator}::{self.name}'
+        return self.name
 
     def __repr__(self):
         return str(self)
@@ -565,6 +577,9 @@ class Wallet:
 
     def connect_to(self, node):
         self.connected_node = node
+
+    def at_exit_from_scope(self):
+        self.close()
 
     def close(self):
         self.__close_process()

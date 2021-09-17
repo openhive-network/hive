@@ -2,7 +2,6 @@ from pathlib import Path
 
 from test_tools import constants
 from test_tools.network import Network
-from test_tools.wallet import Wallet
 from test_tools.private.nodes_creator import NodesCreator
 from test_tools.private.remote_node import RemoteNode
 
@@ -12,7 +11,6 @@ class World(NodesCreator):
         super().__init__()
 
         self.__networks = []
-        self.__wallets = []
         self.__name = 'World'
         self.__is_monitoring_resources = False
         self.__clean_up_policy = constants.WorldCleanUpPolicy.DO_NOT_REMOVE_FILES
@@ -45,10 +43,6 @@ class World(NodesCreator):
 
         nodes_creator_policy = self.__get_corresponding_nodes_creator_policy(self.__clean_up_policy)
         self._handle_final_cleanup(default_policy=nodes_creator_policy)
-
-        for wallet in self.__wallets:
-            if wallet.is_running():
-                wallet.close()
 
         for network in self.__networks:
             network.handle_final_cleanup(default_policy=self.__get_corresponding_network_policy(self.__clean_up_policy))
@@ -101,16 +95,6 @@ class World(NodesCreator):
 
     def networks(self):
         return self.__networks
-
-    def attach_wallet_to(self, node, timeout):
-        name = self._children_names.create_name(f'{node}Wallet')
-
-        wallet = Wallet(name, self, node.directory.parent)
-        wallet.connect_to(node)
-        wallet.run(timeout)
-
-        self.__wallets.append(wallet)
-        return wallet
 
     def nodes(self):
         """Returns list of all nodes in the world (including nodes in networks)"""

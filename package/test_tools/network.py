@@ -2,7 +2,6 @@ from pathlib import Path
 from shutil import rmtree
 
 from test_tools import constants
-from test_tools.wallet import Wallet
 from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.nodes_creator import NodesCreator
 
@@ -57,16 +56,6 @@ class Network(NodesCreator):
         for wallet in self.__wallets:
             if wallet.is_running():
                 wallet.close()
-
-    def attach_wallet_to(self, node, timeout):
-        name = self._children_names.create_name(f'{node.get_name()}Wallet')
-
-        wallet = Wallet(name, self, self._directory)
-        wallet.connect_to(node)
-        wallet.run(timeout)
-
-        self.__wallets.append(wallet)
-        return wallet
 
     def connect_with(self, network):
         if len(self._nodes) == 0 or len(network.nodes()) == 0:

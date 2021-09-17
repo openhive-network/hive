@@ -8,7 +8,7 @@ import subprocess
 import weakref
 
 from test_tools import communication, constants, network, paths_to_executables
-from test_tools.exceptions import CommunicationError, NodeIsNotRunning
+from test_tools.exceptions import CommunicationError
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
@@ -16,7 +16,6 @@ from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.node_message import NodeMessage
 from test_tools.private.snapshot import Snapshot
 from test_tools.private.wait_for import wait_for
-from test_tools.wallet import Wallet
 
 
 class Node:
@@ -185,12 +184,6 @@ class Node:
         ]
 
         return all(conditions)
-
-    def attach_wallet(self, timeout=15) -> Wallet:
-        if not self.is_running():
-            raise NodeIsNotRunning('Before attaching wallet you have to run node')
-
-        return self.__creator.attach_wallet_to(self, timeout)
 
     def get_name(self):
         return self.__name
