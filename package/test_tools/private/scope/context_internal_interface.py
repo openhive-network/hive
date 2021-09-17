@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from test_tools.private.names import Names
     from test_tools.private.scope.context_definition import Context
     from test_tools.private.scope.scope_singleton import ScopesStack
 
@@ -25,3 +26,7 @@ class ContextInternalInterface:
 
     def get_logger(self):
         return self.__context.get_logger()
+
+    @property
+    def names(self) -> 'Names':
+        return self.__context.get_names()

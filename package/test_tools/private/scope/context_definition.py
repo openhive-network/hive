@@ -1,5 +1,8 @@
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional, Union, TYPE_CHECKING
+
+from test_tools.private.names import Names
 
 if TYPE_CHECKING:
     from test_tools.private.logger.logger_wrapper import LoggerWrapper
@@ -16,9 +19,11 @@ class Context:
         if self.__parent is not None:
             self.__current_directory = self.__parent.get_current_directory()
             self.__logger = self.__parent.get_logger()
+            self.__names = deepcopy(self.__parent.get_names())
         else:
             self.__current_directory = self.DEFAULT_CURRENT_DIRECTORY
             self.__logger = None
+            self.__names = Names()
 
     def get_current_directory(self) -> Path:
         return self.__current_directory
@@ -31,3 +36,6 @@ class Context:
 
     def set_logger(self, logger: 'LoggerWrapper'):
         self.__logger = logger
+
+    def get_names(self) -> Names:
+        return self.__names
