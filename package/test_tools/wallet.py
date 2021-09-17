@@ -7,7 +7,7 @@ import warnings
 
 from test_tools import communication, paths_to_executables
 from test_tools.account import Account
-from test_tools.exceptions import CommunicationError
+from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.scope import context, ScopedObject
 from test_tools.private.wait_for import wait_for
@@ -499,7 +499,10 @@ class Wallet(ScopedObject):
         if not self.executable_file_path:
             self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
 
-        if not self.connected_node:
+        if self.connected_node:
+            if not self.connected_node.is_running():
+                raise NodeIsNotRunning('Before attaching wallet you have to run node')
+        else:
             raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
 
         if not self.http_server_port:
