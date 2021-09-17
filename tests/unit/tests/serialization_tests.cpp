@@ -516,12 +516,8 @@ namespace
 
     try
     {
-      T ret = fc::json::from_string(
-        "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]" // condenser_api output
-      ).as< T >();
-
+      T ret = fc::json::from_string( str ).as< T >();
       restore_old_legacy();
-
       return ret;
     }
     FC_CAPTURE_CALL_LOG_AND_RETHROW( (restore_old_legacy), () );
@@ -583,26 +579,50 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
   try
   {
     using hive::plugins::condenser_api::legacy_operation;
+    using hive::plugins::condenser_api::legacy_transfer_operation;
 
-    legacy_operation op_legacy, op_new;
+    transfer_operation op_new, op_legacy;
 
     BOOST_CHECK_NO_THROW(
       op_legacy = json_serialize_with_legacy< legacy_operation >(
-        "[\"legacy_transfer\",{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]", // condenser_api output
+        "[\"transfer\",{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]", // condenser_api output
+        true
+      ).get< legacy_transfer_operation >();
+    );
+
+    BOOST_CHECK_NO_THROW(
+      op_new = json_serialize_with_legacy< operation >(
+        "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}", // block_api output
+        false
+      ).get< transfer_operation >();
+    );
+
+    BOOST_REQUIRE( fc::sha256::hash( op_new ) == fc::sha256::hash( op_legacy ) );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( block_header_test )
+{
+  try
+  {
+    block_header_extensions ex_legacy, ex_new;
+
+    BOOST_CHECK_NO_THROW(
+      ex_legacy = json_serialize_with_legacy< block_header_extensions >(
+        "[\"version\",\"1.2.3\"]", // condenser_api output
         true
       );
     );
 
-    ilog( "${legacy}", ("legacy",dynamic_serializer::legacy_enabled) );
-
     BOOST_CHECK_NO_THROW(
-      op_new = json_serialize_with_legacy< legacy_operation >(
-        "{\"type\":\"legacy_transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}", // block_api output
+      ex_new = json_serialize_with_legacy< block_header_extensions >(
+        "{\"type\":\"version\",\"value\":\"1.2.3\"}", // block_api output
         false
       );
     );
 
-    test_static_variant_same( op_legacy, op_new );
+    test_static_variant_same( ex_legacy, ex_new );
   }
   FC_LOG_AND_RETHROW();
 }

@@ -48,6 +48,30 @@ namespace hive { namespace protocol {
 
 } } // hive::protocol
 
+namespace fc {
+
+using hive::protocol::block_header_extensions;
+template<>
+struct serialization_functor< block_header_extensions >
+{
+  bool operator()( const fc::variant& v, block_header_extensions& s ) const
+  {
+    return extended_serialization_functor< block_header_extensions >().serialize( v, s );
+  }
+};
+
+template<>
+struct variant_creator_functor< block_header_extensions >
+{
+  template<typename T>
+  fc::variant operator()( const T& v ) const
+  {
+    return extended_variant_creator_functor< block_header_extensions >().create( v );
+  }
+};
+
+}
+
 FC_REFLECT_TYPENAME( hive::protocol::block_header_extensions )
 
 FC_REFLECT( hive::protocol::block_header, (previous)(timestamp)(witness)(transaction_merkle_root)(extensions) )
