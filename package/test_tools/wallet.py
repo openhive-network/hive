@@ -2,18 +2,17 @@ import re
 import shutil
 import signal
 import subprocess
-from typing import Optional, TYPE_CHECKING
+from typing import Union
 import warnings
 
 from test_tools import communication, paths_to_executables
 from test_tools.account import Account
 from test_tools.exceptions import CommunicationError, NodeIsNotRunning
 from test_tools.private.logger.logger_internal_interface import logger
+from test_tools.private.node import Node
+from test_tools.private.remote_node import RemoteNode
 from test_tools.private.scope import context, ScopedObject
 from test_tools.private.wait_for import wait_for
-
-if TYPE_CHECKING:
-    from test_tools.private.node import Node
 
 
 class Wallet(ScopedObject):
@@ -446,17 +445,20 @@ class Wallet(ScopedObject):
         def withdraw_vesting(self, from_, vesting_shares, broadcast=None):
             return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast)
 
-    def __init__(self, *, attach_to: Optional['Node']):
+    def __init__(self, *, attach_to: Union[None, 'Node', 'RemoteNode']):
         super().__init__()
 
         self.api = Wallet.__Api(self)
         self.http_server_port = None
-        self.connected_node: Optional['Node'] = attach_to
+        self.connected_node: Union[None, 'Node', 'RemoteNode'] = attach_to
         self.password = None
 
-        if self.connected_node:
+        if isinstance(self.connected_node, Node):
             self.name = context.names.register_numbered_name(f'{self.connected_node}.Wallet')
             self.directory = self.connected_node.directory.parent / self.name
+        elif isinstance(self.connected_node, RemoteNode):
+            self.name = context.names.register_numbered_name(f'{self.connected_node}.Wallet')
+            self.directory = context.get_current_directory() / self.name
         else:
             self.name = context.names.register_numbered_name('Wallet')
             self.directory = context.get_current_directory() / self.name
