@@ -3,6 +3,8 @@
 #include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>
 
+#include <boost/exception/diagnostic_information.hpp>
+
 #include <exception>
 
 namespace hive { namespace plugins { namespace sql_serializer {
@@ -108,7 +110,7 @@ data_processor::data_processor( std::string description, const data_processing_f
     _finished = true;
   };
 
-  _worker = std::thread(body);
+  _future = std::async(std::launch::async, body);
 }
 
 data_processor::~data_processor()
@@ -183,8 +185,11 @@ void data_processor::join()
 
   ilog("Waiting for data processor: ${d} worker thread finish...", ("d", _description));
 
-  if(_finished == false && _worker.joinable())
-    _worker.join();
+  try {
+    _future.get();
+  } catch (...) {
+    elog( "Caught unhandled exception ${diagnostic}", ("diagnostic", boost::current_exception_diagnostic_information()) );
+  }
 
   ilog("Data processor: ${d} finished execution...", ("d", _description));
 }
