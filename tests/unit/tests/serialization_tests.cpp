@@ -506,6 +506,26 @@ namespace
     // Check if comment_options_extension hashes match
     BOOST_REQUIRE( fc::sha256::hash( sv1 ) == fc::sha256::hash( sv2 ) );
   }
+
+  template< typename T >
+  T json_serialize_with_legacy( const std::string& str, bool legacy_enabled = false )
+  {
+    const bool old_legacy = dynamic_serializer::legacy_enabled;
+    const auto restore_old_legacy = [&] { dynamic_serializer::legacy_enabled = old_legacy; };
+    dynamic_serializer::legacy_enabled = legacy_enabled;
+
+    try
+    {
+      T ret = fc::json::from_string(
+        "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]" // condenser_api output
+      ).as< T >();
+
+      restore_old_legacy();
+
+      return ret;
+    }
+    FC_CAPTURE_CALL_LOG_AND_RETHROW( (restore_old_legacy), () );
+  }
 }
 
 BOOST_AUTO_TEST_CASE( comment_options_extension_test )
@@ -515,15 +535,17 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_test )
     comment_options_extension coe_legacy, coe_new;
 
     BOOST_CHECK_NO_THROW(
-      coe_legacy = fc::json::from_string(
-        "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]" // condenser_api output
-      ).as< comment_options_extension >();
+      coe_legacy = json_serialize_with_legacy< comment_options_extension >(
+        "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]", // condenser_api output
+        true
+      );
     );
 
     BOOST_CHECK_NO_THROW(
-      coe_new = fc::json::from_string(
-        "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}}" // block_api output
-      ).as< comment_options_extension >();
+      coe_new = json_serialize_with_legacy< comment_options_extension >(
+        "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}}", // block_api output
+        false
+      );
     );
 
     test_static_variant_same( coe_legacy, coe_new );
@@ -538,15 +560,17 @@ BOOST_AUTO_TEST_CASE( pow2_work_test )
     pow2_work work_legacy, work_new;
 
     BOOST_CHECK_NO_THROW(
-      work_legacy = fc::json::from_string(
-        "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}]" // condenser_api output
-      ).as< pow2_work >();
+      work_legacy = json_serialize_with_legacy< pow2_work >(
+        "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}]", // condenser_api output
+        true
+      );
     );
 
     BOOST_CHECK_NO_THROW(
-      work_new = fc::json::from_string(
-        "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}}" // block_api output
-      ).as< pow2_work >();
+      work_new = json_serialize_with_legacy< pow2_work >(
+        "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}}", // block_api output
+        false
+      );
     );
 
     test_static_variant_same( work_legacy, work_new );
@@ -563,16 +587,19 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
     legacy_operation op_legacy, op_new;
 
     BOOST_CHECK_NO_THROW(
-      op_legacy = fc::json::from_string(
-        "[2,{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]" // condenser_api output
-      ).as< legacy_operation >();
+      op_legacy = json_serialize_with_legacy< legacy_operation >(
+        "[\"legacy_transfer\",{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]", // condenser_api output
+        true
+      );
     );
 
+    ilog( "${legacy}", ("legacy",dynamic_serializer::legacy_enabled) );
+
     BOOST_CHECK_NO_THROW(
-      op_new = fc::json::from_string(
-        // TODO: Auto new serialization of asset: "{\"type\":\"legacy_transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}" // block_api output
-        "{\"type\":\"legacy_transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}}" // block_api output
-      ).as< legacy_operation >();
+      op_new = json_serialize_with_legacy< legacy_operation >(
+        "{\"type\":\"legacy_transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}", // block_api output
+        false
+      );
     );
 
     test_static_variant_same( op_legacy, op_new );
