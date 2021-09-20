@@ -190,6 +190,9 @@ class Wallet(ScopedObject):
         def decrypt_memo(self, memo, only_result: bool = True):
             return self.__send('decrypt_memo', memo=memo, only_result=only_result)
 
+        def delegate_rc(self, from_, to, max_rc, broadcast=None):
+            return self.__send('delegate_rc', from_=from_, to=to, max_rc=max_rc, broadcast=broadcast)
+
         def delegate_vesting_shares(self, delegator, delegatee, vesting_shares, broadcast=None,
                                     only_result: bool = True):
             return self.__send('delegate_vesting_shares', delegator=delegator, delegatee=delegatee,
@@ -239,6 +242,9 @@ class Wallet(ScopedObject):
 
         def exit(self, only_result: bool = True):
             return self.__send('exit', only_result=only_result)
+
+        def find_rc_accounts(self, accounts):
+            return self.__send('find_rc_accounts', accounts=accounts)
 
         def find_proposals(self, proposal_ids, only_result: bool = True):
             return self.__send('find_proposals', proposal_ids=proposal_ids, only_result=only_result)
@@ -347,6 +353,12 @@ class Wallet(ScopedObject):
         def list_proposals(self, start, limit, order_by, order_type, status, only_result: bool = True):
             return self.__send('list_proposals', start=start, limit=limit, order_by=order_by, order_type=order_type,
                                status=status, only_result=only_result)
+
+        def list_rc_accounts(self, account, limit, order):
+            return self.__send('list_rc_accounts', account=account, limit=limit, order=order)
+
+        def list_rc_direct_delegations(self, start, limit, order):
+            return self.__send('list_rc_direct_delegations', start=start, limit=limit, order=order)
 
         def list_witnesses(self, lowerbound, limit, only_result: bool = True):
             return self.__send('list_witnesses', lowerbound=lowerbound, limit=limit, only_result=only_result)
