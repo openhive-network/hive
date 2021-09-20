@@ -582,6 +582,16 @@ class ah_loader
         return { range{ low_value, high_value } };
       }
 
+      /*
+        It's better to send small amount of data in only 1 thread. More threads introduce unnecessary complexity.
+        Beside, if (high_value - low_value) < threads, it's impossible to spread data amongst threads in reasonable way.
+      */
+      const uint32_t _thread_threshold = 500;
+      if( high_value - low_value + 1 <= _thread_threshold )
+      {
+        return { range{ low_value, high_value } };
+      }
+
       std::vector<range> ranges{ threads };
       uint64_t _size = ( high_value - low_value + 1 ) / threads;
 
