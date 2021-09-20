@@ -12,6 +12,14 @@ IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
                sql_serializer.cpp
                data_processor.cpp
                transaction_controllers.cpp
+               end_massive_sync_processor.cpp
+               block_num_rendezvous_trigger.cpp
+               data_2_sql_tuple_base.cpp
+               reindex_data_dumper.cpp
+               tables_descriptions.cpp
+               livesync_data_dumper.cpp
+               queries_commit_data_processor.cpp
+               string_data_processor.cpp
                ${HEADERS}
               )
 ELSE()

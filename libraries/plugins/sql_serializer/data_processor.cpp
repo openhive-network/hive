@@ -30,27 +30,25 @@ private:
   std::condition_variable* _notifier;
 };
 
-data_processor::data_processor(const std::string& psqlUrl, const std::string& description, const data_processing_fn& dataProcessor) :
-  _description(description),
+data_processor::data_processor( std::string description, const data_processing_fn& dataProcessor, std::shared_ptr< block_num_rendezvous_trigger > api_trigger) :
+  _description(std::move(description)),
   _cancel(false),
   _continue(true),
   _initialized(false),
   _finished(false),
-  _total_processed_records(0)
+  _is_processing_data( false ),
+  _total_processed_records(0),
+  _randezvous_trigger( std::move( api_trigger ) )
 {
-  auto body = [this, psqlUrl, dataProcessor]() -> void
+  auto body = [this, dataProcessor]() -> void
   {
     ilog("Entering data processor thread: ${d}", ("d", _description));
 
     try
     {
-      FC_ASSERT(_txController == nullptr, "Already filled transaction controller?");
-      auto local_controller = build_own_transaction_controller(psqlUrl);
-
       {
-        ilog("${d} data processor is connecting to specified db url: `${url}' ...", ("url", psqlUrl)("d", _description));
+        ilog("${d} data processor is connecting ...",("d", _description));
         std::unique_lock<std::mutex> lk(_mtx);
-        _txController = local_controller;
         _initialized = true;
         ilog("${d} data processor connected successfully ...", ("d", _description));
         _cv.notify_one();
@@ -64,10 +62,13 @@ data_processor::data_processor(const std::string& psqlUrl, const std::string& de
 
         dlog("${d} data processor resumed by DATA-READY signal...", ("d", _description));
 
-        if(_continue.load() == false)
+        if(_continue.load() == false) {
+          dlog("${d} data processor _continue.load() == false", ("d", _description));
           break;
+        }
 
         fc::optional<data_chunk_ptr> dataPtr(std::move(_dataPtr));
+        uint32_t last_block_num_in_stage = _last_block_num;
 
         lk.unlock();
         dlog("${d} data processor consumed data - notifying trigger process...", ("d", _description));
@@ -81,16 +82,14 @@ data_processor::data_processor(const std::string& psqlUrl, const std::string& de
         {
           data_processing_status_notifier notifier(&_is_processing_data, &_data_processing_mtx, &_data_processing_finished_cv);
 
-          transaction_ptr tx(_txController->openTx());
-          dataProcessor(*dataPtr, *tx);
-          tx->commit();
+          dataProcessor(*dataPtr);
+
+          if ( _randezvous_trigger && last_block_num_in_stage )
+            _randezvous_trigger->report_complete_thread_stage( last_block_num_in_stage );
         }
 
         dlog("${d} data processor finished processing a data chunk...", ("d", _description));
       }
-
-      local_controller->disconnect();
-      _txController.reset();
     }
     catch(const pqxx::pqxx_exception& ex)
     {
@@ -116,28 +115,7 @@ data_processor::~data_processor()
 {
 }
 
-transaction_controller_ptr data_processor::register_transaction_controler(transaction_controller_ptr controller)
-{
-  FC_ASSERT(controller);
-
-  if(_initialized == false)
-  {
-    ilog("Waiting for data_processor `${d}' initialization...", ("d", _description));
-
-    std::unique_lock<std::mutex> lk(_mtx);
-    _cv.wait(lk, [this] { return _initialized.load(); });
-    ilog("data_processor `${d}' initialized - proceeding registration process...", ("d", _description));
-  }
-
-  FC_ASSERT(_txController != nullptr, "No _txController instance for data_processor: `${d}'?", ("d", _description));
-
-  transaction_controller_ptr txController = std::move(_txController);
-  _txController = std::move(controller);
-  
-  return txController;
-}
-
-void data_processor::trigger(data_chunk_ptr dataPtr)
+void data_processor::trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum)
 {
   if(_finished)
     return;
@@ -149,6 +127,7 @@ void data_processor::trigger(data_chunk_ptr dataPtr)
   dlog("Trying to trigger data processor: ${d}...", ("d", _description));
   std::lock_guard<std::mutex> lk(_mtx);
   _dataPtr = std::move(dataPtr);
+  _last_block_num = last_blocknum;
   dlog("Data processor: ${d} triggerred...", ("d", _description));
   }
   _cv.notify_one();
@@ -162,6 +141,14 @@ void data_processor::trigger(data_chunk_ptr dataPtr)
 
 
   dlog("Leaving trigger of data data processor: ${d}...", ("d", _description));
+}
+
+void
+data_processor::only_report_batch_finished( uint32_t block_num ) {
+  if ( _randezvous_trigger ) {
+    ilog( "${i} commited by ${d}",("i", block_num )("d", _description) );
+    _randezvous_trigger->report_complete_thread_stage( block_num );
+  }
 }
 
 void data_processor::complete_data_processing()
@@ -201,6 +188,5 @@ void data_processor::join()
 
   ilog("Data processor: ${d} finished execution...", ("d", _description));
 }
-
 
 }}} /// hive::plugins::sql_serializer
