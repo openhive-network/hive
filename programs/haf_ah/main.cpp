@@ -159,6 +159,11 @@ class thread_queue
 
     std::queue<T> q;
 
+    bool is_finished_impl()
+    {
+      return finished && q.empty();
+    }
+
   public:
 
   thread_queue(): finished( false )
@@ -168,6 +173,8 @@ class thread_queue
 
   void set_finished()
   {
+    std::lock_guard<std::mutex> lock( mx );
+
     finished = true;
 
     cv.notify_one();
@@ -175,11 +182,15 @@ class thread_queue
 
   bool is_finished()
   {
-    return finished && q.empty();
+    std::lock_guard<std::mutex> lock( mx );
+
+    return is_finished_impl();
   }
 
   bool is_full()
   {
+    std::lock_guard<std::mutex> lock( mx );
+
     return q.size() == max_size;
   }
 
@@ -194,11 +205,11 @@ class thread_queue
 
   T get( bool& is_empty )
   {
-    is_empty = false;
-
     std::unique_lock<std::mutex> lock( mx );
 
-    if( is_finished() )
+    is_empty = false;
+
+    if( is_finished_impl() )
     {
       dlog("queue get() - is finished");
       is_empty = true;
@@ -686,6 +697,9 @@ class ah_loader
         ++_idx;
       }
 
+      for( auto& thread : threads_receive )
+        thread.join();
+
       received_items_block_type _result;
       _result.first = last_block;
 
@@ -695,9 +709,6 @@ class ah_loader
       }
 
       queue.emplace( std::move( _result ) );
-
-      for( auto& thread : threads_receive )
-        thread.join();
     }
 
     void receive()
