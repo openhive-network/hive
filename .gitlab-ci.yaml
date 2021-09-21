@@ -183,6 +183,8 @@ cli_wallet_tests:
 hived_tests:
   stage: test
   extends: .test_tools_based
+  variables:
+    HIVED_MAINNET_ADDRESS: "https://api.hive.blog" # TODO: switch to non-production address
   needs:
     - job: testnet_node_build
       artifacts: true
