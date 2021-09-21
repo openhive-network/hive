@@ -108,7 +108,7 @@ mirrornet_node_build:
 mirrornet_replay_test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs: 
+  needs:
     - job: "mirrornet_node_build"
       artifacts: true
 
@@ -313,7 +313,6 @@ cli_wallet_tests:
 hived_tests:
   stage: test
   extends: .test_tools_based
-
   variables:
     JUNIT_REPORT: tests/functional/python_tests/hived/report.xml
     PYTEST_TIMEOUT_MINUTES: 21
