@@ -248,7 +248,7 @@ class Node:
         if self.config.webserver_http_endpoint is None:
             raise Exception('Webserver http endpoint is unknown')
 
-        endpoint = f'http://{self._get_http_endpoint()}'
+        endpoint = f'http://{self.get_http_endpoint()}'
 
         self.__wait_for_http_listening()
 
@@ -463,7 +463,7 @@ class Node:
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
         return None
 
-    def _get_http_endpoint(self):
+    def get_http_endpoint(self):
         self.__wait_for_http_listening()
         with open(self.__process.get_stderr_file_path()) as output:
             for line in output:
