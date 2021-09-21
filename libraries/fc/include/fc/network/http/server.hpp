@@ -12,7 +12,7 @@ namespace fc { namespace http {
    *  function for every http request.
    *
    */
-  class server 
+  class server  // TODO: http tls server
   {
     public:
       server();

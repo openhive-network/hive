@@ -75,6 +75,28 @@ namespace fc {
      
      typedef std::shared_ptr<connection> connection_ptr;
 
+    namespace detail {
+      class client_impl;
+    } // namespace detail;
+
+    class client
+    {
+    public:
+      /**
+       * @note specify ca_filename argument only if you want to estabilish a secure http connection
+       * @note "_none" disables cert checking (potentially insecure!), "_default" uses default CA's provided by OS
+       **/
+      client( const std::string& ca_filename = "_default" );
+      ~client();
+
+      /// @brief Auto detects secure or insecure http connection from the protocol
+      connection_ptr        connect( const std::string& uri );
+    private:
+      connection_ptr secure_connect( const std::string& uri );
+
+      std::unique_ptr< detail::client_impl > my;
+    };
+
 } } // fc::http
 
 #include <fc/reflect/reflect.hpp>

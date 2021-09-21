@@ -209,4 +209,45 @@ std::vector<header> parse_urlencoded_params( const fc::string& f ) {
   return h;
 }
 
+  namespace detail
+  {
+    class client_impl
+    {
+    public:
+      client_impl( const std::string& ca_filename = "_default" );
+
+    private:
+      std::string ca_filename;
+    };
+
+    client_impl::client_impl( const std::string& ca_filename )
+      : ca_filename( ca_filename )
+    {}
+  }
+
+  client::client( const std::string& ca_filename )
+    : my( std::make_unique<detail::client_impl>( ca_filename ) )
+  {}
+
+  client::~client() {}
+
+  connection_ptr client::connect( const std::string& uri )
+  {
+    try {
+       if( uri.substr(0,6) == "https:" )
+          return secure_connect( uri );
+       FC_ASSERT( uri.substr(0,5) == "http:", "In order to connect to an http endpoint, protocol has to be either http or https" );
+
+   }
+   FC_CAPTURE_AND_RETHROW( (uri) )
+  }
+
+  connection_ptr client::secure_connect( const std::string& uri )
+  {
+    try {
+      
+   }
+   FC_CAPTURE_AND_RETHROW( (uri) )
+  }
+
 } } // fc::http
