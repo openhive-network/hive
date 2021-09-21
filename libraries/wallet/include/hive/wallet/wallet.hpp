@@ -70,7 +70,7 @@ struct wallet_data
   string                    ws_user;
   string                    ws_password;
 
-  bool                      offline;
+  bool                      offline = false;
 };
 
 enum authority_type
