@@ -34,6 +34,7 @@
 #include <fc/io/stdio.hpp>
 #include <fc/network/http/server.hpp>
 #include <fc/network/http/websocket.hpp>
+#include <fc/network/url.hpp>
 #include <fc/rpc/cli.hpp>
 #include <fc/rpc/http_api.hpp>
 #include <fc/rpc/websocket_api.hpp>
@@ -181,9 +182,14 @@ int main( int argc, char** argv )
     // Override wallet data
     wdata.offline = options.count( "offline" );
 
-    fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
+    // XXX: Just for testing purposes. Change before MR:
+    // fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
+    fc::http::connection client;
     idump((wdata.ws_server));
-    fc::http::websocket_connection_ptr con;
+    // fc::http::websocket_connection_ptr con;
+    fc::http::connection_ptr con;
+
+    fc::url server{ wdata.ws_server };
 
     std::shared_ptr<wallet_api> wapiptr;
     boost::signals2::scoped_connection closed_connection;
@@ -300,10 +306,12 @@ int main( int argc, char** argv )
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
-          std::shared_ptr< fc::rpc::http_api_connection > conn =
-            std::make_shared< fc::rpc::http_api_connection>();
-          conn->register_api( wapi );
-          conn->on_request( req, resp );
+          _http_server->on_connection([&]( const fc::http::connection_ptr& c ){
+            std::shared_ptr< fc::rpc::http_api_connection > conn =
+              std::make_shared< fc::rpc::http_api_connection>(*c);
+            conn->register_api( wapi );
+            conn->on_request( req, resp );
+          });
         } );
     }
 

@@ -11,7 +11,7 @@ namespace fc { namespace rpc {
    class http_api_connection : public api_connection
    {
       public:
-         http_api_connection();
+         http_api_connection( fc::http::connection& c );
          ~http_api_connection();
 
          virtual variant send_call(
@@ -33,6 +33,12 @@ namespace fc { namespace rpc {
             const fc::http::request& req,
             const fc::http::server::response& resp );
 
+      protected:
+         std::string on_message(
+            const std::string& message,
+            bool send_message = true );
+
+         fc::http::connection&            _connection;
          fc::rpc::state                   _rpc_state;
    };
 

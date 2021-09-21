@@ -7,7 +7,8 @@ http_api_connection::~http_api_connection()
 {
 }
 
-http_api_connection::http_api_connection()
+http_api_connection::http_api_connection( fc::http::connection& c )
+   : _connection( c )
 {
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
@@ -24,6 +25,8 @@ http_api_connection::http_api_connection()
       }
       else
          api_id = args[0].as_uint64();
+
+      idump( (args) );
 
       return this->receive_call(
          api_id,
@@ -53,6 +56,10 @@ http_api_connection::http_api_connection()
    {
       return this->receive_call( 0, method_name, args );
    } );
+
+   //_connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
+   //_connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg,false); } );
+   //_connection.closed.connect( [this](){ closed(); } );
 }
 
 variant http_api_connection::send_call(
