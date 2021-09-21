@@ -12,7 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
+#include <future>
 #include <utility>
 
 
@@ -59,7 +59,7 @@ public:
     std::atomic_bool _finished;
     std::atomic_bool _is_processing_data;
 
-    std::thread _worker;
+    std::future<void> _future;
     std::mutex _mtx;
     std::mutex _data_processing_mtx;
     std::condition_variable _cv;
