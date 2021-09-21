@@ -178,50 +178,61 @@ int main( int argc, char** argv )
     if( !options.at("server-rpc-endpoint").defaulted() )
       wdata.ws_server = options.at("server-rpc-endpoint").as<std::string>();
 
+    // Override wallet data
+    wdata.offline = options.count( "offline" );
+
     fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
     idump((wdata.ws_server));
     fc::http::websocket_connection_ptr con;
 
-    for (;;)
-    {
-      try
-      {
-        con = client.connect( wdata.ws_server );
-      }
-      catch (const fc::exception& e)
-      {
-        if (!options.count("retry-server-connection"))
-          throw;
-      }
-      if (con)
-        break;
-      else
-      {
-        wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
-        fc::usleep(fc::seconds(10));
-      }
-    }
-
+    std::shared_ptr<wallet_api> wapiptr;
+    boost::signals2::scoped_connection closed_connection;
 
     auto wallet_cli = std::make_shared<fc::rpc::cli>();
-    wallet_cli->set_on_termination_handler( sig_handler );
 
-    auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
-    auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon") );
+    if( wdata.offline )
+    {
+      ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon") );
+    }
+    else
+    {
+      for (;;)
+      {
+        try
+        {
+          con = client.connect( wdata.ws_server );
+        }
+        catch (const fc::exception& e)
+        {
+          if (!options.count("retry-server-connection"))
+            throw;
+        }
+        if (con)
+          break;
+        else
+        {
+          wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
+          fc::usleep(fc::seconds(10));
+        }
+      }
+      auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
+      auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon") );
+      closed_connection = con->closed.connect([=]{
+        cerr << "Server has disconnected us.\n";
+        wallet_cli->stop();
+      });
+      (void)(closed_connection);
+    }
+
+    wallet_cli->set_on_termination_handler( sig_handler );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
-    wapiptr->load_wallet_file();
 
     fc::api<wallet_api> wapi(wapiptr);
 
     for( auto& name_formatter : wapiptr->get_result_formatters() )
       wallet_cli->format_result( name_formatter.first, name_formatter.second );
-
-    boost::signals2::scoped_connection closed_connection(con->closed.connect([=]{
-      cerr << "Server has disconnected us.\n";
-      wallet_cli->stop();
-    }));
-    (void)(closed_connection);
 
     if( wapiptr->is_new() )
     {
