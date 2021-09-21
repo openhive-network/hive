@@ -69,6 +69,8 @@ struct wallet_data
   string                    ws_server = "ws://localhost:8090";
   string                    ws_user;
   string                    ws_password;
+
+  bool                      offline;
 };
 
 enum authority_type
@@ -1407,6 +1409,7 @@ FC_REFLECT( hive::wallet::wallet_data,
         (ws_server)
         (ws_user)
         (ws_password)
+        (offline)
         )
 
 FC_REFLECT( hive::wallet::brain_key_info, (brain_priv_key)(wif_priv_key) (pub_key))
