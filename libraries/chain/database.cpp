@@ -201,6 +201,8 @@ void database::load_state_initial_data(const open_args& args)
       ilog("Rewind undo state done.");
 
       auto new_hb = head_block_num();
+      notify_switch_fork( new_hb );
+
 
       FC_ASSERT(new_hb >= last_irreversible_block);
 
