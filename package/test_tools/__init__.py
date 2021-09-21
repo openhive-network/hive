@@ -5,4 +5,5 @@ from test_tools.account import Account
 from test_tools.world import World
 
 # User handles
+from test_tools.private.user_handles import RemoteNodeHandle as RemoteNode
 from test_tools.private.user_handles import WalletHandle as Wallet
