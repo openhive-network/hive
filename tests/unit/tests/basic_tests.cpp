@@ -478,12 +478,12 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104u ); //at most <30d> of ownership updates
   BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 96u ); //at most <1d> of account recoveries
   BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 40u ); //at most <30d> of recovery account changes
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 144u //at most <7d> of unpaid comments (all comments prior to HF19)
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 136u //at most <7d> of unpaid comments (all comments prior to HF19)
 #ifdef HIVE_ENABLE_SMT
     + 32
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_ex_object ), 48u ); //all comments up to HF19, later not used
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_ex_object ), 64u ); //all comments up to HF19, later not used
   BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48u ); //at most <7d> of votes on unpaid comments
   BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 24u ); //at most <3.5d> of conversion requests
   BOOST_CHECK_EQUAL( sizeof( collateralized_convert_request_object ), 32u ); //at most <3.5d> of conversion requests
