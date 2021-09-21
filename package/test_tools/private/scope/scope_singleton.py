@@ -3,7 +3,7 @@ from typing import List, Optional, TYPE_CHECKING
 import warnings
 
 from test_tools.private.logger.logger_wrapper import LoggerWrapper
-from test_tools.private.scope.context_internal_interface import ContextInternalInterface
+from test_tools.private.scope.context_internal_interface import ContextInternalHandle
 from test_tools.private.scope.scope import Scope
 from test_tools.private.utilities.disabled_keyboard_interrupt import DisabledKeyboardInterrupt
 from test_tools.private.utilities.tests_type import is_manual_test
@@ -78,7 +78,7 @@ class ScopesStack:
 
 
 current_scope = ScopesStack()
-context = ContextInternalInterface(current_scope)
+context = ContextInternalHandle(current_scope)
 
 if is_manual_test():
     # Break import-cycle

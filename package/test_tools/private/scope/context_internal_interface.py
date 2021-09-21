@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from test_tools.private.scope.scope_singleton import ScopesStack
 
 
-class ContextInternalInterface:
+class ContextInternalHandle:
     def __init__(self, scopes_stack: 'ScopesStack'):
         self.__scopes_stack: 'ScopesStack' = scopes_stack
 
