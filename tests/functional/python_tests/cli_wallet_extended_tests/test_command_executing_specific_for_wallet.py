@@ -1,19 +1,19 @@
-from test_tools import Account, logger, World, Asset
-import os.path
+from test_tools import Asset, context
+
 from utilities import send_and_assert_result, send_with_args_and_assert_result
+
 
 def test_wallet(wallet):
 
     pswd = 'pear_peach'
 
-    internal_path = 'generated_during_test_command_executing_specific_for_wallet/test_wallet/InitNodeWallet0/'
-    wallet_content_file_name = 'test_wallet.json'
+    wallet_content_file = context.get_current_directory() / 'InitNode.Wallet0/test_wallet.json'
 
-    send_with_args_and_assert_result(wallet.api.save_wallet_file, wallet_content_file_name, None)
+    send_with_args_and_assert_result(wallet.api.save_wallet_file, wallet_content_file.name, None)
 
-    assert os.path.isfile(internal_path + wallet_content_file_name)
+    assert wallet_content_file.exists()
 
-    send_with_args_and_assert_result(wallet.api.save_wallet_file, internal_path + wallet_content_file_name, None)
+    send_with_args_and_assert_result(wallet.api.save_wallet_file, str(wallet_content_file), None)
 
     send_and_assert_result(wallet.api.is_new, False)
 
