@@ -31,7 +31,8 @@ namespace block_production_condition
     lag = 6,
     consecutive = 7,
     wait_for_genesis = 8,
-    exception_producing_block = 9
+    exception_producing_block = 9,
+    debug_stop = 10
   };
 }
 
@@ -57,6 +58,7 @@ public:
   virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
   virtual void plugin_startup() override;
   virtual void plugin_shutdown() override;
+  bool set_debug_switch_production(bool next);
 
 private:
   std::unique_ptr< detail::witness_plugin_impl > my;
