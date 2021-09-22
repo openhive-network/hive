@@ -57,6 +57,7 @@ http_api_connection::http_api_connection( fc::http::connection& c )
       return this->receive_call( 0, method_name, args );
    } );
 
+   // TM_FC_TODO:
    //_connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
    //_connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg,false); } );
    //_connection.closed.connect( [this](){ closed(); } );

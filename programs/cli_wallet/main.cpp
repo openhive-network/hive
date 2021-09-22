@@ -184,7 +184,7 @@ int main( int argc, char** argv )
 
     // XXX: Just for testing purposes. Change before MR:
     // fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
-    fc::http::connection client;
+    fc::http::client client;
     idump((wdata.ws_server));
     // fc::http::websocket_connection_ptr con;
     fc::http::connection_ptr con;

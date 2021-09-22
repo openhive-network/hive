@@ -1,6 +1,7 @@
 #include <fc/network/http/connection.hpp>
 #include <fc/network/tcp_socket.hpp>
 #include <fc/io/sstream.hpp>
+#include <fc/thread/thread.hpp>
 #include <fc/io/iostream.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/network/ip.hpp>
@@ -216,12 +217,18 @@ std::vector<header> parse_urlencoded_params( const fc::string& f ) {
     public:
       client_impl( const std::string& ca_filename = "_default" );
 
-    private:
-      std::string ca_filename;
+      std::string                        _ca_filename;
+      bool                               _shutting_down = false;
+      fc::promise<void>::ptr             _connected;
+      fc::promise<void>::ptr             _closed;
+      fc::thread&                        _client_thread;
+      // tls_client_type                    _client;
+      connection_ptr                     _connection;
+      fc::url                            _uri;
     };
 
     client_impl::client_impl( const std::string& ca_filename )
-      : ca_filename( ca_filename )
+      : _ca_filename( ca_filename ), _client_thread( fc::thread::current() )
     {}
   }
 
@@ -234,10 +241,39 @@ std::vector<header> parse_urlencoded_params( const fc::string& f ) {
   connection_ptr client::connect( const std::string& uri )
   {
     try {
-       if( uri.substr(0,6) == "https:" )
-          return secure_connect( uri );
-       FC_ASSERT( uri.substr(0,5) == "http:", "In order to connect to an http endpoint, protocol has to be either http or https" );
+      my->_uri = fc::url{ uri };
 
+      FC_ASSERT( my->_uri.host().valid(), "There must be a host in the url" );
+
+      if( my->_uri.proto() == "https" )
+        return secure_connect( uri );
+      FC_ASSERT( my->_uri.proto() == "http", "In order to connect to an http endpoint, protocol has to be either http or https" );
+
+      std::error_code ec;
+
+      my->_connected = fc::promise<void>::ptr( new fc::promise<void>("http::connect") );
+/*
+      boost::asio::ip::tcp::socket socket(io_service);
+      boost::asio::ip::tcp::endpoint endpoint(
+      boost::asio::ip::address::from_string("1.2.3.4"), 12345);
+*/
+
+      /* TM_FC_TODO:
+        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+          auto con =  my->_client.get_con_from_hdl(hdl);
+          my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_client_connection_type>>( con );
+          my->_closed = fc::promise<void>::ptr( new fc::promise<void>("http::closed") );
+          my->_connected->set_value();
+        });
+      */
+
+      //auto con = my->_client.get_connection( uri, ec );
+
+      if( ec ) FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
+
+      //my->_client.connect(con);
+      my->_connected->wait();
+      return my->_connection;
    }
    FC_CAPTURE_AND_RETHROW( (uri) )
   }
@@ -245,7 +281,26 @@ std::vector<header> parse_urlencoded_params( const fc::string& f ) {
   connection_ptr client::secure_connect( const std::string& uri )
   {
     try {
-      
+      std::error_code ec;
+
+      my->_connected = fc::promise<void>::ptr( new fc::promise<void>("http::connect") );
+
+      /* TM_FC_TODO:
+        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+          auto con =  my->_client.get_con_from_hdl(hdl);
+          my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_client_connection_type>>( con );
+          my->_closed = fc::promise<void>::ptr( new fc::promise<void>("http::closed") );
+          my->_connected->set_value();
+        });
+      */
+
+      //auto con = my->_client.get_connection( uri, ec );
+
+      if( ec ) FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
+
+      //my->_client.connect(con);
+      my->_connected->wait();
+      return my->_connection;
    }
    FC_CAPTURE_AND_RETHROW( (uri) )
   }

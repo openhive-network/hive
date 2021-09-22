@@ -22,6 +22,8 @@ namespace fc { namespace http {
 
       server& operator=(server&& s);
 
+
+      typedef std::function<void(const http::connection_ptr& )> on_connection_handler;
       class response 
       {
         public:
@@ -52,6 +54,8 @@ namespace fc { namespace http {
        *  Set the callback to be called for every http request made.
        */
       void on_request( const std::function<void(const http::request&, const server::response& s )>& cb );
+
+      void on_connection( const on_connection_handler& handler);
 
     private:
       class impl;

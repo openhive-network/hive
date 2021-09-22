@@ -1,6 +1,7 @@
 #pragma once
 #include <fc/vector.hpp>
 #include <fc/string.hpp>
+#include <fc/signals.hpp>
 #include <memory>
 
 namespace fc { 
@@ -69,6 +70,7 @@ namespace fc {
          http::request    read_request()const;
 
          class impl;
+         fc::signal<void()> closed;
        private:
          std::unique_ptr<impl> my;
      };

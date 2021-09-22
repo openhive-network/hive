@@ -114,6 +114,7 @@ namespace fc { namespace http {
         {
           http::server::response rep( fc::shared_ptr<response::impl>( new response::impl(c) ) );
           request req = c->read_request();
+          _on_connection( c );
           if( do_on_req ) 
             do_on_req( req, rep );
           c->get_socket().close();
@@ -127,6 +128,7 @@ namespace fc { namespace http {
 
       fc::future<void>                                                      accept_complete;
       std::function<void(const http::request&, const server::response& s)>  on_req;
+      server::on_connection_handler                                         _on_connection;
       std::vector<fc::future<void> >                                        requests_in_progress;
       fc::tcp_server                                                        tcp_serv;
   };
@@ -201,7 +203,10 @@ namespace fc { namespace http {
      my->on_req = cb; 
   }
 
-
+  void server::on_connection( const on_connection_handler& handler)
+  {
+    my->_on_connection = handler;
+  }
 
 
 } }
