@@ -1,7 +1,7 @@
 import pytest
 from test_tools import *
 from test_tools.private.node import Node
-from test_tools.wallet import Wallet
+from test_tools import Wallet
 from .shared_utilites import prepared_proposal_data_with_id, funded_account_info, prepare_proposal
 import datetime, dateutil
 
@@ -13,7 +13,7 @@ def node(world : World):
 
 @pytest.fixture
 def wallet(node : Node):
-  return node.attach_wallet()
+  return Wallet(attach_to=node)
 
 @pytest.fixture
 def creator(node : Node) -> Account:

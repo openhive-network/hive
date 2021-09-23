@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Account, Asset, constants, logger, World
+from test_tools import Account, Asset, constants, logger, Wallet, World
 from test_tools.private.scope import context
 
 
@@ -45,7 +45,7 @@ def world_with_witnesses():
         beta_net.run()
 
         logger.info('Attaching wallets...')
-        wallet = api_node.attach_wallet()
+        wallet = Wallet(attach_to=api_node)
         # We are waiting here for block 43, because witness participation is counting
         # by dividing total produced blocks in last 128 slots by 128. When we were waiting
         # too short, for example 42 blocks, then participation equals 42 / 128 = 32.81%.

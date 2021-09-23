@@ -1,4 +1,4 @@
-from test_tools import Asset, logger
+from test_tools import Asset, logger, Wallet
 
 
 def test_enum_virtual_ops(world_with_witnesses):
@@ -6,7 +6,7 @@ def test_enum_virtual_ops(world_with_witnesses):
 
     # Test enum_virtual_ops for head block returns only virtual ops
     api_node = world.network('Alpha').node('ApiNode0')
-    wallet = api_node.attach_wallet()
+    wallet = Wallet(attach_to=api_node)
 
     account_name = 'gamma-1'
     wallet.api.create_account('initminer', account_name, '')

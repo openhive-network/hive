@@ -1,6 +1,7 @@
 from pathlib import Path
 from pytest import fixture
 from test_tools import *
+from test_tools import Wallet
 
 BLOCK_COUNT = 30
 
@@ -12,7 +13,7 @@ def block_log() -> Path:
     node = world.create_init_node()
     node.run(wait_for_live=True)
 
-    wallet = node.attach_wallet()
+    wallet = Wallet(attach_to=node)
     initminer = node.config.witness[0]
 
     current_block = 0

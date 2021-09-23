@@ -1,5 +1,7 @@
 import pytest
 
+from test_tools import Wallet
+
 
 @pytest.fixture
 def node(world):
@@ -10,4 +12,4 @@ def node(world):
 
 @pytest.fixture
 def wallet(node):
-    return node.attach_wallet()
+    return Wallet(attach_to=node)
