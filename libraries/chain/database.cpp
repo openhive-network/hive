@@ -1174,6 +1174,7 @@ bool database::_push_block(const signed_block& new_block)
               // pop all blocks from the bad fork
               while( head_block_id() != branches.second.back()->data.previous )
                 pop_block();
+              notify_switch_fork( branches.second.back()->data.block_num() );
 
               // restore all blocks from the good fork
               for( auto ritr = branches.second.rbegin(); ritr != branches.second.rend(); ++ritr )
