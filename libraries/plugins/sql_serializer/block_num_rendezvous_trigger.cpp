@@ -20,8 +20,6 @@ namespace hive { namespace plugins { namespace sql_serializer {
   void
   block_num_rendezvous_trigger::report_complete_thread_stage( BLOCK_NUM _stage_block_num ) {
     std::lock_guard< std::mutex > lock( m_mutex );
-    if ( m_already_commited_blocks >= _stage_block_num )
-      return;
 
     if ( m_number_of_threads == 1 )
       m_triggered_function( _stage_block_num );
@@ -35,8 +33,7 @@ namespace hive { namespace plugins { namespace sql_serializer {
     if ( ( stage_it->second + 1 ) == m_number_of_threads ) {
       m_completed_threads.erase( stage_it );
       m_triggered_function( _stage_block_num );
-      m_already_commited_blocks = _stage_block_num;
-      ilog( "Dump to blocks ${i}", ("i", _stage_block_num) );
+      ilog( "Dump whole block ${i}", ("i", _stage_block_num) );
       return;
     }
 

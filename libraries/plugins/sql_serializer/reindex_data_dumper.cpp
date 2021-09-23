@@ -1,10 +1,12 @@
 #include <hive/plugins/sql_serializer/reindex_data_dumper.h>
 
+
 namespace hive{ namespace plugins{ namespace sql_serializer {
   reindex_data_dumper::reindex_data_dumper( const std::string& db_url, uint32_t operations_threads, uint32_t transactions_threads ) {
     ilog( "Starting reindexing dump to database with ${o} operations and ${t} transactions threads", ("o", operations_threads )("t", transactions_threads) );
     _end_massive_sync_processor = std::make_unique< end_massive_sync_processor >( db_url );
-    auto NUMBER_OF_PROCESSORS_THREADS = 2 + operations_threads + transactions_threads;
+    constexpr auto BLOCKS_AND_MULTISIG_THREADS_NUMBER = 2; // one thread for dumping blocks, and one another for dumping multisignatures
+    auto NUMBER_OF_PROCESSORS_THREADS = BLOCKS_AND_MULTISIG_THREADS_NUMBER + operations_threads + transactions_threads;
     auto execute_end_massive_sync_callback = [this](block_num_rendezvous_trigger::BLOCK_NUM _block_num ){
       _end_massive_sync_processor->trigger_block_number( _block_num );
     };

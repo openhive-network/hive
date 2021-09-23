@@ -558,7 +558,10 @@ void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& not
 
 void sql_serializer_plugin_impl::process_cached_data()
 {  
-  _dumper->trigger_data_flush( *currently_caching_data, _last_block_num );
+  // triggers only when there is something to flush
+  if ( !currently_caching_data->blocks.empty() ) {
+    _dumper->trigger_data_flush( *currently_caching_data, _last_block_num );
+  }
 }
 
 bool sql_serializer_plugin_impl::skip_reversible_block(uint32_t block_no)
