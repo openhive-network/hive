@@ -85,12 +85,12 @@ class ah_query:
     self.insert_into_account_ops.append( " ;" )
 
 class args_container:
-  def __init__(self, _url = "", _schema_dir = "", _range_blocks_flush = 1000, _threads_receive = 1, _threads_send = 1):
-    self.url                = _url
-    self.schema_path        = _schema_dir
-    self.flush_size         = _range_blocks_flush
-    self.nr_threads_receive = _threads_receive
-    self.nr_threads_send    = _threads_send
+  def __init__(self, url = "", schema_dir = "", range_blocks_flush = 1000, threads_receive = 1, threads_send = 1):
+    self.url                = url
+    self.schema_path        = schema_dir
+    self.flush_size         = range_blocks_flush
+    self.nr_threads_receive = threads_receive
+    self.nr_threads_send    = threads_send
 
 class singleton(type):
   _instances = {}
@@ -101,48 +101,32 @@ class singleton(type):
         cls._instances[cls] = instance
     return cls._instances[cls]
 
-class ah_loader(metaclass = singleton):
-
-  def __init__(self):
-    self.is_massive           = True
-    self.interrupted          = False
-
-    self.args                 = args_container()
-
-    self.application_context  = "account_history"
-
-    self.accounts_queries     = [];
-    self.account_ops_queries  = []
-
-    self.account_cache        = {}
-
-    self.query                = ah_query(self.application_context)
-
-    self.block_ranges         = deque()
-
-    self.db                   = None
-
-    self.finished              = False;
-
-    self.pool = multiprocessing.Pool(processes = self.args.nr_threads_receive + self.args.nr_threads_send + 1)
-    self.queue = multiprocessing.Manager().Queue(200)
-
-  def get_time(self, start, end):
+class helper:
+  @staticmethod
+  def get_time(start, end):
     return int((end - start).microseconds / 1000)
 
-  def read_file(self, path):
-    with open(path, 'r') as file:
-      return file.read()
-    return ""
-
-  def display_query(self, query):
+  @staticmethod
+  def display_query(query):
     if len(query) > 100:
       logger.info("{}...".format(query[0:100]))
     else:
       logger.info("{}".format(query))
 
+class sql_executor:
+  def __init__(self, application_context):
+    self.args   = None
+    self.db     = None
+    self.query  = ah_query(application_context)
+
+  async def init(self, args, info):
+    self.args = args
+
+    logger.info(info)
+    self.db   = await Db.create(self.args.url, self.args.nr_threads_receive + self.args.nr_threads_send + 1)
+
   async def perform_query(self, query):
-    self.display_query(query)
+    helper.display_query(query)
 
     assert self.db is not None
 
@@ -151,10 +135,10 @@ class ah_loader(metaclass = singleton):
     await self.db.query(query)
 
     end = datetime.datetime.now()
-    logger.info("query time[ms]: {}".format(self.get_time(start, end)))
+    logger.info("query time[ms]: {}".format(helper.get_time(start, end)))
 
   async def perform_query_all(self, query):
-    self.display_query(query)
+    helper.display_query(query)
 
     assert self.db is not None
 
@@ -163,12 +147,12 @@ class ah_loader(metaclass = singleton):
     res = await self.db.query_all(query)
 
     end = datetime.datetime.now()
-    logger.info("query time[ms]: {}".format(self.get_time(start, end)))
+    logger.info("query time[ms]: {}".format(helper.get_time(start, end)))
 
     return res;
 
   async def perform_query_one(self, query):
-    self.display_query(query)
+    helper.display_query(query)
 
     assert self.db is not None
 
@@ -177,15 +161,70 @@ class ah_loader(metaclass = singleton):
     res = await self.db.query_one(query)
 
     end = datetime.datetime.now()
-    logger.info("query time[ms]: {}".format(self.get_time(start, end)))
+    logger.info("query time[ms]: {}".format(helper.get_time(start, end)))
 
     return res;
+
+  @staticmethod
+  async def get_new_instance(src):
+    new_sql_executor = sql_executor(src.query.application_context)
+    await new_sql_executor.init(src.args, "Initialization of process")
+
+    return new_sql_executor
+
+  async def receive_impacted_accounts(src_sql_executor, query, first_block, last_block):
+    _items = []
+
+    try:
+      logger.info("Receiving impacted accounts: from {} block to {} block".format(first_block, last_block))
+
+      new_sql_executor = sql_executor.get_new_instance(src_sql_executor)
+
+      _query = new_sql_executor.query.get_bodies.format(first_block, last_block)
+      _result = await new_sql_executor.perform_query_all(_query)
+
+      if not _result.empty():
+        logger.info("Found {} operations".format(_result.size()))
+        for _record in _result:
+          _items.append( account_op( int(_record[0]), str(_record[1]) ) )
+    except Exception as ex:
+      logger.error("Exception during processing `receive_impacted_accounts` method: {0}".format(ex))
+      raise ex
+
+    return _items
+
+class ah_loader(metaclass = singleton):
+
+  def __init__(self):
+    self.is_massive           = True
+    self.interrupted          = False
+
+    self.application_context  = "account_history"
+
+    self.accounts_queries     = [];
+    self.account_ops_queries  = []
+
+    self.account_cache        = {}
+
+    self.block_ranges         = deque()
+
+    self.finished             = False;
+
+    self.pool                 = None
+    self.queue                = None
+
+    self.sql_executor         = sql_executor(self.application_context)
+
+  def read_file(self, path):
+    with open(path, 'r') as file:
+      return file.read()
+    return ""
 
   async def import_accounts(self):
     if self.is_interrupted():
       return
 
-    _accounts = await self.perform_query_all(self.query.accounts)
+    _accounts = await self.sql_executor.perform_query_all(self.sql_executor.query.accounts)
 
     if _accounts is None:
       return
@@ -206,7 +245,7 @@ class ah_loader(metaclass = singleton):
     if self.is_interrupted():
       return
 
-    _account_ops = await self.perform_query_all(self.query.account_ops)
+    _account_ops = await self.sql_executor.perform_query_all(self.sql_executor.query.account_ops)
 
     if _account_ops is None:
       return
@@ -224,16 +263,13 @@ class ah_loader(metaclass = singleton):
     await self.import_account_operations()
 
   async def context_exists(self):
-    assert self.db is not None
-    return await self.perform_query_one(self.query.check_context)
+    return await self.sql_executor.perform_query_one(self.sql_executor.query.check_context)
 
   async def context_is_attached(self):
-    assert self.db is not None
-    return await self.perform_query_one(self.query.context_is_attached)
+    return await self.sql_executor.perform_query_one(self.sql_executor.query.context_is_attached)
 
   async def context_detached_get_block_num(self):
-    assert self.db is not None
-    _result = await self.perform_query_one(self.query.context_detached_get_block_num)
+    _result = await self.sql_executor.perform_query_one(self.sql_executor.query.context_detached_get_block_num)
     #Here is problem, when a value of `detached_block_num` == NULL
     #Issues 13,14 should be earlier solved
     if _result is None:
@@ -250,10 +286,10 @@ class ah_loader(metaclass = singleton):
       if last_block == 0:
         last_block = await self.context_detached_get_block_num()
 
-      _attach_context_query = self.query.attach_context.format(self.application_context, last_block)
-      await self.perform_query(_attach_context_query)
+      _attach_context_query = self.sql_executor.query.attach_context.format(self.application_context, last_block)
+      await self.sql_executor.perform_query(_attach_context_query)
     else:
-      await self.perform_query(self.query.detach_context)
+      await self.sql_executor.perform_query(self.sql_executor.query.detach_context)
 
   async def attach_context(self, last_block = 0):
     #True value of force_attach
@@ -271,7 +307,7 @@ class ah_loader(metaclass = singleton):
 
     if not found:
       self.account_cache[account_name] = account_info(_next_account_id, _op_cnt)
-      self.accounts_queries.append( self.query.insert_into_accounts[1].format(_next_account_id, account_name) )
+      self.accounts_queries.append( self.sql_executor.query.insert_into_accounts[1].format(_next_account_id, account_name) )
 
       account_info.next_account_id += 1
     else:
@@ -279,7 +315,7 @@ class ah_loader(metaclass = singleton):
       self.account_cache[account_name].operation_count += 1
       _op_cnt           = self.account_cache[account_name].operation_count
 
-    self.account_ops_queries.append( self.query.insert_into_account_ops[1].format(_next_account_id, _op_cnt, operation_id) )
+    self.account_ops_queries.append( self.sql_executor.query.insert_into_account_ops[1].format(_next_account_id, _op_cnt, operation_id) )
 
   async def execute_complex_query(queries, low, high, q_parts):
     if self.is_interrupted():
@@ -297,15 +333,13 @@ class ah_loader(metaclass = singleton):
 
     _total_query += q_parts[2]
 
-    await self.perform_query(_total_query)
+    await self.sql_executor.perform_query(_total_query)
 
-  async def init(self, _args):
+  async def init(self, args):
+    await self.sql_executor.init(args, "Initialization of database")
 
-    logger.info("initialization of database")
-
-    self.args = _args
-
-    self.db = await Db.create(self.args.url, self.args.nr_threads_receive + self.args.nr_threads_send + 1)
+    self.pool         = multiprocessing.Pool(processes = self.sql_executor.args.nr_threads_receive + self.sql_executor.args.nr_threads_send + 1)
+    self.queue        = multiprocessing.Manager().Queue(200)
 
   def interrupt(self):
     if not self.is_interrupted():
@@ -320,23 +354,23 @@ class ah_loader(metaclass = singleton):
 
     try:
       if not await self.context_exists():
-        tables_query    = self.read_file( self.args.schema_path + "/ah_schema_tables.sql" )
-        functions_query = self.read_file( self.args.schema_path + "/ah_schema_functions.sql" )
+        tables_query    = self.read_file( self.sql_executor.args.schema_path + "/ah_schema_tables.sql" )
+        functions_query = self.read_file( self.sql_executor.args.schema_path + "/ah_schema_functions.sql" )
 
         if self.is_interrupted():
           return
 
-        await self.perform_query(self.query.create_context)
+        await self.sql_executor.perform_query(self.sql_executor.query.create_context)
 
         if self.is_interrupted():
           return;
 
-        await self.perform_query(tables_query)
+        await self.sql_executor.perform_query(tables_query)
 
         if self.is_interrupted():
           return;
 
-        await self.perform_query(functions_query)
+        await self.sql_executor.perform_query(functions_query)
 
       await self.import_initial_data()
 
@@ -373,34 +407,15 @@ class ah_loader(metaclass = singleton):
 
     return ranges
 
-  async def receive_impacted_accounts(self, first_block, last_block):
-    _items = []
-
-    try:
-      logger.info("Receiving impacted accounts: from {} block to {} block".format(first_block, last_block))
-
-      _query = self.query.get_bodies.format(first_block, last_block)
-      _result = await self.perform_query_all(_query)
-
-      if not _result.empty():
-        logger.info("Found {} operations".format(_result.size()))
-        for _record in _result:
-          _items.append( account_op( int(_record[0]), str(_record[1]) ) )
-    except Exception as ex:
-      logger.error("Exception during processing `receive_impacted_accounts` method: {0}".format(ex))
-      raise ex
-
-    return _items
-
   def receive_data(self, first_block, last_block):
     try:
-      _ranges = self.prepare_ranges(first_block, last_block, self.args.nr_threads_receive)
+      _ranges = self.prepare_ranges(first_block, last_block, self.sql_executor.args.nr_threads_receive)
       assert len(_ranges) > 0
 
       _futures = []
 
       for range in _ranges:
-        _futures.append(self.pool.apply_async(self.receive_impacted_accounts, self, range.low, range.high))
+        _futures.append(self.pool.apply_async(self.receive_impacted_accounts, range.low, range.high))
 
       _elements = []
       for future in _futures:
@@ -435,7 +450,7 @@ class ah_loader(metaclass = singleton):
       self.receive_data( _item.low, _item.high )
 
       end = datetime.datetime.now()
-      logger.info("receive time[ms]: {}".format(self.get_time(start, end)))
+      logger.info("receive time[ms]: {}".format(helper.get_time(start, end)))
 
     self.finished = True
 
@@ -465,7 +480,7 @@ class ah_loader(metaclass = singleton):
 
     logger.info("INSERT INTO to `accounts`: {} records".format(accounts_queries.size()))
 
-    await self.execute_complex_query(self.accounts_queries, 0, self.accounts_queries.size() - 1, self.query.insert_into_accounts)
+    await self.execute_complex_query(self.accounts_queries, 0, self.accounts_queries.size() - 1, self.sql_executor.query.insert_into_accounts)
 
     self.accounts_queries.clear()
 
@@ -483,7 +498,7 @@ class ah_loader(metaclass = singleton):
       if len(self.account_ops_queries) == 0:
         logger.info("Lack of operations")
       else:
-        _ranges = self.prepare_ranges(0, self.account_ops_queries.size() - 1, self.args.nr_threads_send)
+        _ranges = self.prepare_ranges(0, self.account_ops_queries.size() - 1, self.sql_executor.args.nr_threads_send)
         assert len(_ranges) > 0
 
         for range in _ranges:
@@ -501,8 +516,8 @@ class ah_loader(metaclass = singleton):
     try:
       logger.info("Saving detached block number: {}".format(block_num))
 
-      _query = self.query.context_detached_save_block_num.format(self.query.application_context, block_num)
-      await self.perform_query(_query)
+      _query = self.sql_executor.query.context_detached_save_block_num.format(self.sql_executor.query.application_context, block_num)
+      await self.sql_executor.perform_query(_query)
     except Exception as ex:
       logger.error("Exception during processing `save_detached_block_num` method: {0}".format(ex))
       raise ex
@@ -527,7 +542,7 @@ class ah_loader(metaclass = singleton):
         await self.save_detached_block_num(_last_block_num)
 
       end = datetime.datetime.now()
-      logger.info("send time[ms]: {}".format(self.get_time(start, end)))
+      logger.info("send time[ms]: {}".format(helper.get_time(start, end)))
 
   def work(self):
     if self.is_interrupted():
@@ -549,7 +564,7 @@ class ah_loader(metaclass = singleton):
     _last_block = first_block;
 
     while _last_block != last_block:
-      _last_block = min(_last_block + self.args.flush_size, last_block)
+      _last_block = min(_last_block + self.sql_executor.args.flush_size, last_block)
       self.block_ranges.append(range_type(first_block, _last_block))
       first_block = _last_block + 1
 
@@ -562,7 +577,7 @@ class ah_loader(metaclass = singleton):
       _last_block  = 0
 
       await self.attach_context()
-      _range_blocks = await self.perform_query_all(self.query.next_block)
+      _range_blocks = await self.sql_executor.perform_query_all(self.sql_executor.query.next_block)
 
       if _range_blocks is not None and len(_range_blocks) > 0:
         assert len(_range_blocks) == 1
@@ -678,7 +693,7 @@ async def main():
       empty = await _loader.process()
 
       end = datetime.datetime.now()
-      logger.info("time[ms]: {}\n".format(_loader.get_time(start, end)))
+      logger.info("time[ms]: {}\n".format(helper.get_time(start, end)))
  
       _allow_close, cnt_empty_result = allow_close_app( empty, declared_empty_results, cnt_empty_result )
       if _allow_close:
