@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import Iterable, TYPE_CHECKING, Union
 
 from test_tools.private.user_handles.get_implementation import get_implementation
 from test_tools.wallet import Wallet
@@ -9,13 +9,13 @@ if TYPE_CHECKING:
 
 
 class WalletHandle:
-    def __init__(self, attach_to: Union[None, 'Node', 'RemoteNode'] = None):
+    def __init__(self, attach_to: Union[None, 'Node', 'RemoteNode'] = None, additional_arguments: Iterable = ()):
         # Break import-cycle
         from test_tools import RemoteNode  # pylint: disable=import-outside-toplevel
         if isinstance(attach_to, RemoteNode):
             attach_to = get_implementation(attach_to)
 
-        self.__implementation = Wallet(attach_to=attach_to)
+        self.__implementation = Wallet(attach_to=attach_to, additional_arguments=additional_arguments)
         self.api = self.__implementation.api
 
     def in_single_transaction(self, *, broadcast=None):

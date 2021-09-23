@@ -2,7 +2,7 @@ import re
 import shutil
 import signal
 import subprocess
-from typing import Union
+from typing import Iterable, Union
 import warnings
 
 from test_tools import communication, paths_to_executables
@@ -445,7 +445,7 @@ class Wallet(ScopedObject):
         def withdraw_vesting(self, from_, vesting_shares, broadcast=None):
             return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast)
 
-    def __init__(self, *, attach_to: Union[None, 'Node', 'RemoteNode']):
+    def __init__(self, *, attach_to: Union[None, 'Node', 'RemoteNode'], additional_arguments: Iterable = ()):
         super().__init__()
 
         self.api = Wallet.__Api(self)
@@ -467,6 +467,7 @@ class Wallet(ScopedObject):
         self.stdout_file = None
         self.stderr_file = None
         self.process = None
+        self.additional_arguments = list(additional_arguments)
         self.logger = logger.create_child_logger(self.name)
 
         self.run(timeout=15)
@@ -498,6 +499,11 @@ class Wallet(ScopedObject):
         return False
 
     def run(self, timeout):
+        run_parameters = [
+            '-d',
+            '--rpc-http-allowip=127.0.0.1',
+        ]
+
         if not self.executable_file_path:
             self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
 
@@ -509,6 +515,8 @@ class Wallet(ScopedObject):
 
         if not self.http_server_port:
             self.http_server_port = 0
+
+        run_parameters.extend(['-H', f'0.0.0.0:{self.http_server_port}'])
 
         shutil.rmtree(self.directory, ignore_errors=True)
         self.directory.mkdir(parents=True)
@@ -527,15 +535,15 @@ class Wallet(ScopedObject):
             timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
         )
 
+        run_parameters.extend(['-s', f'ws://{self.connected_node.get_ws_endpoint()}'])
+        run_parameters.extend(self.additional_arguments)
+
         # pylint: disable=consider-using-with
         # Process created here have to exist longer than current scope
         self.process = subprocess.Popen(
             [
                 str(self.executable_file_path),
-                '-s', f'ws://{self.connected_node.get_ws_endpoint()}',
-                '-d',
-                '-H', f'0.0.0.0:{self.http_server_port}',
-                '--rpc-http-allowip=127.0.0.1'
+                *run_parameters,
             ],
             cwd=self.directory,
             stdout=self.stdout_file,
