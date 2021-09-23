@@ -31,7 +31,6 @@ private:
   TRIGGERRED_FUNCTION m_triggered_function;
   std::unordered_map< BLOCK_NUM, NUMBER_OF_COMPLETED_THREADS > m_completed_threads;
   std::mutex m_mutex;
-  BLOCK_NUM m_already_commited_blocks = 0;
 };
 
 } // namespace hive::plugins::sql_serializer
