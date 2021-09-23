@@ -352,7 +352,6 @@ struct api_commment_cashout_info
 
   int32_t        net_votes = 0;
 
-  time_point_sec active;
   time_point_sec last_payout;
   time_point_sec cashout_time;
   time_point_sec max_cashout_time;
@@ -380,7 +379,6 @@ struct api_comment_object
       curator_payout_value    = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->get_net_votes();
-      active                  = cc->get_last_activity_time();
       last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
       children                = cc->get_number_of_replies();
       net_rshares             = cc->get_net_rshares();
@@ -388,7 +386,7 @@ struct api_comment_object
       vote_rshares            = cc->get_vote_rshares();
       children_abs_rshares    = 0; // value not accumulated after HF17
       created                 = cc->get_creation_time();
-      last_update             = active;
+      last_update             = created; // edit time not available here (Hivemind has it)
       cashout_time            = cc->get_cashout_time();
       max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
       max_accepted_payout     = cc->get_max_accepted_payout();
@@ -420,7 +418,6 @@ struct api_comment_object
   string            json_metadata;
   time_point_sec    last_update;
   time_point_sec    created;
-  time_point_sec    active;
   time_point_sec    last_payout;
 
   uint8_t           depth = 0;
@@ -1078,7 +1075,6 @@ FC_REFLECT(hive::plugins::database_api::api_commment_cashout_info,
 
   (net_votes)
 
-  (active)
   (last_payout)
   (cashout_time)
   (max_cashout_time)
@@ -1159,7 +1155,7 @@ FC_REFLECT( hive::plugins::database_api::api_change_recovery_account_request_obj
 FC_REFLECT( hive::plugins::database_api::api_comment_object,
           (id)(author)(permlink)
           (category)(parent_author)(parent_permlink)
-          (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
+          (title)(body)(json_metadata)(last_update)(created)(last_payout)
           (depth)(children)
           (net_rshares)(abs_rshares)(vote_rshares)
           (children_abs_rshares)(cashout_time)(max_cashout_time)

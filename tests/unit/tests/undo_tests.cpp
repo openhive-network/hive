@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     co.create( fake_account_object, "11", fake_parent_comment );
     const comment_object& objc1 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
-    co_cashout.modify( objc1_cashout, [&]( comment_cashout_object& obj ){ obj.on_edit( time_point_sec( 21 ) ); } );
+    co_cashout.modify( objc1_cashout, [&]( comment_cashout_object& obj ){} );
     BOOST_REQUIRE( old_size_co + 2 == co.size< comment_index >() );
     BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
 
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
     BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
 
-    co_cashout.modify( objc2_cashout, [&]( comment_cashout_object& obj ){ obj.on_edit( time_point_sec( 21 ) ); } );
+    co_cashout.modify( objc2_cashout, [&]( comment_cashout_object& obj ){} );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
     BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 
     for( int32_t i=1; i<=5; ++i )
     {
-      co_cashout.modify( co1_cashout, [&]( comment_cashout_object& obj ){ obj.on_edit( time_point_sec( 21 ) ); } );
+      co_cashout.modify( co1_cashout, [&]( comment_cashout_object& obj ){} );
       ao.modify( ao1, [&]( account_object& obj ){ obj.name = std::to_string(0); } );
 
       BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );

@@ -27,25 +27,6 @@ using namespace chain;
 
 namespace detail{ class condenser_api_impl; }
 
-struct discussion_index
-{
-  string           category;         /// category by which everything is filtered
-  vector< string > trending;         /// trending posts over the last 24 hours
-  vector< string > payout;           /// pending posts by payout
-  vector< string > payout_comments;  /// pending comments by payout
-  vector< string > trending30;       /// pending lifetime payout
-  vector< string > created;          /// creation date
-  vector< string > responses;        /// creation date
-  vector< string > updated;          /// creation date
-  vector< string > active;           /// last update or reply
-  vector< string > votes;            /// last update or reply
-  vector< string > cashout;          /// last update or reply
-  vector< string > maturing;         /// about to be paid out
-  vector< string > best;             /// total lifetime payout
-  vector< string > hot;              /// total lifetime payout
-  vector< string > promoted;         /// pending lifetime payout
-};
-
 struct api_limit_order_object
 {
   api_limit_order_object( const limit_order_object& o ) :
@@ -694,11 +675,6 @@ struct api_proposal_object
   uint64_t          total_votes = 0;
 };
 
-struct tag_index
-{
-  vector< tags::tag_name_type > trending; /// pending payouts
-};
-
 struct api_tag_object
 {
   api_tag_object( const tags::api_tag_object& o ) :
@@ -717,29 +693,6 @@ struct api_tag_object
   uint32_t             top_posts = 0;
   uint32_t             comments = 0;
   fc::uint128          trending = 0;
-};
-
-struct state
-{
-  string                                             current_route;
-
-  extended_dynamic_global_properties                 props;
-
-  tag_index                                          tag_idx;
-
-  /**
-    * "" is the global tags::discussion_ index
-    */
-  map< string, discussion_index >                    discussion_idx;
-
-  map< string, api_tag_object >                      tags;
-
-  map< string, extended_account >                    accounts;
-
-  map< string, api_witness_object >                  witnesses;
-  api_witness_schedule_object                        witness_schedule;
-  legacy_price                                       feed_price;
-  string                                             error;
 };
 
 struct scheduled_hardfork
@@ -866,7 +819,7 @@ typedef return_type api_name ## _return;
 
 /*               API,                                    args,                return */
 DEFINE_API_ARGS( get_trending_tags,                      vector< variant >,   vector< api_tag_object > )
-DEFINE_API_ARGS( get_state,                              vector< variant >,   state )
+DEFINE_API_ARGS( get_state,                              vector< variant >,   bool ) //deprecated - placeholder
 DEFINE_API_ARGS( get_active_witnesses,                   vector< variant >,   vector< account_name_type > )
 DEFINE_API_ARGS( get_block_header,                       vector< variant >,   optional< block_header > )
 DEFINE_API_ARGS( get_block,                              vector< variant >,   optional< legacy_signed_block > )
@@ -1064,14 +1017,8 @@ public:
 
 } } } // hive::plugins::condenser_api
 
-FC_REFLECT( hive::plugins::condenser_api::discussion_index,
-        (category)(trending)(payout)(payout_comments)(trending30)(updated)(created)(responses)(active)(votes)(maturing)(best)(hot)(promoted)(cashout) )
-
 FC_REFLECT( hive::plugins::condenser_api::api_tag_object,
         (name)(total_payouts)(net_votes)(top_posts)(comments)(trending) )
-
-FC_REFLECT( hive::plugins::condenser_api::state,
-        (current_route)(props)(tag_idx)(tags)(accounts)(witnesses)(discussion_idx)(witness_schedule)(feed_price)(error) )
 
 FC_REFLECT( hive::plugins::condenser_api::api_limit_order_object,
         (id)(created)(expiration)(seller)(orderid)(for_sale)(sell_price)(real_price)(rewarded) )
@@ -1211,8 +1158,6 @@ FC_REFLECT( hive::plugins::condenser_api::scheduled_hardfork,
 
 FC_REFLECT( hive::plugins::condenser_api::account_vote,
         (authorperm)(weight)(rshares)(percent)(time) )
-
-FC_REFLECT( hive::plugins::condenser_api::tag_index, (trending) )
 
 FC_REFLECT( hive::plugins::condenser_api::broadcast_transaction_synchronous_return,
         (id)(block_num)(trx_num)(expired) )
