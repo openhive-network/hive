@@ -199,7 +199,7 @@ namespace detail
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_state ){
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_active_witnesses )

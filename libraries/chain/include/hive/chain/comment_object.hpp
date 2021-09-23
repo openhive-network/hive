@@ -114,8 +114,8 @@ namespace hive { namespace chain {
         const comment_object& _comment, const account_object& _author, const std::string& _permlink,
         const time_point_sec& _creation_time, const time_point_sec& _cashout_time )
       : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
-        author_id( _author.get_id() ), permlink( a ), active( _creation_time ),
-        created( _creation_time ), cashout_time( _cashout_time ), beneficiaries( a )
+        author_id( _author.get_id() ), permlink( a ), created( _creation_time ),
+        cashout_time( _cashout_time ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
         , allowed_vote_assets( a )
 #endif
@@ -147,8 +147,6 @@ namespace hive { namespace chain {
       time_point_sec get_creation_time() const { return created; }
       //returns time of next cashout (since HF17 there is only one cashout)
       time_point_sec get_cashout_time() const { return cashout_time; }
-      //returns time of last reply (or its deletion, creation time if no replies)
-      time_point_sec get_last_activity_time() const { return active; }
 
       //returns max payout configured for related comment
       const HBD_asset& get_max_accepted_payout() const { return max_accepted_payout; }
@@ -206,16 +204,10 @@ namespace hive { namespace chain {
       //called on reply (including deleting of existing one)
       void on_reply( const time_point_sec& _reply_time, bool _deleting = false )
       {
-        active = _reply_time;
         if( _deleting )
           --children;
         else
           ++children;
-      }
-      //called when comment is edited
-      void on_edit( const time_point_sec& _edit_time )
-      {
-        active = _edit_time;
       }
       //called when related comment is paid
       void on_payout()
@@ -235,21 +227,20 @@ namespace hive { namespace chain {
       account_id_type   author_id;
       shared_string     permlink;
 
-      time_point_sec    active; // only used by APIs (rules for that value are very different in Hivemind)
-      int32_t           net_votes = 0; // only used by APIs
-
       share_type        net_rshares; // sum of all rshares from votes. Influences comment weight and therefore reward payout
       share_type        vote_rshares; // sum of all rshares from new upvotes. Influences vote weights and therefore allotment of curation rewards
 
+      uint64_t          total_vote_weight = 0; /// the total weight of voting rewards, used to calculate pro-rata share of curation payouts
+
+      HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL ); /// HBD value of the maximum payout this post will receive
+
+      int32_t           net_votes = 0; // only used by APIs
       uint32_t          children = 0; // tracks number of direct replies
 
       time_point_sec    created;
       time_point_sec    cashout_time; // since HF17 it is 7 days after creation time, earlier rules were more complex
 
       uint16_t          percent_hbd = HIVE_100_PERCENT; /// the percent of HBD to key, unkept amounts will be received as VESTS
-      uint64_t          total_vote_weight = 0; /// the total weight of voting rewards, used to calculate pro-rata share of curation payouts
-
-      HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL ); /// HBD value of the maximum payout this post will receive
 
       bool              allow_votes = true;
       bool              allow_curation_rewards = true;
@@ -505,11 +496,12 @@ FC_REFLECT( hive::chain::comment_cashout_object::stored_beneficiary_route_type,
 
 FC_REFLECT( hive::chain::comment_cashout_object,
           (id)(author_id)(permlink)
-          (active)(net_votes)
           (net_rshares)(vote_rshares)
-          (children)(created)(cashout_time)
-          (percent_hbd)(total_vote_weight)
-          (max_accepted_payout)(allow_votes)(allow_curation_rewards)(was_voted_on)
+          (total_vote_weight)(max_accepted_payout)
+          (net_votes)(children)
+          (created)(cashout_time)
+          (percent_hbd)
+          (allow_votes)(allow_curation_rewards)(was_voted_on)
           (beneficiaries)
 #ifdef HIVE_ENABLE_SMT
           (allowed_vote_assets)
