@@ -879,7 +879,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
   else // start edit case
   {
     const auto& comment = *itr;
-    const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
@@ -888,6 +887,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
     {
+      const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
       FC_ASSERT( comment_cashout, "Comment cashout object must exist" );
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__306 ) )
         FC_ASSERT( _db.calculate_discussion_payout_time( comment, *comment_cashout ) != fc::time_point_sec::maximum(), "The comment is archived." );
@@ -907,14 +907,6 @@ void comment_evaluator::do_apply( const comment_operation& o )
       //both happened prior to HF21 when check was slightly more relaxed
       auto& parent_comment = _db.get_comment( o.parent_author, o.parent_permlink );
       FC_ASSERT( comment.get_parent_id() == parent_comment.get_id(), "The parent of a comment cannot change." );
-    }
-
-    if( comment_cashout )
-    {
-      _db.modify( *comment_cashout, [&]( comment_cashout_object& com )
-      {
-        com.on_edit( _now );
-      });
     }
 
     _db.modify( auth, [&]( account_object& a )

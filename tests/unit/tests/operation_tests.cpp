@@ -488,7 +488,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_CHECK_EQUAL( alice_comment_cashout->get_author_id(), get_account_id( op.author ) );
     BOOST_CHECK_EQUAL( to_string( alice_comment_cashout->get_permlink() ), "lorem" );
     BOOST_REQUIRE( alice_comment.is_root() );
-    BOOST_REQUIRE( alice_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( alice_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == 0 );
     BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
@@ -525,7 +524,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_CHECK_EQUAL( bob_comment_cashout->get_author_id(), get_account_id( "bob" ) );
     BOOST_CHECK_EQUAL( to_string( bob_comment_cashout->get_permlink() ), "ipsum" );
     BOOST_REQUIRE( bob_comment.get_parent_id() == alice_comment.get_id() );
-    BOOST_REQUIRE( bob_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( bob_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == 0 );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -553,7 +551,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_CHECK_EQUAL( sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
     BOOST_CHECK_EQUAL( to_string( sam_comment_cashout->get_permlink() ), "dolor" );
     BOOST_REQUIRE( sam_comment.get_parent_id() == bob_comment.get_id() );
-    BOOST_REQUIRE( sam_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( sam_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( sam_comment_cashout->get_net_rshares() == 0 );
     BOOST_REQUIRE( sam_comment_cashout->get_cashout_time() == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -598,7 +595,6 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
     BOOST_CHECK_EQUAL( to_string( mod_sam_comment_cashout->get_permlink() ), "dolor" );
     BOOST_REQUIRE( mod_sam_comment.get_parent_id() == mod_bob_comment.get_id() );
-    BOOST_REQUIRE( mod_sam_comment_cashout->get_last_activity_time() == db->head_block_time() );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_creation_time() == created );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_cashout_time() == mod_sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     validate_database();

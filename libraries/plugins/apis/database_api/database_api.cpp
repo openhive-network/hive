@@ -25,7 +25,6 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
   curator_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
   author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
   net_votes = cc.get_net_votes();
-  active = cc.get_last_activity_time();
   last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist after HF19
   net_rshares = cc.get_net_rshares();
   abs_rshares = 0; // value was only used for comments created before HF6 (and to recognize that there are votes)
