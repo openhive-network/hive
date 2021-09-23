@@ -1,4 +1,4 @@
-from test_tools import logger
+from test_tools import logger, Wallet
 
 
 def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
@@ -28,10 +28,10 @@ def check_account_history_duplicates(node, wallet):
 def assert_no_duplicates(node, *nodes):
     nodes = [node, *nodes]
     for node in nodes:
-        wallet = node.attach_wallet()
+        wallet = Wallet(attach_to=node)
         check_account_history_duplicates(node, wallet)
     node.wait_number_of_blocks(10)
     for node in nodes:
-        wallet = node.attach_wallet()
+        wallet = Wallet(attach_to=node)
         check_account_history_duplicates(node, wallet)
     logger.info("No there are no duplicates in account_history.get_ops_in_block...")
