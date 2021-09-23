@@ -507,11 +507,11 @@ class Wallet(ScopedObject):
         if not self.executable_file_path:
             self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
 
-        if self.connected_node:
+        if self.__is_online():
             if not self.connected_node.is_running():
                 raise NodeIsNotRunning('Before attaching wallet you have to run node')
         else:
-            raise Exception('Server websocket RPC endpoint not set, use Wallet.connect_to method')
+            run_parameters.append('--offline')
 
         if not self.http_server_port:
             self.http_server_port = 0
@@ -526,16 +526,18 @@ class Wallet(ScopedObject):
         self.stdout_file = open(self.get_stdout_file_path(), 'w')
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
-        if not self.connected_node.is_ws_listening():
-            self.logger.info(f'Waiting for node {self.connected_node} to listen...')
+        if self.__is_online():
+            if not self.connected_node.is_ws_listening():
+                self.logger.info(f'Waiting for node {self.connected_node} to listen...')
 
-        timeout -= wait_for(
-            self.connected_node.is_ws_listening,
-            timeout=timeout,
-            timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
-        )
+            timeout -= wait_for(
+                self.connected_node.is_ws_listening,
+                timeout=timeout,
+                timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
+            )
 
-        run_parameters.extend([f'--server-rpc-endpoint=ws://{self.connected_node.get_ws_endpoint()}'])
+            run_parameters.extend([f'--server-rpc-endpoint=ws://{self.connected_node.get_ws_endpoint()}'])
+
         run_parameters.extend(self.additional_arguments)
 
         # pylint: disable=consider-using-with
@@ -560,18 +562,23 @@ class Wallet(ScopedObject):
         endpoint = self.__get_http_server_endpoint()
         self.http_server_port = endpoint.split(':')[1]
 
-        timeout -= wait_for(
-            self.__is_communication_established,
-            timeout=timeout,
-            timeout_error_message=f'Problem with starting wallet. See {self.get_stderr_file_path()} for more details.'
-        )
+        if self.__is_online():
+            timeout -= wait_for(
+                self.__is_communication_established,
+                timeout=timeout,
+                timeout_error_message=f'Problem with starting wallet. '
+                                      f'See {self.get_stderr_file_path()} for more details.'
+            )
 
         password = 'password'
         self.api.set_password(password)
         self.api.unlock(password)
         self.api.import_key(Account('initminer').private_key)
 
-        self.logger.info(f'Started, listening on {endpoint}')
+        self.logger.info(f'Started{"" if self.__is_online() else " in offline mode"}, listening on {endpoint}')
+
+    def __is_online(self) -> bool:
+        return self.connected_node is not None
 
     def __is_communication_established(self):
         try:

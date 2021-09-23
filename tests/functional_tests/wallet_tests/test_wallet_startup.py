@@ -27,3 +27,7 @@ def test_attaching_wallet_to_not_run_node(world):
 
     with pytest.raises(NodeIsNotRunning):
         Wallet(attach_to=node)
+
+
+def test_offline_mode_startup():
+    Wallet()
