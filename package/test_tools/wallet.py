@@ -500,7 +500,7 @@ class Wallet(ScopedObject):
 
     def run(self, timeout):
         run_parameters = [
-            '-d',
+            '--daemon',
             '--rpc-http-allowip=127.0.0.1',
         ]
 
@@ -516,7 +516,7 @@ class Wallet(ScopedObject):
         if not self.http_server_port:
             self.http_server_port = 0
 
-        run_parameters.extend(['-H', f'0.0.0.0:{self.http_server_port}'])
+        run_parameters.extend([f'--rpc-http-endpoint=0.0.0.0:{self.http_server_port}'])
 
         shutil.rmtree(self.directory, ignore_errors=True)
         self.directory.mkdir(parents=True)
@@ -535,7 +535,7 @@ class Wallet(ScopedObject):
             timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
         )
 
-        run_parameters.extend(['-s', f'ws://{self.connected_node.get_ws_endpoint()}'])
+        run_parameters.extend([f'--server-rpc-endpoint=ws://{self.connected_node.get_ws_endpoint()}'])
         run_parameters.extend(self.additional_arguments)
 
         # pylint: disable=consider-using-with
