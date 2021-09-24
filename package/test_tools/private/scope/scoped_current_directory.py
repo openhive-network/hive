@@ -29,7 +29,8 @@ class ScopedCurrentDirectory(ScopedObject):
         self.__path.mkdir(parents=True, exist_ok=True)
 
     def __remove_directory_if_empty(self):
-        try:
+        if self.__is_empty():
             self.__path.rmdir()
-        except OSError as error:
-            assert error.errno == 39  # Directory is not empty
+
+    def __is_empty(self):
+        return not any(self.__path.iterdir())
