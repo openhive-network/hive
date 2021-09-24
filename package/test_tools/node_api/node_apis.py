@@ -5,7 +5,6 @@ from test_tools.node_api.bridge_api import BridgeApi
 from test_tools.node_api.condenser_api import CondenserApi
 from test_tools.node_api.database_api import DatabaseApi
 from test_tools.node_api.debug_node_api import DebugNodeApi
-from test_tools.node_api.follow_api import FollowApi
 from test_tools.node_api.jsonrpc_api import JsonrpcApi
 from test_tools.node_api.market_history_api import MarketHistoryApi
 from test_tools.node_api.network_broadcast_api import NetworkBroadcastApi
@@ -13,7 +12,6 @@ from test_tools.node_api.network_node_api import NetworkNodeApi
 from test_tools.node_api.rc_api import RcApi
 from test_tools.node_api.reputation_api import ReputationApi
 from test_tools.node_api.rewards_api import RewardsApi
-from test_tools.node_api.tags_api import TagsApi
 from test_tools.node_api.transaction_status_api import TransactionStatusApi
 from test_tools.node_api.witness_api import WitnessApi
 
@@ -32,7 +30,6 @@ class Apis:
         self.condenser = CondenserApi(self.__node)
         self.database = DatabaseApi(self.__node)
         self.debug_node = DebugNodeApi(self.__node)
-        self.follow = FollowApi(self.__node)
         self.jsonrpc = JsonrpcApi(self.__node)
         self.market_history = MarketHistoryApi(self.__node)
         self.network_broadcast = NetworkBroadcastApi(self.__node)
@@ -40,6 +37,5 @@ class Apis:
         self.rc = RcApi(self.__node)  # pylint: disable=invalid-name
         self.reputation = ReputationApi(self.__node)
         self.rewards = RewardsApi(self.__node)
-        self.tags = TagsApi(self.__node)
         self.transaction_status = TransactionStatusApi(self.__node)
         self.witness = WitnessApi(self.__node)
