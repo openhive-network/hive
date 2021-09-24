@@ -31,14 +31,14 @@ PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_RO
 ### Easy testnet creation
 You can run testnet with node configured for blocks production and attached wallet with such simple script:
 ```python
-from test_tools import World
+from test_tools import Wallet, World
 
 if __name__ == '__main__':
     with World() as world:
         node = world.create_init_node()
         node.run()
 
-        wallet = node.attach_wallet()
+        wallet = Wallet(attach_to=node)
 ```
 
 ### Node and wallet APIs
