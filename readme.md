@@ -148,8 +148,3 @@ with wallet.in_single_transaction() as transaction:
 
 response = transaction.get_response()
 ```
-
-### Features waiting for description
-- Logger
-- Network
-- MainNet
