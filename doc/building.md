@@ -52,25 +52,10 @@ will build out of the box without further effort:
         doxygen \
         libncurses5-dev \
         libreadline-dev \
+        libboost-all-dev \
         perl \
         python3 \
         python3-jinja2
-
-    # Boost packages (also required)
-    sudo apt-get install -y \
-        libboost-chrono-dev \
-        libboost-context-dev \
-        libboost-coroutine-dev \
-        libboost-date-time-dev \
-        libboost-filesystem-dev \
-        libboost-iostreams-dev \
-        libboost-locale-dev \
-        libboost-program-options-dev \
-        libboost-serialization-dev \
-        libboost-signals-dev \
-        libboost-system-dev \
-        libboost-test-dev \
-        libboost-thread-dev
 
     git clone https://github.com/openhive-network/hive
     cd hive
@@ -84,9 +69,6 @@ will build out of the box without further effort:
     make install  # defaults to /usr/local
 
 If at any time you find this documentation not up to date or unprecise, please take a look at CI/CD scripts.
-
-Known issues:
-In Ubuntu 20.04 there's no longer `libboost-signals-dev` available. Removing it shouldn't be a problem because other boost libs depends on `libboost-dev` anyway (which includes signals2).
 
 ## Building on macOS X
 
