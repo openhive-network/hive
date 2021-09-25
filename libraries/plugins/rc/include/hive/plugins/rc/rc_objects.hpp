@@ -3,6 +3,7 @@
 
 #include <hive/plugins/rc/rc_utility.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
+#include <hive/chain/database.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 
@@ -16,6 +17,7 @@ namespace hive { namespace plugins { namespace rc {
 
 using namespace std;
 using namespace hive::chain;
+using hive::protocol::asset;
 
 #ifndef HIVE_RC_SPACE_ID
 #define HIVE_RC_SPACE_ID 16
@@ -29,9 +31,7 @@ enum rc_object_types
   rc_resource_param_object_type   = ( HIVE_RC_SPACE_ID << 8 ),
   rc_pool_object_type             = ( HIVE_RC_SPACE_ID << 8 ) + 1,
   rc_account_object_type          = ( HIVE_RC_SPACE_ID << 8 ) + 2,
-  rc_delegation_pool_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 3,
-  rc_indel_edge_object_type       = ( HIVE_RC_SPACE_ID << 8 ) + 4,
-  rc_outdel_drc_edge_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 5
+  rc_direct_delegation_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 3
 };
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
@@ -62,72 +62,37 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_account_object )
 
-    account_name_type     account;
+    account_name_type            account;
     hive::chain::util::manabar   rc_manabar;
-    asset                 max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
+    asset                        max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
 
     // This is used for bug-catching, to match that the vesting shares in a
     // pre-op are equal to what they were at the last post-op.
-    int64_t               last_max_rc = 0;
-};
+    int64_t                      last_max_rc = 0;
 
-/**
-  * Represents a delegation pool.
-  */
-class rc_delegation_pool_object : public object< rc_delegation_pool_object_type, rc_delegation_pool_object >
+    uint64_t                     delegated_rc = 0;
+    uint64_t                     received_delegated_rc = 0;
+};
+typedef oid_ref< rc_account_object > rc_account_id_type;
+
+
+class rc_direct_delegation_object : public object< rc_direct_delegation_object_type, rc_direct_delegation_object >
 {
-  CHAINBASE_OBJECT( rc_delegation_pool_object );
+  CHAINBASE_OBJECT( rc_direct_delegation_object );
   public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( rc_delegation_pool_object )
+    template< typename Allocator >
+    rc_direct_delegation_object( allocator< Allocator > a, uint64_t _id,
+    const account_id_type& _from, const account_id_type& _to, const uint64_t& _delegated_rc)
+    : id( _id ), from(_from), to(_to), delegated_rc(_delegated_rc) {}
 
-    account_name_type             account;
-    hive::chain::util::manabar   rc_pool_manabar;
+    account_id_type from;
+    account_id_type to;
+    uint64_t        delegated_rc = 0;
+  CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
 
-/**
-  * Represents a delegation from a user to a pool.
-  */
-class rc_indel_edge_object : public object< rc_indel_edge_object_type, rc_indel_edge_object >
-{
-  CHAINBASE_OBJECT( rc_indel_edge_object );
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( rc_indel_edge_object )
-
-    account_name_type             from_account;
-    account_name_type             to_pool;
-    share_type                    amount;
-};
-
-/**
-  * Represents a delegation from a pool to a user based on delegated resource credits (DRC).
-  *
-  * In the case of a pool that is not under heavy load, DRC:RC has a 1:1 exchange rate.
-  *
-  * However, if the pool drops below HIVE_RC_DRC_FLOAT_LEVEL, DRC:RC exchange rate starts
-  * to rise according to `f(x) = 1/(a+b*x)` where `x` is the pool level, and coefficients `a`,
-  * `b` are set such that `f(HIVE_RC_DRC_FLOAT_LEVEL) = 1` and `f(0) = HIVE_RC_MAX_DRC_RATE`.
-  *
-  * This ensures the limited RC of oversubscribed pools under heavy load are
-  * shared "fairly" among their users proportionally to DRC.  This logic
-  * provides a smooth transition between the "fiat regime" (i.e. DRC represent
-  * a direct allocation of RC) and the "proportional regime" (i.e. DRC represent
-  * the fraction of RC that the user is allowed).
-  */
-class rc_outdel_drc_edge_object : public object< rc_outdel_drc_edge_object_type, rc_outdel_drc_edge_object >
-{
-  CHAINBASE_OBJECT( rc_outdel_drc_edge_object );
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( rc_outdel_drc_edge_object )
-
-    account_name_type             from_pool;
-    account_name_type             to_account;
-    hive::chain::util::manabar    drc_manabar;
-    int64_t                       drc_max_mana = 0;
-};
-
-int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account );
-
-struct by_edge;
+int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool add_received_delegated_rc = true );
+void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object* account, uint32_t now, uint64_t delta);
 
 typedef multi_index_container<
   rc_resource_param_object,
@@ -158,45 +123,22 @@ typedef multi_index_container<
   allocator< rc_account_object >
 > rc_account_index;
 
-typedef multi_index_container<
-  rc_delegation_pool_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< rc_delegation_pool_object, rc_delegation_pool_object::id_type, &rc_delegation_pool_object::get_id > >,
-    ordered_unique< tag< by_account >, member< rc_delegation_pool_object, account_name_type, &rc_delegation_pool_object::account > >
-  >,
-  allocator< rc_delegation_pool_object >
-> rc_delegation_pool_index;
+struct by_from_to;
 
 typedef multi_index_container<
-  rc_indel_edge_object,
+  rc_direct_delegation_object,
   indexed_by<
     ordered_unique< tag< by_id >,
-      const_mem_fun< rc_indel_edge_object, rc_indel_edge_object::id_type, &rc_indel_edge_object::get_id > >,
-    ordered_unique< tag< by_edge >,
-        composite_key< rc_indel_edge_object,
-          member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::from_account >,
-          member< rc_indel_edge_object, account_name_type, &rc_indel_edge_object::to_pool >
-        >
+      const_mem_fun< rc_direct_delegation_object, rc_direct_delegation_object::id_type, &rc_direct_delegation_object::get_id > >,
+    ordered_unique< tag< by_from_to >,
+      composite_key< rc_direct_delegation_object,
+        member< rc_direct_delegation_object, account_id_type, &rc_direct_delegation_object::from >,
+        member< rc_direct_delegation_object, account_id_type, &rc_direct_delegation_object::to >
+      >
     >
   >,
-  allocator< rc_indel_edge_object >
-> rc_indel_edge_index;
-
-typedef multi_index_container<
-  rc_outdel_drc_edge_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< rc_outdel_drc_edge_object, rc_outdel_drc_edge_object::id_type, &rc_outdel_drc_edge_object::get_id > >,
-    ordered_unique< tag< by_edge >,
-        composite_key< rc_outdel_drc_edge_object,
-          member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::from_pool >,
-          member< rc_outdel_drc_edge_object, account_name_type, &rc_outdel_drc_edge_object::to_account >
-        >
-    >
-  >,
-  allocator< rc_outdel_drc_edge_object >
-> rc_outdel_drc_edge_index;
+  allocator< rc_direct_delegation_object >
+> rc_direct_delegation_object_index;
 
 } } } // hive::plugins::rc
 
@@ -212,29 +154,15 @@ FC_REFLECT( hive::plugins::rc::rc_account_object,
   (rc_manabar)
   (max_rc_creation_adjustment)
   (last_max_rc)
+  (delegated_rc)
+  (received_delegated_rc)
   )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_account_object, hive::plugins::rc::rc_account_index )
 
-FC_REFLECT( hive::plugins::rc::rc_delegation_pool_object,
+FC_REFLECT( hive::plugins::rc::rc_direct_delegation_object,
   (id)
-  (account)
-  (rc_pool_manabar)
+  (from)
+  (to)
   )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_delegation_pool_object, hive::plugins::rc::rc_delegation_pool_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_direct_delegation_object, hive::plugins::rc::rc_direct_delegation_object_index )
 
-FC_REFLECT( hive::plugins::rc::rc_indel_edge_object,
-  (id)
-  (from_account)
-  (to_pool)
-  (amount)
-  )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_indel_edge_object, hive::plugins::rc::rc_indel_edge_index )
-
-FC_REFLECT( hive::plugins::rc::rc_outdel_drc_edge_object,
-  (id)
-  (from_pool)
-  (to_account)
-  (drc_manabar)
-  (drc_max_mana)
-  )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_outdel_drc_edge_object, hive::plugins::rc::rc_outdel_drc_edge_index )

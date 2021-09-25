@@ -35,6 +35,11 @@ public:
     return oid<T>(std::numeric_limits<__id_type>::max());
   }
 
+  static oid<T> start_id() noexcept
+  {
+    return oid<T>(std::numeric_limits<__id_type>::min());
+  }
+
   bool operator < (const oid & rhs) const { return _id < rhs._id; }
   bool operator > (const oid& rhs) const { return _id > rhs._id; }
   bool operator == (const oid& rhs) const { return _id == rhs._id; }
