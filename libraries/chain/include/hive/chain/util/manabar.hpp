@@ -10,6 +10,8 @@
 
 namespace hive { namespace chain { namespace util {
 
+using fc::uint128_t;
+
 struct manabar_params
 {
   int64_t    max_mana         = 0;

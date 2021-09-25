@@ -12,6 +12,9 @@
 
 #include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -1084,7 +1087,7 @@ vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, 
   result.reserve(accounts.size());
   for (const auto& acc : accounts)
     result.push_back(acc);
-  
+
   result.shrink_to_fit();
   return result;
 }
@@ -2883,6 +2886,55 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
 serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers(const account_name_type& from)
 {
   return { my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK ) };
+}
+
+condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
+            account_name_type from,
+            account_name_type to,
+            uint64_t max_rc,
+            bool broadcast )
+{
+  using namespace plugins::rc;
+  FC_ASSERT( !is_locked() );
+
+  delegate_rc_operation dro;
+  dro.from    = from;
+  dro.to      = to;
+  dro.max_rc  = max_rc;
+
+  custom_json_operation op;
+  op.json = fc::json::to_string( rc_plugin_operation( dro ) );
+  op.id = HIVE_RC_PLUGIN_NAME;
+
+  flat_set< account_name_type > required_auths;
+  dro.get_required_posting_authorities( required_auths );
+  op.required_posting_auths = required_auths;
+
+  signed_transaction trx;
+  trx.operations.push_back( op );
+  trx.validate();
+  return my->sign_transaction( trx, broadcast );
+}
+
+vector< rc::rc_account_api_object > wallet_api::find_rc_accounts( vector< account_name_type > accounts )
+{
+  return my->_remote_api->find_rc_accounts( accounts );
+}
+
+vector< rc::rc_account_api_object > wallet_api::list_rc_accounts(
+            account_name_type account,
+            uint32_t limit,
+            rc::sort_order_type order )
+{
+  return my->_remote_api->list_rc_accounts( account, limit, order );
+}
+
+vector< rc::rc_direct_delegation_api_object > wallet_api::list_rc_direct_delegations(
+            fc::variant start,
+            uint32_t limit,
+            rc::sort_order_type order )
+{
+  return my->_remote_api->list_rc_direct_delegations( start, limit, order );
 }
 
 } } // hive::wallet
