@@ -3,21 +3,23 @@
 
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
 
+#include <hive/plugins/rc/rc_config.hpp>
 #include <hive/plugins/rc/rc_curve.hpp>
 #include <hive/plugins/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/index.hpp>
 
 #include <hive/jsonball/jsonball.hpp>
 
 #include <boost/algorithm/string.hpp>
 
-#define HIVE_RC_REGEN_TIME   (60*60*24*5)
 // 2020.748973 VESTS == 1.000 HIVE when HF20 occurred on mainnet
 // TODO: What should this value be for testnet?
 #define HIVE_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT      2020748973
@@ -61,6 +63,13 @@ class rc_plugin_impl
     void on_post_apply_operation( const operation_notification& note );
     void on_pre_apply_optional_action( const optional_action_notification& note );
     void on_post_apply_optional_action( const optional_action_notification& note );
+    void on_pre_apply_custom_operation( const custom_operation_notification& note );
+    void on_post_apply_custom_operation( const custom_operation_notification& note );
+
+    template< typename OpType >
+    void pre_apply_custom_op_type( const custom_operation_notification& note );
+    template< typename OpType >
+    void post_apply_custom_op_type( const custom_operation_notification& note );
 
     void on_first_block();
     void validate_database();
@@ -77,6 +86,8 @@ class rc_plugin_impl
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
 
+  std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
+
 #ifdef IS_TEST_NET
     std::set< account_name_type > _whitelist;
 #endif
@@ -90,7 +101,9 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_operation_conn;
     boost::signals2::connection   _pre_apply_optional_action_conn;
     boost::signals2::connection   _post_apply_optional_action_conn;
-};
+    boost::signals2::connection   _pre_apply_custom_operation_conn;
+    boost::signals2::connection   _post_apply_custom_operation_conn;
+  };
 
 inline int64_t get_next_vesting_withdrawal( const account_object& account )
 {
@@ -798,6 +811,11 @@ struct pre_apply_operation_visitor
     regenerate( op.proposal_owner );
   }
 
+  void operator()( const delegate_rc_operation& op )const
+  {
+    regenerate( op.from );
+  }
+
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -831,6 +849,65 @@ struct post_apply_operation_visitor
     const account_name_type& w
     ) : _mod_accounts(ma), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
   {}
+
+  void update_outdel_overflow( const account_name_type& account ) const
+  {
+    const auto& from_rc_account = _db.get< rc_account_object, by_name >( account );
+    const auto& from_account = _db.get< account_object, by_name >( account );
+
+    int64_t new_max_rc = get_maximum_rc(from_account, from_rc_account, false );
+
+    int64_t returned_rcs = 0;
+    uint32_t now = _db.get_dynamic_global_properties().time.sec_since_epoch();
+    vector< const rc_direct_delegation_object* > delegations_to_remove;
+
+    if( new_max_rc < from_rc_account.max_rc_creation_adjustment.amount.value && from_rc_account.delegated_rc > 0 ) {
+      // If the account dips below max_rc_creation_adjustment, we bring it back to this level.
+      int64_t needed_rcs = from_rc_account.max_rc_creation_adjustment.amount.value - new_max_rc;
+
+      const auto& rc_del_idx = _db.get_index< rc_direct_delegation_object_index, by_from_to >();
+      // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
+      // start_id just means we iterate over all the rc delegations
+      auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( from_account.get_id(), account_id_type::start_id() ) );
+
+      while( needed_rcs > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == from_account.get_id() )
+      {
+        uint64_t delta_rc = std::min( needed_rcs, int64_t(rc_del_itr->delegated_rc) );
+        returned_rcs += delta_rc;
+        needed_rcs -= delta_rc;
+
+        // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
+        if( rc_del_itr->delegated_rc > delta_rc )
+        {
+          _db.modify( *rc_del_itr, [&]( rc_direct_delegation_object& rc_del )
+          {
+            rc_del.delegated_rc -= delta_rc;
+          });
+        }
+        else
+        {
+          // Otherwise, we remove it
+          delegations_to_remove.push_back( &(*rc_del_itr) );
+        }
+
+        const account_object* to_account = _db.find< account_object, by_id >( rc_del_itr->to  );
+        const auto& to_rc_account = _db.get< rc_account_object, by_name >( to_account->name );
+        update_rc_account_after_delegation(_db, to_rc_account, to_account, now, -delta_rc);
+
+        ++rc_del_itr;
+      }
+
+      for( const rc_direct_delegation_object* delegation : delegations_to_remove )
+      {
+        _db.remove( *delegation );
+      }
+
+      _db.modify(from_rc_account, [&](rc_account_object &rca) {
+        rca.last_max_rc = get_maximum_rc(from_account, rca) + returned_rcs;
+        rca.delegated_rc -= returned_rcs;
+      });
+    }
+  }
 
   void operator()( const account_create_operation& op )const
   {
@@ -873,12 +950,14 @@ struct post_apply_operation_visitor
   void operator()( const withdraw_vesting_operation& op )const
   {
     _mod_accounts.emplace_back( op.account, false );
+    update_outdel_overflow( op.account );
   }
 
   void operator()( const delegate_vesting_shares_operation& op )const
   {
     _mod_accounts.emplace_back( op.delegator );
     _mod_accounts.emplace_back( op.delegatee );
+    update_outdel_overflow( op.delegator );
   }
 
   void operator()( const author_reward_operation& op )const
@@ -901,6 +980,7 @@ struct post_apply_operation_visitor
   {
     _mod_accounts.emplace_back( op.from_account );
     _mod_accounts.emplace_back( op.to_account );
+    update_outdel_overflow( op.from_account );
   }
 
   void operator()( const claim_reward_balance_operation& op )const
@@ -985,6 +1065,12 @@ struct post_apply_operation_visitor
     _mod_accounts.emplace_back( op.proposal_owner );
   }
 
+  void operator()( const delegate_rc_operation& op )const
+  {
+    _mod_accounts.emplace_back( op.from );
+    _mod_accounts.emplace_back( op.to );
+  }
+
   template< typename Op >
   void operator()( const Op& op )const
   {
@@ -993,8 +1079,6 @@ struct post_apply_operation_visitor
 };
 
 typedef post_apply_operation_visitor post_apply_optional_action_visitor;
-
-
 
 void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note )
 { try {
@@ -1014,6 +1098,32 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   // ilog( "Calling pre-vtor on ${op}", ("op", note.op) );
   note.op.visit( vtor );
   } FC_CAPTURE_AND_RETHROW( (note.op) )
+}
+
+
+template< typename OpType >
+void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notification& note )
+{
+  const OpType* op = note.find_get_op< OpType >();
+  if( !op )
+    return;
+
+  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+  pre_apply_operation_visitor vtor( _db );
+
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    vtor._vesting_share_price = gpo.get_vesting_share_price();
+
+  vtor._current_witness = gpo.current_witness;
+  vtor._skip = _skip;
+
+  op->visit( vtor );
+}
+
+void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notification& note )
+{
+  pre_apply_custom_op_type< rc_plugin_operation >( note );
+  // If we wanted to pre-handle other plugin operations, we could put pre_apply_custom_op_type< other_plugin_operation >( note )
 }
 
 void update_modified_accounts( database& db, const std::vector< account_regen_info >& modified_accounts )
@@ -1051,6 +1161,30 @@ void rc_plugin_impl::on_post_apply_operation( const operation_notification& note
 
   update_modified_accounts( _db, modified_accounts );
 } FC_CAPTURE_AND_RETHROW( (note.op) ) }
+
+template< typename OpType >
+void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notification& note )
+{
+  const OpType* op = note.find_get_op< OpType >();
+  if( !op )
+    return;
+
+  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+  const uint32_t now = gpo.time.sec_since_epoch();
+
+  vector< account_regen_info > modified_accounts;
+
+  // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
+  post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  op->visit( vtor );
+
+  update_modified_accounts( _db, modified_accounts );
+}
+
+void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_notification& note )
+{
+  post_apply_custom_op_type< rc_plugin_operation >( note );
+}
 
 void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notification& note )
 {
@@ -1201,10 +1335,16 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       { try { my->on_pre_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_optional_action_conn = db.add_post_apply_optional_action_handler( [&]( const optional_action_notification& note )
       { try { my->on_post_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    my->_pre_apply_custom_operation_conn = db.add_pre_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
+      { try { my->on_pre_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
+      { try { my->on_post_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+
 
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_object_index);
 
     fc::mutable_variant_object state_opts;
 
@@ -1239,6 +1379,16 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
+    // Each plugin needs its own evaluator registry.
+    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > >( my->_db, name() );
+
+    // Add each operation evaluator to the registry
+    my->_custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( this );
+
+    // Add the registry to the database so the database can delegate custom ops to the plugin
+    my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
+
+
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }
   FC_CAPTURE_AND_RETHROW()
@@ -1257,6 +1407,8 @@ void rc_plugin::plugin_shutdown()
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
   chain::util::disconnect_signal( my->_pre_apply_optional_action_conn );
   chain::util::disconnect_signal( my->_post_apply_optional_action_conn );
+  chain::util::disconnect_signal( my->_pre_apply_custom_operation_conn );
+
 }
 
 void rc_plugin::set_rc_plugin_skip_flags( rc_plugin_skip_flags skip )
@@ -1282,14 +1434,30 @@ void exp_rc_data::to_variant( fc::variant& v )const
   fc::to_variant( *this, v );
 }
 
-int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account )
+int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool add_received_delegated_rc )
 {
   int64_t result = account.vesting_shares.amount.value;
   result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
   result = fc::signed_sat_sub( result, detail::get_next_vesting_withdrawal( account ) );
+  result = fc::signed_sat_sub( result, (int64_t) rc_account.delegated_rc );
+  // Used if we want to get the actual amount of RC and not real rc + received rc
+  if (add_received_delegated_rc) {
+    result = fc::signed_sat_add(result, (int64_t) rc_account.received_delegated_rc);
+  }
   return result;
+}
+
+void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object* account, uint32_t now, uint64_t delta) {
+  _db.modify< rc_account_object >( rc_account, [&]( rc_account_object& rca )
+  {
+    hive::chain::util::manabar_params manabar_params(get_maximum_rc( *account, rc_account ), HIVE_RC_REGEN_TIME);
+    rca.rc_manabar.regenerate_mana( manabar_params, now );
+    rca.rc_manabar.current_mana = std::max( int64_t(rca.rc_manabar.current_mana + delta), int64_t(0) );
+    rca.last_max_rc = get_maximum_rc( *account, rca ) + delta;
+    rca.received_delegated_rc += delta;
+  });
 }
 
 } } } // hive::plugins::rc
