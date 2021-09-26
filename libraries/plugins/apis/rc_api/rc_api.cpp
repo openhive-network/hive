@@ -92,7 +92,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
   for( const account_name_type& a : args.accounts )
   {
-    const rc_account_object* rc_account = _db.find< rc_account_object, by_name >( a );
+    const rc_account_object* rc_account = _db.find< rc_account_object, hive::chain::by_name >( a );
 
     if( rc_account != nullptr )
     {
@@ -143,13 +143,13 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
 
   switch( args.order )
   {
-    case( sort_order_type::by_from_to ):
+    case( sort_order_type::by_from_to_sort ):
     {
       auto key = args.start.as< vector< fc::variant > >();
       FC_ASSERT( key.size() == 2, "by_from start requires 2 value. (from, to)" );
 
-      const account_object* delegator = _db.find< account_object, by_name >( key[0].as< account_name_type >() );
-      const account_object* delegatee = _db.find< account_object, by_name >( key[1].as< account_name_type >() );
+      const account_object* delegator = _db.find< account_object, hive::chain::by_name >( key[0].as< account_name_type >() );
+      const account_object* delegatee = _db.find< account_object, hive::chain::by_name >( key[1].as< account_name_type >() );
 
       FC_ASSERT( delegator, "Account ${a} does not exist", ("a", key[0].as< account_name_type >()) );
       FC_ASSERT( delegatee, "Account ${a} does not exist", ("a", key[1].as< account_name_type >()) );
