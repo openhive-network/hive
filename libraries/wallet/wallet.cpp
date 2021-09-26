@@ -15,6 +15,7 @@
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -2888,7 +2889,7 @@ serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet
   return { my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK ) };
 }
 
-condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
+serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
             account_name_type from,
             account_name_type to,
             uint64_t max_rc,
@@ -2913,28 +2914,30 @@ condenser_api::legacy_signed_transaction wallet_api::delegate_rc(
   signed_transaction trx;
   trx.operations.push_back( op );
   trx.validate();
-  return my->sign_transaction( trx, broadcast );
+  return {my->sign_transaction( trx, broadcast )};
 }
 
-vector< rc::rc_account_api_object > wallet_api::find_rc_accounts( vector< account_name_type > accounts )
+serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( vector< account_name_type > accounts )
 {
-  return my->_remote_api->find_rc_accounts( accounts );
+  return {my->_remote_wallet_bridge_api->find_rc_accounts( {variant( accounts )}, LOCK )};
 }
 
-vector< rc::rc_account_api_object > wallet_api::list_rc_accounts(
-            account_name_type account,
+serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
+        const string& start,
             uint32_t limit,
-            rc::sort_order_type order )
+            rc::sort_order_type order_by )
 {
-  return my->_remote_api->list_rc_accounts( account, limit, order );
+  vector<variant> args{start , limit, order_by};
+  return {my->_remote_wallet_bridge_api->list_rc_accounts( {args}, LOCK )};
 }
 
-vector< rc::rc_direct_delegation_api_object > wallet_api::list_rc_direct_delegations(
+serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> wallet_api::list_rc_direct_delegations(
             fc::variant start,
             uint32_t limit,
-            rc::sort_order_type order )
+            rc::sort_order_type order_by )
 {
-  return my->_remote_api->list_rc_direct_delegations( start, limit, order );
+  vector<variant> args{std::move( start ), limit, order_by};
+  return {my->_remote_wallet_bridge_api->list_rc_direct_delegations( {args}, LOCK )};
 }
 
 } } // hive::wallet
