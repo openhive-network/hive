@@ -8,6 +8,7 @@
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>
 #include <fc/api.hpp>
+#include <fc/rpc/cli.hpp>
 
 namespace hive { namespace wallet {
 
@@ -88,7 +89,7 @@ class wallet_api_impl;
 class wallet_api
 {
   public:
-    wallet_api( const wallet_data& initial_data, const chain_id_type& _hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api);
+    wallet_api( const wallet_data& initial_data, const chain_id_type& _hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, std::shared_ptr<fc::rpc::cli> _cli );
     virtual ~wallet_api();
 
     bool copy_wallet_file( const string& destination_filename );
@@ -270,6 +271,11 @@ class wallet_api
       * @ingroup Wallet Management
       */
     void    set_password(const string& password);
+
+    /** Locks (if unlocked) and saves the wallet. Then exits.
+      * @ingroup Wallet Management
+      */
+    void    exit();
 
     /** Dumps all private keys owned by the wallet.
       *
@@ -1380,7 +1386,10 @@ class wallet_api
     std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
 
     fc::signal<void(bool)> lock_changed;
+
+  private:
     std::shared_ptr<detail::wallet_api_impl> my;
+    std::shared_ptr<fc::rpc::cli> cli;
     void encrypt_keys();
 };
 
@@ -1407,7 +1416,7 @@ FC_REFLECT_ENUM( hive::wallet::authority_type, (owner)(active)(posting) )
 FC_API( hive::wallet::wallet_api,
       /// wallet api
       (help)(gethelp)
-      (about)(is_new)(is_locked)(lock)(unlock)(set_password)
+      (about)(is_new)(is_locked)(lock)(unlock)(set_password)(exit)
       (load_wallet_file)(save_wallet_file)
 
       /// key api

@@ -1018,8 +1018,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 
 namespace hive { namespace wallet {
 
-wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api)
-  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api))
+wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, std::shared_ptr<fc::rpc::cli> _cli )
+  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api)), cli(_cli)
 {}
 
 wallet_api::~wallet_api(){}
@@ -1317,6 +1317,13 @@ void wallet_api::set_password( const string& password )
     FC_ASSERT( !is_locked(), "The wallet must be unlocked before the password can be set" );
   my->_checksum = fc::sha512::hash( password.c_str(), password.size() );
   lock();
+}
+
+void wallet_api::exit()
+{
+  if( !is_locked() )
+    lock();
+  cli->stop();
 }
 
 map<public_key_type, string> wallet_api::list_keys()
