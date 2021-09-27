@@ -190,15 +190,17 @@ int main( int argc, char** argv )
       }
     }
 
+
+    auto wallet_cli = std::make_shared<fc::rpc::cli>();
+
     auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
     auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
+    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, wallet_cli );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
     wapiptr->load_wallet_file();
 
     fc::api<wallet_api> wapi(wapiptr);
 
-    auto wallet_cli = std::make_shared<fc::rpc::cli>();
     for( auto& name_formatter : wapiptr->get_result_formatters() )
       wallet_cli->format_result( name_formatter.first, name_formatter.second );
 
