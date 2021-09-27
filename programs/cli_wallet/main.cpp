@@ -75,7 +75,7 @@ int main( int argc, char** argv )
     boost::program_options::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
-      ("server-rpc-endpoint,s", bpo::value<string>()->implicit_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
+      ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
@@ -163,7 +163,7 @@ int main( int argc, char** argv )
     }
 
     // but allow CLI to override
-    if( options.count("server-rpc-endpoint") )
+    if( !options.at("server-rpc-endpoint").defaulted() )
       wdata.ws_server = options.at("server-rpc-endpoint").as<std::string>();
 
     fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
