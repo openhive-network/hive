@@ -143,19 +143,12 @@ int main( int argc, char** argv )
     cfg.loggers.back().level = fc::log_level::debug;
     cfg.loggers.back().appenders = {"rpc"};
 
-
-    //
-    // TODO:  We read wallet_data twice, once in main() to grab the
-    //    socket info, again in wallet_api when we do
-    //    load_wallet_file().  Seems like this could be better
-    //    designed.
-    //
     wallet_data wdata;
 
     fc::path wallet_file( options.count("wallet-file") ? options.at("wallet-file").as<string>() : "wallet.json");
     if( fc::exists( wallet_file ) )
     {
-      wdata = fc::json::from_file( wallet_file ).as<wallet_data>();
+      wdata.merge( fc::json::from_file( wallet_file ).as<wallet_data>() );
     }
     else
     {
@@ -194,7 +187,6 @@ int main( int argc, char** argv )
     auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
     auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
-    wapiptr->load_wallet_file();
 
     fc::api<wallet_api> wapi(wapiptr);
 
