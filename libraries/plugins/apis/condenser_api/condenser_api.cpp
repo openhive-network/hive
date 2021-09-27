@@ -6,8 +6,6 @@
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
 #include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
-#include <hive/plugins/tags_api/tags_api_plugin.hpp>
-#include <hive/plugins/follow_api/follow_api_plugin.hpp>
 #include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 
@@ -165,8 +163,6 @@ namespace detail
       std::shared_ptr< account_by_key::account_by_key_api >             _account_by_key_api;
       std::shared_ptr< network_broadcast_api::network_broadcast_api >   _network_broadcast_api;
       p2p::p2p_plugin*                                                  _p2p = nullptr;
-      std::shared_ptr< tags::tags_api >                                 _tags_api;
-      std::shared_ptr< follow::follow_api >                             _follow_api;
       std::shared_ptr< reputation::reputation_api >                     _reputation_api;
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
       map< transaction_id_type, confirmation_callback >                 _callbacks;
@@ -184,21 +180,11 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_trending_tags )
   {
-    CHECK_ARG_SIZE( 2 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto tags = _tags_api->get_trending_tags( { args[0].as< string >(), args[1].as< uint32_t >() } ).tags;
-    vector< api_tag_object > result;
-    result.reserve( tags.size() );
-    for( const auto& t : tags )
-    {
-      result.push_back( api_tag_object( t ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, get_state ){
+  DEFINE_API_IMPL( condenser_api_impl, get_state )
+  {
     FC_ASSERT( false, "Supported by hivemind" );
   }
 
@@ -772,7 +758,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 2 )
 
-    vector< tags::vote_state > votes;
+    vector< vote_state > votes;
     const auto& comment = _db.get_comment( args[0].as< account_name_type >(), args[1].as< string >() );
     const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
     chain::comment_id_type cid( comment.get_id() );
@@ -781,21 +767,12 @@ namespace detail
     while( itr != idx.end() && itr->get_comment() == cid )
     {
       const auto& vo = _db.get( itr->get_voter() );
-      tags::vote_state vstate;
+      vote_state vstate;
       vstate.voter = vo.name;
       vstate.weight = itr->get_weight();
       vstate.rshares = itr->get_rshares();
       vstate.percent = itr->get_vote_percent();
       vstate.time = itr->get_last_update();
-
-      if( _follow_api )
-      {
-        auto reps = _follow_api->get_account_reputations( follow::get_account_reputations_args( { vo.name, 1 } ) ).reputations;
-        if( reps.size() )
-        {
-          vstate.reputation = reps[0].reputation;
-        }
-      }
 
       votes.push_back( vstate );
       ++itr;
@@ -806,25 +783,22 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_votes )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_content )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_content_replies )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_tags_used_by_author )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    return _tags_api->get_tags_used_by_author( { args[0].as< account_name_type >() } ).tags;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_post_discussions_by_payout )
@@ -1014,34 +988,22 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_followers )
   {
-    CHECK_ARG_SIZE( 4 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_followers( { args[0].as< account_name_type >(), args[1].as< account_name_type >(), args[2].as< follow::follow_type >(), args[3].as< uint32_t >() } ).followers;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_following )
   {
-    CHECK_ARG_SIZE( 4 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_following( { args[0].as< account_name_type >(), args[1].as< account_name_type >(), args[2].as< follow::follow_type >(), args[3].as< uint32_t >() } ).following;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_follow_count )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_follow_count( { args[0].as< account_name_type >() } );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_feed_entries )
   {
-    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_feed_entries( { args[0].as< account_name_type >(), args[1].as< uint32_t >(), args.size() == 3 ? args[2].as< uint32_t >() : 500 } ).feed;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_feed )
@@ -1051,10 +1013,7 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog_entries )
   {
-    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_blog_entries( { args[0].as< account_name_type >(), args[1].as< uint32_t >(), args.size() == 3 ? args[2].as< uint32_t >() : 500 } ).blog;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog )
@@ -1065,32 +1024,19 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_account_reputations )
   {
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api || _reputation_api, "Neither follow_api_plugin nor reputation_api_plugin are enabled. One of these must be running." );
+    FC_ASSERT( _reputation_api, "reputation_api_plugin not enabled." );
 
-    if( _follow_api )
-    {
-      return _follow_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
-    }
-    else
-    {
-      return _reputation_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
-    }
+    return _reputation_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_reblogged_by )
   {
-    CHECK_ARG_SIZE( 2 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_reblogged_by( { args[0].as< account_name_type >(), args[1].as< string >() } ).accounts;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog_authors )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_blog_authors( { args[0].as< account_name_type >() } ).blog_authors;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_ticker )
@@ -1348,18 +1294,6 @@ void condenser_api::api_startup()
   if( p2p != nullptr )
   {
     my->_p2p = p2p;
-  }
-
-  auto tags = appbase::app().find_plugin< tags::tags_api_plugin >();
-  if( tags != nullptr )
-  {
-    my->_tags_api = tags->api;
-  }
-
-  auto follow = appbase::app().find_plugin< follow::follow_api_plugin >();
-  if( follow != nullptr )
-  {
-    my->_follow_api = follow->api;
   }
 
   auto reputation = appbase::app().find_plugin< reputation::reputation_api_plugin >();
