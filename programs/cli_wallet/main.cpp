@@ -131,6 +131,10 @@ int main( int argc, char** argv )
     if( options.count("rpc-http-allowip") && options.count("rpc-http-endpoint") ) {
       allowed_ips = options["rpc-http-allowip"].as<vector<string>>();
       wdump((allowed_ips));
+
+      // TODO:
+      if( allowed_ips.size() )
+        wlog( "This feature is currently not supported!" );
     }
 
     hive::protocol::chain_id_type _hive_chain_id;
@@ -267,8 +271,6 @@ int main( int argc, char** argv )
     if( options.count("rpc-endpoint") )
     {
       _websocket_server->on_connection([&]( const fc::http::connection_ptr& c ){
-        std::cout << "here... \n";
-        wlog("." );
         auto wsc = std::make_shared<fc::rpc::http_api_connection>(*c);
         wsc->register_api(wapi);
         c->set_session_data( wsc );
@@ -303,28 +305,22 @@ int main( int argc, char** argv )
       for( const auto& ip : allowed_ips )
         allowed_ip_set.insert(fc::ip::address(ip));
 
-      _http_server->listen( fc::ip::endpoint::from_string( options.at( "rpc-http-endpoint" ).as<string>() ) );
-      ilog( "Listening for incoming HTTP RPC requests on ${endpoint}", ( "endpoint", _http_server->get_local_endpoint() ) );
-
-      //
-      // due to implementation, on_request() must come AFTER listen()
-      //
-      _http_server->on_request(
-        [&]( const fc::http::request& req, const fc::http::response& resp )
-        {
+      _http_server->on_connection([&]( const fc::http::connection_ptr& c ){
+        auto wsc = std::make_shared<fc::rpc::http_api_connection>(*c);
+        wsc->register_api(wapi);
+        c->set_session_data( wsc );
+      });
+      /* TODO:
           if( allowed_ip_set.find( fc::ip::endpoint::from_string(req.remote_endpoint).get_address() ) == allowed_ip_set.end() &&
               allowed_ip_set.find( fc::ip::address() ) == allowed_ip_set.end() ) {
             elog("Rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
-          _http_server->on_connection([&]( const fc::http::connection_ptr& c ){
-            std::shared_ptr< fc::rpc::http_api_connection > conn =
-              std::make_shared< fc::rpc::http_api_connection>(*c);
-            conn->register_api( wapi );
-            conn->on_request( req, resp );
-          });
-        } );
+        */
+      ilog( "Listening for incoming HTTP RPC requests on ${endpoint}", ( "endpoint", options.at( "rpc-http-endpoint" ).as<string>() ) );
+      _http_server->listen( fc::ip::endpoint::from_string( options.at( "rpc-http-endpoint" ).as<string>() ) );
+      _http_server->start_accept();
     }
 
     if( options.count("unlock" ) ) {
