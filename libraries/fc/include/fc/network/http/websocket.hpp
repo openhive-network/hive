@@ -27,7 +27,6 @@ namespace fc { namespace http {
          virtual void start_accept() override;
 
       private:
-         friend class detail::websocket_server_impl;
          std::unique_ptr<detail::websocket_server_impl> my;
    };
 
@@ -45,21 +44,18 @@ namespace fc { namespace http {
          virtual void start_accept() override;
 
       private:
-         friend class detail::websocket_tls_server_impl;
          std::unique_ptr<detail::websocket_tls_server_impl> my;
    };
 
    class websocket_client : public client
    {
       public:
-         websocket_client( const std::string& ca_filename = "_default" );
+         websocket_client();
          virtual ~websocket_client();
 
          virtual connection_ptr connect( const std::string& uri ) override;
       private:
-         connection_ptr secure_connect( const std::string& uri );
          std::unique_ptr<detail::websocket_client_impl> my;
-         std::unique_ptr<detail::websocket_tls_client_impl> smy;
    };
    class websocket_tls_client : public client
    {

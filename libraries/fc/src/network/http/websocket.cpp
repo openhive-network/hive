@@ -280,7 +280,7 @@ namespace fc { namespace http {
                if( _closed ) _closed->wait();
             }
 
-            typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
+            typedef std::map<connection_hdl, connection_ptr,std::owner_less<connection_hdl> > con_map;
 
             con_map                  _connections;
             fc::thread&              _server_thread;
@@ -385,7 +385,7 @@ namespace fc { namespace http {
                   _server.close( item.first, 0, "server exit" );
             }
 
-            typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
+            typedef std::map<connection_hdl, connection_ptr,std::owner_less<connection_hdl> > con_map;
 
             con_map                     _connections;
             fc::thread&                 _server_thread;
@@ -462,7 +462,7 @@ namespace fc { namespace http {
             fc::promise<void>::ptr             _closed;
             fc::thread&                        _client_thread;
             websocket_client_type              _client;
-            websocket_connection_ptr           _connection;
+            connection_ptr           _connection;
             std::string                        _uri;
       };
 
@@ -584,7 +584,7 @@ namespace fc { namespace http {
             fc::promise<void>::ptr             _closed;
             fc::thread&                        _client_thread;
             websocket_tls_client_type          _client;
-            websocket_connection_ptr           _connection;
+            connection_ptr           _connection;
             std::string                        _uri;
       };
 
@@ -645,14 +645,12 @@ namespace fc { namespace http {
 
 
 
-   websocket_client::websocket_client( const std::string& ca_filename )
-      : client( ca_filename ), my( new detail::websocket_client_impl() ),smy(new detail::websocket_tls_client_impl( ca_filename )) {}
+   websocket_client::websocket_client()
+      : client(), my( new detail::websocket_client_impl() ) {}
    websocket_client::~websocket_client(){ }
 
-   websocket_connection_ptr websocket_client::connect( const std::string& uri )
+   connection_ptr websocket_client::connect( const std::string& uri )
    { try {
-       if( uri.substr(0,4) == "wss:" )
-          return secure_connect(uri);
        FC_ASSERT( uri.substr(0,3) == "ws:" );
 
        // wlog( "connecting to ${uri}", ("uri",uri));
@@ -677,34 +675,9 @@ namespace fc { namespace http {
        return my->_connection;
    } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
-   websocket_connection_ptr websocket_client::secure_connect( const std::string& uri )
+   connection_ptr websocket_tls_client::connect( const std::string& uri )
    { try {
-       if( uri.substr(0,3) == "ws:" )
-          return connect(uri);
        FC_ASSERT( uri.substr(0,4) == "wss:" );
-       // wlog( "connecting to ${uri}", ("uri",uri));
-       websocketpp::lib::error_code ec;
-
-       smy->_uri = uri;
-       smy->_connected = fc::promise<void>::ptr( new fc::promise<void>("websocket::connect") );
-
-       smy->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
-          auto con =  smy->_client.get_con_from_hdl(hdl);
-          smy->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_tls_client_connection_type>>( con );
-          smy->_closed = fc::promise<void>::ptr( new fc::promise<void>("websocket::closed") );
-          smy->_connected->set_value();
-       });
-
-       auto con = smy->_client.get_connection( uri, ec );
-       if( ec )
-          FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
-       smy->_client.connect(con);
-       smy->_connected->wait();
-       return smy->_connection;
-   } FC_CAPTURE_AND_RETHROW( (uri) ) }
-
-   websocket_connection_ptr websocket_tls_client::connect( const std::string& uri )
-   { try {
        // wlog( "connecting to ${uri}", ("uri",uri));
        websocketpp::lib::error_code ec;
 

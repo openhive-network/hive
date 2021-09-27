@@ -186,7 +186,7 @@ int main( int argc, char** argv )
     // fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
     fc::http::client client;
     idump((wdata.ws_server));
-    // fc::http::websocket_connection_ptr con;
+    // fc::http::connection_ptr con;
     fc::http::connection_ptr con;
 
     fc::url server{ wdata.ws_server };
@@ -254,7 +254,7 @@ int main( int argc, char** argv )
     auto _websocket_server = std::make_shared<fc::http::websocket_server>();
     if( options.count("rpc-endpoint") )
     {
-      _websocket_server->on_connection([&]( const fc::http::websocket_connection_ptr& c ){
+      _websocket_server->on_connection([&]( const fc::http::connection_ptr& c ){
         std::cout << "here... \n";
         wlog("." );
         auto wsc = std::make_shared<fc::rpc::websocket_api_connection>(*c);
@@ -273,7 +273,7 @@ int main( int argc, char** argv )
     auto _websocket_tls_server = std::make_shared<fc::http::websocket_tls_server>(cert_pem);
     if( options.count("rpc-tls-endpoint") )
     {
-      _websocket_tls_server->on_connection([&]( const fc::http::websocket_connection_ptr& c ){
+      _websocket_tls_server->on_connection([&]( const fc::http::connection_ptr& c ){
         auto wsc = std::make_shared<fc::rpc::websocket_api_connection>(*c);
         wsc->register_api(wapi);
         c->set_session_data( wsc );

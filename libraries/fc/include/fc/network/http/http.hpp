@@ -117,14 +117,13 @@ namespace fc {
    class http_client : public client
    {
       public:
-         http_client( const std::string& ca_filename = "_default" );
+         http_client();
          virtual ~http_client();
 
          virtual connection_ptr connect( const std::string& uri ) override;
+
       private:
-         connection_ptr secure_connect( const std::string& uri );
          std::unique_ptr<detail::http_client_impl> my;
-         std::unique_ptr<detail::http_tls_client_impl> smy;
    };
    class http_tls_client : public client
    {
@@ -133,8 +132,12 @@ namespace fc {
          virtual ~http_tls_client();
 
          virtual connection_ptr connect( const std::string& uri ) override;
+
       private:
          std::unique_ptr<detail::http_tls_client_impl> my;
    };
 
-} }
+} } // fc::http
+
+#include <fc/reflect/reflect.hpp>
+FC_REFLECT( fc::http::header, (key)(val) )

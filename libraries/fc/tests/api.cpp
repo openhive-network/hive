@@ -58,7 +58,7 @@ int main( int argc, char** argv )
       fc::api<calculator> calc_api( std::make_shared<some_calculator>() );
 
       fc::http::websocket_server server;
-      server.on_connection([&]( const websocket_connection_ptr& c ){
+      server.on_connection([&]( const connection_ptr& c ){
                auto wsc = std::make_shared<websocket_api_connection>(*c);
                auto login = std::make_shared<login_api>();
                login->calc = calc_api;
