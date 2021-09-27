@@ -115,11 +115,12 @@ namespace hive
             int32_t block_number;
             int16_t trx_in_block;
             int16_t op_in_trx;
+            fc::time_point_sec timestamp;
             operation op;
 
             process_operation_t(int64_t _operation_id, int32_t _block_number, const int16_t _trx_in_block, const int16_t _op_in_trx,
-              const operation &_op) : operation_id{_operation_id }, block_number{_block_number}, trx_in_block{_trx_in_block},
-              op_in_trx{_op_in_trx}, op{_op} {}
+            const fc::time_point_sec& time, const operation &_op) : operation_id{_operation_id }, block_number{_block_number}, trx_in_block{_trx_in_block},
+            op_in_trx{_op_in_trx}, timestamp(time), op{_op} {}
           };
 
         }; // namespace processing_objects
