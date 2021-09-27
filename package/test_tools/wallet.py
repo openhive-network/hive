@@ -445,7 +445,11 @@ class Wallet(ScopedObject):
         def withdraw_vesting(self, from_, vesting_shares, broadcast=None):
             return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast)
 
-    def __init__(self, *, attach_to: Union[None, 'Node', 'RemoteNode'], additional_arguments: Iterable = ()):
+    def __init__(self,
+                 *,
+                 attach_to: Union[None, 'Node', 'RemoteNode'],
+                 additional_arguments: Iterable = (),
+                 preconfigure: bool = True):
         super().__init__()
 
         self.api = Wallet.__Api(self)
@@ -470,7 +474,7 @@ class Wallet(ScopedObject):
         self.additional_arguments = list(additional_arguments)
         self.logger = logger.create_child_logger(self.name)
 
-        self.run(timeout=15)
+        self.run(timeout=15, preconfigure=preconfigure)
 
     def __str__(self):
         return self.name
@@ -498,11 +502,12 @@ class Wallet(ScopedObject):
 
         return False
 
-    def run(self, *, timeout):
+    def run(self, *, timeout, preconfigure=True):
         """
         Starts wallet. Blocks until wallet will be ready for use.
 
         :param timeout: TimeoutError will be raised, if wallet won't start before specified timeout.
+        :param preconfigure: If set to True, wallet will be unlocked with password "password" and initminer key imported.
         """
         run_parameters = [
             '--daemon',
@@ -575,10 +580,11 @@ class Wallet(ScopedObject):
                                       f'See {self.get_stderr_file_path()} for more details.'
             )
 
-        password = 'password'
-        self.api.set_password(password)
-        self.api.unlock(password)
-        self.api.import_key(Account('initminer').private_key)
+        if preconfigure:
+            password = 'password'
+            self.api.set_password(password)
+            self.api.unlock(password)
+            self.api.import_key(Account('initminer').private_key)
 
         self.logger.info(f'Started{"" if self.__is_online() else " in offline mode"}, listening on {endpoint}')
 
