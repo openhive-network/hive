@@ -495,7 +495,7 @@ class ah_loader(metaclass = singleton):
     try:
       _futures = []
 
-      _futures.append(self.pool.apply_async(self.send_accounts, self))
+      _futures.append(self.pool.apply_async(self.send_accounts))
 
       if len(self.account_ops_queries) == 0:
         logger.info("Lack of operations")
@@ -504,9 +504,9 @@ class ah_loader(metaclass = singleton):
         assert len(_ranges) > 0
 
         for range in _ranges:
-          _futures.append(self.pool.apply_async(self.send_account_operations, self, range.low, range.high))
+          _futures.append(self.pool.apply_async(self.send_account_operations, [range.low, range.high]))
 
-      for future in as_completed(_futures):
+      for future in _futures:
         future.get()
 
       account_ops_queries.clear();
@@ -553,7 +553,7 @@ class ah_loader(metaclass = singleton):
     _futures = []
     with ThreadPoolExecutor(max_workers = 2) as executor:
       _futures.append(executor.submit(self.receive))
-      #_futures.append(executor.submit(self.send))
+      _futures.append(executor.submit(self.send))
 
     for future in as_completed(_futures):
       future.result()
