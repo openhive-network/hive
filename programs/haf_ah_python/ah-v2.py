@@ -195,6 +195,44 @@ class sql_executor:
 
     return _items
 
+  @staticmethod
+  def execute_complex_query(sql_executor, queries, low, high, q_parts):
+    if len(queries) == 0:
+      return
+
+    cnt = 0;
+    _total_query = q_parts[0]
+
+    for i in range(low, high + 1):
+      _total_query += ( "," if cnt else "" ) + queries[i]
+      cnt += 1
+
+    _total_query += q_parts[2]
+
+    sql_executor.perform_query(_total_query)
+
+  @staticmethod
+  def send_accounts(args, query, accounts_queries):
+    if len(accounts_queries) == 0:
+      logger.info("Lack of accounts")
+      return;
+
+    logger.info("INSERT INTO to `accounts`: {} records".format(accounts_queries.size()))
+
+    new_sql_executor = sql_executor.get_new_instance(args, query)
+    execute_complex_query(new_sql_executor, accounts_queries, 0, accounts_queries.size() - 1, sql_executor.query.insert_into_accounts)
+
+    accounts_queries.clear()
+
+  @staticmethod
+  def send_account_operations(args, query, account_ops_queries, first_element, last_element):
+    logger.info("INSERT INTO to `account_operations`: first element: {} last element: {}".format(first_element, last_element))
+
+    new_sql_executor = sql_executor.get_new_instance(args, query)
+    execute_complex_query(new_sql_executor, account_ops_queries, first_element, last_element, query.insert_into_account_ops)
+
+pool = None
+
 class ah_loader(metaclass = singleton):
 
   def __init__(self):
@@ -211,8 +249,6 @@ class ah_loader(metaclass = singleton):
     self.block_ranges         = deque()
 
     self.finished             = False;
-
-    self.pool                 = None
     self.queue                = None
 
     self.sql_executor         = sql_executor(self.application_context)
@@ -319,29 +355,13 @@ class ah_loader(metaclass = singleton):
 
     self.account_ops_queries.append( self.sql_executor.query.insert_into_account_ops[1].format(_next_account_id, _op_cnt, operation_id) )
 
-  def execute_complex_query(queries, low, high, q_parts):
-    if self.is_interrupted():
-      return
-
-    if len(queries) == 0:
-      return
-
-    cnt = 0;
-    _total_query = q_parts[0]
-
-    for i in range(low, high + 1):
-      _total_query += ( "," if cnt else "" ) + queries[i]
-      cnt += 1
-
-    _total_query += q_parts[2]
-
-    self.sql_executor.perform_query(_total_query)
-
   def init(self, args):
+    global pool
+
     self.sql_executor.init(args, "Initialization of database")
 
-    self.pool         = multiprocessing.Pool(processes = self.sql_executor.args.nr_threads_receive + self.sql_executor.args.nr_threads_send + 1)
-    self.queue        = multiprocessing.Manager().Queue(200)
+    pool        = multiprocessing.Pool(processes = self.sql_executor.args.nr_threads_receive + self.sql_executor.args.nr_threads_send + 1)
+    self.queue  = multiprocessing.Manager().Queue(200)
 
   def interrupt(self):
     if not self.is_interrupted():
@@ -410,6 +430,7 @@ class ah_loader(metaclass = singleton):
     return ranges
 
   def receive_data(self, first_block, last_block):
+    global pool
     try:
       _ranges = self.prepare_ranges(first_block, last_block, self.sql_executor.args.nr_threads_receive)
       assert len(_ranges) > 0
@@ -417,7 +438,7 @@ class ah_loader(metaclass = singleton):
       _futures = []
 
       for range in _ranges:
-        _futures.append(self.pool.apply_async(self.sql_executor.receive_impacted_accounts, [self.sql_executor.args, self.sql_executor.query, range.low, range.high]))
+        _futures.append(pool.apply_async(self.sql_executor.receive_impacted_accounts, [self.sql_executor.args, self.sql_executor.query, range.low, range.high]))
 
       _elements = []
       for future in _futures:
@@ -461,6 +482,7 @@ class ah_loader(metaclass = singleton):
     _get_delay = 1#[s]
     _sleep     = 1#[s]
 
+    received_items_block = None
     while not _received and not self.finished:
       try:
         received_items_block = self.queue.get(True, _get_delay)
@@ -469,33 +491,22 @@ class ah_loader(metaclass = singleton):
         logger.info("Queue is empty... Waiting {} seconds".format(_sleep))
         time.sleep(_sleep)
 
+    if received_items_block is None:
+      return None
+
     for items in received_items_block['elements']:
       for item in items:
         self.gather_part_of_queries( item.op_id, item.name )
 
     return received_items_block['block']
 
-  def send_accounts(self):
-    if len(self.accounts_queries) == 0:
-      logger.info("Lack of accounts")
-      return;
-
-    logger.info("INSERT INTO to `accounts`: {} records".format(accounts_queries.size()))
-
-    self.execute_complex_query(self.accounts_queries, 0, self.accounts_queries.size() - 1, self.sql_executor.query.insert_into_accounts)
-
-    self.accounts_queries.clear()
-
-  def send_account_operations(self, index, first_element, last_element):
-    logger.info("INSERT INTO to `account_operations`: first element: {} last element: {}".format(first_element, last_element))
-
-    self.execute_complex_query(account_ops_queries, first_element, last_element, query.insert_into_account_ops)
-
   def send_data(self):
+    global pool
     try:
+
       _futures = []
 
-      _futures.append(self.pool.apply_async(self.send_accounts))
+      _futures.append(pool.apply_async(self.sql_executor.send_accounts, [self.sql_executor.args, self.sql_executor.query, self.accounts_queries]))
 
       if len(self.account_ops_queries) == 0:
         logger.info("Lack of operations")
@@ -504,12 +515,12 @@ class ah_loader(metaclass = singleton):
         assert len(_ranges) > 0
 
         for range in _ranges:
-          _futures.append(self.pool.apply_async(self.send_account_operations, [range.low, range.high]))
+          _futures.append(pool.apply_async(self.sql_executor.send_account_operations, [self.sql_executor.args, self.sql_executor.query, self.account_ops_queries, range.low, range.high]))
 
       for future in _futures:
         future.get()
 
-      account_ops_queries.clear();
+      self.account_ops_queries.clear();
     except Exception as ex:
       logger.error("Exception during processing `send_data` method: {0}".format(ex))
       raise ex
@@ -540,7 +551,7 @@ class ah_loader(metaclass = singleton):
 
       self.send_data()
 
-      if self.is_massive:
+      if self.is_massive and _last_block_num is not None:
         self.save_detached_block_num(_last_block_num)
 
       end = datetime.datetime.now()
