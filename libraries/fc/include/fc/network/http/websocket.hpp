@@ -55,9 +55,9 @@ namespace fc { namespace http {
          websocket_client( const std::string& ca_filename = "_default" );
          virtual ~websocket_client();
 
-         virtual websocket_connection_ptr connect( const std::string& uri ) override;
+         virtual connection_ptr connect( const std::string& uri ) override;
       private:
-         websocket_connection_ptr secure_connect( const std::string& uri );
+         connection_ptr secure_connect( const std::string& uri );
          std::unique_ptr<detail::websocket_client_impl> my;
          std::unique_ptr<detail::websocket_tls_client_impl> smy;
    };
@@ -67,7 +67,7 @@ namespace fc { namespace http {
          websocket_tls_client( const std::string& ca_filename = "_default" );
          virtual ~websocket_tls_client();
 
-         virtual websocket_connection_ptr connect( const std::string& uri ) override;
+         virtual connection_ptr connect( const std::string& uri ) override;
       private:
          std::unique_ptr<detail::websocket_tls_client_impl> my;
    };
