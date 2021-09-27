@@ -87,7 +87,7 @@ namespace hive::plugins::sql_serializer {
 
         return std::to_string(data.operation_id) + ',' + std::to_string(data.block_number) + ',' +
         std::to_string(data.trx_in_block) + ',' + std::to_string(data.op_in_trx) + ',' +
-        std::to_string(data.op.which()) + ',' + escape(deserialized_op);
+        std::to_string(data.op.which()) + ",'" + data.timestamp.to_iso_string() + "'," + escape(deserialized_op);
       }
       };
     };
