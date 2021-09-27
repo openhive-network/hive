@@ -36,8 +36,6 @@ data_processor::data_processor( std::string description, const data_processing_f
   _description(std::move(description)),
   _cancel(false),
   _continue(true),
-  _initialized(false),
-  _finished(false),
   _is_processing_data( false ),
   _total_processed_records(0),
   _randezvous_trigger( std::move( api_trigger ) )
@@ -51,7 +49,6 @@ data_processor::data_processor( std::string description, const data_processing_f
       {
         ilog("${d} data processor is connecting ...",("d", _description));
         std::unique_lock<std::mutex> lk(_mtx);
-        _initialized = true;
         ilog("${d} data processor connected successfully ...", ("d", _description));
         _cv.notify_one();
       }
@@ -112,7 +109,6 @@ data_processor::data_processor( std::string description, const data_processing_f
     }
 
     ilog("Leaving data processor thread: ${d}", ("d", _description));
-    _finished = true;
   };
 
   _future = std::async(std::launch::async, body);
@@ -124,7 +120,7 @@ data_processor::~data_processor()
 
 void data_processor::trigger(data_chunk_ptr dataPtr, uint32_t last_blocknum)
 {
-  if(_finished)
+  if(!_future.valid())
     return;
 
   /// Set immediately data processing flag

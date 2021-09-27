@@ -55,8 +55,6 @@ public:
     std::string _description;
     std::atomic_bool _cancel;
     std::atomic_bool _continue;
-    std::atomic_bool _initialized;
-    std::atomic_bool _finished;
     std::atomic_bool _is_processing_data;
 
     std::future<void> _future;
