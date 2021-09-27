@@ -221,8 +221,6 @@ class sql_executor:
     new_sql_executor = sql_executor.get_new_instance(args, query)
     new_sql_executor.execute_complex_query(accounts_queries, 0, len(accounts_queries) - 1, new_sql_executor.query.insert_into_accounts)
 
-    accounts_queries.clear()
-
   @staticmethod
   def send_account_operations(args, query, account_ops_queries, first_element, last_element):
     logger.info("INSERT INTO to `account_operations`: first element: {} last element: {}".format(first_element, last_element))
@@ -481,14 +479,25 @@ class ah_loader(metaclass = singleton):
     _get_delay = 1#[s]
     _sleep     = 1#[s]
 
+    cnt   = 0
+    tries = 1
+
     received_items_block = None
-    while not _received and not self.finished:
+    while not _received:
       try:
         received_items_block = self.queue.get(True, _get_delay)
         _received = True
       except queue.Empty:
-        logger.info("Queue is empty... Waiting {} seconds".format(_sleep))
-        time.sleep(_sleep)
+        if self.finished:
+          if cnt < tries:
+            logger.info("Queue is probably empty... Try: {}/{}".format(cnt/tries))
+            cnt += 1
+          else:
+            logger.info("Queue is empty... All data was received")
+            break
+        else:
+          logger.info("Queue is empty... Waiting {} seconds".format(_sleep))
+          time.sleep(_sleep)
 
     if received_items_block is None:
       logger.info("Lack of impacted accounts...")
@@ -520,6 +529,7 @@ class ah_loader(metaclass = singleton):
       for future in _futures:
         future.get()
 
+      self.accounts_queries.clear()
       self.account_ops_queries.clear()
     except Exception as ex:
       logger.error("Exception during processing `send_data` method: {0}".format(ex))
@@ -543,8 +553,6 @@ class ah_loader(metaclass = singleton):
         return
 
       _last_block_num = self.prepare_sql()
-      if self.finished:
-        break
 
       if self.is_interrupted():
         return
@@ -556,6 +564,9 @@ class ah_loader(metaclass = singleton):
 
       end = datetime.datetime.now()
       logger.info("send time[ms]: {}".format(helper.get_time(start, end)))
+
+      if self.finished and self.queue.empty():
+        break
 
   def work(self):
     if self.is_interrupted():
