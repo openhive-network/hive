@@ -14,7 +14,7 @@ namespace fc { namespace http {
         connection() = default;
         virtual ~connection() = default;
         virtual void send_message( const std::string& message ) = 0;
-        virtual void close( int64_t code, const std::string& reason  ){};
+        virtual void close( int64_t code, const std::string& reason ){};
         void on_message( const std::string& message ) { _on_message(message); }
         string on_http( const std::string& message ) { return _on_http(message); }
 

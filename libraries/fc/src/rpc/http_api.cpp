@@ -7,7 +7,7 @@ http_api_connection::~http_api_connection()
 {
 }
 
-http_api_connection::http_api_connection( fc::http::websocket_connection& c )
+http_api_connection::http_api_connection( fc::http::connection& c )
    : _connection(c)
 {
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant

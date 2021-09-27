@@ -1,25 +1,25 @@
-#include <fc/network/http/connection.hpp>
+#include <fc/network/http/http.hpp>
 #include <fc/network/rate_limiting.hpp>
 #include <fc/network/ip.hpp>
 #include <fc/time.hpp>
 #include <fc/thread/thread.hpp>
 
 #include <iostream>
+#include <memory>
 fc::rate_limiting_group rate_limiter(1000000, 1000000);
 
 void download_url(const std::string& ip_address, const std::string& url)
 {
-  fc::http::connection http_connection;
-  rate_limiter.add_tcp_socket(&http_connection.get_socket());
-  http_connection.connect_to(fc::ip::endpoint(fc::ip::address(ip_address.c_str()), 80));
+  auto client = std::make_shared< http_client >();
+  auto con = client->connect( url );
   std::cout << "Starting download...\n";
   fc::time_point start_time(fc::time_point::now());
-  fc::http::reply reply = http_connection.request("GET", "http://mirror.cs.vt.edu/pub/cygwin/glibc/releases/glibc-2.9.tar.gz");
-  fc::time_point end_time(fc::time_point::now());
-
-  std::cout << "HTTP return code: " << reply.status << "\n";
-  std::cout << "Retreived " << reply.body.size() << " bytes in " << ((end_time - start_time).count() / fc::milliseconds(1).count()) << "ms\n";
-  std::cout << "Average speed " << ((1000 * (uint64_t)reply.body.size()) / ((end_time - start_time).count() / fc::milliseconds(1).count())) << " bytes per second";
+  con->on_http_handler( [&]( const std::string& msg ){
+    fc::time_point end_time(fc::time_point::now());
+    std::cout << "Retreived " << msg.size() << " bytes in " << ((end_time - start_time).count() / fc::milliseconds(1).count()) << "ms\n";
+    std::cout << "Average speed " << ((1000 * (uint64_t)msg.size()) / ((end_time - start_time).count() / fc::milliseconds(1).count())) << " bytes per second";
+  } );
+  con->send_message("");
 }
 
 int main( int argc, char** argv )

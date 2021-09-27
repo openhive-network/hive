@@ -75,6 +75,22 @@ namespace
   {
     exit_promise->set_value(signal);
   }
+
+  std::shared_ptr< fc::http::client > get_client_type( const std::string& _url_str, const std::string& server_auth )
+  {
+    fc::url _url{ url_str };
+
+    if( _url.proto() == "ws" )
+      return std::make_shared< fc::http::websocket_client >();
+    else if( _url.proto() == "wss" )
+      return std::make_shared< fc::http::websocket_tls_client >( server_auth );
+    else if( _url.proto() == "http" )
+      return std::make_shared< fc::http::http_client >();
+    else if( _url.proto() == "https" )
+      return std::make_shared< fc::http::http_tls_client >( server_auth );
+    else
+      FC_ASSERT( false, "Unsupported protocol: ${proto}", ("proto", _url.proto()) );
+  }
 }
 
 int main( int argc, char** argv )
