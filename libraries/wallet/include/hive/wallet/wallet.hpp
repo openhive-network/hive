@@ -65,9 +65,12 @@ struct wallet_data
 {
   vector<char>              cipher_keys; /** encrypted keys */
 
-  string                    ws_server = "ws://localhost:8090";
+  string                    ws_server;
   string                    ws_user;
   string                    ws_password;
+
+  /// @brief Merges this wallet_data with the provided other wallet_data (other overrides data on conflict)
+  void merge( const wallet_data& other );
 };
 
 enum authority_type

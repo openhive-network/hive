@@ -68,6 +68,35 @@ constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_br
 namespace hive { namespace wallet {
 
 namespace detail {
+  struct wallet_data_merger
+  {
+  private:
+    wallet_data&       lhs; // Old
+    const wallet_data& rhs; // New
+
+  public:
+    wallet_data_merger( wallet_data& lhs, const wallet_data& rhs )
+      : lhs( lhs ), rhs( rhs )
+    {}
+
+    /// @note requires the Member type to be default value initialized and to have != operator implemented
+    template<typename Member, class Class, Member (Class::*member)>
+    void operator()( const char* name )const
+    {
+      // ilog( "Wallet data merger[\"${name}\"]: lhs(${lhs}), rhs(${rhs})", ("name",name)("lhs",lhs.*member)("rhs",rhs.*member) );
+      // If rhs member value is not default initialized then apply its value to the lhs
+      if( rhs.*member != Member{} )
+        lhs.*member = rhs.*member;
+    }
+  };
+}
+
+void wallet_data::merge( const wallet_data& other )
+{
+  fc::reflector< wallet_data >::visit( detail::wallet_data_merger{ *this, other } );
+}
+
+namespace detail {
 
 template<class T>
 optional<T> maybe_id( const string& name_or_id )
@@ -412,15 +441,13 @@ public:
 
   bool load_wallet_file(string wallet_filename = "")
   {
-    // TODO:  Merge imported wallet with existing wallet,
-    //        instead of replacing it
     if( wallet_filename == "" )
       wallet_filename = _wallet_filename;
 
     if( ! fc::exists( wallet_filename ) )
       return false;
 
-    _wallet = fc::json::from_file( wallet_filename ).as< wallet_data >();
+    _wallet.merge( fc::json::from_file( wallet_filename ).as< wallet_data >() );
 
     return true;
   }
