@@ -10,6 +10,7 @@
 #include <fc/variant.hpp>
 #include <fc/thread/thread.hpp>
 #include <fc/asio.hpp>
+#include <fc/network/http/connection.hpp>
 
 #ifdef DEFAULT_LOGGER
 # undef DEFAULT_LOGGER
@@ -590,7 +591,8 @@ namespace fc { namespace http {
 
    } // namespace detail
 
-   websocket_server::websocket_server():my( new detail::websocket_server_impl() ) {}
+   websocket_server::websocket_server()
+      : server(), my( new detail::websocket_server_impl() ) {}
    websocket_server::~websocket_server(){}
 
    void websocket_server::on_connection( const on_connection_handler& handler )
@@ -614,7 +616,8 @@ namespace fc { namespace http {
 
 
 
-   websocket_tls_server::websocket_tls_server( const string& server_pem, const string& ssl_password ):my( new detail::websocket_tls_server_impl(server_pem, ssl_password) ) {}
+   websocket_tls_server::websocket_tls_server( const string& server_pem, const string& ssl_password )
+      : server( server_pem, ssl_password ), my( new detail::websocket_tls_server_impl(server_pem, ssl_password) ) {}
    websocket_tls_server::~websocket_tls_server(){}
 
    void websocket_tls_server::on_connection( const on_connection_handler& handler )
@@ -636,12 +639,14 @@ namespace fc { namespace http {
    }
 
 
-   websocket_tls_client::websocket_tls_client( const std::string& ca_filename ):my( new detail::websocket_tls_client_impl( ca_filename ) ) {}
+   websocket_tls_client::websocket_tls_client( const std::string& ca_filename )
+      : client( ca_filename ), my( new detail::websocket_tls_client_impl( ca_filename ) ) {}
    websocket_tls_client::~websocket_tls_client(){ }
 
 
 
-   websocket_client::websocket_client( const std::string& ca_filename ):my( new detail::websocket_client_impl() ),smy(new detail::websocket_tls_client_impl( ca_filename )) {}
+   websocket_client::websocket_client( const std::string& ca_filename )
+      : client( ca_filename ), my( new detail::websocket_client_impl() ),smy(new detail::websocket_tls_client_impl( ca_filename )) {}
    websocket_client::~websocket_client(){ }
 
    websocket_connection_ptr websocket_client::connect( const std::string& uri )
