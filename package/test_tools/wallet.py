@@ -498,7 +498,7 @@ class Wallet(ScopedObject):
 
         return False
 
-    def run(self, timeout):
+    def run(self, *, timeout):
         run_parameters = [
             '--daemon',
             '--rpc-http-allowip=127.0.0.1',
