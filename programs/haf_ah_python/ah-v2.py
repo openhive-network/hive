@@ -150,7 +150,7 @@ class sql_executor:
     end = datetime.datetime.now()
     logger.info("query time[ms]: {}".format(helper.get_time(start, end)))
 
-    return res;
+    return res
 
   def perform_query_one(self, query):
     helper.display_query(query)
@@ -164,7 +164,7 @@ class sql_executor:
     end = datetime.datetime.now()
     logger.info("query time[ms]: {}".format(helper.get_time(start, end)))
 
-    return res;
+    return res
 
   @staticmethod
   def get_new_instance(args, query):
@@ -185,8 +185,8 @@ class sql_executor:
       _query = new_sql_executor.query.get_bodies.format(first_block, last_block)
       _result = new_sql_executor.perform_query_all(_query)
 
-      if len(_result) == 0:
-        logger.info("Found {} operations".format(_result.size()))
+      if len(_result) != 0:
+        logger.info("Found {} operations".format(len(_result)))
         for _record in _result:
           _items.append( account_op( int(_record[0]), str(_record[1]) ) )
     except Exception as ex:
@@ -195,12 +195,11 @@ class sql_executor:
 
     return _items
 
-  @staticmethod
-  def execute_complex_query(sql_executor, queries, low, high, q_parts):
+  def execute_complex_query(self, queries, low, high, q_parts):
     if len(queries) == 0:
       return
 
-    cnt = 0;
+    cnt = 0
     _total_query = q_parts[0]
 
     for i in range(low, high + 1):
@@ -209,18 +208,18 @@ class sql_executor:
 
     _total_query += q_parts[2]
 
-    sql_executor.perform_query(_total_query)
+    self.perform_query(_total_query)
 
   @staticmethod
   def send_accounts(args, query, accounts_queries):
     if len(accounts_queries) == 0:
-      logger.info("Lack of accounts")
-      return;
+      logger.info("Lack of accounts...")
+      return
 
-    logger.info("INSERT INTO to `accounts`: {} records".format(accounts_queries.size()))
+    logger.info("INSERT INTO to `accounts`: {} records".format(len(accounts_queries)))
 
     new_sql_executor = sql_executor.get_new_instance(args, query)
-    execute_complex_query(new_sql_executor, accounts_queries, 0, accounts_queries.size() - 1, sql_executor.query.insert_into_accounts)
+    new_sql_executor.execute_complex_query(accounts_queries, 0, len(accounts_queries) - 1, new_sql_executor.query.insert_into_accounts)
 
     accounts_queries.clear()
 
@@ -229,7 +228,7 @@ class sql_executor:
     logger.info("INSERT INTO to `account_operations`: first element: {} last element: {}".format(first_element, last_element))
 
     new_sql_executor = sql_executor.get_new_instance(args, query)
-    execute_complex_query(new_sql_executor, account_ops_queries, first_element, last_element, query.insert_into_account_ops)
+    new_sql_executor.execute_complex_query(account_ops_queries, first_element, last_element, new_sql_executor.query.insert_into_account_ops)
 
 pool = None
 
@@ -241,14 +240,14 @@ class ah_loader(metaclass = singleton):
 
     self.application_context  = "account_history"
 
-    self.accounts_queries     = [];
+    self.accounts_queries     = []
     self.account_ops_queries  = []
 
     self.account_cache        = {}
 
     self.block_ranges         = deque()
 
-    self.finished             = False;
+    self.finished             = False
     self.queue                = None
 
     self.sql_executor         = sql_executor(self.application_context)
@@ -268,7 +267,7 @@ class ah_loader(metaclass = singleton):
       return
 
     for _record in _accounts:
-      _id   = int(_record["id"]);
+      _id   = int(_record["id"])
       _name = str(_record["name"])
 
       if _id > account_info.next_account_id:
@@ -292,7 +291,7 @@ class ah_loader(metaclass = singleton):
       _name             = str(_record["name"])
       _operation_count  = int(_record["operation_count"])
 
-      found = account_cache.has_key( _name );
+      found = name in account_cache
       assert found
       account_cache[_name] = _operation_count
 
@@ -312,7 +311,7 @@ class ah_loader(metaclass = singleton):
     #Issues 13,14 should be earlier solved
     if _result is None:
       _result = 0
-    return _result + 2;
+    return _result + 2
 
   def switch_context_internal(self, force_attach, last_block = 0):
     _is_attached = self.context_is_attached()
@@ -338,10 +337,10 @@ class ah_loader(metaclass = singleton):
     self.switch_context_internal(False)
 
   def gather_part_of_queries(self, operation_id, account_name):
-    found = self.account_cache.has_key(account_name);
+    found = account_name in self.account_cache
 
     _next_account_id = account_info.next_account_id
-    _op_cnt = 1;
+    _op_cnt = 1
 
     if not found:
       self.account_cache[account_name] = account_info(_next_account_id, _op_cnt)
@@ -385,12 +384,12 @@ class ah_loader(metaclass = singleton):
         self.sql_executor.perform_query(self.sql_executor.query.create_context)
 
         if self.is_interrupted():
-          return;
+          return
 
         self.sql_executor.perform_query(tables_query)
 
         if self.is_interrupted():
-          return;
+          return
 
         self.sql_executor.perform_query(functions_query)
 
@@ -409,7 +408,7 @@ class ah_loader(metaclass = singleton):
 
     #It's better to send small amount of data in only 1 thread. More threads introduce unnecessary complexity.
     #Beside, if (high_value - low_value) < threads, it's impossible to spread data amongst threads in reasonable way.
-    _thread_threshold = 500;
+    _thread_threshold = 500
     if high_value - low_value + 1 <= _thread_threshold:
       return [ range_type(low_value, high_value) ]
 
@@ -492,6 +491,7 @@ class ah_loader(metaclass = singleton):
         time.sleep(_sleep)
 
     if received_items_block is None:
+      logger.info("Lack of impacted accounts...")
       return None
 
     for items in received_items_block['elements']:
@@ -509,9 +509,9 @@ class ah_loader(metaclass = singleton):
       _futures.append(pool.apply_async(self.sql_executor.send_accounts, [self.sql_executor.args, self.sql_executor.query, self.accounts_queries]))
 
       if len(self.account_ops_queries) == 0:
-        logger.info("Lack of operations")
+        logger.info("Lack of operations...")
       else:
-        _ranges = self.prepare_ranges(0, self.account_ops_queries.size() - 1, self.sql_executor.args.nr_threads_send)
+        _ranges = self.prepare_ranges(0, len(self.account_ops_queries) - 1, self.sql_executor.args.nr_threads_send)
         assert len(_ranges) > 0
 
         for range in _ranges:
@@ -520,7 +520,7 @@ class ah_loader(metaclass = singleton):
       for future in _futures:
         future.get()
 
-      self.account_ops_queries.clear();
+      self.account_ops_queries.clear()
     except Exception as ex:
       logger.error("Exception during processing `send_data` method: {0}".format(ex))
       raise ex
@@ -540,14 +540,14 @@ class ah_loader(metaclass = singleton):
       start = datetime.datetime.now()
 
       if self.is_interrupted():
-        return;
+        return
 
       _last_block_num = self.prepare_sql()
       if self.finished:
         break
 
       if self.is_interrupted():
-        return;
+        return
 
       self.send_data()
 
@@ -559,7 +559,7 @@ class ah_loader(metaclass = singleton):
 
   def work(self):
     if self.is_interrupted():
-      return;
+      return
 
     _futures = []
     with ThreadPoolExecutor(max_workers = 2) as executor:
@@ -572,9 +572,9 @@ class ah_loader(metaclass = singleton):
   def fill_block_ranges(self, first_block, last_block):
     if first_block == last_block:
       self.block_ranges.append(range_type(first_block, last_block))
-      return;
+      return
 
-    _last_block = first_block;
+    _last_block = first_block
 
     while _last_block != last_block:
       _last_block = min(_last_block + self.sql_executor.args.flush_size, last_block)
@@ -619,7 +619,7 @@ class ah_loader(metaclass = singleton):
         else:
           self.work()
 
-        return False;
+        return False
       else:
         logger.info("Range blocks is returned empty")
         return True
@@ -628,9 +628,9 @@ class ah_loader(metaclass = singleton):
       raise ex
 
 def allow_close_app(empty, declared_empty_results, cnt_empty_result):
-  _res = False;
+  _res = False
 
-  cnt_empty_result = ( cnt_empty_result + 1 ) if empty else 0;
+  cnt_empty_result = ( cnt_empty_result + 1 ) if empty else 0
 
   if declared_empty_results == -1:
     if empty:
@@ -640,7 +640,7 @@ def allow_close_app(empty, declared_empty_results, cnt_empty_result):
       logger.info("A result returned from a database is empty. Declared empty results: {} Actual empty result: {}".format(declared_empty_results, cnt_empty_result))
 
       if declared_empty_results < cnt_empty_result:
-        _res = True;
+        _res = True
 
   return _res, cnt_empty_result
 
@@ -648,7 +648,7 @@ def shutdown_properly(signal, frame):
   logger.info("Closing. Wait...")
 
   _loader = ah_loader()
-  _loader.interrupt();
+  _loader.interrupt()
 
   logger.info("Interrupted...")
 
@@ -693,9 +693,9 @@ def main():
 
     set_handlers()
 
-    _loader.prepare();
+    _loader.prepare()
 
-    cnt_empty_result = 0;
+    cnt_empty_result = 0
     declared_empty_results = _allowed_empty_results
 
     total_start = datetime.datetime.now()
@@ -710,7 +710,7 @@ def main():
  
       _allow_close, cnt_empty_result = allow_close_app( empty, declared_empty_results, cnt_empty_result )
       if _allow_close:
-        break;
+        break
 
     total_end = datetime.datetime.now()
     logger.info("*****Total time*****")
