@@ -1,7 +1,6 @@
 from test_tools import logger, Account, World, Asset, BlockLog
 from local_tools import prepare_block_log, prepare_nodes, make_fork, wait_for_irreversible_progress
 import sqlalchemy
-from sqlalchemy_utils import database_exists, create_database, drop_database
 
 
 FORKS = 1
@@ -14,7 +13,6 @@ def test_undo_operations(world):
     block_log = prepare_block_log(world, BLOCKLOG_LENGTH)
     node_under_test = prepare_nodes(world, block_log, START_TEST_BLOCK_NUMBER)
 
-    recreate_database()
     engine = sqlalchemy.create_engine('postgresql://myuser:mypassword@localhost/haf_block_log', echo=False)
     with engine.connect() as database_under_test:
         # WHEN
@@ -31,11 +29,3 @@ def test_undo_operations(world):
             for row in result:
                 body = row['body']
                 assert 'account_created_operation' not in body
-
-
-def recreate_database():
-    engine = sqlalchemy.create_engine('postgresql://myuser:mypassword@localhost/haf_block_log', echo=False)
-    if not database_exists(engine.url):
-        drop_database(engine.url)
-    create_database(engine.url)
-    connection.engine('CREATE EXTENSION hive_fork_manager')

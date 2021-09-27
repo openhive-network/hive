@@ -327,8 +327,10 @@ sql_serializer:
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/sql_serializer_tests
     - pip3 install pytest sqlalchemy psycopg2
     - /etc/init.d/postgresql start
-    - sudo -u postgres psql -d postgres -c "CREATE ROLE myuser LOGIN PASSWORD 'mypassword' INHERIT IN ROLE hived_group;"
     - sudo -u postgres psql -d postgres -c "CREATE DATABASE haf_block_log;"
+    - sudo -u postgres psql -d haf_block_log -c "CREATE EXTENSION hive_fork_manager"
+    - sudo -u postgres psql -d haf_block_log -c "CREATE ROLE myuser LOGIN PASSWORD 'mypassword' INHERIT IN ROLE hived_group;"
+    - sudo -u postgres psql -d haf_block_log -c "\dx"
     # - su postgres -c 'bash db_setup.sh'
     - pytest --junitxml="./report.xml" -s test_undo_operations.py
     - sudo -u postgres psql -d haf_block_log -c 'select * from hive.blocks order by num;'

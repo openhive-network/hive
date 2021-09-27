@@ -11,7 +11,6 @@ def test_blocks_table_not_empty(world):
     block_log = prepare_block_log(world, BLOCKLOG_LENGTH)
     node_under_test = prepare_nodes(world, block_log, START_TEST_BLOCK_NUMBER)
 
-    recreate_database()
     engine = sqlalchemy.create_engine('postgresql://myuser:mypassword@localhost/haf_block_log', echo=False)
     with engine.connect() as database_under_test:
         fork_block = START_TEST_BLOCK_NUMBER
@@ -44,11 +43,3 @@ def test_blocks_table_not_empty(world):
             # assert table hive.blocks contains blocks irreversible_block_num+1..head_block_number
             for i in range(irreversible_block_num+1, head_block_num+1):
                 assert i in blocks_reversible
-
-
-def recreate_database():
-    engine = sqlalchemy.create_engine('postgresql://myuser:mypassword@localhost/myuser', echo=False)
-    connection = engine.connect()
-    connection.execute("CREATE DATABASE haf_block_log;")
-    connection.execute("CREATE EXTENSION hive_fork_manager;")
-    connection.execute("CREATE ROLE myuser LOGIN PASSWORD 'mypassword' INHERIT IN ROLE hived_group;")
