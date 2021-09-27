@@ -14,7 +14,6 @@
 #include <hive/protocol/asset.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 
-#include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>
 
 #include <array>

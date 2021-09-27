@@ -51,53 +51,62 @@ namespace fc {
      
      std::vector<header> parse_urlencoded_params( const fc::string& f );
      
-     /**
-      *  Connections have reference semantics, all copies refer to the same
-      *  underlying socket.  
-      */
-     class connection 
-     {
-       public:
-         connection();
-         ~connection();
-         // used for clients
-         void         connect_to( const fc::ip::endpoint& ep );
-         http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
-     
-         // used for servers
-         fc::tcp_socket& get_socket()const;
-     
-         http::request    read_request()const;
+   class connection
+   {
+      public:
+         connection() = default;
+         virtual ~connection() = default;
+         virtual void send_message( const std::string& message ) = 0;
+         virtual void close( int64_t code, const std::string& reason  ){};
+         void on_message( const std::string& message ) { _on_message(message); }
+         string on_http( const std::string& message ) { return _on_http(message); }
 
-         class impl;
+         void on_message_handler( const std::function<void(const std::string&)>& h ) { _on_message = h; }
+         void on_http_handler( const std::function<std::string(const std::string&)>& h ) { _on_http = h; }
+
+         void     set_session_data( fc::any d ){ _session_data = std::move(d); }
+         fc::any& get_session_data() { return _session_data; }
+
          fc::signal<void()> closed;
-       private:
-         std::unique_ptr<impl> my;
-     };
-     
-     typedef std::shared_ptr<connection> connection_ptr;
 
-    namespace detail {
-      class client_impl;
-    } // namespace detail;
+      protected:
+         fc::any                                   _session_data;
+         std::function<void(const std::string&)>   _on_message;
+         std::function<string(const std::string&)> _on_http;
+   };
 
-    class client
-    {
-    public:
-      /**
-       * @note specify ca_filename argument only if you want to estabilish a secure http connection
-       * @note "_none" disables cert checking (potentially insecure!), "_default" uses default CA's provided by OS
-       **/
-      client( const std::string& ca_filename = "_default" );
-      ~client();
+   typedef std::shared_ptr< connection > connection_ptr;
 
-      /// @brief Auto detects secure or insecure http connection from the protocol
-      connection_ptr        connect( const std::string& uri );
-    private:
-      connection_ptr secure_connect( const std::string& uri );
+   typedef std::function< void(const connection_ptr&) > on_connection_handler;
 
-      std::unique_ptr< detail::client_impl > my;
-    };
+   class server
+   {
+      public:
+         server( const std::string& server_pem = std::string{},
+                           const std::string& ssl_password = std::string{});
+         virtual ~server() = default;
+
+         virtual void on_connection( const on_connection_handler& handler) = 0;
+         virtual void listen( uint16_t port ) = 0;
+         virtual void listen( const fc::ip::endpoint& ep ) = 0;
+         virtual void start_accept() = 0;
+
+      protected:
+        std::string server_pem;
+        std::string ssl_password;
+   };
+
+   class client
+   {
+      public:
+         client( const std::string& ca_filename = std::string{} );
+         virtual ~client() = default;
+
+         virtual connection_ptr connect( const std::string& uri ) = 0;
+
+      protected:
+        std::string ca_filename;
+   };
 
 } } // fc::http
 
