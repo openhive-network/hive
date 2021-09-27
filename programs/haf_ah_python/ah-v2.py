@@ -363,7 +363,7 @@ class ah_loader(metaclass = singleton):
 
     _nr_processes = sql_data.args.nr_threads_receive + sql_data.args.nr_threads_send + 1
     pool        = multiprocessing.Pool(processes = _nr_processes)
-    self.queue  = multiprocessing.Manager().Queue(200)
+    self.queue  = queue.Queue( maxsize = 200 )
 
   def interrupt(self):
     if not self.is_interrupted():
