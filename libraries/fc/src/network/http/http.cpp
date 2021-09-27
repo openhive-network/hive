@@ -1,4 +1,4 @@
-#include <fc/network/http/server.hpp>
+#include <fc/network/http/http.hpp>
 #include <fc/thread/thread.hpp>
 #include <fc/network/tcp_socket.hpp>
 #include <fc/io/sstream.hpp>

@@ -2,6 +2,8 @@
 #include <fc/vector.hpp>
 #include <fc/string.hpp>
 #include <fc/signals.hpp>
+#include <fc/network/ip.hpp>
+#include <fc/any.hpp>
 #include <memory>
 
 namespace fc { namespace http {
@@ -64,7 +66,3 @@ namespace fc { namespace http {
    };
 
 } } // fc::http
-
-#include <fc/reflect/reflect.hpp>
-FC_REFLECT( fc::http::header, (key)(val) )
-

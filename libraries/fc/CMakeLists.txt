@@ -200,11 +200,10 @@ set( fc_sources
      src/interprocess/mmap_struct.cpp
      src/interprocess/file_mutex.cpp
      src/rpc/cli.cpp
-     src/rpc/http_api.cpp
      src/rpc/json_connection.cpp
      src/rpc/state.cpp
      src/rpc/bstate.cpp
-     src/rpc/websocket_api.cpp
+     src/rpc/http_api.cpp
      src/log/log_message.cpp
      src/log/logger.cpp
      src/log/appender.cpp
@@ -237,8 +236,8 @@ set( fc_sources
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
-     src/network/http/http_connection.cpp
-     src/network/http/http_server.cpp
+     src/network/http/connection.cpp
+     src/network/http/http.cpp
      src/network/http/websocket.cpp
      src/network/ntp.cpp
      src/network/ip.cpp

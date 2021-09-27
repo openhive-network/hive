@@ -7,13 +7,11 @@ http_api_connection::~http_api_connection()
 {
 }
 
-http_api_connection::http_api_connection( fc::http::connection& c )
-   : _connection( c )
+http_api_connection::http_api_connection( fc::http::websocket_connection& c )
+   : _connection(c)
 {
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
-      // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
-      // it should be consolidated into one place instead of copy-pasted
       FC_ASSERT( args.size() == 3 && args[2].is_array() );
       api_id_type api_id;
       if( args[0].is_string() )
@@ -37,18 +35,14 @@ http_api_connection::http_api_connection( fc::http::connection& c )
    _rpc_state.add_method( "notice", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 2 && args[1].is_array() );
-      this->receive_notice(
-         args[0].as_uint64(),
-         args[1].get_array() );
+      this->receive_notice( args[0].as_uint64(), args[1].get_array() );
       return variant();
    } );
 
    _rpc_state.add_method( "callback", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 2 && args[1].is_array() );
-      this->receive_callback(
-         args[0].as_uint64(),
-         args[1].get_array() );
+      this->receive_callback( args[0].as_uint64(), args[1].get_array() );
       return variant();
    } );
 
@@ -57,10 +51,9 @@ http_api_connection::http_api_connection( fc::http::connection& c )
       return this->receive_call( 0, method_name, args );
    } );
 
-   // TM_FC_TODO:
-   //_connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
-   //_connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg,false); } );
-   //_connection.closed.connect( [this](){ closed(); } );
+   _connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
+   _connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg,false); } );
+   _connection.closed.connect( [this](){ closed(); } );
 }
 
 variant http_api_connection::send_call(
@@ -68,90 +61,110 @@ variant http_api_connection::send_call(
    string method_name,
    variants args /* = variants() */ )
 {
-   // HTTP has no way to do this, so do nothing
-   return variant();
+   idump( (api_id)(method_name)(args) );
+   auto request = _rpc_state.start_remote_call(  "call", {api_id, std::move(method_name), std::move(args) } );
+   idump( (request) );
+   _connection.send_message( fc::json::to_string(request) );
+   return _rpc_state.wait_for_response( *request.id );
 }
 
 variant http_api_connection::send_call(
    string api_name,
    string method_name,
-   variants args /* = variants() */ )
+   variants args )
 {
-   // HTTP has no way to do this, so do nothing
-   return variant();
+   auto request = _rpc_state.start_remote_call(  "call", {std::move(api_name), std::move(method_name), std::move(args) } );
+   _connection.send_message( fc::json::to_string(request) );
+   return _rpc_state.wait_for_response( *request.id );
 }
 
 variant http_api_connection::send_callback(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   // HTTP has no way to do this, so do nothing
-   return variant();
+   auto request = _rpc_state.start_remote_call( "callback", {callback_id, std::move(args) } );
+   _connection.send_message( fc::json::to_string(request) );
+   return _rpc_state.wait_for_response( *request.id );
 }
 
 void http_api_connection::send_notice(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   // HTTP has no way to do this, so do nothing
-   return;
+   fc::rpc::request req{ "2.0", optional<uint64_t>(), "notice", {callback_id, std::move(args)}};
+   _connection.send_message( fc::json::to_string(req) );
 }
 
-void http_api_connection::on_request( const fc::http::request& req, const fc::http::server::response& resp )
+std::string http_api_connection::on_message(
+   const std::string& message,
+   bool send_message /* = true */ )
 {
-   // this must be called by outside HTTP server's on_request method
-   std::string resp_body;
-   http::reply::status_code resp_status;
-
+   wdump((message));
    try
    {
-      resp.add_header( "Content-Type", "application/json" );
-      std::string req_body( req.body.begin(), req.body.end() );
-      auto var = fc::json::from_string( req_body );
+      auto var = fc::json::from_string(message);
       const auto& var_obj = var.get_object();
-
       if( var_obj.contains( "method" ) )
       {
          auto call = var.as<fc::rpc::request>();
+         exception_ptr optexcept;
          try
          {
             try
             {
+#ifdef LOG_LONG_API
+               auto start = time_point::now();
+#endif
+
                auto result = _rpc_state.local_call( call.method, call.params );
-               resp_body = fc::json::to_string( fc::rpc::response( *call.id, result ) );
-               resp_status = http::reply::OK;
+
+#ifdef LOG_LONG_API
+               auto end = time_point::now();
+
+               if( end - start > fc::milliseconds( LOG_LONG_API_MAX_MS ) )
+                  elog( "API call execution time limit exceeded. method: ${m} params: ${p} time: ${t}", ("m",call.method)("p",call.params)("t", end - start) );
+               else if( end - start > fc::milliseconds( LOG_LONG_API_WARN_MS ) )
+                  wlog( "API call execution time nearing limit. method: ${m} params: ${p} time: ${t}", ("m",call.method)("p",call.params)("t", end - start) );
+#endif
+
+               if( call.id )
+               {
+                  auto reply = fc::json::to_string( response( *call.id, result ) );
+                  if( send_message )
+                     _connection.send_message( reply );
+                  return reply;
+               }
             }
-            FC_CAPTURE_AND_RETHROW( (call.method)(call.params) );
+            FC_CAPTURE_AND_RETHROW( (call.method)(call.params) )
          }
          catch ( const fc::exception& e )
          {
-            resp_body = fc::json::to_string( fc::rpc::response( *call.id, error_object{ 1, e.to_detail_string(), fc::variant(e)} ) );
-            resp_status = http::reply::InternalServerError;
+            if( call.id )
+            {
+               optexcept = e.dynamic_copy_exception();
+            }
+         }
+         if( optexcept ) {
+
+               auto reply = fc::json::to_string( response( *call.id,  error_object{ 1, optexcept->to_detail_string(), fc::variant(*optexcept)}  ) );
+               if( send_message )
+                  _connection.send_message( reply );
+
+               return reply;
          }
       }
       else
       {
-         resp_status = http::reply::BadRequest;
-         resp_body = "";
+         auto reply = var.as<fc::rpc::response>();
+         _rpc_state.handle_reply( reply );
       }
    }
    catch ( const fc::exception& e )
    {
-      resp_status = http::reply::InternalServerError;
-      resp_body = "";
       wdump((e.to_detail_string()));
+      return e.to_detail_string();
    }
-   try
-   {
-      resp.set_status( resp_status );
-      resp.set_length( resp_body.length() );
-      resp.write( resp_body.c_str(), resp_body.length() );
-   }
-   catch( const fc::exception& e )
-   {
-      wdump((e.to_detail_string()));
-   }
-   return;
+   return string();
 }
 
 } } // namespace fc::rpc

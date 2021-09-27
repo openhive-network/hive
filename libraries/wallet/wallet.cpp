@@ -48,7 +48,7 @@
 #include <fc/macros.hpp>
 #include <fc/network/http/websocket.hpp>
 #include <fc/rpc/cli.hpp>
-#include <fc/rpc/websocket_api.hpp>
+#include <fc/rpc/http_api.hpp>
 #include <fc/crypto/aes.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/crypto/rand.hpp>

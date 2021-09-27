@@ -1,10 +1,9 @@
 #pragma once
-#include <fc/io/json.hpp>
-#include <fc/network/http/connection.hpp>
-#include <fc/network/http/server.hpp>
-#include <fc/reflect/variant.hpp>
 #include <fc/rpc/api_connection.hpp>
 #include <fc/rpc/state.hpp>
+#include <fc/network/http/websocket.hpp>
+#include <fc/io/json.hpp>
+#include <fc/reflect/variant.hpp>
 
 namespace fc { namespace rpc {
 
@@ -29,17 +28,13 @@ namespace fc { namespace rpc {
             uint64_t callback_id,
             variants args = variants() ) override;
 
-         void on_request(
-            const fc::http::request& req,
-            const fc::http::server::response& resp );
-
       protected:
          std::string on_message(
             const std::string& message,
             bool send_message = true );
 
-         fc::http::connection&            _connection;
-         fc::rpc::state                   _rpc_state;
+         fc::http::connection&  _connection;
+         fc::rpc::state         _rpc_state;
    };
 
 } } // namespace fc::rpc
