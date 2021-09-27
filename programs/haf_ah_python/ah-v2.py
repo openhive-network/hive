@@ -37,27 +37,27 @@ if not logger.hasHandlers():
   logger.addHandler(fh)
 
 class range_type:
-  def __init__(self, _low, _high):
-    self.low = _low
-    self.high = _high
+  def __init__(self, low, high):
+    self.low  = low
+    self.high = high
 
 class account_op:
-  def __init__(self, _op_id, _name):
-    self.op_id = _op_id
-    self.name = _name
+  def __init__(self, op_id, name):
+    self.op_id  = op_id
+    self.name   = name
 
 class account_info:
 
   next_account_id = 1
 
-  def __init__(self, _id, _operation_count):
-    self.id = _id
-    self.operation_count = _operation_count
+  def __init__(self, id, operation_count):
+    self.id               = id
+    self.operation_count  = operation_count
 
 class ah_query:
-  def __init__(self, _application_context):
+  def __init__(self, application_context):
 
-    self.application_context              = _application_context
+    self.application_context              = application_context
 
     self.accounts                         = "SELECT id, name FROM accounts;"
     self.account_ops                      = "SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;"
@@ -401,7 +401,7 @@ class ah_loader(metaclass = singleton):
   def prepare_ranges(self, low_value, high_value, threads):
     assert threads > 0 and threads <= 64
 
-    if threads == 1 or not is_massive:
+    if threads == 1 or not self.is_massive:
       return [ range_type(low_value, high_value) ]
 
     #It's better to send small amount of data in only 1 thread. More threads introduce unnecessary complexity.
@@ -410,21 +410,20 @@ class ah_loader(metaclass = singleton):
     if high_value - low_value + 1 <= _thread_threshold:
       return [ range_type(low_value, high_value) ]
 
-    ranges = threads * [None]
-    _size = ( high_value - low_value + 1 ) / threads
+    _ranges = []
+    _size = int(( high_value - low_value + 1 ) / threads)
 
-    for i in range(len(ranges)):
+    for i in range(threads):
       if i == 0:
-        ranges[i].low   = low_value
-        ranges[i].high  = low_value + _size
+        _ranges.append(range_type(low_value, low_value + _size))
       else:
-        ranges[i].low   = ranges[i - 1].high + 1
-        ranges[i].high  = ranges[i].low + _size
+        _low = _ranges[i - 1].high + 1
+        _ranges.append(range_type(_low, _low + _size))
 
-    assert len(ranges) > 0
-    ranges[len(ranges) - 1].high = high_value
+    assert len(_ranges) > 0
+    _ranges[len(_ranges) - 1].high = high_value
 
-    return ranges
+    return _ranges
 
   def receive_data(self, first_block, last_block):
     global pool
