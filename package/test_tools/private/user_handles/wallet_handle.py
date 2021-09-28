@@ -37,3 +37,6 @@ class WalletHandle:
 
     def close(self):
         self.__implementation.close()
+
+    def is_running(self) -> bool:
+        return self.__implementation.is_running()
