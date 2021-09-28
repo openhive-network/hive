@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class WalletHandle:
+    DEFAULT_PASSWORD = Wallet.DEFAULT_PASSWORD
+
     def __init__(self,
                  attach_to: Union[None, 'Node', 'RemoteNode'] = None,
                  additional_arguments: Iterable[str] = (),
