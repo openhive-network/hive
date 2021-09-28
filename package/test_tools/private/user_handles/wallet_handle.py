@@ -28,3 +28,9 @@ class WalletHandle:
 
     def in_single_transaction(self, *, broadcast=None):
         return self.__implementation.in_single_transaction(broadcast=broadcast)
+
+    def run(self, *, timeout, preconfigure: bool = True):
+        self.__implementation.run(timeout=timeout, preconfigure=preconfigure)
+
+    def close(self):
+        self.__implementation.close()
