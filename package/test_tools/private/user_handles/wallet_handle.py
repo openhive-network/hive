@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class WalletHandle:
     def __init__(self,
                  attach_to: Union[None, 'Node', 'RemoteNode'] = None,
-                 additional_arguments: Iterable = (),
+                 additional_arguments: Iterable[str] = (),
                  preconfigure: bool = True):
         # Break import-cycle
         from test_tools import RemoteNode  # pylint: disable=import-outside-toplevel
