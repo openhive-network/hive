@@ -514,6 +514,9 @@ class Wallet(ScopedObject):
             '--rpc-http-allowip=127.0.0.1',
         ]
 
+        if self.is_running():
+            raise RuntimeError('Wallet is already running')
+
         if not self.executable_file_path:
             self.executable_file_path = paths_to_executables.get_path_of('cli_wallet')
 
