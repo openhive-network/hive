@@ -19,6 +19,9 @@ class Wallet(ScopedObject):
     # pylint: disable=too-many-instance-attributes
     # This pylint warning is right, but this refactor has low priority. Will be done later...
 
+    DEFAULT_RUN_TIMEOUT = 15
+    DEFAULT_PASSWORD = 'password'
+
     class __Api:
         # pylint: disable=invalid-name, too-many-arguments, too-many-public-methods
         # Wallet api is out of TestTools control
@@ -474,7 +477,7 @@ class Wallet(ScopedObject):
         self.additional_arguments = list(additional_arguments)
         self.logger = logger.create_child_logger(self.name)
 
-        self.run(timeout=15, preconfigure=preconfigure)
+        self.run(timeout=self.DEFAULT_RUN_TIMEOUT, preconfigure=preconfigure)
 
     def __str__(self):
         return self.name
@@ -507,7 +510,8 @@ class Wallet(ScopedObject):
         Starts wallet. Blocks until wallet will be ready for use.
 
         :param timeout: TimeoutError will be raised, if wallet won't start before specified timeout.
-        :param preconfigure: If set to True, wallet will be unlocked with password "password" and initminer key imported.
+        :param preconfigure: If set to True, wallet will be unlocked with password Wallet.DEFAULT_PASSWORD and initminer
+                             key imported.
         """
         run_parameters = [
             '--daemon',
@@ -584,7 +588,7 @@ class Wallet(ScopedObject):
             )
 
         if preconfigure:
-            password = 'password'
+            password = self.DEFAULT_PASSWORD
             self.api.set_password(password)
             self.api.unlock(password)
             self.api.import_key(Account('initminer').private_key)
