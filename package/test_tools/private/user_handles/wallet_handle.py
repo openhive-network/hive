@@ -32,5 +32,8 @@ class WalletHandle:
     def run(self, *, timeout, preconfigure: bool = True):
         self.__implementation.run(timeout=timeout, preconfigure=preconfigure)
 
+    def restart(self, *, preconfigure: bool = True):
+        self.__implementation.restart(preconfigure=preconfigure)
+
     def close(self):
         self.__implementation.close()

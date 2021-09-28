@@ -505,13 +505,14 @@ class Wallet(ScopedObject):
 
         return False
 
-    def run(self, *, timeout, preconfigure=True):
+    def run(self, *, timeout, preconfigure=True, clean=True):
         """
         Starts wallet. Blocks until wallet will be ready for use.
 
         :param timeout: TimeoutError will be raised, if wallet won't start before specified timeout.
         :param preconfigure: If set to True, wallet will be unlocked with password Wallet.DEFAULT_PASSWORD and initminer
                              key imported.
+        :param clean: If set to True, wallet directory with all its files will be removed before run.
         """
         run_parameters = [
             '--daemon',
@@ -535,8 +536,10 @@ class Wallet(ScopedObject):
 
         run_parameters.extend([f'--rpc-http-endpoint=0.0.0.0:{self.http_server_port}'])
 
-        shutil.rmtree(self.directory, ignore_errors=True)
-        self.directory.mkdir(parents=True)
+        if clean:
+            shutil.rmtree(self.directory, ignore_errors=True)
+
+        self.directory.mkdir(parents=True, exist_ok=True)
 
         # pylint: disable=consider-using-with
         # Files opened here have to exist longer than current scope
@@ -589,7 +592,10 @@ class Wallet(ScopedObject):
 
         if preconfigure:
             password = self.DEFAULT_PASSWORD
-            self.api.set_password(password)
+
+            if not self.__is_password_set():
+                self.api.set_password(password)
+
             self.api.unlock(password)
             self.api.import_key(Account('initminer').private_key)
 
@@ -613,15 +619,23 @@ class Wallet(ScopedObject):
                     return endpoint.replace('0.0.0.0', '127.0.0.1')
         return None
 
+    def __is_password_set(self) -> bool:
+        return not self.api.is_new()['result']
+
     def connect_to(self, node):
         self.connected_node = node
 
     def at_exit_from_scope(self):
         self.close()
 
+    def restart(self, *, preconfigure=True):
+        self.close()
+        self.run(timeout=self.DEFAULT_RUN_TIMEOUT, preconfigure=preconfigure, clean=False)
+
     def close(self):
         self.__close_process()
         self.__close_opened_files()
+        self.http_server_port = None
 
     def __close_process(self):
         if self.process is None:

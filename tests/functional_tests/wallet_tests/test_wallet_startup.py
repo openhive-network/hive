@@ -31,3 +31,11 @@ def test_attaching_wallet_to_not_run_node(world):
 
 def test_offline_mode_startup():
     Wallet()
+
+
+def test_restart(world):
+    node = world.create_init_node()
+    node.run()
+
+    wallet = Wallet(attach_to=node)
+    wallet.restart()
