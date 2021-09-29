@@ -122,7 +122,23 @@ struct ah_query
 
     next_block      = format( "SELECT * FROM hive.app_next_block('%s');", application_context );
 
-    get_bodies      = "SELECT id, get_impacted_accounts(body) FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d;";
+    // get_bodies      = "SELECT id, get_impacted_accounts(body), ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d ORDER BY block_num, helper_trx_in_block, op_pos;";
+    get_bodies = R"(
+SELECT T.id id, T.account get_impacted_accounts
+FROM (
+  SELECT 
+    ahov.id,
+    get_impacted_accounts(body) as account,
+    ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block
+  FROM
+    hive.account_history_operations_view ahov
+  JOIN
+    hive.operation_types hot ON hot.id = ahov.op_type_id
+  WHERE 
+    block_num >= %d AND block_num <= %d
+  ORDER BY
+    block_num, helper_trx_in_block, op_pos ASC, hot.is_virtual DESC
+) T;)";
 
     FC_ASSERT( insert_into_accounts.size() == 3 );
     insert_into_accounts[0] = "INSERT INTO public.accounts( id, name ) VALUES";
@@ -455,7 +471,7 @@ class ah_loader
       auto found = account_cache.find( account_name );
 
       auto _next_account_id = account_info::next_account_id;
-      uint64_t _op_cnt = 1;
+      uint64_t _op_cnt = 0;
 
       if( found == account_cache.end() )
       {
