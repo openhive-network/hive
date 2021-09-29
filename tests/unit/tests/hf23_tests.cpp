@@ -370,45 +370,45 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
       generate_block();
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       delegate_vest( "alice", "bob", _3v, alice_private_key );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       delegate_vest( "alice", "bob", _2v, alice_private_key );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) != idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       delegate_vest( "alice", "bob", _1v, alice_private_key );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) != idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       const auto& _bob = db->get_account( "bob" );
       db->clear_account( _bob );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) != idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       const auto& _alice = db->get_account( "alice" );
       db->clear_account( _alice );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
 
     database_fixture::validate_database();

@@ -308,7 +308,7 @@ namespace hive { namespace chain {
       //amount of delegated VESTS
       const VEST_asset& get_vesting() const { return vesting_shares; }
       //minimal time when delegation will not be returned to the delegator (can be taken from delegatee though)
-      const time_point_sec& get_min_delegation_time() const { return min_delegation_time; }
+      time_point_sec get_min_delegation_time() const { return min_delegation_time; }
 
       void set_vesting( const VEST_asset& _new_amount )
       {
@@ -329,14 +329,23 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( vesting_delegation_expiration_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( vesting_delegation_expiration_object )
+      template< typename Allocator >
+      vesting_delegation_expiration_object( allocator< Allocator > a, uint64_t _id,
+        const account_object& _delegator, const VEST_asset& _amount, const time_point_sec& _expiration )
+      : id( _id ), delegator( _delegator.get_id() ), vesting_shares( _amount ), expiration( _expiration )
+      {}
 
-      //amount of expiring delegated VESTS
-      const asset& get_vesting() const { return vesting_shares; }
+      //id of "delegation sender" where VESTs are to be returned
+      account_id_type get_delegator() const { return delegator; }
+      //amount of expiring delegated VESTs
+      const VEST_asset& get_vesting() const { return vesting_shares; }
+      //time when VESTs are to be returned to delegator
+      time_point_sec get_expiration_time() const { return expiration; }
 
-      account_name_type delegator;
-      asset             vesting_shares = asset( 0, VESTS_SYMBOL );
-      time_point_sec    expiration;
+    private:
+      account_id_type delegator;
+      VEST_asset      vesting_shares;
+      time_point_sec  expiration;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_expiration_object);
   };
@@ -553,18 +562,16 @@ namespace hive { namespace chain {
         const_mem_fun< vesting_delegation_expiration_object, vesting_delegation_expiration_object::id_type, &vesting_delegation_expiration_object::get_id > >,
       ordered_unique< tag< by_expiration >,
         composite_key< vesting_delegation_expiration_object,
-          member< vesting_delegation_expiration_object, time_point_sec, &vesting_delegation_expiration_object::expiration >,
+          const_mem_fun< vesting_delegation_expiration_object, time_point_sec, &vesting_delegation_expiration_object::get_expiration_time >,
           const_mem_fun< vesting_delegation_expiration_object, vesting_delegation_expiration_object::id_type, &vesting_delegation_expiration_object::get_id >
-        >,
-        composite_key_compare< std::less< time_point_sec >, std::less< vesting_delegation_expiration_id_type > >
+        >
       >,
       ordered_unique< tag< by_account_expiration >,
         composite_key< vesting_delegation_expiration_object,
-          member< vesting_delegation_expiration_object, account_name_type, &vesting_delegation_expiration_object::delegator >,
-          member< vesting_delegation_expiration_object, time_point_sec, &vesting_delegation_expiration_object::expiration >,
+          const_mem_fun< vesting_delegation_expiration_object, account_id_type, &vesting_delegation_expiration_object::get_delegator >,
+          const_mem_fun< vesting_delegation_expiration_object, time_point_sec, &vesting_delegation_expiration_object::get_expiration_time >,
           const_mem_fun< vesting_delegation_expiration_object, vesting_delegation_expiration_object::id_type, &vesting_delegation_expiration_object::get_id >
-        >,
-        composite_key_compare< std::less< account_name_type >, std::less< time_point_sec >, std::less< vesting_delegation_expiration_id_type > >
+        >
       >
     >,
     allocator< vesting_delegation_expiration_object >
