@@ -129,9 +129,9 @@ struct api_vesting_delegation_expiration_object
 {
   api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( o.delegator ),
-    vesting_shares( o.vesting_shares ),
-    expiration( o.expiration )
+    delegator( db.get_account( o.get_delegator() ).get_name() ),
+    vesting_shares( o.get_vesting() ),
+    expiration( o.get_expiration_time() )
   {}
 
   vesting_delegation_expiration_id_type id;
