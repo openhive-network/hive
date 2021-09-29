@@ -2205,26 +2205,26 @@ void database::clear_account( const account_object& account,
     asset freed_delegations = asset( 0, VESTS_SYMBOL );
 
     const auto& delegation_idx = get_index< vesting_delegation_index, by_delegation >();
-    auto delegation_itr = delegation_idx.lower_bound( account_name );
-    while( delegation_itr != delegation_idx.end() && delegation_itr->delegator == account_name )
+    auto delegation_itr = delegation_idx.lower_bound( account.get_id() );
+    while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account.get_id() )
     {
       auto& delegation = *delegation_itr;
       ++delegation_itr;
 
-      const auto& delegatee = get_account( delegation.delegatee );
+      const auto& delegatee = get_account( delegation.get_delegatee() );
 
       modify( delegatee, [&]( account_object& a )
       {
         util::update_manabar( cprops, a, true, true );
-        a.received_vesting_shares -= delegation.vesting_shares;
-        freed_delegations += delegation.vesting_shares;
+        a.received_vesting_shares -= delegation.get_vesting();
+        freed_delegations += delegation.get_vesting();
 
-        a.voting_manabar.use_mana( delegation.vesting_shares.amount.value );
+        a.voting_manabar.use_mana( delegation.get_vesting().amount.value );
         if( a.voting_manabar.current_mana < 0 )
           a.voting_manabar.current_mana = 0;
 
         a.downvote_manabar.use_mana(
-          ((uint128_t(delegation.vesting_shares.amount.value) * cprops.downvote_pool_percent) /
+          ((uint128_t(delegation.get_vesting().amount.value) * cprops.downvote_pool_percent) /
           HIVE_100_PERCENT).to_int64());
         if( a.downvote_manabar.current_mana < 0 )
           a.downvote_manabar.current_mana = 0;
@@ -6154,7 +6154,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         while( delegation_itr != delegation_idx.end() )
         {
-          if( delegation_itr->vesting_shares.amount == 0 )
+          if( delegation_itr->get_vesting().amount == 0 )
             to_remove.push_back( &(*delegation_itr) );
 
           ++delegation_itr;

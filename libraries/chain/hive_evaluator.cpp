@@ -459,13 +459,16 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   if( o.delegation.amount > 0 || !_db.has_hardfork( HIVE_HARDFORK_0_19__997 ) )
   {
-    _db.create< vesting_delegation_object >( [&]( vesting_delegation_object& vdo )
-    {
-      vdo.delegator = o.creator;
-      vdo.delegatee = o.new_account_name;
-      vdo.vesting_shares = o.delegation;
-      vdo.min_delegation_time = _db.head_block_time() + HIVE_CREATE_ACCOUNT_DELEGATION_TIME;
-    });
+    //ABW: for future reference:
+    //the above HF19 condition cannot be eliminated, because when delegation is created here, its minimal time
+    //is 30 days, while delegation created normally will have no effective limit;
+    //this means that there is difference between zero delegation created here and then increased with
+    //delegate_vesting_shares_operation and delegation created with delegate_vesting_shares_operation;
+    //if such delegation is then reduced, delegated VESTs will return to delegator at different time, in case
+    //30 days after creation happens to be later than "now - dgpo.delegation_return_period" at the time when
+    //delegation is reduced; such situation actually happened
+    _db.create< vesting_delegation_object >( creator, new_account, o.delegation,
+      _db.head_block_time() + HIVE_CREATE_ACCOUNT_DELEGATION_TIME );
   }
 
   asset initial_vesting_shares;
@@ -2830,7 +2833,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );
-  auto delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( op.delegator, op.delegatee ) );
+  auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );
 
   const auto& gpo = _db.get_dynamic_global_properties();
 
@@ -2921,13 +2924,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       ("acc", op.delegator)("r", op.vesting_shares)("a", available_downvote_shares) );
     FC_ASSERT( op.vesting_shares >= min_delegation, "Account must delegate a minimum of ${v}", ("v", min_delegation) );
 
-    _db.create< vesting_delegation_object >( [&]( vesting_delegation_object& obj )
-    {
-      obj.delegator = op.delegator;
-      obj.delegatee = op.delegatee;
-      obj.vesting_shares = op.vesting_shares;
-      obj.min_delegation_time = _db.head_block_time();
-    });
+    _db.create< vesting_delegation_object >( delegator, delegatee, op.vesting_shares, _db.head_block_time() );
 
     _db.modify( delegator, [&]( account_object& a )
     {
@@ -2959,9 +2956,9 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     });
   }
   // Else if the delegation is increasing
-  else if( op.vesting_shares >= delegation->vesting_shares )
+  else if( op.vesting_shares >= delegation->get_vesting() )
   {
-    auto delta = op.vesting_shares - delegation->vesting_shares;
+    auto delta = op.vesting_shares - delegation->get_vesting();
 
     FC_ASSERT( delta >= min_update, "Hive Power increase is not enough of a difference. min_update: ${min}", ("min", min_update) );
     FC_ASSERT( available_shares >= delta, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
@@ -3002,13 +2999,13 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     _db.modify( *delegation, [&]( vesting_delegation_object& obj )
     {
-      obj.vesting_shares = op.vesting_shares;
+      obj.set_vesting( op.vesting_shares );
     });
   }
   // Else the delegation is decreasing
   else /* delegation->vesting_shares > op.vesting_shares */
   {
-    auto delta = delegation->vesting_shares - op.vesting_shares;
+    auto delta = delegation->get_vesting() - op.vesting_shares;
 
     if( op.vesting_shares.amount > 0 )
     {
@@ -3017,14 +3014,14 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     }
     else
     {
-      FC_ASSERT( delegation->vesting_shares.amount > 0, "Delegation would set vesting_shares to zero, but it is already zero");
+      FC_ASSERT( delegation->get_vesting().amount > 0, "Delegation would set vesting_shares to zero, but it is already zero");
     }
 
     _db.create< vesting_delegation_expiration_object >( [&]( vesting_delegation_expiration_object& obj )
     {
       obj.delegator = op.delegator;
       obj.vesting_shares = delta;
-      obj.expiration = std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->min_delegation_time );
+      obj.expiration = std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->get_min_delegation_time() );
     });
 
     _db.modify( delegatee, [&]( account_object& a )
@@ -3068,7 +3065,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       _db.modify( *delegation, [&]( vesting_delegation_object& obj )
       {
-        obj.vesting_shares = op.vesting_shares;
+        obj.set_vesting( op.vesting_shares );
       });
     }
     else
