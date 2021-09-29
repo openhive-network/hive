@@ -891,8 +891,17 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
     case( by_delegation ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      const auto* delegator = _db.find_account( key.first );
+      FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+      account_id_type delegatee_id;
+      if( key.second != "" )
+      {
+        const auto* delegatee = _db.find_account( key.second );
+        FC_ASSERT( delegatee != nullptr, "Given account does not exist." );
+        delegatee_id = delegatee->get_id();
+      }
       iterate_results< chain::vesting_delegation_index, chain::by_delegation >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( delegator->get_id(), delegatee_id ),
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_object, vesting_delegation_object >,
@@ -910,9 +919,12 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 {
   find_vesting_delegations_return result;
   const auto& delegation_idx = _db.get_index< chain::vesting_delegation_index, chain::by_delegation >();
-  auto itr = delegation_idx.lower_bound( args.account );
+  const auto* delegator = _db.find_account( args.account );
+  FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+  account_id_type delegator_id = delegator->get_id();
+  auto itr = delegation_idx.lower_bound( delegator_id );
 
-  while( itr != delegation_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != delegation_idx.end() && itr->get_delegator() == delegator_id && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.delegations.emplace_back( *itr, _db );
     ++itr;
