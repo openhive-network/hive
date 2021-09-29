@@ -6,6 +6,7 @@
 #include <fc/io/stdio.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/network/url.hpp>
+#include <boost/system/error_code.hpp>
 #include <string>
 
 namespace fc { namespace http {
@@ -121,6 +122,10 @@ namespace fc { namespace http {
 
     my->_connected = fc::promise<void>::ptr( new fc::promise<void>("http::connect") );
 
+    boost::system::error_code ec;
+
+
+    FC_ASSERT( !ec, "${con_desc}: Error: ${ec_msg}", ("con_desc",my->_connected->get_desc())("ec_msg",ec.message()) );
 
     my->_connected->wait();
     return nullptr;
@@ -139,6 +144,10 @@ namespace fc { namespace http {
 
     my->_connected = fc::promise<void>::ptr( new fc::promise<void>("https::connect") );
 
+    boost::system::error_code ec;
+
+
+    FC_ASSERT( !ec, "${con_desc}: Error: ${ec_msg}", ("con_desc",my->_connected->get_desc())("ec_msg",ec.message()) );
 
     my->_connected->wait();
     return nullptr;
