@@ -5,7 +5,7 @@
 #include <fc/network/ip.hpp>
 #include <fc/io/stdio.hpp>
 #include <fc/log/logger.hpp>
-
+#include <fc/network/url.hpp>
 #include <string>
 
 namespace fc { namespace http {
@@ -56,14 +56,28 @@ namespace fc { namespace http {
     {
     public:
       http_client_impl()
+        : _client_thread( fc::thread::current() )
       {}
+
+      fc::promise<void>::ptr  _connected;
+      fc::url                 _url;
+
+    private:
+      fc::thread&             _client_thread;
     };
 
     class http_tls_client_impl
     {
     public:
       http_tls_client_impl( const std::string& ca_filename )
+        : _client_thread( fc::thread::current() )
       {}
+
+      fc::promise<void>::ptr  _connected;
+      fc::url                 _url;
+
+    private:
+      fc::thread&             _client_thread;
     };
   } // namespace detail
 
@@ -99,23 +113,35 @@ namespace fc { namespace http {
     : client(), my( new detail::http_client_impl() ) {}
   http_client::~http_client() {}
 
-  connection_ptr http_client::connect( const std::string& uri )
+  connection_ptr http_client::connect( const std::string& _url_str )
   { try {
-    FC_ASSERT( uri.substr(0,5) == "http:" );
+    fc::url _url{ _url_str };
+    FC_ASSERT( _url.proto() == "http", "Invalid protocol: \"{proto}\". Expected: \"http\"", ("proto", _url.proto()) );
+    my->_url = _url;
 
+    my->_connected = fc::promise<void>::ptr( new fc::promise<void>("http::connect") );
+
+
+    my->_connected->wait();
     return nullptr;
-  } FC_CAPTURE_AND_RETHROW( (uri) )}
+  } FC_CAPTURE_AND_RETHROW( (_url_str) )}
 
 
   http_tls_client::http_tls_client( const std::string& ca_filename )
     : client( ca_filename ), my( new detail::http_tls_client_impl( ca_filename ) ) {}
   http_tls_client::~http_tls_client() {}
 
-  connection_ptr http_tls_client::connect( const std::string& uri )
+  connection_ptr http_tls_client::connect( const std::string& _url_str )
   { try {
-    FC_ASSERT( uri.substr(0,6) == "https:" );
+    fc::url _url{ _url_str };
+    FC_ASSERT( _url.proto() == "https", "Invalid protocol: \"{proto}\". Expected: \"https\"", ("proto", _url.proto()) );
+    my->_url = _url;
 
+    my->_connected = fc::promise<void>::ptr( new fc::promise<void>("https::connect") );
+
+
+    my->_connected->wait();
     return nullptr;
-  } FC_CAPTURE_AND_RETHROW( (uri) ) }
+  } FC_CAPTURE_AND_RETHROW( (_url_str) ) }
 
 } } // fc::http

@@ -55,7 +55,7 @@ namespace fc { namespace http {
          http_client();
          virtual ~http_client();
 
-         virtual connection_ptr connect( const std::string& uri ) override;
+         virtual connection_ptr connect( const std::string& _url_str ) override;
 
       private:
          std::unique_ptr<detail::http_client_impl> my;
@@ -66,7 +66,7 @@ namespace fc { namespace http {
          http_tls_client( const std::string& ca_filename = "_default" );
          virtual ~http_tls_client();
 
-         virtual connection_ptr connect( const std::string& uri ) override;
+         virtual connection_ptr connect( const std::string& _url_str ) override;
 
       private:
          std::unique_ptr<detail::http_tls_client_impl> my;
