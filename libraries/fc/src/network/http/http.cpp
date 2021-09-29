@@ -11,6 +11,33 @@
 namespace fc { namespace http {
 
   namespace detail {
+
+    template< typename ConnectionType >
+    class http_connection_impl : public http_connection
+    {
+    public:
+      typedef ConnectionType connection_type;
+
+      http_connection_impl( connection_type con )
+        : _http_connection( con )
+      {}
+
+      virtual ~http_connection_impl() = default;
+
+      virtual void send_message( const std::string& message )override
+      {
+        idump((message));
+        auto ec = _http_connection->send( message );
+        FC_ASSERT( !ec, "http send failed: ${msg}", ("msg",ec.message() ) );
+      }
+      virtual void close( int64_t code, const std::string& reason )override
+      {
+          _http_connection->close(code,reason);
+      }
+
+      connection_type _http_connection;
+    };
+
     class http_server_impl
     {
     public:
