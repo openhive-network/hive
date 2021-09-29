@@ -14,6 +14,8 @@ namespace fc { namespace http {
       class http_tls_client_impl;
    } // namespace detail;
 
+   typedef connection http_connection;
+
    class http_server : public server
    {
       public:

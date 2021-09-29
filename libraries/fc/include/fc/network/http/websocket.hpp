@@ -15,6 +15,18 @@ namespace fc { namespace http {
       class websocket_tls_client_impl;
    } // namespace detail;
 
+   class websocket_connection : public connection
+   {
+   public:
+      websocket_connection() = default;
+      virtual ~websocket_connection() = default;
+
+      string on_http( const std::string& message ) { return _on_http(message); }
+
+   private:
+      std::function<string(const std::string&)> _on_http;
+   };
+
    class websocket_server : public server
    {
       public:

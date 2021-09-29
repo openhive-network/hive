@@ -146,7 +146,7 @@ namespace fc { namespace http {
       typedef websocketpp::server<asio_tls_stub_log>   websocket_tls_server_type;
 
       template<typename T>
-      class websocket_connection_impl : public connection
+      class websocket_connection_impl : public websocket_connection
       {
          public:
             websocket_connection_impl( T con )
