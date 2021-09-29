@@ -1,13 +1,17 @@
 
-#include <fc/rpc/http_api.hpp>
+#include <fc/rpc/network_api_connection.hpp>
+#include <fc/network/http/connection.hpp>
+#include <fc/io/json.hpp>
+#include <fc/reflect/variant.hpp>
+#include <fc/rpc/state.hpp>
 
 namespace fc { namespace rpc {
 
-http_api_connection::~http_api_connection()
+network_api_connection::~network_api_connection()
 {
 }
 
-http_api_connection::http_api_connection( fc::http::connection& c )
+network_api_connection::network_api_connection( fc::http::connection& c )
    : _connection(c)
 {
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
@@ -52,11 +56,10 @@ http_api_connection::http_api_connection( fc::http::connection& c )
    } );
 
    _connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
-   _connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg,false); } );
    _connection.closed.connect( [this](){ closed(); } );
 }
 
-variant http_api_connection::send_call(
+variant network_api_connection::send_call(
    api_id_type api_id,
    string method_name,
    variants args /* = variants() */ )
@@ -68,7 +71,7 @@ variant http_api_connection::send_call(
    return _rpc_state.wait_for_response( *request.id );
 }
 
-variant http_api_connection::send_call(
+variant network_api_connection::send_call(
    string api_name,
    string method_name,
    variants args )
@@ -78,7 +81,7 @@ variant http_api_connection::send_call(
    return _rpc_state.wait_for_response( *request.id );
 }
 
-variant http_api_connection::send_callback(
+variant network_api_connection::send_callback(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
@@ -87,7 +90,7 @@ variant http_api_connection::send_callback(
    return _rpc_state.wait_for_response( *request.id );
 }
 
-void http_api_connection::send_notice(
+void network_api_connection::send_notice(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
@@ -95,7 +98,7 @@ void http_api_connection::send_notice(
    _connection.send_message( fc::json::to_string(req) );
 }
 
-std::string http_api_connection::on_message(
+std::string network_api_connection::on_message(
    const std::string& message,
    bool send_message /* = true */ )
 {
@@ -129,7 +132,7 @@ std::string http_api_connection::on_message(
 
                if( call.id )
                {
-                  auto reply = fc::json::to_string( response( *call.id, result ) );
+                  auto reply = fc::json::to_string( fc::rpc::response( *call.id, result ) );
                   if( send_message )
                      _connection.send_message( reply );
                   return reply;
@@ -146,7 +149,7 @@ std::string http_api_connection::on_message(
          }
          if( optexcept ) {
 
-               auto reply = fc::json::to_string( response( *call.id,  error_object{ 1, optexcept->to_detail_string(), fc::variant(*optexcept)}  ) );
+               auto reply = fc::json::to_string( fc::rpc::response( *call.id, fc::rpc::error_object{ 1, optexcept->to_detail_string(), fc::variant(*optexcept)}  ) );
                if( send_message )
                   _connection.send_message( reply );
 

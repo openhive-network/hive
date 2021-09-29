@@ -36,7 +36,9 @@
 #include <fc/network/http/websocket.hpp>
 #include <fc/network/url.hpp>
 #include <fc/rpc/cli.hpp>
+#include <fc/rpc/api_connection.hpp>
 #include <fc/rpc/http_api.hpp>
+#include <fc/rpc/websocket_api.hpp>
 #include <fc/smart_ref_impl.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
@@ -79,7 +81,20 @@ namespace
   std::shared_ptr< fc::http::client > get_client_type( const std::string& _url_str, const std::string& server_auth = std::string{} )
   {
     fc::url _url{ url_str };
+  }
 
+  std::shared_ptr< fc::api_connection > get_api_connection( const fc::url& _url, fc::http::connection_ptr& con )
+  {
+    if( _url.proto().substr( 0, 2 ) == "ws" )
+      return std::make_shared< fc::rpc::websocket_api_connection >( static_cast< fc::http::websocket_connection& >( *con ) );
+    else if( _url.proto().substr( 0, 4 ) == "http" )
+      return std::make_shared< fc::rpc::http_api_connection >( static_cast< fc::http::http_connection& >( *con ) );
+    else
+      FC_ASSERT( false, "Unsupported protocol: ${proto}", ("proto", _url.proto()) );
+  }
+
+  std::shared_ptr< fc::http::client > get_client_type( const fc::url& _url, const std::string& server_auth = std::string{} )
+  {
     if( _url.proto() == "ws" )
       return std::make_shared< fc::http::websocket_client >();
     else if( _url.proto() == "wss" )
@@ -201,16 +216,11 @@ int main( int argc, char** argv )
     // Override wallet data
     wdata.offline = options.count( "offline" );
 
-    auto client = get_client_type( wdata.ws_server, options["cert-authority"].as<std::string>() );
+    auto wallet_cli = std::make_shared<fc::rpc::cli>();
+
+    auto client = get_client_type( server, options["cert-authority"].as<std::string>() );
     idump((wdata.ws_server));
     fc::http::connection_ptr con;
-
-    fc::url server{ wdata.ws_server };
-
-    std::shared_ptr<wallet_api> wapiptr;
-    boost::signals2::scoped_connection closed_connection;
-
-    auto wallet_cli = std::make_shared<fc::rpc::cli>();
 
     if( wdata.offline )
     {

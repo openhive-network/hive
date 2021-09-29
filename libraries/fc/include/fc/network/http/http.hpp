@@ -14,7 +14,8 @@ namespace fc { namespace http {
       class http_tls_client_impl;
    } // namespace detail;
 
-   typedef connection http_connection;
+   typedef connection                         http_connection;
+   typedef std::shared_ptr< http_connection > http_connection_ptr;
 
    class http_server : public server
    {

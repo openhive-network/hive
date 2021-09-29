@@ -18,7 +18,6 @@ namespace fc { namespace http {
         void on_message( const std::string& message ) { _on_message(message); }
 
         void on_message_handler( const std::function<void(const std::string&)>& h ) { _on_message = h; }
-        void on_http_handler( const std::function<std::string(const std::string&)>& h ) { _on_http = h; }
 
         void     set_session_data( fc::any d ){ _session_data = std::move(d); }
         fc::any& get_session_data() { return _session_data; }
