@@ -26,6 +26,7 @@ class _PathsToExecutables:
             self.__ExecutableDetails('hived', 'programs/hived/hived'),
             self.__ExecutableDetails('cli_wallet', 'programs/cli_wallet/cli_wallet'),
             self.__ExecutableDetails('get_dev_key', 'programs/util/get_dev_key'),
+            self.__ExecutableDetails('truncate_block_log', 'programs/util/truncate_block_log'),
         ]
 
         self.parse_command_line_arguments()
