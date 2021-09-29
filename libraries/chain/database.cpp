@@ -2235,13 +2235,13 @@ void database::clear_account( const account_object& account,
 
     // Remove pending expired delegations
     const auto& exp_delegation_idx = get_index< vesting_delegation_expiration_index, by_account_expiration >();
-    auto exp_delegation_itr = exp_delegation_idx.lower_bound( account_name );
-    while( exp_delegation_itr != exp_delegation_idx.end() && exp_delegation_itr->delegator == account_name )
+    auto exp_delegation_itr = exp_delegation_idx.lower_bound( account.get_id() );
+    while( exp_delegation_itr != exp_delegation_idx.end() && exp_delegation_itr->get_delegator() == account.get_id() )
     {
       auto& delegation = *exp_delegation_itr;
       ++exp_delegation_itr;
 
-      freed_delegations += delegation.vesting_shares;
+      freed_delegations += delegation.get_vesting();
       remove( delegation );
     }
 
@@ -5384,13 +5384,14 @@ void database::clear_expired_delegations()
   auto itr = delegations_by_exp.begin();
   const auto& gpo = get_dynamic_global_properties();
 
-  while( itr != delegations_by_exp.end() && itr->expiration < now )
+  while( itr != delegations_by_exp.end() && itr->get_expiration_time() < now )
   {
-    operation vop = return_vesting_delegation_operation( itr->delegator, itr->vesting_shares );
+    auto& delegator = get_account( itr->get_delegator() );
+    operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
     try{
     pre_push_virtual_operation( vop );
 
-    modify( get_account( itr->delegator ), [&]( account_object& a )
+    modify( delegator, [&]( account_object& a )
     {
       if( has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
@@ -5399,10 +5400,10 @@ void database::clear_expired_delegations()
           a,
           has_hardfork( HIVE_HARDFORK_0_21__3336 ),
           head_block_num() > HIVE_HF_21_STALL_BLOCK,
-          itr->vesting_shares.amount.value );
+          itr->get_vesting().amount.value );
       }
 
-      a.delegated_vesting_shares -= itr->vesting_shares;
+      a.delegated_vesting_shares -= itr->get_vesting();
     });
 
     post_push_virtual_operation( vop );

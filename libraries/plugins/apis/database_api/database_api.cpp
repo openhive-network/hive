@@ -960,8 +960,16 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
     {
       auto key = args.start.as< std::vector< fc::variant > >();
       FC_ASSERT( key.size() == 3, "by_account_expiration start requires 3 values. (account_name_type, time_point_sec, vesting_delegation_expiration_id_type" );
+      account_name_type delegator_name = key[0].as< account_name_type >();
+      account_id_type delegator_id;
+      if( delegator_name != "" )
+      {
+        const auto* delegator = _db.find_account( delegator_name );
+        FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+        delegator_id = delegator->get_id();
+      }
       iterate_results< chain::vesting_delegation_expiration_index, chain::by_account_expiration >(
-        boost::make_tuple( key[0].as< account_name_type >(), key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() ),
+        boost::make_tuple( delegator_id, key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() ),
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_expiration_object, vesting_delegation_expiration_object >,
@@ -979,9 +987,12 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 {
   find_vesting_delegation_expirations_return result;
   const auto& del_exp_idx = _db.get_index< chain::vesting_delegation_expiration_index, chain::by_account_expiration >();
-  auto itr = del_exp_idx.lower_bound( args.account );
+  const auto* delegator = _db.find_account( args.account );
+  FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+  account_id_type delegator_id = delegator->get_id();
+  auto itr = del_exp_idx.lower_bound( delegator_id );
 
-  while( itr != del_exp_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != del_exp_idx.end() && itr->get_delegator() == delegator_id && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.delegations.emplace_back( *itr, _db );
     ++itr;

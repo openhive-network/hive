@@ -8084,9 +8084,9 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( gpo.delegation_return_period == HIVE_DELEGATION_RETURN_PERIOD_HF20 );
 
     BOOST_REQUIRE( exp_obj != end );
-    BOOST_REQUIRE( exp_obj->delegator == "sam" );
+    BOOST_REQUIRE( exp_obj->get_delegator() == sam_id );
     BOOST_REQUIRE( exp_obj->get_vesting() == sam_vest );
-    BOOST_REQUIRE( exp_obj->expiration == db->head_block_time() + gpo.delegation_return_period );
+    BOOST_REQUIRE( exp_obj->get_expiration_time() == db->head_block_time() + gpo.delegation_return_period );
     BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == sam_vest );
     BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
     delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
@@ -8113,7 +8113,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     sam_params.max_mana = util::get_effective_vesting_shares( db->get_account( "sam" ) );
     dave_params.max_mana = util::get_effective_vesting_shares( db->get_account( "dave" ) );
 
-    generate_blocks( exp_obj->expiration + HIVE_BLOCK_INTERVAL );
+    generate_blocks( exp_obj->get_expiration_time() + HIVE_BLOCK_INTERVAL );
 
     old_sam_manabar.regenerate_mana( sam_params, db->head_block_time() );
     sam_params.max_mana /= 4;

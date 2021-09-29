@@ -3017,12 +3017,8 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       FC_ASSERT( delegation->get_vesting().amount > 0, "Delegation would set vesting_shares to zero, but it is already zero");
     }
 
-    _db.create< vesting_delegation_expiration_object >( [&]( vesting_delegation_expiration_object& obj )
-    {
-      obj.delegator = op.delegator;
-      obj.vesting_shares = delta;
-      obj.expiration = std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->get_min_delegation_time() );
-    });
+    _db.create< vesting_delegation_expiration_object >( delegator, delta,
+      std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->get_min_delegation_time() ) );
 
     _db.modify( delegatee, [&]( account_object& a )
     {
