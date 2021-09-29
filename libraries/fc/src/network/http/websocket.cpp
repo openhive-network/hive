@@ -280,7 +280,7 @@ namespace fc { namespace http {
                if( _closed ) _closed->wait();
             }
 
-            typedef std::map<connection_hdl, connection_ptr,std::owner_less<connection_hdl> > con_map;
+            typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
 
             con_map                  _connections;
             fc::thread&              _server_thread;
@@ -385,7 +385,7 @@ namespace fc { namespace http {
                   _server.close( item.first, 0, "server exit" );
             }
 
-            typedef std::map<connection_hdl, connection_ptr,std::owner_less<connection_hdl> > con_map;
+            typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
 
             con_map                     _connections;
             fc::thread&                 _server_thread;
@@ -462,7 +462,7 @@ namespace fc { namespace http {
             fc::promise<void>::ptr             _closed;
             fc::thread&                        _client_thread;
             websocket_client_type              _client;
-            connection_ptr           _connection;
+            websocket_connection_ptr           _connection;
             std::string                        _uri;
       };
 
@@ -584,7 +584,7 @@ namespace fc { namespace http {
             fc::promise<void>::ptr             _closed;
             fc::thread&                        _client_thread;
             websocket_tls_client_type          _client;
-            connection_ptr           _connection;
+            websocket_connection_ptr           _connection;
             std::string                        _uri;
       };
 
