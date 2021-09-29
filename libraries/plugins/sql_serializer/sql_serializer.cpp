@@ -9,6 +9,7 @@
 #include <hive/plugins/sql_serializer/sql_serializer_objects.hpp>
 
 #include <hive/chain/util/impacted.hpp>
+#include <hive/chain/util/supplement_operations.hpp>
 
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/operations.hpp>
@@ -177,9 +178,9 @@ using chain::reindex_notification;
           uint32_t psql_operations_threads_number = 5;
           uint32_t head_block_number = 0;
 
-          int64_t block_vops = 0;
           int64_t op_sequence_id = 0; 
 
+          std::unique_ptr<PSQL::processing_objects::process_operation_t> deferred_non_virtual_operation;
           cached_containter_t currently_caching_data;
           stats_group current_stats;
 
@@ -444,21 +445,44 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
   if(skip_reversible_block(note.block))
     return;
 
+  hive::util::supplement_operation(note.op, chain_db);
+
   const bool is_virtual = hive::protocol::is_virtual_operation(note.op);
 
   cached_containter_t& cdtf = currently_caching_data; // alias
+  if(is_virtual && note.trx_in_block < 0)
+  {
+    std::cout << "################## block operation! op_pos: " << note.op_in_trx << " virtual: " << note.virtual_op << std::endl;
+  }
 
   ++op_sequence_id;
+  if(!is_virtual)
+  {
+    if(deferred_non_virtual_operation)
+    {
+      cdtf->operations.emplace_back(std::move(*deferred_non_virtual_operation));
+    }
 
-  cdtf->operations.emplace_back(
-    op_sequence_id,
-    note.block,
-    note.trx_in_block,
-    is_virtual && note.trx_in_block < 0 ? block_vops++ : note.op_in_trx,
-    chain_db.head_block_time(),
-    note.op
-  );
-
+    deferred_non_virtual_operation = std::make_unique<PSQL::processing_objects::process_operation_t>(
+      op_sequence_id,
+      note.block,
+      note.trx_in_block,
+      is_virtual && note.trx_in_block < 0 ? note.virtual_op : note.op_in_trx,
+      chain_db.head_block_time(),
+      note.op
+    );
+  }
+  else
+  {
+    cdtf->operations.emplace_back(
+      op_sequence_id,
+      note.block,
+      note.trx_in_block,
+      is_virtual && note.trx_in_block < 0 ? note.virtual_op : note.op_in_trx,
+      chain_db.head_block_time(),
+      note.op
+    );
+  }
 }
 
 void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& note)
@@ -476,7 +500,6 @@ void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& n
     note.block_num,
     note.block.timestamp,
     note.prev_block_id);
-  block_vops = 0;
   _last_block_num = note.block_num;
 
   if(note.block_num % _dumper->blocks_per_flush() == 0)
@@ -547,6 +570,12 @@ void sql_serializer_plugin_impl::on_pre_reindex(const reindex_notification& note
 void sql_serializer_plugin_impl::on_post_reindex(const reindex_notification& note)
 {
   ilog("finishing from post reindex");
+
+  if(deferred_non_virtual_operation)
+  {
+    currently_caching_data->operations.emplace_back(std::move(*deferred_non_virtual_operation));
+    deferred_non_virtual_operation.reset();
+  }
 
   process_cached_data();
   wait_for_data_processing_finish();
