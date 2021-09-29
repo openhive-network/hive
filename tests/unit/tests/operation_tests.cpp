@@ -7851,11 +7851,11 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( bob_acc.downvote_manabar.current_mana == old_bob_downvote_manabar.current_mana + op.vesting_shares.amount.value / 4 );
 
     BOOST_TEST_MESSAGE( "--- Test that the delegation object is correct. " );
-    auto delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( op.delegator, op.delegatee ) );
+    auto delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( alice_acc.get_id(), bob_acc.get_id() ) );
 
 
     BOOST_REQUIRE( delegation != nullptr );
-    BOOST_REQUIRE( delegation->delegator == op.delegator);
+    BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "10000000.000000 VESTS"));
 
     old_manabar = VOTING_MANABAR( "alice" );
@@ -7888,7 +7888,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     idump( (alice_acc.voting_manabar)(old_manabar)(delta) );
 
     BOOST_REQUIRE( delegation != nullptr );
-    BOOST_REQUIRE( delegation->delegator == op.delegator);
+    BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_acc.voting_manabar.current_mana == old_manabar.current_mana - delta );
@@ -7950,6 +7950,9 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     generate_block();
     ACTORS( (sam)(dave) )
     generate_block();
+
+    const account_object& sam_acc = db->get_account( "sam" );
+    const account_object& dave_acc = db->get_account( "dave" );
 
     vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "1000.000 TESTS" ) );
 
@@ -8086,7 +8089,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( exp_obj->expiration == db->head_block_time() + gpo.delegation_return_period );
     BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == sam_vest );
     BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
-    delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( op.delegator, op.delegatee ) );
+    delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
     BOOST_REQUIRE( delegation == nullptr );
 
     old_sam_manabar.regenerate_mana( sam_params, db->head_block_time() );

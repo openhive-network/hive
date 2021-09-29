@@ -293,15 +293,34 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( vesting_delegation_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( vesting_delegation_object )
+      template< typename Allocator >
+      vesting_delegation_object( allocator< Allocator > a, uint64_t _id,
+        const account_object& _from, const account_object& _to,
+        const VEST_asset& _amount, const time_point_sec& _min_delegation_time )
+      : id( _id ), delegator( _from.get_id() ), delegatee( _to.get_id() ),
+        min_delegation_time( _min_delegation_time ), vesting_shares( _amount )
+      {}
 
+      //id of "delegation sender"
+      account_id_type get_delegator() const { return delegator; }
+      //id of "delegation receiver"
+      account_id_type get_delegatee() const { return delegatee; }
       //amount of delegated VESTS
-      const asset& get_vesting() const { return vesting_shares; }
+      const VEST_asset& get_vesting() const { return vesting_shares; }
+      //minimal time when delegation will not be returned to the delegator (can be taken from delegatee though)
+      const time_point_sec& get_min_delegation_time() const { return min_delegation_time; }
 
-      account_name_type delegator;
-      account_name_type delegatee;
-      asset             vesting_shares = asset( 0, VESTS_SYMBOL );
-      time_point_sec    min_delegation_time;
+      void set_vesting( const VEST_asset& _new_amount )
+      {
+        FC_ASSERT( _new_amount.amount > 0 );
+        vesting_shares = _new_amount;
+      }
+
+    private:
+      account_id_type delegator;
+      account_id_type delegatee;
+      time_point_sec  min_delegation_time;
+      VEST_asset      vesting_shares;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_object);
   };
@@ -516,10 +535,9 @@ namespace hive { namespace chain {
         const_mem_fun< vesting_delegation_object, vesting_delegation_object::id_type, &vesting_delegation_object::get_id > >,
       ordered_unique< tag< by_delegation >,
         composite_key< vesting_delegation_object,
-          member< vesting_delegation_object, account_name_type, &vesting_delegation_object::delegator >,
-          member< vesting_delegation_object, account_name_type, &vesting_delegation_object::delegatee >
-        >,
-        composite_key_compare< std::less< account_name_type >, std::less< account_name_type > >
+          const_mem_fun< vesting_delegation_object, account_id_type, &vesting_delegation_object::get_delegator >,
+          const_mem_fun< vesting_delegation_object, account_id_type, &vesting_delegation_object::get_delegatee >
+        >
       >
     >,
     allocator< vesting_delegation_object >
@@ -629,7 +647,7 @@ FC_REFLECT( hive::chain::account_authority_object,
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_authority_object, hive::chain::account_authority_index )
 
 FC_REFLECT( hive::chain::vesting_delegation_object,
-        (id)(delegator)(delegatee)(vesting_shares)(min_delegation_time) )
+        (id)(delegator)(delegatee)(min_delegation_time)(vesting_shares) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::vesting_delegation_object, hive::chain::vesting_delegation_index )
 
 FC_REFLECT( hive::chain::vesting_delegation_expiration_object,

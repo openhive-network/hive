@@ -112,10 +112,10 @@ struct api_vesting_delegation_object
 {
   api_vesting_delegation_object( const vesting_delegation_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( o.delegator ),
-    delegatee( o.delegatee ),
-    vesting_shares( o.vesting_shares ),
-    min_delegation_time( o.min_delegation_time )
+    delegator( db.get_account( o.get_delegator() ).get_name() ),
+    delegatee( db.get_account( o.get_delegatee() ).get_name() ),
+    vesting_shares( o.get_vesting() ),
+    min_delegation_time( o.get_min_delegation_time() )
   {}
 
   vesting_delegation_id_type id;
