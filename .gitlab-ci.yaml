@@ -318,7 +318,7 @@ sql_serializer:
     DB_PASS: "DB_NAME"
   script:
     - apt-get install sudo cmake libboost-all-dev postgresql postgresql-server-dev-10 libpq-dev libpqxx-dev postgresql-client-10 faketime -y
-    - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/psql_tools
+    - env GIT_SSL_NO_VERIFY=1 git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/psql_tools
     - cd psql_tools
     - mkdir build && cd build
     - cmake ..
