@@ -13,6 +13,38 @@ namespace fc { namespace http {
 
   namespace detail {
 
+    class endpoint
+    {
+    public:
+      void set_open_handler() {}
+      void clear_access_channels() {}
+      void set_message_handler() {}
+      void set_close_handler() {}
+      void set_fail_handler() {}
+      void get_con_from_hdl() {}
+      void set_tls_init_handler() {}
+      void init_asio() {}
+    };
+
+    class client_endpoint : public endpoint
+    {
+    public:
+      void get_connection() {}
+      void connect() {}
+    };
+
+    class server_endpoint : public endpoint
+    {
+    public:
+      void set_reuse_addr() {}
+      void set_socket_init_handler() {}
+      void is_listening() {}
+      void stop_listening() {}
+      void close() {}
+      void listen() {}
+      void start_accept() {}
+    };
+
     template< typename ConnectionType >
     class http_connection_impl : public http_connection
     {
