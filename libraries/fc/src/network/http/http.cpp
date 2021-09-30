@@ -6,6 +6,7 @@
 #include <fc/io/stdio.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/network/url.hpp>
+#include <fc/asio.hpp>
 
 #include <boost/system/error_code.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -49,12 +50,14 @@ namespace fc { namespace http {
     class connection_base
     {
     public:
-      virtual ~connection_base() = default;
+      virtual ~connection_base() {};
 
       virtual constexpr bool is_secure()const = 0;
 
       /// Close the connection
-      void close( uint16_t code, const std::string& reason );
+      void close( uint16_t code, const message_type& reason );
+
+      boost::system::error_code send(const message_type& payload );
 
     protected:
       /// Handlers mutex
@@ -67,7 +70,7 @@ namespace fc { namespace http {
       public:
         typedef boost::asio::ssl::stream< boost::asio::ip::tcp::socket > socket_type;
 
-        virtual ~connection() = default;
+        virtual ~connection() {};
 
         virtual constexpr bool is_secure()const { return true; }
 
@@ -89,7 +92,7 @@ namespace fc { namespace http {
       public:
         typedef boost::asio::ip::tcp::socket socket_type;
 
-        virtual ~connection() = default;
+        virtual ~connection() {};
 
         virtual constexpr bool is_secure()const { return false; }
 
@@ -108,13 +111,18 @@ namespace fc { namespace http {
       typedef std::function< void( connection_hdl&, typename ConnectionType::socket_type& ) >
           socket_init_handler;
 
-      virtual ~endpoint() = default;
+      virtual ~endpoint() {};
 
-      /// Retrieves a connection_ptr from a connection_hdl (exception free)
-      connection_ptr get_con_from_hdl( connection_hdl& hdl )noexcept;
+      /// Retrieves a connection_ptr from a connection_hdl
+      connection_ptr get_con_from_hdl( connection_hdl& hdl )
+      {
+        connection_ptr con = std::static_pointer_cast< connection_type >( hdl.lock() );
+        FC_ASSERT( con, "Bad connection" );
+        return con;
+      }
 
-      /// initialize asio transport with external io_service (exception free)
-      void init_asio( io_service_ptr ptr )noexcept;
+      /// initialize asio transport with external io_service
+      void init_asio( io_service_ptr ptr );
 
       /// Sets whether to use the SO_REUSEADDR flag when opening listening sockets
       void set_reuse_addr( bool value );
@@ -166,31 +174,31 @@ namespace fc { namespace http {
     };
 
     template< typename ConnectionType >
-    class client_endpoint : public endpoint< ConnectionType >, std::enable_shared_from_this< client_endpoint< ConnectionType > >
+    class client_endpoint : public endpoint< ConnectionType >
     {
     public:
-      virtual ~client_endpoint() = default;
+      virtual ~client_endpoint() {};
 
-      /// Creates and returns a pointer to a new connection to the given URI suitable for passing to connect(connection_ptr)
-      connection_ptr get_connection( const fc::url& _url, boost::system::error_code& ec );
+      /// Create and initialize a new connection. You should then call connect() in order to perform a handshake
+      void create_connection( const fc::url& _url, boost::system::error_code& ec );
 
-      /// Initiates the opening connection handshake for connection con
-      connection_ptr connect( connection_ptr& );
+      /// Initiates the opening connection handshake for connection
+      void connect();
 
     protected:
     };
 
     template< typename ConnectionType >
-    class server_endpoint : public endpoint< ConnectionType >, std::enable_shared_from_this< client_endpoint< ConnectionType > >
+    class server_endpoint : public endpoint< ConnectionType >
     {
     public:
-      virtual ~server_endpoint() = default;
+      virtual ~server_endpoint() {};
 
       /// Starts the server's async connection acceptance loop
       void start_accept();
 
       /// Create and initialize a new connection
-      connection_ptr get_connection();
+      void create_connection();
 
     protected:
     };
@@ -205,7 +213,7 @@ namespace fc { namespace http {
         : _http_connection( con )
       {}
 
-      virtual ~http_connection_impl() = default;
+      virtual ~http_connection_impl() {};
 
       virtual void send_message( const std::string& message )override
       {
@@ -215,7 +223,7 @@ namespace fc { namespace http {
       }
       virtual void close( int64_t code, const std::string& reason )override
       {
-          _http_connection->close(code,reason);
+        _http_connection->close( code,reason );
       }
 
       connection_type _http_connection;
@@ -237,12 +245,52 @@ namespace fc { namespace http {
 
     class http_client_impl
     {
+    private:
+      typedef std::shared_ptr< unsecure::connection >  con_impl_ptr;
+
     public:
+      typedef client_endpoint< unsecure::connection >  endpoint_type;
+      typedef std::shared_ptr< endpoint_type >         endpoint_ptr;
+      typedef http_connection_impl< con_impl_ptr >     con_type;
+      typedef std::shared_ptr< con_type >              con_ptr;
+
       http_client_impl()
         : _client_thread( fc::thread::current() )
-      {}
+      {
+        _client.set_message_handler( [&]( connection_hdl hdl, message_type msg ){
+          _client_thread.async( [&](){
+            wdump((msg));
+            fc::async( [=](){ if( _connection ) _connection->on_message(msg); });
+          }).wait();
+        });
+        _client.set_close_handler( [=]( connection_hdl hdl ){
+          _client_thread.async( [&](){ if( _connection ) {_connection->closed(); _connection.reset();} } ).wait();
+          if( _closed ) _closed->set_value();
+        });
+        _client.set_fail_handler( [=]( connection_hdl hdl ){
+          auto con = _client.get_con_from_hdl(hdl);
+          if( _connection )
+            _client_thread.async( [&](){ if( _connection ) _connection->closed(); _connection.reset(); } ).wait();
+          if( _closed )
+              _closed->set_value();
+        });
+
+        _client.init_asio( &fc::asio::default_io_service() );
+      }
+      ~http_client_impl()
+      {
+        if( _connection )
+        {
+          _connection->close( 0, "client closed" );
+          _connection.reset();
+          _closed->wait();
+        }
+      }
 
       fc::promise<void>::ptr  _connected;
+      fc::promise<void>::ptr  _closed;
+      endpoint_type           _client;
+      con_ptr                 _connection;
       fc::url                 _url;
 
     private:
@@ -306,11 +354,17 @@ namespace fc { namespace http {
 
     boost::system::error_code ec;
 
+    my->_client.set_open_handler( [=]( detail::connection_hdl hdl ){
+      my->_connection = std::make_shared< detail::http_client_impl::con_type >( my->_client.get_con_from_hdl( hdl ) );
+      my->_closed = fc::promise<void>::ptr( new fc::promise<void>("http::closed") );
+      my->_connected->set_value();
+    });
 
     FC_ASSERT( !ec, "${con_desc}: Error: ${ec_msg}", ("con_desc",my->_connected->get_desc())("ec_msg",ec.message()) );
 
     my->_connected->wait();
-    return nullptr;
+    my->_client.connect();
+    return my->_connection;
   } FC_CAPTURE_AND_RETHROW( (_url_str) )}
 
 
