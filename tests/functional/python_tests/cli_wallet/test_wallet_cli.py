@@ -5,9 +5,9 @@ from test_tools import paths_to_executables, logger
 def test_help_option():
   from subprocess import PIPE, run as run_executable
   only_args_to_be_founded = [
-    '--help', '--server-rpc-endpoint', '--cert-authority', 
-    '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint', 
-    '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock', 
+    '--help', '--offline', '--server-rpc-endpoint', '--cert-authority',
+    '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint',
+    '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock',
     '--daemon', '--rpc-http-allowip', '--wallet-file', '--chain-id'
   ]
 
