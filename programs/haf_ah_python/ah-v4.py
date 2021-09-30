@@ -72,7 +72,22 @@ class ah_query:
 
     self.next_block                       = "SELECT * FROM hive.app_next_block('{}');".format( self.application_context )
 
-    self.get_bodies                       = "SELECT id, get_impacted_accounts(body) FROM hive.account_history_operations_view WHERE block_num >= {} AND block_num <= {};"
+    self.get_bodies                       = """
+                                              SELECT T.id id, T.account get_impacted_accounts
+                                              FROM (
+                                                SELECT 
+                                                  ahov.id,
+                                                  get_impacted_accounts(body) as account,
+                                                  ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block
+                                                FROM
+                                                  hive.account_history_operations_view ahov
+                                                JOIN
+                                                  hive.operation_types hot ON hot.id = ahov.op_type_id
+                                                WHERE 
+                                                  block_num >= {} AND block_num <= {}
+                                                ORDER BY
+                                                  block_num, helper_trx_in_block, op_pos ASC, hot.is_virtual DESC
+                                              ) T;"""
 
     self.insert_into_accounts             = []
     self.insert_into_accounts.append( "INSERT INTO public.accounts( id, name ) VALUES" )
@@ -359,7 +374,7 @@ class ah_loader(metaclass = singleton):
     found = account_name in self.account_cache
 
     _next_account_id = account_info.next_account_id
-    _op_cnt = 1
+    _op_cnt = 0
 
     if not found:
       self.account_cache[account_name] = account_info(_next_account_id, _op_cnt)
