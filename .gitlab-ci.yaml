@@ -330,7 +330,10 @@ sql_serializer:
     - sudo -u postgres psql -d postgres -c "CREATE DATABASE haf_block_log;"
     - sudo -u postgres psql -d haf_block_log -c "CREATE EXTENSION hive_fork_manager"
     - sudo -u postgres psql -d haf_block_log -c "CREATE ROLE myuser LOGIN PASSWORD 'mypassword' INHERIT IN ROLE hived_group;"
+    - sudo -u postgres psql -d haf_block_log -c "ALTER ROLE myuser WITH CREATEDB ;"
     - sudo -u postgres psql -d haf_block_log -c "\dx"
+    - sudo -u postgres psql -d haf_block_log -c "ALTER DATABASE haf_block_log OWNER TO myuser;"
+    
     # - su postgres -c 'bash db_setup.sh'
     - env TZ=UTC faketime '2021-09-29 14:06:57' pytest --junitxml="./report.xml" -s
     - sudo -u postgres psql -d haf_block_log -c 'select * from hive.blocks order by num;'
