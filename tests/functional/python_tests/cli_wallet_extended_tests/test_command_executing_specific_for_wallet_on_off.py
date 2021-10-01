@@ -35,7 +35,7 @@ def configured_wallet(request):
 
 
 pswd = "password"
-internal_path = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/generated_during_test_command_executing_specific_for_wallet/test_wallet/InitNode.Wallet0/'
+internal_path = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/'
 wallet_content_file_name = 'test_wallet.json'
 
 def test_if_state_is_new_after_first_start(unconfigured_wallet:Wallet):
