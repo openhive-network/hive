@@ -70,6 +70,7 @@ class NodeConfig:
         self.log_json_rpc = Untouched()  # Set correct type
         self.market_history_bucket_size = Untouched()  # Set correct type
         self.market_history_buckets_per_size = Untouched()  # Set correct type
+        self.notifications_endpoint = Untouched()
         self.p2p_endpoint = Untouched()
         self.p2p_max_connections = Untouched()  # Set correct type
         self.seed_node = Untouched()  # Set correct type
