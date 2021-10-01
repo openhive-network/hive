@@ -532,7 +532,7 @@ class ah_loader
 
       for( uint32_t i = 0; i < args.nr_threads_receive + args.nr_threads_send + 1; ++i )
       {
-        tx_controllers.emplace_back( hive::utilities::build_own_transaction_controller( args.url ) );
+        tx_controllers.emplace_back( hive::utilities::build_own_transaction_controller( args.url, "ah_loader instance" ) );
       }
     }
 
