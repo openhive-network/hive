@@ -48,20 +48,20 @@ def test_if_state_is_locked_after_first_password_set(unconfigured_wallet: Wallet
 
 def test_if_state_is_unlocked_after_entering_password(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password('password')
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
+    unconfigured_wallet.api.unlock('password')
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, False)
 
 def test_if_state_is_locked_after_entering_password(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password('password')
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
+    unconfigured_wallet.api.unlock('password')
     send_and_assert_result(unconfigured_wallet.api.lock, None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_restart_wallet(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password('password')
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
+    unconfigured_wallet.api.unlock('password')
     unconfigured_wallet.restart(preconfigure=False)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
@@ -92,7 +92,7 @@ def test_normalize_brain_key(configured_wallet: Wallet):
 
 def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password('password')
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
+    unconfigured_wallet.api.unlock('password')
     response = unconfigured_wallet.api.list_keys()
     _keys = response['result']
     assert len(_keys) == 0
