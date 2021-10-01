@@ -77,7 +77,7 @@ def test_load_wallet_from_file(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.load_wallet_file, path_to_wallet, True)
 
 def test_get_prototype_operation(configured_wallet: Wallet):
-    response = configured_wallet.api.get_prototype_operation("comment_operation")
+    response = configured_wallet.api.get_prototype_operation('comment_operation')
     result = response['result']
     assert 'comment' in result
 
@@ -107,7 +107,7 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     assert keys[1][1] == '5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3'
 
 def test_get_private_key_from_password(configured_wallet: Wallet):
-    response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', "apricot")
+    response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
     result = response['result']
 
     assert len(result) == 2
