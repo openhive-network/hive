@@ -124,11 +124,11 @@ def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = configured_wallet.api.help()['result']
     help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
     error_list = []
-    for i in help_functions:
+    for command in help_functions:
         try:
-            configured_wallet.api.gethelp(i)
+            configured_wallet.api.gethelp(command)
         except CommunicationError:
-            error_list.append(f'Error in command: {i}')
+            error_list.append(f'Error in command: {command}')
     if len(error_list) > 0:
         print(*error_list, sep="\n")
         raise NameError('GET_HELP not inluce HELP commands from list')
