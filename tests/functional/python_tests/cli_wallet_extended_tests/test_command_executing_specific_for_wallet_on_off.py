@@ -37,60 +37,60 @@ def configured_wallet(request):
 path_to_wallet = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/test_wallet.json'
 
 
-def test_if_state_is_new_after_first_start(unconfigured_wallet:Wallet):
+def test_if_state_is_new_after_first_start(unconfigured_wallet: Wallet):
     send_and_assert_result(unconfigured_wallet.api.is_new, True)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
-def test_if_state_is_locked_after_first_password_set(unconfigured_wallet:Wallet):
+def test_if_state_is_locked_after_first_password_set(unconfigured_wallet: Wallet):
     send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
-def test_if_state_is_unlocked_after_entering_password(unconfigured_wallet:Wallet):
+def test_if_state_is_unlocked_after_entering_password(unconfigured_wallet: Wallet):
     send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
     send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, False)
 
-def test_if_state_is_locked_after_entering_password(unconfigured_wallet:Wallet):
+def test_if_state_is_locked_after_entering_password(unconfigured_wallet: Wallet):
     send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
     send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     send_and_assert_result(unconfigured_wallet.api.lock, None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
-def test_restart_wallet(unconfigured_wallet:Wallet):
+def test_restart_wallet(unconfigured_wallet: Wallet):
     send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
     send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     unconfigured_wallet.restart(preconfigure=False)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
-def test_save_wallet_to_file(configured_wallet:Wallet):
+def test_save_wallet_to_file(configured_wallet: Wallet):
     if os.path.exists(path_to_wallet) == True:
         os.remove(path_to_wallet)
     send_with_args_and_assert_result(configured_wallet.api.save_wallet_file, path_to_wallet, None)
     assert os.path.exists(path_to_wallet)
 
-def test_load_wallet_from_file(configured_wallet:Wallet):
+def test_load_wallet_from_file(configured_wallet: Wallet):
     assert os.path.exists(path_to_wallet), "Wallet file does not exist"
     send_with_args_and_assert_result(configured_wallet.api.load_wallet_file, path_to_wallet, True)
 
-def test_get_prototype_operation(configured_wallet:Wallet):
+def test_get_prototype_operation(configured_wallet: Wallet):
     response = configured_wallet.api.get_prototype_operation("comment_operation")
     _result = response['result']
     assert 'comment' in _result
 
-def test_about(configured_wallet:Wallet):
+def test_about(configured_wallet: Wallet):
     response = configured_wallet.api.about()
     _result = response['result']
     assert 'blockchain_version' in _result
     assert 'client_version' in _result
 
-def test_normalize_brain_key(configured_wallet:Wallet):
+def test_normalize_brain_key(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ', 'MANGO APPLE BANANA CHERRY')
 
-def test_list_keys_and_import_key(unconfigured_wallet:Wallet):
+def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
     send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     response = unconfigured_wallet.api.list_keys()
@@ -106,7 +106,7 @@ def test_list_keys_and_import_key(unconfigured_wallet:Wallet):
     assert _keys[0][1] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
     assert _keys[1][1] == '5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3'
 
-def test_get_private_key_from_password(configured_wallet:Wallet):
+def test_get_private_key_from_password(configured_wallet: Wallet):
     response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', "apricot")
     _result = response['result']
 
@@ -115,10 +115,10 @@ def test_get_private_key_from_password(configured_wallet:Wallet):
     assert _result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
     assert _result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
-def test_get_private_key(configured_wallet:Wallet):
+def test_get_private_key(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.get_private_key, 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
 
-def test_help_and_gethelp(configured_wallet:Wallet):
+def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = configured_wallet.api.help()['result']
     help_functions = [re.match(r'.* ([\w_]+)\(.*', s)[1] for s in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
     error_list = []
@@ -131,7 +131,7 @@ def test_help_and_gethelp(configured_wallet:Wallet):
         print(*error_list, sep="\n")
         raise NameError('GET_HELP not inluce HELP commands from list')
 
-def test_suggest_brain_key(configured_wallet:Wallet):
+def test_suggest_brain_key(configured_wallet: Wallet):
     response = configured_wallet.api.suggest_brain_key()
 
     _result = response['result']
@@ -142,17 +142,17 @@ def test_suggest_brain_key(configured_wallet:Wallet):
     assert len(_result['wif_priv_key']) == 51
     assert _result['pub_key'].find('TST') != -1
 
-def test_set_transaction_expiration(configured_wallet:Wallet):
+def test_set_transaction_expiration(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.set_transaction_expiration, 31, None)
 
-def test_serialize_transaction(configured_wallet:Wallet, node): #impossible to test, transaction does not exist
+def test_serialize_transaction(configured_wallet: Wallet, node): #impossible to test, transaction does not exist
     wallet_temp = Wallet(attach_to=node)
     transaction = wallet_temp.api.create_account('initminer', 'alice', '{}', False)
 
     serialized_transaction = configured_wallet.api.serialize_transaction(transaction['result'])
     assert serialized_transaction['result'] != '00000000000000000000000000'
 
-def test_get_encrypted_memo_and_decrypt_memo(configured_wallet:Wallet, node):
+def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
 
     wallet_temp = Wallet(attach_to=node)
     wallet_temp.api.create_account('initminer', 'alice', '{}')
