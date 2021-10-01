@@ -73,7 +73,7 @@ def test_save_wallet_to_file(configured_wallet: Wallet):
     assert os.path.exists(path_to_wallet)
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
-    assert os.path.exists(path_to_wallet), "Wallet file does not exist"
+    configured_wallet.api.save_wallet_file(path_to_wallet)
     send_with_args_and_assert_result(configured_wallet.api.load_wallet_file, path_to_wallet, True)
 
 def test_get_prototype_operation(configured_wallet: Wallet):
