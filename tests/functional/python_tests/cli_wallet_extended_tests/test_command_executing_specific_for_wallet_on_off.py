@@ -131,8 +131,8 @@ def test_help_and_gethelp(configured_wallet: Wallet):
             error_list.append(f'Error in command: {command}')
     if len(error_list) > 0:
         print(*error_list, sep="\n")
-        raise NameError('GET_HELP not inluce HELP commands from list')
-
+        assert False, 'GET_HELP not inluce HELP commands from list'
+        
 def test_suggest_brain_key(configured_wallet: Wallet):
     response = configured_wallet.api.suggest_brain_key()
 
