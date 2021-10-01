@@ -59,7 +59,7 @@ def test_if_state_is_locked_after_entering_password(unconfigured_wallet: Wallet)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
-def test_restart_wallet(unconfigured_wallet: Wallet):
+def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password('password')
     unconfigured_wallet.api.unlock('password')
     unconfigured_wallet.restart(preconfigure=False)
