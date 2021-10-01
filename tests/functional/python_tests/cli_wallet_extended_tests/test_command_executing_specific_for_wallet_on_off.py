@@ -34,48 +34,47 @@ def configured_wallet(request):
     return request.getfixturevalue(request.param)
 
 
-pswd = "password"
-internal_path = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/'
-wallet_content_file_name = 'test_wallet.json'
+path_to_wallet = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/test_wallet.json'
+
 
 def test_if_state_is_new_after_first_start(unconfigured_wallet:Wallet):
     send_and_assert_result(unconfigured_wallet.api.is_new, True)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_if_state_is_locked_after_first_password_set(unconfigured_wallet:Wallet):
-    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, pswd, None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_if_state_is_unlocked_after_entering_password(unconfigured_wallet:Wallet):
-    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, pswd, None)
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, pswd, None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, False)
 
 def test_if_state_is_locked_after_entering_password(unconfigured_wallet:Wallet):
-    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, pswd, None)
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, pswd, None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     send_and_assert_result(unconfigured_wallet.api.lock, None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_restart_wallet(unconfigured_wallet:Wallet):
-    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, pswd, None)
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, pswd, None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     unconfigured_wallet.restart(preconfigure=False)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_save_wallet_to_file(configured_wallet:Wallet):
-    if os.path.exists(internal_path+wallet_content_file_name) == True:
-        os.remove(internal_path+wallet_content_file_name)
-    send_with_args_and_assert_result(configured_wallet.api.save_wallet_file, internal_path+wallet_content_file_name, None)
-    assert os.path.exists(internal_path+wallet_content_file_name)
+    if os.path.exists(path_to_wallet) == True:
+        os.remove(path_to_wallet)
+    send_with_args_and_assert_result(configured_wallet.api.save_wallet_file, path_to_wallet, None)
+    assert os.path.exists(path_to_wallet)
 
 def test_load_wallet_from_file(configured_wallet:Wallet):
-    assert os.path.exists(internal_path+wallet_content_file_name), "Wallet file does not exist"
-    send_with_args_and_assert_result(configured_wallet.api.load_wallet_file, internal_path+wallet_content_file_name, True)
+    assert os.path.exists(path_to_wallet), "Wallet file does not exist"
+    send_with_args_and_assert_result(configured_wallet.api.load_wallet_file, path_to_wallet, True)
 
 def test_get_prototype_operation(configured_wallet:Wallet):
     response = configured_wallet.api.get_prototype_operation("comment_operation")
@@ -92,8 +91,8 @@ def test_normalize_brain_key(configured_wallet:Wallet):
     send_with_args_and_assert_result(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ', 'MANGO APPLE BANANA CHERRY')
 
 def test_list_keys_and_import_key(unconfigured_wallet:Wallet):
-    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, pswd, None)
-    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, pswd, None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.set_password, 'password', None)
+    send_with_args_and_assert_result(unconfigured_wallet.api.unlock, 'password', None)
     response = unconfigured_wallet.api.list_keys()
     _keys = response['result']
     assert len(_keys) == 0
