@@ -98,6 +98,12 @@ def test_exit_before_synchronization(world):
     assert not init_node.is_running()
 
 
+def test_restart(world):
+    init_node = world.create_init_node()
+    init_node.run()
+    init_node.restart()
+
+
 def make_transaction_for_test(node):
     wallet = Wallet(attach_to=node)
     wallet.api.create_account('initminer', 'alice', '{}')
