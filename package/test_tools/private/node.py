@@ -6,6 +6,8 @@ import re
 import shutil
 import signal
 import subprocess
+from threading import Event
+from typing import Optional
 import weakref
 
 from test_tools import communication, constants, network, paths_to_executables
@@ -16,6 +18,7 @@ from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.node_http_server import NodeHttpServer
 from test_tools.private.node_message import NodeMessage
 from test_tools.private.snapshot import Snapshot
+from test_tools.private.url import Url
 from test_tools.private.wait_for import wait_for
 
 
@@ -178,15 +181,26 @@ class Node:
             self.server = NodeHttpServer(self)
             self.__logger = logger
 
+            self.http_listening_event = Event()
+            self.http_endpoint: Optional[str] = None
+
         def listen(self):
             self.node.config.notifications_endpoint = f'127.0.0.1:{self.server.port}'
             self.server.run()
 
         def notify(self, message):
+            if message['name'] == 'webserver listening':
+                details = message['value']
+                if details['type'] == 'HTTP':
+                    endpoint = f'{details["address"].replace("0.0.0.0", "127.0.0.1")}:{details["port"]}'
+                    self.http_endpoint = Url(endpoint, protocol='http').as_string(with_protocol=False)
+                    self.http_listening_event.set()
+
             self.__logger.info(f'Received message: {message}')
 
         def close(self):
             self.server.close()
+            self.http_listening_event.clear()
 
     def __init__(self, creator, name, directory):
         self.api = Apis(self)
@@ -231,9 +245,6 @@ class Node:
 
     def __is_p2p_plugin_started(self):
         return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
-
-    def __is_http_listening(self):
-        return self.__any_line_in_stderr(lambda line: 'start listening for http requests' in line)
 
     def is_ws_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
@@ -296,8 +307,8 @@ class Node:
         return response['result'] if only_result else response
 
     def __wait_for_http_listening(self, timeout=10):
-        wait_for(self.__is_http_listening, timeout=timeout,
-                 timeout_error_message=f'Waiting too long for {self} to start listening on http port')
+        if not self.__notifications.http_listening_event.wait(timeout):
+            raise TimeoutError(f'Waiting too long for {self} to start listening on http port')
 
     def get_id(self):
         response = self.api.network_node.get_info()
@@ -527,12 +538,7 @@ class Node:
 
     def get_http_endpoint(self):
         self.__wait_for_http_listening()
-        with open(self.__process.get_stderr_file_path()) as output:
-            for line in output:
-                if 'start listening for http requests' in line:
-                    endpoint = re.match(r'^.*start listening for http requests on ([\d\.]+\:\d+)\s*$', line)[1]
-                    return endpoint.replace('0.0.0.0', '127.0.0.1')
-        return None
+        return self.__notifications.http_endpoint
 
     def get_ws_endpoint(self):
         self.__wait_for_http_listening()
