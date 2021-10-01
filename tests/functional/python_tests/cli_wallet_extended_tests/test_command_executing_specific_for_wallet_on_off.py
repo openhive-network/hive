@@ -106,7 +106,7 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     assert keys[0][1] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
     assert keys[1][1] == '5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3'
 
-def test_get_private_key_from_password(configured_wallet: Wallet):
+def test_generate_privat_key_related_to_account_role_password(configured_wallet: Wallet):
     response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
     result = response['result']
 
@@ -115,7 +115,7 @@ def test_get_private_key_from_password(configured_wallet: Wallet):
     assert result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
     assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
-def test_get_private_key(configured_wallet: Wallet):
+def test_generate_private_key_related_to_public_key(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.get_private_key, 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
 
 def test_help_and_gethelp(configured_wallet: Wallet):
