@@ -116,11 +116,13 @@ def test_generate_privat_key_related_to_account_role_password(configured_wallet:
     assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_generate_private_key_related_to_public_key(configured_wallet: Wallet):
-    send_with_args_and_assert_result(configured_wallet.api.get_private_key, 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
+    send_with_args_and_assert_result(configured_wallet.api.get_private_key,
+                                     'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+                                     '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
 
 def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = configured_wallet.api.help()['result']
-    help_functions = [re.match(r'.* ([\w_]+)\(.*', s)[1] for s in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
+    help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
     error_list = []
     for i in help_functions:
         try:
