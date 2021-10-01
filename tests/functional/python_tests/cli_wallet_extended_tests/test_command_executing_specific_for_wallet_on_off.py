@@ -1,9 +1,12 @@
+from datetime import datetime, timezone, timedelta
 import os.path
+from pytz import utc
 import re
+
 
 import pytest
 
-from test_tools import Wallet
+from test_tools import Account, Wallet
 from test_tools.exceptions import CommunicationError
 
 from utilities import send_and_assert_result, send_with_args_and_assert_result
@@ -144,8 +147,22 @@ def test_suggest_brain_key(configured_wallet: Wallet):
     assert len(result['wif_priv_key']) == 51
     assert result['pub_key'].find('TST') != -1
 
-def test_set_transaction_expiration(configured_wallet: Wallet):
-    send_with_args_and_assert_result(configured_wallet.api.set_transaction_expiration, 31, None)
+def test_set_transaction_expiration(wallet:Wallet):
+    set_time = 1000
+    blocktime = 3
+    TOLERANCE = 1
+    rangeup = timedelta(seconds=(set_time + TOLERANCE))
+    rangedown = timedelta(seconds=(set_time - blocktime - TOLERANCE))
+    wallet.api.set_transaction_expiration(set_time)
+
+    time_now = datetime.now(timezone.utc)
+    transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
+    expriration_time_str = transaction['result']['expiration']
+    expriration_time = utc.localize(datetime.strptime(expriration_time_str, '%Y-%m-%dT%H:%M:%S'))
+    activity_time = expriration_time - time_now
+
+    assert rangedown <= activity_time <= rangeup
+
 
 def test_serialize_transaction(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
