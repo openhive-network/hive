@@ -11,6 +11,8 @@
 #include <boost/system/error_code.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/rfc2818_verification.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
 
@@ -46,6 +48,8 @@ namespace fc { namespace http {
     typedef std::function< ssl_context_ptr( connection_hdl& ) >    tls_init_handler;
 
     typedef boost::asio::io_service*                               io_service_ptr;
+
+    typedef std::shared_ptr< boost::asio::ssl::context >           ssl_context_ptr;
 
     class connection_base
     {
@@ -274,7 +278,6 @@ namespace fc { namespace http {
           if( _closed )
               _closed->set_value();
         });
-
         _client.init_asio( &fc::asio::default_io_service() );
       }
       ~http_client_impl()
@@ -299,12 +302,79 @@ namespace fc { namespace http {
 
     class http_tls_client_impl
     {
+    private:
+      typedef std::shared_ptr< tls::connection >       con_impl_ptr;
+
     public:
+      typedef client_endpoint< tls::connection >       endpoint_type;
+      typedef std::shared_ptr< endpoint_type >         endpoint_ptr;
+      typedef http_connection_impl< con_impl_ptr >     con_type;
+      typedef std::shared_ptr< con_type >              con_ptr;
+
       http_tls_client_impl( const std::string& ca_filename )
         : _client_thread( fc::thread::current() )
-      {}
+      {
+        _client.set_message_handler( [&]( connection_hdl hdl, message_type msg ){
+          _client_thread.async( [&](){
+            wdump((msg));
+            fc::async( [=](){ if( _connection ) _connection->on_message(msg); });
+          }).wait();
+        });
+        _client.set_close_handler( [=]( connection_hdl hdl ){
+          _client_thread.async( [&](){ if( _connection ) {_connection->closed(); _connection.reset();} } ).wait();
+          if( _closed ) _closed->set_value();
+        });
+        _client.set_fail_handler( [=]( connection_hdl hdl ){
+          auto con = _client.get_con_from_hdl(hdl);
+          if( _connection )
+            _client_thread.async( [&](){ if( _connection ) _connection->closed(); _connection.reset(); } ).wait();
+          if( _closed )
+              _closed->set_value();
+        });
+
+        _client.set_tls_init_handler( [=]( connection_hdl ) {
+          ssl_context_ptr ctx = std::make_shared< boost::asio::ssl::context >( boost::asio::ssl::context::tlsv1 );
+          try {
+            ctx->set_options(boost::asio::ssl::context::default_workarounds |
+            boost::asio::ssl::context::no_sslv2 |
+            boost::asio::ssl::context::no_sslv3 |
+            boost::asio::ssl::context::single_dh_use);
+
+            setup_peer_verify( ctx, ca_filename );
+          } FC_CAPTURE_AND_LOG(());
+          return ctx;
+        });
+
+        _client.init_asio( &fc::asio::default_io_service() );
+      }
+      ~http_tls_client_impl()
+      {
+        if( _connection )
+        {
+          _connection->close( 0, "client closed" );
+          _connection.reset();
+          _closed->wait();
+        }
+      }
+
+      void setup_peer_verify( ssl_context_ptr& ctx, const std::string& ca_filename )
+      {
+        if( ca_filename == "_none" )
+          return;
+        ctx->set_verify_mode( boost::asio::ssl::verify_peer );
+        if( ca_filename == "_default" )
+          ctx->set_default_verify_paths();
+        else
+          ctx->load_verify_file( ca_filename );
+        ctx->set_verify_depth(10);
+        FC_ASSERT( _url.host().valid(), "Host not in given url: ${url}", ("url",_url) );
+        ctx->set_verify_callback( boost::asio::ssl::rfc2818_verification( *_url.host() ) );
+      }
 
       fc::promise<void>::ptr  _connected;
+      fc::promise<void>::ptr  _closed;
+      endpoint_type           _client;
+      con_ptr                 _connection;
       fc::url                 _url;
 
     private:
@@ -327,7 +397,7 @@ namespace fc { namespace http {
 
 
   http_tls_server::http_tls_server( const std::string& server_pem, const std::string& ssl_password )
-    : server( server_pem, ssl_password ), my( new detail::http_tls_server_impl(server_pem, ssl_password) ) {}
+    : server( server_pem, ssl_password ), my( new detail::http_tls_server_impl(server::server_pem, server::ssl_password) ) {}
   http_tls_server::~http_tls_server() {}
 
   void http_tls_server::on_connection( const on_connection_handler& handler )
@@ -352,15 +422,11 @@ namespace fc { namespace http {
 
     my->_connected = fc::promise<void>::ptr( new fc::promise<void>("http::connect") );
 
-    boost::system::error_code ec;
-
     my->_client.set_open_handler( [=]( detail::connection_hdl hdl ){
       my->_connection = std::make_shared< detail::http_client_impl::con_type >( my->_client.get_con_from_hdl( hdl ) );
       my->_closed = fc::promise<void>::ptr( new fc::promise<void>("http::closed") );
       my->_connected->set_value();
     });
-
-    FC_ASSERT( !ec, "${con_desc}: Error: ${ec_msg}", ("con_desc",my->_connected->get_desc())("ec_msg",ec.message()) );
 
     my->_connected->wait();
     my->_client.connect();
@@ -369,7 +435,7 @@ namespace fc { namespace http {
 
 
   http_tls_client::http_tls_client( const std::string& ca_filename )
-    : client( ca_filename ), my( new detail::http_tls_client_impl( ca_filename ) ) {}
+    : client( ca_filename ), my( new detail::http_tls_client_impl( client::ca_filename ) ) {}
   http_tls_client::~http_tls_client() {}
 
   connection_ptr http_tls_client::connect( const std::string& _url_str )
@@ -380,10 +446,11 @@ namespace fc { namespace http {
 
     my->_connected = fc::promise<void>::ptr( new fc::promise<void>("https::connect") );
 
-    boost::system::error_code ec;
-
-
-    FC_ASSERT( !ec, "${con_desc}: Error: ${ec_msg}", ("con_desc",my->_connected->get_desc())("ec_msg",ec.message()) );
+    my->_client.set_open_handler( [=]( detail::connection_hdl hdl ){
+      my->_connection = std::make_shared< detail::http_tls_client_impl::con_type >( my->_client.get_con_from_hdl( hdl ) );
+      my->_closed = fc::promise<void>::ptr( new fc::promise<void>("https::closed") );
+      my->_connected->set_value();
+    });
 
     my->_connected->wait();
     return nullptr;
