@@ -402,15 +402,21 @@ class ah_loader
     }
 
     template<typename T>
-    T execute_query( transaction_ptr& trx, const std::string& query )
+    T execute_query( transaction_ptr& trx, const std::string& query, bool* is_result = nullptr )
     {
+      if( is_result )
+        *is_result = false;
+
       if( is_interrupted() )
         return T();
 
       T _val = T();
 
       pqxx::result _res = exec( trx, query );
-      get_single_value( _res, _val );
+      if( is_result )
+        *is_result = get_single_value( _res, _val );
+      else
+        get_single_value( _res, _val );
 
       return _val;
     }
@@ -427,10 +433,14 @@ class ah_loader
 
     uint64_t context_detached_get_block_num( transaction_ptr& trx )
     {
-      uint64_t _result = execute_query<uint64_t>( trx, query.context_detached_get_block_num );
-      //Here is problem, when a value of `detached_block_num` == NULL
-      //Issues 13,14 should be earlier solved
-      return _result + 2;
+      bool is_result = false;
+
+      uint64_t _result = execute_query<uint64_t>( trx, query.context_detached_get_block_num, &is_result );
+
+      if( is_result )
+        return _result;
+      else
+        return 0;
     }
 
     void switch_context_internal( transaction_ptr& trx, bool force_attach, uint64_t last_block = 0 )
