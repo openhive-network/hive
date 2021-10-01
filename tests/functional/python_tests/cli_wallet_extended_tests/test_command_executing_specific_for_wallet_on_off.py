@@ -78,14 +78,14 @@ def test_load_wallet_from_file(configured_wallet: Wallet):
 
 def test_get_prototype_operation(configured_wallet: Wallet):
     response = configured_wallet.api.get_prototype_operation("comment_operation")
-    _result = response['result']
-    assert 'comment' in _result
+    result = response['result']
+    assert 'comment' in result
 
 def test_about(configured_wallet: Wallet):
     response = configured_wallet.api.about()
-    _result = response['result']
-    assert 'blockchain_version' in _result
-    assert 'client_version' in _result
+    result = response['result']
+    assert 'blockchain_version' in result
+    assert 'client_version' in result
 
 def test_normalize_brain_key(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ', 'MANGO APPLE BANANA CHERRY')
@@ -94,26 +94,26 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password('password')
     unconfigured_wallet.api.unlock('password')
     response = unconfigured_wallet.api.list_keys()
-    _keys = response['result']
-    assert len(_keys) == 0
+    keys = response['result']
+    assert len(keys) == 0
 
     unconfigured_wallet.api.import_key('5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3')
     unconfigured_wallet.api.import_key('5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
 
     response = unconfigured_wallet.api.list_keys()
-    _keys = response['result']
-    assert len(_keys) == 2
-    assert _keys[0][1] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
-    assert _keys[1][1] == '5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3'
+    keys = response['result']
+    assert len(keys) == 2
+    assert keys[0][1] == '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
+    assert keys[1][1] == '5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3'
 
 def test_get_private_key_from_password(configured_wallet: Wallet):
     response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', "apricot")
-    _result = response['result']
+    result = response['result']
 
-    assert len(_result) == 2
+    assert len(result) == 2
 
-    assert _result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
-    assert _result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
+    assert result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
+    assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_get_private_key(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.get_private_key, 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n')
@@ -134,13 +134,13 @@ def test_help_and_gethelp(configured_wallet: Wallet):
 def test_suggest_brain_key(configured_wallet: Wallet):
     response = configured_wallet.api.suggest_brain_key()
 
-    _result = response['result']
-    _brain_priv_key = _result['brain_priv_key']
-    _items = _brain_priv_key.split(' ')
-    assert len(_items) == 16
+    result = response['result']
+    brain_priv_key = result['brain_priv_key']
+    items = brain_priv_key.split(' ')
+    assert len(items) == 16
 
-    assert len(_result['wif_priv_key']) == 51
-    assert _result['pub_key'].find('TST') != -1
+    assert len(result['wif_priv_key']) == 51
+    assert result['pub_key'].find('TST') != -1
 
 def test_set_transaction_expiration(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.set_transaction_expiration, 31, None)
