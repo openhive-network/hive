@@ -139,15 +139,15 @@ def test_suggest_brain_key(configured_wallet: Wallet):
     result = response['result']
     brain_priv_key = result['brain_priv_key']
     brain_priv_key_splited = brain_priv_key.split(' ')
-    assert len(brain_priv_key_splited) == 16
 
+    assert len(brain_priv_key_splited) == 16
     assert len(result['wif_priv_key']) == 51
     assert result['pub_key'].find('TST') != -1
 
 def test_set_transaction_expiration(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.set_transaction_expiration, 31, None)
 
-def test_serialize_transaction(configured_wallet: Wallet, node): #impossible to test, transaction does not exist
+def test_serialize_transaction(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
     transaction = wallet_temp.api.create_account('initminer', 'alice', '{}', False)
 
