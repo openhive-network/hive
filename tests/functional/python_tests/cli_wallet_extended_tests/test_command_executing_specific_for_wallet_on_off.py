@@ -138,8 +138,8 @@ def test_suggest_brain_key(configured_wallet: Wallet):
 
     result = response['result']
     brain_priv_key = result['brain_priv_key']
-    items = brain_priv_key.split(' ')
-    assert len(items) == 16
+    brain_priv_key_splited = brain_priv_key.split(' ')
+    assert len(brain_priv_key_splited) == 16
 
     assert len(result['wif_priv_key']) == 51
     assert result['pub_key'].find('TST') != -1
