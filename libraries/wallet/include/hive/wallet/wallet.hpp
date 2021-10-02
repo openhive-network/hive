@@ -1375,32 +1375,22 @@ class wallet_api
             uint16_t executions,
             bool broadcast );
 
-
-
-    /**
+  /**
       * Finds a recurrent transfer
       * @param from The account from which the funds are coming from
       */
-    serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
+  serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
           const account_name_type& from );
 
-    std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
-
-    fc::signal<void(bool)> lock_changed;
-
-  private:
-    std::shared_ptr<detail::wallet_api_impl> my;
-    std::shared_ptr<fc::rpc::cli> cli;
-    void encrypt_keys();
 
     /**
-      *  Delegate Rc
-      *
-      *  @param from The source account
-      *  @param to The destination account
-      *  @param max_rc The amount to delegate
-      *  @param broadcast To broadcast this transaction or not
-      */
+    *  Delegate Rc
+    *
+    *  @param from The source account
+    *  @param to The destination account
+    *  @param max_rc The amount to delegate
+    *  @param broadcast To broadcast this transaction or not
+    */
     serializer_wrapper<annotated_signed_transaction> delegate_rc(
           account_name_type from,
           account_name_type to,
@@ -1408,21 +1398,21 @@ class wallet_api
           bool broadcast );
 
 
-  /**
-   *  Retrieve RC information for the given accounts.
-   *
-   *  @param accounts The vector of accounts
-   */
-  serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( vector< account_name_type > accounts );
+    /**
+     *  Retrieve RC information for the given accounts.
+     *
+     *  @param accounts The vector of accounts
+     */
+    serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( vector< account_name_type > accounts );
 
-  /**
-   *  List RC accounts.
-   *
-   *  @param account The starting account
-   *  @param limit   The limit of returned results
-   *  @param order   The sort order
-   */
-  serializer_wrapper<vector< rc::rc_account_api_object >> list_rc_accounts(
+    /**
+     *  List RC accounts.
+     *
+     *  @param account The starting account
+     *  @param limit   The limit of returned results
+     *  @param order   The sort order
+     */
+    serializer_wrapper<vector< rc::rc_account_api_object >> list_rc_accounts(
           const string& account,
           uint32_t limit,
           rc::sort_order_type order );
@@ -1439,10 +1429,14 @@ class wallet_api
           uint32_t limit,
           rc::sort_order_type order );
 
-    fc::signal<void(bool)> lock_changed;
-    std::shared_ptr<detail::wallet_api_impl> my;
-    void encrypt_keys();
+    std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
 
+    fc::signal<void(bool)> lock_changed;
+
+  private:
+    std::shared_ptr<detail::wallet_api_impl> my;
+    std::shared_ptr<fc::rpc::cli> cli;
+    void encrypt_keys();
 };
 
 struct plain_keys {
@@ -1560,7 +1554,7 @@ FC_API( hive::wallet::wallet_api,
       (get_active_witnesses)
       (get_transaction)
 
-      /// worker proposal api
+      ///worker proposal api
       (create_proposal)
       (update_proposal)
       (update_proposal_votes)
