@@ -623,8 +623,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
   FC_ASSERT( args.get_array()[0].is_array(), "Array of account names is required as first argument" );
   const auto array_args = args.get_array()[0].get_array();
 
-  // rc_api::find_rc_accounts_args find_rc_accounts_args;
-
   std::vector< protocol::account_name_type >  accounts;
   accounts.reserve(array_args.size());
   for (const auto& arg : array_args)
@@ -633,13 +631,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
   return _rc_api->find_rc_accounts({ accounts }).rc_accounts;
 }
 
-
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least one argument");
+  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least three arguments");
   const auto arguments = args.get_array()[0];
-  FC_ASSERT( args.get_array()[0].is_string(),       "Account name is required as first argument" );
+  FC_ASSERT( arguments.get_array()[0].is_string(),       "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
   FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
 
@@ -654,9 +651,9 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least one argument");
+  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least three arguments");
   const auto arguments = args.get_array()[0];
-  FC_ASSERT( args.get_array()[0].is_string(),       "Account name is required as first argument" );
+
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
   FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
 
@@ -710,7 +707,5 @@ DEFINE_READ_APIS(
   (list_rc_accounts)
   (list_rc_direct_delegations)
 )
-
-
 
 } } } // hive::plugins::wallet_bridge_api
