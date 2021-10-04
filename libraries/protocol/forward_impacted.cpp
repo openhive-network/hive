@@ -1,7 +1,6 @@
 #include <hive/protocol/authority.hpp>
 
-#include <hive/chain/database.hpp>
-#include <hive/chain/util/impacted.hpp>
+#include <hive/protocol/forward_impacted.hpp>
 
 #include <fc/utility.hpp>
 
