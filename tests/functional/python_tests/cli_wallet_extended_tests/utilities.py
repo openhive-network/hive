@@ -60,3 +60,11 @@ def send_and_assert_result( method, value ):
 def send_with_args_and_assert_result( method, args, value ):
     response = method(args)
     assert response['result'] == value
+
+def result_of(method):
+    response = method()['result']
+    return response
+
+def result_of_with_args( method, *args):
+    response = method(*args)['result']
+    return response
