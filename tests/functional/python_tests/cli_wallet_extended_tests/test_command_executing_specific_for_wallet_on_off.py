@@ -39,32 +39,31 @@ def configured_wallet(request):
 
 path_to_wallet = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/test_wallet.json'
 
-
 def test_if_state_is_new_after_first_start(unconfigured_wallet: Wallet):
     send_and_assert_result(unconfigured_wallet.api.is_new, True)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_if_state_is_locked_after_first_password_set(unconfigured_wallet: Wallet):
-    unconfigured_wallet.api.set_password('password')
+    unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_if_state_is_unlocked_after_entering_password(unconfigured_wallet: Wallet):
-    unconfigured_wallet.api.set_password('password')
-    unconfigured_wallet.api.unlock('password')
+    unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
+    unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, False)
 
 def test_if_state_is_locked_after_entering_password(unconfigured_wallet: Wallet):
-    unconfigured_wallet.api.set_password('password')
-    unconfigured_wallet.api.unlock('password')
+    unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
+    unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
     send_and_assert_result(unconfigured_wallet.api.lock, None)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
 
 def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
-    unconfigured_wallet.api.set_password('password')
-    unconfigured_wallet.api.unlock('password')
+    unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
+    unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.restart(preconfigure=False)
     send_and_assert_result(unconfigured_wallet.api.is_new, False)
     send_and_assert_result(unconfigured_wallet.api.is_locked, True)
@@ -94,8 +93,8 @@ def test_normalize_brain_key(configured_wallet: Wallet):
     send_with_args_and_assert_result(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ', 'MANGO APPLE BANANA CHERRY')
 
 def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
-    unconfigured_wallet.api.set_password('password')
-    unconfigured_wallet.api.unlock('password')
+    unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
+    unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
     response = unconfigured_wallet.api.list_keys()
     keys = response['result']
     assert len(keys) == 0
