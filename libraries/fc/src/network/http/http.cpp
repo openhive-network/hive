@@ -56,6 +56,9 @@ namespace fc { namespace http {
     struct config
     {
       static constexpr bool enable_multithreading = true;
+
+      /// Maximum size of close frame reason
+      static uint8_t const close_reason_size = 123;
     };
 
     class connection_base
@@ -85,6 +88,13 @@ namespace fc { namespace http {
         reading       = 2
       };
 
+      enum class endpoint_state
+      {
+        uninitialized = 0,
+        ready         = 1,
+        listening     = 2
+      };
+
       enum class session_state
       {
         connecting = 0,
@@ -95,6 +105,7 @@ namespace fc { namespace http {
 
       /// Current connection state
       session_state       m_session_state;
+      endpoint_state      m_endpoint_state;
       connection_state    m_connection_state;
       strand_ptr          m_strand;
 
@@ -236,7 +247,10 @@ namespace fc { namespace http {
       void set_reuse_addr( bool value );
 
       /// Check if the endpoint is listening
-      bool is_listening()const;
+      bool is_listening()const
+      {
+        return (m_endpoint_state == endpoint_state::listening);
+      }
 
       /// Stop listening
       void stop_listening();
