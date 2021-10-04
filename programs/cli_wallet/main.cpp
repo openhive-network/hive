@@ -26,7 +26,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
-#include <future>
+#include <memory>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -86,9 +86,9 @@ namespace
   std::shared_ptr< fc::api_connection > get_api_connection( const fc::url& _url, fc::http::connection_ptr& con )
   {
     if( _url.proto().substr( 0, 2 ) == "ws" )
-      return std::make_shared< fc::rpc::websocket_api_connection >( static_cast< fc::http::websocket_connection& >( *con ) );
+      return std::make_shared< fc::rpc::websocket_api_connection >( *std::static_pointer_cast< fc::http::websocket_connection >( con ) );
     else if( _url.proto().substr( 0, 4 ) == "http" )
-      return std::make_shared< fc::rpc::http_api_connection >( static_cast< fc::http::http_connection& >( *con ) );
+      return std::make_shared< fc::rpc::http_api_connection >( *std::static_pointer_cast< fc::http::http_connection >( con ) );
     else
       FC_ASSERT( false, "Unsupported protocol: ${proto}", ("proto", _url.proto()) );
   }
