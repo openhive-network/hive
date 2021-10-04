@@ -49,8 +49,9 @@ namespace fc { namespace http {
 
     typedef boost::asio::io_service*                               io_service_ptr;
 
+    typedef boost::asio::io_service::strand                        strand_type;
     /// Type of a pointer to the Asio io_service::strand being used
-    typedef std::shared_ptr< boost::asio::io_service::strand >     strand_ptr;
+    typedef std::shared_ptr< strand_type >                         strand_ptr;
 
     struct config
     {
@@ -131,12 +132,12 @@ namespace fc { namespace http {
           m_io_service = service;
 
           if ( config::enable_multithreading )
-            m_strand.reset( new boost::asio::io_service::strand( *service ) );
+            m_strand = std::make_shared< strand_type >( *service );
 
           m_context = m_tls_init_handler(m_hdl);
           FC_ASSERT( m_context, "Invalid tls context" );
 
-          m_socket.reset(new socket_type(*service, *m_context));
+          m_socket = std::make_shared< socket_type >(*service, *m_context);
 
           if ( m_socket_init_handler )
             m_socket_init_handler(m_hdl, get_socket());
@@ -185,9 +186,9 @@ namespace fc { namespace http {
           m_io_service = service;
 
           if ( config::enable_multithreading )
-            m_strand.reset( new boost::asio::io_service::strand( *service ) );
+            m_strand = std::make_shared< strand_type >(*service);
 
-          m_socket.reset( new socket_type(*service) );
+          m_socket = std::make_shared< socket_type >(*service);
 
           if ( m_socket_init_handler )
             m_socket_init_handler( m_hdl, *m_socket );
