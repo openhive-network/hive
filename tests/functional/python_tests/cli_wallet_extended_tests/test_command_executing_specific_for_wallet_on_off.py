@@ -102,7 +102,7 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     assert keys[0][1] == Account('alice').private_key
     assert keys[1][1] == Account('initminer').private_key
 
-def test_generate_privat_key_related_to_account_role_password(configured_wallet: Wallet):
+def test_generate_private_key_related_to_account_role_password(configured_wallet: Wallet):
     response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
     result = response['result']
     res = result_of_with_args(configured_wallet.api.get_private_key_from_password, 'hulabula', 'owner', 'apricot')
@@ -122,7 +122,7 @@ def test_help_and_gethelp(configured_wallet: Wallet):
         try:
             configured_wallet.api.gethelp(command)
         except CommunicationError:
-            error_list.append(f'Error in command: {command}')
+            error_list.append(command)
     if len(error_list) > 0:
         print(*error_list, sep="\n")
         assert False, f'Error occurred when gethelp was called for following commands: {error_list}'
