@@ -80,10 +80,8 @@ def test_get_prototype_operation(configured_wallet: Wallet):
     assert 'comment' in result_of_with_args(configured_wallet.api.get_prototype_operation, 'comment_operation')
 
 def test_about(configured_wallet: Wallet):
-    response = configured_wallet.api.about()
-    result = response['result']
-    assert 'blockchain_version' in result
-    assert 'client_version' in result
+    assert 'blockchain_version' in result_of(configured_wallet.api.about)
+    assert 'client_version' in result_of(configured_wallet.api.about)
 
 def test_normalize_brain_key(configured_wallet: Wallet):
     assert result_of_with_args(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ') == 'MANGO APPLE BANANA CHERRY'
