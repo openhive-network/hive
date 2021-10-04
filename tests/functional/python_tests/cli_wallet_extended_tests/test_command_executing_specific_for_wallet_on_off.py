@@ -144,7 +144,7 @@ def test_suggest_brain_key(configured_wallet: Wallet):
 
     assert len(brain_priv_key_splited) == 16
     assert len(result['wif_priv_key']) == 51
-    assert result['pub_key'].find('TST') != -1
+    assert result['pub_key'].startswith('TST') == True
 
 def test_set_transaction_expiration(wallet:Wallet):
     set_time = 1000
@@ -161,7 +161,6 @@ def test_set_transaction_expiration(wallet:Wallet):
     activity_time = expriration_time - time_now
 
     assert rangedown <= activity_time <= rangeup
-
 
 def test_serialize_transaction(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
