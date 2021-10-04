@@ -70,7 +70,7 @@ def test_save_wallet_to_file(configured_wallet: Wallet):
     if os.path.exists(path_to_wallet) == True:
         os.remove(path_to_wallet)
     configured_wallet.api.save_wallet_file(path_to_wallet)
-    assert os.path.exists(path_to_wallet)  #add is true
+    assert os.path.exists(path_to_wallet) is True
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
     configured_wallet.api.save_wallet_file(path_to_wallet)
