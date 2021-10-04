@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import send_with_args_and_assert_result
+from utilities import result_of
 
 def test_conversion(wallet):
     response = wallet.api.create_account('initminer', 'alice', '{}')
@@ -29,7 +29,7 @@ def test_conversion(wallet):
     assert _request['collateral_amount'] == Asset.Test(4)
     assert _request['converted_amount'] == Asset.Tbd(1.904)
 
-    send_with_args_and_assert_result(wallet.api.estimate_hive_collateral, Asset.Tbd(4), Asset.Test(8.4))
+    assert result_of(wallet.api.estimate_hive_collateral, Asset.Test(4)) == Asset.Test(8.4)
 
     wallet.api.convert_hbd('alice', Asset.Tbd(0.5))
 

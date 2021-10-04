@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import send_with_args_and_assert_result
+from utilities import result_of
 
 def test_getters(node, wallet):
     response = wallet.api.create_account('initminer', 'alice', '{}')
@@ -22,7 +22,7 @@ def test_getters(node, wallet):
 
     _encrypted = response['result']
 
-    send_with_args_and_assert_result(wallet.api.decrypt_memo, _encrypted, 'this is memo')
+    assert result_of( wallet.api.decrypt_memo, _encrypted) == 'this is memo'
 
     response = wallet.api.get_feed_history()
 
