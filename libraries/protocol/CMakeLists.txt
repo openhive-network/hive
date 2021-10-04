@@ -46,6 +46,7 @@ add_library( hive_protocol
              asset.cpp
              version.cpp
              misc_utilities.cpp
+             forward_impacted.cpp
 
              ${GET_CONFIG_CPP}
 
