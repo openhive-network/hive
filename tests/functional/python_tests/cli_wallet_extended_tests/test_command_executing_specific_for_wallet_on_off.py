@@ -3,7 +3,6 @@ import os.path
 from pytz import utc
 import re
 
-
 import pytest
 
 from test_tools import Account, Wallet
@@ -78,9 +77,7 @@ def test_load_wallet_from_file(configured_wallet: Wallet):
     assert result_of_with_args(configured_wallet.api.load_wallet_file, path_to_wallet) is True
 
 def test_get_prototype_operation(configured_wallet: Wallet):
-    response = configured_wallet.api.get_prototype_operation('comment_operation')
-    result = response['result']
-    assert 'comment' in result
+    assert 'comment' in result_of_with_args(configured_wallet.api.get_prototype_operation, 'comment_operation')
 
 def test_about(configured_wallet: Wallet):
     response = configured_wallet.api.about()
