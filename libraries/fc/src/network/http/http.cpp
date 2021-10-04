@@ -61,7 +61,7 @@ namespace fc { namespace http {
     class connection_base
     {
     public:
-      virtual ~connection_base() {};
+      virtual ~connection_base() {}
 
       virtual constexpr bool is_secure()const = 0;
       virtual void init_asio ( io_service_ptr service ) = 0;
@@ -69,7 +69,7 @@ namespace fc { namespace http {
       /// Close the connection
       void close( uint16_t code, const message_type& reason );
 
-      boost::system::error_code send(const message_type& payload );
+      void send(const message_type& payload );
 
       /// Set Connection Handle
       void set_handle( connection_hdl hdl )
@@ -78,18 +78,29 @@ namespace fc { namespace http {
       }
 
     protected:
-      enum state {
-          UNINITIALIZED = 0,
-          READY = 1,
-          READING = 2
+      enum class connection_state
+      {
+        uninitialized = 0,
+        ready         = 1,
+        reading       = 2
+      };
+
+      enum class session_state
+      {
+        connecting = 0,
+        open       = 1,
+        closing    = 2,
+        closed     = 3
       };
 
       /// Current connection state
-      state               m_state;
+      session_state       m_session_state;
+      connection_state    m_connection_state;
       strand_ptr          m_strand;
 
       /// Handlers mutex
-      std::mutex          m_mutex;
+      std::mutex          m_handlers_mutex;
+      std::mutex          m_connection_state_lock;
 
       connection_hdl      m_hdl;
       io_service_ptr      m_io_service;
@@ -106,14 +117,14 @@ namespace fc { namespace http {
         typedef std::function< void( connection_hdl&, socket_type& ) >
             socket_init_handler;
 
-        virtual ~connection() {};
+        virtual ~connection() {}
 
         virtual constexpr bool is_secure()const { return true; }
 
         // Handlers //
         void set_tls_init_handler( tls_init_handler&& _handler )
         {
-          std::lock_guard< std::mutex > _guard( m_mutex );
+          std::lock_guard< std::mutex > _guard( m_handlers_mutex );
           m_tls_init_handler = _handler;
         }
 
@@ -125,7 +136,7 @@ namespace fc { namespace http {
         /// initialize asio transport with external io_service
         virtual void init_asio ( io_service_ptr service ) override
         {
-          FC_ASSERT( connection_base::m_state == UNINITIALIZED, "Invalid state" );
+          FC_ASSERT( connection_base::m_connection_state == connection_state::uninitialized, "Invalid state" );
 
           FC_ASSERT( m_tls_init_handler, "Missing tls init handler" );
 
@@ -145,7 +156,7 @@ namespace fc { namespace http {
           if ( m_socket_init_handler )
             m_socket_init_handler( m_hdl, *m_socket );
 
-          m_state = READY;
+          m_connection_state = connection_state::ready;
         }
 
       protected:
@@ -169,7 +180,7 @@ namespace fc { namespace http {
         typedef std::function< void( connection_hdl&, socket_type& ) >
             socket_init_handler;
 
-        virtual ~connection() {};
+        virtual ~connection() {}
 
         virtual constexpr bool is_secure()const { return false; }
 
@@ -181,7 +192,7 @@ namespace fc { namespace http {
         /// initialize asio transport with external io_service
         virtual void init_asio ( io_service_ptr service ) override
         {
-          FC_ASSERT( connection_base::m_state == UNINITIALIZED, "Invalid state" );
+          FC_ASSERT( connection_base::m_connection_state == connection_state::uninitialized, "Invalid state" );
 
           m_io_service = service;
 
@@ -193,7 +204,7 @@ namespace fc { namespace http {
           if ( m_socket_init_handler )
             m_socket_init_handler( m_hdl, *m_socket );
 
-          m_state = READY;
+          m_connection_state = connection_state::ready;
         }
 
       protected:
@@ -211,7 +222,7 @@ namespace fc { namespace http {
       typedef ConnectionType                     connection_type;
       typedef std::shared_ptr< connection_type > connection_ptr;
 
-      virtual ~endpoint() {};
+      virtual ~endpoint() {}
 
       /// Retrieves a connection_ptr from a connection_hdl
       connection_ptr get_con_from_hdl( connection_hdl& hdl )
@@ -238,22 +249,22 @@ namespace fc { namespace http {
       // Handlers //
       void set_open_handler( open_handler&& _handler )
       {
-        std::lock_guard< std::mutex > _guard( connection_type::m_mutex );
+        std::lock_guard< std::mutex > _guard( connection_type::m_handlers_mutex );
         m_open_handler = _handler;
       }
       void set_message_handler( message_handler&& _handler )
       {
-        std::lock_guard< std::mutex > _guard( connection_type::m_mutex );
+        std::lock_guard< std::mutex > _guard( connection_type::m_handlers_mutex );
         m_message_handler = _handler;
       }
       void set_close_handler( close_handler&& _handler )
       {
-        std::lock_guard< std::mutex > _guard( connection_type::m_mutex );
+        std::lock_guard< std::mutex > _guard( connection_type::m_handlers_mutex );
         m_close_handler = _handler;
       }
       void set_fail_handler( fail_handler&& _handler )
       {
-        std::lock_guard< std::mutex > _guard( connection_type::m_mutex );
+        std::lock_guard< std::mutex > _guard( connection_type::m_handlers_mutex );
         m_fail_handler = _handler;
       }
 
@@ -268,7 +279,7 @@ namespace fc { namespace http {
     class client_endpoint : public endpoint< ConnectionType >
     {
     public:
-      virtual ~client_endpoint() {};
+      virtual ~client_endpoint() {}
 
       /// Create and initialize a new connection. You should then call connect() in order to perform a handshake
       void create_connection( const fc::url& _url, boost::system::error_code& ec );
@@ -283,7 +294,7 @@ namespace fc { namespace http {
     class server_endpoint : public endpoint< ConnectionType >
     {
     public:
-      virtual ~server_endpoint() {};
+      virtual ~server_endpoint() {}
 
       /// Starts the server's async connection acceptance loop
       void start_accept();
@@ -309,8 +320,7 @@ namespace fc { namespace http {
       virtual void send_message( const std::string& message )override
       {
         idump((message));
-        auto ec = _http_connection->send( message );
-        FC_ASSERT( !ec, "http send failed: ${msg}", ("msg",ec.message() ) );
+        _http_connection->send( message );
       }
       virtual void close( int64_t code, const std::string& reason )override
       {
