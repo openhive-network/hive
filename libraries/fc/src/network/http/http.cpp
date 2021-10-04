@@ -49,7 +49,13 @@ namespace fc { namespace http {
 
     typedef boost::asio::io_service*                               io_service_ptr;
 
-    typedef std::shared_ptr< boost::asio::ssl::context >           ssl_context_ptr;
+    /// Type of a pointer to the Asio io_service::strand being used
+    typedef std::shared_ptr< boost::asio::io_service::strand >     strand_ptr;
+
+    struct config
+    {
+      static constexpr bool enable_multithreading = true;
+    };
 
     class connection_base
     {
@@ -57,15 +63,35 @@ namespace fc { namespace http {
       virtual ~connection_base() {};
 
       virtual constexpr bool is_secure()const = 0;
+      virtual void init_asio ( io_service_ptr service ) = 0;
 
       /// Close the connection
       void close( uint16_t code, const message_type& reason );
 
       boost::system::error_code send(const message_type& payload );
 
+      /// Set Connection Handle
+      void set_handle( connection_hdl hdl )
+      {
+        m_hdl = hdl;
+      }
+
     protected:
+      enum state {
+          UNINITIALIZED = 0,
+          READY = 1,
+          READING = 2
+      };
+
+      /// Current connection state
+      state               m_state;
+      strand_ptr          m_strand;
+
       /// Handlers mutex
-      std::mutex      m_mutex;
+      std::mutex          m_mutex;
+
+      connection_hdl      m_hdl;
+      io_service_ptr      m_io_service;
     };
 
     namespace tls {
@@ -73,6 +99,11 @@ namespace fc { namespace http {
       {
       public:
         typedef boost::asio::ssl::stream< boost::asio::ip::tcp::socket > socket_type;
+        typedef std::shared_ptr< socket_type >                           socket_ptr;
+
+        /// called after the socket object is created but before it is used
+        typedef std::function< void( connection_hdl&, socket_type& ) >
+            socket_init_handler;
 
         virtual ~connection() {};
 
@@ -85,8 +116,44 @@ namespace fc { namespace http {
           m_tls_init_handler = _handler;
         }
 
+        /// Retrieve a pointer to the wrapped socket
+        socket_type& get_socket() {
+            return *m_socket;
+        }
+
+        /// initialize asio transport with external io_service
+        virtual void init_asio ( io_service_ptr service ) override
+        {
+          FC_ASSERT( connection_base::m_state == UNINITIALIZED, "Invalid state" );
+
+          FC_ASSERT( m_tls_init_handler, "Missing tls init handler" );
+
+          m_io_service = service;
+
+          if ( config::enable_multithreading )
+            m_strand.reset( new boost::asio::io_service::strand( *service ) );
+
+          m_context = m_tls_init_handler(m_hdl);
+          FC_ASSERT( m_context, "Invalid tls context" );
+
+          m_socket.reset(new socket_type(*service, *m_context));
+
+          if ( m_socket_init_handler )
+            m_socket_init_handler(m_hdl, get_socket());
+
+          if ( m_socket_init_handler )
+            m_socket_init_handler( m_hdl, *m_socket );
+
+          m_state = READY;
+        }
+
       protected:
-        tls_init_handler m_tls_init_handler;
+        // Handlers
+        socket_init_handler m_socket_init_handler;
+        tls_init_handler    m_tls_init_handler;
+
+        socket_ptr          m_socket;
+        ssl_context_ptr     m_context;
       };
     } // tls
 
@@ -94,13 +161,45 @@ namespace fc { namespace http {
       class connection : public connection_base
       {
       public:
-        typedef boost::asio::ip::tcp::socket socket_type;
+        typedef boost::asio::ip::tcp::socket   socket_type;
+        typedef std::shared_ptr< socket_type > socket_ptr;
+
+        /// called after the socket object is created but before it is used
+        typedef std::function< void( connection_hdl&, socket_type& ) >
+            socket_init_handler;
 
         virtual ~connection() {};
 
         virtual constexpr bool is_secure()const { return false; }
 
+        /// Retrieve a pointer to the wrapped socket
+        socket_type& get_socket() {
+            return *m_socket;
+        }
+
+        /// initialize asio transport with external io_service
+        virtual void init_asio ( io_service_ptr service ) override
+        {
+          FC_ASSERT( connection_base::m_state == UNINITIALIZED, "Invalid state" );
+
+          m_io_service = service;
+
+          if ( config::enable_multithreading )
+            m_strand.reset( new boost::asio::io_service::strand( *service ) );
+
+          m_socket.reset( new socket_type(*service) );
+
+          if ( m_socket_init_handler )
+            m_socket_init_handler( m_hdl, *m_socket );
+
+          m_state = READY;
+        }
+
       protected:
+        // Handlers
+        socket_init_handler m_socket_init_handler;
+
+        socket_ptr       m_socket;
       };
     } // unsecure
 
@@ -111,10 +210,6 @@ namespace fc { namespace http {
       typedef ConnectionType                     connection_type;
       typedef std::shared_ptr< connection_type > connection_ptr;
 
-      /// called after the socket object is created but before it is used
-      typedef std::function< void( connection_hdl&, typename ConnectionType::socket_type& ) >
-          socket_init_handler;
-
       virtual ~endpoint() {};
 
       /// Retrieves a connection_ptr from a connection_hdl
@@ -124,9 +219,6 @@ namespace fc { namespace http {
         FC_ASSERT( con, "Bad connection" );
         return con;
       }
-
-      /// initialize asio transport with external io_service
-      void init_asio( io_service_ptr ptr );
 
       /// Sets whether to use the SO_REUSEADDR flag when opening listening sockets
       void set_reuse_addr( bool value );
@@ -163,18 +255,12 @@ namespace fc { namespace http {
         std::lock_guard< std::mutex > _guard( connection_type::m_mutex );
         m_fail_handler = _handler;
       }
-      void set_socket_init_handler( socket_init_handler&& _handler )
-      {
-        std::lock_guard< std::mutex > _guard( connection_type::m_mutex );
-        m_socket_init_handler = _handler;
-      }
 
     protected:
       open_handler        m_open_handler;
       message_handler     m_message_handler;
       close_handler       m_close_handler;
       fail_handler        m_fail_handler;
-      socket_init_handler m_socket_init_handler;
     };
 
     template< typename ConnectionType >
