@@ -9,7 +9,7 @@ import pytest
 from test_tools import Account, Wallet
 from test_tools.exceptions import CommunicationError
 
-from utilities import send_and_assert_result, send_with_args_and_assert_result
+from utilities import  result_of, result_of_with_args
 
 
 @pytest.fixture
@@ -40,43 +40,42 @@ def configured_wallet(request):
 path_to_wallet = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/test_wallet.json'
 
 def test_if_state_is_new_after_first_start(unconfigured_wallet: Wallet):
-    send_and_assert_result(unconfigured_wallet.api.is_new, True)
-    send_and_assert_result(unconfigured_wallet.api.is_locked, True)
+    assert result_of(unconfigured_wallet.api.is_new) is True
+    assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_if_state_is_locked_after_first_password_set(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
-    send_and_assert_result(unconfigured_wallet.api.is_new, False)
-    send_and_assert_result(unconfigured_wallet.api.is_locked, True)
+    assert result_of(unconfigured_wallet.api.is_new) is False
+    assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_if_state_is_unlocked_after_entering_password(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
-    send_and_assert_result(unconfigured_wallet.api.is_new, False)
-    send_and_assert_result(unconfigured_wallet.api.is_locked, False)
+    assert result_of(unconfigured_wallet.api.is_new) is False
+    assert result_of(unconfigured_wallet.api.is_locked) is False
 
 def test_if_state_is_locked_after_entering_password(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
-    send_and_assert_result(unconfigured_wallet.api.lock, None)
-    send_and_assert_result(unconfigured_wallet.api.is_new, False)
-    send_and_assert_result(unconfigured_wallet.api.is_locked, True)
-
+    unconfigured_wallet.api.lock()
+    assert result_of(unconfigured_wallet.api.is_new) is False
+    assert result_of(unconfigured_wallet.api.is_locked) is True
 def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.restart(preconfigure=False)
-    send_and_assert_result(unconfigured_wallet.api.is_new, False)
-    send_and_assert_result(unconfigured_wallet.api.is_locked, True)
+    assert result_of(unconfigured_wallet.api.is_new) is False
+    assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_save_wallet_to_file(configured_wallet: Wallet):
     if os.path.exists(path_to_wallet) == True:
         os.remove(path_to_wallet)
-    send_with_args_and_assert_result(configured_wallet.api.save_wallet_file, path_to_wallet, None)
-    assert os.path.exists(path_to_wallet)
+    configured_wallet.api.save_wallet_file(path_to_wallet)
+    assert os.path.exists(path_to_wallet)  #add is true
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
     configured_wallet.api.save_wallet_file(path_to_wallet)
-    send_with_args_and_assert_result(configured_wallet.api.load_wallet_file, path_to_wallet, True)
+    assert result_of_with_args(configured_wallet.api.load_wallet_file, path_to_wallet) is True
 
 def test_get_prototype_operation(configured_wallet: Wallet):
     response = configured_wallet.api.get_prototype_operation('comment_operation')
@@ -90,7 +89,7 @@ def test_about(configured_wallet: Wallet):
     assert 'client_version' in result
 
 def test_normalize_brain_key(configured_wallet: Wallet):
-    send_with_args_and_assert_result(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ', 'MANGO APPLE BANANA CHERRY')
+    assert result_of_with_args(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ') == 'MANGO APPLE BANANA CHERRY'
 
 def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
@@ -111,16 +110,14 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
 def test_generate_privat_key_related_to_account_role_password(configured_wallet: Wallet):
     response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
     result = response['result']
-
+    res = result_of_with_args(configured_wallet.api.get_private_key_from_password, 'hulabula', 'owner', 'apricot')
     assert len(result) == 2
 
     assert result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
     assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_generate_private_key_related_to_public_key(configured_wallet: Wallet):
-    send_with_args_and_assert_result(configured_wallet.api.get_private_key,
-                                     Account('initminer').public_key,
-                                     Account('initminer').private_key)
+    assert result_of_with_args(configured_wallet.api.get_private_key, Account('initminer').public_key) == Account('initminer').private_key
 
 def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = configured_wallet.api.help()['result']
