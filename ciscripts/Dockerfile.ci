@@ -54,24 +54,3 @@ RUN chmod 755 hived.run
 
 CMD "${install_base_dir}/consensus/hived.run"
 
-#####################################################################
-FROM $CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG AS fat_node
-
-ARG TRACKED_ACCOUNT_NAME
-ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
-ARG USE_PUBLIC_BLOCKLOG
-ENV USE_PUBLIC_BLOCKLOG=${USE_PUBLIC_BLOCKLOG}
-ENV install_base_dir="/usr/local/hive"
-
-# rpc
-EXPOSE 8090
-
-# p2p
-EXPOSE 2001
-
-WORKDIR "${install_base_dir}/fat-node"
-COPY fat_build/install-root/ fat_build/hived.run ./
-COPY fat_build/config-for-docker.ini datadir/config.ini
-RUN chmod 755 hived.run
-
-CMD "${install_base_dir}/fat-node/hived.run"
