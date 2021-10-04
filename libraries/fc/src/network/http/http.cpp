@@ -49,9 +49,35 @@ namespace fc { namespace http {
 
     typedef boost::asio::io_service*                               io_service_ptr;
 
+    /// acceptor being used
+    typedef boost::asio::ip::tcp::acceptor                         acceptor_type;
+    typedef std::shared_ptr< acceptor_type >                       acceptor_ptr;
+
     typedef boost::asio::io_service::strand                        strand_type;
     /// Type of a pointer to the Asio io_service::strand being used
     typedef std::shared_ptr< strand_type >                         strand_ptr;
+
+    enum class connection_state
+    {
+      uninitialized = 0,
+      ready         = 1,
+      reading       = 2
+    };
+
+    enum class endpoint_state
+    {
+      uninitialized = 0,
+      ready         = 1,
+      listening     = 2
+    };
+
+    enum class session_state
+    {
+      connecting = 0,
+      open       = 1,
+      closing    = 2,
+      closed     = 3
+    };
 
     struct config
     {
@@ -81,28 +107,6 @@ namespace fc { namespace http {
       }
 
     protected:
-      enum class connection_state
-      {
-        uninitialized = 0,
-        ready         = 1,
-        reading       = 2
-      };
-
-      enum class endpoint_state
-      {
-        uninitialized = 0,
-        ready         = 1,
-        listening     = 2
-      };
-
-      enum class session_state
-      {
-        connecting = 0,
-        open       = 1,
-        closing    = 2,
-        closed     = 3
-      };
-
       /// Current connection state
       session_state       m_session_state;
       endpoint_state      m_endpoint_state;
@@ -115,6 +119,7 @@ namespace fc { namespace http {
 
       connection_hdl      m_hdl;
       io_service_ptr      m_io_service;
+      acceptor_ptr        m_acceptor;
     };
 
     namespace tls {
@@ -152,6 +157,8 @@ namespace fc { namespace http {
           FC_ASSERT( m_tls_init_handler, "Missing tls init handler" );
 
           m_io_service = service;
+
+          m_acceptor = std::make_shared< acceptor_type >(*service);
 
           if ( config::enable_multithreading )
             m_strand = std::make_shared< strand_type >( *service );
@@ -207,6 +214,8 @@ namespace fc { namespace http {
 
           m_io_service = service;
 
+          m_acceptor = std::make_shared< acceptor_type >(*service);
+
           if ( config::enable_multithreading )
             m_strand = std::make_shared< strand_type >(*service);
 
@@ -249,11 +258,17 @@ namespace fc { namespace http {
       /// Check if the endpoint is listening
       bool is_listening()const
       {
-        return (m_endpoint_state == endpoint_state::listening);
+        return (connection_type::m_endpoint_state == connection_type::endpoint_state::listening);
       }
 
       /// Stop listening
-      void stop_listening();
+      void stop_listening()
+      {
+        FC_ASSERT( connection_type::m_endpoint_state == endpoint_state::listening, "asio::listen called from the wrong state" );
+
+        connection_type::m_acceptor->close();
+        connection_type::m_endpoint_state = endpoint_state::listening;
+      }
 
       /// Set up endpoint for listening on a port
       void listen( uint16_t port );
