@@ -1,5 +1,4 @@
 from datetime import datetime, timezone, timedelta
-import os.path
 import re
 
 import pytest
@@ -65,12 +64,14 @@ def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_save_wallet_to_file(configured_wallet: Wallet):
-    configured_wallet.api.save_wallet_file(str(context.get_current_directory()) +'/test_file.json')
-    assert os.path.exists(str(context.get_current_directory()) +'/test_file.json') is True
+    wallet_file_path = context.get_current_directory() / 'test_file.json'
+    configured_wallet.api.save_wallet_file(str(wallet_file_path))
+    assert wallet_file_path.exists()
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
-    configured_wallet.api.save_wallet_file(str(context.get_current_directory()) +'/test_file.json')
-    assert result_of(configured_wallet.api.load_wallet_file, str(context.get_current_directory()) +'/test_file.json') is True
+    wallet_file_path = context.get_current_directory() / 'test_file.json'
+    configured_wallet.api.save_wallet_file(str(wallet_file_path))
+    assert result_of(configured_wallet.api.load_wallet_file, str(wallet_file_path)) is True
 
 def test_get_prototype_operation(configured_wallet: Wallet):
     assert 'comment' in result_of(configured_wallet.api.get_prototype_operation, 'comment_operation')
@@ -119,7 +120,7 @@ def test_help_and_gethelp(configured_wallet: Wallet):
             failed_commands.append(function)
     if len(failed_commands) > 0:
         print(*failed_commands, sep="\n")
-        assert False, f'Error occurred when gethelp was called for following functions: {error_list}'
+        assert False, f'Error occurred when gethelp was called for following functions: {failed_commands}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
     response = result_of(configured_wallet.api.suggest_brain_key)
@@ -130,19 +131,19 @@ def test_suggest_brain_key(configured_wallet: Wallet):
     assert response['pub_key'].startswith('TST')
 
 def test_set_transaction_expiration(wallet: Wallet):
-    set_time = 1000
-    blocktime = 3
-    TOLERANCE = 1
-    max_expiration_time = timedelta(seconds=(set_time + TOLERANCE))
-    min_expiration_time = timedelta(seconds=(set_time - blocktime - TOLERANCE))
-    wallet.api.set_transaction_expiration(set_time)
-    time_now = datetime.now(timezone.utc)
+    set_expiration_time = 1000
+    wallet.api.set_transaction_expiration(set_expiration_time)
     transaction = result_of(wallet.api.create_account, 'initminer', 'alice', '{}', False)
-    expriration_time_str = transaction['expiration']
-    expriration_time = datetime.strptime(expriration_time_str, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
-    activity_time = expriration_time - time_now
 
-    assert min_expiration_time <= activity_time <= max_expiration_time
+    expiration_time_point = datetime.strptime(transaction['expiration'], '%Y-%m-%dT%H:%M:%S')
+    expiration_time_point = expiration_time_point.replace(tzinfo=timezone.utc)
+    expiration_time = expiration_time_point - datetime.now(timezone.utc)
+
+    block_time = 3
+    tolerance = 1
+    max_expiration_time = timedelta(seconds=(set_expiration_time + tolerance))
+    min_expiration_time = timedelta(seconds=(set_expiration_time - block_time - tolerance))
+    assert min_expiration_time <= expiration_time <= max_expiration_time
 
 def test_serialize_transaction(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
