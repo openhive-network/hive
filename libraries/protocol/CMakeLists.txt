@@ -1,3 +1,6 @@
+
+add_subdirectory( schema )
+
 file(GLOB HEADERS "include/hive/protocol/*.hpp")
 file(GLOB HF_PARTS "hardfork.d/*.hpp")
 
