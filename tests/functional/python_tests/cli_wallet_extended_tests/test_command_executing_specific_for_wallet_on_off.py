@@ -113,17 +113,17 @@ def test_get_private_key_related_to_public_key(configured_wallet: Wallet):
     assert result_of(configured_wallet.api.get_private_key, Account('initminer').public_key) == Account('initminer').private_key
 
 def test_help_and_gethelp(configured_wallet: Wallet):
-    help_content = configured_wallet.api.help()['result']
+    help_content = result_of(configured_wallet.api.help)
     help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
     error_list = []
-    for command in help_functions:
+    for function in help_functions:
         try:
-            configured_wallet.api.gethelp(command)
+            configured_wallet.api.gethelp(function)
         except CommunicationError:
-            error_list.append(command)
+            error_list.append(function)
     if len(error_list) > 0:
         print(*error_list, sep="\n")
-        assert False, f'Error occurred when gethelp was called for following commands: {error_list}'
+        assert False, f'Error occurred when gethelp was called for following functions: {error_list}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
     response = configured_wallet.api.suggest_brain_key()
