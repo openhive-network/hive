@@ -63,14 +63,20 @@ private:
       {
         try
         {
-          if(_opened_tx == nullptr)
+          if(_owner->_opened_connection == nullptr) {
             do_reconnect();
+          }
 
+          if ( _opened_tx == nullptr ) {
+            _opened_tx = std::make_unique<pqxx::work>(*_owner->_opened_connection.get());
+          }
           return ex();
         }
         catch(const pqxx::broken_connection& ex)
         {
           _opened_tx.reset();
+          _owner->_opened_connection->disconnect();
+          _owner->_opened_connection.release();
 
           wlog("Transaction controller: `${d}' lost connection to database: `${url}'. Retrying # ${r}...", ("d", _owner->_description)("url", _owner->_dbUrl)("r", retry));
           ++retry;
@@ -108,7 +114,6 @@ private:
 
       dlog("Trying to connect to database: `${url}'...", ("url", _owner->_dbUrl));
       _owner->_opened_connection = std::make_unique<pqxx::connection>(_owner->_dbUrl);
-      _opened_tx = std::make_unique<pqxx::work>(*_owner->_opened_connection.get());
       dlog("Connected to database: `${url}'.", ("url", _owner->_dbUrl));
 
     }
