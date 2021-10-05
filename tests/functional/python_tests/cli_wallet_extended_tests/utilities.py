@@ -53,14 +53,6 @@ def create_accounts( wallet, creator, accounts ):
     for account in accounts:
         wallet.api.create_account(creator, account, '{}')
 
-def send_and_assert_result( method, value ):
-    response = method()
-    assert response['result'] == value
-
-def send_with_args_and_assert_result( method, args, value ):
-    response = method(args)
-    assert response['result'] == value
-
 def result_of( method, *args):
     response = method(*args)['result']
     return response
