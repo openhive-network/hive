@@ -111,14 +111,14 @@ def test_get_private_key_related_to_public_key(configured_wallet: Wallet):
 def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = result_of(configured_wallet.api.help)
     help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
-    error_list = []
+    failed_commands = []
     for function in help_functions:
         try:
             configured_wallet.api.gethelp(function)
         except CommunicationError:
-            error_list.append(function)
-    if len(error_list) > 0:
-        print(*error_list, sep="\n")
+            failed_commands.append(function)
+    if len(failed_commands) > 0:
+        print(*failed_commands, sep="\n")
         assert False, f'Error occurred when gethelp was called for following functions: {error_list}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
