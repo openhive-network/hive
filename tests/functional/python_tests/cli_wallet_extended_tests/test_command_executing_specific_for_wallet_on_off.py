@@ -1,6 +1,5 @@
 from datetime import datetime, timezone, timedelta
 import os.path
-from pytz import utc
 import re
 
 import pytest
@@ -131,23 +130,22 @@ def test_suggest_brain_key(configured_wallet: Wallet):
 
     assert len(brain_priv_key) == 16
     assert len(response['wif_priv_key']) == 51
-    assert response['pub_key'].startswith('TST') 
+    assert response['pub_key'].startswith('TST')
 
 def test_set_transaction_expiration(wallet: Wallet):
     set_time = 1000
     blocktime = 3
     TOLERANCE = 1
-    rangeup = timedelta(seconds=(set_time + TOLERANCE))
-    rangedown = timedelta(seconds=(set_time - blocktime - TOLERANCE))
+    max_expiration_time = timedelta(seconds=(set_time + TOLERANCE))
+    min_expiration_time = timedelta(seconds=(set_time - blocktime - TOLERANCE))
     wallet.api.set_transaction_expiration(set_time)
-
     time_now = datetime.now(timezone.utc)
-    transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
-    expriration_time_str = transaction['result']['expiration']
-    expriration_time = utc.localize(datetime.strptime(expriration_time_str, '%Y-%m-%dT%H:%M:%S'))
+    transaction = result_of(wallet.api.create_account, 'initminer', 'alice', '{}', False)
+    expriration_time_str = transaction['expiration']
+    expriration_time = datetime.strptime(expriration_time_str, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
     activity_time = expriration_time - time_now
 
-    assert rangedown <= activity_time <= rangeup
+    assert min_expiration_time <= activity_time <= max_expiration_time
 
 def test_serialize_transaction(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
