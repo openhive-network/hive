@@ -126,15 +126,12 @@ def test_help_and_gethelp(configured_wallet: Wallet):
         assert False, f'Error occurred when gethelp was called for following functions: {error_list}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
-    response = configured_wallet.api.suggest_brain_key()
+    response = result_of(configured_wallet.api.suggest_brain_key)
+    brain_priv_key = response['brain_priv_key'].split(' ')
 
-    result = response['result']
-    brain_priv_key = result['brain_priv_key']
-    brain_priv_key_splited = brain_priv_key.split(' ')
-
-    assert len(brain_priv_key_splited) == 16
-    assert len(result['wif_priv_key']) == 51
-    assert result['pub_key'].startswith('TST') == True
+    assert len(brain_priv_key) == 16
+    assert len(response['wif_priv_key']) == 51
+    assert response['pub_key'].startswith('TST') 
 
 def test_set_transaction_expiration(wallet: Wallet):
     set_time = 1000
