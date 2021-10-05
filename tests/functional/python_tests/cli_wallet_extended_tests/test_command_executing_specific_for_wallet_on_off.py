@@ -35,7 +35,6 @@ def unconfigured_wallet(request):
 def configured_wallet(request):
     return request.getfixturevalue(request.param)
 
-
 path_to_wallet = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/test_wallet.json'
 
 def test_if_state_is_new_after_first_start(unconfigured_wallet: Wallet):
@@ -59,6 +58,7 @@ def test_if_state_is_locked_after_entering_password(unconfigured_wallet: Wallet)
     unconfigured_wallet.api.lock()
     assert result_of(unconfigured_wallet.api.is_new) is False
     assert result_of(unconfigured_wallet.api.is_locked) is True
+
 def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
@@ -137,7 +137,7 @@ def test_suggest_brain_key(configured_wallet: Wallet):
     assert len(result['wif_priv_key']) == 51
     assert result['pub_key'].startswith('TST') == True
 
-def test_set_transaction_expiration(wallet:Wallet):
+def test_set_transaction_expiration(wallet: Wallet):
     set_time = 1000
     blocktime = 3
     TOLERANCE = 1
@@ -156,12 +156,10 @@ def test_set_transaction_expiration(wallet:Wallet):
 def test_serialize_transaction(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
     transaction = wallet_temp.api.create_account('initminer', 'alice', '{}', False)
-
     serialized_transaction = configured_wallet.api.serialize_transaction(transaction['result'])
     assert serialized_transaction['result'] != '00000000000000000000000000'
 
 def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
-
     wallet_temp = Wallet(attach_to=node)
     wallet_temp.api.create_account('initminer', 'alice', '{}')
     response = wallet_temp.api.get_encrypted_memo('alice', 'initminer', '#this is memo')
