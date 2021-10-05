@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from test_tools import Account, Wallet
+from test_tools import Account, context, Wallet
 from test_tools.exceptions import CommunicationError
 
 from utilities import result_of
@@ -34,7 +34,6 @@ def unconfigured_wallet(request):
 def configured_wallet(request):
     return request.getfixturevalue(request.param)
 
-path_to_wallet = '/home/dev/hive/tests/functional/python_tests/cli_wallet_extended_tests/test_wallet.json'
 
 def test_if_state_is_new_after_first_start(unconfigured_wallet: Wallet):
     assert result_of(unconfigured_wallet.api.is_new) is True
@@ -66,14 +65,12 @@ def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_save_wallet_to_file(configured_wallet: Wallet):
-    if os.path.exists(path_to_wallet) == True:
-        os.remove(path_to_wallet)
-    configured_wallet.api.save_wallet_file(path_to_wallet)
-    assert os.path.exists(path_to_wallet) is True
+    configured_wallet.api.save_wallet_file(str(context.get_current_directory()) +'/test_file.json')
+    assert os.path.exists(str(context.get_current_directory()) +'/test_file.json') is True
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
-    configured_wallet.api.save_wallet_file(path_to_wallet)
-    assert result_of(configured_wallet.api.load_wallet_file, path_to_wallet) is True
+    configured_wallet.api.save_wallet_file(str(context.get_current_directory()) +'/test_file.json')
+    assert result_of(configured_wallet.api.load_wallet_file, str(context.get_current_directory()) +'/test_file.json') is True
 
 def test_get_prototype_operation(configured_wallet: Wallet):
     assert 'comment' in result_of(configured_wallet.api.get_prototype_operation, 'comment_operation')
