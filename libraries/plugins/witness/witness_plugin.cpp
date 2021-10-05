@@ -14,6 +14,9 @@
 #include <fc/io/json.hpp>
 #include <fc/macros.hpp>
 #include <fc/smart_ref_impl.hpp>
+#include <fc/network/ip.hpp>
+#include <fc/network/resolve.hpp>
+#include <fc/optional.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -23,7 +26,7 @@
 
 #define DISTANCE_CALC_PRECISION (10000)
 #define BLOCK_PRODUCING_LAG_TIME (750)
-#define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (200000)
+#define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (20000)
 #define DEFAULT_WITNESS_PARTICIPATION (33)
 
 
@@ -85,6 +88,11 @@ namespace detail {
     boost::signals2::connection   _post_apply_operation_conn;
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
+  
+    fc::time_point get_time();
+  #ifdef IS_TEST_NET
+    fc::optional<fc::ip::endpoint> endpoint;
+  #endif
   };
 
   struct comment_options_extension_visitor
@@ -308,7 +316,7 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop()
   {
-    if( fc::time_point::now() < fc::time_point(HIVE_GENESIS_TIME) )
+    if( get_time() < fc::time_point(HIVE_GENESIS_TIME) )
     {
       wlog( "waiting until genesis time to produce block: ${t}", ("t",HIVE_GENESIS_TIME) );
       schedule_production_loop();
@@ -378,7 +386,7 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
-    fc::time_point now_fine = fc::time_point::now();
+    fc::time_point now_fine = get_time();
     fc::time_point_sec now = now_fine + fc::microseconds( 500000 );
 
     // If the next block production opportunity is in the present or future, we're synced.
@@ -451,6 +459,18 @@ namespace detail {
     appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
     return block_production_condition::produced;
   }
+
+  fc::time_point witness_plugin_impl::get_time()
+  {
+#ifdef IS_TEST_NET
+    if( endpoint.valid() )
+    {
+      //make request
+    }
+#endif
+    fc::time_point now = fc::time_point::now();
+    return now;
+  }
 } // detail
 
 
@@ -466,13 +486,19 @@ void witness_plugin::set_program_options(
       ("enable-stale-production", bpo::value<bool>()->default_value( false ), "Enable block production, even if the chain is stale.")
       ("required-participation", bpo::value< uint32_t >()->default_value( DEFAULT_WITNESS_PARTICIPATION ), "Percent of witnesses (0-99) that must be participating in order to produce blocks")
       ("witness,w", bpo::value<vector<string>>()->composing()->multitoken(),
-        ("name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
+      ("name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
       ("private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
       ("witness-skip-enforce-bandwidth", bpo::value<bool>()->default_value( true ), "Skip enforcing bandwidth restrictions. Default is true in favor of rc_plugin." )
+#ifdef IS_TEST_NET
+      ("time-server-endpoint", "Address and port of time server for testnet.")
+#endif
       ;
   cli.add_options()
       ("enable-stale-production", bpo::bool_switch()->default_value( false ), "Enable block production, even if the chain is stale.")
       ("witness-skip-enforce-bandwidth", bpo::bool_switch()->default_value( true ), "Skip enforcing bandwidth restrictions. Default is true in favor of rc_plugin." )
+#ifdef IS_TEST_NET
+      ("time-server-endpoint", "Address and port of time server for testnet.")
+#endif
       ;
 }
 
@@ -513,6 +539,11 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   }
   if ( my->_required_witness_participation < DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT)
     wlog("warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION));
+
+#ifdef IS_TEST_NET
+  if(options.count("time-server-endpoint"))
+    my->time_server = fc::ip::endpoint::from_string( options.at( "time-server-endpoint" ).as< string >() );
+#endif
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );

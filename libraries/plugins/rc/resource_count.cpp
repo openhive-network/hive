@@ -110,6 +110,13 @@ struct count_operation_visitor
     execution_time_count += _e.decline_voting_rights_operation_exec_time;
   }
 
+#ifdef IS_TEST_NET
+  void operator()( const debug_set_witness_schedule_operation& op )const
+  {
+    // empty
+  }
+#endif
+
   void operator()( const delegate_vesting_shares_operation& op )const
   {
     state_bytes_count += std::max(

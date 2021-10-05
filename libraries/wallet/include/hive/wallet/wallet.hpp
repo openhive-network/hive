@@ -609,6 +609,16 @@ class wallet_api
       public_key_type key,
       bool broadcast );
 
+#ifdef IS_TEST_NET
+    /** Set custom witness schedule for debug purposes
+      *
+      * @param witnesses Vector of witnesses
+      */
+    serializer_wrapper<annotated_signed_transaction> debug_set_witness_schedule(
+      const vector< account_name_type >& witnesses,
+      bool broadcast );
+#endif
+
     /** This method delegates VESTS from one account to another.
       *
       * @param delegator The name of the account delegating VESTS
@@ -1516,6 +1526,10 @@ FC_API( hive::wallet::wallet_api,
       (find_proposals)
       (list_proposal_votes)
       (remove_proposal)
+
+#ifdef IS_TEST_NET
+      (debug_set_witness_schedule)
+#endif
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )

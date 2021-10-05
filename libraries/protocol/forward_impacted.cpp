@@ -175,6 +175,14 @@ struct get_impacted_account_visitor
     _impacted.insert( op.to );
   }
 
+#ifdef IS_TEST_NET
+  void operator()( const debug_set_witness_schedule_operation& op )
+  {
+      for(const auto& witness : op.witnesses)
+      _impacted.insert( witness );
+  }
+#endif
+
   void operator()( const delegate_vesting_shares_operation& op )
   {
     _impacted.insert( op.delegator );

@@ -726,6 +726,13 @@ namespace hive { namespace protocol {
   }
 #endif
 
+#ifdef IS_TEST_NET
+  void debug_set_witness_schedule_operation::validate()const
+  {
+    // TODO assert that account exists
+  }
+#endif
+
   void delegate_vesting_shares_operation::validate()const
   {
     validate_account_name( delegator );

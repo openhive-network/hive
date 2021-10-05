@@ -2097,6 +2097,8 @@ void account_history_rocksdb_plugin::impl::on_post_apply_operation(const operati
 
 void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block_num )
 {
+  wlog( "Incoming LIB value ${l}",
+    ( "l", block_num ) );
   if( _reindexing ) return;
 
   if( block_num <= _cached_reindex_point )

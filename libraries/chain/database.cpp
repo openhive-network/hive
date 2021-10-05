@@ -1464,6 +1464,16 @@ account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
   const witness_schedule_object& wso = get_witness_schedule_object();
+
+  uint64_t head_block_num_origin = 0;
+  uint64_t head_block_num_state = 0;
+  is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+
+  if(  head_block_num_state >= head_block_num_origin )
+  {
+    for( size_t i = 0; i < wso.num_scheduled_witnesses; i++)
+      elog("current_shuffled_witnesses[${i}] = ${name}", ("i", i)("name", wso.current_shuffled_witnesses[i]));
+  }
   uint64_t current_aslot = dpo.current_aslot + slot_num;
   return wso.current_shuffled_witnesses[ current_aslot % wso.num_scheduled_witnesses ];
 }
@@ -3722,6 +3732,7 @@ void database::initialize_evaluators()
   _my->_req_action_evaluator_registry.register_evaluator< example_required_evaluator    >();
 
   _my->_opt_action_evaluator_registry.register_evaluator< example_optional_evaluator    >();
+  _my->_evaluator_registry.register_evaluator< debug_set_witness_schedule_evaluator     >();
 #endif
 }
 

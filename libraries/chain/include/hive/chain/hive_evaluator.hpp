@@ -69,5 +69,8 @@ HIVE_DEFINE_EVALUATOR(update_proposal)
 HIVE_DEFINE_EVALUATOR( update_proposal_votes )
 HIVE_DEFINE_EVALUATOR( remove_proposal )
 HIVE_DEFINE_EVALUATOR( recurrent_transfer )
+#ifdef IS_TEST_NET
+HIVE_DEFINE_EVALUATOR( debug_set_witness_schedule )
+#endif
 
 } } // hive::chain

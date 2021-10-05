@@ -1838,6 +1838,25 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+#ifdef IS_TEST_NET
+serializer_wrapper<annotated_signed_transaction> wallet_api::debug_set_witness_schedule(
+  const vector< account_name_type >& witnesses,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+
+  debug_set_witness_schedule_operation op;
+  op.witnesses = witnesses;
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+
+  tx.validate();
+
+  return { my->sign_and_broadcast_transaction( tx, broadcast, true ) };
+}
+#endif
+
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_and_broadcast(
   const string& delegator,
   const string& delegatee,

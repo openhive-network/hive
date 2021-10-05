@@ -1074,6 +1074,19 @@ namespace hive { namespace protocol {
   };
 #endif
 
+#ifdef IS_TEST_NET
+  /**
+    * For testnet purposes set desired witness schedule
+    */
+  struct debug_set_witness_schedule_operation : public base_operation
+  {
+    vector< account_name_type > witnesses;
+
+    void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( HIVE_INIT_MINER_NAME ); }
+    void validate() const;
+  };
+#endif
+
   /**
     * Delegate vesting shares from one account to the other. The vesting shares are still owned
     * by the original account, but content voting rights and bandwidth allocation are transferred
@@ -1236,3 +1249,6 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+#ifdef IS_TEST_NET
+FC_REFLECT( hive::protocol::debug_set_witness_schedule_operation, (witnesses) );
+#endif

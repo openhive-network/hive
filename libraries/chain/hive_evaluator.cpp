@@ -2832,6 +2832,26 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 }
 #endif
 
+#ifdef IS_TEST_NET
+void debug_set_witness_schedule_evaluator::do_apply( const debug_set_witness_schedule_operation& op)
+{
+  const auto& witnesses = op.witnesses;
+  const witness_schedule_object& wso = _db.get_witness_schedule_object();
+  _db.modify( wso, [&]( witness_schedule_object& _wso )
+  {
+    for( size_t i = 0; i < HIVE_MAX_WITNESSES; i++ )
+    {
+      if( i < witnesses.size() )
+        _wso.temp_current_shuffled_witnesses[i] = witnesses[i];
+      else
+        _wso.temp_current_shuffled_witnesses[i] = account_name_type();
+    }
+    _wso.temp_num_scheduled_witnesses = std::max< uint8_t >( witnesses.size(), 1 );
+    _wso.debug_schedule = true;
+  } );
+}
+#endif
+
 void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_operation& op )
 {
 FC_TODO("Update get_effective_vesting_shares when modifying this operation to support SMTs." )

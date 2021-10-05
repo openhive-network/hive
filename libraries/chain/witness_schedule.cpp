@@ -386,6 +386,24 @@ void update_witness_schedule4( database& db )
   */
 void update_witness_schedule(database& db)
 {
+
+#ifdef IS_TEST_NET
+  {
+    const witness_schedule_object& wso = db.get_witness_schedule_object();
+    if( wso.debug_schedule == true )
+    {
+      const witness_schedule_object& wso = db.get_witness_schedule_object();
+      db.modify( wso, [&]( witness_schedule_object& _wso )
+      {
+        for(size_t i = 0; i < HIVE_MAX_WITNESSES; i++)
+          _wso.current_shuffled_witnesses = _wso.temp_current_shuffled_witnesses;
+        _wso.num_scheduled_witnesses = _wso.temp_num_scheduled_witnesses;
+      } );
+      return;
+    }
+  }
+#endif
+
   if( (db.head_block_num() % HIVE_MAX_WITNESSES) == 0 ) //wso.next_shuffle_block_num )
   {
     if( db.has_hardfork(HIVE_HARDFORK_0_4) )
@@ -396,6 +414,7 @@ void update_witness_schedule(database& db)
 
     const auto& props = db.get_dynamic_global_properties();
     const witness_schedule_object& wso = db.get_witness_schedule_object();
+
 
 
     vector<account_name_type> active_witnesses;

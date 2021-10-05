@@ -194,6 +194,11 @@ namespace hive { namespace chain {
       rd_dynamics_params account_subsidy_rd;
       rd_dynamics_params account_subsidy_witness_rd;
       int64_t            min_witness_account_subsidy_decay = 0;
+#ifdef IS_TEST_NET
+      bool debug_schedule = false;
+      fc::array< account_name_type, HIVE_MAX_WITNESSES > temp_current_shuffled_witnesses;
+      uint8_t temp_num_scheduled_witnesses = 1;
+#endif
   };
 
 
