@@ -37,7 +37,7 @@ add_library( hive_chain
              ${HEADERS}
            )
 
-target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase hive_schema appbase
+target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase appbase
                        ${PATCH_MERGE_LIB} )
 target_include_directories( hive_chain
                             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
