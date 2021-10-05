@@ -285,7 +285,10 @@ namespace hive { namespace chain {
       //returns id of associated comment
       comment_id_type get_comment_id() const { return comment_object::id_type( id ); }
       //returns id of root comment
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
       comment_id_type get_root_id() const { return root_comment; }
+#pragma GCC diagnostic pop
       //tells if this cashout object is related to root comment
       bool is_root() const { return root_comment == get_comment_id(); }
 
