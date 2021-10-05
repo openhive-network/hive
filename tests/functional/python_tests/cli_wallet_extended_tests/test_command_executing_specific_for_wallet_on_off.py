@@ -102,13 +102,12 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     assert keys[0][1] == Account('alice').private_key
     assert keys[1][1] == Account('initminer').private_key
 
-def test_generate_private_key_related_to_account_role_password(configured_wallet: Wallet):
-    response = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
-    result = response['result']
-    assert len(result) == 2
+def test_generate_keys(configured_wallet: Wallet):
+    response = result_of(configured_wallet.api.get_private_key_from_password, 'hulabula', 'owner', 'apricot')
+    assert len(response) == 2
 
-    assert result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
-    assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
+    assert response[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
+    assert response[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_generate_private_key_related_to_public_key(configured_wallet: Wallet):
     assert result_of(configured_wallet.api.get_private_key, Account('initminer').public_key) == Account('initminer').private_key
