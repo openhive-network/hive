@@ -15,6 +15,7 @@
 #include <boost/asio/ssl/rfc2818_verification.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 #include <string>
 #include <mutex>
@@ -56,6 +57,16 @@ namespace fc { namespace http {
     typedef boost::asio::io_service::strand                        strand_type;
     /// Type of a pointer to the Asio io_service::strand being used
     typedef std::shared_ptr< strand_type >                         strand_ptr;
+    /// Type of a pointer to the Asio timer class
+    typedef std::shared_ptr< boost::asio::steady_timer >           timer_ptr;
+
+    /// The type and signature of the callback passed to the accept method
+    typedef std::function< void( const boost::system::error_code& )> accept_handler;
+
+    typedef std::function< void( const boost::system::error_code& )> shutdown_handler;
+
+    class http_processor;
+    typedef std::shared_ptr< http_processor >                      processor_ptr;
 
     enum class connection_state
     {
@@ -79,21 +90,61 @@ namespace fc { namespace http {
       closed     = 3
     };
 
+    enum class internal_state
+    {
+      user_init            = 0,
+      transport_init       = 1,
+      read_http_request    = 2,
+      write_http_request   = 3,
+      read_http_response   = 4,
+      write_http_response  = 5,
+      process_http_request = 6,
+      process_connection   = 7
+    };
+
+    enum class terminate_status
+    {
+        failed  = 0,
+        closed  = 1,
+        unknown = 2
+    };
+
     struct config
     {
       static constexpr bool enable_multithreading = true;
 
       /// Maximum size of close frame reason
-      static uint8_t const close_reason_size = 123;
+      static constexpr uint8_t close_reason_size = 123;
+
+      static constexpr float client_version = 1.1;
     };
+
+    class http_processor
+    {
+    public:
+      virtual ~http_processor() {}
+    };
+
+    namespace http_1_1 {
+      class processor : public http_processor
+      {
+      public:
+        virtual ~processor() {}
+      };
+    } // http_1_1
 
     class connection_base
     {
     public:
+      typedef boost::asio::ip::tcp::socket   socket_type;
+      typedef std::shared_ptr< socket_type > socket_ptr;
+
       virtual ~connection_base() {}
 
       virtual constexpr bool is_secure()const = 0;
       virtual void init_asio ( io_service_ptr service ) = 0;
+      virtual socket_type& get_socket() = 0;
+      virtual void async_shutdown( shutdown_handler hdl ) = 0;
 
       /// Close the connection
       void close( uint16_t code, const message_type& reason );
@@ -111,15 +162,18 @@ namespace fc { namespace http {
       session_state       m_session_state;
       endpoint_state      m_endpoint_state;
       connection_state    m_connection_state;
-      strand_ptr          m_strand;
+      internal_state      m_internal_state;
 
       /// Handlers mutex
       std::mutex          m_handlers_mutex;
       std::mutex          m_connection_state_lock;
 
+      timer_ptr           m_handshake_timer;
+
       connection_hdl      m_hdl;
       io_service_ptr      m_io_service;
       acceptor_ptr        m_acceptor;
+      strand_ptr          m_strand;
     };
 
     namespace tls {
@@ -135,7 +189,7 @@ namespace fc { namespace http {
 
         virtual ~connection() {}
 
-        virtual constexpr bool is_secure()const { return true; }
+        virtual constexpr bool is_secure()const override { return true; }
 
         // Handlers //
         void set_tls_init_handler( tls_init_handler&& _handler )
@@ -144,9 +198,18 @@ namespace fc { namespace http {
           m_tls_init_handler = _handler;
         }
 
-        /// Retrieve a pointer to the wrapped socket
-        socket_type& get_socket() {
-            return *m_socket;
+        /// Retrieve a reference to the wrapped socket
+        virtual connection_base::socket_type& get_socket() override
+        {
+          return m_socket->next_layer();
+        }
+
+        virtual void async_shutdown( shutdown_handler hdl ) override
+        {
+          if ( m_strand )
+            m_socket->async_shutdown( m_strand->wrap(hdl) );
+          else
+            m_socket->async_shutdown( hdl );
         }
 
         /// initialize asio transport with external io_service
@@ -169,7 +232,7 @@ namespace fc { namespace http {
           m_socket = std::make_shared< socket_type >(*service, *m_context);
 
           if ( m_socket_init_handler )
-            m_socket_init_handler(m_hdl, get_socket());
+            m_socket_init_handler(m_hdl, *m_socket);
 
           if ( m_socket_init_handler )
             m_socket_init_handler( m_hdl, *m_socket );
@@ -200,10 +263,11 @@ namespace fc { namespace http {
 
         virtual ~connection() {}
 
-        virtual constexpr bool is_secure()const { return false; }
+        virtual constexpr bool is_secure()const override { return false; }
 
-        /// Retrieve a pointer to the wrapped socket
-        socket_type& get_socket() {
+        /// Retrieve a reference to the socket
+        virtual connection_base::socket_type& get_socket() override
+        {
             return *m_socket;
         }
 
@@ -227,11 +291,18 @@ namespace fc { namespace http {
           m_connection_state = connection_state::ready;
         }
 
+        virtual void async_shutdown( shutdown_handler hdl ) override
+        {
+          boost::system::error_code ec;
+          m_socket->shutdown( boost::asio::ip::tcp::socket::shutdown_both, ec );
+          FC_ASSERT( !ec, "async shutdown error: ${err}", ("err",ec.message()) );
+        }
+
       protected:
         // Handlers
         socket_init_handler m_socket_init_handler;
 
-        socket_ptr       m_socket;
+        socket_ptr          m_socket;
       };
     } // unsecure
 
@@ -256,6 +327,106 @@ namespace fc { namespace http {
       void set_reuse_addr( bool value )
       {
         m_reuse_addr = value;
+      }
+
+      void start()
+      {
+        if ( connection_type::m_internal_state != internal_state::user_init )
+        {
+          terminate( boost::system::errc::make_error_code( boost::system::errc::already_connected ));
+          return;
+        }
+
+        connection_type::m_internal_state = internal_state::transport_init;
+
+        m_processor = get_processor( config::client_version );
+
+        // At this point the transport is ready to read and write bytes.
+        if ( m_is_server )
+        {
+          connection_type::m_internal_state = internal_state::read_http_request;
+          // TODO: read_handshake( 1 );
+        }
+        else
+        {
+          // We are a client. Set the processor to the version specified in the
+          // config file and send a handshake request.
+          connection_type::m_internal_state = internal_state::write_http_request;
+          // TODO: send_http_request();
+        }
+      }
+
+      processor_ptr get_processor( float client_version )
+      {
+        switch( client_version )
+        {
+          case 1.1:
+            return std::make_shared< http_1_1::processor >();
+          default:
+            FC_ASSERT( false, "Unimplemented http processor for version HTTP/${type}", ("type",client_version) );
+        }
+      }
+
+      void terminate( const boost::system::error_code& ec )
+      {
+        // Cancel close handshake timer
+        if ( connection_type::m_handshake_timer )
+        {
+          connection_type::m_handshake_timer->cancel();
+          connection_type::m_handshake_timer.reset();
+        }
+
+        terminate_status tstat = terminate_status::unknown;
+
+        if( connection_type::m_session_state == connection_type::session_state::connecting)
+        {
+          connection_type::m_session_state = session_state::closed;
+          tstat = terminate_status::failed;
+        }
+        else if( connection_type::m_session_state != session_state::closed )
+        {
+          connection_type::m_session_state = session_state::closed;
+          tstat = terminate_status::closed;
+        }
+        else return;
+
+        connection_type::async_shutdown(
+          std::bind(
+            &handle_terminate,
+            this,
+            tstat,
+            std::placeholders::_1
+          )
+        );
+      }
+
+      void handle_terminate( terminate_status tstat, const boost::system::error_code& ec )
+      {
+        if ( ec )
+          elog( "asio::handle_terminate error: ${err}", ("err",ec.message()) );
+
+        // clean shutdown
+        switch( tstat )
+        {
+        case terminate_status::failed:
+          if( connection_type::m_fail_handler )
+              connection_type::m_fail_handler( connection_type::m_hdl );
+          break;
+        case terminate_status::closed:
+          if( connection_type::m_close_handler )
+              connection_type::m_close_handler( connection_type::m_hdl );
+          break;
+        default:
+          break;
+        }
+
+        // call the termination handler if it exists
+        // if it exists it might (but shouldn't) refer to a bad memory location.
+        // If it does, we don't care and should catch and ignore it.
+        if ( connection_type::m_termination_handler)
+          try {
+            connection_type::m_termination_handler( this );
+          } FC_CAPTURE_AND_LOG( () );
       }
 
       /// Check if the endpoint is listening
@@ -329,7 +500,10 @@ namespace fc { namespace http {
       close_handler       m_close_handler;
       fail_handler        m_fail_handler;
 
+      processor_ptr       m_processor;
+
       bool                m_reuse_addr;
+      bool                m_is_server;
 
       boost::system::error_code clean_up_listen_after_error( boost::system::error_code& ec )
       {
@@ -343,6 +517,11 @@ namespace fc { namespace http {
     class client_endpoint : public endpoint< ConnectionType >
     {
     public:
+      typedef ConnectionType                     connection_type;
+      typedef std::shared_ptr< connection_type > connection_ptr;
+      typedef endpoint< connection_type >        endpoint_type;
+      typedef std::shared_ptr< endpoint_type >   endpoint_ptr;
+
       virtual ~client_endpoint() {}
 
       /// Create and initialize a new connection. You should then call connect() in order to perform a handshake
@@ -358,15 +537,79 @@ namespace fc { namespace http {
     class server_endpoint : public endpoint< ConnectionType >
     {
     public:
+      typedef ConnectionType                     connection_type;
+      typedef std::shared_ptr< connection_type > connection_ptr;
+      typedef endpoint< connection_type >        endpoint_type;
+      typedef std::shared_ptr< endpoint_type >   endpoint_ptr;
+
       virtual ~server_endpoint() {}
 
       /// Starts the server's async connection acceptance loop
-      void start_accept();
+      void start_accept()
+      {
+        FC_ASSERT( endpoint_type::is_listening(), "Not listening" );
+
+        connection_type::m_is_server = true;
+
+        boost::system::error_code ec;
+
+        async_accept( std::bind( &handle_accept, this, std::placeholders::_1 ), ec );
+
+        // If the connection was constructed but the accept failed,
+        // terminate the connection to prevent memory leaks
+        if( ec ) endpoint_type::terminate( ec );
+      }
 
       /// Create and initialize a new connection
       void create_connection();
 
     protected:
+      /// Accept the next connection attempt and assign it to con
+      void async_accept( accept_handler callback, boost::system::error_code & ec )
+      {
+        if ( !endpoint_type::m_acceptor)
+        {
+          ec = boost::system::errc::make_error_code( boost::system::errc::not_connected );
+          return;
+        }
+
+        if ( config::enable_multithreading )
+        {
+          endpoint_type::m_acceptor->async_accept(
+            endpoint_type::get_socket(),
+            endpoint_type::m_strand->wrap(std::bind(
+              &handle_accept,
+              this,
+              callback,
+              std::placeholders::_1
+            ))
+          );
+        }
+        else
+        {
+          endpoint_type::m_acceptor->async_accept(
+            endpoint_type::get_socket(),
+            std::bind(
+              &handle_accept,
+              this,
+              callback,
+              std::placeholders::_1
+            )
+          );
+        }
+      }
+
+      /// Handler callback for start_accept
+      void handle_accept( const boost::system::error_code& ec ) {
+        if (ec) {
+          endpoint_type::terminate(ec);
+          edump((ec.message()));
+        } else {
+          endpoint_type::start();
+        }
+
+        start_accept();
+      }
     };
 
     template< typename ConnectionType >
