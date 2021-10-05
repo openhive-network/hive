@@ -81,7 +81,7 @@ def test_about(configured_wallet: Wallet):
     assert 'client_version' in result_of(configured_wallet.api.about)
 
 def test_normalize_brain_key(configured_wallet: Wallet):
-    assert result_of(configured_wallet.api.normalize_brain_key, '     mango Apple banana CHERRY ') == 'MANGO APPLE BANANA CHERRY'
+    assert result_of(configured_wallet.api.normalize_brain_key, '     mango Apple CHERRY ') == 'MANGO APPLE CHERRY'
 
 def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
@@ -107,11 +107,14 @@ def test_generate_keys(configured_wallet: Wallet):
     assert response[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_get_private_key_related_to_public_key(configured_wallet: Wallet):
-    assert result_of(configured_wallet.api.get_private_key, Account('initminer').public_key) == Account('initminer').private_key
+    pub_key = Account('initminer').public_key
+    priv_key = Account('initminer').private_key
+    assert result_of(configured_wallet.api.get_private_key, pub_key) == priv_key
 
 def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = result_of(configured_wallet.api.help)
-    help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]  # saparate names of functions from "help"
+    # saparate names of functions from "help"
+    help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]
     failed_commands = []
     for function in help_functions:
         try:
