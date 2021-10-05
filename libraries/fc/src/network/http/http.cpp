@@ -253,7 +253,10 @@ namespace fc { namespace http {
       }
 
       /// Sets whether to use the SO_REUSEADDR flag when opening listening sockets
-      void set_reuse_addr( bool value );
+      void set_reuse_addr( bool value )
+      {
+        m_reuse_addr = value;
+      }
 
       /// Check if the endpoint is listening
       bool is_listening()const
@@ -271,9 +274,32 @@ namespace fc { namespace http {
       }
 
       /// Set up endpoint for listening on a port
-      void listen( uint16_t port );
+      void listen( uint16_t port )
+      {
+        listen( typename boost::asio::ip::tcp::endpoint{ boost::asio::ip::tcp::v6(), port } );
+      }
       /// Set up endpoint for listening manually
-      void listen( const boost::asio::ip::tcp::endpoint& ep );
+      void listen( const boost::asio::ip::tcp::endpoint& ep )
+      {
+        FC_ASSERT( connection_type::m_endpoint_state == endpoint_state::ready, "asio::listen called from the wrong state" );
+        static const auto check_error = [&]( const boost::system::error_code& ec )
+        {
+          FC_ASSERT( !ec, "asio::listen error: ${err}", ("err", clean_up_listen_after_error( ec ).message()) );
+        };
+
+        boost::system::error_code ec;
+
+        connection_type::m_acceptor->open( ep.protocol(), ec );
+        check_error( ec );
+
+        connection_type::m_acceptor->set_option( boost::asio::socket_base::reuse_address( m_reuse_addr ), ec );
+        check_error( ec );
+
+        connection_type::m_acceptor->bind( ep, ec );
+        check_error( ec );
+
+        connection_type::m_endpoint_state = endpoint_state::listening;
+      }
 
       // Handlers //
       void set_open_handler( open_handler&& _handler )
@@ -302,6 +328,15 @@ namespace fc { namespace http {
       message_handler     m_message_handler;
       close_handler       m_close_handler;
       fail_handler        m_fail_handler;
+
+      bool                m_reuse_addr;
+
+      boost::system::error_code clean_up_listen_after_error( boost::system::error_code& ec )
+      {
+        if ( connection_type::m_acceptor->is_open() )
+            connection_type::m_acceptor->close();
+        return ec;
+      }
     };
 
     template< typename ConnectionType >
