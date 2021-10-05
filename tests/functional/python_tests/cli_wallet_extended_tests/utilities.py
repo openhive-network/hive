@@ -54,5 +54,5 @@ def create_accounts( wallet, creator, accounts ):
         wallet.api.create_account(creator, account, '{}')
 
 def result_of( method, *args):
-    response = method(*args)['result']
-    return response
+    response = method(*args)
+    return response['result']
