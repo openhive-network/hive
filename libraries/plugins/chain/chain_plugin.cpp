@@ -588,9 +588,6 @@ void chain_plugin_impl::write_default_database_config( bfs::path &p )
 
 void chain_plugin_impl::setup_benchmark_dumper()
 {
-  static std::mutex mtx;
-  std::lock_guard<std::mutex> _{mtx};
-
   if(!this->dumper.is_initialized())
   {
     typedef hive::utilities::benchmark_dumper::database_object_sizeof_cntr_t database_object_sizeof_cntr_t;
@@ -714,6 +711,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     }
   }
 
+  this->my->setup_benchmark_dumper();
   my->benchmark_is_enabled = (options.count( "advanced-benchmark" ) != 0);
 
   if( options.count( "statsd-record-on-replay" ) )
@@ -740,7 +738,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   if(my->benchmark_interval > 0)
   {
     my->dumper_post_apply_block = db().add_post_apply_block_handler([&](const hive::chain::block_notification& note) noexcept {
-      if(!this->my->dumper.is_initialized()) this->my->setup_benchmark_dumper();
       const uint32_t current_block_number = note.block_num;
       if( my->benchmark_interval && ( current_block_number % my->benchmark_interval == 0 ) )
       {
