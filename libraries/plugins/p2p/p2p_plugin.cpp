@@ -89,6 +89,7 @@ public:
     ilog("P2P plugin is closing...");
     shutdown_helper.shutdown();
     ilog("P2P plugin was closed...");
+    hive::notify_hived_status("P2P stopped");
   }
 
   bool is_included_block(const block_id_type& block_id);
@@ -676,8 +677,16 @@ void p2p_plugin::plugin_startup()
     });
     my->node->sync_from(graphene::net::item_id(graphene::net::block_message_type, block_id), std::vector<uint32_t>());
     ilog("P2P node listening at ${ep}", ("ep", my->node->get_actual_listening_endpoint()));
+    hive::notify( "P2P listening",
+    // {
+        "type", "p2p",
+        "address", static_cast<fc::string>(my->node->get_actual_listening_endpoint().get_address()),
+        "port", my->node->get_actual_listening_endpoint().port()
+    // }
+    );
   }).wait();
   ilog( "P2P Plugin started" );
+  hive::notify_hived_status("P2P started");
 }
 
 void p2p_plugin::plugin_pre_shutdown() {

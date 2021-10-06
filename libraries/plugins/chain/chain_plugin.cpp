@@ -294,6 +294,7 @@ void chain_plugin_impl::start_write_processing()
     fc::time_point last_popped_block_time = fc::time_point::now();
     fc::time_point last_msg_time = last_popped_block_time;
 
+    hive::notify_hived_status("syncing");
     while( running )
     {
       if( write_queue.pop( cxt ) )
@@ -811,6 +812,7 @@ void chain_plugin::plugin_shutdown()
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
+  hive::notify_hived_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)
