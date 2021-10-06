@@ -50,7 +50,7 @@ bool error_handler(std::function<void ()> foo)
   auto handle_exception = [&is_exception_occured](const fc::string &ex)
   {
     is_exception_occured = true;
-    wlog("cought exception! details:\n${details}", ("details", ex));
+    wlog("caught exception! details:\n${details}", ("details", ex));
   };
 
   try { foo(); }
