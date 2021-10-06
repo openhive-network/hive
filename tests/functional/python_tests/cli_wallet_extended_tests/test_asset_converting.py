@@ -1,3 +1,5 @@
+import re
+
 from test_tools import Account, logger, World, Asset
 from utilities import result_of
 
@@ -29,7 +31,7 @@ def test_conversion(wallet):
     assert _request['collateral_amount'] == Asset.Test(4)
     assert _request['converted_amount'] == Asset.Tbd(1.904)
 
-    assert result_of(wallet.api.estimate_hive_collateral, Asset.Test(4)) == Asset.Test(8.4)
+    assert is_valid_asset(result_of(wallet.api.estimate_hive_collateral, Asset.Test(4)))
 
     wallet.api.convert_hbd('alice', Asset.Tbd(0.5))
 
@@ -43,3 +45,7 @@ def test_conversion(wallet):
     response = wallet.api.get_conversion_requests('alice')
 
     assert response['result'][0]['amount'] == Asset.Tbd(0.5)
+
+def is_valid_asset(asset_value):
+    bool_value = bool(re.search(r'\d+\.\d{3}\sTESTS', asset_value))
+    return bool_value
