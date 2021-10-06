@@ -107,9 +107,9 @@ def test_generate_keys(configured_wallet: Wallet):
     assert response[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_get_private_key_related_to_public_key(configured_wallet: Wallet):
-    pub_key = Account('initminer').public_key
-    priv_key = Account('initminer').private_key
-    assert result_of(configured_wallet.api.get_private_key, pub_key) == priv_key
+    public_key = Account('initminer').public_key
+    private_key = Account('initminer').private_key
+    assert result_of(configured_wallet.api.get_private_key, public_key) == private_key
 
 def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = result_of(configured_wallet.api.help)
