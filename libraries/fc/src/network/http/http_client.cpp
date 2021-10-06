@@ -12,7 +12,6 @@
 #include <boost/system/error_code.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
-#include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/rfc2818_verification.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
@@ -25,52 +24,6 @@
 namespace fc { namespace http {
 
   namespace detail {
-    typedef boost::asio::ssl::context       ssl_context;
-    typedef std::shared_ptr< ssl_context >  ssl_context_ptr;
-
-    typedef boost::asio::io_service*        io_service_ptr;
-
-    typedef std::shared_ptr< processor >    processor_ptr;
-
-    template< typename ConnectionType >
-    class http_connection_impl : public http_connection
-    {
-    public:
-      typedef ConnectionType connection_type;
-
-      http_connection_impl( connection_type con )
-        : _http_connection( con )
-      {}
-
-      virtual ~http_connection_impl() {};
-
-      virtual void send_message( const std::string& message )override
-      {
-        idump((message));
-        _http_connection->send( message );
-      }
-      virtual void close( int64_t code, const std::string& reason )override
-      {
-        _http_connection->close( code, reason );
-      }
-
-      connection_type _http_connection;
-    };
-
-    class http_unsecure_server_impl
-    {
-    public:
-      http_unsecure_server_impl()
-      {}
-    };
-
-    class http_tls_server_impl
-    {
-    public:
-      http_tls_server_impl( const std::string& server_pem, const std::string& ssl_password )
-      {}
-    };
-
     enum class client_state
     {
       not_connected = 0,
@@ -116,6 +69,7 @@ namespace fc { namespace http {
 
       client_state            _state = client_state::not_connected;
     };
+
 
     class http_unsecure_client_impl final : public http_client_impl
     {
@@ -183,34 +137,6 @@ namespace fc { namespace http {
       std::string     ca_filename;
     };
   } // namespace detail
-
-  http_server::http_server()
-      : server(), my( new detail::http_unsecure_server_impl() ) {}
-  http_server::~http_server() {}
-
-  void http_server::on_connection( const on_connection_handler& handler )
-  {}
-  void http_server::listen( uint16_t port )
-  {}
-  void http_server::listen( const fc::ip::endpoint& ep )
-  {}
-  void http_server::start_accept()
-  {}
-
-
-  http_tls_server::http_tls_server( const std::string& server_pem, const std::string& ssl_password )
-    : server( server_pem, ssl_password ), my( new detail::http_tls_server_impl(server::server_pem, server::ssl_password) ) {}
-  http_tls_server::~http_tls_server() {}
-
-  void http_tls_server::on_connection( const on_connection_handler& handler )
-  {}
-  void http_tls_server::listen( uint16_t port )
-  {}
-  void http_tls_server::listen( const fc::ip::endpoint& ep )
-  {}
-  void http_tls_server::start_accept()
-  {}
-
 
   http_client::http_client()
     : client() {}
