@@ -36,5 +36,25 @@ namespace fc { namespace http {
     return type;
   }
 
+  http_version::http_version( const std::string& str_version )
+  {
+    if( str_version == "HTTP/1.1" )
+      _version = version::http_1_1;
+    else
+      FC_ASSERT( false, "Unsupported http version: ${version}", ("version",str_version) );
+  }
+
+  std::string http_version::str()const
+  {
+    if( _version == version::http_1_1 )
+      return "HTTP/1.1";
+    else
+      FC_ASSERT( false, "Unsupported http version: ${version}", ("version",static_cast< unsigned >( _version )) );
+  }
+
+  version http_version::get()const
+  {
+    return _version;
+  }
 
 } } // fc::http
