@@ -8,68 +8,72 @@
 namespace fc { namespace http {
 
   namespace detail {
-      class http_server_impl;
-      class http_tls_server_impl;
-      class http_client_impl;
-      class http_tls_client_impl;
-   } // namespace detail;
+    class http_unsecure_server_impl;
+    class http_tls_server_impl;
+    class http_unsecure_client_impl;
+    class http_tls_client_impl;
+  } // detail
 
-   typedef connection                         http_connection;
-   typedef std::shared_ptr< http_connection > http_connection_ptr;
+  typedef connection                         http_connection;
+  typedef std::shared_ptr< http_connection > http_connection_ptr;
 
-   class http_server : public server
-   {
-      public:
-         http_server();
-         virtual ~http_server();
+  class http_server : public server
+  {
+  public:
+    http_server();
+    virtual ~http_server();
 
-         virtual void on_connection( const on_connection_handler& handler) override;
-         virtual void listen( uint16_t port ) override;
-         virtual void listen( const fc::ip::endpoint& ep ) override;
-         virtual void start_accept() override;
+    virtual void on_connection( const on_connection_handler& handler) override;
+    virtual void listen( uint16_t port ) override;
+    virtual void listen( const fc::ip::endpoint& ep ) override;
+    virtual void start_accept() override;
 
-      private:
-         std::unique_ptr<detail::http_server_impl> my;
-   };
+  private:
+    typedef std::unique_ptr< detail::http_unsecure_server_impl > server_impl_ptr;
+    server_impl_ptr my;
+  };
 
 
-   class http_tls_server : public server
-   {
-      public:
-         http_tls_server( const std::string& server_pem = std::string(),
-                           const std::string& ssl_password = std::string());
-         virtual ~http_tls_server();
+  class http_tls_server : public server
+  {
+  public:
+    http_tls_server( const std::string& server_pem = std::string(),
+                const std::string& ssl_password = std::string());
+    virtual ~http_tls_server();
 
-         virtual void on_connection( const on_connection_handler& handler) override;
-         virtual void listen( uint16_t port ) override;
-         virtual void listen( const fc::ip::endpoint& ep ) override;
-         virtual void start_accept() override;
+    virtual void on_connection( const on_connection_handler& handler) override;
+    virtual void listen( uint16_t port ) override;
+    virtual void listen( const fc::ip::endpoint& ep ) override;
+    virtual void start_accept() override;
 
-      private:
-         std::unique_ptr<detail::http_tls_server_impl> my;
-   };
+  private:
+    typedef std::unique_ptr< detail::http_tls_server_impl > server_impl_ptr;
+    server_impl_ptr my;
+  };
 
-   class http_client : public client
-   {
-      public:
-         http_client();
-         virtual ~http_client();
+  class http_client : public client
+  {
+  public:
+    http_client();
+    virtual ~http_client();
 
-         virtual connection_ptr connect( const std::string& _url_str ) override;
+    virtual connection_ptr connect( const std::string& _url_str ) override;
 
-      private:
-         std::unique_ptr<detail::http_client_impl> my;
-   };
-   class http_tls_client : public client
-   {
-      public:
-         http_tls_client( const std::string& ca_filename = "_default" );
-         virtual ~http_tls_client();
+  private:
+    typedef std::unique_ptr< detail::http_unsecure_client_impl > client_impl_ptr;
+    client_impl_ptr my;
+  };
+  class http_tls_client : public client
+  {
+  public:
+    http_tls_client( const std::string& ca_filename = "_default" );
+    virtual ~http_tls_client();
 
-         virtual connection_ptr connect( const std::string& _url_str ) override;
+    virtual connection_ptr connect( const std::string& _url_str ) override;
 
-      private:
-         std::unique_ptr<detail::http_tls_client_impl> my;
-   };
+  private:
+      typedef std::unique_ptr< detail::http_tls_client_impl > client_impl_ptr;
+      client_impl_ptr my;
+  };
 
 } } // fc::http
