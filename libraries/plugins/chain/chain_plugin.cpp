@@ -258,7 +258,6 @@ void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared< std::thread >( [&]()
   {
-    hive::notify_hived_status("syncing");
     ilog("Write processing thread started.");
 
     const fc::microseconds block_wait_max_time = fc::seconds(10*HIVE_BLOCK_INTERVAL);
@@ -292,6 +291,7 @@ void chain_plugin_impl::start_write_processing()
     fc::time_point last_popped_block_time = fc::time_point::now();
     fc::time_point last_msg_time = last_popped_block_time;
 
+    hive::notify_hived_status("syncing");
     while( running )
     {
       if( write_queue.pop( cxt ) )
@@ -369,7 +369,6 @@ void chain_plugin_impl::start_write_processing()
 
 void chain_plugin_impl::stop_write_processing()
 {
-  hive::notify_hived_status("finished syncing");
   running = false;
 
   if( write_processor_thread )
@@ -807,6 +806,7 @@ void chain_plugin::plugin_shutdown()
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
+  hive::notify_hived_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)
