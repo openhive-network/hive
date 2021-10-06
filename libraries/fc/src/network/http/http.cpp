@@ -51,7 +51,7 @@ namespace fc { namespace http {
       }
       virtual void close( int64_t code, const std::string& reason )override
       {
-        _http_connection->close( code,reason );
+        _http_connection->close( code, reason );
       }
 
       connection_type _http_connection;
@@ -85,6 +85,8 @@ namespace fc { namespace http {
       virtual ~http_client_impl() {}
 
       virtual void connect( const fc::url& _url ) = 0;
+      virtual void send( const std::string& message ) = 0;
+      virtual void close( int64_t code, const std::string& reason ) = 0;
 
       std::future<void> get_connected_future()
       {
@@ -127,8 +129,22 @@ namespace fc { namespace http {
       virtual void connect( const fc::url& _url ) override
       {
         http_client_impl::_url = _url;
-
+        // TODO: Implement connecting over unsecured TCP connections
         _state = client_state::connected;
+        _connected.set_value();
+      }
+
+      virtual void send( const std::string& message )
+      {
+        // TODO: Implement sending messages over unsecured TCP connections
+      }
+
+      virtual void close( int64_t code, const std::string& reason )
+      {
+        ilog( "Closing http secure connection with code: ${code}, and reason: ${reason}", ("code",code)("reason",reason) );
+        // TODO: Implement closing connection over unsecured TCP connections
+        _state = client_state::closed;
+        _closed.set_value();
       }
     };
 
@@ -145,8 +161,22 @@ namespace fc { namespace http {
       virtual void connect( const fc::url& _url ) override
       {
         http_client_impl::_url = _url;
-
+        // TODO: Implement connecting over secured TCP connections
         _state = client_state::connected;
+        _connected.set_value();
+      }
+
+      virtual void send( const std::string& message )
+      {
+        // TODO: Implement sending messages over secured TCP connections
+      }
+
+      virtual void close( int64_t code, const std::string& reason )
+      {
+        ilog( "Closing http secure connection with code: ${code}, and reason: ${reason}", ("code",code)("reason",reason) );
+        // TODO: Implement closing connection over secured TCP connections
+        _state = client_state::closed;
+        _closed.set_value();
       }
 
     private:
@@ -183,7 +213,7 @@ namespace fc { namespace http {
 
 
   http_client::http_client()
-    : client(), my( new detail::http_unsecure_client_impl() ) {}
+    : client() {}
   http_client::~http_client() {}
 
   connection_ptr http_client::connect( const std::string& _url_str )
@@ -191,15 +221,17 @@ namespace fc { namespace http {
     fc::url _url{ _url_str };
     FC_ASSERT( _url.proto() == "http", "Invalid protocol: \"{proto}\". Expected: \"http\"", ("proto", _url.proto()) );
 
+    auto my = std::make_unique< detail::http_unsecure_client_impl >(); // Create unique client for every connection
+
     my->connect( _url );
     my->get_connected_future().wait();
 
-    return std::make_shared< detail::http_connection_impl< client_impl_ptr > >( my );
+    return std::make_shared< detail::http_connection_impl< std::shared_ptr< detail::http_unsecure_client_impl > > >( std::move( my ) );
   } FC_CAPTURE_AND_RETHROW( (_url_str) )}
 
 
   http_tls_client::http_tls_client( const std::string& ca_filename )
-    : client( ca_filename ), my( new detail::http_tls_client_impl( client::ca_filename ) ) {}
+    : client( ca_filename ) {}
   http_tls_client::~http_tls_client() {}
 
   connection_ptr http_tls_client::connect( const std::string& _url_str )
@@ -207,10 +239,12 @@ namespace fc { namespace http {
     fc::url _url{ _url_str };
     FC_ASSERT( _url.proto() == "https", "Invalid protocol: \"{proto}\". Expected: \"https\"", ("proto", _url.proto()) );
 
+    auto my = std::make_unique< detail::http_tls_client_impl >( client::ca_filename ); // Create unique client for every connection
+
     my->connect( _url );
     my->get_connected_future().wait();
 
-    return std::make_shared< detail::http_connection_impl< client_impl_ptr > >( my );
+    return std::make_shared< detail::http_connection_impl< std::shared_ptr< detail::http_tls_client_impl > > >( std::move( my ) );
   } FC_CAPTURE_AND_RETHROW( (_url_str) ) }
 
 } } // fc::http

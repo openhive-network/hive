@@ -58,10 +58,6 @@ namespace fc { namespace http {
     virtual ~http_client();
 
     virtual connection_ptr connect( const std::string& _url_str ) override;
-
-  private:
-    typedef std::unique_ptr< detail::http_unsecure_client_impl > client_impl_ptr;
-    client_impl_ptr my;
   };
   class http_tls_client : public client
   {
@@ -70,10 +66,6 @@ namespace fc { namespace http {
     virtual ~http_tls_client();
 
     virtual connection_ptr connect( const std::string& _url_str ) override;
-
-  private:
-      typedef std::unique_ptr< detail::http_tls_client_impl > client_impl_ptr;
-      client_impl_ptr my;
   };
 
 } } // fc::http
