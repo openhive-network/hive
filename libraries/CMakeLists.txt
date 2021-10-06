@@ -1,4 +1,3 @@
-add_subdirectory( fc )
 add_subdirectory( vendor )
 add_subdirectory( jsonball )
 add_subdirectory( appbase )
