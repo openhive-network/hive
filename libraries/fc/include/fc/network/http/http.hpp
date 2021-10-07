@@ -26,34 +26,6 @@ namespace fc { namespace http {
     class http_client_impl;
     class http_unsecure_client_impl;
     class http_tls_client_impl;
-
-    template< typename ConnectionType >
-    class http_connection_impl final : public http_connection
-    {
-    public:
-      typedef typename ConnectionType::element_type element_type; // requires ConnectionType to be a std::shared_ptr
-      typedef typename std::enable_if<
-           std::is_base_of< http_server_impl, typename std::decay< element_type >::type >::value
-        || std::is_base_of< http_client_impl, typename std::decay< element_type >::type >::value,
-       ConnectionType >::type connection_type; // Should be available only for http server and http client implementations
-
-      http_connection_impl( connection_type con ) : _http_connection( con ) {}
-      virtual ~http_connection_impl() {};
-
-      virtual void send_message( const std::string& message ) override
-      {
-        idump((message));
-        _http_connection->send( message );
-      }
-
-      virtual void close( int64_t code, const std::string& reason ) override
-      {
-        _http_connection->close( code, reason );
-      }
-
-    private:
-      connection_type _http_connection;
-    };
   } // detail
 
   class http_server : public server

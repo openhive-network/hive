@@ -31,14 +31,14 @@ namespace fc { namespace http {
       closed        = 2
     };
 
-    class http_client_impl
+    class http_client_impl : public http_connection
     {
     public:
       http_client_impl() {}
       virtual ~http_client_impl() {}
 
       virtual void connect( const fc::url& _url ) = 0;
-      virtual void send( const std::string& message ) = 0;
+      virtual void send_message( const std::string& message ) = 0;
       virtual void close( int64_t code, const std::string& reason ) = 0;
 
       std::future<void> get_connected_future()
@@ -88,8 +88,9 @@ namespace fc { namespace http {
         _connected.set_value();
       }
 
-      virtual void send( const std::string& message )
+      virtual void send_message( const std::string& message )
       {
+        idump((message));
         // TODO: Implement sending messages over unsecured TCP connections
       }
 
@@ -120,8 +121,9 @@ namespace fc { namespace http {
         _connected.set_value();
       }
 
-      virtual void send( const std::string& message )
+      virtual void send_message( const std::string& message )
       {
+        idump((message));
         // TODO: Implement sending messages over secured TCP connections
       }
 
@@ -152,7 +154,7 @@ namespace fc { namespace http {
     my->connect( _url );
     my->get_connected_future().wait();
 
-    return std::make_shared< detail::http_connection_impl< std::shared_ptr< detail::http_unsecure_client_impl > > >( std::move( my ) );
+    return std::move( my );
   } FC_CAPTURE_AND_RETHROW( (_url_str) )}
 
 
@@ -170,7 +172,7 @@ namespace fc { namespace http {
     my->connect( _url );
     my->get_connected_future().wait();
 
-    return std::make_shared< detail::http_connection_impl< std::shared_ptr< detail::http_tls_client_impl > > >( std::move( my ) );
+    return std::move( my );
   } FC_CAPTURE_AND_RETHROW( (_url_str) ) }
 
 } } // fc::http

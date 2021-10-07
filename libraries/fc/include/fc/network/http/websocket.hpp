@@ -21,6 +21,9 @@ namespace fc { namespace http {
       websocket_connection() = default;
       virtual ~websocket_connection() = default;
 
+      virtual void send_message( const std::string& message ) = 0;
+      virtual void close( int64_t code, const std::string& reason ) = 0;
+
       void on_http_handler( const std::function<std::string(const std::string&)>& h ) { _on_http = h; }
 
       string on_http( const std::string& message ) { return _on_http(message); }
