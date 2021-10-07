@@ -5,10 +5,23 @@
 
 BOOST_AUTO_TEST_SUITE( fc_network )
 
-BOOST_AUTO_TEST_CASE( processor_test )
+namespace
 {
   namespace fh = fc::http;
+}
 
+BOOST_AUTO_TEST_CASE( request_method_test )
+{
+  class request_method_visitor
+  {
+  public:
+    void operator()( const char* name, int64_t index )
+    {
+      BOOST_REQUIRE( fh::request_method{ name }.get() == static_cast< fh::request_method_type >( index ) );
+    }
+  };
+  request_method_visitor v;
+  fc::reflector< fh::request_method_type >::visit( v );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
