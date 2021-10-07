@@ -86,25 +86,23 @@ def test_normalize_brain_key(configured_wallet: Wallet):
 def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
-    response = unconfigured_wallet.api.list_keys()
-    keys = response['result']
+    keys = result_of(unconfigured_wallet.api.list_keys)
     assert len(keys) == 0
 
     unconfigured_wallet.api.import_key(Account('initminer').private_key)
     unconfigured_wallet.api.import_key(Account('alice').private_key)
 
-    response = unconfigured_wallet.api.list_keys()
-    keys = response['result']
+    keys = result_of(unconfigured_wallet.api.list_keys)
     assert len(keys) == 2
     assert keys[0][1] == Account('alice').private_key
     assert keys[1][1] == Account('initminer').private_key
 
 def test_generate_keys(configured_wallet: Wallet):
-    response = result_of(configured_wallet.api.get_private_key_from_password, 'hulabula', 'owner', 'apricot')
-    assert len(response) == 2
+    result = result_of(configured_wallet.api.get_private_key_from_password, 'hulabula', 'owner', 'apricot')
+    assert len(result) == 2
 
-    assert response[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
-    assert response[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
+    assert result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
+    assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
 
 def test_get_private_key_related_to_public_key(configured_wallet: Wallet):
     public_key = Account('initminer').public_key
@@ -125,12 +123,12 @@ def test_help_and_gethelp(configured_wallet: Wallet):
         assert False, f'Error occurred when gethelp was called for following functions: {failed_commands}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
-    response = result_of(configured_wallet.api.suggest_brain_key)
-    brain_priv_key = response['brain_priv_key'].split(' ')
+    result = result_of(configured_wallet.api.suggest_brain_key)
+    brain_priv_key = result['brain_priv_key'].split(' ')
 
     assert len(brain_priv_key) == 16
-    assert len(response['wif_priv_key']) == 51
-    assert response['pub_key'].startswith('TST')
+    assert len(result['wif_priv_key']) == 51
+    assert result['pub_key'].startswith('TST')
 
 def test_set_transaction_expiration(wallet: Wallet):
     set_expiration_time = 1000
