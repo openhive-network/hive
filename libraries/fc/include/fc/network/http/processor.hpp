@@ -205,6 +205,9 @@ namespace fc { namespace http {
 
   class processor
   {
+  private:
+    static processor_ptr get_default();
+
   public:
     processor();
     virtual ~processor();
@@ -220,6 +223,8 @@ namespace fc { namespace http {
 
     /// Returns processor for specific http version
     static processor_ptr get_for_version( version _http_v );
+
+    static bool has_processor_for( version _http_v );
   };
 
 } } // fc::http

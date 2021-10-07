@@ -214,19 +214,28 @@ namespace fc { namespace http {
   processor::processor() {}
   processor::~processor() {}
 
+  processor_ptr processor::get_default()
+  {
+    static processor_ptr default_processor = std::shared_ptr< detail::processor_default >( new detail::processor_default{} );
+    return default_processor;
+  }
+
   processor_ptr processor::get_for_version( version _http_v )
   {
     static const std::map< version, processor_ptr > processors =
     {
       { version::http_1_1, std::shared_ptr< detail::processor_1_1 >( new detail::processor_1_1{} ) }
     };
-    static processor_ptr default_processor = std::shared_ptr< detail::processor_default >( new detail::processor_default{} );
-
     auto itr = processors.find( _http_v );
     if( itr == processors.end() )
-      return default_processor; // Processor for requested http version not found so return the default one
+      return get_default(); // Processor for requested http version not found so return the default one
 
     return itr->second;
+  }
+
+  bool processor::has_processor_for( version _http_v )
+  {
+    return get_for_version( _http_v ) != get_default();
   }
 
 } } // fc::http
