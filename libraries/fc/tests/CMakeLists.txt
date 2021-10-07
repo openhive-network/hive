@@ -61,6 +61,10 @@ add_executable( all_tests all_tests.cpp
                           crypto/sha_tests.cpp
                           network/ntp_test.cpp
                           network/http/websocket_test.cpp
+                          network/http/http_test.cpp
+                          network/http/processor_test.cpp
+                          network/http/processors/http_unsupported_test.cpp
+                          network/http/processors/http_1_1_test.cpp
                           thread/task_cancel.cpp
                           thread/thread_tests.cpp
                           bloom_test.cpp
