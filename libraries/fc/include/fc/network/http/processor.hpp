@@ -1,6 +1,7 @@
 #pragma once
-#include <map>
+#include <unordered_map>
 #include <string>
+#include <memory>
 
 namespace fc { namespace http {
 
@@ -8,17 +9,18 @@ namespace fc { namespace http {
   {
     // Note: http_0_9 is obsolete for over 20 years and it will be most likely never used in this or any other hive related project
     // TODO: implement http_1_0 = 0, // Provided header fields including rich metadata about both request and response
-                       http_1_1 = 1  // enables connection reuse
+                       http_1_1 = 1,  // enables connection reuse
     // TODO: implement http_2_0 = 2, // HPACK, multiple streams of data at once
-    // TODO: implement http_3_0 = 3  // QUIC
+    // TODO: implement http_3_0 = 3,  // QUIC
+                       http_unsupported = static_cast<unsigned>(-1)
   };
 
   namespace detail {
     // class processor_1_0;
-       class processor_1_1;
+       class processor_1_1; // See processors/http_1_1.hpp
     // class processor_2_0;
     // class processor_3_0;
-       class processor_default; // for sending http_version_not_supported response
+       class processor_default; // for sending http_version_not_supported response // See processors/http_unsupported.hpp
 
     static constexpr const char* default_http_version = "HTTP/1.1";
   } // detail
@@ -73,7 +75,7 @@ namespace fc { namespace http {
     version     get()const;
   };
 
-  typedef std::map< std::string, std::string > headers_type;
+  typedef std::unordered_map< std::string, std::string > headers_type;
 
   struct request
   {
@@ -187,6 +189,9 @@ namespace fc { namespace http {
     std::string    body; // defaults to empty body
   };
 
+  class processor;
+  typedef std::shared_ptr< processor > processor_ptr;
+
   class processor
   {
   public:
@@ -194,7 +199,10 @@ namespace fc { namespace http {
     virtual ~processor();
 
     /// Version of the HTTP that processor accepts
-    virtual version get_version() = 0;
+    virtual version get_version()const = 0;
+
+    /// Returns processor for specific http version
+    static processor_ptr get_for_version( version _http_v );
   };
 
 } } // fc::http

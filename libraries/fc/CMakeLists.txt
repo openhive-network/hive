@@ -238,6 +238,8 @@ set( fc_sources
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
      src/network/http/connection.cpp
+     src/network/http/processors/http_1_1.cpp
+     src/network/http/processors/http_unsupported.cpp
      src/network/http/processor.cpp
      src/network/http/http_client.cpp
      src/network/http/http_server.cpp

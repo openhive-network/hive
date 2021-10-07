@@ -1,8 +1,12 @@
 #include <fc/network/http/processor.hpp>
+#include <fc/network/http/processors/http_1_1.hpp>
+#include <fc/network/http/processors/http_unsupported.hpp>
 #include <fc/exception/exception.hpp>
 #include <sstream>
 #include <algorithm>
 #include <unordered_map>
+#include <map>
+#include <memory>
 
 namespace fc { namespace http {
 
@@ -43,7 +47,7 @@ namespace fc { namespace http {
     if( str_version == "HTTP/1.1" )
       _version = version::http_1_1;
     else
-      FC_ASSERT( false, "Unsupported http version: ${version}", ("version",str_version) );
+      _version = version::http_unsupported;
   }
 
   std::string http_version::str()const
@@ -161,5 +165,20 @@ namespace fc { namespace http {
 
   processor::processor() {}
   processor::~processor() {}
+
+  processor_ptr processor::get_for_version( version _http_v )
+  {
+    static const std::map< version, processor_ptr > processors =
+    {
+      { version::http_1_1, std::shared_ptr< detail::processor_1_1 >( new detail::processor_1_1{} ) }
+    };
+    static processor_ptr default_processor = std::shared_ptr< detail::processor_default >( new detail::processor_default{} );
+
+    auto itr = processors.find( _http_v );
+    if( itr == processors.end() )
+      return default_processor; // Processor for requested http version not found so return the default one
+
+    return itr->second;
+  }
 
 } } // fc::http
