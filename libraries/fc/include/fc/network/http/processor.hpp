@@ -22,7 +22,9 @@ namespace fc { namespace http {
     // class processor_3_0;
        class processor_default; // for sending http_version_not_supported response // See processors/http_unsupported.hpp
 
-    static constexpr const char* default_http_version = "HTTP/1.1";
+    static constexpr const char* default_http_version  = "HTTP/1.1";
+    static constexpr const char* default_http_target   = "/";
+    static constexpr const char* default_http_response = "200 OK";
   } // detail
 
   enum class request_method : unsigned
@@ -53,7 +55,7 @@ namespace fc { namespace http {
     target_type type;
 
   public:
-    http_target( const std::string& str_target = "/" );
+    http_target( const std::string& str_target = detail::default_http_target );
 
     /// Returns the string representation passed into the request target constructor
     const std::string& str()const;
@@ -171,7 +173,7 @@ namespace fc { namespace http {
 
   public:
     /// Parses "<http_code> <http_code_str>" into the status representation
-    http_status( const std::string& status_str = "200 OK" );
+    http_status( const std::string& status_str = detail::default_http_response );
 
     static std::string code_to_status_text( http_status_code code );
 
