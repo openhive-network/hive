@@ -186,6 +186,8 @@ class Node:
 
             self.replay_finished_event = Event()
 
+            self.snapshot_dumped_event = Event()
+
         def listen(self):
             self.node.config.notifications_endpoint = f'127.0.0.1:{self.server.port}'
             self.server.run()
@@ -201,6 +203,8 @@ class Node:
                 details = message['value']
                 if details['current_status'] == 'finished replaying':
                     self.replay_finished_event.set()
+                elif details['current_status'] == 'finished dumping snapshot':
+                    self.snapshot_dumped_event.set()
 
             self.__logger.info(f'Received message: {message}')
 
@@ -209,6 +213,7 @@ class Node:
 
             self.http_listening_event.clear()
             self.replay_finished_event.clear()
+            self.snapshot_dumped_event.clear()
 
     def __init__(self, creator, name, directory):
         self.api = Apis(self)
@@ -261,9 +266,6 @@ class Node:
         return self.__any_line_in_stderr(
             lambda line: 'transactions on block' in line or 'Generated block #' in line
         )
-
-    def __is_snapshot_dumped(self):
-        return self.__any_line_in_stderr(lambda line: 'Snapshot generation finished' in line)
 
     def __any_line_in_stderr(self, predicate):
         with open(self.__process.get_stderr_file_path()) as output:
@@ -353,7 +355,7 @@ class Node:
         )
 
         if not close:
-            self.__wait_for_dumping_snapshot_finish()
+            self.__notifications.snapshot_dumped_event.wait()
 
         self.__logger.info('Snapshot dumped')
 
@@ -368,10 +370,6 @@ class Node:
         plugin_required_for_snapshots = 'state_snapshot'
         if plugin_required_for_snapshots not in self.config.plugin:
             self.config.plugin.append(plugin_required_for_snapshots)
-
-    def __wait_for_dumping_snapshot_finish(self, timeout=15):
-        wait_for(self.__is_snapshot_dumped, timeout=timeout,
-                 timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
     def __run_process(self,
                       *,
