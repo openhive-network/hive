@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import Optional
 
 import pytest
@@ -77,8 +78,26 @@ def __get_module_name(request) -> str:
 
 def __get_directory_for_function(request):
     assert request.scope == 'function'
-    function_name = request.function.__name__
-    return current_scope.context.get_current_directory() / function_name
+    directory_name = __convert_test_name_to_directory_name(request.node.name)
+    return current_scope.context.get_current_directory() / directory_name
+
+
+def __convert_test_name_to_directory_name(test_name: str) -> str:
+    directory_name = []
+
+    parametrized_test_match = re.match(r'([\w_]+)\[(.*)\]', test_name)
+    if parametrized_test_match:
+        test_name = f'{parametrized_test_match[1]}_with_parameters_{parametrized_test_match[2]}'
+
+    for character in test_name:
+        if character.isalnum() or character in '-_':
+            pass
+        else:
+            character = f'-0x{ord(character):X}-'
+
+        directory_name.append(character)
+
+    return ''.join(directory_name)
 
 
 def __get_function_name(request) -> str:
