@@ -571,7 +571,8 @@ namespace fc {
   {
     try
     {
-      if( hive::protocol::dynamic_serializer::legacy_enabled )
+      FC_ASSERT( var.is_object() || var.is_string(), "asset has to be treated as an object or a string. Variant type: ${type}", ("type",var.get_type()) );
+      if( var.is_string() )
       {
         hive::protocol::legacy_asset a;
         from_variant( var, a );
@@ -579,8 +580,6 @@ namespace fc {
       }
       else
       {
-        FC_ASSERT( var.is_object(), "Asset has to be treated as object." );
-
         const auto& v_object = var.get_object();
 
         FC_ASSERT( v_object.contains( ASSET_AMOUNT_KEY ), "Amount field doesn't exist." );
