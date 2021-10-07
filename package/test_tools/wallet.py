@@ -614,15 +614,6 @@ class Wallet(ScopedObject):
         self.stderr_file = open(self.get_stderr_file_path(), 'w')
 
         if self.__is_online():
-            if not self.connected_node.is_ws_listening():
-                self.logger.info(f'Waiting for node {self.connected_node} to listen...')
-
-            timeout -= wait_for(
-                self.connected_node.is_ws_listening,
-                timeout=timeout,
-                timeout_error_message=f'{self} waited too long for {self.connected_node} to start listening on ws port'
-            )
-
             run_parameters.extend([f'--server-rpc-endpoint=ws://{self.connected_node.get_ws_endpoint()}'])
 
         run_parameters.extend(self.additional_arguments)

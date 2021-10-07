@@ -23,10 +23,6 @@ class RemoteNode:
             NodeMessage(method, params, jsonrpc, id_).as_json()
         )
 
-    @staticmethod
-    def is_ws_listening():
-        return True
-
     def get_ws_endpoint(self):
         if self.__ws_endpoint is None:
             return None

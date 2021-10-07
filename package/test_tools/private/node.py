@@ -265,9 +265,6 @@ class Node:
     def get_block_log(self, include_index=True):
         return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
 
-    def is_ws_listening(self):
-        return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
-
     def __is_live(self):
         return self.__any_line_in_stderr(
             lambda line: 'transactions on block' in line or 'Generated block #' in line
