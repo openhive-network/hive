@@ -122,7 +122,6 @@ def test_help_and_gethelp(configured_wallet: Wallet):
         except CommunicationError:
             failed_commands.append(function)
     if len(failed_commands) > 0:
-        print(*failed_commands, sep="\n")
         assert False, f'Error occurred when gethelp was called for following functions: {failed_commands}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
