@@ -184,6 +184,9 @@ class Node:
             self.http_listening_event = Event()
             self.http_endpoint: Optional[str] = None
 
+            self.p2p_plugin_started_event = Event()
+            self.p2p_endpoint: Optional[str] = None
+
             self.replay_finished_event = Event()
 
             self.snapshot_dumped_event = Event()
@@ -205,6 +208,11 @@ class Node:
                     self.replay_finished_event.set()
                 elif details['current_status'] == 'finished dumping snapshot':
                     self.snapshot_dumped_event.set()
+            elif message['name'] == 'P2P listening':
+                details = message['value']
+                endpoint = f'{details["address"].replace("0.0.0.0", "127.0.0.1")}:{details["port"]}'
+                self.p2p_endpoint = Url(endpoint).as_string(with_protocol=False)
+                self.p2p_plugin_started_event.set()
 
             self.__logger.info(f'Received message: {message}')
 
@@ -212,6 +220,7 @@ class Node:
             self.server.close()
 
             self.http_listening_event.clear()
+            self.p2p_plugin_started_event.clear()
             self.replay_finished_event.clear()
             self.snapshot_dumped_event.clear()
 
@@ -256,9 +265,6 @@ class Node:
     def get_block_log(self, include_index=True):
         return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
 
-    def __is_p2p_plugin_started(self):
-        return self.__any_line_in_stderr(lambda line: 'P2P Plugin started' in line)
-
     def is_ws_listening(self):
         return self.__any_line_in_stderr(lambda line: 'start listening for ws requests' in line)
 
@@ -295,9 +301,9 @@ class Node:
         response = self.api.database.get_dynamic_global_properties()
         return response['head_block_number']
 
-    def _wait_for_p2p_plugin_start(self, timeout=10):
-        wait_for(self.__is_p2p_plugin_started, timeout=timeout,
-                 timeout_error_message=f'Waiting too long for start of {self} p2p plugin')
+    def __wait_for_p2p_plugin_start(self, timeout=10):
+        if not self.__notifications.p2p_plugin_started_event.wait(timeout=timeout):
+            raise TimeoutError(f'Waiting too long for start of {self} p2p plugin')
 
     def wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
         wait_for(self.__is_live, timeout=timeout,
@@ -537,13 +543,8 @@ class Node:
             self.config.webserver_ws_endpoint = '0.0.0.0:0'
 
     def get_p2p_endpoint(self):
-        self._wait_for_p2p_plugin_start()
-        with open(self.__process.get_stderr_file_path()) as output:
-            for line in output:
-                if 'P2P node listening at ' in line:
-                    endpoint = re.match(r'^.*P2P node listening at ([\d\.]+\:\d+)\s*$', line)[1]
-                    return endpoint.replace('0.0.0.0', '127.0.0.1')
-        return None
+        self.__wait_for_p2p_plugin_start()
+        return self.__notifications.p2p_endpoint
 
     def get_http_endpoint(self):
         self.__wait_for_http_listening()
