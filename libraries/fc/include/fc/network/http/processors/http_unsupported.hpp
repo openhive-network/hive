@@ -16,6 +16,15 @@ namespace fc { namespace http {
 
       virtual version get_version()const override;
     };
+
+    // request
+    template<> std::string to_string_impl< version::http_unsupported, request >( const request& other );
+    template<> request from_string_impl< version::http_unsupported, request >( const std::string& str );
+
+    // response
+    template<> std::string to_string_impl< version::http_unsupported, response >( const response& other );
+    template<> response from_string_impl< version::http_unsupported, response >( const std::string& str );
+
   } // detail
 
 } } // fc::http

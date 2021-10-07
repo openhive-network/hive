@@ -180,7 +180,7 @@ namespace fc { namespace http {
 
   std::string request::to_string()const
   {
-    return processor::get_for_version( this->version.get() )->to_string( *this );
+    return detail::to_string< request >( this->version.get(), *this );
   }
 
   void request::from_string( const std::string& str )
@@ -192,35 +192,27 @@ namespace fc { namespace http {
       this->version = http_version{ "HTTP/0.9" };
     else
       this->version = http_version{ str.substr( i + 1, crlf_index - i ) };
-    this->operator=( processor::get_for_version( this->version.get() )->from_string( str ).get< request >() );
+
+    this->operator=( detail::from_string< request >( this->version.get(), str ) );
   }
 
   std::string response::to_string()const
   {
-    return processor::get_for_version( this->version.get() )->to_string( *this );
+    return detail::to_string< response >( this->version.get(), *this );
   }
 
   void response::from_string( const std::string& str )
   {
-    if( str.substr(0,5) != "HTTP/" )
+    if( str.size() < 9 || str.substr(0,5) != "HTTP/" || str.at( 8 ) != ' ' )
       this->version = http_version{ "HTTP/0.9" };
     else
       this->version = http_version{ str };
-    this->operator=( processor::get_for_version( this->version.get() )->from_string( str ).get< response >() );
+
+    this->operator=( detail::from_string< response >( this->version.get(), str ) );
   }
 
   processor::processor() {}
   processor::~processor() {}
-
-  std::string processor::to_string( const supported_parse_types& ptype )
-  {
-    return "";
-  }
-
-  processor::supported_parse_types processor::from_string( const std::string& str )
-  {
-    return processor::supported_parse_types{};
-  }
 
   processor_ptr processor::get_for_version( version _http_v )
   {
