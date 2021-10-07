@@ -159,4 +159,7 @@ namespace fc { namespace http {
     return std::to_string( static_cast<unsigned>(code) ) + itr->second;
   }
 
+  processor::processor() {}
+  processor::~processor() {}
+
 } } // fc::http
