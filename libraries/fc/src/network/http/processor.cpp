@@ -10,6 +10,40 @@
 
 namespace fc { namespace http {
 
+  request_method::request_method( const std::string& str_method )
+  {
+    if( str_method == "GET" )
+      method = request_method_type::GET;
+    else if( str_method == "POST" )
+      method = request_method_type::POST;
+    else if( str_method == "HEAD" )
+      method = request_method_type::HEAD;
+    else if( str_method == "PUT" )
+      method = request_method_type::PUT;
+    else if( str_method == "DELETE" )
+      method = request_method_type::DELETE;
+    else if( str_method == "CONNECT" )
+      method = request_method_type::CONNECT;
+    else if( str_method == "OPTIONS" )
+      method = request_method_type::OPTIONS;
+    else if( str_method == "TRACE" )
+      method = request_method_type::TRACE;
+    else if( str_method == "PATCH" )
+      method = request_method_type::PATCH;
+    else
+      FC_ASSERT( false, "Unsupported request method type: ${type}", ("type",str_method) );
+  }
+
+  std::string request_method::str()const
+  {
+    return fc::reflector< request_method_type >::to_fc_string( method );
+  }
+
+  request_method_type request_method::get()const
+  {
+    return method;
+  }
+
   http_target::http_target( const std::string& str_target )
     : str_target( str_target )
   {

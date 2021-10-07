@@ -25,12 +25,13 @@ namespace fc { namespace http {
     // TODO: implement class processor_3_0;
        class processor_default; // for sending http_version_not_supported response // See processors/http_unsupported.hpp
 
+    static constexpr const char* default_method_type   = "GET";
     static constexpr const char* default_http_version  = "HTTP/1.1";
     static constexpr const char* default_http_target   = "/";
     static constexpr const char* default_http_response = "200 OK";
   } // detail
 
-  enum class request_method : unsigned
+  enum class request_method_type : unsigned
   {
     GET     = 0,
     POST    = 1,
@@ -41,6 +42,20 @@ namespace fc { namespace http {
     OPTIONS = 6,
     TRACE   = 7,
     PATCH   = 8
+  };
+
+  class request_method
+  {
+  private:
+    request_method_type method;
+
+  public:
+    request_method( const std::string& str_method = detail::default_method_type );
+
+    /// Returns the string representation passed into the request method constructor
+    std::string         str()const;
+    /// Returns the method type
+    request_method_type get()const;
   };
 
   enum class target_type : unsigned
@@ -84,7 +99,7 @@ namespace fc { namespace http {
 
   struct request
   {
-    request_method method = request_method::GET; // defaults to GET
+    request_method method; // defaults to GET
     http_target    target; // default to /
     http_version   version; // defaults to HTTP/1.1
     headers_type   headers; // defaults to (no headers)
@@ -228,6 +243,8 @@ namespace fc { namespace http {
   };
 
 } } // fc::http
+
+FC_REFLECT_ENUM( fc::http::request_method_type, (GET)(POST)(HEAD)(PUT)(DELETE)(CONNECT)(OPTIONS)(TRACE)(PATCH) );
 
 FC_REFLECT( fc::http::request, (method)(target)(version)(headers)(body) );
 FC_REFLECT( fc::http::response, (version)(status)(headers)(body) );
