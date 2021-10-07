@@ -180,7 +180,7 @@ namespace fc { namespace http {
 
   std::string request::to_string()const
   {
-    return detail::to_string< request >( this->version.get(), *this );
+    return processor::get_for_version( this->version.get() )->parse_request( *this );
   }
 
   void request::from_string( const std::string& str )
@@ -193,12 +193,12 @@ namespace fc { namespace http {
     else
       this->version = http_version{ str.substr( i + 1, crlf_index - i ) };
 
-    this->operator=( detail::from_string< request >( this->version.get(), str ) );
+    this->operator=( processor::get_for_version( this->version.get() )->parse_request( str ) );
   }
 
   std::string response::to_string()const
   {
-    return detail::to_string< response >( this->version.get(), *this );
+    return processor::get_for_version( this->version.get() )->parse_response( *this );
   }
 
   void response::from_string( const std::string& str )
@@ -208,7 +208,7 @@ namespace fc { namespace http {
     else
       this->version = http_version{ str };
 
-    this->operator=( detail::from_string< response >( this->version.get(), str ) );
+    this->operator=( processor::get_for_version( this->version.get() )->parse_response( str ) );
   }
 
   processor::processor() {}

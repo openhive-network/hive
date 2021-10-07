@@ -12,15 +12,25 @@ namespace fc { namespace http {
       return version::http_1_1;
     }
 
-    template<>
-    std::string to_string_impl< version::http_1_1, request >( const request& other ) { return ""; } // TODO: Implement
-    template<>
-    request from_string_impl< version::http_1_1, request >( const std::string& str ) { return request{}; } // TODO: Implement
+    std::string processor_1_1::parse_request( const request& r )const
+    {
+      return "";
+    }
 
-    template<>
-    std::string to_string_impl< version::http_1_1, response >( const response& other ) { return ""; } // TODO: Implement
-    template<>
-    response from_string_impl< version::http_1_1, response >( const std::string& str ) { return response{}; } // TODO: Implement
+    request processor_1_1::parse_request( const std::string& r )const
+    {
+      return request{};
+    }
+
+    std::string processor_1_1::parse_response( const response& r )const
+    {
+      return "";
+    }
+
+    response processor_1_1::parse_response( const std::string& r )const
+    {
+      return response{};
+    }
 
   } // detail
 

@@ -15,15 +15,13 @@ namespace fc { namespace http {
       virtual ~processor_1_1();
 
       virtual version get_version()const override;
+
+      virtual std::string parse_request( const request& r )const override;
+      virtual request     parse_request( const std::string& r )const override;
+
+      virtual std::string parse_response( const response& r )const override;
+      virtual response    parse_response( const std::string& r )const override;
     };
-
-    // request
-    template<> std::string to_string_impl< version::http_1_1, request >( const request& other );
-    template<> request from_string_impl< version::http_1_1, request >( const std::string& str );
-
-    // response
-    template<> std::string to_string_impl< version::http_1_1, response >( const response& other );
-    template<> response from_string_impl< version::http_1_1, response >( const std::string& str );
 
   } // detail
 

@@ -212,45 +212,15 @@ namespace fc { namespace http {
     /// Version of the HTTP that processor accepts
     virtual version get_version()const = 0;
 
+    virtual std::string parse_request( const request& r )const     = 0;
+    virtual request     parse_request( const std::string& r )const = 0;
+
+    virtual std::string parse_response( const response& r )const    = 0;
+    virtual response    parse_response( const std::string& r )const = 0;
+
     /// Returns processor for specific http version
     static processor_ptr get_for_version( version _http_v );
   };
-
-  namespace detail
-  {
-    template< version Ver, typename Type >
-    std::string to_string_impl( const Type& other );
-    template< version Ver, typename Type >
-    Type from_string_impl( const std::string& other );
-
-    template< typename Type >
-    std::string to_string( version v, const Type& other )
-    {
-      switch( v )
-      {
-        //case version::http_0_9: return to_string_impl< version::http_0_9, Type >( other );
-        //case version::http_1_0: return to_string_impl< version::http_1_0, Type >( other );
-        case version::http_1_1: return to_string_impl< version::http_1_1, Type >( other );
-        //case version::http_2_0: return to_string_impl< version::http_2_0, Type >( other );
-        //case version::http_3_0: return to_string_impl< version::http_3_0, Type >( other );
-        default:                return to_string_impl< version::http_unsupported, Type >( other );
-      }
-    }
-
-    template< typename Type >
-    Type from_string( version v, const std::string& str )
-    {
-      switch( v )
-      {
-        //case version::http_0_9: return from_string_impl< version::http_0_9, Type >( str );
-        //case version::http_1_0: return from_string_impl< version::http_1_0, Type >( str );
-        case version::http_1_1: return from_string_impl< version::http_1_1, Type >( str );
-        //case version::http_2_0: return from_string_impl< version::http_2_0, Type >( str );
-        //case version::http_3_0: return from_string_impl< version::http_3_0, Type >( str );
-        default:                return from_string_impl< version::http_unsupported, Type >( str );
-      }
-    }
-  }
 
 } } // fc::http
 
