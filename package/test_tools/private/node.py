@@ -1,7 +1,8 @@
-import math
 import json
-import re
+import math
+import os
 from pathlib import Path
+import re
 import shutil
 import signal
 import subprocess
@@ -75,18 +76,23 @@ class Node:
                 'stderr': None,
             }
 
-        def run(self, *, blocking, with_arguments=()):
+        def run(self, *, blocking, with_arguments=(), with_time_offset=None):
             self.__directory.mkdir(exist_ok=True)
             self.__prepare_files_for_streams()
 
             command = [str(self.__executable.get_path()), '-d', '.', *with_arguments]
             self.__logger.debug(' '.join(item for item in command))
 
+            env = dict(os.environ)
+            if with_time_offset is not None:
+                self.__configure_fake_time(env, with_time_offset)
+
             if blocking:
                 subprocess.run(
                     command,
                     cwd=self.__directory,
                     **self.__files,
+                    env=env,
                     check=True,
                 )
             else:
@@ -95,11 +101,22 @@ class Node:
                 self.__process = subprocess.Popen(
                     command,
                     cwd=self.__directory,
+                    env=env,
                     **self.__files,
                 )
 
         def get_id(self):
             return self.__process.pid
+
+        def __configure_fake_time(self, env, time_offset):
+            libfaketime_path = os.getenv('LIBFAKETIME_PATH') or '/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1'
+            if not Path(libfaketime_path).is_file():
+                raise RuntimeError(f'libfaketime was not found at {libfaketime_path}')
+            self.__logger.info(f"using time_offset {time_offset}")
+            env['LD_PRELOAD'] = libfaketime_path
+            env['FAKETIME'] = time_offset
+            env['FAKETIME_DONT_RESET'] = '1'
+            env['TZ'] = 'UTC'
 
         def __prepare_files_for_streams(self):
             for name in self.__files:
@@ -315,11 +332,11 @@ class Node:
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
-    def __run_process(self, *, blocking, write_config_before_run=True, with_arguments=()):
+    def __run_process(self, *, blocking, write_config_before_run=True, with_arguments=(), with_time_offset=None):
         if write_config_before_run:
             self.config.write_to_file(self.__get_config_file_path())
 
-        self.__process.run(blocking=blocking, with_arguments=with_arguments)
+        self.__process.run(blocking=blocking, with_arguments=with_arguments, with_time_offset=with_time_offset)
 
     def run(
             self,
@@ -330,6 +347,7 @@ class Node:
             exit_before_synchronization=False,
             wait_for_live=None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
+            time_offset=None
     ):
         """
         :param wait_for_live: Stops execution until node will generate or receive blocks.
@@ -360,6 +378,9 @@ class Node:
         # ------------------------- End of workaround -------------------------
 
         log_message = f'Running {self}'
+        if time_offset is not None:
+            log_message += f' with time offset {time_offset}'
+
         additional_arguments = []
         if load_snapshot_from is not None:
             self.__handle_loading_snapshot(load_snapshot_from, additional_arguments)
@@ -383,7 +404,11 @@ class Node:
         else:
             self.__logger.info(f'{log_message} and NOT waiting for live...')
 
-        self.__run_process(blocking=exit_before_synchronization, with_arguments=additional_arguments)
+        self.__run_process(
+            blocking=exit_before_synchronization,
+            with_arguments=additional_arguments,
+            with_time_offset=time_offset
+        )
 
         self.__produced_files = True
         if wait_for_live:

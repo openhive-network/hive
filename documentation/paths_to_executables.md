@@ -47,6 +47,7 @@ To define path using environment variables you have to use following variable na
 | _cli_wallet_         | `CLI_WALLET_PATH`         |
 | _get_dev_key_        | `GET_DEV_KEY_PATH`        |
 | _truncate_block_log_ | `TRUNCATE_BLOCK_LOG_PATH` |
+| _libfaketime_        | `LIBFAKETIME_PATH`        |
 
 Example run with all executables from selected path:
 ```bash
