@@ -2,24 +2,26 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include <fc/static_variant.hpp>
 
 namespace fc { namespace http {
 
   enum class version : unsigned
   {
-    // Note: http_0_9 is obsolete for over 20 years and it will be most likely never used in this or any other hive related project
-    // TODO: implement http_1_0 = 0, // Provided header fields including rich metadata about both request and response
-                       http_1_1 = 1,  // enables connection reuse
-    // TODO: implement http_2_0 = 2, // HPACK, multiple streams of data at once
-    // TODO: implement http_3_0 = 3,  // QUIC
-                       http_unsupported = static_cast<unsigned>(-1)
+    http_0_9 = 0, // Note: is obsolete for over 20 years and it will be most likely never used in this or any other hive related project
+    http_1_0 = 1, // Provided header fields including rich metadata about both request and response
+    http_1_1 = 2, // enables connection reuse
+    http_2_0 = 3, // HPACK, multiple streams of data at once
+    http_3_0 = 4, // QUIC
+    http_unsupported = static_cast<unsigned>(-1)
   };
 
   namespace detail {
-    // class processor_1_0;
+    // TODO: implement class processor_0_9;
+    // TODO: implement class processor_1_0;
        class processor_1_1; // See processors/http_1_1.hpp
-    // class processor_2_0;
-    // class processor_3_0;
+    // TODO: implement class processor_2_0;
+    // TODO: implement class processor_3_0;
        class processor_default; // for sending http_version_not_supported response // See processors/http_unsupported.hpp
 
     static constexpr const char* default_http_version  = "HTTP/1.1";
@@ -87,6 +89,9 @@ namespace fc { namespace http {
     headers_type   headers; // defaults to (no headers)
     /// Cannot be empty in TRACE, GET, HEAD, DELETE, CONNECT and OPTIONS methods
     std::string    body; // defaults to empty body
+
+    std::string to_string()const;
+    void        from_string( const std::string& str );
   };
 
   enum class http_status_code : unsigned
@@ -189,6 +194,9 @@ namespace fc { namespace http {
     http_status    status; // defaults to 200 OK
     headers_type   headers; // defaults to (no headers)
     std::string    body; // defaults to empty body
+
+    std::string to_string()const;
+    void        from_string( const std::string& str );
   };
 
   class processor;
@@ -197,14 +205,22 @@ namespace fc { namespace http {
   class processor
   {
   public:
+    typedef static_variant< request, response > supported_parse_types;
+
     processor();
     virtual ~processor();
 
     /// Version of the HTTP that processor accepts
     virtual version get_version()const = 0;
 
+    virtual std::string           to_string( const supported_parse_types& ptype ) = 0;
+    virtual supported_parse_types from_string( const std::string& str ) = 0;
+
     /// Returns processor for specific http version
     static processor_ptr get_for_version( version _http_v );
   };
 
 } } // fc::http
+
+FC_REFLECT( fc::http::request, (method)(target)(version)(headers)(body) );
+FC_REFLECT( fc::http::response, (version)(status)(headers)(body) );

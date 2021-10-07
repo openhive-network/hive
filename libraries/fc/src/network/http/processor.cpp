@@ -44,18 +44,33 @@ namespace fc { namespace http {
 
   http_version::http_version( const std::string& str_version )
   {
-    if( str_version == "HTTP/1.1" )
+    std::string _str_version = str_version.substr(0,8);
+    if( _str_version == "HTTP/0.9" )
+      _version = version::http_0_9;
+    else if( _str_version == "HTTP/1.0" )
+      _version = version::http_1_0;
+    else if( _str_version == "HTTP/1.1" )
       _version = version::http_1_1;
+    else if( _str_version == "HTTP/2.0" )
+      _version = version::http_2_0;
+    else if( _str_version == "HTTP/3.0" )
+      _version = version::http_3_0;
     else
       _version = version::http_unsupported;
   }
 
   std::string http_version::str()const
   {
-    if( _version == version::http_1_1 )
-      return "HTTP/1.1";
-    else
+    switch( _version )
+    {
+      case version::http_0_9: return "HTTP/0.9";
+      case version::http_1_0: return "HTTP/1.0";
+      case version::http_1_1: return "HTTP/1.1";
+      case version::http_2_0: return "HTTP/2.0";
+      case version::http_3_0: return "HTTP/3.0";
+      default:
       FC_ASSERT( false, "Unsupported http version: ${version}", ("version",static_cast< unsigned >( _version )) );
+    }
   }
 
   version http_version::get()const
@@ -163,8 +178,49 @@ namespace fc { namespace http {
     return std::to_string( static_cast<unsigned>(code) ) + itr->second;
   }
 
+  std::string request::to_string()const
+  {
+    return processor::get_for_version( this->version.get() )->to_string( *this );
+  }
+
+  void request::from_string( const std::string& str )
+  {
+    size_t crlf_index = str.find("\r\n");
+    FC_ASSERT( crlf_index != std::string::npos, "No CRLF in request" );
+    size_t i = str.rfind(" HTTP/", crlf_index);
+    if( i == std::string::npos )
+      this->version = http_version{ "HTTP/0.9" };
+    else
+      this->version = http_version{ str.substr( i + 1, crlf_index - i ) };
+    this->operator=( processor::get_for_version( this->version.get() )->from_string( str ).get< request >() );
+  }
+
+  std::string response::to_string()const
+  {
+    return processor::get_for_version( this->version.get() )->to_string( *this );
+  }
+
+  void response::from_string( const std::string& str )
+  {
+    if( str.substr(0,5) != "HTTP/" )
+      this->version = http_version{ "HTTP/0.9" };
+    else
+      this->version = http_version{ str };
+    this->operator=( processor::get_for_version( this->version.get() )->from_string( str ).get< response >() );
+  }
+
   processor::processor() {}
   processor::~processor() {}
+
+  std::string processor::to_string( const supported_parse_types& ptype )
+  {
+    return "";
+  }
+
+  processor::supported_parse_types processor::from_string( const std::string& str )
+  {
+    return processor::supported_parse_types{};
+  }
 
   processor_ptr processor::get_for_version( version _http_v )
   {
