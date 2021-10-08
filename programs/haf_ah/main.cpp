@@ -124,21 +124,33 @@ struct ah_query
 
     // get_bodies      = "SELECT id, get_impacted_accounts(body), ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d ORDER BY block_num, helper_trx_in_block, op_pos;";
     get_bodies = R"(
-SELECT T.id id, T.account get_impacted_accounts
-FROM (
-  SELECT 
-    ahov.id,
-    get_impacted_accounts(body) as account,
-    ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block
-  FROM
-    hive.account_history_operations_view ahov
-  JOIN
-    hive.operation_types hot ON hot.id = ahov.op_type_id
-  WHERE 
-    block_num >= %d AND block_num <= %d
-  ORDER BY
-    block_num, helper_trx_in_block, op_pos ASC, hot.is_virtual DESC
-) T;)";
+SELECT * FROM (
+SELECT ahov.id, get_impacted_accounts(body) as account,
+( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block,
+( CASE WHEN ahov.trx_in_block <= -1 THEN ahov.op_pos
+  ELSE (ahov.id - (
+  SELECT nahov.id
+  FROM hive.operations nahov
+  JOIN hive.operation_types nhot 
+  ON nahov.op_type_id = nhot.id 
+  WHERE nahov.block_num=ahov.block_num 
+    AND nahov.trx_in_block=ahov.trx_in_block 
+    AND nahov.op_pos=ahov.op_pos
+    AND nhot.is_virtual=FALSE
+  LIMIT 1
+) )
+END
+) virtual_pos
+FROM
+  hive.account_history_operations_view ahov
+JOIN
+  hive.operation_types hot ON hot.id = ahov.op_type_id
+WHERE 
+  block_num >= %d AND block_num <= %d
+ORDER BY
+  block_num, helper_trx_in_block, op_pos ASC, hot.is_virtual DESC, virtual_pos ASC
+) T;
+)";
 
     FC_ASSERT( insert_into_accounts.size() == 3 );
     insert_into_accounts[0] = "INSERT INTO public.accounts( id, name ) VALUES";

@@ -275,10 +275,20 @@ BEGIN
         END
       ) AS _op_in_trx,
       (
-        CASE
-        WHEN ho.trx_in_block <= -1 THEN abs(ho.op_pos::BIGINT)
-        ELSE hot.is_virtual ::INTEGER ::BIGINT
-        END
+        CASE 
+        WHEN ho.trx_in_block <= -1 THEN ho.op_pos ::BIGINT
+        ELSE (ho.id - (
+          SELECT nahov.id
+          FROM hive.operations nahov
+          JOIN hive.operation_types nhot 
+          ON nahov.op_type_id = nhot.id 
+          WHERE nahov.block_num=ho.block_num 
+            AND nahov.trx_in_block=ho.trx_in_block 
+            AND nahov.op_pos=ho.op_pos
+            AND nhot.is_virtual=FALSE
+          LIMIT 1
+        ) ) :: BIGINT
+      END
       ) AS _virtual_op,
       trim(both '"' from to_json(ho.timestamp)::text) _timestamp,
       ho.body _value,
@@ -288,13 +298,14 @@ BEGIN
         SELECT hao.operation_id as operation_id, hao.account_op_seq_no as seq_no
         FROM public.account_operations hao 
         WHERE hao.account_id = __account_id AND hao.account_op_seq_no <= _START
-        ORDER BY seq_no ASC
+        ORDER BY seq_no DESC
         LIMIT _LIMIT
       ) T
     JOIN hive.operations ho ON T.operation_id = ho.id
     JOIN hive.operation_types hot ON hot.id = ho.op_type_id
     LEFT JOIN hive.transactions ht ON ho.block_num = ht.block_num AND ho.trx_in_block = ht.trx_in_block
     WHERE ( (__upper_block_limit IS NULL) OR ho.block_num <= __upper_block_limit )
+    ORDER BY _operation_id ASC
     LIMIT _LIMIT;
   ELSE
     RETURN QUERY
@@ -319,9 +330,19 @@ BEGIN
           END
         ) AS _op_in_trx,
         (
-          CASE
-          WHEN ho.trx_in_block <= -1 THEN abs(ho.op_pos::BIGINT)
-          ELSE hot.is_virtual ::INTEGER ::BIGINT
+          CASE 
+          WHEN ho.trx_in_block <= -1 THEN ho.op_pos ::BIGINT
+          ELSE (ho.id - (
+            SELECT nahov.id
+            FROM hive.operations nahov
+            JOIN hive.operation_types nhot 
+            ON nahov.op_type_id = nhot.id 
+            WHERE nahov.block_num=ho.block_num 
+              AND nahov.trx_in_block=ho.trx_in_block 
+              AND nahov.op_pos=ho.op_pos
+              AND nhot.is_virtual=FALSE
+            LIMIT 1
+          ) ) :: BIGINT
           END
         ) AS _virtual_op,
         trim(both '"' from to_json(T.timestamp)::text) _timestamp,
@@ -331,19 +352,20 @@ BEGIN
         (
           --`abs` it's temporary, until position of operation is correctly saved
           SELECT
-            ho.id, ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id, hao.account_op_seq_no as seq_no, timestamp
+            ho.id, ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id, hao.account_op_seq_no as seq_no, timestamp, virtual_pos
             FROM hive.operations ho
             JOIN public.account_operations hao ON ho.id = hao.operation_id
             WHERE ( (__upper_block_limit IS NULL) OR ho.block_num <= __upper_block_limit )
               AND hao.account_id = __account_id
               AND hao.account_op_seq_no <= _START
               AND ( ho.op_type_id = ANY( _FILTER ) )
-            ORDER BY seq_no ASC
+            ORDER BY seq_no DESC
             LIMIT _LIMIT
         ) T
         JOIN hive.operation_types hot ON hot.id = T.op_type_id
         LEFT JOIN hive.transactions ht ON T.block_num = ht.block_num AND T.trx_in_block = ht.trx_in_block
-      LIMIT _LIMIT;
+        ORDER BY _operation_id ASC
+        LIMIT _LIMIT;
 
   END IF;
 
