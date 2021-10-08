@@ -21,6 +21,7 @@ def test_help_option():
 
     assert len(diff) == 0
 
+
 def test_wallet_help_default_values():
     cli_wallet_path = paths_to_executables.get_path_of('cli_wallet')
     process = run_executable([cli_wallet_path, "--help"], stdout=PIPE, stderr=PIPE)
@@ -36,24 +37,19 @@ def test_wallet_help_default_values():
             continue
 
         default_value = re.match(r'.*\s?\(=(.*)\).*', line)
-        if default_value is not None:
-            default_value = default_value[1]
-        if default_value is None:
-            default_value = 'null'
+        default_values[parameter] = default_value[1] if default_value is not None else None
 
-        default_values[parameter] = default_value
-
-    assert default_values['--help'] == 'null'
-    assert default_values['--offline'] == 'null'
+    assert default_values['--help'] is None
+    assert default_values['--offline'] is None
     assert default_values['--server-rpc-endpoint'] == 'ws://127.0.0.1:8090'
     assert default_values['--cert-authority'] == '_default'
-    assert default_values['--retry-server-connection'] =='null'
-    assert default_values['--rpc-endpoint'] =='127.0.0.1:8091'
-    assert default_values['--rpc-tls-endpoint'] =='127.0.0.1:8092'
-    assert default_values['--rpc-tls-certificate'] =='server.pem'
-    assert default_values['--rpc-http-endpoint'] =='127.0.0.1:8093'
-    assert default_values['--unlock'] == 'null'
-    assert default_values['--daemon'] == 'null'
-    assert default_values['--rpc-http-allowip'] == 'null'
+    assert default_values['--retry-server-connection'] is None
+    assert default_values['--rpc-endpoint'] == '127.0.0.1:8091'
+    assert default_values['--rpc-tls-endpoint'] == '127.0.0.1:8092'
+    assert default_values['--rpc-tls-certificate'] == 'server.pem'
+    assert default_values['--rpc-http-endpoint'] == '127.0.0.1:8093'
+    assert default_values['--unlock'] is None
+    assert default_values['--daemon'] is None
+    assert default_values['--rpc-http-allowip'] is None
     assert default_values['--wallet-file'] == 'wallet.json'
     assert default_values['--chain-id'] == '18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e'
