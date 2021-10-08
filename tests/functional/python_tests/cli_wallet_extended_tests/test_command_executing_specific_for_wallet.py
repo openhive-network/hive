@@ -64,12 +64,12 @@ def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_save_wallet_to_file(configured_wallet: Wallet):
-    wallet_file_path = context.get_current_directory() / 'Wallet0/test_file.json'
+    wallet_file_path = configured_wallet.directory / 'test_file.json'
     configured_wallet.api.save_wallet_file(str(wallet_file_path))
     assert wallet_file_path.exists()
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
-    wallet_file_path = context.get_current_directory() / 'Wallet0/test_file.json'
+    wallet_file_path = configured_wallet.directory / 'test_file.json'
     configured_wallet.api.save_wallet_file(str(wallet_file_path))
     assert result_of(configured_wallet.api.load_wallet_file, str(wallet_file_path)) is True
 
@@ -131,6 +131,7 @@ def test_suggest_brain_key(configured_wallet: Wallet):
     assert result['pub_key'].startswith('TST')
 
 def test_set_transaction_expiration(world):
+#TODO repair block stop
 
 # A new "node" was created to test_set_transaction_expiration.
 # "Node" has been stopped to keep the time consistent between the start time of the transaction
