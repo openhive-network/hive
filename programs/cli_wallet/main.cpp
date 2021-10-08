@@ -162,6 +162,13 @@ int main( int argc, char** argv )
       std::cout << "Starting a new wallet\n";
     }
 
+    fc::promise<int>::ptr exit_promise = new fc::promise<int>("UNIX Signal Handler");
+    const auto sig_handler = [&exit_promise](int signal) {
+      exit_promise->set_value(signal);
+    };
+    fc::set_signal_handler(sig_handler, SIGINT);
+    fc::set_signal_handler(sig_handler, SIGTERM);
+
     // but allow CLI to override
     if( !options.at("server-rpc-endpoint").defaulted() )
       wdata.ws_server = options.at("server-rpc-endpoint").as<std::string>();
@@ -195,7 +202,7 @@ int main( int argc, char** argv )
 
     auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
     auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, wallet_cli );
+    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
     wapiptr->load_wallet_file();
 
@@ -291,27 +298,19 @@ int main( int argc, char** argv )
     {
       wallet_cli->register_api( wapi );
       wallet_cli->start();
-      wallet_cli->wait();
     }
     else
     {
-      fc::promise<int>::ptr exit_promise = new fc::promise<int>("UNIX Signal Handler");
-      fc::set_signal_handler([&exit_promise](int signal) {
-        exit_promise->set_value(signal);
-      }, SIGINT);
-
       ilog( "Entering Daemon Mode, ^C to exit" );
-      exit_promise->wait();
     }
+
+    exit_promise->wait();
+    wallet_cli->stop();
 
     wapi->save_wallet_file(wallet_file.generic_string());
     locked_connection.disconnect();
     closed_connection.disconnect();
-  }
-  catch ( const fc::exception& e )
-  {
-    std::cout << e.to_detail_string() << "\n";
-    return -1;
-  }
+  } FC_CAPTURE_AND_LOG(());
+
   return 0;
 }
