@@ -2,7 +2,7 @@
 
 ARG BUILD_HIVE_TESTNET=OFF
 ARG HIVE_LINT=OFF
-FROM registry.gitlab.syncad.com/hive/hive/hive-baseenv:latest AS builder
+FROM registry.gitlab.syncad.com/hive/hive/builder:latest AS builder
 
 ENV src_dir="/usr/local/src/hive"
 ENV install_base_dir="/usr/local/hive"
