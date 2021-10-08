@@ -822,6 +822,7 @@ void chain_plugin::report_state_options( const string& plugin_name, const fc::va
 void chain_plugin::connection_count_changed(uint32_t peer_count)
 {
   my->peer_count = peer_count;
+  hive::notify("hived_peer_count_changed");
 }
 
 bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip )
