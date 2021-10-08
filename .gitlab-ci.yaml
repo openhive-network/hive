@@ -8,7 +8,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
   RUNTIME_IMAGE_TAG: "@sha256:0923dee91073e21a99e95a2f5e73b167775f552089e18e2de5c2818e8f9c8006"
-  BUILDER_IMAGE_TAG: "@sha256:4be2c52694984cddca496ee1bf3e5392dbfb7841d4845b47f069d6f8ca620cb6"
+  BUILDER_IMAGE_TAG: "@sha256:d3d1a51a198b34ce451b039d381e689b852c1666a9fb4f86b13ddf173b67ee53"
   TEST_IMAGE_TAG: "@sha256:dc3376d1a48c5f5af4df066c25053e03480caab79972d4c13153f48bbecba3da"
 
 testnet_node_build:
