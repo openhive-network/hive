@@ -197,7 +197,7 @@ namespace fc { namespace http {
                        wdump(("server")(msg->get_payload()));
                        //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
                        auto payload = msg->get_payload();
-                       std::shared_ptr<connection> con = current_con->second;
+                       std::shared_ptr<websocket_connection> con = current_con->second;
                        ++_pending_messages;
                        auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
                        if( _pending_messages > 100 ) 
@@ -329,7 +329,7 @@ namespace fc { namespace http {
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
                        auto received = msg->get_payload();
-                       std::shared_ptr<connection> con = current_con->second;
+                       std::shared_ptr<websocket_connection> con = current_con->second;
                        fc::async([con,received](){ con->on_message( received ); });
                     }).wait();
                });
