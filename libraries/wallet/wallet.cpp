@@ -1019,7 +1019,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 namespace hive { namespace wallet {
 
 wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, std::shared_ptr<fc::rpc::cli> _cli )
-  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api)), cli(_cli)
+  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api)), cli(std::move(_cli))
 {}
 
 wallet_api::~wallet_api(){}
