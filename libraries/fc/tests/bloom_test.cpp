@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(bloom_test_1)
       std::string line;
       std::ifstream in("README.md");
       std::ofstream words("words.txt");
-      while( !in.eof() && count < 100000 )
+      while( in.is_open() && !in.eof() && count < 100000 )
       {
          std::getline(in, line);
 //         std::cout << "'"<<line<<"'\n";

@@ -2,7 +2,7 @@
 #include <boost/test/unit_test.hpp>
 #include <fc/log/logger.hpp>
 
-BOOST_AUTO_TEST_SUITE(fc)
+BOOST_AUTO_TEST_SUITE(fc_math)
 
 using fc::real128;
 using std::string;

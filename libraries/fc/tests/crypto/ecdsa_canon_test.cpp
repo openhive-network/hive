@@ -3,6 +3,9 @@
 
 #include <iostream>
 
+#include <boost/test/unit_test.hpp>
+BOOST_AUTO_TEST_SUITE(fc_canon)
+
 uint8_t fc_canon[65] = {
    /*rec id */ 0x20,
    /* r */     0x12, 0x65, 0xbb, 0xa6, 0xde, 0xb1, 0xba, 0xf0, 0x79, 0x3b, 0xc5, 0x08, 0x77, 0x99, 0x27, 0x2b, 0x5d, 0x2e, 0xf6, 0xff, 0x9d, 0x72, 0x21, 0x8a, 0x68, 0x82, 0x25, 0x9d, 0x98, 0x94, 0xda, 0xd7,
@@ -28,10 +31,9 @@ uint8_t non_canon[65] = {
    /* s */     0xa9, 0x92, 0xca, 0x62, 0xe0, 0xa8, 0x95, 0xa6, 0x4a, 0xf3, 0xb1, 0xce, 0xba, 0xfb, 0xdb, 0xbc, 0x60, 0x77, 0xc0, 0xb1, 0xad, 0x1d, 0xf5, 0x1b, 0xa0, 0x03, 0x09, 0x70, 0xe1, 0xdd, 0x64, 0x31
 };
 
-int main( int argc, char** argv )
+BOOST_AUTO_TEST_CASE( fc_canon_test )
 {
-   try
-   {
+   BOOST_REQUIRE_NO_THROW(
       fc::ecc::compact_signature fc_canon_sig;
       memcpy( fc_canon_sig.data, fc_canon, sizeof( unsigned char ) * 65 );
 
@@ -45,28 +47,23 @@ int main( int argc, char** argv )
       memcpy( non_canon_sig.data, non_canon, sizeof( unsigned char ) * 65 );
 
       ilog( "Testing non-canonical validation" );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( fc_canon_sig,          fc::ecc::canonical_signature_type::non_canonical ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon_sig,    fc::ecc::canonical_signature_type::non_canonical ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,   fc::ecc::canonical_signature_type::non_canonical ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( non_canon_sig,         fc::ecc::canonical_signature_type::non_canonical ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( fc_canon_sig,          fc::ecc::canonical_signature_type::non_canonical ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( bip_0062_canon_sig,    fc::ecc::canonical_signature_type::non_canonical ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,   fc::ecc::canonical_signature_type::non_canonical ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( non_canon_sig,         fc::ecc::canonical_signature_type::non_canonical ) );
 
       ilog( "Testing bip_0062 canonical validation" );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( fc_canon_sig,          fc::ecc::canonical_signature_type::bip_0062 ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon_sig,    fc::ecc::canonical_signature_type::bip_0062 ) );
-      FC_ASSERT( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,   fc::ecc::canonical_signature_type::bip_0062 ) );
-      FC_ASSERT( !fc::ecc::public_key::is_canonical( non_canon_sig,        fc::ecc::canonical_signature_type::bip_0062 ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( fc_canon_sig,          fc::ecc::canonical_signature_type::bip_0062 ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( bip_0062_canon_sig,    fc::ecc::canonical_signature_type::bip_0062 ) );
+      BOOST_REQUIRE( fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,   fc::ecc::canonical_signature_type::bip_0062 ) );
+      BOOST_REQUIRE( !fc::ecc::public_key::is_canonical( non_canon_sig,        fc::ecc::canonical_signature_type::bip_0062 ) );
 
       ilog( "Testing fc canonical validation" );
-      FC_ASSERT(  fc::ecc::public_key::is_canonical( fc_canon_sig,         fc::ecc::canonical_signature_type::fc_canonical ) );
-      FC_ASSERT( !fc::ecc::public_key::is_canonical( bip_0062_canon_sig,   fc::ecc::canonical_signature_type::fc_canonical ) );
-      FC_ASSERT(  fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,  fc::ecc::canonical_signature_type::fc_canonical ) );
-      FC_ASSERT( !fc::ecc::public_key::is_canonical( non_canon_sig,        fc::ecc::canonical_signature_type::fc_canonical ) );
-   }
-   catch( fc::exception& e )
-   {
-      ilog( "Uncaught Exception: ${e}", ("e", e) );
-      return 1;
-   }
-
-   return 0;
+      BOOST_REQUIRE(  fc::ecc::public_key::is_canonical( fc_canon_sig,         fc::ecc::canonical_signature_type::fc_canonical ) );
+      BOOST_REQUIRE( !fc::ecc::public_key::is_canonical( bip_0062_canon_sig,   fc::ecc::canonical_signature_type::fc_canonical ) );
+      BOOST_REQUIRE(  fc::ecc::public_key::is_canonical( bip_0062_canon2_sig,  fc::ecc::canonical_signature_type::fc_canonical ) );
+      BOOST_REQUIRE( !fc::ecc::public_key::is_canonical( non_canon_sig,        fc::ecc::canonical_signature_type::fc_canonical ) );
+   );
 }
+
+BOOST_AUTO_TEST_SUITE_END()

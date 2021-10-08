@@ -4,7 +4,7 @@
 
 using namespace fc;
 
-BOOST_AUTO_TEST_SUITE(thread_tests)
+BOOST_AUTO_TEST_SUITE(fc_thread_tests)
 
 BOOST_AUTO_TEST_CASE(executes_task)
 {

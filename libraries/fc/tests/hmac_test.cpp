@@ -1,4 +1,3 @@
-#define BOOST_TEST_MODULE HmacTest
 #include <boost/test/unit_test.hpp>
 #include <fc/array.hpp>
 #include <fc/crypto/hex.hpp>
@@ -6,6 +5,8 @@
 #include <fc/crypto/sha224.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/crypto/sha512.hpp>
+
+BOOST_AUTO_TEST_SUITE( fc_crypto )
 
 // See http://tools.ietf.org/html/rfc4231
 
@@ -116,3 +117,5 @@ BOOST_AUTO_TEST_CASE(hmac_test_7)
 {
     run_test<131,152>( TEST7_KEY, TEST7_DATA, TEST7_224, TEST7_256, TEST7_512 );
 }
+
+BOOST_AUTO_TEST_SUITE_END()

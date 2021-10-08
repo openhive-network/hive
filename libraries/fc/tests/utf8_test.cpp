@@ -19,7 +19,7 @@ static const std::string TEST_INVALID_10("\355\244\200\001");
 static const std::string TEST_INVALID_11("\340\214\200");
 static const std::string TEST_INVALID_12("\340\214\200\001");
 
-BOOST_AUTO_TEST_SUITE(fc)
+BOOST_AUTO_TEST_SUITE(fc_utf8)
 
 BOOST_AUTO_TEST_CASE(utf8_test)
 {

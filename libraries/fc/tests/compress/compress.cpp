@@ -6,7 +6,7 @@
 #include <fc/compress/zlib.hpp>
 #include <fc/exception/exception.hpp>
 
-BOOST_AUTO_TEST_SUITE(compress)
+BOOST_AUTO_TEST_SUITE(fc_compress)
 
 BOOST_AUTO_TEST_CASE(smaz_test)
 {
