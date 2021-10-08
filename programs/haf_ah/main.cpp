@@ -124,7 +124,7 @@ struct ah_query
 
     // get_bodies      = "SELECT id, get_impacted_accounts(body), ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d ORDER BY block_num, helper_trx_in_block, op_pos;";
     get_bodies = R"(
-SELECT * FROM (
+SELECT T.id, T.account FROM (
 SELECT ahov.id, get_impacted_accounts(body) as account,
 ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block,
 ( CASE WHEN ahov.trx_in_block <= -1 THEN ahov.op_pos
