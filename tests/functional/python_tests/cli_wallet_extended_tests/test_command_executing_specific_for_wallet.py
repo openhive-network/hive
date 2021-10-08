@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from test_tools import Account, context, Wallet
+from test_tools import Account, context, logger, Wallet
 from test_tools.exceptions import CommunicationError
 
 from utilities import result_of
@@ -64,12 +64,12 @@ def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: Wallet):
     assert result_of(unconfigured_wallet.api.is_locked) is True
 
 def test_save_wallet_to_file(configured_wallet: Wallet):
-    wallet_file_path = context.get_current_directory() / 'test_file.json'
+    wallet_file_path = context.get_current_directory() / 'Wallet0/test_file.json'
     configured_wallet.api.save_wallet_file(str(wallet_file_path))
     assert wallet_file_path.exists()
 
 def test_load_wallet_from_file(configured_wallet: Wallet):
-    wallet_file_path = context.get_current_directory() / 'test_file.json'
+    wallet_file_path = context.get_current_directory() / 'Wallet0/test_file.json'
     configured_wallet.api.save_wallet_file(str(wallet_file_path))
     assert result_of(configured_wallet.api.load_wallet_file, str(wallet_file_path)) is True
 
@@ -113,14 +113,14 @@ def test_help_and_gethelp(configured_wallet: Wallet):
     help_content = result_of(configured_wallet.api.help)
     # saparate names of functions from "help"
     help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]
-    failed_commands = []
+    failed_functions = []
     for function in help_functions:
         try:
             configured_wallet.api.gethelp(function)
         except CommunicationError:
-            failed_commands.append(function)
-    if len(failed_commands) > 0:
-        assert False, f'Error occurred when gethelp was called for following functions: {failed_commands}'
+            failed_functions.append(function)
+    if len(failed_functions) > 0:
+        assert False, f'Error occurred when gethelp was called for following functions: {failed_functions}'
 
 def test_suggest_brain_key(configured_wallet: Wallet):
     result = result_of(configured_wallet.api.suggest_brain_key)
@@ -130,19 +130,32 @@ def test_suggest_brain_key(configured_wallet: Wallet):
     assert len(result['wif_priv_key']) == 51
     assert result['pub_key'].startswith('TST')
 
-def test_set_transaction_expiration(wallet: Wallet):
+def test_set_transaction_expiration(world):
+
+# A new "node" was created to test_set_transaction_expiration.
+# "Node" has been stopped to keep the time consistent between the start time of the transaction
+# and the estimated time of its completion.
+
+    node = world.create_init_node()
+    node.run(stop_at_block=1)
+
+    response = node.api.condenser.get_block(1)
+    time_format = '%Y-%m-%dT%H:%M:%S'
+    last_block_time_point = datetime.strptime(response['result']['timestamp'], time_format).replace(tzinfo=timezone.utc)
+
+    wallet = Wallet(attach_to=node)
+
     set_expiration_time = 1000
     wallet.api.set_transaction_expiration(set_expiration_time)
     transaction = result_of(wallet.api.create_account, 'initminer', 'alice', '{}', False)
-
     expiration_time_point = datetime.strptime(transaction['expiration'], '%Y-%m-%dT%H:%M:%S')
     expiration_time_point = expiration_time_point.replace(tzinfo=timezone.utc)
-    expiration_time = expiration_time_point - datetime.now(timezone.utc)
+    expiration_time = expiration_time_point - last_block_time_point
 
     block_time = 3
-    tolerance = 1
-    max_expiration_time = timedelta(seconds=(set_expiration_time + tolerance))
-    min_expiration_time = timedelta(seconds=(set_expiration_time - block_time - tolerance))
+    max_expiration_time = timedelta(seconds=(set_expiration_time))
+    min_expiration_time = timedelta(seconds=(set_expiration_time - block_time))
+
     assert min_expiration_time <= expiration_time <= max_expiration_time
 
 def test_serialize_transaction(configured_wallet: Wallet, node):
@@ -153,6 +166,6 @@ def test_serialize_transaction(configured_wallet: Wallet, node):
 
 def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
-    wallet_temp.api.create_account('initminer', 'alice', '{}', broadcast=None)
+    wallet_temp.api.create_account('initminer', 'alice', '{}')
     encrypted = result_of(wallet_temp.api.get_encrypted_memo, 'alice', 'initminer', '#this is memo')
     assert result_of(configured_wallet.api.decrypt_memo, encrypted) == 'this is memo'
