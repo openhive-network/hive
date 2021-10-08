@@ -97,6 +97,7 @@ tests/intense_test
 tests/performance_test
 
 # Build directories
+*build*/
 build/
 build.*/
 build-*/
