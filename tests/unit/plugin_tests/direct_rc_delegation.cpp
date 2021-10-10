@@ -176,7 +176,6 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply )
   FC_LOG_AND_RETHROW()
 }
 
-
 BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 {
   try
@@ -314,6 +313,156 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( dave_rc_account_after_two.rc_manabar.current_mana == 50 );
     BOOST_REQUIRE( dave_rc_account_after_two.last_max_rc == 50 );
     BOOST_REQUIRE( dave_rc_account_after_two.received_delegated_rc == 40 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with many actors" );
+    #define NUM_ACTORS 250
+    #define CREATE_ACTORS(z, n, text) ACTORS( (actor ## n) );
+    BOOST_PP_REPEAT(NUM_ACTORS, CREATE_ACTORS, )
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    // We are forced to do this because vests and rc values are bugged when executing tests
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_account( "alice" ), [&]( account_object& a )
+      {
+        a.vesting_shares = asset( NUM_ACTORS * 10, VESTS_SYMBOL );
+      });
+
+      db.modify( db.get< rc_account_object, by_name >( "alice" ), [&]( rc_account_object& rca )
+      {
+        rca.max_rc_creation_adjustment.amount.value = 10;
+        rca.rc_manabar.current_mana = NUM_ACTORS * 10 + 10; // vests + max_rc_creation_adjustment
+        rca.rc_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+        rca.last_max_rc = NUM_ACTORS * 10 + 10; // vests + max_rc_creation_adjustment
+      });
+
+
+      // Set the values for every actor
+      for (int i = 0; i < NUM_ACTORS; i++) {
+        db.modify( db.get_account( "actor" + std::to_string(i) ), [&]( account_object& a )
+        {
+          a.vesting_shares = asset( 0, VESTS_SYMBOL );
+        });
+
+        db.modify( db.get< rc_account_object, by_name >( "actor" + std::to_string(i) ), [&]( rc_account_object& rca )
+        {
+          rca.max_rc_creation_adjustment.amount.value = 10;
+          rca.rc_manabar.current_mana = 10;
+          rca.rc_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+          rca.max_rc_creation_adjustment.amount.value = 10;
+          rca.last_max_rc = 10;
+        });
+      }
+    });
+
+    // Delegate 10 rc to every actor account
+    for (int i = 0; i < NUM_ACTORS; i++) {
+      delegate_rc_operation op;
+      op.from = "alice";
+      op.max_rc = 10;
+      op.to = "actor" + std::to_string(i);
+      custom_json_operation custom_op;
+      custom_op.required_posting_auths.insert( "alice" );
+      custom_op.id = HIVE_RC_PLUGIN_NAME;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      push_transaction(custom_op, alice_private_key);
+      generate_block(); // TODO optimize this loop where we push the max allowed custom ops per block
+    }
+
+    const rc_account_object& actor0_rc_account_before = db->get< rc_account_object, by_name >("actor0");
+    const rc_account_object& actor2_rc_account_before = db->get< rc_account_object, by_name >("actor2");
+    const rc_account_object& alice_rc_before = db->get< rc_account_object, by_name >( "alice" );
+
+    BOOST_REQUIRE( alice_rc_before.delegated_rc == NUM_ACTORS * 10 );
+    BOOST_REQUIRE( alice_rc_before.received_delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == 10 );
+    BOOST_REQUIRE( alice_rc_before.last_max_rc == 10 );
+
+    BOOST_REQUIRE( actor0_rc_account_before.rc_manabar.current_mana == 20 );
+    BOOST_REQUIRE( actor0_rc_account_before.last_max_rc == 20 );
+    BOOST_REQUIRE( actor0_rc_account_before.received_delegated_rc == 10 );
+
+    BOOST_REQUIRE( actor2_rc_account_before.rc_manabar.current_mana == 20 );
+    BOOST_REQUIRE( actor2_rc_account_before.last_max_rc == 20 );
+    BOOST_REQUIRE( actor2_rc_account_before.received_delegated_rc == 10 );
+
+    // we delegate 25 vests and it affects the first three delegations
+    // Delegate 25 vests out, alice has -15 remaining rc, it's lower than the max_rc_creation_adjustment which is 10
+    // So the first two delegations (to actor0 and actor2) are deleted while the delegation to actor2 is deleted
+    delegate_vesting_shares_operation dvso;
+    dvso.vesting_shares = ASSET( "0.000025 VESTS");
+    dvso.delegator = "alice";
+    dvso.delegatee = "bob";
+    push_transaction(dvso, alice_private_key);
+
+    const rc_account_object& actor0_rc_account_after = db->get< rc_account_object, by_name >("actor0");
+    const rc_account_object& actor2_rc_account_after = db->get< rc_account_object, by_name >("actor2");
+    const rc_account_object& alice_rc_after = db->get< rc_account_object, by_name >( "alice" );
+
+    BOOST_REQUIRE( alice_rc_after.delegated_rc == NUM_ACTORS * 10 - 25 ); // total amount minus what was delegated
+    BOOST_REQUIRE( alice_rc_after.received_delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == 10 );
+    BOOST_REQUIRE( alice_rc_after.last_max_rc == 10 );
+
+    BOOST_REQUIRE( actor0_rc_account_after.rc_manabar.current_mana == 10 );
+    BOOST_REQUIRE( actor0_rc_account_after.last_max_rc == 10 );
+    BOOST_REQUIRE( actor0_rc_account_after.received_delegated_rc == 0 );
+
+    BOOST_REQUIRE( actor2_rc_account_after.rc_manabar.current_mana == 15 );
+    BOOST_REQUIRE( actor2_rc_account_after.last_max_rc == 15 );
+    BOOST_REQUIRE( actor2_rc_account_after.received_delegated_rc == 5 );
+
+    // We check that the rest of the delegations weren't affected
+    for (int i = 4; i < NUM_ACTORS; i++) {
+      const rc_account_object& actor_rc_account = db->get< rc_account_object, by_name >( "actor" + std::to_string(i) );
+      BOOST_REQUIRE( actor_rc_account.rc_manabar.current_mana == 20 );
+      BOOST_REQUIRE( actor_rc_account.last_max_rc == 20 );
+      BOOST_REQUIRE( actor_rc_account.received_delegated_rc == 10 );
+    }
+
+    // We delegate all our vests and we don't have enough to sustain any of our remaining delegations
+    const account_object& acct = db->get_account( "alice" );
+
+    dvso.vesting_shares = acct.vesting_shares;
+    dvso.delegator = "alice";
+    dvso.delegatee = "bob";
+    push_transaction(dvso, alice_private_key);
+
+    const rc_account_object& alice_rc_end = db->get< rc_account_object, by_name >( "alice" );
+
+    BOOST_REQUIRE( alice_rc_end.delegated_rc == 0 ); // total amount minus what was delegated
+    BOOST_REQUIRE( alice_rc_end.received_delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_end.rc_manabar.current_mana == 10 );
+    BOOST_REQUIRE( alice_rc_end.last_max_rc == 10 );
+
+    // We check that every delegation got deleted
+    for (int i = 0; i < NUM_ACTORS; i++) {
+      const rc_account_object& actor_rc_account = db->get< rc_account_object, by_name >( "actor" + std::to_string(i) );
+      BOOST_REQUIRE( actor_rc_account.rc_manabar.current_mana == 10 );
+      BOOST_REQUIRE( actor_rc_account.last_max_rc == 10 );
+      BOOST_REQUIRE( actor_rc_account.received_delegated_rc == 0 );
+    }
+
+    // Remove vests delegation and check that we got the rc back
+    dvso.vesting_shares = ASSET( "0.000000 VESTS");;
+    dvso.delegator = "alice";
+    dvso.delegatee = "bob";
+    push_transaction(dvso, alice_private_key);
+
+    const rc_account_object& alice_rc_final = db->get< rc_account_object, by_name >( "alice" );
+
+    BOOST_REQUIRE( alice_rc_final.delegated_rc == 0 ); // total amount minus what was delegated
+    BOOST_REQUIRE( alice_rc_final.received_delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_final.rc_manabar.current_mana == 10 );
+    BOOST_REQUIRE( alice_rc_final.last_max_rc == 10 );
   }
   FC_LOG_AND_RETHROW()
 }
