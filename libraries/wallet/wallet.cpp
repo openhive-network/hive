@@ -2890,8 +2890,8 @@ serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
-            account_name_type from,
-            account_name_type to,
+            const account_name_type& from,
+            const account_name_type& to,
             uint64_t max_rc,
             bool broadcast )
 {
@@ -2917,13 +2917,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
   return {my->sign_transaction( trx, broadcast )};
 }
 
-serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( vector< account_name_type > accounts )
+serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( const vector< account_name_type >& accounts )
 {
   return {my->_remote_wallet_bridge_api->find_rc_accounts( {variant( accounts )}, LOCK )};
 }
 
 serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
-        const string& start,
+            const string& start,
             uint32_t limit,
             rc::sort_order_type order_by )
 {

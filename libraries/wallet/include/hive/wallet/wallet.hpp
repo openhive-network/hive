@@ -1392,8 +1392,8 @@ class wallet_api
     *  @param broadcast To broadcast this transaction or not
     */
     serializer_wrapper<annotated_signed_transaction> delegate_rc(
-          account_name_type from,
-          account_name_type to,
+          const account_name_type& from,
+          const account_name_type& to,
           uint64_t max_rc,
           bool broadcast );
 
@@ -1403,7 +1403,7 @@ class wallet_api
      *
      *  @param accounts The vector of accounts
      */
-    serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( vector< account_name_type > accounts );
+    serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( const vector< account_name_type >& accounts );
 
     /**
      *  List RC accounts.
