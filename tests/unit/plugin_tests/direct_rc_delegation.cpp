@@ -300,6 +300,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     const rc_account_object& dave_rc_account_after_two = db->get< rc_account_object, by_name >("dave");
     const rc_account_object& alice_rc_after_two = db->get< rc_account_object, by_name >( "alice" );
 
+    const rc_direct_delegation_object* delegation_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation_deleted == nullptr );
    
     BOOST_REQUIRE( bob_rc_account_after_two.rc_manabar.current_mana == 10 );
     BOOST_REQUIRE( bob_rc_account_after_two.last_max_rc == 10 );
@@ -374,7 +376,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
       custom_op.id = HIVE_RC_PLUGIN_NAME;
       custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
       push_transaction(custom_op, alice_private_key);
-      generate_block(); // TODO optimize this loop where we push the max allowed custom ops per block
+      generate_block();
     }
 
     const rc_account_object& actor0_rc_account_before = db->get< rc_account_object, by_name >("actor0");
@@ -419,6 +421,11 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     BOOST_REQUIRE( actor2_rc_account_after.rc_manabar.current_mana == 15 );
     BOOST_REQUIRE( actor2_rc_account_after.last_max_rc == 15 );
     BOOST_REQUIRE( actor2_rc_account_after.received_delegated_rc == 5 );
+
+    const rc_direct_delegation_object* delegation_actor0_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, actor0_id ) );
+    BOOST_REQUIRE( delegation_actor0_deleted == nullptr );
+    const rc_direct_delegation_object* delegation_actor1_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, actor1_id ) );
+    BOOST_REQUIRE( delegation_actor1_deleted == nullptr );
 
     // We check that the rest of the delegations weren't affected
     for (int i = 4; i < NUM_ACTORS; i++) {
