@@ -951,7 +951,7 @@ namespace detail
       LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Exccesive delay to validate & broadcast trx ${e}", (e) );
 
       boost::lock_guard< boost::mutex > guard( _mtx );
-      // The callback may have been cleared in the meantine, so we need to check for existence.
+      // The callback may have been cleared in the meantime, so we need to check for existence.
       auto c_itr = _callbacks.find( txid );
       if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
       // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.

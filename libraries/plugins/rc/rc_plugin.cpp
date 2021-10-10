@@ -859,7 +859,6 @@ struct post_apply_operation_visitor
 
     int64_t returned_rcs = 0;
     uint32_t now = _db.get_dynamic_global_properties().time.sec_since_epoch();
-    vector< const rc_direct_delegation_object* > delegations_to_remove;
 
     if( new_max_rc < from_rc_account.max_rc_creation_adjustment.amount.value && from_rc_account.delegated_rc > 0 ) {
       // If the account dips below max_rc_creation_adjustment, we bring it back to this level.
@@ -876,6 +875,10 @@ struct post_apply_operation_visitor
         returned_rcs += delta_rc;
         needed_rcs -= delta_rc;
 
+        const account_object* to_account = _db.find< account_object, by_id >( rc_del_itr->to  );
+        const auto& to_rc_account = _db.get< rc_account_object, by_name >( to_account->name );
+        update_rc_account_after_delegation(_db, to_rc_account, to_account, now, -delta_rc);
+
         // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
         if( rc_del_itr->delegated_rc > delta_rc )
         {
@@ -887,19 +890,9 @@ struct post_apply_operation_visitor
         else
         {
           // Otherwise, we remove it
-          delegations_to_remove.push_back( &(*rc_del_itr) );
+          _db.remove( *rc_del_itr );
         }
-
-        const account_object* to_account = _db.find< account_object, by_id >( rc_del_itr->to  );
-        const auto& to_rc_account = _db.get< rc_account_object, by_name >( to_account->name );
-        update_rc_account_after_delegation(_db, to_rc_account, to_account, now, -delta_rc);
-
         ++rc_del_itr;
-      }
-
-      for( const rc_direct_delegation_object* delegation : delegations_to_remove )
-      {
-        _db.remove( *delegation );
       }
 
       _db.modify(from_rc_account, [&](rc_account_object &rca) {
