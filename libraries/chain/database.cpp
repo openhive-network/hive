@@ -4410,14 +4410,24 @@ try {
         if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
         {
           // This block limits the effective median price to force HBD to remain at or
-          // below 10% of the combined market cap of HIVE and HBD. The reason is to prevent
-          // individual with a lot of HBD to use sharp decline in HIVE price to make
-          // in-chain-but-out-of-market conversion to HIVE and take over the blockchain
+          // below HIVE_HBD_HARD_LIMIT of the combined market cap of HIVE and HBD.
+          // The reason is to prevent individual with a lot of HBD to use sharp decline
+          // in HIVE price to make in-chain-but-out-of-market conversion to HIVE and take
+          // over the blockchain
           //
-          // For example, if we have 500 HIVE and 100 HBD, the price is limited to
-          // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 HIVE
-          // would be valued at 500 * $1.80 = $900.  100 HBD is by definition always $100,
+          // For example (for 10% hard limit), if we have 500 HIVE and 100 HBD, the price is
+          // limited to 900 HBD / 500 HIVE which works out to be $1.80. At this price, 500 HIVE
+          // would be valued at 500 * $1.80 = $900. 100 HBD is by definition always $100,
           // so the combined market cap is $900 + $100 = $1000.
+          // 
+          // Generalized formula:
+          // With minimal price we want existing amount of HBD (X) to be HIVE_HBD_HARD_LIMIT (L) of
+          // combined market cap (CMC), meaning the existing amount of HIVE (Y) has to be 100%-L of CMC.
+          // X + Y*price = CMC, X = L*CMC, Y*price = (100%-L)*CMC
+          // (100% - L)*CMC = (100% - L)*X/L = (100%/L - 1)*X therefore minimal price is
+          // (100%/L - 1)*X HBD per Y HIVE
+          // the above has one big problem - accuracy; f.e. with L = 30% the price will be the same
+          // as for L = 33%; for better accuracy we can express the price as (100%-L)*X HBD per L*Y HIVE
 
           const auto& dgpo = get_dynamic_global_properties();
           auto hbd_supply = dgpo.get_current_hbd_supply();
@@ -4425,13 +4435,17 @@ try {
             hbd_supply -= get_treasury().get_hbd_balance();
           if( hbd_supply.amount > 0 )
           {
-            price min_price( asset( 9 * hbd_supply.amount, HBD_SYMBOL ), dgpo.get_current_supply() );
+            uint16_t limit = HIVE_HBD_HARD_LIMIT_PRE_HF26;
+            if( has_hardfork( HIVE_HARDFORK_1_26_HBD_HARD_CAP ) )
+              limit = HIVE_HBD_HARD_LIMIT;
+            price min_price( asset( ( HIVE_100_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
+                             asset( limit * dgpo.get_current_supply().amount, HIVE_SYMBOL ) );
 
             if( min_price > fho.current_median_history )
             {
               push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
-                "HIVE price corrected upward due to 10% HBD cutoff rule, from ${actual} to ${corrected}",
-                ( "actual", fho.current_median_history )( "corrected", min_price ) ).get_message() ) );
+                "HIVE price corrected upward due to HBD cutoff rule (${limit} basis points), from ${actual} to ${corrected}",
+                ( "limit", limit )( "actual", fho.current_median_history )( "corrected", min_price )).get_message()));
 
               fho.current_median_history = min_price;
             }

@@ -681,7 +681,7 @@ namespace hive { namespace protocol {
     void  validate()const;
     void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
 
-    price             get_price()const { return amount_to_sell / min_to_receive; }
+    price             get_price()const { return price( amount_to_sell, min_to_receive ); }
 
     pair< asset_symbol_type, asset_symbol_type > get_market()const
     {
