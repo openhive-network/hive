@@ -1,9 +1,10 @@
+from utilities import create_accounts
+
 def test_direct_rc_delegations(wallet):
     creator = 'initminer'
     delegator = 'delegator'
     receiver = 'receiver'
-    wallet.api.create_account(creator, delegator, '{}', 'true')
-    wallet.api.create_account(creator, receiver, '{}', 'true')
+    create_accounts( wallet, 'initminer', [delegator, receiver] )
     wallet.api.transfer(creator, receiver, '10.000 TESTS', '', 'true')
     wallet.api.transfer_to_vesting(creator, delegator, '0.010 TESTS', 'true')
     wallet.api.transfer(creator, receiver, '1.000 TESTS', '', 'true')
@@ -65,7 +66,7 @@ def test_direct_rc_delegations(wallet):
     assert (rc_delegator['delegated_rc'] == 20)
     assert (rc_delegator['received_delegated_rc'] == 0)
     assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar'][
-        'current_mana'] - 59) # amount remains the same - 3 because current rc is not given back from reducing the delegation, and we paid 3 for the extra op
+        'current_mana'] - 59)  # amount remains the same - 3 because current rc is not given back from reducing the delegation, and we paid 3 for the extra op
 
     print('deleting the delegation to {}'.format(receiver))
     wallet.api.delegate_rc(delegator, receiver, 0, 'true')
