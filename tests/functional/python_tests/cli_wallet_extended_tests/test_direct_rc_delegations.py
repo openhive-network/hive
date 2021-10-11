@@ -94,11 +94,11 @@ def test_direct_rc_delegations(wallet):
     assert (accounts[0]['received_delegated_rc'] == 0)
     assert (accounts[1]['account'] == 'hive.fund')
 
-    accounts_all = wallet.api.list_rc_accounts('aaa', 100, 'by_name')
+    accounts_all = wallet.api.list_rc_accounts('aaa', 100, 'by_name')['result']
     assert (len(accounts_all) == 8)
     assert (accounts_all[7]['account'] == 'temp')
 
-    accounts_offset = wallet.api.list_rc_accounts('receiver', 3, 'by_name')
+    accounts_offset = wallet.api.list_rc_accounts('receiver', 3, 'by_name')['result']
     assert (len(accounts_offset) == 3)
     assert (accounts_offset[0]['account'] == 'receiver')
     assert (accounts_offset[0]['rc_manabar']['current_mana'] == 0)
