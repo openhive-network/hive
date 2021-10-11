@@ -7,10 +7,9 @@ from test_tools import logger
 from local_tools import make_fork, wait_for_irreversible_progress
 
 
-START_TEST_BLOCK = 105
+START_TEST_BLOCK = 101
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("world_with_witnesses_and_database", [Path().resolve()], indirect=True)
 def test_undo_operations(world_with_witnesses_and_database):
     logger.info(f'Start test_undo_operations')
@@ -31,6 +30,7 @@ def test_undo_operations(world_with_witnesses_and_database):
     wait_for_irreversible_progress(node_under_test, after_fork_block)
     for i in range(fork_block, after_fork_block):
         try:
+            # there should be exactly one producer_reward_operation
             session.query(operations).filter(operations.block_num == i).one()
         
         except MultipleResultsFound:

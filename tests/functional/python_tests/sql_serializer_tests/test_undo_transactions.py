@@ -5,7 +5,7 @@ from test_tools import logger, BlockLog
 from local_tools import make_fork, wait_for_irreversible_progress
 
 
-START_TEST_BLOCK = 105
+START_TEST_BLOCK = 101
 
 
 @pytest.mark.parametrize("world_with_witnesses_and_database", [Path().resolve()], indirect=True)
