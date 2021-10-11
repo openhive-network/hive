@@ -183,6 +183,7 @@ def test_serialize_transaction(configured_wallet: Wallet, node):
     serialized_transaction = configured_wallet.api.serialize_transaction(transaction['result'])
     assert serialized_transaction['result'] != '00000000000000000000000000'
 
+
 def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
     wallet_temp = Wallet(attach_to=node)
     wallet_temp.api.create_account('initminer', 'alice', '{}')
