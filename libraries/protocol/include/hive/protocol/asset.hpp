@@ -175,7 +175,6 @@ namespace hive { namespace protocol {
 
   }; /// price
 
-  price operator / ( const asset& base, const asset& quote );
   inline price operator~( const price& p ) { return price{p.quote,p.base}; }
 
   bool  operator <  ( const asset& a, const asset& b );

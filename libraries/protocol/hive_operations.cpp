@@ -515,7 +515,7 @@ namespace hive { namespace protocol {
             ),
           "Limit order must be for the HIVE:HBD or SMT:(HIVE/HBD) market" );
 
-    (amount_to_sell / min_to_receive).validate();
+    price( amount_to_sell, min_to_receive ).validate();
   }
 
   void limit_order_create2_operation::validate()const

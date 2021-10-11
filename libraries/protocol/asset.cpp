@@ -300,13 +300,15 @@ asset operator * ( const asset& a, const price& b )
   }
 }
 
-price operator / ( const asset& base, const asset& quote )
-{ try {
-  return price( base, quote );
-} FC_CAPTURE_AND_RETHROW( (base)(quote) ) }
+price price::max( asset_symbol_type base, asset_symbol_type quote )
+{
+  return price( asset( share_type(HIVE_MAX_SATOSHIS), base ), asset( share_type(1), quote) );
+}
 
-price price::max( asset_symbol_type base, asset_symbol_type quote ) { return asset( share_type(HIVE_MAX_SATOSHIS), base ) / asset( share_type(1), quote); }
-price price::min( asset_symbol_type base, asset_symbol_type quote ) { return asset( 1, base ) / asset( HIVE_MAX_SATOSHIS, quote); }
+price price::min( asset_symbol_type base, asset_symbol_type quote )
+{
+  return price( asset( 1, base ), asset( HIVE_MAX_SATOSHIS, quote) );
+}
 
 bool price::is_null() const { return *this == price(); }
 
