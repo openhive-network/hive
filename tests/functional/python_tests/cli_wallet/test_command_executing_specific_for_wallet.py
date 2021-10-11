@@ -6,7 +6,7 @@ import pytest
 from test_tools import Account, Wallet
 from test_tools.exceptions import CommunicationError
 
-from utilities import result_of
+from ..cli_wallet_extended_tests.utilities import result_of
 
 
 @pytest.fixture
