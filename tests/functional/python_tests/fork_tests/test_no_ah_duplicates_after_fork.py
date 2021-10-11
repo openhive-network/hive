@@ -1,5 +1,6 @@
 from test_tools import logger
-from fork_tests.local_tools import assert_no_duplicates
+
+from .local_tools import assert_no_duplicates
 
 
 def test_no_duplicates_in_account_history_plugin_after_fork(world_with_witnesses):
