@@ -2,6 +2,7 @@
 #include <fc/thread/thread.hpp>
 
 #include <iostream>
+#include <csignal>
 
 #ifndef WIN32
 #include <unistd.h>
@@ -30,18 +31,43 @@
 
 namespace fc { namespace rpc {
 
-static std::vector<std::string>& cli_commands()
+namespace
 {
-   static std::vector<std::string>* cmds = new std::vector<std::string>();
-   return *cmds;
+   static std::vector<std::string>& cli_commands()
+   {
+      static std::vector<std::string>* cmds = new std::vector<std::string>();
+      return *cmds;
+   }
+
+   static volatile sig_atomic_t last_signal = 0;
+
+   static void signal_handler( sig_atomic_t sig )
+   {
+      last_signal = sig;
+      ilog("signal_handler");
+   }
+}
+
+cli::cli()
+   : _run_complete( false )
+{
+   ::signal( SIGINT, signal_handler );
+   ::signal( SIGTERM, signal_handler );
+#ifdef HAVE_READLINE
+   rl_getc_function = getc;
+   rl_clear_signals();
+   rl_event_hook = [](){
+      if ( last_signal )
+        FC_THROW_EXCEPTION( fc::eof_exception, "Signal termination: ${sigcode}", ("sigcode",last_signal) );
+      return 0;
+   };
+#endif
 }
 
 cli::~cli()
 {
-   if( _run_complete.valid() )
-   {
+   if( !_run_complete.load() )
       stop();
-   }
 }
 
 variant cli::send_call( api_id_type api_id, string method_name, variants args /* = variants() */ )
@@ -66,19 +92,21 @@ void cli::send_notice( uint64_t callback_id, variants args /* = variants() */ )
 
 void cli::start()
 {
+   FC_ASSERT( !_run_complete.load(), "Could not start CLI that has been already started" );
    cli_commands() = get_method_names(0);
-   _run_complete = fc::async( [&](){ run(); } );
+   _run_complete.store( false );
+   _run_thread = std::thread{ std::bind(&cli::run,this) };
 }
 
 void cli::stop()
 {
-   _run_complete.cancel();
-   _run_complete.wait();
+   _run_complete.store( true );
+   _run_thread.join();
 }
 
 void cli::wait()
 {
-   _run_complete.wait();
+   _run_thread.join();
 }
 
 void cli::format_result( const string& method, std::function<string(variant,const variants&)> formatter)
@@ -91,21 +119,19 @@ void cli::set_prompt( const string& prompt )
    _prompt = prompt;
 }
 
+void cli::set_on_termination_handler( on_termination_handler&& hdl )
+{
+   _termination_hdl = hdl;
+}
+
 void cli::run()
 {
-   while( !_run_complete.canceled() )
+   while( !_run_complete.load() )
    {
       try
       {
          std::string line;
-         try
-         {
-            getline( _prompt.c_str(), line );
-         }
-         catch ( const fc::eof_exception& e )
-         {
-            break;
-         }
+         getline( _prompt.c_str(), line );
          std::cout << line << "\n";
          line += char(EOF);
          fc::variants args = fc::json::variants_from_string(line);;
@@ -122,6 +148,15 @@ void cli::run()
          }
          else
             std::cout << itr->second( result, args ) << "\n";
+      }
+      catch ( const fc::eof_exception& e )
+      {
+         _termination_hdl( SIGINT );
+         _run_complete.store( true );
+#ifdef HAVE_READLINE
+         rl_cleanup_after_signal();
+#endif
+         break;
       }
       catch ( const fc::exception& e )
       {
@@ -198,19 +233,16 @@ void cli::getline( const fc::string& prompt, fc::string& line)
    {
       rl_attempted_completion_function = cli_completion;
 
-      static fc::thread getline_thread("getline");
-      getline_thread.async( [&](){
-         char* line_read = nullptr;
-         std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
-         line_read = readline(prompt.c_str());
-         if( line_read == nullptr )
-            FC_THROW_EXCEPTION( fc::eof_exception, "" );
-         rl_bind_key( '\t', rl_complete );
-         if( *line_read )
-            add_history(line_read);
-         line = line_read;
-         free(line_read);
-      }).wait();
+      char* line_read = nullptr;
+      std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
+      line_read = readline(prompt.c_str());
+      if( line_read == nullptr )
+         FC_THROW_EXCEPTION( fc::eof_exception, "EOT" );
+      if( *line_read )
+         add_history(line_read);
+      rl_bind_key( '\t', rl_complete );
+      line = line_read;
+      free(line_read);
    }
    else
 #endif

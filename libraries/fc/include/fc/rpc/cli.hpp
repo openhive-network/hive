@@ -7,6 +7,7 @@
 #include <fc/thread/thread.hpp>
 
 #include <iostream>
+#include <thread>
 
 namespace fc { namespace rpc {
 
@@ -16,6 +17,9 @@ namespace fc { namespace rpc {
    class cli : public api_connection
    {
       public:
+         typedef std::function< void(int) > on_termination_handler;
+
+         cli();
          ~cli();
 
          virtual variant send_call( api_id_type api_id, string method_name, variants args = variants() );
@@ -27,6 +31,7 @@ namespace fc { namespace rpc {
          void stop();
          void wait();
          void format_result( const string& method, std::function<string(variant,const variants&)> formatter);
+         void set_on_termination_handler( on_termination_handler&& hdl );
 
          virtual void getline( const fc::string& prompt, fc::string& line );
 
@@ -35,8 +40,11 @@ namespace fc { namespace rpc {
       private:
          void run();
 
-         std::string _prompt = ">>>";
          std::map<string,std::function<string(variant,const variants&)> > _result_formatters;
-         fc::future<void> _run_complete;
+
+         std::string            _prompt = ">>>";
+         std::thread            _run_thread;
+         std::atomic< bool >    _run_complete;
+         on_termination_handler _termination_hdl;
    };
 } }
