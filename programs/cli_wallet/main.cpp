@@ -300,9 +300,9 @@ int main( int argc, char** argv )
 
     if( !options.count( "daemon" ) )
     {
+      wallet_cli->set_on_termination_handler( sig_handler );
       wallet_cli->register_api( wapi );
       wallet_cli->start();
-      wallet_cli->set_on_termination_handler( sig_handler );
     }
     else
     {
