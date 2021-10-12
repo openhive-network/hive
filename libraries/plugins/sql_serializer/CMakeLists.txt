@@ -23,7 +23,7 @@ IF (PostgreSQL_FOUND AND PQXX_LIB AND PQ_LIB)
                ${HEADERS}
               )
 ELSE()
-  MESSAGE (WARNING "No PostgreSQL installation found. sql_serializer plugin functionality WILL BE UNAVAILABLE. Check installation of ubuntu package: postgresql-server-dev-all")
+  MESSAGE (WARNING "No PostgreSQL installation found. sql_serializer plugin functionality WILL BE UNAVAILABLE. Check installation of ubuntu packages: postgresql-server-dev-all libpqxx-dev")
   ADD_LIBRARY( sql_serializer_plugin
                fake_sql_serializer.cpp
                ${HEADERS}
