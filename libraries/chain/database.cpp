@@ -4438,13 +4438,16 @@ try {
             uint16_t limit = HIVE_HBD_HARD_LIMIT_PRE_HF26;
             if( has_hardfork( HIVE_HARDFORK_1_26_HBD_HARD_CAP ) )
               limit = HIVE_HBD_HARD_LIMIT;
-            price min_price( asset( ( HIVE_100_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
+            static_assert( ( HIVE_HBD_HARD_LIMIT % HIVE_1_PERCENT ) == 0, "Hard cap has to be expressed in full percentage points" );
+            limit /= HIVE_1_PERCENT; //ABW: this is just to have two more levels of magnitude bigger margin;
+              //even without it we can still fit within 64bit value, even though numbers used here are pretty big
+            price min_price( asset( ( HIVE_100_PERCENT/HIVE_1_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
                              asset( limit * dgpo.get_current_supply().amount, HIVE_SYMBOL ) );
 
             if( min_price > fho.current_median_history )
             {
               push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
-                "HIVE price corrected upward due to HBD cutoff rule (${limit} basis points), from ${actual} to ${corrected}",
+                "HIVE price corrected upward due to ${limit}% HBD cutoff rule, from ${actual} to ${corrected}",
                 ( "limit", limit )( "actual", fho.current_median_history )( "corrected", min_price )).get_message()));
 
               fho.current_median_history = min_price;

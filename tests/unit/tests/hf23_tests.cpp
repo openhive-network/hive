@@ -1054,7 +1054,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       limit_order_create2_operation op;
       op.owner = "bob";
       op.amount_to_sell = ASSET( "3.000 TBD" );
-      op.exchange_rate = ASSET( "2.000 TBD" ) / ASSET( "5.000 TESTS" );
+      op.exchange_rate = price( ASSET( "2.000 TBD" ), ASSET( "5.000 TESTS" ) );
       op.fill_or_kill = true;
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
@@ -1079,7 +1079,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       limit_order_create2_operation op;
       op.owner = "bob";
       op.amount_to_sell = ASSET( "3.000 TBD" );
-      op.exchange_rate = ASSET( "2.000 TBD" ) / ASSET( "4.000 TESTS" );
+      op.exchange_rate = price( ASSET( "2.000 TBD" ), ASSET( "4.000 TESTS" ) );
       op.fill_or_kill = true;
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
