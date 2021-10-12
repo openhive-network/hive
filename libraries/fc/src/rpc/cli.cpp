@@ -54,24 +54,12 @@ namespace
    }
 }
 
-cli::cli()
-   : _run_complete( false )
-{
-#ifdef HAVE_READLINE
-   rl_getc_function = getc;
-   rl_clear_signals();
-   rl_event_hook = [](){
-      if ( last_signal )
-        FC_THROW_EXCEPTION( fc::eof_exception, "Signal termination: ${sigcode}", ("sigcode",last_signal) );
-      return 0;
-   };
-#endif
-}
-
 cli::~cli()
 {
-   if( !_run_complete.load() )
+   if( _run_complete.valid() )
+   {
       stop();
+   }
 }
 
 variant cli::send_call( api_id_type api_id, string method_name, variants args /* = variants() */ )
@@ -96,9 +84,15 @@ void cli::send_notice( uint64_t callback_id, variants args /* = variants() */ )
 
 void cli::start()
 {
-   FC_ASSERT( !_run_complete.load(), "Could not start CLI that has been already started" );
 #ifdef HAVE_READLINE
    fc::set_signal_handler( signal_handler, SIGINT );
+   rl_getc_function = getc;
+   rl_clear_signals();
+   rl_event_hook = [](){
+      if ( last_signal )
+        FC_THROW_EXCEPTION( fc::eof_exception, "Signal termination: ${sigcode}", ("sigcode",last_signal) );
+      return 0;
+   };
 #else
    struct sigaction action = {};  // Initialize all members to zero or null
    action.sa_handler = &signal_handler;
@@ -107,19 +101,18 @@ void cli::start()
    fc::set_signal_handler( signal_handler, SIGTERM );
    last_signal = 0;
    cli_commands() = get_method_names(0);
-   _run_complete.store( false );
-   _run_thread = std::thread{ std::bind(&cli::run,this) };
+   _run_complete = fc::async( [&](){ run(); } );
 }
 
 void cli::stop()
 {
-   _run_complete.store( true );
-   _run_thread.join();
+   _run_complete.cancel();
+   _run_complete.wait();
 }
 
 void cli::wait()
 {
-   _run_thread.join();
+   _run_complete.wait();
 }
 
 void cli::format_result( const string& method, std::function<string(variant,const variants&)> formatter)
@@ -139,7 +132,7 @@ void cli::set_on_termination_handler( on_termination_handler&& hdl )
 
 void cli::run()
 {
-   while( !_run_complete.load() )
+   while( !_run_complete.canceled() )
    {
       try
       {
@@ -165,7 +158,6 @@ void cli::run()
       catch ( const fc::eof_exception& e )
       {
          _termination_hdl( SIGINT );
-         _run_complete.store( true );
 #ifdef HAVE_READLINE
          rl_cleanup_after_signal();
 #endif

@@ -7,9 +7,7 @@
 #include <fc/thread/thread.hpp>
 
 #include <iostream>
-#include <thread>
 #include <functional>
-#include <atomic>
 
 namespace fc { namespace rpc {
 
@@ -20,8 +18,6 @@ namespace fc { namespace rpc {
    {
       public:
          typedef std::function< void(int) > on_termination_handler;
-
-         cli();
          ~cli();
 
          virtual variant send_call( api_id_type api_id, string method_name, variants args = variants() );
@@ -42,11 +38,9 @@ namespace fc { namespace rpc {
       private:
          void run();
 
+         std::string _prompt = ">>>";
          std::map<string,std::function<string(variant,const variants&)> > _result_formatters;
-
-         std::string            _prompt = ">>>";
-         std::thread            _run_thread;
-         std::atomic< bool >    _run_complete;
+         fc::future<void> _run_complete;
          on_termination_handler _termination_hdl;
    };
 } }
