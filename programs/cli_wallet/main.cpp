@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <future>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -203,8 +204,6 @@ int main( int argc, char** argv )
 
     auto wallet_cli = std::make_shared<fc::rpc::cli>();
 
-    wallet_cli->set_on_termination_handler( sig_handler );
-
     auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
     auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
     auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
@@ -303,9 +302,12 @@ int main( int argc, char** argv )
     {
       wallet_cli->register_api( wapi );
       wallet_cli->start();
+      wallet_cli->set_on_termination_handler( sig_handler );
     }
     else
     {
+      fc::set_signal_handler( sig_handler, SIGINT );
+      fc::set_signal_handler( sig_handler, SIGTERM );
       ilog( "Entering Daemon Mode, ^C to exit" );
     }
 

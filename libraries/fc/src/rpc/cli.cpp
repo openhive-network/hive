@@ -1,8 +1,11 @@
 #include <fc/rpc/cli.hpp>
 #include <fc/thread/thread.hpp>
+#include <fc/interprocess/signals.hpp>
 
 #include <iostream>
 #include <csignal>
+#include <cstdio>
+#include <cerrno>
 
 #ifndef WIN32
 #include <unistd.h>
@@ -44,15 +47,16 @@ namespace
    static void signal_handler( sig_atomic_t sig )
    {
       last_signal = sig;
-      ilog("signal_handler");
+#ifndef HAVE_READLINE
+      std::cout << "\nPress enter to confirm";
+      std::cout.flush(); // Workaround as std::getline used in cli::getline is a blocking function which cannot be interrupted
+#endif
    }
 }
 
 cli::cli()
    : _run_complete( false )
 {
-   ::signal( SIGINT, signal_handler );
-   ::signal( SIGTERM, signal_handler );
 #ifdef HAVE_READLINE
    rl_getc_function = getc;
    rl_clear_signals();
@@ -93,6 +97,15 @@ void cli::send_notice( uint64_t callback_id, variants args /* = variants() */ )
 void cli::start()
 {
    FC_ASSERT( !_run_complete.load(), "Could not start CLI that has been already started" );
+#ifdef HAVE_READLINE
+   fc::set_signal_handler( signal_handler, SIGINT );
+#else
+   struct sigaction action = {};  // Initialize all members to zero or null
+   action.sa_handler = &signal_handler;
+   sigaction(SIGINT, &action, NULL);
+#endif
+   fc::set_signal_handler( signal_handler, SIGTERM );
+   last_signal = 0;
    cli_commands() = get_method_names(0);
    _run_complete.store( false );
    _run_thread = std::thread{ std::bind(&cli::run,this) };
@@ -249,7 +262,13 @@ void cli::getline( const fc::string& prompt, fc::string& line)
    {
       std::cout << prompt;
       // sync_call( cin_thread, [&](){ std::getline( *input_stream, line ); }, "getline");
-      fc::getline( fc::cin, line );
+
+      std::getline( std::cin, line );
+      if ( last_signal || std::cin.fail() || std::cin.eof() ) {
+         std::cin.clear(); // reset cin state
+         FC_THROW_EXCEPTION( fc::eof_exception, "EOT" );
+      }
+
       return;
    }
 }

@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <thread>
+#include <functional>
+#include <atomic>
 
 namespace fc { namespace rpc {
 
