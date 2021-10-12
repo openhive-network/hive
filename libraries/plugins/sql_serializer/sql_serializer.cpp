@@ -179,7 +179,6 @@ using chain::reindex_notification;
           uint32_t psql_operations_threads_number = 5;
           uint32_t head_block_number = 0;
 
-          int64_t block_vops = 0;
           int64_t op_sequence_id = 0; 
 
           cached_containter_t currently_caching_data;
@@ -462,7 +461,7 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
     op_sequence_id,
     note.block,
     note.trx_in_block,
-    is_virtual && note.trx_in_block < 0 ? block_vops++ : note.op_in_trx,
+    is_virtual && note.trx_in_block < 0 ? note.virtual_op : note.op_in_trx,
     chain_db.head_block_time(),
     note.op
   );
@@ -509,7 +508,6 @@ void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& n
     note.block_num,
     note.block.timestamp,
     note.prev_block_id);
-  block_vops = 0;
   _last_block_num = note.block_num;
 
   if(note.block_num % _dumper->blocks_per_flush() == 0)
