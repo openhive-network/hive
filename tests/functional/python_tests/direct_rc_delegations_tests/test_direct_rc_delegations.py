@@ -1,10 +1,9 @@
-from utilities import create_accounts
-
 def test_direct_rc_delegations(wallet):
     creator = 'initminer'
     delegator = 'delegator'
     receiver = 'receiver'
-    create_accounts( wallet, 'initminer', [delegator, receiver] )
+    wallet.api.create_account(creator, delegator, '{}')
+    wallet.api.create_account(creator, receiver, '{}')
     wallet.api.transfer(creator, receiver, '10.000 TESTS', '', 'true')
     wallet.api.transfer_to_vesting(creator, delegator, '0.010 TESTS', 'true')
     wallet.api.transfer(creator, receiver, '1.000 TESTS', '', 'true')
