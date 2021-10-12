@@ -38,7 +38,7 @@ struct operation_notification
   int64_t             block = 0;
   int64_t             trx_in_block = 0;
   int64_t             op_in_trx = 0;
-  int64_t             virtual_op = 0;
+  int64_t             virtual_op = 0;   // represent position of virtual operation in block (if trx_in_block == -1) or next virtual operation produced while processing 'op_in_trx' operation
   const hive::protocol::operation&    op;
 };
 
