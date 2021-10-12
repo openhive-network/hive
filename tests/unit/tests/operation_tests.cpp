@@ -1782,7 +1782,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    auto new_vest = op.amount * ( shares / vests );
+    auto new_vest = op.amount * price( shares, vests );
     shares += new_vest;
     vests += op.amount;
     alice_shares += new_vest;
@@ -1802,7 +1802,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     sign( tx, alice_private_key );
     db->push_transaction( tx, 0 );
 
-    new_vest = asset( ( op.amount * ( shares / vests ) ).amount, VESTS_SYMBOL );
+    new_vest = asset( ( op.amount * price( shares, vests ) ).amount, VESTS_SYMBOL );
     shares += new_vest;
     vests += op.amount;
     bob_shares += new_vest;
@@ -4006,7 +4006,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->seller == op.owner );
     BOOST_REQUIRE( limit_order->orderid == op.orderid );
     BOOST_REQUIRE( limit_order->for_sale == op.amount_to_sell.amount );
-    BOOST_REQUIRE( limit_order->sell_price == price( op.amount_to_sell / op.min_to_receive ) );
+    BOOST_REQUIRE( limit_order->sell_price == price( op.amount_to_sell, op.min_to_receive ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( alice.get_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
     BOOST_REQUIRE( alice.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
