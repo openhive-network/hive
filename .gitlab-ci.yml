@@ -11,4 +11,4 @@ run-pylint:
     - pip3 install pylint==2.8.2 pytest
     - find . -type f -name "*.py" | xargs pylint
   tags:
-    - public-runner-docker
+    - hived-for-tests  # Change to 'public-runner-docker' when pylint will be updated
