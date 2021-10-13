@@ -144,6 +144,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
     [&result, &args](const account_history_rocksdb::rocksdb_operation_object& op)
     {
       api_operation_object temp(op);
+      temp.op_in_trx = op.op_in_trx;
       if( !args.only_virtual || is_virtual_operation( temp.op ) )
         result.ops.emplace(std::move(temp));
     }
@@ -159,7 +160,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
   get_account_history_return result;
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
-  
+
   unsigned int total_processed_items = 0;
 
   if(args.operation_filter_low || args.operation_filter_high)
@@ -302,6 +303,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
       if( args.filter.valid() )
       {
         api_operation_object _api_obj( op );
+        _api_obj.op_in_trx = op.op_in_trx;
 
         _api_obj.operation_id = operation_id;
 
@@ -319,7 +321,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
               w.timestamp = op.timestamp;
               w.irreversible = irreversible;
             }
-            
+
             w.ops.emplace_back(std::move(_api_obj));
           }
           else
