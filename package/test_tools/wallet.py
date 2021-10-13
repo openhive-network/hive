@@ -190,8 +190,8 @@ class Wallet(ScopedObject):
         def decrypt_memo(self, memo, only_result: bool = True):
             return self.__send('decrypt_memo', memo=memo, only_result=only_result)
 
-        def delegate_rc(self, from_, to, max_rc, broadcast=None):
-            return self.__send('delegate_rc', from_=from_, to=to, max_rc=max_rc, broadcast=broadcast)
+        def delegate_rc(self, from_, delegatees, max_rc, broadcast=None):
+            return self.__send('delegate_rc', from_=from_, delegatees=delegatees, max_rc=max_rc, broadcast=broadcast)
 
         def delegate_vesting_shares(self, delegator, delegatee, vesting_shares, broadcast=None,
                                     only_result: bool = True):
