@@ -17,7 +17,7 @@ class rc_plugin;
 struct delegate_rc_operation : base_operation
 {
   account_name_type     from;
-  account_name_type     to;
+  vector< account_name_type > delegatees;
   uint64_t              max_rc = 0;
   extensions_type       extensions;
 
@@ -35,7 +35,7 @@ HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_rc );
 
 FC_REFLECT( hive::plugins::rc::delegate_rc_operation,
   (from)
-  (to)
+  (delegatees)
   (max_rc)
   (extensions)
   )

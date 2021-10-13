@@ -2936,7 +2936,7 @@ serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
             const account_name_type& from,
-            const account_name_type& to,
+            const vector<account_name_type>& delegatees,
             uint64_t max_rc,
             bool broadcast )
 {
@@ -2945,7 +2945,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
 
   delegate_rc_operation dro;
   dro.from    = from;
-  dro.to      = to;
+  dro.delegatees = delegatees;
   dro.max_rc  = max_rc;
 
   custom_json_operation op;

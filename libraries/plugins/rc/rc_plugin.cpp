@@ -1061,7 +1061,9 @@ struct post_apply_operation_visitor
   void operator()( const delegate_rc_operation& op )const
   {
     _mod_accounts.emplace_back( op.from );
-    _mod_accounts.emplace_back( op.to );
+    for (unsigned int i = 0; i < op.delegatees.size(); i++) {
+      _mod_accounts.emplace_back( op.delegatees[i] );
+    }
   }
 
   template< typename Op >
