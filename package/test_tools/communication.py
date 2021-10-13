@@ -22,17 +22,17 @@ def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.
 
     attempts_left = max_attempts
     while attempts_left > 0:
-        result = requests.post(url, data=message)
-        if result.status_code != 200:
+        response = requests.post(url, data=message)
+        if response.status_code != 200:
             if attempts_left > 0:
                 time.sleep(seconds_between_attempts)
             attempts_left -= 1
             continue
 
-        return json.loads(result.text)
+        return json.loads(response.text)
 
     raise CommunicationError(
         f'Problem occurred during communication with {url}',
         message,
-        result.text
+        response.text
     )
