@@ -1,3 +1,4 @@
 #pragma once
 
 #define HIVE_RC_REGEN_TIME         (60*60*24*5)
+#define HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP 100
