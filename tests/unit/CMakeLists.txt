@@ -286,7 +286,8 @@ add_boost_test( plugin_test
     market_history/mh_test
     transaction_status/transaction_status_test
     rc_direct_delegation/delegate_rc_operation_validate
-    rc_direct_delegation/delegate_rc_operation_apply
+    rc_direct_delegation/delegate_rc_operation_apply_single
+    rc_direct_delegation/delegate_rc_operation_apply_many
     rc_direct_delegation/update_outdel_overflow
     rc_direct_delegation/update_outdel_overflow_many
 )
