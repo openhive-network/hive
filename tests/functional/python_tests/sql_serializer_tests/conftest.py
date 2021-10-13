@@ -79,9 +79,12 @@ def world_with_witnesses_and_database(world, database, witness_names, request):
 
     alpha_net = world.create_network('Alpha')
     alpha_witness_node = alpha_net.create_witness_node(witnesses=alpha_witness_names)
+    api_node = alpha_net.create_api_node(name = 'ReferenceNotForkingNode')
+    api_node.config.webserver_http_endpoint = "0.0.0.0:27999"
     beta_net = world.create_network('Beta')
     beta_witness_node = beta_net.create_witness_node(witnesses=beta_witness_names)
     node_under_test = beta_net.create_api_node(name = 'NodeUnderTest')
+    node_under_test.config.webserver_http_endpoint = "0.0.0.0:7999"
 
     # alpha_witness_node.config.enable_stale_production = True
     # alpha_witness_node.config.required_participation = 0
@@ -97,7 +100,7 @@ def world_with_witnesses_and_database(world, database, witness_names, request):
     alpha_witness_node.run(wait_for_live=False, replay_from=block_log)
     endpoint = alpha_witness_node.get_p2p_endpoint()
 
-    for node in [beta_witness_node, node_under_test]:
+    for node in [api_node, beta_witness_node, node_under_test]:
         node.config.p2p_seed_node.append(endpoint)
         node.run(wait_for_live=False, replay_from=block_log)
 

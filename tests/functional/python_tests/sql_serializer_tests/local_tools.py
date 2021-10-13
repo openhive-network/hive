@@ -17,7 +17,7 @@ def make_fork(world):
     alpha_net.disconnect_from(beta_net)
 
     fork_chain_wallet.api.transfer('initminer', 'initminer', Asset.Test(1000), 'fork chain transfer operation')
-
+    fork_chain_wallet.close()
     for node in [alpha_witness_node, beta_witness_node]:
         node.wait_for_block_with_number(head_block + BLOCKS_IN_FORK)
     alpha_net.connect_with(beta_net)
