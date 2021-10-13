@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import threading
-from typing import Optional
+from typing import Any, Optional
 
 
 class NodeHttpServer:
@@ -66,6 +66,11 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         self.server.notify(json.loads(message, encoding='utf-8'))
 
         self.__set_response()
+
+    def log_message(self, format: str, *args: Any) -> None:  # pylint: disable=redefined-builtin
+        # This method is defined to silent logs printed after each received message.
+        # Solution based on: https://stackoverflow.com/a/3389505
+        pass
 
     def __set_response(self):
         self.send_response(200)
