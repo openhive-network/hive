@@ -89,7 +89,8 @@ class wallet_api_impl;
 class wallet_api
 {
   public:
-    wallet_api( const wallet_data& initial_data, const chain_id_type& _hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api );
+    wallet_api( const wallet_data& initial_data, const chain_id_type& _hive_chain_id,
+        const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon );
     virtual ~wallet_api();
 
     bool copy_wallet_file( const string& destination_filename );
@@ -1389,6 +1390,8 @@ class wallet_api
 
   private:
     std::shared_ptr<detail::wallet_api_impl> my;
+    fc::promise< int >::ptr&                 exit_promise;
+    bool                                     is_daemon;
     void encrypt_keys();
 };
 
