@@ -23,16 +23,21 @@ def request(url: str, message: dict, max_attempts=3, seconds_between_attempts=0.
     attempts_left = max_attempts
     while attempts_left > 0:
         response = requests.post(url, data=message)
-        if response.status_code != 200:
-            if attempts_left > 0:
-                time.sleep(seconds_between_attempts)
-            attempts_left -= 1
-            continue
+        status_code = response.status_code
+        response = json.loads(response.text)
+        if status_code == 200:
+            if 'result' in response:
+                return response
 
-        return json.loads(response.text)
+            if 'error' not in response:
+                raise CommunicationError(f'Unknown response format from {url}: ', message, response)
+
+        if attempts_left > 0:
+            time.sleep(seconds_between_attempts)
+        attempts_left -= 1
 
     raise CommunicationError(
         f'Problem occurred during communication with {url}',
         message,
-        response.text
+        response
     )

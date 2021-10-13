@@ -8,7 +8,6 @@ import subprocess
 import weakref
 
 from test_tools import communication, constants, network, paths_to_executables
-from test_tools.exceptions import CommunicationError
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
@@ -254,9 +253,6 @@ class Node:
 
         message = NodeMessage(method, params, jsonrpc, id_).as_json()
         response = communication.request(endpoint, message)
-
-        if 'error' in response:
-            raise CommunicationError(f'Error detected in response from node {self}', message, response)
 
         return response
 
