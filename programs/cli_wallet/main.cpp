@@ -69,11 +69,11 @@ namespace bpo = boost::program_options;
 
 namespace
 {
-  static std::promise< int > exit_promise;
+  static fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
 
   static void sig_handler(int signal)
   {
-    exit_promise.set_value(signal);
+    exit_promise->set_value(signal);
   }
 }
 
@@ -203,10 +203,11 @@ int main( int argc, char** argv )
 
 
     auto wallet_cli = std::make_shared<fc::rpc::cli>();
+    wallet_cli->set_on_termination_handler( sig_handler );
 
     auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
     auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
+    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon") );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
     wapiptr->load_wallet_file();
 
@@ -300,7 +301,6 @@ int main( int argc, char** argv )
 
     if( !options.count( "daemon" ) )
     {
-      wallet_cli->set_on_termination_handler( sig_handler );
       wallet_cli->register_api( wapi );
       wallet_cli->start();
     }
@@ -311,7 +311,7 @@ int main( int argc, char** argv )
       ilog( "Entering Daemon Mode, ^C to exit" );
     }
 
-    exit_promise.get_future().wait();
+    exit_promise->wait();
     wallet_cli->stop();
 
     wapi->save_wallet_file(wallet_file.generic_string());

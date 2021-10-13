@@ -1019,8 +1019,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 
 namespace hive { namespace wallet {
 
-wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api )
-  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api))
+wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id,
+    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon )
+  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api)), exit_promise(exit_promise), is_daemon(is_daemon)
 {}
 
 wallet_api::~wallet_api(){}
@@ -1324,7 +1325,9 @@ void wallet_api::exit()
 {
   if( !is_locked() )
     lock();
-  FC_THROW_EXCEPTION( fc::eof_exception, "Exit function invoked" );
+  exit_promise->set_value(SIGTERM);
+  if( !is_daemon )
+    FC_THROW_EXCEPTION( fc::eof_exception, "Exit function invoked" ); // needed for the destruction of interactive cli mode
 }
 
 map<public_key_type, string> wallet_api::list_keys()
