@@ -276,12 +276,14 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_MIN_PAYOUT_HBD                   (asset(20,HBD_SYMBOL))
 
-#define HIVE_HBD_STOP_PERCENT_HF14            (5*HIVE_1_PERCENT ) // Stop printing HBD at 5% Market Cap
-#define HIVE_HBD_STOP_PERCENT_HF20            (10*HIVE_1_PERCENT ) // Stop printing HBD at 10% Market Cap
 #define HIVE_HBD_START_PERCENT_HF14           (2*HIVE_1_PERCENT) // Start reducing printing of HBD at 2% Market Cap
+#define HIVE_HBD_STOP_PERCENT_HF14            (5*HIVE_1_PERCENT) // Stop printing HBD at 5% Market Cap
 #define HIVE_HBD_START_PERCENT_HF20           (9*HIVE_1_PERCENT) // Start reducing printing of HBD at 9% Market Cap
-#define HIVE_HBD_HARD_LIMIT_PRE_HF26          (10*HIVE_1_PERCENT)
-#define HIVE_HBD_HARD_LIMIT                   (10*HIVE_1_PERCENT) // Force artificial HBD price when amount of HBD exceeds 10% Market Cap
+#define HIVE_HBD_STOP_PERCENT_HF20            (10*HIVE_1_PERCENT) // Stop printing HBD at 10% Market Cap
+#define HIVE_HBD_START_PERCENT_HF26           (20*HIVE_1_PERCENT) // Start reducing printing of HBD at 20% Market Cap
+#define HIVE_HBD_STOP_PERCENT_HF26            (20*HIVE_1_PERCENT) // Stop printing HBD at 20% Market Cap
+#define HIVE_HBD_HARD_LIMIT_PRE_HF26          (10*HIVE_1_PERCENT) // Artificial HBD price kicks in at 10% Market Cap
+#define HIVE_HBD_HARD_LIMIT                   (30*HIVE_1_PERCENT) // Artificial HBD price kicks in at 30% Market Cap
 
 #define HIVE_MIN_ACCOUNT_NAME_LENGTH          3
 #define HIVE_MAX_ACCOUNT_NAME_LENGTH          16
