@@ -5022,10 +5022,10 @@ void database::update_virtual_supply()
     {
       uint16_t percent_hbd = calculate_HBD_percent();
 
-      if( percent_hbd <= dgp.hbd_start_percent )
-        dgp.hbd_print_rate = HIVE_100_PERCENT;
-      else if( percent_hbd >= dgp.hbd_stop_percent )
+      if( percent_hbd >= dgp.hbd_stop_percent )
         dgp.hbd_print_rate = 0;
+      else if( percent_hbd <= dgp.hbd_start_percent )
+        dgp.hbd_print_rate = HIVE_100_PERCENT;
       else
         dgp.hbd_print_rate = ( ( dgp.hbd_stop_percent - percent_hbd ) * HIVE_100_PERCENT ) / ( dgp.hbd_stop_percent - dgp.hbd_start_percent );
     }
@@ -6281,6 +6281,15 @@ void database::apply_hardfork( uint32_t hardfork )
         gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
         gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
       });
+      break;
+    }
+    case HIVE_HARDFORK_1_26:
+    {
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF26;
+        gpo.hbd_start_percent = HIVE_HBD_START_PERCENT_HF26;
+      } );
       break;
     }
     case HIVE_SMT_HARDFORK:

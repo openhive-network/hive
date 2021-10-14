@@ -3646,7 +3646,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     }
     transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
 
-    BOOST_TEST_MESSAGE( "--- Setting amount of HBD in the system to the edge of hard limit" );
+    BOOST_TEST_MESSAGE( "--- Setting amount of HBD in the system to the edge of upper soft limit" );
     {
       fc::uint128_t amount( dgpo.get_current_supply().amount.value );
       uint16_t limit2 = 2 * dgpo.hbd_stop_percent + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
@@ -3668,7 +3668,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     //let's make some room for conversion (treasury HBD does not count)
     transfer( "alice", db->get_treasury_name(), ASSET( "25.000 TBD" ) );
 
-    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 5 cents per HIVE actual (while price is artificial)" );
+    BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 5 cents per HIVE actual" );
     op.amount = ASSET( "1000.000 TESTS" );
     auto conversion_4_time = db->head_block_time();
     auto alice_hbd_balance = get_hbd_balance( "alice" );
@@ -3679,7 +3679,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     alice_hbd_balance += ASSET( "23.809 TBD" ); // 1000/2 collateral * 1/21 price with fee
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd_balance );
 
-    BOOST_TEST_MESSAGE( "--- Test ok - regular conversion at artificial price" );
+    BOOST_TEST_MESSAGE( "--- Test ok - regular conversion" );
     {
       //let's schedule conversion from HBD to hive
       convert_operation op;
@@ -3688,17 +3688,32 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       push_transaction( op, bob_private_key );
     }
     generate_block();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
 
-    //since we are nearly on the edge of HBD hard limit, let's use the opportunity and test what happens when we try to cross it
-    fund( "bob", dgpo.get_current_hbd_supply() );
-    generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
-    //last feed update should've put up artificial price of HIVE
-    auto recent_ops = get_last_operations( 2 );
-    auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
-    BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+    BOOST_TEST_MESSAGE( "--- Test failed - conversion initiated while at or above upper soft limit" );
+    op.amount = ASSET( "1000.000 TESTS" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "dgpo.hbd_print_rate > 0" );
 
-    price price_1_for_10 = price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) );
-    BOOST_REQUIRE( ( feed.current_median_history > price_1_for_10 ) && feed.current_median_history < price_1_for_8 );
+    //since we are already on the edge of HBD upper soft limit which means we can't convert more anyway,
+    //let's use the opportunity and test what happens when we try to cross hard limit
+    {
+      auto extra_hbd = dgpo.get_current_hbd_supply();
+      int16_t diff = HIVE_HBD_HARD_LIMIT - dgpo.hbd_stop_percent;
+      if( diff < 0 )
+        diff = 0; //just in case we'd have incorrect configuration with hard limit below upper soft limit
+      extra_hbd.amount *= diff;
+      extra_hbd.amount /= dgpo.hbd_stop_percent; //HBD supply multiplied by the same factor as a difference between hard and upper soft limit
+      extra_hbd += dgpo.get_current_hbd_supply(); //to always have some value above hard limit
+      fund( "bob", extra_hbd );
+
+      generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
+      //last feed update should've put up artificial price of HIVE
+      auto recent_ops = get_last_operations( 2 );
+      auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
+      BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+    }
+
+    BOOST_REQUIRE( feed.current_median_history > price_1_for_20 );
     BOOST_REQUIRE( feed.current_max_history == price_1_for_4 ); //it is hard to force artificial correction of max price when it is so high to begin with
     BOOST_REQUIRE( feed.market_median_history == price_1_for_20 ); //market driven median price should be intact
     BOOST_REQUIRE( feed.current_min_history == price_1_for_20 ); //minimal price should be intact
@@ -3710,7 +3725,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_block(); //actual conversion
     alice_balance += ASSET( "500.011 TESTS" ); //excess collateral (1000 - 23.809 * 21/1) - alice used fee corrected market_median_price...
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "199.102 TESTS" ) ); //...but bob used ~1/10 price (artificial current_median_history)
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "273.625 TESTS" ) ); //...but bob used artificial current_median_history
+      //(for HF25 values of 9%/10%/10% lower/upper/hard cap expected value is 199.102)
+      //(for 9%/10%/30% expected value is 383.222)
+      //with different limits value will change, but should be less than 400.000 TESTS
 
     //put HBD on treasury where it does not count, but try to make some conversion with artificial price before it is changed back down
     transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
