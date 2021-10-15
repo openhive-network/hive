@@ -3,6 +3,7 @@
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/extensions/permessage_deflate/enabled.hpp>
 #include <websocketpp/client.hpp>
 #include <websocketpp/logger/stub.hpp>
 
@@ -20,6 +21,8 @@
 namespace fc { namespace http {
 
   namespace detail {
+
+#define FC_HTTP_CONFIG_PERMESSAGE_DEFLATE 1 // Undef this to disable the compression
 
     struct asio_with_stub_log : public websocketpp::config::asio {
       typedef asio_with_stub_log type;
@@ -51,6 +54,12 @@ namespace fc { namespace http {
       typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
 
       static const long timeout_open_handshake = 0;
+
+#ifdef FC_HTTP_CONFIG_PERMESSAGE_DEFLATE
+      struct permessage_deflate_config {};
+
+      typedef websocketpp::extensions::permessage_deflate::enabled<permessage_deflate_config> permessage_deflate_type;
+#endif
     };
 
     struct asio_tls_stub_log : public websocketpp::config::asio_tls {
@@ -79,6 +88,14 @@ namespace fc { namespace http {
         typedef type::response_type response_type;
         typedef websocketpp::transport::asio::tls_socket::endpoint socket_type;
       };
+
+      typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
+
+#ifdef FC_HTTP_CONFIG_PERMESSAGE_DEFLATE
+      struct permessage_deflate_config {};
+
+      typedef websocketpp::extensions::permessage_deflate::enabled<permessage_deflate_config> permessage_deflate_type;
+#endif
     };
 
     using websocketpp::connection_hdl;
