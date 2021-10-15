@@ -27,9 +27,19 @@ def test_direct_rc_delegations(wallet, node):
     accounts_to_delegate = split_list(client_accounts, int(number_of_accounts/100))
     logger.info('End of splitting')
 
+    number_of_threads = 4
     tasks_list = []
-    executor = ThreadPoolExecutor(max_workers=10)
+    executor = ThreadPoolExecutor(max_workers=number_of_threads)
 
+
+    for thread_number in number_of_threads:
+
+        delegator_name = accounts[thread_number].name
+        delegator_key = accounts[thread_number].public_key
+        wallet.api.create_account_with_keys('initminer', delegator_key, '{}', delegator_key, delegator_key,
+                                            delegator_key, delegator_key)
+
+        thread_number = executor.submit(delegator_name, f'wallet{thread_number}', node, int(thread_number/number_of_threads * number_of_accounts))
     task0 = executor.submit(delegation_rc, 'initminer', 'wallet1', node, 0, int(1/4 * number_of_accounts), accounts_to_delegate)
     tasks_list.append(task0)
 
@@ -63,3 +73,4 @@ def split_list(alist, wanted_parts):
     length = len(alist)
     return [alist[i * length // wanted_parts: (i + 1) * length // wanted_parts]
             for i in range(wanted_parts)]
+
