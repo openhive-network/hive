@@ -1142,29 +1142,25 @@ serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_acc
   return { my->get_accounts( account_names ) };
 }
 
-bool wallet_api::import_key(const string& wif_key)
+void wallet_api::import_key(const string& wif_key)
 {
   FC_ASSERT(!is_locked());
 
   if( !my->import_key(wif_key) )
-    return false;
+    wlog( "Private key duplication in storage: ${wif}", ("wif",wif_key) );
 
   save_wallet_file();
-  return true;
 }
 
-bool wallet_api::import_keys( const vector< string >& wif_keys )
+void wallet_api::import_keys( const vector< string >& wif_keys )
 {
   FC_ASSERT(!is_locked());
 
-  bool all_imported = true;
-
   for( const auto& wif_key : wif_keys )
     if( !my->import_key(wif_key) )
-      all_imported = false;
+      wlog( "Private key duplication in storage: ${wif}", ("wif",wif_key) );
 
   save_wallet_file();
-  return all_imported;
 }
 
 string wallet_api::normalize_brain_key(string s) const
