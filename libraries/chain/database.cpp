@@ -4119,6 +4119,17 @@ void database::_apply_block( const signed_block& next_block )
 
   if( BOOST_UNLIKELY( next_block_num == 1 ) )
   {
+    // first create virtual operations for accounts created in genesis
+    const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
+    std::for_each(
+        account_idx.begin()
+      , account_idx.end()
+      , [&]( const account_object& obj ){
+          push_virtual_operation(
+            account_created_operation(obj.name, "", asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+        }
+    );
+
     // For every existing before the head_block_time (genesis time), apply the hardfork
     // This allows the test net to launch with past hardforks and apply the next harfork when running
 
