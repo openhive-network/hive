@@ -6,6 +6,7 @@
 #include <fc/network/ip.hpp>
 #include <fc/signals.hpp>
 #include <fc/network/http/connection.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 namespace fc { namespace http {
    namespace detail {
@@ -42,7 +43,7 @@ namespace fc { namespace http {
 
          virtual void on_connection( const on_connection_handler& handler) override;
          virtual void listen( uint16_t port ) override;
-         virtual void listen( const fc::ip::endpoint& ep ) override;
+         virtual void listen( const boost::asio::ip::tcp::endpoint& ep ) override;
          virtual void start_accept() override;
 
       private:
@@ -59,7 +60,7 @@ namespace fc { namespace http {
 
          virtual void on_connection( const on_connection_handler& handler) override;
          virtual void listen( uint16_t port ) override;
-         virtual void listen( const fc::ip::endpoint& ep ) override;
+         virtual void listen( const boost::asio::ip::tcp::endpoint& ep ) override;
          virtual void start_accept() override;
 
       private:

@@ -11,6 +11,7 @@
 
 #include <boost/system/error_code.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 #include <string>
 #include <memory>
@@ -44,7 +45,7 @@ namespace fc { namespace http {
   {}
   void http_server::listen( uint16_t port )
   {}
-  void http_server::listen( const fc::ip::endpoint& ep )
+  void http_server::listen( const boost::asio::ip::tcp::endpoint& ep )
   {}
   void http_server::start_accept()
   {}
@@ -58,7 +59,7 @@ namespace fc { namespace http {
   {}
   void http_tls_server::listen( uint16_t port )
   {}
-  void http_tls_server::listen( const fc::ip::endpoint& ep )
+  void http_tls_server::listen( const boost::asio::ip::tcp::endpoint& ep )
   {}
   void http_tls_server::start_accept()
   {}

@@ -4,6 +4,7 @@
 #include <fc/signals.hpp>
 #include <fc/network/ip.hpp>
 #include <fc/any.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <memory>
 
 namespace fc { namespace http {
@@ -42,7 +43,7 @@ namespace fc { namespace http {
 
         virtual void on_connection( const on_connection_handler& handler) = 0;
         virtual void listen( uint16_t port ) = 0;
-        virtual void listen( const fc::ip::endpoint& ep ) = 0;
+        virtual void listen( const boost::asio::ip::tcp::endpoint& ep ) = 0;
         virtual void start_accept() = 0;
 
     protected:

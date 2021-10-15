@@ -4,6 +4,7 @@
 #include <fc/network/http/processor.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <vector>
 #include <functional>
 #include <type_traits>
@@ -36,7 +37,7 @@ namespace fc { namespace http {
 
     virtual void on_connection( const on_connection_handler& handler) override;
     virtual void listen( uint16_t port ) override;
-    virtual void listen( const fc::ip::endpoint& ep ) override;
+    virtual void listen( const boost::asio::ip::tcp::endpoint& ep ) override;
     virtual void start_accept() override;
 
   private:
@@ -54,7 +55,7 @@ namespace fc { namespace http {
 
     virtual void on_connection( const on_connection_handler& handler) override;
     virtual void listen( uint16_t port ) override;
-    virtual void listen( const fc::ip::endpoint& ep ) override;
+    virtual void listen( const boost::asio::ip::tcp::endpoint& ep ) override;
     virtual void start_accept() override;
 
   private:
