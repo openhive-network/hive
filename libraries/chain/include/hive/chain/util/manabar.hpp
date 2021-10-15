@@ -56,7 +56,7 @@ struct manabar
     uint128_t max_mana_dt = uint64_t( params.max_mana >= 0 ? params.max_mana : 0 );
     max_mana_dt *= dt;
     uint64_t u_regen = (max_mana_dt / params.regen_time).to_uint64();
-    FC_ASSERT( u_regen <= std::numeric_limits< int64_t >::max() );
+    FC_ASSERT( u_regen <= static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) );
     int64_t new_current_mana = fc::signed_sat_add( current_mana, int64_t( u_regen ) );
     current_mana = (new_current_mana > params.max_mana) ? params.max_mana : new_current_mana;
 
@@ -76,7 +76,7 @@ struct manabar
 
   bool has_mana( uint64_t mana_needed )const
   {
-    FC_ASSERT( mana_needed <= std::numeric_limits< int64_t >::max() );
+    FC_ASSERT( mana_needed <= static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) );
     return has_mana( (int64_t) mana_needed );
   }
 
@@ -92,7 +92,7 @@ struct manabar
 
   void use_mana( uint64_t mana_used, int64_t min_mana = std::numeric_limits< uint64_t >::min() )
   {
-    FC_ASSERT( mana_used <= std::numeric_limits< int64_t >::max() );
+    FC_ASSERT( mana_used <= static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) );
     use_mana( (int64_t) mana_used, min_mana );
   }
 };
