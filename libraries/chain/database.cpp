@@ -4444,6 +4444,21 @@ try {
             price min_price( asset( ( HIVE_100_PERCENT/HIVE_1_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
                              asset( limit * dgpo.get_current_supply().amount, HIVE_SYMBOL ) );
 
+            ilog( "GREP${daily}: ${block}, ${minfeed}, ${medfeed}, ${maxfeed}, ${minprice}, ${medprice}, ${maxprice}, ${capprice}, ${debt}, ${hbdinfl}, ${hivesup}, ${virtsup}",
+              ( "daily", ( ( head_block_num() % ( 24 * HIVE_FEED_INTERVAL_BLOCKS ) ) == 0 ) ? "24" : "" )( "block", head_block_num() )
+              ( "minfeed", double( feeds.front().base.amount.value ) / double( feeds.front().quote.amount.value ) )
+              ( "medfeed", double( median_feed.base.amount.value ) / double( median_feed.quote.amount.value ) )
+              ( "maxfeed", double( feeds.back().base.amount.value ) / double( feeds.back().quote.amount.value ) )
+              ( "minprice", double( fho.current_min_history.base.amount.value ) / double( fho.current_min_history.quote.amount.value ) )
+              ( "medprice", double( fho.current_median_history.base.amount.value ) / double( fho.current_median_history.quote.amount.value ) )
+              ( "maxprice", double( fho.current_max_history.base.amount.value ) / double( fho.current_max_history.quote.amount.value ) )
+              ( "capprice", double( min_price.base.amount.value ) / double( min_price.quote.amount.value ) )
+              ( "debt", double( calculate_HBD_percent() ) / 100.0 )
+              ( "hbdinfl", double( dgpo.get_hbd_interest_rate() ) / 100.0 )
+              ( "hivesup", dgpo.get_current_supply().amount.value )
+              ( "virtsup", dgpo.virtual_supply.amount.value )
+            );
+
             if( min_price > fho.current_median_history )
             {
               push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
