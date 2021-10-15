@@ -83,7 +83,7 @@ Datum get_impacted_accounts(PG_FUNCTION_ARGS)
 
           if( _accounts.size() > 1 )
           {
-            Datum** _buffer = ( Datum** )palloc( sizeof( Datum* ) );
+            Datum** _buffer = ( Datum** )palloc( ( _accounts.size() - 1 ) * sizeof( Datum* ) );
             for( size_t i = 1; i < _accounts.size(); ++i )
             {
               ++itr;
