@@ -197,6 +197,8 @@ class Node:
             self.node.config.notifications_endpoint = f'127.0.0.1:{self.server.port}'
             self.server.run()
 
+            self.__logger.debug(f'Notifications server is listening on {self.node.config.notifications_endpoint}...')
+
         def notify(self, message):
             if message['name'] == 'webserver listening':
                 details = message['value']
@@ -230,6 +232,8 @@ class Node:
             self.p2p_plugin_started_event.clear()
             self.replay_finished_event.clear()
             self.snapshot_dumped_event.clear()
+
+            self.__logger.debug('Notifications server closed')
 
     def __init__(self, creator, name, directory):
         self.api = Apis(self)
