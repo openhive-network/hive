@@ -360,8 +360,25 @@ class wallet_api
       * example: import_key 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
       *
       * @param wif_key the WIF Private Key to import
+      *
+      * @returns either true or false if the key has been successfully added to the storage (no duplicates detected)
+      *
+      * @throws if given wif private key is invalid
       */
     bool import_key( const string& wif_key );
+
+
+    /** Imports multiple WIF Private Keys into the wallet to be used to sign transactions by an account.
+      *
+      * example: import_keys ["5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3","5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]
+      *
+      * @param wif_keys the WIF Private Keys array to import
+      *
+      * @returns either true or false if the key has been successfully added to the storage (no duplicates detected)
+      *
+      * @throws if any of the wif private keys is invalid
+      */
+    bool import_keys( const vector< string >& wif_keys );
 
     /** Transforms a brain key to reduce the chance of errors when re-entering the key from memory.
       *
@@ -1420,7 +1437,7 @@ FC_API( hive::wallet::wallet_api,
       (load_wallet_file)(save_wallet_file)
 
       /// key api
-      (import_key)
+      (import_key)(import_keys)
       (suggest_brain_key)
       (list_keys)
       (get_private_key)

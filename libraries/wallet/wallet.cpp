@@ -397,8 +397,7 @@ public:
 
   // imports the private key into the wallet, and associate it in some way (?) with the
   // given account name.
-  // @returns true if the key matches a current active/owner/memo key for the named
-  //          account, false otherwise (but it is stored either way)
+  // @returns either true or false if the key has been successfully added to the storage
   bool import_key(const string& wif_key)
   {
     fc::optional<fc::ecc::private_key> optional_private_key = wif_to_key(wif_key);
@@ -406,8 +405,7 @@ public:
       FC_THROW("Invalid private key");
     hive::chain::public_key_type wif_pub_key = optional_private_key->get_public_key();
 
-    _keys[wif_pub_key] = wif_key;
-    return true;
+    return _keys.emplace( wif_pub_key, wif_key ).second;
   }
 
   bool load_wallet_file(string wallet_filename = "")
@@ -1147,20 +1145,26 @@ serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_acc
 bool wallet_api::import_key(const string& wif_key)
 {
   FC_ASSERT(!is_locked());
-  // backup wallet
-  fc::optional<fc::ecc::private_key> optional_private_key = wif_to_key(wif_key);
-  if( !optional_private_key )
-    FC_THROW("Invalid private key");
-//   string shorthash = detail::pubkey_to_shorthash( optional_private_key->get_public_key() );
-//   copy_wallet_file( "before-import-key-" + shorthash );
 
-  if( my->import_key(wif_key) )
-  {
-    save_wallet_file();
-  //     copy_wallet_file( "after-import-key-" + shorthash );
-    return true;
-  }
-  return false;
+  if( !my->import_key(wif_key) )
+    return false;
+
+  save_wallet_file();
+  return true;
+}
+
+bool wallet_api::import_keys( const vector< string >& wif_keys )
+{
+  FC_ASSERT(!is_locked());
+
+  bool all_imported = true;
+
+  for( const auto& wif_key : wif_keys )
+    if( !my->import_key(wif_key) )
+      all_imported = false;
+
+  save_wallet_file();
+  return all_imported;
 }
 
 string wallet_api::normalize_brain_key(string s) const
