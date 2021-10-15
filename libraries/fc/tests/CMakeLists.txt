@@ -65,7 +65,6 @@ add_executable( all_tests all_tests.cpp
                           thread/thread_tests.cpp
                           bloom_test.cpp
                           real128_test.cpp
-                          saturation_test.cpp
                           utf8_test.cpp
                           )
 target_link_libraries( all_tests fc )
