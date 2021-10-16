@@ -2,7 +2,7 @@ def test_direct_rc_delegations(wallet):
     creator = 'initminer'
     delegator = 'delegator'
     receiver = 'receiver'
-    receiver2 = 'zang'
+    receiver2 = 'zzz'
     wallet.api.create_account(creator, delegator, '{}')
     wallet.api.create_account(creator, receiver, '{}')
     wallet.api.create_account(creator, receiver2, '{}')
@@ -39,11 +39,13 @@ def test_direct_rc_delegations(wallet):
     assert (rc_receiver2['received_delegated_rc'] == 10)
     assert (rc_delegator['delegated_rc'] == 20)
     assert (rc_delegator['received_delegated_rc'] == 0)
-    assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar']['current_mana'] - 23)  # 20 + 3, 3 is the base cost of an rc delegation op, 20 is the amount delegated
+    assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar'][
+        'current_mana'] - 23)  # 20 + 3, 3 is the base cost of an rc delegation op, 20 is the amount delegated
 
     print('testing list direct delegations api')
 
-    delegation_from_to = wallet.api.list_rc_direct_delegations([delegator, receiver], 1000, 'by_from_to_sort')['result'][0]
+    delegation_from_to = \
+        wallet.api.list_rc_direct_delegations([delegator, receiver], 1000, 'by_from_to_sort')['result'][0]
 
     assert (delegation_from_to['from'] == delegator)
     assert (delegation_from_to['to'] == receiver)
@@ -59,7 +61,8 @@ def test_direct_rc_delegations(wallet):
     assert (rc_receiver['received_delegated_rc'] == 50)
     assert (rc_delegator['delegated_rc'] == 60)
     assert (rc_delegator['received_delegated_rc'] == 0)
-    assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar']['current_mana'] - 66)  # 50 + 3 x 2, 3 is the base cost of an rc delegation op, 50 is the amount delegated
+    assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar'][
+        'current_mana'] - 66)  # 50 + 3 x 2, 3 is the base cost of an rc delegation op, 50 is the amount delegated
 
     print('Reducing the delegation to 20 to {}'.format(receiver))
     wallet.api.delegate_rc(delegator, [receiver], 20, 'true')
@@ -82,11 +85,11 @@ def test_direct_rc_delegations(wallet):
     delegation = wallet.api.list_rc_direct_delegations([delegator, receiver], 1000, 'by_from_to_sort')['result']
 
     assert (rc_receiver['delegated_rc'] == 0)
-    assert (len(delegation) == 0)
+    assert (len(delegation) == 1)
     assert (rc_receiver['received_delegated_rc'] == 0)
-    assert (rc_delegator['delegated_rc'] == 0)
+    assert (rc_delegator['delegated_rc'] == 10)
     assert (rc_delegator['received_delegated_rc'] == 0)
-    assert (rc_delegator['max_rc'] == rc_delegator_before['max_rc'])
+    assert (rc_delegator['max_rc'] == rc_delegator_before['max_rc'] - 10)
 
     print("testing list_rc_accounts")
     accounts = wallet.api.list_rc_accounts('delegator', 3, 'by_name')['result']
@@ -96,7 +99,7 @@ def test_direct_rc_delegations(wallet):
     assert (accounts[0]['rc_manabar']['current_mana'] == rc_delegator['rc_manabar']['current_mana'])
     assert (accounts[0]['rc_manabar']['last_update_time'] == rc_delegator['rc_manabar']['last_update_time'])
     assert (accounts[0]['max_rc'] == rc_delegator['max_rc'])
-    assert (accounts[0]['delegated_rc'] == 0)
+    assert (accounts[0]['delegated_rc'] == 10)
     assert (accounts[0]['received_delegated_rc'] == 0)
     assert (accounts[1]['account'] == 'hive.fund')
 
@@ -108,3 +111,4 @@ def test_direct_rc_delegations(wallet):
     assert (accounts_offset[0]['account'] == 'receiver')
     assert (accounts_offset[0]['rc_manabar']['current_mana'] == 0)
     assert (accounts_offset[1]['account'] == 'steem.dao')
+
