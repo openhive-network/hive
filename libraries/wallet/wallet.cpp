@@ -226,16 +226,18 @@ class wallet_api_impl
 public:
   wallet_api& self;
   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api )
-    : self( s ), _remote_wallet_bridge_api(remote_api)
+    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api)
   {
     init_prototype_ops();
-
-    _wallet.ws_server = initial_data.ws_server;
-    _hive_chain_id = hive_chain_id;
   }
 
   virtual ~wallet_api_impl()
   {}
+
+  void require_online()const
+  {
+    FC_ASSERT( !_wallet.offline, "Online mode is required in order to perform this method" );
+  }
 
   void encrypt_keys()
   {
@@ -289,6 +291,7 @@ public:
 
   serializer_wrapper<database_api::api_dynamic_global_property_object> get_dynamic_global_properties() const
   {
+    require_online();
     return { _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK) };
   }
 
@@ -344,6 +347,7 @@ public:
 
     try
     {
+      FC_ASSERT( !_wallet.offline ); // Throw fc::exception if not online
       auto v = _remote_wallet_bridge_api->get_version({}, LOCK);
       result["server_blockchain_version"] = v.blockchain_version;
       result["server_hive_revision"] = v.hive_revision;
@@ -359,6 +363,7 @@ public:
 
   database_api::api_account_object get_account( const string& account_name ) const
   {
+    require_online();
     auto account = _remote_wallet_bridge_api->get_account( { account_name }, LOCK );
     FC_ASSERT( account.valid(), "Unknown account" );
     return *account;
@@ -366,6 +371,7 @@ public:
 
   vector<database_api::api_account_object> get_accounts( const vector<string>& account_names ) const
   {
+    require_online();
     return _remote_wallet_bridge_api->get_accounts( {variant(account_names)}, LOCK );
   }
 
@@ -505,6 +511,7 @@ public:
                                     bool broadcast = false,
                                     bool save_wallet = true)
   { try {
+      require_online();
       int active_key_index = find_first_unused_derived_key_index(owner_privkey);
       fc::ecc::private_key active_privkey = derive_private_key( key_to_wif(owner_privkey), active_key_index);
 
@@ -555,6 +562,7 @@ public:
 
   optional< database_api::api_witness_object > get_witness( const string& owner_account )
   {
+    require_online();
     return _remote_wallet_bridge_api->get_witness( {owner_account}, LOCK );
   }
 
@@ -586,6 +594,7 @@ public:
   // collisions.
   void make_transaction_unique(transaction& tx, const std::string& auth)
   {
+    require_online();
     initialize_transaction_header(tx);
     if (_remote_wallet_bridge_api->is_known_transaction({variant(tx.id())},LOCK))
     {
@@ -609,6 +618,7 @@ public:
 
   annotated_signed_transaction sign_and_broadcast_transaction(signed_transaction tx, bool broadcast, bool blocking)
   {
+    require_online();
     static const authority null_auth( 1, public_key_type(), 0 );
     flat_set< account_name_type >   req_active_approvals;
     flat_set< account_name_type >   req_owner_approvals;
@@ -1031,6 +1041,7 @@ bool wallet_api::copy_wallet_file(const string& destination_filename)
 
 optional<serializer_wrapper<block_api::api_signed_block_object>> wallet_api::get_block(uint32_t num)
 {
+  my->require_online();
   block_api::get_block_return res = my->_remote_wallet_bridge_api->get_block( {num}, LOCK );
   if( res.block.valid() )
     return serializer_wrapper<block_api::api_signed_block_object>{ std::move( *(res.block) ) };
@@ -1040,6 +1051,7 @@ optional<serializer_wrapper<block_api::api_signed_block_object>> wallet_api::get
 
 serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::get_ops_in_block(uint32_t block_num, bool only_virtual)
 {
+  my->require_online();
   vector< variant > args{block_num, only_virtual};
   const auto operations = my->_remote_wallet_bridge_api->get_ops_in_block(args , LOCK ).ops;
   vector< account_history::api_operation_object > result;
@@ -1054,6 +1066,7 @@ serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::
 serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_my_accounts()
 {
   FC_ASSERT( !is_locked(), "Wallet must be unlocked to list accounts" );
+  my->require_online();
   vector<database_api::api_account_object> result;
 
   vector<public_key_type> pub_keys;
@@ -1078,6 +1091,7 @@ serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_
 
 vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, uint32_t limit)
 {
+  my->require_online();
   vector<variant> args{lowerbound, limit};
   const auto accounts = my->_remote_wallet_bridge_api->list_accounts( args, LOCK );
   vector<account_name_type> result;
@@ -1090,6 +1104,7 @@ vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, 
 }
 
 vector< account_name_type > wallet_api::get_active_witnesses()const {
+  my->require_online();
   return my->_remote_wallet_bridge_api->get_active_witnesses({}, LOCK).witnesses;
 }
 
@@ -1136,11 +1151,13 @@ string wallet_api::get_wallet_filename() const
 
 serializer_wrapper<database_api::api_account_object> wallet_api::get_account( const string& account_name ) const
 {
+  my->require_online();
   return { my->get_account( account_name ) };
 }
 
 serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_accounts( const vector<string>& account_names ) const
 {
+  my->require_online();
   return { my->get_accounts( account_names ) };
 }
 
@@ -1170,6 +1187,7 @@ string wallet_api::normalize_brain_key(string s) const
 
 variant wallet_api::info()
 {
+  my->require_online();
   return my->info();
 }
 
@@ -1187,6 +1205,7 @@ fc::ecc::private_key wallet_api::derive_private_key(const std::string& prefix_st
 
 vector< account_name_type > wallet_api::list_witnesses(const string& lowerbound, uint32_t limit)
 {
+  my->require_online();
   vector<variant> args{lowerbound, limit};
   const auto& witnesses = my->_remote_wallet_bridge_api->list_witnesses( {args}, LOCK ).witnesses;
   vector<account_name_type> result;
@@ -1200,6 +1219,7 @@ vector< account_name_type > wallet_api::list_witnesses(const string& lowerbound,
 
 optional<serializer_wrapper<database_api::api_witness_object>> wallet_api::get_witness( const string& owner_account)
 {
+  my->require_online();
   optional<database_api::api_witness_object> res = my->get_witness(owner_account);
   if( res.valid() )
     return serializer_wrapper<database_api::api_witness_object>{ std::move( *res ) };
@@ -1347,6 +1367,7 @@ pair<public_key_type,string> wallet_api::get_private_key_from_password( const st
 
 serializer_wrapper<database_api::api_feed_history_object> wallet_api::get_feed_history()const
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->get_feed_history({}, LOCK) };
 }
 
@@ -1411,6 +1432,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_accou
                                                                                       bool broadcast )const
 { try {
    FC_ASSERT( !is_locked() );
+   my->require_online();
 
    auto creator_account = get_account(creator).value;
    signed_transaction tx;
@@ -1550,6 +1572,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::change_recovery_acc
 
 vector< database_api::api_owner_authority_history_object > wallet_api::get_owner_history( const string& account )const
 {
+  my->require_online();
   return my->_remote_wallet_bridge_api->get_owner_history( {account}, LOCK ).owner_auths;
 }
 
@@ -1591,6 +1614,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
 
   auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
   FC_ASSERT( account.valid(), "Account does not exist" );
@@ -1663,6 +1687,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
 
   auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
   FC_ASSERT( account.valid(), "Account does not exist" );
@@ -1734,6 +1759,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
 
   auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
   FC_ASSERT( account.valid(), "Account does not exist" );
@@ -1798,6 +1824,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_meta
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
 
   auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
   FC_ASSERT( account.valid(), "Account does not exist" );
@@ -1821,6 +1848,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
 
   auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
   FC_ASSERT( account.valid(), "Account does not exist" );
@@ -1848,6 +1876,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
   bool blocking )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
   vector<variant> args{delegator, delegatee};
   auto accounts = my->_remote_wallet_bridge_api->get_accounts( { args  }, LOCK );
   FC_ASSERT( accounts.size() == 2 , "One or more of the accounts specified do not exist." );
@@ -1978,6 +2007,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   bool broadcast  )
 {
   FC_ASSERT( !is_locked() );
+  my->require_online();
 
   witness_update_operation op;
 
@@ -2475,11 +2505,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
 
 serializer_wrapper<vector< database_api::api_convert_request_object >> wallet_api::get_conversion_requests( const string& owner_account )
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->get_conversion_requests( {owner_account}, LOCK ) };
 }
 
 serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> wallet_api::get_collateralized_conversion_requests( const string& owner_account )
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->get_collateralized_conversion_requests( {owner_account}, LOCK ) };
 }
 
@@ -2565,6 +2597,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balanc
 
 serializer_wrapper<map< uint32_t, account_history::api_operation_object >> wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
 {
+  my->require_online();
   vector<variant> args{account, from, limit};
   auto result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK ).history;
   if( !is_locked() )
@@ -2593,18 +2626,21 @@ serializer_wrapper<map< uint32_t, account_history::api_operation_object >> walle
 
 vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
 {
+  my->require_online();
   vector<variant> args{ account, variant{ type } };
   return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK ).routes;
 }
 
 serializer_wrapper<wallet_bridge_api::get_order_book_return> wallet_api::get_order_book( uint32_t limit )
 {
+  my->require_online();
   FC_ASSERT( limit <= 1000 );
   return { my->_remote_wallet_bridge_api->get_order_book( {limit}, LOCK ) };
 }
 
 serializer_wrapper<vector< database_api::api_limit_order_object >> wallet_api::get_open_orders( const string& accountname )
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->get_open_orders( {accountname}, LOCK ) };
 }
 
@@ -2707,6 +2743,7 @@ void wallet_api::set_transaction_expiration(uint32_t seconds)
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::get_transaction( transaction_id_type id )const
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->get_transaction( {variant(id)}, LOCK ) };
 }
 
@@ -2818,12 +2855,14 @@ serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list
                                   database_api::order_direction_type order_type,
                                   database_api::proposal_status status )
 {
+  my->require_online();
   vector<variant> args{std::move(start), limit, order_by, order_type, status};
   return { my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals };
 }
 
 serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( const vector< database_api::api_id_type >& proposal_ids )
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->find_proposals( {variant( proposal_ids )}, LOCK ).proposals };
 }
 
@@ -2834,6 +2873,7 @@ serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api:
   database_api::order_direction_type order_type,
   database_api::proposal_status status )
 {
+  my->require_online();
   vector<variant> args{std::move( start ), limit, order_by, order_type, status};
   return { my->_remote_wallet_bridge_api->list_proposal_votes( {args}, LOCK ).proposal_votes };
 }
@@ -2882,6 +2922,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
 
 serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers(const account_name_type& from)
 {
+  my->require_online();
   return { my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK ) };
 }
 
