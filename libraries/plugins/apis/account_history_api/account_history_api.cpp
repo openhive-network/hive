@@ -190,6 +190,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
         if(accepted)
         {
+          api_op.op_in_trx = op.op_in_trx;
           result.history.emplace(sequence, std::move(api_op));
           return true;
         }
@@ -212,7 +213,9 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
       [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         /// Here internal counter (inside find_account_history_data) does the limiting job.
-        result.history[sequence] = api_operation_object(op);
+        api_operation_object api_op{op};
+        api_op.op_in_trx = op.op_in_trx;
+        result.history[sequence] = api_op;
         return true;
       });
   }

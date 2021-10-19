@@ -151,12 +151,14 @@ using chain::reindex_notification;
           void on_post_reindex(const reindex_notification& note);
 
           void on_pre_apply_operation(const operation_notification& note);
+          void on_post_apply_operation(const operation_notification& note);
           void on_pre_apply_block(const block_notification& note);
           void on_post_apply_block(const block_notification& note);
 
           void handle_transactions(const vector<hive::protocol::signed_transaction>& transactions, const int64_t block_num);
 
           boost::signals2::connection _on_pre_apply_operation_con;
+          boost::signals2::connection _on_post_apply_operation_con;
           boost::signals2::connection _on_pre_apply_block_con;
           boost::signals2::connection _on_post_apply_block_con;
           boost::signals2::connection _on_starting_reindex;
@@ -177,7 +179,6 @@ using chain::reindex_notification;
           uint32_t psql_operations_threads_number = 5;
           uint32_t head_block_number = 0;
 
-          int64_t block_vops = 0;
           int64_t op_sequence_id = 0; 
 
           cached_containter_t currently_caching_data;
@@ -398,6 +399,7 @@ void sql_serializer_plugin_impl::wait_for_data_processing_finish()
 void sql_serializer_plugin_impl::connect_signals()
 {
   _on_pre_apply_operation_con = chain_db.add_pre_apply_operation_handler([&](const operation_notification& note) { on_pre_apply_operation(note); }, main_plugin);
+  _on_post_apply_operation_con = chain_db.add_post_apply_operation_handler([&](const operation_notification& note) { on_post_apply_operation(note); }, main_plugin);
   _on_pre_apply_block_con = chain_db.add_pre_apply_block_handler([&](const block_notification& note) { on_pre_apply_block(note); }, main_plugin);
   _on_post_apply_block_con = chain_db.add_post_apply_block_handler([&](const block_notification& note) { on_post_apply_block(note); }, main_plugin);
   _on_finished_reindex = chain_db.add_post_reindex_handler([&](const reindex_notification& note) { on_post_reindex(note); }, main_plugin);
@@ -413,6 +415,8 @@ void sql_serializer_plugin_impl::disconnect_signals()
     chain::util::disconnect_signal(_on_post_apply_block_con);
   if(_on_pre_apply_operation_con.connected())
     chain::util::disconnect_signal(_on_pre_apply_operation_con);
+  if(_on_post_apply_operation_con.connected())
+    chain::util::disconnect_signal(_on_post_apply_operation_con);
   if(_on_starting_reindex.connected())
     chain::util::disconnect_signal(_on_starting_reindex);
   if(_on_finished_reindex.connected())
@@ -435,6 +439,9 @@ void sql_serializer_plugin_impl::on_pre_apply_block(const block_notification& no
 
 void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notification& note)
 {
+  if( note.op.which() == hive::protocol::operation::tag<hive::protocol::hardfork_operation>::value )
+    return;
+
   if(chain_db.is_producing())
   {
     dlog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
@@ -454,11 +461,36 @@ void sql_serializer_plugin_impl::on_pre_apply_operation(const operation_notifica
     op_sequence_id,
     note.block,
     note.trx_in_block,
-    is_virtual && note.trx_in_block < 0 ? block_vops++ : note.op_in_trx,
+    is_virtual && note.trx_in_block < 0 ? note.virtual_op : note.op_in_trx,
     chain_db.head_block_time(),
     note.op
   );
 
+}
+
+void sql_serializer_plugin_impl::on_post_apply_operation(const operation_notification& note)
+{
+  if( note.op.which() != hive::protocol::operation::tag<hive::protocol::hardfork_operation>::value ) 
+    return;
+
+  if(chain_db.is_producing())
+  {
+    dlog("Skipping operation processing coming from incoming transaction - waiting for already produced incoming block...");
+    return;
+  }
+
+  if(skip_reversible_block(note.block))
+    return;
+
+  ++op_sequence_id;
+  currently_caching_data->operations.emplace_back(
+    op_sequence_id,
+    note.block,
+    note.trx_in_block,
+    note.trx_in_block < 0 ? note.virtual_op : note.op_in_trx,
+    chain_db.head_block_time(),
+    note.op
+  );
 }
 
 void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& note)
@@ -476,7 +508,6 @@ void sql_serializer_plugin_impl::on_post_apply_block(const block_notification& n
     note.block_num,
     note.block.timestamp,
     note.prev_block_id);
-  block_vops = 0;
   _last_block_num = note.block_num;
 
   if(note.block_num % _dumper->blocks_per_flush() == 0)

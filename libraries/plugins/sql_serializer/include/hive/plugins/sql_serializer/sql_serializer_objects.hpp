@@ -84,14 +84,14 @@ namespace hive
           {
             using process_base_t::hash_t;
 
-            int16_t trx_in_block;
+            int32_t trx_in_block;
             uint16_t ref_block_num;
             uint32_t ref_block_prefix;
             fc::time_point_sec expiration;
             fc::optional<signature_type> signature;
 
             process_transaction_t() = default;
-            process_transaction_t(const hash_t& _hash, const int _block_number, const int16_t _trx_in_block,
+            process_transaction_t(const hash_t& _hash, const int _block_number, const int32_t _trx_in_block,
                                   const uint16_t _ref_block_num, const uint32_t _ref_block_prefix, const fc::time_point_sec& _expiration, const fc::optional<signature_type>& _signature)
             : process_base_ex_t{_hash, _block_number}, trx_in_block{_trx_in_block},
               ref_block_num{_ref_block_num}, ref_block_prefix{_ref_block_prefix}, expiration{_expiration}, signature{_signature}
@@ -113,12 +113,12 @@ namespace hive
           {
             int64_t operation_id;
             int32_t block_number;
-            int16_t trx_in_block;
-            int16_t op_in_trx;
+            int32_t trx_in_block;
+            int32_t op_in_trx;
             fc::time_point_sec timestamp;
             operation op;
 
-            process_operation_t(int64_t _operation_id, int32_t _block_number, const int16_t _trx_in_block, const int16_t _op_in_trx,
+            process_operation_t(int64_t _operation_id, int32_t _block_number, const int32_t _trx_in_block, const int32_t _op_in_trx,
             const fc::time_point_sec& time, const operation &_op) : operation_id{_operation_id }, block_number{_block_number}, trx_in_block{_trx_in_block},
             op_in_trx{_op_in_trx}, timestamp(time), op{_op} {}
           };
