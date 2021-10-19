@@ -33,7 +33,7 @@ namespace hive
       namespace detail
       {
         constexpr uint32_t MAX_RETRIES = 5;
-        bool error_handler(std::function<void()> foo);
+        bool error_handler(const std::function<void()> &foo);
 
         class notification_handler
         {

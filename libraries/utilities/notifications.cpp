@@ -44,7 +44,7 @@ void setup_notifications(const boost::program_options::variables_map &args)
 
 namespace detail
 {
-bool error_handler(std::function<void ()> foo)
+bool error_handler(const std::function<void ()> &foo)
 {
   bool is_exception_occured = false;
   auto handle_exception = [&is_exception_occured](const fc::string &ex)
