@@ -6,7 +6,7 @@ import os
 import sys
 
 def find_plugin_filenames(basedir):
-    for root, dirs, files in os.walk(basedir):
+    for root, dirs, files in os.walk(basedir, followlinks=True):
         dirs_to_remove = [d for d in dirs if d.startswith(".")]
         for d in dirs_to_remove:
             dirs.remove(d)
