@@ -68,6 +68,7 @@ libraries/vendor/rocksdb/RocksDBConfigVersion.cmake
 libraries/wallet/Doxyfile
 libraries/wallet/api_documentation.cpp
 libraries/wallet/doxygen
+libraries/plugins/sql_serializer
 
 programs/build_helpers/hive_build_helpers/__pycache__/
 programs/util/dump_hive_schema
