@@ -5,11 +5,11 @@ import time
 
 def test_direct_rc_delegations(world):
     node = world.create_init_node()
-    node.run(load_snapshot_from='/home/dev/src/hive/tests/functional/python_tests/direct_rc_delegations/generated_during_creation_accounts_snapshot/test_direct_rc_delegations/InitNode/snapshot')
+    node.run(load_snapshot_from='/home/dev/Desktop/copy-of-snapshot-from-tuesday/snapshot')
 
     client_accounts = []
     number_of_accounts_in_one_transaction = 400
-    number_of_transactions = 2500
+    number_of_transactions = 2
     number_of_accounts = number_of_accounts_in_one_transaction * number_of_transactions
 
     for account_number_absolute in range(number_of_accounts):
@@ -17,7 +17,7 @@ def test_direct_rc_delegations(world):
     accounts_to_delegate = split_list(client_accounts, int(number_of_accounts / 100))
     logger.info('End of splitting')
 
-    number_of_threads = 10
+    number_of_threads = 50
     wallets = []
     delegators = []
 
