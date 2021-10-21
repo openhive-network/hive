@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.get_ops_in_block( in _BLOCK_NUM INT, in _ONLY_VIRTUAL BOOLEAN, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION hafah.get_ops_in_block( in _BLOCK_NUM INT, in _ONLY_VIRTUAL BOOLEAN, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _trx_in_block BIGINT,
@@ -80,7 +80,7 @@ END
 $function$
 language plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION public.get_transaction( in _TRX_HASH BYTEA, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION hafah.get_transaction( in _TRX_HASH BYTEA, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _ref_block_num INT,
     _ref_block_prefix BIGINT,
@@ -126,7 +126,7 @@ END
 $function$
 language plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION public.get_multi_signatures_in_transaction( in _TRX_HASH BYTEA )
+CREATE OR REPLACE FUNCTION hafah.get_multi_signatures_in_transaction( in _TRX_HASH BYTEA )
 RETURNS TABLE(
     _signature TEXT
 )
@@ -143,7 +143,7 @@ END
 $function$
 language plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION public.get_ops_in_transaction( in _BLOCK_NUM INT, in _TRX_IN_BLOCK INT )
+CREATE OR REPLACE FUNCTION hafah.get_ops_in_transaction( in _BLOCK_NUM INT, in _TRX_IN_BLOCK INT )
 RETURNS TABLE(
     _value TEXT
 )
@@ -163,7 +163,7 @@ language plpgsql STABLE;
 
 DROP TYPE IF EXISTS enum_virtual_ops_result;
 CREATE TYPE enum_virtual_ops_result AS ( _trx_id TEXT, _block INT, _trx_in_block BIGINT, _op_in_trx BIGINT, _virtual_op BIGINT, _timestamp TEXT, _value TEXT, _operation_id BIGINT );
-CREATE OR REPLACE FUNCTION public.enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION hafah.enum_virtual_ops( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS SETOF enum_virtual_ops_result
 AS
 $function$
@@ -194,7 +194,7 @@ BEGIN
   END IF;
 
   RETURN QUERY
-    SELECT * FROM public.enum_virtual_ops_impl( _FILTER, _BLOCK_RANGE_BEGIN, _BLOCK_RANGE_END, _OPERATION_BEGIN, _LIMIT, __filter_info )
+    SELECT * FROM hafah.enum_virtual_ops_impl( _FILTER, _BLOCK_RANGE_BEGIN, _BLOCK_RANGE_END, _OPERATION_BEGIN, _LIMIT, __filter_info )
   UNION ALL
     SELECT
       '',
@@ -206,13 +206,13 @@ BEGIN
       '{"type":"","value":""}'::TEXT,
       _next_op_id _operation_id
     FROM
-      public.enum_virtual_ops_pagination(_FILTER, _BLOCK_RANGE_BEGIN, _BLOCK_RANGE_END, _OPERATION_BEGIN, _LIMIT, __filter_info)
+      hafah.enum_virtual_ops_pagination(_FILTER, _BLOCK_RANGE_BEGIN, _BLOCK_RANGE_END, _OPERATION_BEGIN, _LIMIT, __filter_info)
   LIMIT _LIMIT + 1; -- if first query didn't returned _LIMIT + 1 results append additional record with data required to pagination
 END
 $function$
 language plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION public.enum_virtual_ops_impl( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in __filter_info INT )
+CREATE OR REPLACE FUNCTION hafah.enum_virtual_ops_impl( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in __filter_info INT )
 RETURNS SETOF enum_virtual_ops_result
 AS
 $function$
@@ -282,7 +282,7 @@ END
 $function$
 language plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION public.enum_virtual_ops_pagination( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in __filter_info INT )
+CREATE OR REPLACE FUNCTION hafah.enum_virtual_ops_pagination( in _FILTER INT[], in _BLOCK_RANGE_BEGIN INT, in _BLOCK_RANGE_END INT, _OPERATION_BEGIN BIGINT, in _LIMIT INT, in __filter_info INT )
 RETURNS TABLE( _next_block INT, _next_op_id BIGINT )
 AS
 $function$
@@ -304,7 +304,7 @@ END
 $function$
 language plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION public.ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _START BIGINT, _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
+CREATE OR REPLACE FUNCTION hafah.ah_get_account_history( in _FILTER INT[], in _ACCOUNT VARCHAR, _START BIGINT, _LIMIT INT, in _INCLUDE_REVERSIBLE BOOLEAN )
 RETURNS TABLE(
     _trx_id TEXT,
     _block INT,
@@ -329,7 +329,7 @@ BEGIN
     SELECT hive.app_get_irreversible_block( 'account_history' ) INTO __upper_block_limit;
   END IF;
 
-  SELECT INTO __account_id ( select id from public.accounts where name = _ACCOUNT );
+  SELECT INTO __account_id ( select id from hafah.accounts where name = _ACCOUNT );
 
   IF __filter_info IS NULL THEN
   RETURN QUERY
@@ -375,7 +375,7 @@ BEGIN
       FROM
       (
         SELECT hao.operation_id as operation_id, hao.account_op_seq_no as seq_no
-        FROM public.account_operations hao
+        FROM hafah.account_operations hao
         WHERE hao.account_id = __account_id AND hao.account_op_seq_no <= _START
         ORDER BY seq_no DESC
         LIMIT _LIMIT
@@ -433,7 +433,7 @@ BEGIN
           SELECT
             ho.id, ho.block_num, ho.trx_in_block, abs(ho.op_pos::BIGINT) op_pos, ho.body, ho.op_type_id, hao.account_op_seq_no as seq_no, timestamp, virtual_pos
             FROM hive.operations ho
-            JOIN public.account_operations hao ON ho.id = hao.operation_id
+            JOIN hafah.account_operations hao ON ho.id = hao.operation_id
             WHERE ( (__upper_block_limit IS NULL) OR ho.block_num <= __upper_block_limit )
               AND hao.account_id = __account_id
               AND hao.account_op_seq_no <= _START
@@ -452,15 +452,15 @@ END
 $function$
 language plpgsql STABLE;
 
-DROP VIEW IF EXISTS public.account_operation_count_info_view CASCADE;
-CREATE OR REPLACE VIEW public.account_operation_count_info_view
+DROP VIEW IF EXISTS hafah.account_operation_count_info_view CASCADE;
+CREATE OR REPLACE VIEW hafah.account_operation_count_info_view
 AS
 SELECT ha.id, ha.name, COALESCE( T.operation_count, 0 ) operation_count
-FROM public.accounts ha
+FROM hafah.accounts ha
 LEFT JOIN
 (
 SELECT ao.account_id account_id, COUNT(ao.account_op_seq_no) operation_count
-FROM public.account_operations ao
+FROM hafah.account_operations ao
 GROUP BY ao.account_id
 )T ON ha.id = T.account_id
 ;

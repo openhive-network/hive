@@ -108,8 +108,8 @@ struct ah_query
 
   ah_query( const string& _application_context ) : application_context( _application_context )
   {
-    accounts        = "SELECT id, name FROM accounts;";
-    account_ops     = "SELECT ai.name, ai.id, ai.operation_count FROM account_operation_count_info_view ai;";
+    accounts        = "SELECT id, name FROM hafah.accounts;";
+    account_ops     = "SELECT ai.name, ai.id, ai.operation_count FROM hafah.account_operation_count_info_view ai;";
 
     create_context  = format( "SELECT * FROM hive.app_create_context('%s');", application_context );
     detach_context  = format( "SELECT * FROM hive.app_context_detach('%s');", application_context );
@@ -122,10 +122,10 @@ struct ah_query
 
     next_block      = format( "SELECT * FROM hive.app_next_block('%s');", application_context );
 
-    // get_bodies      = "SELECT id, get_impacted_accounts(body), ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d ORDER BY block_num, helper_trx_in_block, op_pos;";
+    // get_bodies      = "SELECT id, hive.get_impacted_accounts(body), ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block FROM hive.account_history_operations_view WHERE block_num >= %d AND block_num <= %d ORDER BY block_num, helper_trx_in_block, op_pos;";
     get_bodies = R"(
 SELECT T.id, T.account FROM (
-SELECT ahov.id, get_impacted_accounts(body) as account,
+SELECT ahov.id, hive.get_impacted_accounts(body) as account,
 ( CASE WHEN trx_in_block = -1 THEN 4294967295 ELSE trx_in_block END ) AS helper_trx_in_block,
 ( CASE WHEN ahov.trx_in_block <= -1 THEN ahov.op_pos
   ELSE (ahov.id - (
@@ -153,12 +153,12 @@ ORDER BY
 )";
 
     FC_ASSERT( insert_into_accounts.size() == 3 );
-    insert_into_accounts[0] = "INSERT INTO public.accounts( id, name ) VALUES";
+    insert_into_accounts[0] = "INSERT INTO hafah.accounts( id, name ) VALUES";
     insert_into_accounts[1] = " ( %d, '%s')";
     insert_into_accounts[2] = " ;";
 
     FC_ASSERT( insert_into_account_ops.size() == 3 );
-    insert_into_account_ops[0] = "INSERT INTO public.account_operations( account_id, account_op_seq_no, operation_id ) VALUES";
+    insert_into_account_ops[0] = "INSERT INTO hafah.account_operations( account_id, account_op_seq_no, operation_id ) VALUES";
     insert_into_account_ops[1] = " ( %d, %d, %d )";
     insert_into_account_ops[2] = " ;";
   }
