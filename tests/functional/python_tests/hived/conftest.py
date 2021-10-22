@@ -1,14 +1,15 @@
 from pathlib import Path
 from pytest import fixture
 from test_tools import *
-from test_tools import Wallet
+from test_tools import constants, context, Wallet
 
 BLOCK_COUNT = 30
 
 @fixture(scope='package')
 def block_log() -> Path:
   from time import sleep
-  with World() as world:
+  with World(directory=context.get_current_directory()) as world:
+    world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
     logger.info(f'preparing block log with {BLOCK_COUNT} blocks')
     node = world.create_init_node()
     node.run(wait_for_live=True)
