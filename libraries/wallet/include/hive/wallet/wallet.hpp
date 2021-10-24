@@ -1414,7 +1414,7 @@ class wallet_api
     */
     serializer_wrapper<annotated_signed_transaction> delegate_rc(
           const account_name_type& from,
-          const vector<account_name_type>& delegatees,
+          const flat_set<account_name_type>& delegatees,
           uint64_t max_rc,
           bool broadcast );
 

@@ -2936,7 +2936,7 @@ serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
             const account_name_type& from,
-            const vector<account_name_type>& delegatees,
+            const flat_set<account_name_type>& delegatees,
             uint64_t max_rc,
             bool broadcast )
 {
