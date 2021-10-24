@@ -46,16 +46,16 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_validate )
     op.delegatees = {};
     BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
-    // bob is defined twice
+    // bob is defined twice, handled by the flat_set
     op.delegatees = {"eve", "bob", "bob"};
-    BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.validate();
 
     // There is more than HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP accounts in delegatees
-    vector<account_name_type> vector_too_big;
+    flat_set<account_name_type> set_too_big;
     for (int i = 0; i < HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP + 1; i++) {
-      vector_too_big.push_back( "actor" + std::to_string(i) );
+      set_too_big.insert( "actor" + std::to_string(i) );
     }
-    op.delegatees = vector_too_big;
+    op.delegatees = set_too_big;
     BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW()
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation->delegated_rc == op.max_rc );
 
     const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( op.delegatees[0] );
+    const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
 
     BOOST_REQUIRE( from_rc_account.delegated_rc == 10 );
     BOOST_REQUIRE( from_rc_account.received_delegated_rc == 0 );
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation_decreased->delegated_rc == op.max_rc );
 
     const rc_account_object& from_rc_account_decreased = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account_decreased = db->get< rc_account_object, by_name >( op.delegatees[0] );
+    const rc_account_object& to_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
 
     BOOST_REQUIRE( from_rc_account_decreased.delegated_rc == 5 );
     BOOST_REQUIRE( from_rc_account_decreased.received_delegated_rc == 0 );
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation_increased->delegated_rc == op.max_rc );
 
     const rc_account_object& from_rc_account_increased = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account_increased = db->get< rc_account_object, by_name >( op.delegatees[0] );
+    const rc_account_object& to_rc_account_increased = db->get< rc_account_object, by_name >( "bob" );
 
     BOOST_REQUIRE( from_rc_account_increased.delegated_rc == 50 );
     BOOST_REQUIRE( from_rc_account_increased.received_delegated_rc == 0 );
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( delegation->delegated_rc == op.max_rc );
 
     const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( op.delegatees[0] );
+    const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
 
     BOOST_REQUIRE( from_rc_account.delegated_rc == 20 );
     BOOST_REQUIRE( from_rc_account.received_delegated_rc == 0 );
@@ -546,7 +546,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     op.max_rc = 10;
     // Delegate 10 rc to every actor account
     for (int i = 0; i < NUM_ACTORS; i++) {
-      op.delegatees.push_back( "actor" + std::to_string(i) );
+      op.delegatees.insert( "actor" + std::to_string(i) );
       if (count == 50 || i == NUM_ACTORS -1 ) {
         custom_json_operation custom_op;
         custom_op.required_posting_auths.insert( "alice" );
