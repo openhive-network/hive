@@ -21,13 +21,11 @@ void delegate_rc_operation::validate()const
   validate_account_name( from );
   FC_ASSERT(delegatees.size() != 0, "Must provide at least one account");
   FC_ASSERT(delegatees.size() <= HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP, "Provided ${size} accounts, cannot delegate to more than ${max} accounts in one operation", ("size", delegatees.size())("max", HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP));
-  for (unsigned  int i = 0; i < delegatees.size(); i++) {
-    validate_account_name(delegatees[i]);
-    FC_ASSERT( delegatees[i] != from, "cannot delegate rc to yourself" );
-  }
 
-  set<account_name_type> delegatees_set(delegatees.begin(), delegatees.end());
-  FC_ASSERT(delegatees_set.size() == delegatees.size(), "The delegatees list must only contain unique accounts");
+  for(account_name_type delegatee:delegatees) {
+    validate_account_name(delegatee);
+    FC_ASSERT( delegatee != from, "cannot delegate rc to yourself" );
+  }
 
   FC_ASSERT( max_rc >= 0, "amount of rc delegated cannot be negative" ); // Cannot happen because max_rc is an uint but it doesn't hurt to pre-emptively have a validate if in the future it gets changed to int
 }
@@ -43,8 +41,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   const account_object &from_account = _db.get<account_object, by_name>(op.from);
   int64_t delta_total = 0; // total amount of rc gained/delegated over the accounts
 
-  for (unsigned int i = 0; i < op.delegatees.size(); i++) {
-    auto to = op.delegatees[i];
+  for (account_name_type to:op.delegatees) {
     const rc_account_object &to_rc_account = _db.get<rc_account_object, by_name>(to);
 
     const account_object *to_account = _db.find<account_object, by_name>(to);

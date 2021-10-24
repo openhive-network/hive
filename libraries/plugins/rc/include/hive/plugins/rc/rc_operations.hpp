@@ -17,7 +17,7 @@ class rc_plugin;
 struct delegate_rc_operation : base_operation
 {
   account_name_type     from;
-  vector< account_name_type > delegatees;
+  flat_set< account_name_type > delegatees;
   uint64_t              max_rc = 0;
   extensions_type       extensions;
 
