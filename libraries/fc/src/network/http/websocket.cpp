@@ -13,6 +13,8 @@
 #include <fc/asio.hpp>
 #include <fc/network/http/connection.hpp>
 
+#include <boost/asio/io_service.hpp>
+
 #ifdef DEFAULT_LOGGER
 # undef DEFAULT_LOGGER
 #endif
@@ -21,6 +23,8 @@
 namespace fc { namespace http {
 
   namespace detail {
+
+    typedef std::shared_ptr< std::thread >             thread_ptr;
 
 #define FC_HTTP_CONFIG_PERMESSAGE_DEFLATE 1 // Undef this to disable the compression
 
@@ -131,59 +135,62 @@ namespace fc { namespace http {
     {
     public:
       websocket_server_impl()
-       : _server_thread( fc::thread::current() )
       {
         _server.clear_access_channels( websocketpp::log::alevel::all );
-        _server.init_asio(&fc::asio::default_io_service());
+        _server.init_asio( &_io_service );
         _server.set_reuse_addr(true);
         _server.set_open_handler( [&]( connection_hdl hdl ){
-          _server_thread.async( [&](){
-            auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
-            _on_connection( _connections[hdl] = new_con );
-          }).wait();
+          auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+          _on_connection( _connections[hdl] = new_con );
         });
         _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
-          _server_thread.async( [&](){
-            auto current_con = _connections.find(hdl);
-            assert( current_con != _connections.end() );
-            wdump(("server")(msg->get_payload()));
-            //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
-            auto payload = msg->get_payload();
-            std::shared_ptr<websocket_connection> con = current_con->second;
-            ++_pending_messages;
-            auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
-            if( _pending_messages > 100 ) 
-              f.wait();
-          }).wait();
+          auto current_con = _connections.find(hdl);
+          assert( current_con != _connections.end() );
+          wdump(("server")(msg->get_payload()));
+          //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
+          auto payload = msg->get_payload();
+          std::shared_ptr<websocket_connection> con = current_con->second;
+          ++_pending_messages;
+          auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
+          if( _pending_messages > 100 )
+            f.wait();
         });
 
-        _server.set_socket_init_handler( [&](websocketpp::connection_hdl hdl, boost::asio::ip::tcp::socket& s ) {
-          boost::asio::ip::tcp::no_delay option(true);
-          s.lowest_layer().set_option(option);
-        } );
-
         _server.set_http_handler( [&]( connection_hdl hdl ){
-          _server_thread.async( [&](){
-            auto current_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
-            _on_connection( current_con );
+          auto current_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+          _on_connection( current_con );
 
-            auto con = _server.get_con_from_hdl(hdl);
-            con->defer_http_response();
-            std::string request_body = con->get_request_body();
-            wdump(("server")(request_body));
+          auto con = _server.get_con_from_hdl(hdl);
+          con->defer_http_response();
+          std::string request_body = con->get_request_body();
+          wdump(("server")(request_body));
 
-            fc::async([current_con, request_body, con] {
-              std::string response = current_con->on_http(request_body);
-              con->set_body( response );
-              con->set_status( websocketpp::http::status_code::ok );
-              con->send_http_response();
-              current_con->closed();
-            }, "call on_http");
-          }).wait();
+          fc::async([current_con, request_body, con] {
+            std::string response = current_con->on_http(request_body);
+            con->set_body( response );
+            con->set_status( websocketpp::http::status_code::ok );
+            con->send_http_response();
+            current_con->closed();
+          }, "call on_http");
         });
 
         _server.set_close_handler( [&]( connection_hdl hdl ){
-          _server_thread.async( [&](){
+          if( _connections.find(hdl) != _connections.end() )
+          {
+            _connections[hdl]->closed();
+            _connections.erase( hdl );
+          }
+          else
+          {
+              wlog( "unknown connection closed" );
+          }
+          if( _connections.empty() && _closed )
+            _closed->set_value();
+        });
+
+        _server.set_fail_handler( [&]( connection_hdl hdl ){
+          if( _server.is_listening() )
+          {
             if( _connections.find(hdl) != _connections.end() )
             {
               _connections[hdl]->closed();
@@ -191,31 +198,14 @@ namespace fc { namespace http {
             }
             else
             {
-                wlog( "unknown connection closed" );
+              wlog( "unknown connection failed" );
             }
             if( _connections.empty() && _closed )
               _closed->set_value();
-          }).wait();
-        });
-
-        _server.set_fail_handler( [&]( connection_hdl hdl ){
-          if( _server.is_listening() )
-          {
-            _server_thread.async( [&](){
-              if( _connections.find(hdl) != _connections.end() )
-              {
-                _connections[hdl]->closed();
-                _connections.erase( hdl );
-              }
-              else
-              {
-                wlog( "unknown connection failed" );
-              }
-              if( _connections.empty() && _closed )
-                _closed->set_value();
-            }).wait();
           }
         });
+
+        _server_thread = std::make_shared< std::thread >( [&] { _io_service.run(); } );
       }
       ~websocket_server_impl()
       {
@@ -230,23 +220,30 @@ namespace fc { namespace http {
           _server.close( item.first, 0, "server exit" );
 
         if( _closed ) _closed->wait();
+
+        if( _server_thread )
+        {
+          _io_service.stop();
+          _server_thread->join();
+          _server_thread.reset();
+        }
       }
 
       typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
 
-      con_map                _connections;
-      fc::thread&            _server_thread;
-      websocket_server_type  _server;
-      on_connection_handler  _on_connection;
-      fc::promise<void>::ptr _closed;
-      uint32_t               _pending_messages = 0;
+      con_map                 _connections;
+      thread_ptr              _server_thread;
+      boost::asio::io_service _io_service;
+      websocket_server_type   _server;
+      on_connection_handler   _on_connection;
+      fc::promise<void>::ptr  _closed;
+      uint32_t                _pending_messages = 0;
     };
 
     class websocket_tls_server_impl
     {
     public:
       websocket_tls_server_impl( const string& server_pem, const string& ssl_password )
-      : _server_thread( fc::thread::current() )
       {
         _server.set_tls_init_handler( [=]( websocketpp::connection_hdl hdl ) -> context_ptr {
           context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::tlsv1);
@@ -265,65 +262,55 @@ namespace fc { namespace http {
         });
 
         _server.clear_access_channels( websocketpp::log::alevel::all );
-        _server.init_asio(&fc::asio::default_io_service());
+        _server.init_asio( &_io_service );
         _server.set_reuse_addr(true);
         _server.set_open_handler( [&]( connection_hdl hdl ){
-          _server_thread.async( [&](){
-            auto new_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
-            _on_connection( _connections[hdl] = new_con );
-          }).wait();
+          auto new_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+          _on_connection( _connections[hdl] = new_con );
         });
         _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
-          _server_thread.async( [&](){
-            auto current_con = _connections.find(hdl);
-            assert( current_con != _connections.end() );
-            auto received = msg->get_payload();
-            std::shared_ptr<websocket_connection> con = current_con->second;
-            fc::async([con,received](){ con->on_message( received ); });
-          }).wait();
+          auto current_con = _connections.find(hdl);
+          assert( current_con != _connections.end() );
+          auto received = msg->get_payload();
+          std::shared_ptr<websocket_connection> con = current_con->second;
+          fc::async([con,received](){ con->on_message( received ); });
         });
 
         _server.set_http_handler( [&]( connection_hdl hdl ){
-          _server_thread.async( [&](){
+          auto current_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+          try{
+            _on_connection( current_con );
 
-            auto current_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
-            try{
-              _on_connection( current_con );
+            auto con = _server.get_con_from_hdl(hdl);
+            wdump(("server")(con->get_request_body()));
+            auto response = current_con->on_http( con->get_request_body() );
 
-              auto con = _server.get_con_from_hdl(hdl);
-              wdump(("server")(con->get_request_body()));
-              auto response = current_con->on_http( con->get_request_body() );
-
-              con->set_body( response );
-              con->set_status( websocketpp::http::status_code::ok );
-            } catch ( const fc::exception& e )
-            {
-              edump((e.to_detail_string()));
-            }
-            current_con->closed();
-
-          }).wait();
+            con->set_body( response );
+            con->set_status( websocketpp::http::status_code::ok );
+          } catch ( const fc::exception& e )
+          {
+            edump((e.to_detail_string()));
+          }
+          current_con->closed();
         });
 
         _server.set_close_handler( [&]( connection_hdl hdl ){
-          _server_thread.async( [&](){
-            _connections[hdl]->closed();
-            _connections.erase( hdl );
-          }).wait();
+          _connections[hdl]->closed();
+          _connections.erase( hdl );
         });
 
         _server.set_fail_handler( [&]( connection_hdl hdl ){
           if( _server.is_listening() )
           {
-            _server_thread.async( [&](){
-              if( _connections.find(hdl) != _connections.end() )
-              {
-                _connections[hdl]->closed();
-                _connections.erase( hdl );
-              }
-            }).wait();
+            if( _connections.find(hdl) != _connections.end() )
+            {
+              _connections[hdl]->closed();
+              _connections.erase( hdl );
+            }
           }
         });
+
+        _server_thread = std::make_shared< std::thread >( [&] { _io_service.run(); } );
       }
       ~websocket_tls_server_impl()
       {
@@ -332,12 +319,20 @@ namespace fc { namespace http {
         auto cpy_con = _connections;
         for( auto item : cpy_con )
           _server.close( item.first, 0, "server exit" );
+
+        if( _server_thread )
+        {
+          _io_service.stop();
+          _server_thread->join();
+          _server_thread.reset();
+        }
       }
 
       typedef std::map< connection_hdl, websocket_connection_ptr, std::owner_less< connection_hdl > > con_map;
 
       con_map                    _connections;
-      fc::thread&                _server_thread;
+      thread_ptr                 _server_thread;
+      boost::asio::io_service    _io_service;
       websocket_tls_server_type  _server;
       on_connection_handler      _on_connection;
       fc::promise<void>::ptr     _closed;
@@ -356,35 +351,34 @@ namespace fc { namespace http {
       typedef websocket_client_type::message_ptr message_ptr;
 
       websocket_client_impl()
-       : _client_thread( fc::thread::current() )
       {
         _client.clear_access_channels( websocketpp::log::alevel::all );
         _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
-          _client_thread.async( [&](){
-            wdump((msg->get_payload()));
-            auto received = msg->get_payload();
-            fc::async( [=](){
-              if( _connection )
-                  _connection->on_message(received);
-            });
-          }).wait();
+          wdump((msg->get_payload()));
+          auto received = msg->get_payload();
+          fc::async( [=](){ if( _connection ) _connection->on_message(received); });
         });
         _client.set_close_handler( [=]( connection_hdl hdl ){
-          _client_thread.async( [&](){ if( _connection ) {_connection->closed(); _connection.reset();} } ).wait();
+          if( _connection )
+            _connection->closed();
+          _connection.reset();
           if( _closed ) _closed->set_value();
         });
         _client.set_fail_handler( [=]( connection_hdl hdl ){
           auto con = _client.get_con_from_hdl(hdl);
           auto message = con->get_ec().message();
           if( _connection )
-            _client_thread.async( [&](){ if( _connection ) _connection->closed(); _connection.reset(); } ).wait();
+            _connection->closed();
+          _connection.reset();
           if( _connected && !_connected->ready() )
             _connected->set_exception( exception_ptr( new FC_EXCEPTION( exception, "${message}", ("message",message)) ) );
           if( _closed )
             _closed->set_value();
         });
 
-        _client.init_asio( &fc::asio::default_io_service() );
+        _client.init_asio( &_io_service );
+
+        _client_thread = std::make_shared< std::thread >( [&] { _io_service.run(); } );
       }
       ~websocket_client_impl()
       {
@@ -394,11 +388,19 @@ namespace fc { namespace http {
           _connection.reset();
           _closed->wait();
         }
+
+        if( _client_thread )
+        {
+          _io_service.stop();
+          _client_thread->join();
+          _client_thread.reset();
+        }
       }
 
       fc::promise<void>::ptr   _connected;
       fc::promise<void>::ptr   _closed;
-      fc::thread&              _client_thread;
+      thread_ptr               _client_thread;
+      boost::asio::io_service  _io_service;
       websocket_client_type    _client;
       websocket_connection_ptr _connection;
       std::string              _uri;
@@ -410,7 +412,6 @@ namespace fc { namespace http {
         typedef websocket_tls_client_type::message_ptr message_ptr;
 
         websocket_tls_client_impl( std::string ca_filename )
-         : _client_thread( fc::thread::current() )
         {
           // ca_filename has special values:
           // "_none" disables cert checking (potentially insecure!)
@@ -418,21 +419,17 @@ namespace fc { namespace http {
 
           _client.clear_access_channels( websocketpp::log::alevel::all );
           _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
-            _client_thread.async( [&](){
-              wdump((msg->get_payload()));
-              _connection->on_message( msg->get_payload() );
-            }).wait();
+            wdump((msg->get_payload()));
+            _connection->on_message( msg->get_payload() );
           });
           _client.set_close_handler( [=]( connection_hdl hdl ){
             if( _connection )
             {
               try {
-                _client_thread.async( [&](){
-                  wlog(". ${p}", ("p",uint64_t(_connection.get())));
-                  if( !_shutting_down && !_closed && _connection )
-                    _connection->closed();
-                  _connection.reset();
-                } ).wait();
+                wlog(". ${p}", ("p",uint64_t(_connection.get())));
+                if( !_shutting_down && !_closed && _connection )
+                  _connection->closed();
+                _connection.reset();
               }
               catch ( const fc::exception& e )
               {
@@ -446,7 +443,8 @@ namespace fc { namespace http {
             auto con = _client.get_con_from_hdl(hdl);
             auto message = con->get_ec().message();
             if( _connection )
-              _client_thread.async( [&](){ if( _connection ) _connection->closed(); _connection.reset(); } ).wait();
+              _connection->closed();
+            _connection.reset();
             if( _connected && !_connected->ready() )
               _connected->set_exception( exception_ptr( new FC_EXCEPTION( exception, "${message}", ("message",message)) ) );
             if( _closed )
@@ -483,7 +481,9 @@ namespace fc { namespace http {
             return ctx;
           });
 
-          _client.init_asio( &fc::asio::default_io_service() );
+          _client.init_asio( &_io_service );
+
+          _client_thread = std::make_shared< std::thread >( [&] { _io_service.run(); } );
         }
         ~websocket_tls_client_impl()
         {
@@ -493,6 +493,13 @@ namespace fc { namespace http {
             _shutting_down = true;
             _connection->close(0, "client closed");
             _closed->wait();
+          }
+
+          if( _client_thread )
+          {
+            _io_service.stop();
+            _client_thread->join();
+            _client_thread.reset();
           }
         }
 
@@ -517,7 +524,8 @@ namespace fc { namespace http {
         bool                      _shutting_down = false;
         fc::promise<void>::ptr    _connected;
         fc::promise<void>::ptr    _closed;
-        fc::thread&               _client_thread;
+        thread_ptr                _client_thread;
+        boost::asio::io_service   _io_service;
         websocket_tls_client_type _client;
         websocket_connection_ptr  _connection;
         std::string               _uri;
@@ -545,7 +553,6 @@ namespace fc { namespace http {
 
   void websocket_server::start_accept() {
     my->_server.start_accept();
-    my->_server.run();
   }
 
 
@@ -569,7 +576,6 @@ namespace fc { namespace http {
 
   void websocket_tls_server::start_accept() {
     my->_server.start_accept();
-    my->_server.run();
   }
 
 

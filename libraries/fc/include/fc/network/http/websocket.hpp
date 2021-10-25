@@ -48,6 +48,7 @@ namespace fc { namespace http {
 
       private:
          std::unique_ptr<detail::websocket_server_impl> my;
+         fc::future<void> server_thread;
    };
 
 
@@ -65,6 +66,7 @@ namespace fc { namespace http {
 
       private:
          std::unique_ptr<detail::websocket_tls_server_impl> my;
+         fc::future<void> server_thread;
    };
 
    class websocket_client : public client
