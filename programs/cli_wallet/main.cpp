@@ -69,9 +69,9 @@ namespace bpo = boost::program_options;
 
 namespace
 {
-  static fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
+  fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
 
-  static void sig_handler(int signal)
+  void sig_handler(int signal)
   {
     exit_promise->set_value(signal);
   }

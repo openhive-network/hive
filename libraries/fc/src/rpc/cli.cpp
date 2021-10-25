@@ -36,15 +36,15 @@ namespace fc { namespace rpc {
 
 namespace
 {
-   static std::vector<std::string>& cli_commands()
+   std::vector<std::string>& cli_commands()
    {
       static std::vector<std::string>* cmds = new std::vector<std::string>();
       return *cmds;
    }
 
-   static volatile sig_atomic_t last_signal = 0;
+   volatile sig_atomic_t last_signal = 0;
 
-   static void signal_handler( sig_atomic_t sig )
+   void signal_handler( sig_atomic_t sig )
    {
       last_signal = sig;
 #ifndef HAVE_READLINE
