@@ -1061,7 +1061,7 @@ struct post_apply_operation_visitor
   void operator()( const delegate_rc_operation& op )const
   {
     _mod_accounts.emplace_back( op.from );
-    for (account_name_type delegatee:op.delegatees) {
+    for (const account_name_type& delegatee:op.delegatees) {
       _mod_accounts.emplace_back( delegatee );
     }
   }
