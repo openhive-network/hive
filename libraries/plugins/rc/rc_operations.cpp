@@ -22,7 +22,7 @@ void delegate_rc_operation::validate()const
   FC_ASSERT(delegatees.size() != 0, "Must provide at least one account");
   FC_ASSERT(delegatees.size() <= HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP, "Provided ${size} accounts, cannot delegate to more than ${max} accounts in one operation", ("size", delegatees.size())("max", HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP));
 
-  for(account_name_type delegatee:delegatees) {
+  for(const account_name_type delegatee:delegatees) {
     validate_account_name(delegatee);
     FC_ASSERT( delegatee != from, "cannot delegate rc to yourself" );
   }
@@ -41,7 +41,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   const account_object &from_account = _db.get<account_object, by_name>(op.from);
   int64_t delta_total = 0; // total amount of rc gained/delegated over the accounts
 
-  for (account_name_type to:op.delegatees) {
+  for (const account_name_type& to:op.delegatees) {
     const rc_account_object &to_rc_account = _db.get<rc_account_object, by_name>(to);
 
     const account_object *to_account = _db.find<account_object, by_name>(to);
