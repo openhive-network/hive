@@ -46,10 +46,12 @@
 
 #include <iostream>
 
+#include <chrono>
 #include <cstdint>
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <thread>
 
 #include <stdlib.h>
 
@@ -5906,6 +5908,11 @@ void database::set_hardfork( uint32_t hardfork, bool apply_now )
 
   for( uint32_t i = hardforks.last_hardfork + 1; i <= hardfork && i <= HIVE_NUM_HARDFORKS; i++ )
   {
+	if( i == 24 )
+	{
+	  std::this_thread::sleep_for(std::chrono::seconds(10));
+	}
+
     if( i <= HIVE_HARDFORK_0_5__54 )
       _hardfork_versions.times[i] = head_block_time();
     else
