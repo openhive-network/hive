@@ -22,7 +22,7 @@ void delegate_rc_operation::validate()const
   FC_ASSERT(delegatees.size() != 0, "Must provide at least one account");
   FC_ASSERT(delegatees.size() <= HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP, "Provided ${size} accounts, cannot delegate to more than ${max} accounts in one operation", ("size", delegatees.size())("max", HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP));
 
-  for(const account_name_type delegatee:delegatees) {
+  for(const account_name_type& delegatee:delegatees) {
     validate_account_name(delegatee);
     FC_ASSERT( delegatee != from, "cannot delegate rc to yourself" );
   }
