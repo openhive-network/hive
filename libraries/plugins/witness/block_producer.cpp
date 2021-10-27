@@ -33,8 +33,11 @@ chain::signed_block block_producer::generate_block(fc::time_point_sec when, cons
 
 chain::signed_block block_producer::_generate_block(fc::time_point_sec when, const chain::account_name_type& witness_owner, const fc::ecc::private_key& block_signing_private_key)
 {
+  elog( "start generating block" );
   uint32_t skip = _db.get_node_properties().skip_flags;
+  elog( "skip: ${s}", ("s", skip) );
   uint32_t slot_num = _db.get_slot_at_time( when );
+  elog( "slot_num: ${s}", ("s", slot_num) );
   FC_ASSERT( slot_num > 0 );
   string scheduled_witness = _db.get_scheduled_witness( slot_num );
   FC_ASSERT( scheduled_witness == witness_owner );
@@ -49,6 +52,9 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   pending_block.previous = _db.head_block_id();
   pending_block.timestamp = when;
   pending_block.witness = witness_owner;
+  elog( "pending_block.previous : ${s}", ("s", pending_block.previous ) );
+  elog( "pending_block.timestamp : ${s}", ("s", pending_block.timestamp ) );
+  elog( "pending_block.witness_owner : ${s}", ("s", pending_block.witness ) );
 
   adjust_hardfork_version_vote( _db.get_witness( witness_owner ), pending_block );
 
@@ -60,6 +66,7 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   // However, the push_block() call below will re-create the
   // _pending_tx_session.
 
+  elog( "will sign block" );
   if( !(skip & chain::database::skip_witness_signature) )
     pending_block.sign( block_signing_private_key, _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
 
@@ -69,6 +76,7 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
     FC_ASSERT( fc::raw::pack_size(pending_block) <= HIVE_MAX_BLOCK_SIZE );
   }
 
+  elog( "will push block to database" );
   _db.push_block( pending_block, skip );
 
   return pending_block;

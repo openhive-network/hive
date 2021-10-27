@@ -308,6 +308,7 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop()
   {
+    elog( "inside block_production_loop, time is ${t}", ("t", fc::time_point::now()) );
     if( fc::time_point::now() < fc::time_point(HIVE_GENESIS_TIME) )
     {
       wlog( "waiting until genesis time to produce block: ${t}", ("t",HIVE_GENESIS_TIME) );
@@ -320,10 +321,12 @@ namespace detail {
     try
     {
       result = maybe_produce_block(capture);
+      elog( "maybe_produce_block result is ${r}", ("r", static_cast<int>(result)) );
     }
     catch( const fc::canceled_exception& )
     {
       //We're trying to exit. Go ahead and let this one out.
+      elog( "We're trying to exit. Go ahead and let this one out." );
       throw;
     }
     catch( const chain::unknown_hardfork_exception& e )
@@ -345,13 +348,13 @@ namespace detail {
         
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+           ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+           ilog("Not producing block because it isn't my turn");
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+           ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
@@ -406,6 +409,7 @@ namespace detail {
     // which would result in allowing a later block to have a timestamp
     // less than or equal to the previous block
     //
+    elog( "now: ${n} head_block_time: ${t}", ("n", now) ("t", _db.head_block_time()) );
     assert( now > _db.head_block_time() );
 
     chain::account_name_type scheduled_witness = _db.get_scheduled_witness( slot );
@@ -415,10 +419,12 @@ namespace detail {
       capture("scheduled_witness", scheduled_witness);
       return block_production_condition::not_my_turn;
     }
+    elog( "scheduled_witness: ${s}", ("s", scheduled_witness) );
 
     fc::time_point_sec scheduled_time = _db.get_slot_time( slot );
     chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
     auto private_key_itr = _private_keys.find( scheduled_key );
+    elog( "scheduled_key: ${s}", ("s", scheduled_key) );
 
     if( private_key_itr == _private_keys.end() )
     {
@@ -428,12 +434,14 @@ namespace detail {
     }
 
     uint32_t prate = _db.witness_participation_rate();
+    elog( "witness_participation_rate: ${s}", ("s", prate) );
     if( prate < _required_witness_participation )
     {
       capture("pct", uint32_t(100*uint64_t(prate) / HIVE_1_PERCENT));
       return block_production_condition::low_participation;
     }
 
+    elog( "scheduled_time - now: ${s}", ("s", llabs((scheduled_time - now).count())) );
     if( llabs((scheduled_time - now).count()) > fc::milliseconds( BLOCK_PRODUCING_LAG_TIME ).count() )
     {
       capture("scheduled_time", scheduled_time)("now", now);
@@ -446,9 +454,11 @@ namespace detail {
       private_key_itr->second,
       _production_skip_flags
       );
+    elog( "generated block" );
     capture("n", block.block_num())("t", block.timestamp)("c", now);
 
     appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
+    elog( "broadcasted block" );
     return block_production_condition::produced;
   }
 } // detail

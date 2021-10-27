@@ -22,6 +22,7 @@
 #include <thread>
 #include <memory>
 #include <iostream>
+#include <chrono>
 
 namespace hive { namespace plugins { namespace chain {
 
@@ -208,7 +209,9 @@ struct write_request_visitor
       if( !block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
+      elog( "before STATSD_START_TIMER" );
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
+      elog( "block_generator will generate block" );
       req->block = block_generator->generate_block(
         req->when,
         req->witness_owner,
@@ -287,11 +290,14 @@ void chain_plugin_impl::start_write_processing()
     {
       if( write_queue.pop( cxt ) )
       {
+        elog("write_queue NOT empty");
+        ilog("Will process write_request_visitor");
         last_popped_block_time = fc::time_point::now();
 
 	      fc::time_point write_lock_request_time = fc::time_point::now();
         db.with_write_lock( [&]()
         {
+          ilog("acquired database write lock");
           fc::time_point write_lock_acquired_time = fc::time_point::now();
           fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
@@ -305,6 +311,7 @@ void chain_plugin_impl::start_write_processing()
           {
             req_visitor.skip = cxt->skip;
             req_visitor.except = &(cxt->except);
+            ilog("applying write_request_visitor");
             cxt->success = cxt->req_ptr.visit( req_visitor );
             cxt->prom_ptr.visit( prom_visitor );
 
@@ -335,9 +342,15 @@ void chain_plugin_impl::start_write_processing()
           }
         });
       }
+      else
+        ilog("write_queue empty");
 
-      if( !is_syncing )
-        boost::this_thread::sleep_for( boost::chrono::milliseconds( 10 ) );
+      ilog("before sleep");
+      using namespace std::chrono_literals;
+       if( !is_syncing )
+         // std::this_thread::sleep_for(10ms);
+         boost::this_thread::sleep_for( boost::chrono::milliseconds( 10 ) );
+      ilog("after sleep");
 
       auto now = fc::time_point::now();
       if((now - last_popped_block_time) > block_wait_max_time)
@@ -856,8 +869,10 @@ hive::chain::signed_block chain_plugin::generate_block(
   cxt.prom_ptr = &prom;
 
   my->write_queue.push( &cxt );
+  elog( "generate_block_request pushed" );
 
   prom.get_future().get();
+  elog( "prom got future" );
 
   if( cxt.except ) throw *(cxt.except);
 
