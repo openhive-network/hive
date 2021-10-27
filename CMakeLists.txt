@@ -137,7 +137,23 @@ find_program(
 )
 
 SET( CLANG_TIDY_IGNORED
-"-fuchsia-default-arguments\
+"-fuchsia-default-arguments-*\
+,-bugprone-lambda-function-name\
+,-llvm-qualified-auto\
+,-misc-non-private-member-variables-in-classes\
+,-cert-dcl16-c\
+,-bugprone-narrowing-conversions\
+,-bugprone-macro-parentheses\
+,-bugprone-branch-clone\
+,-cert-oop54-cpp\
+,-fuchsia-statically-constructed-objects\
+,-performance-unnecessary-value-param\
+,-bugprone-exception-escape\
+,-clang-analyzer-cplusplus.NewDeleteLeaks\
+,-fuchsia-default-arguments\
+,-fuchsia-trailing-return\
+,-clang-analyzer-optin.cplusplus.UninitializedObject\
+,-bugprone-signed-char-misuse\
 ,-hicpp-*\
 ,-cert-err60-cpp\
 ,-llvm-namespace-comment\
@@ -171,9 +187,24 @@ elseif( VERSION LESS 3.6 )
    messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
 else()
    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
+   EXECUTE_PROCESS(
+           COMMAND ${CLANG_TIDY_EXE} --version
+           OUTPUT_VARIABLE CLANG_VERSION
+           ERROR_QUIET
+           OUTPUT_STRIP_TRAILING_WHITESPACE
+   )
+   STRING( REPLACE "\n" ";" CLANG_VERSION ${CLANG_VERSION} )
+   LIST( GET CLANG_VERSION 1 CLANG_VERSION )
+   STRING( REGEX MATCH "[0-9]+" CLANG_VERSION ${CLANG_VERSION} )
+   MESSAGE( STATUS "clang-tidy version: ${CLANG_VERSION}")
    if( HIVE_LINT )
+       SET( CLANG_ALL_CHECKS "--checks=*" )
+       IF ( CLANG_VERSION LESS 10 )
+           SET( CLANG_ALL_CHECKS "-checks=*" )
+       ENDIF()
+
       message( STATUS "Linting enabled" )
-      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=*,${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
+      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};${CLANG_ALL_CHECKS},${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
    else()
       unset( CLANG_TIDY_EXE )
       message( STATUS "Linting disabled" )

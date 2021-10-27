@@ -44,7 +44,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       environment_check& operator = ( const environment_check& other )
       {
 #ifndef ENABLE_STD_ALLOCATOR
-        plugins = plugins;
+        plugins = other.plugins;
 #endif
         compiler_version = other.compiler_version;
         debug = other.debug;
