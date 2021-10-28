@@ -14,30 +14,24 @@ BOOST_AUTO_TEST_CASE(websocket_test)
     fc::http::connection_ptr s_conn, c_conn;
 
     {
-      ilog("Before server");
       fc::http::websocket_server server;
 
-      ilog("Before on connection");
       server.on_connection( [&]( const fc::http::connection_ptr& c ){
         s_conn = c;
-        c->on_message_handler( [&](const std::string& s){
-          c->send_message("echo: " + s);
+        s_conn->on_message_handler( [&](const std::string& s){
+          s_conn->send_message("echo: " + s);
         } );
       } );
 
-      ilog("Before listen");
       server.listen( 8090 );
-      ilog("Before start accept");
       server.start_accept();
 
       std::string echo;
-      ilog("Before connect");
       c_conn = client.connect( "ws://localhost:8090" );
       c_conn->on_message_handler( [&](const std::string& s){
         echo = s;
       } );
 
-      ilog("Before send");
       c_conn->send_message( "hello world" );
       fc::usleep( fc::seconds(1) );
       BOOST_CHECK_EQUAL("echo: hello world", echo);
