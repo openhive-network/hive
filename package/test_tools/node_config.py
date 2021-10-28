@@ -100,6 +100,8 @@ class NodeConfig:
         self.witness_skip_enforce_bandwidth = Untouched()  # Set correct type
         self.psql_url = Untouched()
         self.psql_index_threshold = Integer()
+        self.psql_operations_threads_number = Integer()
+        self.psql_transactions_threads_number = Integer()
 
     def __setattr__(self, key, value):
         entries = self.__get_entries()
