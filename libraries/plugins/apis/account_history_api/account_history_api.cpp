@@ -82,7 +82,6 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
 
     return result;
   });
-#endif
 }
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
@@ -245,8 +244,6 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     {
     FC_ASSERT(false, "Unknown Transaction ${t}", ("t", args.id));
     }
-#endif
-
 }
 
 #define CHECK_OPERATION( r, data, CLASS_NAME ) \
