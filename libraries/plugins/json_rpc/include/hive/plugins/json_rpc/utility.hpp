@@ -2,11 +2,14 @@
 
 #include <type_traits>
 
+#include <fc/log/logger.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/macros.hpp>
 
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/cat.hpp>
+
+#include <iostream>
 
 #define DECLARE_API_METHOD_HELPER( r, data, method ) \
 BOOST_PP_CAT( method, _return ) method( const BOOST_PP_CAT( method, _args )& args, bool lock = false );
@@ -40,27 +43,33 @@ BOOST_PP_CAT( method, _return ) method( const BOOST_PP_CAT( method, _args )& arg
 BOOST_PP_SEQ_FOR_EACH( DECLARE_API_IMPL_HELPER, _, METHODS )
 
 #define DEFINE_API_IMPL( class, method )                                                        \
-BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _args )& args )   \
+BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _args )& args )
 
 #define DEFINE_READ_API_HELPER( r, class, method )                                                       \
 BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _args )& args, bool lock ) \
 {                                                                                                        \
-  if( lock )                                                                                            \
-  {                                                                                                     \
-    return my->_db.with_read_lock( [&args, this](){ return my->method( args ); });                     \
-  }                                                                                                     \
-  else                                                                                                  \
-  {                                                                                                     \
-    return my->method( args );                                                                         \
-  }                                                                                                     \
+  if( lock )                                                                                             \
+  {                                                                                                      \
+	std::cerr << #class "::" #method "Locking for reading" << std::endl;                                 \
+    auto result = my->_db.with_read_lock( [&args, this](){ return my->method( args ); });                \
+    std::cerr << #class "::" #method "Unlocking after reading" << std::endl;                             \
+    return result;                                                                                       \
+  }                                                                                                      \
+  else                                                                                                   \
+  {                                                                                                      \
+    return my->method( args );                                                                           \
+  }                                                                                                      \
 }
 
 #define DEFINE_WRITE_API_HELPER( r, class, method )                                                      \
 BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _args )& args, bool lock ) \
 {                                                                                                        \
-  if( lock )                                                                                            \
-  {                                                                                                     \
-    return my->_db.with_write_lock( [&args, this](){ return my->method( args ); });                    \
+  if( lock )                                                                                             \
+  {                                                                                                      \
+	std::cerr << #class "::" #method "Locking for writing" << std::endl;                                 \
+    auto result = my->_db.with_write_lock( [&args, this](){ return my->method( args ); });               \
+    std::cerr << #class "::" #method "Unlocking after reading" << std::endl;                             \
+    return result;                                                                                       \
   }                                                                                                     \
   else                                                                                                  \
   {                                                                                                     \

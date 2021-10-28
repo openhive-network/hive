@@ -48,13 +48,16 @@ namespace detail
     if( max_block_age < 0 )
       return false;
 
-    return _chain.db().with_read_lock( [&]()
+    ilog("Locking for reading");
+    auto result = _chain.db().with_read_lock( [&]()
     {
       fc::time_point_sec now = fc::time_point::now();
       const auto& dgpo = _chain.db().get_dynamic_global_properties();
 
       return ( dgpo.time < now - fc::seconds( max_block_age ) );
     });
+    ilog("Unlocking after reading");
+    return result;
   }
 
 } // detail

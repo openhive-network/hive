@@ -134,7 +134,8 @@ public:
 ////////////////////////////// Begin node_delegate Implementation //////////////////////////////
 bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
 {
-  return chain.db().with_read_lock( [&]()
+  ilog("Locking for reading");
+  auto result = chain.db().with_read_lock( [&]()
   {
     try
     {
@@ -145,6 +146,8 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
     }
     FC_CAPTURE_LOG_AND_RETHROW( (id) )
   });
+  ilog("Unlocking after reading");
+  return result;
 }
 
 bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg, bool sync_mode, std::vector<fc::uint160_t>& )
@@ -154,10 +157,12 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
     action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_BLOCK_HANDLER ) );
 
     uint32_t head_block_num;
+    ilog("Locking for reading");
     chain.db().with_read_lock( [&]()
     {
       head_block_num = chain.db().head_block_num();
     });
+	ilog("Unlocking after reading");
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
           "chain pushing sync block #${block_num} ${block_hash}, head is ${head}",
@@ -247,7 +252,8 @@ void p2p_plugin_impl::handle_message( const graphene::net::message& message_to_p
 
 std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_block_ids( const std::vector< graphene::net::item_hash_t >& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit )
 { try {
-  return chain.db().with_read_lock( [&]()
+  ilog("Locking for reading");
+  auto result = chain.db().with_read_lock( [&]()
   {
     vector<block_id_type> result;
     remaining_item_count = 0;
@@ -297,13 +303,16 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_block_ids( const 
 
     return result;
   });
+  ilog("Unlocking after reading");
+  return result;
 } FC_CAPTURE_AND_RETHROW( (blockchain_synopsis)(remaining_item_count)(limit) ) }
 
 graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& id )
 { try {
   if( id.item_type == graphene::net::block_message_type )
   {
-    return chain.db().with_read_lock( [&]()
+	ilog("Locking for reading");
+    auto result = chain.db().with_read_lock( [&]()
     {
       auto opt_block = chain.db().fetch_block_by_id(id.item_hash);
       if( !opt_block )
@@ -313,11 +322,17 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
       // ilog("Serving up block #${num}", ("num", opt_block->block_num()));
       return block_message(*opt_block);
     });
+	ilog("Unlocking after reading");
+	return result;
   }
-  return chain.db().with_read_lock( [&]()
+
+  ilog("Locking for reading");
+  auto result = chain.db().with_read_lock( [&]()
   {
     return trx_message( chain.db().get_recent_transaction( id.item_hash ) );
   });
+  ilog("Unlocking after reading");
+  return result;
 } FC_CAPTURE_AND_RETHROW( (id) ) }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
@@ -339,6 +354,7 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
 {
   try {
   std::vector<item_hash_t> synopsis;
+  ilog("Locking for reading");
   chain.db().with_read_lock( [&]()
   {
     synopsis.reserve(30);
@@ -456,6 +472,7 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
     //idump((synopsis));
     return;
   });
+  ilog("Unlocking after reading");
 
   return synopsis;
 } FC_LOG_AND_RETHROW() }
@@ -481,21 +498,27 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    return chain.db().with_read_lock( [&]()
+	ilog("Locking for reading");
+    auto result = chain.db().with_read_lock( [&]()
     {
       auto opt_block = chain.db().fetch_block_by_id( block_id );
       if( opt_block.valid() ) return opt_block->timestamp;
       return fc::time_point_sec::min();
     });
+	ilog("Unlocking after reading");
+	return result;
   } FC_CAPTURE_AND_RETHROW( (block_id) )
 }
 
 graphene::net::item_hash_t p2p_plugin_impl::get_head_block_id() const
 { try {
-  return chain.db().with_read_lock( [&]()
+  ilog("Locking for reading");
+  auto result = chain.db().with_read_lock( [&]()
   {
     return chain.db().head_block_id();
   });
+  ilog("Unlocking after reading");
+  return result;
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t p2p_plugin_impl::estimate_last_known_fork_from_git_revision_timestamp(uint32_t) const
@@ -515,12 +538,15 @@ fc::time_point_sec p2p_plugin_impl::get_blockchain_now()
 
 bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
 { try {
-  return chain.db().with_read_lock( [&]()
+  ilog("Locking for reading");
+  auto result = chain.db().with_read_lock( [&]()
   {
     uint32_t block_num = block_header::num_from_id(block_id);
     block_id_type block_id_in_preferred_chain = chain.db().get_block_id_for_num(block_num);
     return block_id == block_id_in_preferred_chain;
   });
+  ilog("Unlocking after reading");
+  return result;
 } FC_CAPTURE_AND_RETHROW() }
 
 ////////////////////////////// End node_delegate Implementation //////////////////////////////
@@ -672,10 +698,12 @@ void p2p_plugin::plugin_startup()
     my->node->listen_to_p2p_network();
     my->node->connect_to_p2p_network();
     block_id_type block_id;
+    ilog("Locking for reading");
     my->chain.db().with_read_lock( [&]()
     {
       block_id = my->chain.db().head_block_id();
     });
+    ilog("Unlocking after reading");
     my->node->sync_from(graphene::net::item_id(graphene::net::block_message_type, block_id), std::vector<uint32_t>());
     ilog("P2P node listening at ${ep}", ("ep", my->node->get_actual_listening_endpoint()));
     hive::notify( "P2P listening",

@@ -37,7 +37,8 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
 {
   FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
-  return _db.with_read_lock( [&]()
+  ilog("Locking for reading");
+  auto result = _db.with_read_lock( [&]()
   {
     const auto& idx = _db.get_index< chain::operation_index, chain::by_location >();
     auto itr = idx.lower_bound( args.block_num );
@@ -54,6 +55,8 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
 
     return result;
   });
+  ilog("Unlocking after reading");
+  return result;
 }
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
@@ -64,7 +67,9 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
 
   FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
-  return _db.with_read_lock( [&]()
+
+  ilog("Locking for reading");
+  auto result = _db.with_read_lock( [&]()
   {
     get_transaction_return result;
 
@@ -86,6 +91,8 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
 
     return result;
   });
+  ilog("Unlocking after reading");
+  return result;
 #endif
 }
 
@@ -96,7 +103,8 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
 
   FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
-  return _db.with_read_lock( [&]()
+  ilog("Locking for reading");
+  auto result = _db.with_read_lock( [&]()
   {
     const auto& idx = _db.get_index< chain::account_history_index, chain::by_account >();
     auto itr = idx.lower_bound( boost::make_tuple( args.account, args.start ) );
@@ -118,6 +126,8 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
 
     return result;
   });
+  ilog("Unlocking after reading");
+  return result;
 }
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, enum_virtual_ops )
@@ -236,6 +246,8 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   if(_dataSource.find_transaction_info(args.id, include_reversible, &blockNo, &txInBlock))
     {
     get_transaction_return result;
+
+    ilog("Locking for reading");
     _db.with_read_lock([this, blockNo, txInBlock, &result]()
     {
     auto blk = _db.fetch_block_by_number(blockNo);
@@ -245,6 +257,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     result.block_num = blockNo;
     result.transaction_num = txInBlock;
     });
+    ilog("Unlocking after reading");
 
     return result;
     }

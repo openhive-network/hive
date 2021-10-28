@@ -155,18 +155,22 @@ void database::initialize_state_independent_data(const open_args& args)
 
   if(!find< dynamic_global_property_object >())
   {
+	ilog("Locking for writing");
     with_write_lock([&]()
     {
       init_genesis(args.initial_supply, args.hbd_initial_supply);
     });
+	ilog("Unlocking after writing");
   }
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
 
+  ilog("Locking for writing");
   with_write_lock([&]()
   {
     _block_log.open(args.data_dir / "block_log");
   });
+  ilog("Unlocking after writing");
 
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
@@ -185,6 +189,7 @@ void database::load_state_initial_data(const open_args& args)
   ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${lb}", ("hb", hb)("lb", last_irreversible_block));
 
    // Rewind all undo state. This should return us to the state at the last irreversible block.
+  ilog("Locking for writing");
   with_write_lock([&]()
     {
       ilog("Attempting to rewind all undo state...");
@@ -215,6 +220,7 @@ void database::load_state_initial_data(const open_args& args)
           validate_invariants();
       }
     });
+  ilog("Unlocking after writing");
 
   if(head_block_num())
   {
@@ -225,6 +231,7 @@ void database::load_state_initial_data(const open_args& args)
     _fork_db.start_block(*head_block);
   }
 
+  ilog("Locking for reading");
   with_read_lock([&]()
     {
       const auto& hardforks = get_hardfork_property_object();
@@ -233,10 +240,12 @@ void database::load_state_initial_data(const open_args& args)
       FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION);
       FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS]);
     });
+  ilog("Unlocking after reading");
 
 #ifdef IS_TEST_NET
   /// Leave the chain-id passed to cmdline option.
 #else
+  ilog("Locking for reading");
   with_read_lock([&]()
     {
       const auto& hardforks = get_hardfork_property_object();
@@ -246,6 +255,7 @@ void database::load_state_initial_data(const open_args& args)
         set_chain_id(HIVE_CHAIN_ID);
       }
     });
+  ilog("Unlocking after reading");
 #endif /// IS_TEST_NET
 
 
@@ -376,6 +386,7 @@ uint32_t database::reindex( const open_args& args )
 
     ilog( "Replaying blocks..." );
 
+	ilog("Locking for writing");
     with_write_lock( [&]()
     {
       optional<signed_block> start_block;
@@ -417,6 +428,7 @@ uint32_t database::reindex( const open_args& args )
 
       //get_index< account_index >().indices().print_stats();
     });
+	ilog("Unlocking after writing");
 
     if ( _block_log.head()->block_num() )
       _fork_db.start_block( *_block_log.head() );
@@ -564,10 +576,12 @@ optional<signed_block> database::fetch_block_by_number( uint32_t block_num )cons
 optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_num )
 { try {
   shared_ptr< fork_item > fitem;
+  ilog("Locking for reading");
   with_read_lock( [&]()
   {
     fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
   });
+  ilog("Unlocking after reading");
 
   if( fitem )
     return fitem->data;
@@ -585,10 +599,12 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
   idump((starting_block_num)(count));
 
   vector<fork_item> fork_items;
+  ilog("Locking for reading");
   with_read_lock( [&]()
   {
     fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count );
   });
+  ilog("Unlocking after reading");
   idump((fork_items.size()));
   if (!fork_items.empty())
     idump((fork_items.front().num));

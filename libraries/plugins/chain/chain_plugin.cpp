@@ -300,6 +300,7 @@ void chain_plugin_impl::start_write_processing()
         last_popped_block_time = fc::time_point::now();
 
 	      fc::time_point write_lock_request_time = fc::time_point::now();
+	    ilog("Locking for writing");
         db.with_write_lock( [&]()
         {
           fc::time_point write_lock_acquired_time = fc::time_point::now();
@@ -344,6 +345,7 @@ void chain_plugin_impl::start_write_processing()
             last_popped_block_time = fc::time_point::now();
           }
         });
+	    ilog("Unlocking after writing");
       }
 
       if( !is_syncing )

@@ -9,6 +9,7 @@
 #include <fc/exception/exception.hpp>
 #include <fc/macros.hpp>
 #include <fc/io/fstream.hpp>
+#include <fc/log/logger.hpp>
 
 #include <chainbase/chainbase.hpp>
 
@@ -344,6 +345,7 @@ namespace detail
             catch( chainbase::lock_exception& e )
             {
               response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
+              ilog("Error occurred: ${error}", ("error", e.what()));
             }
             catch( fc::assert_exception& e )
             {
