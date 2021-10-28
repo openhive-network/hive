@@ -58,10 +58,6 @@ DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
 
 DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
 {
-#ifdef SKIP_BY_TX_ID
-  FC_ASSERT( false, "This node's operator has disabled operation indexing by transaction_id" );
-#else
-
   FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
 
   return _db.with_read_lock( [&]()
@@ -225,9 +221,6 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 {
-#ifdef SKIP_BY_TX_ID
-  FC_ASSERT(false, "This node's operator has disabled operation indexing by transaction_id");
-#else
   uint32_t blockNo = 0;
   uint32_t txInBlock = 0;
 
