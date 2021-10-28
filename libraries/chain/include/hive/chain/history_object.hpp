@@ -42,16 +42,13 @@ namespace hive { namespace chain {
           member< operation_object, uint32_t, &operation_object::block >,
           const_mem_fun< operation_object, operation_object::id_type, &operation_object::get_id >
         >
-      >
-#ifndef SKIP_BY_TX_ID
-      ,
+      >,
       ordered_unique< tag< by_transaction_id >,
         composite_key< operation_object,
           member< operation_object, transaction_id_type, &operation_object::trx_id> ,
           const_mem_fun< operation_object, operation_object::id_type, &operation_object::get_id >
         >
       >
-#endif
     >,
     allocator< operation_object >
   > operation_index;

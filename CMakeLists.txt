@@ -115,13 +115,6 @@ else()
   MESSAGE( FATAL_ERROR "   NOTE: CLEAR OLD VOTES OPTION HAS BEEN DEPRECATED" )
 endif()
 
-OPTION( SKIP_BY_TX_ID "Skip ordering operation history by transaction id (ON or OFF)" OFF )
-MESSAGE( STATUS "SKIP_BY_TX_ID: ${SKIP_BY_TX_ID}" )
-if( SKIP_BY_TX_ID )
-   SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSKIP_BY_TX_ID" )
-   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSKIP_BY_TX_ID" )
-endif()
-
 OPTION( HIVE_STATIC_BUILD "Build hived as a static library (ON or OFF)" OFF )
 if( HIVE_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
    MESSAGE( STATUS "Statuc build is not available on Windows or OS X" )
