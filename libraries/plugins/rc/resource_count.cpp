@@ -16,6 +16,7 @@ struct count_operation_visitor
   mutable int32_t new_account_op_count = 0;
   mutable int64_t state_bytes_count = 0;
   mutable int64_t execution_time_count = 0;
+  mutable bool has_logged_operation = false;
 
   const state_object_size_info& _w;
   const operation_exec_info& _e;
@@ -60,11 +61,12 @@ struct count_operation_visitor
 
   void operator()( const comment_operation& op )const
   {
-    state_bytes_count +=
-        _w.comment_object_base_size
+    int64_t state_size = _w.comment_object_base_size
       + _w.comment_object_permlink_char_size * op.permlink.size()
       + _w.comment_object_parent_permlink_char_size * op.parent_permlink.size();
+    state_bytes_count += state_size;
     execution_time_count += _e.comment_operation_exec_time;
+    has_logged_operation = true;
   }
 
   void operator()( const comment_payout_beneficiaries& bens )const
@@ -157,6 +159,7 @@ struct count_operation_visitor
     FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     state_bytes_count += _w.comment_vote_object_base_size;
     execution_time_count += _e.vote_operation_exec_time;
+    has_logged_operation = true;
   }
 
   void operator()( const witness_update_operation& op )const
@@ -172,6 +175,7 @@ struct count_operation_visitor
     FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     execution_time_count += _e.transfer_operation_exec_time;
     market_op_count++;
+    has_logged_operation = true;
   }
 
   void operator()( const transfer_to_vesting_operation& )const
@@ -256,6 +260,8 @@ struct count_operation_visitor
     }
 
     execution_time_count += exec_time;
+
+    has_logged_operation = true;
   }
 
   void operator()( const custom_binary_operation& o )const
@@ -449,7 +455,7 @@ struct count_operation_visitor
 
 typedef count_operation_visitor count_optional_action_visitor;
 
-void count_resources(
+bool count_resources(
   const signed_transaction& tx,
   count_resources_result& result
   )
@@ -477,9 +483,11 @@ void count_resources(
     + vtor.state_bytes_count;
 
   result.resource_count[ resource_execution_time ] += vtor.execution_time_count;
+
+  return vtor.has_logged_operation;
 }
 
-void count_resources(
+bool count_resources(
   const optional_automated_action& action,
   count_resources_result& result)
 {
@@ -498,6 +506,8 @@ void count_resources(
   result.resource_count[ resource_state_bytes ] += vtor.state_bytes_count;
 
   result.resource_count[ resource_execution_time ] += vtor.execution_time_count;
+
+  return vtor.has_logged_operation;
 }
 
 } } } // hive::plugins::rc

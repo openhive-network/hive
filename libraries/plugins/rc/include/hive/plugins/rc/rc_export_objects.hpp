@@ -19,7 +19,8 @@ struct rc_transaction_info
   account_name_type         resource_user;
   count_resources_result    usage;
   fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES >
-                    cost;
+                            cost;
+  std::vector< uint8_t >    contains;
 };
 
 typedef rc_transaction_info rc_optional_action_info;
@@ -53,6 +54,7 @@ FC_REFLECT( hive::plugins::rc::rc_transaction_info,
   (resource_user)
   (usage)
   (cost)
+  (contains)
 )
 
 FC_REFLECT( hive::plugins::rc::rc_block_info,

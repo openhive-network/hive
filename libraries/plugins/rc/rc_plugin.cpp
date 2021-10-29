@@ -322,7 +322,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   rc_transaction_info tx_info;
 
   // How many resources does the transaction use?
-  count_resources( note.transaction, tx_info.usage );
+  bool logged_ops = count_resources( note.transaction, tx_info.usage );
 
   // How many RC does this transaction cost?
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
@@ -361,6 +361,13 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   }
   if( export_data )
     export_data->tx_info.push_back( tx_info );
+  if( logged_ops )
+  {
+    for( const operation& op : note.transaction.operations )
+      tx_info.contains.emplace_back( op.which() );
+    ilog( "GREPT: {\"block_num\":${b}, \"tx_info\":${i}}", ( "b", _db.head_block_num() )( "i", tx_info ) );
+  }
+  
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
 struct block_extensions_count_resources_visitor
@@ -377,7 +384,7 @@ struct block_extensions_count_resources_visitor
   {
     for( const auto& a : opt_actions )
     {
-      count_resources( a, _r);
+      count_resources( a, _r );
     }
   }
 
@@ -430,9 +437,10 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 
   // How many resources did transactions use?
   count_resources_result count;
+  bool logged_ops = false;
   for( const signed_transaction& tx : note.block.transactions )
   {
-    count_resources( tx, count );
+    logged_ops |= count_resources( tx, count );
   }
 
   block_extensions_count_resources_visitor ext_visitor( count );
@@ -515,6 +523,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
     export_data->block_info = block_info;
+  if( logged_ops )
+    ilog( "GREPB: {\"block_num\":${b}, \"block_info\":${i}}", ( "b", _db.head_block_num() )( "i", block_info ) );
 } FC_CAPTURE_AND_RETHROW( (note.block) ) }
 
 void rc_plugin_impl::on_first_block()

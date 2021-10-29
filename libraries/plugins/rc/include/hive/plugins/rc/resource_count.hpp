@@ -27,12 +27,12 @@ struct count_resources_result
   resource_count_type                            resource_count;
 };
 
-void count_resources(
+bool count_resources(
   const hive::protocol::signed_transaction& tx,
   count_resources_result& result
   );
 
-void count_resources(
+bool count_resources(
   const hive::protocol::optional_automated_action&,
   count_resources_result& result
   );
