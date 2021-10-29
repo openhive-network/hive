@@ -323,6 +323,7 @@ void chain_plugin_impl::start_write_processing()
             if( is_syncing && fc::time_point::now() - db.head_block_time() < fc::minutes(1) )
             {
               is_syncing = false;
+              hive::notify_hived_status("entering live mode");
             }
 
             if( !is_syncing )
