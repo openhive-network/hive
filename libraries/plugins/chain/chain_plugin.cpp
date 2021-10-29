@@ -20,6 +20,7 @@
 #include <boost/lockfree/queue.hpp>
 
 #include <thread>
+#include <chrono>
 #include <memory>
 #include <iostream>
 
@@ -337,7 +338,7 @@ void chain_plugin_impl::start_write_processing()
       }
 
       if( !is_syncing )
-        boost::this_thread::sleep_for( boost::chrono::milliseconds( 10 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
       auto now = fc::time_point::now();
       if((now - last_popped_block_time) > block_wait_max_time)
@@ -350,7 +351,7 @@ void chain_plugin_impl::start_write_processing()
           wlog("Checking for new P2P data once per ${t} seconds...", ("t", HIVE_BLOCK_INTERVAL));
         }
 
-        boost::this_thread::sleep_for(boost::chrono::seconds(HIVE_BLOCK_INTERVAL));
+        std::this_thread::sleep_for(std::chrono::seconds(HIVE_BLOCK_INTERVAL));
       }
     }
 
