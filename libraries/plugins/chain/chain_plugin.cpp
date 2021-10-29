@@ -324,6 +324,7 @@ void chain_plugin_impl::start_write_processing()
             {
               is_syncing = false;
               db.notify_end_of_syncing();
+              hive::notify_hived_status("entering live mode");
             }
 
             if( !is_syncing )
