@@ -369,10 +369,12 @@ namespace fc { namespace http {
     typedef websocket_client_type::connection_ptr      websocket_client_connection_type;
     typedef websocket_tls_client_type::connection_ptr  websocket_tls_client_connection_type;
 
+    template< typename T >
     class websocket_client_impl
     {
     public:
-      typedef websocket_client_type::message_ptr message_ptr;
+      typedef typename std::decay< T >::type client_type;
+      typedef typename client_type::message_ptr message_ptr;
 
       websocket_client_impl()
       {
@@ -432,61 +434,22 @@ namespace fc { namespace http {
       fc::promise<void>::ptr   _closed;
       thread_ptr               _client_thread;
       boost::asio::io_service  _io_service;
-      websocket_client_type    _client;
+      client_type              _client;
       websocket_connection_ptr _connection;
       std::string              _uri;
     };
 
-    class websocket_tls_client_impl
+    class websocket_tls_client_impl : public websocket_client_impl< websocket_tls_client_type >
     {
     public:
-      typedef websocket_tls_client_type::message_ptr message_ptr;
-
       websocket_tls_client_impl( std::string ca_filename )
+        : websocket_client_impl()
       {
         // ca_filename has special values:
         // "_none" disables cert checking (potentially insecure!)
         // "_default" uses default CA's provided by OS
 
-        _client.clear_access_channels( websocketpp::log::alevel::all );
-        _client.clear_error_channels( websocketpp::log::elevel::all );
-        _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
-          wdump((msg->get_payload()));
-          _connection->on_message( msg->get_payload() );
-        });
-        _client.set_close_handler( [=]( connection_hdl hdl ){
-            if( _connection )
-              _connection->closed();
-            _connection.reset();
-            if( _closed ) _closed->set_value();
-          });
-        _client.set_fail_handler( [=]( connection_hdl hdl ){
-          auto con = _client.get_con_from_hdl(hdl);
-          auto message = con->get_ec().message();
-          if( _connection )
-            _connection->closed();
-          _connection.reset();
-          if( _connected && !_connected->ready() )
-            _connected->set_exception( exception_ptr( new FC_EXCEPTION( exception, "${message}", ("message",message)) ) );
-          if( _closed )
-            _closed->set_value();
-        });
-
-        //
-        // We need ca_filename to be copied into the closure, as the referenced object might be destroyed by the caller by the time
-        // tls_init_handler() is called.  According to [1], capture-by-value results in the desired behavior (i.e. creation of
-        // a copy which is stored in the closure) on standards compliant compilers, but some compilers on some optimization levels
-        // are buggy and are not standards compliant in this situation.  Also, keep in mind this is the opinion of a single forum
-        // poster and might be wrong.
-        //
-        // To be safe, the following line explicitly creates a non-reference string which is captured by value, which should have the
-        // correct behavior on all compilers.
-        //
-        // [1] http://www.cplusplus.com/forum/general/142165/
-        // [2] http://stackoverflow.com/questions/21443023/capturing-a-reference-by-reference-in-a-c11-lambda
-        //
-
-        _client.set_tls_init_handler( [=](websocketpp::connection_hdl) {
+        websocket_client_impl::_client.set_tls_init_handler( [=](websocketpp::connection_hdl) {
           context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::tlsv1);
           try {
             ctx->set_options(boost::asio::ssl::context::default_workarounds |
@@ -501,37 +464,11 @@ namespace fc { namespace http {
           }
           return ctx;
         });
-
-        _client.init_asio( &_io_service );
-      }
-      void stop()
-      {
-        if( _client_thread )
-        {
-          _io_service.stop();
-          _client_thread->join();
-          _client_thread.reset();
-        }
-      }
-      void run()
-      {
-        stop();
-        _client_thread = std::make_shared< std::thread >( [&] { _io_service.run(); } );
-      }
-      ~websocket_tls_client_impl()
-      {
-        if( _connection )
-        {
-          _shutting_down = true;
-          _connection->close(0, "client closed");
-          _closed->wait();
-        }
-        stop();
       }
 
       std::string get_host()const
       {
-        return websocketpp::uri( _uri ).get_host();
+        return websocketpp::uri( websocket_client_impl::_uri ).get_host();
       }
 
       void setup_peer_verify( context_ptr& ctx, const std::string& ca_filename )
@@ -546,15 +483,6 @@ namespace fc { namespace http {
         ctx->set_verify_depth(10);
         ctx->set_verify_callback( boost::asio::ssl::rfc2818_verification( get_host() ) );
       }
-
-      bool                      _shutting_down = false;
-      fc::promise<void>::ptr    _connected;
-      fc::promise<void>::ptr    _closed;
-      thread_ptr                _client_thread;
-      boost::asio::io_service   _io_service;
-      websocket_tls_client_type _client;
-      websocket_connection_ptr  _connection;
-      std::string               _uri;
     };
 
   } // namespace detail
@@ -623,7 +551,7 @@ namespace fc { namespace http {
       FC_ASSERT( uri.substr(0,3) == "ws:" );
 
       // Create new connection
-      auto my = std::make_shared< detail::websocket_client_impl >();
+      auto my = std::make_shared< detail::websocket_client_impl< detail::websocket_client_type > >();
 
       websocketpp::lib::error_code ec;
 
