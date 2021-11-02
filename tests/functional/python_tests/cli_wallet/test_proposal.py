@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import pytest
+
 from test_tools import logger
 from .shared_utilites import *
 from test_tools.wallet import Wallet
@@ -37,23 +39,17 @@ def test_update_proposal_votes(wallet : Wallet, creator_proposal_id : proposal_d
   assert voter_proposals_before_count + 1 == voter_proposals_after_count
 
 def test_create_proposal_fail_negative_payment(wallet : Wallet, funded_account : funded_account_info, creator : Account):
-
-  ERROR_MESSAGE = "daily_pay.amount >= 0: Daily pay can't be negative value"
-  exception = None
-
   assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
   prepared_proposal = prepare_proposal(funded_account)
   prepared_proposal.create_proposal_arguments["daily_pay"] = Asset.Tbd(-1) # "-1.000 TBD"
   wallet.api.post_comment( **prepared_proposal.post_comment_arguments )
 
-  try:
+  with pytest.raises(CommunicationError) as exception:
     wallet.api.create_proposal( **prepared_proposal.create_proposal_arguments )
-  except CommunicationError as e:
-    exception = e
 
-  assert exception is not None
-  assert ERROR_MESSAGE in exception.response
+  response = exception.value.response
+  assert "daily_pay.amount >= 0: Daily pay can't be negative value" in response['error']['message']
 
   assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
