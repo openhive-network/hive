@@ -618,8 +618,8 @@ namespace fc { namespace http {
     {
       FC_ASSERT( uri.substr(0,3) == "ws:" );
 
-      // Create new connection and discard the other one; XXX: Fix
-      my = std::make_unique< detail::websocket_client_impl >();
+      // Create new connection
+      auto my = std::make_shared< detail::websocket_client_impl >();
 
       websocketpp::lib::error_code ec;
 
@@ -649,8 +649,8 @@ namespace fc { namespace http {
     {
       FC_ASSERT( uri.substr(0,4) == "wss:" );
 
-      // Create new connection and discard the other one; XXX: Fix
-      my = std::make_unique< detail::websocket_tls_client_impl >( client::ca_filename );
+      // Create new connection
+      auto my = std::make_shared< detail::websocket_tls_client_impl >( client::ca_filename );
 
       websocketpp::lib::error_code ec;
 

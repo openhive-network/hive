@@ -12,8 +12,6 @@ namespace fc { namespace http {
    namespace detail {
       class websocket_server_impl;
       class websocket_tls_server_impl;
-      class websocket_client_impl;
-      class websocket_tls_client_impl;
    } // namespace detail;
 
    class websocket_connection : public connection
@@ -74,8 +72,6 @@ namespace fc { namespace http {
          virtual ~websocket_client();
 
          virtual connection_ptr connect( const std::string& uri ) override;
-      private:
-         std::unique_ptr<detail::websocket_client_impl> my;
    };
    class websocket_tls_client : public client
    {
@@ -84,8 +80,6 @@ namespace fc { namespace http {
          virtual ~websocket_tls_client();
 
          virtual connection_ptr connect( const std::string& uri ) override;
-      private:
-         std::unique_ptr<detail::websocket_tls_client_impl> my;
    };
 
 } }
