@@ -20,7 +20,7 @@
             "permlink": "i-did-mean-it-in-no-bad-way"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-14T21:57:48",
         "trx_id": "3ca1ef0fc0d035222245327ef524e724bc5d7de5",
@@ -48,7 +48,7 @@
             "permlink": "we-haven-t-been-able-to-grow"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-15T09:22:24",
         "trx_id": "10a97c80d2b757d6215f56740548360b87171b3b",
@@ -76,7 +76,7 @@
             "permlink": "you-want-godzilla-roll"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-15T09:55:45",
         "trx_id": "ec31328dd62df34b8d3f934a94064dd7a9003da0",
