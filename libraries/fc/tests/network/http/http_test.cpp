@@ -18,8 +18,8 @@ BOOST_AUTO_TEST_CASE(http_test)
 
       server.on_connection( [&]( const fc::http::connection_ptr& c ){
         s_conn = c;
-        c->on_message_handler( [&](const std::string& s){
-          c->send_message("echo: " + s);
+        s_conn->on_message_handler( [&](const std::string& s){
+          s_conn->send_message("echo: " + s);
         } );
       } );
 
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(http_test)
 
     BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );
 
-    BOOST_REQUIRE_THROW( c_conn = client.connect( "http://localhost:8093" ), fc::assert_exception );
+    BOOST_REQUIRE_THROW( client.connect( "http://localhost:8093" ), fc::exception );
 
   } FC_CAPTURE_LOG_AND_RETHROW(());
 }
