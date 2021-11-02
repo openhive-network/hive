@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
 
     BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );
 
-    BOOST_REQUIRE_THROW( c_conn = client.connect( "ws://localhost:8090" ), fc::assert_exception );
+    BOOST_REQUIRE_THROW( client.connect( "ws://localhost:8090" ), fc::exception );
 
   } FC_CAPTURE_LOG_AND_RETHROW(());
 }
