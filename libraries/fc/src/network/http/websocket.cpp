@@ -142,6 +142,7 @@ namespace fc { namespace http {
       websocket_server_impl()
       {
         _server.clear_access_channels( websocketpp::log::alevel::all );
+        _server.clear_error_channels( websocketpp::log::elevel::all );
         _server.init_asio( &_io_service );
         _server.set_reuse_addr(true);
         _server.set_open_handler( [&]( connection_hdl hdl ){
@@ -262,6 +263,7 @@ namespace fc { namespace http {
         });
 
         _server.clear_access_channels( websocketpp::log::alevel::all );
+        _server.clear_error_channels( websocketpp::log::elevel::all );
         _server.init_asio( &_io_service );
         _server.set_reuse_addr(true);
         _server.set_open_handler( [&]( connection_hdl hdl ){
@@ -375,6 +377,7 @@ namespace fc { namespace http {
       websocket_client_impl()
       {
         _client.clear_access_channels( websocketpp::log::alevel::all );
+        _client.clear_error_channels( websocketpp::log::elevel::all );
         _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
           wdump((msg->get_payload()));
           auto received = msg->get_payload();
@@ -446,6 +449,7 @@ namespace fc { namespace http {
         // "_default" uses default CA's provided by OS
 
         _client.clear_access_channels( websocketpp::log::alevel::all );
+        _client.clear_error_channels( websocketpp::log::elevel::all );
         _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
           wdump((msg->get_payload()));
           _connection->on_message( msg->get_payload() );
