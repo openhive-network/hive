@@ -1,4 +1,7 @@
-from test_tools import Account, logger, World, Asset
+import pytest
+
+from test_tools import Asset, exceptions, logger
+
 
 def test_delegate(node, wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
@@ -89,10 +92,8 @@ def test_delegate(node, wallet):
     assert _result['balance'] == Asset.Test(50)
     assert _result['hbd_balance'] == Asset.Tbd(0.111)
 
-    try:
-        response = wallet.api.claim_reward_balance('initminer', Asset.Test(0), Asset.Tbd(0), Asset.Vest(0.000001))
-    except Exception as e:
-        message = str(e)
-        logger.info(message)
-        found = message.find('Cannot claim that much VESTS')
-        assert found != -1
+    with pytest.raises(exceptions.CommunicationError) as exception:
+        wallet.api.claim_reward_balance('initminer', Asset.Test(0), Asset.Tbd(0), Asset.Vest(0.000001))
+
+    response = exception.value.response
+    assert 'Cannot claim that much VESTS' in response['error']['message']
