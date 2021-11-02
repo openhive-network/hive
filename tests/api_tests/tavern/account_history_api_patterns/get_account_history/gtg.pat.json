@@ -3,6 +3,41 @@
     [
       1,
       {
+        "block": 2794856,
+        "op": {
+          "type": "pow_operation",
+          "value": {
+            "block_id": "002aa567ccf390d2cc68306123b0d6fe9dba5cb8",
+            "nonce": "2194496385481149070",
+            "props": {
+              "account_creation_fee": {
+                "amount": "1",
+                "nai": "@@000000021",
+                "precision": 3
+              },
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "851c610d1495b7019601e2188f1597f4b1804e7b29d0edd5fcbb078da714789d",
+              "signature": "203e847f9bc84c89cf89c1ac0afb9f5b405a408a46268f16f17bad2c001a0746e22715822421918be92d99ab1b0a9dd249ae3185ffe78bfb7c970cac7d58a7f237",
+              "work": "00000016a6ea16fb3a956ce4743157b15c49616fdef2a84f6c22224bf05348b1",
+              "worker": "STM5F9tCbND6zWPwksy1rEN24WjPiQWSU2vwGgegQVjAcYDe1zTWi"
+            },
+            "worker_account": "gtg"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-30T17:22:18",
+        "trx_id": "486b5caec9fd094ec21144c67ecef12aa15c8f4f",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      2,
+      {
         "block": 2796791,
         "op": {
           "type": "producer_reward_operation",
@@ -24,7 +59,7 @@
       }
     ],
     [
-      2,
+      3,
       {
         "block": 2797050,
         "op": {
@@ -52,7 +87,7 @@
       }
     ],
     [
-      3,
+      4,
       {
         "block": 2797050,
         "op": {
@@ -73,7 +108,7 @@
       }
     ],
     [
-      4,
+      5,
       {
         "block": 2797188,
         "op": {
@@ -101,7 +136,7 @@
       }
     ],
     [
-      5,
+      6,
       {
         "block": 2797188,
         "op": {
@@ -122,7 +157,7 @@
       }
     ],
     [
-      6,
+      7,
       {
         "block": 2797362,
         "op": {
@@ -150,7 +185,7 @@
       }
     ],
     [
-      7,
+      8,
       {
         "block": 2797362,
         "op": {
@@ -171,7 +206,7 @@
       }
     ],
     [
-      8,
+      9,
       {
         "block": 2797645,
         "op": {
@@ -199,7 +234,7 @@
       }
     ],
     [
-      9,
+      10,
       {
         "block": 2797645,
         "op": {
@@ -217,34 +252,6 @@
         "trx_id": "f98b305720148c4b37b19c1c7616ad9057e46c32",
         "trx_in_block": 0,
         "virtual_op": 0
-      }
-    ],
-    [
-      10,
-      {
-        "block": 2812987,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "cylonmaker2053",
-            "pending_payout": {
-              "amount": "84920",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "steemit-infrastructure-security-scalability-and-points-of-failure",
-            "rshares": 27547358,
-            "total_vote_weight": "15377444600345",
-            "voter": "gtg",
-            "weight": 0
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-07-01T08:30:48",
-        "trx_id": "0b42bdd9a3961b740dc5f32857b645b1220e95d7",
-        "trx_in_block": 0,
-        "virtual_op": 1
       }
     ]
   ]

@@ -1,28 +1,7 @@
 {
   "history": [
     [
-      21420,
-      {
-        "block": 4636980,
-        "op": {
-          "type": "vote_operation",
-          "value": {
-            "author": "camilla",
-            "permlink": "re-sompitonov-re-camilla-re-sompitonov-re-camilla-do-you-like-to-colour-20160902t173457804z",
-            "voter": "ihashfury",
-            "weight": 10000
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-03T04:04:51",
-        "trx_id": "f5b6ee9b862a31f6f634175bebbfa6bffbbee4b5",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
-      21421,
+      21422,
       {
         "block": 4638421,
         "op": {
@@ -50,7 +29,7 @@
       }
     ],
     [
-      21422,
+      21423,
       {
         "block": 4638421,
         "op": {
@@ -71,7 +50,7 @@
       }
     ],
     [
-      21423,
+      21424,
       {
         "block": 4641586,
         "op": {
@@ -99,7 +78,7 @@
       }
     ],
     [
-      21424,
+      21425,
       {
         "block": 4641586,
         "op": {
@@ -120,7 +99,7 @@
       }
     ],
     [
-      21425,
+      21426,
       {
         "block": 4641650,
         "op": {
@@ -148,7 +127,7 @@
       }
     ],
     [
-      21426,
+      21427,
       {
         "block": 4641650,
         "op": {
@@ -169,7 +148,7 @@
       }
     ],
     [
-      21427,
+      21428,
       {
         "block": 4641682,
         "op": {
@@ -197,7 +176,7 @@
       }
     ],
     [
-      21428,
+      21429,
       {
         "block": 4641682,
         "op": {
@@ -218,7 +197,7 @@
       }
     ],
     [
-      21429,
+      21430,
       {
         "block": 4641717,
         "op": {
@@ -246,7 +225,7 @@
       }
     ],
     [
-      21430,
+      21431,
       {
         "block": 4641717,
         "op": {
@@ -267,7 +246,7 @@
       }
     ],
     [
-      21431,
+      21432,
       {
         "block": 4641731,
         "op": {
@@ -295,7 +274,7 @@
       }
     ],
     [
-      21432,
+      21433,
       {
         "block": 4641731,
         "op": {
@@ -316,7 +295,7 @@
       }
     ],
     [
-      21433,
+      21434,
       {
         "block": 4642714,
         "op": {
@@ -344,7 +323,7 @@
       }
     ],
     [
-      21434,
+      21435,
       {
         "block": 4642714,
         "op": {
@@ -365,7 +344,7 @@
       }
     ],
     [
-      21435,
+      21436,
       {
         "block": 4643114,
         "op": {
@@ -393,7 +372,7 @@
       }
     ],
     [
-      21436,
+      21437,
       {
         "block": 4643114,
         "op": {
@@ -414,7 +393,7 @@
       }
     ],
     [
-      21437,
+      21438,
       {
         "block": 4643118,
         "op": {
@@ -442,7 +421,7 @@
       }
     ],
     [
-      21438,
+      21439,
       {
         "block": 4643118,
         "op": {
@@ -463,7 +442,7 @@
       }
     ],
     [
-      21439,
+      21440,
       {
         "block": 4643121,
         "op": {
@@ -491,7 +470,7 @@
       }
     ],
     [
-      21440,
+      21441,
       {
         "block": 4643121,
         "op": {
@@ -512,7 +491,7 @@
       }
     ],
     [
-      21441,
+      21442,
       {
         "block": 4643140,
         "op": {
@@ -540,7 +519,7 @@
       }
     ],
     [
-      21442,
+      21443,
       {
         "block": 4643140,
         "op": {
@@ -561,7 +540,7 @@
       }
     ],
     [
-      21443,
+      21444,
       {
         "block": 4643156,
         "op": {
@@ -589,7 +568,7 @@
       }
     ],
     [
-      21444,
+      21445,
       {
         "block": 4643156,
         "op": {
@@ -610,7 +589,7 @@
       }
     ],
     [
-      21445,
+      21446,
       {
         "block": 4643207,
         "op": {
@@ -638,7 +617,7 @@
       }
     ],
     [
-      21446,
+      21447,
       {
         "block": 4643207,
         "op": {
@@ -659,7 +638,7 @@
       }
     ],
     [
-      21447,
+      21448,
       {
         "block": 4647979,
         "op": {
@@ -668,6 +647,7 @@
             "comment_author": "anca3drandom",
             "comment_permlink": "steemart-the-art-of-quilling-paper-steemit-logo",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "80336806",
               "nai": "@@000000037",
@@ -684,7 +664,7 @@
       }
     ],
     [
-      21448,
+      21449,
       {
         "block": 4648623,
         "op": {
@@ -712,7 +692,7 @@
       }
     ],
     [
-      21449,
+      21450,
       {
         "block": 4648623,
         "op": {
@@ -733,7 +713,7 @@
       }
     ],
     [
-      21450,
+      21451,
       {
         "block": 4650309,
         "op": {
@@ -742,6 +722,7 @@
             "comment_author": "favorit",
             "comment_permlink": "enchanted-forest",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "77087879",
               "nai": "@@000000037",
@@ -758,7 +739,7 @@
       }
     ],
     [
-      21451,
+      21452,
       {
         "block": 4650600,
         "op": {
@@ -767,6 +748,7 @@
             "comment_author": "dabaisha",
             "comment_permlink": "7-major-anti-inflammatory-food-eating-a-healthy-save-beer-belly",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "80295266",
               "nai": "@@000000037",
@@ -783,7 +765,7 @@
       }
     ],
     [
-      21452,
+      21453,
       {
         "block": 4650906,
         "op": {
@@ -792,6 +774,7 @@
             "comment_author": "mrlee",
             "comment_permlink": "beautiful-macarons",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "80290443",
               "nai": "@@000000037",
@@ -808,7 +791,7 @@
       }
     ],
     [
-      21453,
+      21454,
       {
         "block": 4651096,
         "op": {
@@ -817,6 +800,7 @@
             "comment_author": "tanyabtc",
             "comment_permlink": "dragon-ferocious",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "80287412",
               "nai": "@@000000037",
@@ -833,7 +817,7 @@
       }
     ],
     [
-      21454,
+      21455,
       {
         "block": 4651244,
         "op": {
@@ -842,6 +826,7 @@
             "comment_author": "jpiper20",
             "comment_permlink": "hand-drawn-typography-from-this-week",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "105976313",
               "nai": "@@000000037",
@@ -858,7 +843,7 @@
       }
     ],
     [
-      21455,
+      21456,
       {
         "block": 4653163,
         "op": {
@@ -867,6 +852,7 @@
             "comment_author": "storyseeker",
             "comment_permlink": "my-process-step-by-step-start-to-finish-intricate-collage-and-acrylic-painting",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "4118671564",
               "nai": "@@000000037",
@@ -883,7 +869,7 @@
       }
     ],
     [
-      21456,
+      21457,
       {
         "block": 4653405,
         "op": {
@@ -911,7 +897,7 @@
       }
     ],
     [
-      21457,
+      21458,
       {
         "block": 4653405,
         "op": {
@@ -932,7 +918,7 @@
       }
     ],
     [
-      21458,
+      21459,
       {
         "block": 4655414,
         "op": {
@@ -941,6 +927,7 @@
             "comment_author": "opheliafu",
             "comment_permlink": "i-was-a-different-person-yesterday",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "60966556",
               "nai": "@@000000037",
@@ -957,7 +944,7 @@
       }
     ],
     [
-      21459,
+      21460,
       {
         "block": 4656578,
         "op": {
@@ -966,6 +953,7 @@
             "comment_author": "yangyang",
             "comment_permlink": "mermaid-drawing",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "285514715",
               "nai": "@@000000037",
@@ -982,7 +970,7 @@
       }
     ],
     [
-      21460,
+      21461,
       {
         "block": 4657501,
         "op": {
@@ -991,6 +979,7 @@
             "comment_author": "alexbeyman",
             "comment_permlink": "psychedelics-the-beautiful-bossy-dryad-my-encounters-with-forest-intelligence",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "60941504",
               "nai": "@@000000037",
@@ -1007,7 +996,7 @@
       }
     ],
     [
-      21461,
+      21462,
       {
         "block": 4663596,
         "op": {
@@ -1016,6 +1005,7 @@
             "comment_author": "allasyummyfood",
             "comment_permlink": "alla-goes-to-usa-part-1-san-francisco",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "108922513",
               "nai": "@@000000037",
@@ -1032,7 +1022,7 @@
       }
     ],
     [
-      21462,
+      21463,
       {
         "block": 4669230,
         "op": {
@@ -1041,6 +1031,7 @@
             "comment_author": "mammasitta",
             "comment_permlink": "kaffeehaus-culture-the-viennese-coffee-house-an-intangible-cultural-heritage-and-the-secession-an-artist-movement",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70401302",
               "nai": "@@000000037",
@@ -1057,7 +1048,7 @@
       }
     ],
     [
-      21463,
+      21464,
       {
         "block": 4669469,
         "op": {
@@ -1066,6 +1057,7 @@
             "comment_author": "ndbeledrifts",
             "comment_permlink": "i-met-a-girl-from-germany-once",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "63998182",
               "nai": "@@000000037",
@@ -1082,7 +1074,7 @@
       }
     ],
     [
-      21464,
+      21465,
       {
         "block": 4671716,
         "op": {
@@ -1091,6 +1083,7 @@
             "comment_author": "juliac",
             "comment_permlink": "mythical-creature-original-artwork",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "422201508",
               "nai": "@@000000037",
@@ -1107,7 +1100,7 @@
       }
     ],
     [
-      21465,
+      21466,
       {
         "block": 4672446,
         "op": {
@@ -1116,6 +1109,7 @@
             "comment_author": "anwenbaumeister",
             "comment_permlink": "pura-vida-my-experience-working-on-a-permaculture-farm-in-costa-rica",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "313408097",
               "nai": "@@000000037",
@@ -1132,7 +1126,7 @@
       }
     ],
     [
-      21466,
+      21467,
       {
         "block": 4673465,
         "op": {
@@ -1141,6 +1135,7 @@
             "comment_author": "opheliafu",
             "comment_permlink": "say-hello-to-big-bob",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "687441625",
               "nai": "@@000000037",
@@ -1157,7 +1152,7 @@
       }
     ],
     [
-      21467,
+      21468,
       {
         "block": 4675025,
         "op": {
@@ -1185,7 +1180,7 @@
       }
     ],
     [
-      21468,
+      21469,
       {
         "block": 4675025,
         "op": {
@@ -1206,7 +1201,7 @@
       }
     ],
     [
-      21469,
+      21470,
       {
         "block": 4675057,
         "op": {
@@ -1230,7 +1225,7 @@
       }
     ],
     [
-      21470,
+      21471,
       {
         "block": 4681217,
         "op": {
@@ -1249,7 +1244,7 @@
       }
     ],
     [
-      21471,
+      21472,
       {
         "block": 4681217,
         "op": {
@@ -1258,6 +1253,7 @@
             "comment_author": "pixielolz",
             "comment_permlink": "re-camilla-re-pixielolz-can-steemit-take-some-fanart--20160807t183600081z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "76621057",
               "nai": "@@000000037",
@@ -1274,7 +1270,7 @@
       }
     ],
     [
-      21472,
+      21473,
       {
         "block": 4694018,
         "op": {
@@ -1296,6 +1292,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "the-magic-world-of-books",
             "vesting_payout": {
               "amount": "1031792689",
@@ -1313,7 +1310,7 @@
       }
     ],
     [
-      21473,
+      21474,
       {
         "block": 4694018,
         "op": {
@@ -1353,7 +1350,7 @@
       }
     ],
     [
-      21474,
+      21475,
       {
         "block": 4694018,
         "op": {
@@ -1372,7 +1369,7 @@
       }
     ],
     [
-      21475,
+      21476,
       {
         "block": 4694018,
         "op": {
@@ -1381,6 +1378,7 @@
             "comment_author": "alexft",
             "comment_permlink": "re-camilla-the-magic-world-of-books-20160809t081535352z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "76429088",
               "nai": "@@000000037",
@@ -1397,7 +1395,7 @@
       }
     ],
     [
-      21476,
+      21477,
       {
         "block": 4724362,
         "op": {
@@ -1416,7 +1414,7 @@
       }
     ],
     [
-      21477,
+      21478,
       {
         "block": 4725117,
         "op": {
@@ -1435,7 +1433,7 @@
       }
     ],
     [
-      21478,
+      21479,
       {
         "block": 4725117,
         "op": {
@@ -1454,7 +1452,7 @@
       }
     ],
     [
-      21479,
+      21480,
       {
         "block": 4725117,
         "op": {
@@ -1473,7 +1471,7 @@
       }
     ],
     [
-      21480,
+      21481,
       {
         "block": 4725117,
         "op": {
@@ -1492,7 +1490,7 @@
       }
     ],
     [
-      21481,
+      21482,
       {
         "block": 4725117,
         "op": {
@@ -1501,6 +1499,7 @@
             "comment_author": "alexft",
             "comment_permlink": "re-camilla-crazy-flood-on-the-subway-tracks-20160807t062503313z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "79130255",
               "nai": "@@000000037",
@@ -1517,7 +1516,7 @@
       }
     ],
     [
-      21482,
+      21483,
       {
         "block": 4725117,
         "op": {
@@ -1526,6 +1525,7 @@
             "comment_author": "joelinux",
             "comment_permlink": "re-camilla-crazy-flood-on-the-subway-tracks-20160810t164432985z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "82295466",
               "nai": "@@000000037",
@@ -1542,7 +1542,7 @@
       }
     ],
     [
-      21483,
+      21484,
       {
         "block": 4727278,
         "op": {
@@ -1561,7 +1561,7 @@
       }
     ],
     [
-      21484,
+      21485,
       {
         "block": 4727781,
         "op": {
@@ -1580,7 +1580,7 @@
       }
     ],
     [
-      21485,
+      21486,
       {
         "block": 4727781,
         "op": {
@@ -1599,7 +1599,7 @@
       }
     ],
     [
-      21486,
+      21487,
       {
         "block": 4727781,
         "op": {
@@ -1618,7 +1618,7 @@
       }
     ],
     [
-      21487,
+      21488,
       {
         "block": 4727781,
         "op": {
@@ -1637,7 +1637,7 @@
       }
     ],
     [
-      21488,
+      21489,
       {
         "block": 4727781,
         "op": {
@@ -1656,7 +1656,7 @@
       }
     ],
     [
-      21489,
+      21490,
       {
         "block": 4727781,
         "op": {
@@ -1675,7 +1675,7 @@
       }
     ],
     [
-      21490,
+      21491,
       {
         "block": 4727781,
         "op": {
@@ -1694,7 +1694,7 @@
       }
     ],
     [
-      21491,
+      21492,
       {
         "block": 4727781,
         "op": {
@@ -1713,7 +1713,7 @@
       }
     ],
     [
-      21492,
+      21493,
       {
         "block": 4727781,
         "op": {
@@ -1732,7 +1732,7 @@
       }
     ],
     [
-      21493,
+      21494,
       {
         "block": 4727781,
         "op": {
@@ -1751,7 +1751,7 @@
       }
     ],
     [
-      21494,
+      21495,
       {
         "block": 4727781,
         "op": {
@@ -1770,7 +1770,7 @@
       }
     ],
     [
-      21495,
+      21496,
       {
         "block": 4727781,
         "op": {
@@ -1789,7 +1789,7 @@
       }
     ],
     [
-      21496,
+      21497,
       {
         "block": 4727781,
         "op": {
@@ -1808,7 +1808,7 @@
       }
     ],
     [
-      21497,
+      21498,
       {
         "block": 4727781,
         "op": {
@@ -1827,7 +1827,7 @@
       }
     ],
     [
-      21498,
+      21499,
       {
         "block": 4727781,
         "op": {
@@ -1836,6 +1836,7 @@
             "comment_author": "monopoly-man",
             "comment_permlink": "re-camilla-my-ladybug-drawing-20160807t081105049z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "75925581",
               "nai": "@@000000037",
@@ -1852,7 +1853,7 @@
       }
     ],
     [
-      21499,
+      21500,
       {
         "block": 4727781,
         "op": {
@@ -1871,7 +1872,7 @@
       }
     ],
     [
-      21500,
+      21501,
       {
         "block": 4727781,
         "op": {
@@ -1880,6 +1881,7 @@
             "comment_author": "helle",
             "comment_permlink": "re-camilla-my-ladybug-drawing-20160807t184458232z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "79089147",
               "nai": "@@000000037",
@@ -1896,7 +1898,7 @@
       }
     ],
     [
-      21501,
+      21502,
       {
         "block": 4727781,
         "op": {
@@ -1905,6 +1907,7 @@
             "comment_author": "juvyjabian",
             "comment_permlink": "re-camilla-my-ladybug-drawing-20160808t072735516z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "79089147",
               "nai": "@@000000037",
@@ -1921,7 +1924,7 @@
       }
     ],
     [
-      21502,
+      21503,
       {
         "block": 4760179,
         "op": {
@@ -1949,7 +1952,7 @@
       }
     ],
     [
-      21503,
+      21504,
       {
         "block": 4760179,
         "op": {
@@ -1970,7 +1973,7 @@
       }
     ],
     [
-      21504,
+      21505,
       {
         "block": 4760181,
         "op": {
@@ -1998,7 +2001,7 @@
       }
     ],
     [
-      21505,
+      21506,
       {
         "block": 4760181,
         "op": {
@@ -2019,7 +2022,7 @@
       }
     ],
     [
-      21506,
+      21507,
       {
         "block": 4760207,
         "op": {
@@ -2047,7 +2050,7 @@
       }
     ],
     [
-      21507,
+      21508,
       {
         "block": 4760207,
         "op": {
@@ -2068,7 +2071,7 @@
       }
     ],
     [
-      21508,
+      21509,
       {
         "block": 4760218,
         "op": {
@@ -2096,7 +2099,7 @@
       }
     ],
     [
-      21509,
+      21510,
       {
         "block": 4760218,
         "op": {
@@ -2117,7 +2120,7 @@
       }
     ],
     [
-      21510,
+      21511,
       {
         "block": 4760233,
         "op": {
@@ -2145,7 +2148,7 @@
       }
     ],
     [
-      21511,
+      21512,
       {
         "block": 4760233,
         "op": {
@@ -2166,7 +2169,7 @@
       }
     ],
     [
-      21512,
+      21513,
       {
         "block": 4769868,
         "op": {
@@ -2187,7 +2190,7 @@
       }
     ],
     [
-      21513,
+      21514,
       {
         "block": 4769874,
         "op": {
@@ -2208,7 +2211,7 @@
       }
     ],
     [
-      21514,
+      21515,
       {
         "block": 4780729,
         "op": {
@@ -2227,7 +2230,7 @@
       }
     ],
     [
-      21515,
+      21516,
       {
         "block": 4783685,
         "op": {
@@ -2236,6 +2239,7 @@
             "comment_author": "acidyo",
             "comment_permlink": "gemo-dna-introduction-and-prologue-sci-fi-action-rpg-futurism",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "291037297",
               "nai": "@@000000037",
@@ -2252,7 +2256,7 @@
       }
     ],
     [
-      21516,
+      21517,
       {
         "block": 4784890,
         "op": {
@@ -2271,7 +2275,7 @@
       }
     ],
     [
-      21517,
+      21518,
       {
         "block": 4784890,
         "op": {
@@ -2290,7 +2294,7 @@
       }
     ],
     [
-      21518,
+      21519,
       {
         "block": 4785210,
         "op": {
@@ -2313,7 +2317,7 @@
       }
     ],
     [
-      21519,
+      21520,
       {
         "block": 4785210,
         "op": {
@@ -2335,6 +2339,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "a-steem-whale-in-a-dream-world-art-and-poem",
             "vesting_payout": {
               "amount": "59441772",
@@ -2352,7 +2357,7 @@
       }
     ],
     [
-      21520,
+      21521,
       {
         "block": 4785210,
         "op": {
@@ -2392,7 +2397,7 @@
       }
     ],
     [
-      21521,
+      21522,
       {
         "block": 4785210,
         "op": {
@@ -2411,7 +2416,7 @@
       }
     ],
     [
-      21522,
+      21523,
       {
         "block": 4785210,
         "op": {
@@ -2430,7 +2435,7 @@
       }
     ],
     [
-      21523,
+      21524,
       {
         "block": 4785210,
         "op": {
@@ -2449,7 +2454,7 @@
       }
     ],
     [
-      21524,
+      21525,
       {
         "block": 4785210,
         "op": {
@@ -2468,7 +2473,7 @@
       }
     ],
     [
-      21525,
+      21526,
       {
         "block": 4785210,
         "op": {
@@ -2477,6 +2482,7 @@
             "comment_author": "joelinux",
             "comment_permlink": "re-camilla-a-steem-whale-in-a-dream-world-art-and-poem-20160810t164328721z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "68827315",
               "nai": "@@000000037",
@@ -2493,7 +2499,7 @@
       }
     ],
     [
-      21526,
+      21527,
       {
         "block": 4785210,
         "op": {
@@ -2502,6 +2508,7 @@
             "comment_author": "steemswede",
             "comment_permlink": "re-camilla-a-steem-whale-in-a-dream-world-art-and-poem-20160828t214107644z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "34413657",
               "nai": "@@000000037",
@@ -2518,7 +2525,7 @@
       }
     ],
     [
-      21527,
+      21528,
       {
         "block": 4785210,
         "op": {
@@ -2537,7 +2544,7 @@
       }
     ],
     [
-      21528,
+      21529,
       {
         "block": 4785909,
         "op": {
@@ -2546,6 +2553,7 @@
             "comment_author": "anwenbaumeister",
             "comment_permlink": "my-cross-country-road-trip-greater-than-sf-greater-than-vegas-greater-than-boulder-greater-than-houston-greater-than-new-orleans",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "203326016",
               "nai": "@@000000037",
@@ -2562,7 +2570,7 @@
       }
     ],
     [
-      21529,
+      21530,
       {
         "block": 4788433,
         "op": {
@@ -2571,6 +2579,7 @@
             "comment_author": "infovore",
             "comment_permlink": "the-rise-of-the-human-cyborgs-outsmarting-smartphones-and-the-internables-trend",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "168834816",
               "nai": "@@000000037",
@@ -2587,7 +2596,7 @@
       }
     ],
     [
-      21530,
+      21531,
       {
         "block": 4815612,
         "op": {
@@ -2615,7 +2624,7 @@
       }
     ],
     [
-      21531,
+      21532,
       {
         "block": 4815612,
         "op": {
@@ -2636,7 +2645,7 @@
       }
     ],
     [
-      21532,
+      21533,
       {
         "block": 4815614,
         "op": {
@@ -2664,7 +2673,7 @@
       }
     ],
     [
-      21533,
+      21534,
       {
         "block": 4815614,
         "op": {
@@ -2685,7 +2694,7 @@
       }
     ],
     [
-      21534,
+      21535,
       {
         "block": 4815619,
         "op": {
@@ -2713,7 +2722,7 @@
       }
     ],
     [
-      21535,
+      21536,
       {
         "block": 4815619,
         "op": {
@@ -2734,7 +2743,7 @@
       }
     ],
     [
-      21536,
+      21537,
       {
         "block": 4817530,
         "op": {
@@ -2762,7 +2771,7 @@
       }
     ],
     [
-      21537,
+      21538,
       {
         "block": 4817530,
         "op": {
@@ -2783,7 +2792,7 @@
       }
     ],
     [
-      21538,
+      21539,
       {
         "block": 4817545,
         "op": {
@@ -2811,7 +2820,7 @@
       }
     ],
     [
-      21539,
+      21540,
       {
         "block": 4817545,
         "op": {
@@ -2832,7 +2841,7 @@
       }
     ],
     [
-      21540,
+      21541,
       {
         "block": 4817547,
         "op": {
@@ -2855,7 +2864,7 @@
       }
     ],
     [
-      21541,
+      21542,
       {
         "block": 4817575,
         "op": {
@@ -2883,7 +2892,7 @@
       }
     ],
     [
-      21542,
+      21543,
       {
         "block": 4817575,
         "op": {
@@ -2901,34 +2910,6 @@
         "trx_id": "bb884d2af5c220acb4b55892c657a6aa5dec0c6e",
         "trx_in_block": 4,
         "virtual_op": 0
-      }
-    ],
-    [
-      21543,
-      {
-        "block": 4817585,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "pixielolz",
-            "pending_payout": {
-              "amount": "92",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "through-time-step-by-step-of-my-drawing-process-from-sketch-to-finished-artwork",
-            "rshares": "211238166990",
-            "total_vote_weight": 0,
-            "voter": "camilla",
-            "weight": 0
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-09T10:56:48",
-        "trx_id": "1a1c70c6de09511a6a13e038f58d06d19d712b14",
-        "trx_in_block": 1,
-        "virtual_op": 1
       }
     ],
     [
@@ -2936,6 +2917,34 @@
       {
         "block": 4817585,
         "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "pixielolz",
+            "pending_payout": {
+              "amount": "92",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "through-time-step-by-step-of-my-drawing-process-from-sketch-to-finished-artwork",
+            "rshares": "211238166990",
+            "total_vote_weight": 0,
+            "voter": "camilla",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-09T10:56:48",
+        "trx_id": "1a1c70c6de09511a6a13e038f58d06d19d712b14",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      21545,
+      {
+        "block": 4817585,
+        "op": {
           "type": "vote_operation",
           "value": {
             "author": "pixielolz",
@@ -2953,7 +2962,7 @@
       }
     ],
     [
-      21545,
+      21546,
       {
         "block": 4817615,
         "op": {
@@ -2981,7 +2990,7 @@
       }
     ],
     [
-      21546,
+      21547,
       {
         "block": 4817615,
         "op": {
@@ -3002,7 +3011,7 @@
       }
     ],
     [
-      21547,
+      21548,
       {
         "block": 4829727,
         "op": {
@@ -3011,6 +3020,7 @@
             "comment_author": "pixielolz",
             "comment_permlink": "copic-markers-a-beginner-s-guide",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "93056250",
               "nai": "@@000000037",
@@ -3027,7 +3037,7 @@
       }
     ],
     [
-      21548,
+      21549,
       {
         "block": 4831404,
         "op": {
@@ -3036,6 +3046,7 @@
             "comment_author": "pixielolz",
             "comment_permlink": "fennec-fox-step-by-step-of-my-drawing-process-from-sketch-to-finished-artwork",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "71320251",
               "nai": "@@000000037",
@@ -3052,7 +3063,7 @@
       }
     ],
     [
-      21549,
+      21550,
       {
         "block": 4832860,
         "op": {
@@ -3061,6 +3072,7 @@
             "comment_author": "stellabelle",
             "comment_permlink": "new-idea-for-steemit-let-s-open-our-own-bars",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "80600453",
               "nai": "@@000000037",
@@ -3077,7 +3089,7 @@
       }
     ],
     [
-      21550,
+      21551,
       {
         "block": 4847456,
         "op": {
@@ -3105,7 +3117,7 @@
       }
     ],
     [
-      21551,
+      21552,
       {
         "block": 4847456,
         "op": {
@@ -3126,7 +3138,7 @@
       }
     ],
     [
-      21552,
+      21553,
       {
         "block": 4847500,
         "op": {
@@ -3154,7 +3166,7 @@
       }
     ],
     [
-      21553,
+      21554,
       {
         "block": 4847500,
         "op": {
@@ -3175,7 +3187,7 @@
       }
     ],
     [
-      21554,
+      21555,
       {
         "block": 4847541,
         "op": {
@@ -3199,7 +3211,7 @@
       }
     ],
     [
-      21555,
+      21556,
       {
         "block": 4847547,
         "op": {
@@ -3227,7 +3239,7 @@
       }
     ],
     [
-      21556,
+      21557,
       {
         "block": 4847547,
         "op": {
@@ -3248,7 +3260,7 @@
       }
     ],
     [
-      21557,
+      21558,
       {
         "block": 4847565,
         "op": {
@@ -3276,7 +3288,7 @@
       }
     ],
     [
-      21558,
+      21559,
       {
         "block": 4847565,
         "op": {
@@ -3297,7 +3309,7 @@
       }
     ],
     [
-      21559,
+      21560,
       {
         "block": 4847590,
         "op": {
@@ -3325,7 +3337,7 @@
       }
     ],
     [
-      21560,
+      21561,
       {
         "block": 4847590,
         "op": {
@@ -3346,7 +3358,7 @@
       }
     ],
     [
-      21561,
+      21562,
       {
         "block": 4847798,
         "op": {
@@ -3374,7 +3386,7 @@
       }
     ],
     [
-      21562,
+      21563,
       {
         "block": 4847798,
         "op": {
@@ -3395,7 +3407,7 @@
       }
     ],
     [
-      21563,
+      21564,
       {
         "block": 4847813,
         "op": {
@@ -3423,7 +3435,7 @@
       }
     ],
     [
-      21564,
+      21565,
       {
         "block": 4847813,
         "op": {
@@ -3444,7 +3456,7 @@
       }
     ],
     [
-      21565,
+      21566,
       {
         "block": 4855539,
         "op": {
@@ -3472,7 +3484,7 @@
       }
     ],
     [
-      21566,
+      21567,
       {
         "block": 4855539,
         "op": {
@@ -3493,7 +3505,7 @@
       }
     ],
     [
-      21567,
+      21568,
       {
         "block": 4855580,
         "op": {
@@ -3517,7 +3529,7 @@
       }
     ],
     [
-      21568,
+      21569,
       {
         "block": 4861233,
         "op": {
@@ -3541,7 +3553,7 @@
       }
     ],
     [
-      21569,
+      21570,
       {
         "block": 4861233,
         "op": {
@@ -3560,7 +3572,7 @@
             "weight": 0
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-10T23:31:03",
         "trx_id": "ab378409dc2b9e81a6b30a78dae53ca69a4acfb2",
@@ -3569,7 +3581,7 @@
       }
     ],
     [
-      21570,
+      21571,
       {
         "block": 4861233,
         "op": {
@@ -3581,7 +3593,7 @@
             "weight": 10000
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-10T23:31:03",
         "trx_id": "ab378409dc2b9e81a6b30a78dae53ca69a4acfb2",
@@ -3590,7 +3602,7 @@
       }
     ],
     [
-      21571,
+      21572,
       {
         "block": 4861237,
         "op": {
@@ -3618,7 +3630,7 @@
       }
     ],
     [
-      21572,
+      21573,
       {
         "block": 4861237,
         "op": {
@@ -3639,7 +3651,7 @@
       }
     ],
     [
-      21573,
+      21574,
       {
         "block": 4861248,
         "op": {
@@ -3663,7 +3675,7 @@
       }
     ],
     [
-      21574,
+      21575,
       {
         "block": 4861257,
         "op": {
@@ -3691,7 +3703,7 @@
       }
     ],
     [
-      21575,
+      21576,
       {
         "block": 4861257,
         "op": {
@@ -3712,7 +3724,7 @@
       }
     ],
     [
-      21576,
+      21577,
       {
         "block": 4861263,
         "op": {
@@ -3740,7 +3752,7 @@
       }
     ],
     [
-      21577,
+      21578,
       {
         "block": 4861263,
         "op": {
@@ -3761,7 +3773,7 @@
       }
     ],
     [
-      21578,
+      21579,
       {
         "block": 4861274,
         "op": {
@@ -3789,7 +3801,7 @@
       }
     ],
     [
-      21579,
+      21580,
       {
         "block": 4861274,
         "op": {
@@ -3810,7 +3822,7 @@
       }
     ],
     [
-      21580,
+      21581,
       {
         "block": 4861278,
         "op": {
@@ -3838,7 +3850,7 @@
       }
     ],
     [
-      21581,
+      21582,
       {
         "block": 4861278,
         "op": {
@@ -3859,7 +3871,7 @@
       }
     ],
     [
-      21582,
+      21583,
       {
         "block": 4861282,
         "op": {
@@ -3887,7 +3899,7 @@
       }
     ],
     [
-      21583,
+      21584,
       {
         "block": 4861282,
         "op": {
@@ -3908,7 +3920,7 @@
       }
     ],
     [
-      21584,
+      21585,
       {
         "block": 4861283,
         "op": {
@@ -3936,7 +3948,7 @@
       }
     ],
     [
-      21585,
+      21586,
       {
         "block": 4861283,
         "op": {
@@ -3957,7 +3969,7 @@
       }
     ],
     [
-      21586,
+      21587,
       {
         "block": 4861305,
         "op": {
@@ -3985,7 +3997,7 @@
       }
     ],
     [
-      21587,
+      21588,
       {
         "block": 4861305,
         "op": {
@@ -4006,7 +4018,7 @@
       }
     ],
     [
-      21588,
+      21589,
       {
         "block": 4861306,
         "op": {
@@ -4034,7 +4046,7 @@
       }
     ],
     [
-      21589,
+      21590,
       {
         "block": 4861306,
         "op": {
@@ -4055,7 +4067,7 @@
       }
     ],
     [
-      21590,
+      21591,
       {
         "block": 4861315,
         "op": {
@@ -4079,7 +4091,7 @@
       }
     ],
     [
-      21591,
+      21592,
       {
         "block": 4861358,
         "op": {
@@ -4107,7 +4119,7 @@
       }
     ],
     [
-      21592,
+      21593,
       {
         "block": 4861358,
         "op": {
@@ -4128,7 +4140,7 @@
       }
     ],
     [
-      21593,
+      21594,
       {
         "block": 4861421,
         "op": {
@@ -4156,7 +4168,7 @@
       }
     ],
     [
-      21594,
+      21595,
       {
         "block": 4861421,
         "op": {
@@ -4177,7 +4189,7 @@
       }
     ],
     [
-      21595,
+      21596,
       {
         "block": 4861425,
         "op": {
@@ -4201,7 +4213,7 @@
       }
     ],
     [
-      21596,
+      21597,
       {
         "block": 4861441,
         "op": {
@@ -4229,7 +4241,7 @@
       }
     ],
     [
-      21597,
+      21598,
       {
         "block": 4861441,
         "op": {
@@ -4250,7 +4262,7 @@
       }
     ],
     [
-      21598,
+      21599,
       {
         "block": 4861442,
         "op": {
@@ -4278,7 +4290,7 @@
       }
     ],
     [
-      21599,
+      21600,
       {
         "block": 4861442,
         "op": {
@@ -4299,7 +4311,7 @@
       }
     ],
     [
-      21600,
+      21601,
       {
         "block": 4861447,
         "op": {
@@ -4323,7 +4335,7 @@
       }
     ],
     [
-      21601,
+      21602,
       {
         "block": 4861455,
         "op": {
@@ -4347,7 +4359,7 @@
       }
     ],
     [
-      21602,
+      21603,
       {
         "block": 4861507,
         "op": {
@@ -4375,7 +4387,7 @@
       }
     ],
     [
-      21603,
+      21604,
       {
         "block": 4861507,
         "op": {
@@ -4396,7 +4408,7 @@
       }
     ],
     [
-      21604,
+      21605,
       {
         "block": 4861523,
         "op": {
@@ -4420,7 +4432,7 @@
       }
     ],
     [
-      21605,
+      21606,
       {
         "block": 4861594,
         "op": {
@@ -4448,7 +4460,7 @@
       }
     ],
     [
-      21606,
+      21607,
       {
         "block": 4861594,
         "op": {
@@ -4469,7 +4481,7 @@
       }
     ],
     [
-      21607,
+      21608,
       {
         "block": 4861611,
         "op": {
@@ -4497,7 +4509,7 @@
       }
     ],
     [
-      21608,
+      21609,
       {
         "block": 4861611,
         "op": {
@@ -4518,7 +4530,7 @@
       }
     ],
     [
-      21609,
+      21610,
       {
         "block": 4861611,
         "op": {
@@ -4546,7 +4558,7 @@
       }
     ],
     [
-      21610,
+      21611,
       {
         "block": 4861611,
         "op": {
@@ -4567,7 +4579,7 @@
       }
     ],
     [
-      21611,
+      21612,
       {
         "block": 4861613,
         "op": {
@@ -4595,7 +4607,7 @@
       }
     ],
     [
-      21612,
+      21613,
       {
         "block": 4861613,
         "op": {
@@ -4616,7 +4628,7 @@
       }
     ],
     [
-      21613,
+      21614,
       {
         "block": 4861613,
         "op": {
@@ -4644,7 +4656,7 @@
       }
     ],
     [
-      21614,
+      21615,
       {
         "block": 4861613,
         "op": {
@@ -4665,7 +4677,7 @@
       }
     ],
     [
-      21615,
+      21616,
       {
         "block": 4861613,
         "op": {
@@ -4693,7 +4705,7 @@
       }
     ],
     [
-      21616,
+      21617,
       {
         "block": 4861613,
         "op": {
@@ -4714,7 +4726,7 @@
       }
     ],
     [
-      21617,
+      21618,
       {
         "block": 4861615,
         "op": {
@@ -4742,7 +4754,7 @@
       }
     ],
     [
-      21618,
+      21619,
       {
         "block": 4861615,
         "op": {
@@ -4763,7 +4775,7 @@
       }
     ],
     [
-      21619,
+      21620,
       {
         "block": 4861616,
         "op": {
@@ -4791,7 +4803,7 @@
       }
     ],
     [
-      21620,
+      21621,
       {
         "block": 4861616,
         "op": {
@@ -4812,7 +4824,7 @@
       }
     ],
     [
-      21621,
+      21622,
       {
         "block": 4861620,
         "op": {
@@ -4840,7 +4852,7 @@
       }
     ],
     [
-      21622,
+      21623,
       {
         "block": 4861620,
         "op": {
@@ -4861,7 +4873,7 @@
       }
     ],
     [
-      21623,
+      21624,
       {
         "block": 4861749,
         "op": {
@@ -4889,7 +4901,7 @@
       }
     ],
     [
-      21624,
+      21625,
       {
         "block": 4861749,
         "op": {
@@ -4910,7 +4922,7 @@
       }
     ],
     [
-      21625,
+      21626,
       {
         "block": 4861771,
         "op": {
@@ -4938,7 +4950,7 @@
       }
     ],
     [
-      21626,
+      21627,
       {
         "block": 4861771,
         "op": {
@@ -4959,7 +4971,7 @@
       }
     ],
     [
-      21627,
+      21628,
       {
         "block": 4861772,
         "op": {
@@ -4987,7 +4999,7 @@
       }
     ],
     [
-      21628,
+      21629,
       {
         "block": 4861772,
         "op": {
@@ -5008,7 +5020,7 @@
       }
     ],
     [
-      21629,
+      21630,
       {
         "block": 4861772,
         "op": {
@@ -5036,7 +5048,7 @@
       }
     ],
     [
-      21630,
+      21631,
       {
         "block": 4861772,
         "op": {
@@ -5057,7 +5069,7 @@
       }
     ],
     [
-      21631,
+      21632,
       {
         "block": 4861772,
         "op": {
@@ -5085,7 +5097,7 @@
       }
     ],
     [
-      21632,
+      21633,
       {
         "block": 4861772,
         "op": {
@@ -5106,7 +5118,7 @@
       }
     ],
     [
-      21633,
+      21634,
       {
         "block": 4861772,
         "op": {
@@ -5134,7 +5146,7 @@
       }
     ],
     [
-      21634,
+      21635,
       {
         "block": 4861772,
         "op": {
@@ -5155,7 +5167,7 @@
       }
     ],
     [
-      21635,
+      21636,
       {
         "block": 4861772,
         "op": {
@@ -5183,7 +5195,7 @@
       }
     ],
     [
-      21636,
+      21637,
       {
         "block": 4861772,
         "op": {
@@ -5204,7 +5216,7 @@
       }
     ],
     [
-      21637,
+      21638,
       {
         "block": 4861773,
         "op": {
@@ -5232,7 +5244,7 @@
       }
     ],
     [
-      21638,
+      21639,
       {
         "block": 4861773,
         "op": {
@@ -5253,7 +5265,7 @@
       }
     ],
     [
-      21639,
+      21640,
       {
         "block": 4861773,
         "op": {
@@ -5281,7 +5293,7 @@
       }
     ],
     [
-      21640,
+      21641,
       {
         "block": 4861773,
         "op": {
@@ -5302,7 +5314,7 @@
       }
     ],
     [
-      21641,
+      21642,
       {
         "block": 4861773,
         "op": {
@@ -5330,7 +5342,7 @@
       }
     ],
     [
-      21642,
+      21643,
       {
         "block": 4861773,
         "op": {
@@ -5351,7 +5363,7 @@
       }
     ],
     [
-      21643,
+      21644,
       {
         "block": 4861773,
         "op": {
@@ -5379,7 +5391,7 @@
       }
     ],
     [
-      21644,
+      21645,
       {
         "block": 4861773,
         "op": {
@@ -5400,7 +5412,7 @@
       }
     ],
     [
-      21645,
+      21646,
       {
         "block": 4861773,
         "op": {
@@ -5428,7 +5440,7 @@
       }
     ],
     [
-      21646,
+      21647,
       {
         "block": 4861773,
         "op": {
@@ -5449,7 +5461,7 @@
       }
     ],
     [
-      21647,
+      21648,
       {
         "block": 4861773,
         "op": {
@@ -5477,7 +5489,7 @@
       }
     ],
     [
-      21648,
+      21649,
       {
         "block": 4861773,
         "op": {
@@ -5498,7 +5510,7 @@
       }
     ],
     [
-      21649,
+      21650,
       {
         "block": 4861773,
         "op": {
@@ -5526,7 +5538,7 @@
       }
     ],
     [
-      21650,
+      21651,
       {
         "block": 4861773,
         "op": {
@@ -5547,7 +5559,7 @@
       }
     ],
     [
-      21651,
+      21652,
       {
         "block": 4861773,
         "op": {
@@ -5575,7 +5587,7 @@
       }
     ],
     [
-      21652,
+      21653,
       {
         "block": 4861773,
         "op": {
@@ -5596,7 +5608,7 @@
       }
     ],
     [
-      21653,
+      21654,
       {
         "block": 4861773,
         "op": {
@@ -5624,7 +5636,7 @@
       }
     ],
     [
-      21654,
+      21655,
       {
         "block": 4861773,
         "op": {
@@ -5645,7 +5657,7 @@
       }
     ],
     [
-      21655,
+      21656,
       {
         "block": 4861773,
         "op": {
@@ -5673,7 +5685,7 @@
       }
     ],
     [
-      21656,
+      21657,
       {
         "block": 4861773,
         "op": {
@@ -5694,7 +5706,7 @@
       }
     ],
     [
-      21657,
+      21658,
       {
         "block": 4861773,
         "op": {
@@ -5722,7 +5734,7 @@
       }
     ],
     [
-      21658,
+      21659,
       {
         "block": 4861773,
         "op": {
@@ -5743,7 +5755,7 @@
       }
     ],
     [
-      21659,
+      21660,
       {
         "block": 4861785,
         "op": {
@@ -5771,7 +5783,7 @@
       }
     ],
     [
-      21660,
+      21661,
       {
         "block": 4861785,
         "op": {
@@ -5792,7 +5804,7 @@
       }
     ],
     [
-      21661,
+      21662,
       {
         "block": 4861792,
         "op": {
@@ -5820,7 +5832,7 @@
       }
     ],
     [
-      21662,
+      21663,
       {
         "block": 4861792,
         "op": {
@@ -5841,7 +5853,7 @@
       }
     ],
     [
-      21663,
+      21664,
       {
         "block": 4861793,
         "op": {
@@ -5869,7 +5881,7 @@
       }
     ],
     [
-      21664,
+      21665,
       {
         "block": 4861793,
         "op": {
@@ -5890,7 +5902,7 @@
       }
     ],
     [
-      21665,
+      21666,
       {
         "block": 4861795,
         "op": {
@@ -5918,7 +5930,7 @@
       }
     ],
     [
-      21666,
+      21667,
       {
         "block": 4861795,
         "op": {
@@ -5939,7 +5951,7 @@
       }
     ],
     [
-      21667,
+      21668,
       {
         "block": 4861797,
         "op": {
@@ -5967,7 +5979,7 @@
       }
     ],
     [
-      21668,
+      21669,
       {
         "block": 4861797,
         "op": {
@@ -5988,7 +6000,7 @@
       }
     ],
     [
-      21669,
+      21670,
       {
         "block": 4861804,
         "op": {
@@ -6016,7 +6028,7 @@
       }
     ],
     [
-      21670,
+      21671,
       {
         "block": 4861804,
         "op": {
@@ -6037,7 +6049,7 @@
       }
     ],
     [
-      21671,
+      21672,
       {
         "block": 4861870,
         "op": {
@@ -6065,7 +6077,7 @@
       }
     ],
     [
-      21672,
+      21673,
       {
         "block": 4861870,
         "op": {
@@ -6086,7 +6098,7 @@
       }
     ],
     [
-      21673,
+      21674,
       {
         "block": 4862066,
         "op": {
@@ -6114,7 +6126,7 @@
       }
     ],
     [
-      21674,
+      21675,
       {
         "block": 4862066,
         "op": {
@@ -6135,7 +6147,7 @@
       }
     ],
     [
-      21675,
+      21676,
       {
         "block": 4862096,
         "op": {
@@ -6163,7 +6175,7 @@
       }
     ],
     [
-      21676,
+      21677,
       {
         "block": 4862096,
         "op": {
@@ -6184,7 +6196,7 @@
       }
     ],
     [
-      21677,
+      21678,
       {
         "block": 4862180,
         "op": {
@@ -6208,7 +6220,7 @@
       }
     ],
     [
-      21678,
+      21679,
       {
         "block": 4862440,
         "op": {
@@ -6236,7 +6248,7 @@
       }
     ],
     [
-      21679,
+      21680,
       {
         "block": 4862440,
         "op": {
@@ -6257,7 +6269,7 @@
       }
     ],
     [
-      21680,
+      21681,
       {
         "block": 4863012,
         "op": {
@@ -6285,7 +6297,7 @@
       }
     ],
     [
-      21681,
+      21682,
       {
         "block": 4863012,
         "op": {
@@ -6306,7 +6318,7 @@
       }
     ],
     [
-      21682,
+      21683,
       {
         "block": 4863030,
         "op": {
@@ -6334,7 +6346,7 @@
       }
     ],
     [
-      21683,
+      21684,
       {
         "block": 4863030,
         "op": {
@@ -6355,7 +6367,7 @@
       }
     ],
     [
-      21684,
+      21685,
       {
         "block": 4863031,
         "op": {
@@ -6383,7 +6395,7 @@
       }
     ],
     [
-      21685,
+      21686,
       {
         "block": 4863031,
         "op": {
@@ -6404,7 +6416,7 @@
       }
     ],
     [
-      21686,
+      21687,
       {
         "block": 4863031,
         "op": {
@@ -6432,7 +6444,7 @@
       }
     ],
     [
-      21687,
+      21688,
       {
         "block": 4863031,
         "op": {
@@ -6453,7 +6465,7 @@
       }
     ],
     [
-      21688,
+      21689,
       {
         "block": 4863032,
         "op": {
@@ -6481,7 +6493,7 @@
       }
     ],
     [
-      21689,
+      21690,
       {
         "block": 4863032,
         "op": {
@@ -6502,7 +6514,7 @@
       }
     ],
     [
-      21690,
+      21691,
       {
         "block": 4863033,
         "op": {
@@ -6530,7 +6542,7 @@
       }
     ],
     [
-      21691,
+      21692,
       {
         "block": 4863033,
         "op": {
@@ -6551,7 +6563,7 @@
       }
     ],
     [
-      21692,
+      21693,
       {
         "block": 4863034,
         "op": {
@@ -6579,7 +6591,7 @@
       }
     ],
     [
-      21693,
+      21694,
       {
         "block": 4863034,
         "op": {
@@ -6600,7 +6612,7 @@
       }
     ],
     [
-      21694,
+      21695,
       {
         "block": 4863035,
         "op": {
@@ -6628,7 +6640,7 @@
       }
     ],
     [
-      21695,
+      21696,
       {
         "block": 4863035,
         "op": {
@@ -6649,7 +6661,7 @@
       }
     ],
     [
-      21696,
+      21697,
       {
         "block": 4863275,
         "op": {
@@ -6677,7 +6689,7 @@
       }
     ],
     [
-      21697,
+      21698,
       {
         "block": 4863275,
         "op": {
@@ -6698,7 +6710,7 @@
       }
     ],
     [
-      21698,
+      21699,
       {
         "block": 4863304,
         "op": {
@@ -6726,7 +6738,7 @@
       }
     ],
     [
-      21699,
+      21700,
       {
         "block": 4863304,
         "op": {
@@ -6747,7 +6759,7 @@
       }
     ],
     [
-      21700,
+      21701,
       {
         "block": 4863305,
         "op": {
@@ -6775,7 +6787,7 @@
       }
     ],
     [
-      21701,
+      21702,
       {
         "block": 4863305,
         "op": {
@@ -6796,7 +6808,7 @@
       }
     ],
     [
-      21702,
+      21703,
       {
         "block": 4863306,
         "op": {
@@ -6824,7 +6836,7 @@
       }
     ],
     [
-      21703,
+      21704,
       {
         "block": 4863306,
         "op": {
@@ -6845,7 +6857,7 @@
       }
     ],
     [
-      21704,
+      21705,
       {
         "block": 4863338,
         "op": {
@@ -6873,7 +6885,7 @@
       }
     ],
     [
-      21705,
+      21706,
       {
         "block": 4863338,
         "op": {
@@ -6894,7 +6906,7 @@
       }
     ],
     [
-      21706,
+      21707,
       {
         "block": 4863374,
         "op": {
@@ -6922,7 +6934,7 @@
       }
     ],
     [
-      21707,
+      21708,
       {
         "block": 4863374,
         "op": {
@@ -6943,7 +6955,7 @@
       }
     ],
     [
-      21708,
+      21709,
       {
         "block": 4863456,
         "op": {
@@ -6971,7 +6983,7 @@
       }
     ],
     [
-      21709,
+      21710,
       {
         "block": 4863456,
         "op": {
@@ -6992,7 +7004,7 @@
       }
     ],
     [
-      21710,
+      21711,
       {
         "block": 4863492,
         "op": {
@@ -7020,7 +7032,7 @@
       }
     ],
     [
-      21711,
+      21712,
       {
         "block": 4863492,
         "op": {
@@ -7041,7 +7053,7 @@
       }
     ],
     [
-      21712,
+      21713,
       {
         "block": 4863566,
         "op": {
@@ -7069,7 +7081,7 @@
       }
     ],
     [
-      21713,
+      21714,
       {
         "block": 4863566,
         "op": {
@@ -7090,7 +7102,7 @@
       }
     ],
     [
-      21714,
+      21715,
       {
         "block": 4863594,
         "op": {
@@ -7118,7 +7130,7 @@
       }
     ],
     [
-      21715,
+      21716,
       {
         "block": 4863594,
         "op": {
@@ -7139,7 +7151,7 @@
       }
     ],
     [
-      21716,
+      21717,
       {
         "block": 4863681,
         "op": {
@@ -7167,7 +7179,7 @@
       }
     ],
     [
-      21717,
+      21718,
       {
         "block": 4863681,
         "op": {
@@ -7188,7 +7200,7 @@
       }
     ],
     [
-      21718,
+      21719,
       {
         "block": 4863693,
         "op": {
@@ -7216,7 +7228,7 @@
       }
     ],
     [
-      21719,
+      21720,
       {
         "block": 4863693,
         "op": {
@@ -7237,7 +7249,7 @@
       }
     ],
     [
-      21720,
+      21721,
       {
         "block": 4863949,
         "op": {
@@ -7265,7 +7277,7 @@
       }
     ],
     [
-      21721,
+      21722,
       {
         "block": 4863949,
         "op": {
@@ -7286,7 +7298,7 @@
       }
     ],
     [
-      21722,
+      21723,
       {
         "block": 4864302,
         "op": {
@@ -7314,7 +7326,7 @@
       }
     ],
     [
-      21723,
+      21724,
       {
         "block": 4864302,
         "op": {
@@ -7335,7 +7347,7 @@
       }
     ],
     [
-      21724,
+      21725,
       {
         "block": 4866343,
         "op": {
@@ -7363,7 +7375,7 @@
       }
     ],
     [
-      21725,
+      21726,
       {
         "block": 4866343,
         "op": {
@@ -7384,7 +7396,7 @@
       }
     ],
     [
-      21726,
+      21727,
       {
         "block": 4866361,
         "op": {
@@ -7408,7 +7420,7 @@
       }
     ],
     [
-      21727,
+      21728,
       {
         "block": 4867542,
         "op": {
@@ -7436,7 +7448,7 @@
       }
     ],
     [
-      21728,
+      21729,
       {
         "block": 4867542,
         "op": {
@@ -7457,7 +7469,7 @@
       }
     ],
     [
-      21729,
+      21730,
       {
         "block": 4867952,
         "op": {
@@ -7485,7 +7497,7 @@
       }
     ],
     [
-      21730,
+      21731,
       {
         "block": 4867952,
         "op": {
@@ -7506,7 +7518,7 @@
       }
     ],
     [
-      21731,
+      21732,
       {
         "block": 4868633,
         "op": {
@@ -7515,6 +7527,7 @@
             "comment_author": "fairytalelife",
             "comment_permlink": "how-to-draw-a-braid",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "92369054",
               "nai": "@@000000037",
@@ -7531,7 +7544,7 @@
       }
     ],
     [
-      21732,
+      21733,
       {
         "block": 4869126,
         "op": {
@@ -7559,7 +7572,7 @@
       }
     ],
     [
-      21733,
+      21734,
       {
         "block": 4869126,
         "op": {
@@ -7580,7 +7593,7 @@
       }
     ],
     [
-      21734,
+      21735,
       {
         "block": 4869148,
         "op": {
@@ -7608,7 +7621,7 @@
       }
     ],
     [
-      21735,
+      21736,
       {
         "block": 4869148,
         "op": {
@@ -7629,7 +7642,7 @@
       }
     ],
     [
-      21736,
+      21737,
       {
         "block": 4869556,
         "op": {
@@ -7657,7 +7670,7 @@
       }
     ],
     [
-      21737,
+      21738,
       {
         "block": 4869556,
         "op": {
@@ -7678,7 +7691,7 @@
       }
     ],
     [
-      21738,
+      21739,
       {
         "block": 4870013,
         "op": {
@@ -7702,7 +7715,7 @@
       }
     ],
     [
-      21739,
+      21740,
       {
         "block": 4871461,
         "op": {
@@ -7730,7 +7743,7 @@
       }
     ],
     [
-      21740,
+      21741,
       {
         "block": 4871461,
         "op": {
@@ -7751,7 +7764,7 @@
       }
     ],
     [
-      21741,
+      21742,
       {
         "block": 4871660,
         "op": {
@@ -7760,6 +7773,7 @@
             "comment_author": "infovore",
             "comment_permlink": "a-day-in-the-life-of-a-steemcleaner-steemians-speak-fondest-moment-on-steemit-this-week-on-steemit-steemmag-steemit-s-weekend",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "95393246",
               "nai": "@@000000037",
@@ -7776,7 +7790,7 @@
       }
     ],
     [
-      21742,
+      21743,
       {
         "block": 4871660,
         "op": {
@@ -7798,6 +7812,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "re-infovore-a-day-in-the-life-of-a-steemcleaner-steemians-speak-fondest-moment-on-steemit-this-week-on-steemit-steemmag-steemit-s-weekend-20160910t120251791z",
             "vesting_payout": {
               "amount": "298488546",
@@ -7815,7 +7830,7 @@
       }
     ],
     [
-      21743,
+      21744,
       {
         "block": 4871660,
         "op": {
@@ -7855,7 +7870,7 @@
       }
     ],
     [
-      21744,
+      21745,
       {
         "block": 4872663,
         "op": {
@@ -7879,7 +7894,7 @@
       }
     ],
     [
-      21745,
+      21746,
       {
         "block": 4872665,
         "op": {
@@ -7907,7 +7922,7 @@
       }
     ],
     [
-      21746,
+      21747,
       {
         "block": 4872665,
         "op": {
@@ -7928,7 +7943,7 @@
       }
     ],
     [
-      21747,
+      21748,
       {
         "block": 4872675,
         "op": {
@@ -7952,7 +7967,7 @@
       }
     ],
     [
-      21748,
+      21749,
       {
         "block": 4872677,
         "op": {
@@ -7980,7 +7995,7 @@
       }
     ],
     [
-      21749,
+      21750,
       {
         "block": 4872677,
         "op": {
@@ -8001,7 +8016,7 @@
       }
     ],
     [
-      21750,
+      21751,
       {
         "block": 4872683,
         "op": {
@@ -8025,7 +8040,7 @@
       }
     ],
     [
-      21751,
+      21752,
       {
         "block": 4872697,
         "op": {
@@ -8053,7 +8068,7 @@
       }
     ],
     [
-      21752,
+      21753,
       {
         "block": 4872697,
         "op": {
@@ -8074,7 +8089,7 @@
       }
     ],
     [
-      21753,
+      21754,
       {
         "block": 4873207,
         "op": {
@@ -8098,7 +8113,7 @@
       }
     ],
     [
-      21754,
+      21755,
       {
         "block": 4873216,
         "op": {
@@ -8107,6 +8122,7 @@
             "comment_author": "infovore",
             "comment_permlink": "steemmag-steemit-s-weekend-digest-9-of-community-curation-and-reputation-chats-with-a-whale-steemit-chat-lead-moderators-a-day",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "113822821",
               "nai": "@@000000037",
@@ -8123,7 +8139,7 @@
       }
     ],
     [
-      21755,
+      21756,
       {
         "block": 4873251,
         "op": {
@@ -8151,7 +8167,7 @@
       }
     ],
     [
-      21756,
+      21757,
       {
         "block": 4873251,
         "op": {
@@ -8172,7 +8188,7 @@
       }
     ],
     [
-      21757,
+      21758,
       {
         "block": 4873672,
         "op": {
@@ -8196,7 +8212,7 @@
       }
     ],
     [
-      21758,
+      21759,
       {
         "block": 4873672,
         "op": {
@@ -8215,7 +8231,7 @@
             "weight": 0
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-11T09:55:24",
         "trx_id": "b32e4cb901a4a9975ad1f671e6bbc4f1641118ba",
@@ -8224,7 +8240,7 @@
       }
     ],
     [
-      21759,
+      21760,
       {
         "block": 4873672,
         "op": {
@@ -8236,7 +8252,7 @@
             "weight": 10000
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-11T09:55:24",
         "trx_id": "b32e4cb901a4a9975ad1f671e6bbc4f1641118ba",
@@ -8245,7 +8261,7 @@
       }
     ],
     [
-      21760,
+      21761,
       {
         "block": 4873682,
         "op": {
@@ -8269,7 +8285,7 @@
       }
     ],
     [
-      21761,
+      21762,
       {
         "block": 4873683,
         "op": {
@@ -8297,7 +8313,7 @@
       }
     ],
     [
-      21762,
+      21763,
       {
         "block": 4873683,
         "op": {
@@ -8318,7 +8334,7 @@
       }
     ],
     [
-      21763,
+      21764,
       {
         "block": 4873708,
         "op": {
@@ -8342,7 +8358,7 @@
       }
     ],
     [
-      21764,
+      21765,
       {
         "block": 4873750,
         "op": {
@@ -8366,7 +8382,7 @@
       }
     ],
     [
-      21765,
+      21766,
       {
         "block": 4873755,
         "op": {
@@ -8394,7 +8410,7 @@
       }
     ],
     [
-      21766,
+      21767,
       {
         "block": 4873755,
         "op": {
@@ -8415,7 +8431,7 @@
       }
     ],
     [
-      21767,
+      21768,
       {
         "block": 4873759,
         "op": {
@@ -8443,7 +8459,7 @@
       }
     ],
     [
-      21768,
+      21769,
       {
         "block": 4873759,
         "op": {
@@ -8464,7 +8480,7 @@
       }
     ],
     [
-      21769,
+      21770,
       {
         "block": 4873767,
         "op": {
@@ -8492,7 +8508,7 @@
       }
     ],
     [
-      21770,
+      21771,
       {
         "block": 4873767,
         "op": {
@@ -8513,7 +8529,7 @@
       }
     ],
     [
-      21771,
+      21772,
       {
         "block": 4873778,
         "op": {
@@ -8541,7 +8557,7 @@
       }
     ],
     [
-      21772,
+      21773,
       {
         "block": 4873778,
         "op": {
@@ -8562,7 +8578,7 @@
       }
     ],
     [
-      21773,
+      21774,
       {
         "block": 4873778,
         "op": {
@@ -8590,7 +8606,7 @@
       }
     ],
     [
-      21774,
+      21775,
       {
         "block": 4873778,
         "op": {
@@ -8611,7 +8627,7 @@
       }
     ],
     [
-      21775,
+      21776,
       {
         "block": 4873791,
         "op": {
@@ -8639,7 +8655,7 @@
       }
     ],
     [
-      21776,
+      21777,
       {
         "block": 4873791,
         "op": {
@@ -8660,7 +8676,7 @@
       }
     ],
     [
-      21777,
+      21778,
       {
         "block": 4873814,
         "op": {
@@ -8684,7 +8700,7 @@
       }
     ],
     [
-      21778,
+      21779,
       {
         "block": 4873828,
         "op": {
@@ -8708,7 +8724,7 @@
       }
     ],
     [
-      21779,
+      21780,
       {
         "block": 4873842,
         "op": {
@@ -8732,7 +8748,7 @@
       }
     ],
     [
-      21780,
+      21781,
       {
         "block": 4873847,
         "op": {
@@ -8760,7 +8776,7 @@
       }
     ],
     [
-      21781,
+      21782,
       {
         "block": 4873847,
         "op": {
@@ -8781,7 +8797,7 @@
       }
     ],
     [
-      21782,
+      21783,
       {
         "block": 4873862,
         "op": {
@@ -8809,7 +8825,7 @@
       }
     ],
     [
-      21783,
+      21784,
       {
         "block": 4873862,
         "op": {
@@ -8830,7 +8846,7 @@
       }
     ],
     [
-      21784,
+      21785,
       {
         "block": 4873865,
         "op": {
@@ -8854,7 +8870,7 @@
       }
     ],
     [
-      21785,
+      21786,
       {
         "block": 4873874,
         "op": {
@@ -8882,7 +8898,7 @@
       }
     ],
     [
-      21786,
+      21787,
       {
         "block": 4873874,
         "op": {
@@ -8903,7 +8919,7 @@
       }
     ],
     [
-      21787,
+      21788,
       {
         "block": 4873883,
         "op": {
@@ -8931,7 +8947,7 @@
       }
     ],
     [
-      21788,
+      21789,
       {
         "block": 4873883,
         "op": {
@@ -8952,7 +8968,7 @@
       }
     ],
     [
-      21789,
+      21790,
       {
         "block": 4873889,
         "op": {
@@ -8976,7 +8992,7 @@
       }
     ],
     [
-      21790,
+      21791,
       {
         "block": 4873900,
         "op": {
@@ -9004,7 +9020,7 @@
       }
     ],
     [
-      21791,
+      21792,
       {
         "block": 4873900,
         "op": {
@@ -9025,7 +9041,7 @@
       }
     ],
     [
-      21792,
+      21793,
       {
         "block": 4873903,
         "op": {
@@ -9053,7 +9069,7 @@
       }
     ],
     [
-      21793,
+      21794,
       {
         "block": 4873903,
         "op": {
@@ -9074,7 +9090,7 @@
       }
     ],
     [
-      21794,
+      21795,
       {
         "block": 4873904,
         "op": {
@@ -9102,7 +9118,7 @@
       }
     ],
     [
-      21795,
+      21796,
       {
         "block": 4873904,
         "op": {
@@ -9123,7 +9139,7 @@
       }
     ],
     [
-      21796,
+      21797,
       {
         "block": 4873920,
         "op": {
@@ -9151,7 +9167,7 @@
       }
     ],
     [
-      21797,
+      21798,
       {
         "block": 4873920,
         "op": {
@@ -9172,7 +9188,7 @@
       }
     ],
     [
-      21798,
+      21799,
       {
         "block": 4873951,
         "op": {
@@ -9200,7 +9216,7 @@
       }
     ],
     [
-      21799,
+      21800,
       {
         "block": 4873951,
         "op": {
@@ -9221,7 +9237,7 @@
       }
     ],
     [
-      21800,
+      21801,
       {
         "block": 4873965,
         "op": {
@@ -9249,7 +9265,7 @@
       }
     ],
     [
-      21801,
+      21802,
       {
         "block": 4873965,
         "op": {
@@ -9270,7 +9286,7 @@
       }
     ],
     [
-      21802,
+      21803,
       {
         "block": 4873970,
         "op": {
@@ -9298,7 +9314,7 @@
       }
     ],
     [
-      21803,
+      21804,
       {
         "block": 4873970,
         "op": {
@@ -9319,7 +9335,7 @@
       }
     ],
     [
-      21804,
+      21805,
       {
         "block": 4873984,
         "op": {
@@ -9347,7 +9363,7 @@
       }
     ],
     [
-      21805,
+      21806,
       {
         "block": 4873984,
         "op": {
@@ -9368,7 +9384,7 @@
       }
     ],
     [
-      21806,
+      21807,
       {
         "block": 4874034,
         "op": {
@@ -9396,7 +9412,7 @@
       }
     ],
     [
-      21807,
+      21808,
       {
         "block": 4874034,
         "op": {
@@ -9417,7 +9433,7 @@
       }
     ],
     [
-      21808,
+      21809,
       {
         "block": 4874036,
         "op": {
@@ -9445,7 +9461,7 @@
       }
     ],
     [
-      21809,
+      21810,
       {
         "block": 4874036,
         "op": {
@@ -9466,7 +9482,7 @@
       }
     ],
     [
-      21810,
+      21811,
       {
         "block": 4874037,
         "op": {
@@ -9494,7 +9510,7 @@
       }
     ],
     [
-      21811,
+      21812,
       {
         "block": 4874037,
         "op": {
@@ -9515,7 +9531,7 @@
       }
     ],
     [
-      21812,
+      21813,
       {
         "block": 4874040,
         "op": {
@@ -9543,7 +9559,7 @@
       }
     ],
     [
-      21813,
+      21814,
       {
         "block": 4874040,
         "op": {
@@ -9564,7 +9580,7 @@
       }
     ],
     [
-      21814,
+      21815,
       {
         "block": 4874049,
         "op": {
@@ -9592,7 +9608,7 @@
       }
     ],
     [
-      21815,
+      21816,
       {
         "block": 4874049,
         "op": {
@@ -9613,7 +9629,7 @@
       }
     ],
     [
-      21816,
+      21817,
       {
         "block": 4874049,
         "op": {
@@ -9641,7 +9657,7 @@
       }
     ],
     [
-      21817,
+      21818,
       {
         "block": 4874049,
         "op": {
@@ -9662,7 +9678,7 @@
       }
     ],
     [
-      21818,
+      21819,
       {
         "block": 4874052,
         "op": {
@@ -9690,7 +9706,7 @@
       }
     ],
     [
-      21819,
+      21820,
       {
         "block": 4874052,
         "op": {
@@ -9711,7 +9727,7 @@
       }
     ],
     [
-      21820,
+      21821,
       {
         "block": 4874052,
         "op": {
@@ -9739,7 +9755,7 @@
       }
     ],
     [
-      21821,
+      21822,
       {
         "block": 4874052,
         "op": {
@@ -9760,7 +9776,7 @@
       }
     ],
     [
-      21822,
+      21823,
       {
         "block": 4874053,
         "op": {
@@ -9788,7 +9804,7 @@
       }
     ],
     [
-      21823,
+      21824,
       {
         "block": 4874053,
         "op": {
@@ -9809,7 +9825,7 @@
       }
     ],
     [
-      21824,
+      21825,
       {
         "block": 4874132,
         "op": {
@@ -9837,7 +9853,7 @@
       }
     ],
     [
-      21825,
+      21826,
       {
         "block": 4874132,
         "op": {
@@ -9858,7 +9874,7 @@
       }
     ],
     [
-      21826,
+      21827,
       {
         "block": 4874199,
         "op": {
@@ -9886,7 +9902,7 @@
       }
     ],
     [
-      21827,
+      21828,
       {
         "block": 4874199,
         "op": {
@@ -9907,7 +9923,7 @@
       }
     ],
     [
-      21828,
+      21829,
       {
         "block": 4874220,
         "op": {
@@ -9935,7 +9951,7 @@
       }
     ],
     [
-      21829,
+      21830,
       {
         "block": 4874220,
         "op": {
@@ -9956,7 +9972,7 @@
       }
     ],
     [
-      21830,
+      21831,
       {
         "block": 4874232,
         "op": {
@@ -9984,7 +10000,7 @@
       }
     ],
     [
-      21831,
+      21832,
       {
         "block": 4874232,
         "op": {
@@ -10005,7 +10021,7 @@
       }
     ],
     [
-      21832,
+      21833,
       {
         "block": 4874233,
         "op": {
@@ -10033,7 +10049,7 @@
       }
     ],
     [
-      21833,
+      21834,
       {
         "block": 4874233,
         "op": {
@@ -10054,7 +10070,7 @@
       }
     ],
     [
-      21834,
+      21835,
       {
         "block": 4874235,
         "op": {
@@ -10082,7 +10098,7 @@
       }
     ],
     [
-      21835,
+      21836,
       {
         "block": 4874235,
         "op": {
@@ -10103,7 +10119,7 @@
       }
     ],
     [
-      21836,
+      21837,
       {
         "block": 4874251,
         "op": {
@@ -10131,7 +10147,7 @@
       }
     ],
     [
-      21837,
+      21838,
       {
         "block": 4874251,
         "op": {
@@ -10152,7 +10168,7 @@
       }
     ],
     [
-      21838,
+      21839,
       {
         "block": 4874528,
         "op": {
@@ -10174,6 +10190,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "a-quick-steem-elf-drawing",
             "vesting_payout": {
               "amount": "61510564",
@@ -10191,7 +10208,7 @@
       }
     ],
     [
-      21839,
+      21840,
       {
         "block": 4874528,
         "op": {
@@ -10231,7 +10248,7 @@
       }
     ],
     [
-      21840,
+      21841,
       {
         "block": 4874528,
         "op": {
@@ -10250,7 +10267,7 @@
       }
     ],
     [
-      21841,
+      21842,
       {
         "block": 4874528,
         "op": {
@@ -10269,7 +10286,7 @@
       }
     ],
     [
-      21842,
+      21843,
       {
         "block": 4874528,
         "op": {
@@ -10288,7 +10305,7 @@
       }
     ],
     [
-      21843,
+      21844,
       {
         "block": 4874528,
         "op": {
@@ -10307,7 +10324,7 @@
       }
     ],
     [
-      21844,
+      21845,
       {
         "block": 4874528,
         "op": {
@@ -10326,7 +10343,7 @@
       }
     ],
     [
-      21845,
+      21846,
       {
         "block": 4874528,
         "op": {
@@ -10345,7 +10362,7 @@
       }
     ],
     [
-      21846,
+      21847,
       {
         "block": 4874528,
         "op": {
@@ -10364,7 +10381,7 @@
       }
     ],
     [
-      21847,
+      21848,
       {
         "block": 4874585,
         "op": {
@@ -10392,7 +10409,7 @@
       }
     ],
     [
-      21848,
+      21849,
       {
         "block": 4874585,
         "op": {
@@ -10413,7 +10430,7 @@
       }
     ],
     [
-      21849,
+      21850,
       {
         "block": 4874635,
         "op": {
@@ -10441,7 +10458,7 @@
       }
     ],
     [
-      21850,
+      21851,
       {
         "block": 4874635,
         "op": {
@@ -10462,7 +10479,7 @@
       }
     ],
     [
-      21851,
+      21852,
       {
         "block": 4874832,
         "op": {
@@ -10471,6 +10488,7 @@
             "comment_author": "lyubovbar",
             "comment_permlink": "gentle-casserole-of-minced-chicken-and-vegetables-recipe-and-cooking-lyubovbar",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "76883771",
               "nai": "@@000000037",
@@ -10487,7 +10505,7 @@
       }
     ],
     [
-      21852,
+      21853,
       {
         "block": 4875179,
         "op": {
@@ -10515,7 +10533,7 @@
       }
     ],
     [
-      21853,
+      21854,
       {
         "block": 4875179,
         "op": {
@@ -10536,7 +10554,7 @@
       }
     ],
     [
-      21854,
+      21855,
       {
         "block": 4875324,
         "op": {
@@ -10564,7 +10582,7 @@
       }
     ],
     [
-      21855,
+      21856,
       {
         "block": 4875324,
         "op": {
@@ -10585,7 +10603,7 @@
       }
     ],
     [
-      21856,
+      21857,
       {
         "block": 4875398,
         "op": {
@@ -10613,7 +10631,7 @@
       }
     ],
     [
-      21857,
+      21858,
       {
         "block": 4875398,
         "op": {
@@ -10634,7 +10652,7 @@
       }
     ],
     [
-      21858,
+      21859,
       {
         "block": 4875400,
         "op": {
@@ -10662,7 +10680,7 @@
       }
     ],
     [
-      21859,
+      21860,
       {
         "block": 4875400,
         "op": {
@@ -10683,7 +10701,7 @@
       }
     ],
     [
-      21860,
+      21861,
       {
         "block": 4875401,
         "op": {
@@ -10711,7 +10729,7 @@
       }
     ],
     [
-      21861,
+      21862,
       {
         "block": 4875401,
         "op": {
@@ -10732,7 +10750,7 @@
       }
     ],
     [
-      21862,
+      21863,
       {
         "block": 4875405,
         "op": {
@@ -10760,7 +10778,7 @@
       }
     ],
     [
-      21863,
+      21864,
       {
         "block": 4875405,
         "op": {
@@ -10781,7 +10799,7 @@
       }
     ],
     [
-      21864,
+      21865,
       {
         "block": 4875430,
         "op": {
@@ -10790,6 +10808,7 @@
             "comment_author": "ekaterina4ka",
             "comment_permlink": "knitting-needles-my-passion-post-14-vyazanie-spicami-moe-uvlechenie-post-14",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "79950080",
               "nai": "@@000000037",
@@ -10806,7 +10825,7 @@
       }
     ],
     [
-      21865,
+      21866,
       {
         "block": 4875431,
         "op": {
@@ -10834,7 +10853,7 @@
       }
     ],
     [
-      21866,
+      21867,
       {
         "block": 4875431,
         "op": {
@@ -10855,7 +10874,7 @@
       }
     ],
     [
-      21867,
+      21868,
       {
         "block": 4875443,
         "op": {
@@ -10883,7 +10902,7 @@
       }
     ],
     [
-      21868,
+      21869,
       {
         "block": 4875443,
         "op": {
@@ -10904,7 +10923,7 @@
       }
     ],
     [
-      21869,
+      21870,
       {
         "block": 4875689,
         "op": {
@@ -10928,7 +10947,7 @@
       }
     ],
     [
-      21870,
+      21871,
       {
         "block": 4875691,
         "op": {
@@ -10956,7 +10975,7 @@
       }
     ],
     [
-      21871,
+      21872,
       {
         "block": 4875691,
         "op": {
@@ -10977,7 +10996,7 @@
       }
     ],
     [
-      21872,
+      21873,
       {
         "block": 4875787,
         "op": {
@@ -11005,7 +11024,7 @@
       }
     ],
     [
-      21873,
+      21874,
       {
         "block": 4875787,
         "op": {
@@ -11026,7 +11045,7 @@
       }
     ],
     [
-      21874,
+      21875,
       {
         "block": 4875794,
         "op": {
@@ -11054,7 +11073,7 @@
       }
     ],
     [
-      21875,
+      21876,
       {
         "block": 4875794,
         "op": {
@@ -11075,7 +11094,7 @@
       }
     ],
     [
-      21876,
+      21877,
       {
         "block": 4875855,
         "op": {
@@ -11103,7 +11122,7 @@
       }
     ],
     [
-      21877,
+      21878,
       {
         "block": 4875855,
         "op": {
@@ -11124,7 +11143,7 @@
       }
     ],
     [
-      21878,
+      21879,
       {
         "block": 4875953,
         "op": {
@@ -11152,7 +11171,7 @@
       }
     ],
     [
-      21879,
+      21880,
       {
         "block": 4875953,
         "op": {
@@ -11173,7 +11192,7 @@
       }
     ],
     [
-      21880,
+      21881,
       {
         "block": 4876379,
         "op": {
@@ -11192,7 +11211,7 @@
       }
     ],
     [
-      21881,
+      21882,
       {
         "block": 4876485,
         "op": {
@@ -11220,7 +11239,7 @@
       }
     ],
     [
-      21882,
+      21883,
       {
         "block": 4876485,
         "op": {
@@ -11241,7 +11260,7 @@
       }
     ],
     [
-      21883,
+      21884,
       {
         "block": 4876557,
         "op": {
@@ -11269,7 +11288,7 @@
       }
     ],
     [
-      21884,
+      21885,
       {
         "block": 4876557,
         "op": {
@@ -11290,7 +11309,7 @@
       }
     ],
     [
-      21885,
+      21886,
       {
         "block": 4877027,
         "op": {
@@ -11318,7 +11337,7 @@
       }
     ],
     [
-      21886,
+      21887,
       {
         "block": 4877027,
         "op": {
@@ -11339,7 +11358,7 @@
       }
     ],
     [
-      21887,
+      21888,
       {
         "block": 4877054,
         "op": {
@@ -11367,7 +11386,7 @@
       }
     ],
     [
-      21888,
+      21889,
       {
         "block": 4877054,
         "op": {
@@ -11388,7 +11407,7 @@
       }
     ],
     [
-      21889,
+      21890,
       {
         "block": 4877111,
         "op": {
@@ -11412,7 +11431,7 @@
       }
     ],
     [
-      21890,
+      21891,
       {
         "block": 4877118,
         "op": {
@@ -11436,7 +11455,7 @@
       }
     ],
     [
-      21891,
+      21892,
       {
         "block": 4877125,
         "op": {
@@ -11460,7 +11479,7 @@
       }
     ],
     [
-      21892,
+      21893,
       {
         "block": 4877146,
         "op": {
@@ -11488,7 +11507,7 @@
       }
     ],
     [
-      21893,
+      21894,
       {
         "block": 4877146,
         "op": {
@@ -11509,7 +11528,7 @@
       }
     ],
     [
-      21894,
+      21895,
       {
         "block": 4877152,
         "op": {
@@ -11533,7 +11552,7 @@
       }
     ],
     [
-      21895,
+      21896,
       {
         "block": 4877179,
         "op": {
@@ -11561,7 +11580,7 @@
       }
     ],
     [
-      21896,
+      21897,
       {
         "block": 4877179,
         "op": {
@@ -11582,7 +11601,7 @@
       }
     ],
     [
-      21897,
+      21898,
       {
         "block": 4877185,
         "op": {
@@ -11590,7 +11609,7 @@
           "value": {
             "author": "dailybest",
             "pending_payout": {
-              "amount": "141859",
+              "amount": "141863",
               "nai": "@@000000013",
               "precision": 3
             },
@@ -11610,7 +11629,7 @@
       }
     ],
     [
-      21898,
+      21899,
       {
         "block": 4877185,
         "op": {
@@ -11631,7 +11650,7 @@
       }
     ],
     [
-      21899,
+      21900,
       {
         "block": 4877355,
         "op": {
@@ -11659,7 +11678,7 @@
       }
     ],
     [
-      21900,
+      21901,
       {
         "block": 4877355,
         "op": {
@@ -11677,34 +11696,6 @@
         "trx_id": "4ea1437797feb5ff91c3e5f0bebceff16388733c",
         "trx_in_block": 1,
         "virtual_op": 0
-      }
-    ],
-    [
-      21901,
-      {
-        "block": 4877360,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "sompitonov",
-            "pending_payout": {
-              "amount": "73",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "re-camilla-re-sompitonov-re-camilla-colors-of-the-falling-leaves-20160911t093158180z",
-            "rshares": "198568874927",
-            "total_vote_weight": "872428040577635556",
-            "voter": "camilla",
-            "weight": "872428040577635556"
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-11T13:00:24",
-        "trx_id": "954cd9fa0c07baac4df1c975a3318e0cbb6d2e3a",
-        "trx_in_block": 1,
-        "virtual_op": 1
       }
     ],
     [
@@ -11712,6 +11703,34 @@
       {
         "block": 4877360,
         "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "sompitonov",
+            "pending_payout": {
+              "amount": "73",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-camilla-re-sompitonov-re-camilla-colors-of-the-falling-leaves-20160911t093158180z",
+            "rshares": "198568874927",
+            "total_vote_weight": "872428040577635556",
+            "voter": "camilla",
+            "weight": "872428040577635556"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-11T13:00:24",
+        "trx_id": "954cd9fa0c07baac4df1c975a3318e0cbb6d2e3a",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      21903,
+      {
+        "block": 4877360,
+        "op": {
           "type": "vote_operation",
           "value": {
             "author": "sompitonov",
@@ -11729,7 +11748,7 @@
       }
     ],
     [
-      21903,
+      21904,
       {
         "block": 4877847,
         "op": {
@@ -11757,7 +11776,7 @@
       }
     ],
     [
-      21904,
+      21905,
       {
         "block": 4877847,
         "op": {
@@ -11778,7 +11797,7 @@
       }
     ],
     [
-      21905,
+      21906,
       {
         "block": 4878056,
         "op": {
@@ -11806,7 +11825,7 @@
       }
     ],
     [
-      21906,
+      21907,
       {
         "block": 4878056,
         "op": {
@@ -11827,7 +11846,7 @@
       }
     ],
     [
-      21907,
+      21908,
       {
         "block": 4878079,
         "op": {
@@ -11855,7 +11874,7 @@
       }
     ],
     [
-      21908,
+      21909,
       {
         "block": 4878079,
         "op": {
@@ -11876,7 +11895,7 @@
       }
     ],
     [
-      21909,
+      21910,
       {
         "block": 4878288,
         "op": {
@@ -11904,7 +11923,7 @@
       }
     ],
     [
-      21910,
+      21911,
       {
         "block": 4878288,
         "op": {
@@ -11925,7 +11944,7 @@
       }
     ],
     [
-      21911,
+      21912,
       {
         "block": 4879035,
         "op": {
@@ -11953,7 +11972,7 @@
       }
     ],
     [
-      21912,
+      21913,
       {
         "block": 4879035,
         "op": {
@@ -11974,7 +11993,7 @@
       }
     ],
     [
-      21913,
+      21914,
       {
         "block": 4880294,
         "op": {
@@ -12002,7 +12021,7 @@
       }
     ],
     [
-      21914,
+      21915,
       {
         "block": 4880294,
         "op": {
@@ -12023,7 +12042,7 @@
       }
     ],
     [
-      21915,
+      21916,
       {
         "block": 4880302,
         "op": {
@@ -12051,7 +12070,7 @@
       }
     ],
     [
-      21916,
+      21917,
       {
         "block": 4880302,
         "op": {
@@ -12072,7 +12091,7 @@
       }
     ],
     [
-      21917,
+      21918,
       {
         "block": 4880788,
         "op": {
@@ -12091,7 +12110,7 @@
       }
     ],
     [
-      21918,
+      21919,
       {
         "block": 4880977,
         "op": {
@@ -12119,7 +12138,7 @@
       }
     ],
     [
-      21919,
+      21920,
       {
         "block": 4880977,
         "op": {
@@ -12140,7 +12159,7 @@
       }
     ],
     [
-      21920,
+      21921,
       {
         "block": 4883321,
         "op": {
@@ -12149,6 +12168,7 @@
             "comment_author": "diana.catherine",
             "comment_permlink": "my-last-days-in-greece-cloudy-but-beautiful-shocked-but-alive-part-3",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "67549036",
               "nai": "@@000000037",
@@ -12165,7 +12185,7 @@
       }
     ],
     [
-      21921,
+      21922,
       {
         "block": 4884483,
         "op": {
@@ -12193,7 +12213,7 @@
       }
     ],
     [
-      21922,
+      21923,
       {
         "block": 4884483,
         "op": {
@@ -12214,7 +12234,7 @@
       }
     ],
     [
-      21923,
+      21924,
       {
         "block": 4884669,
         "op": {
@@ -12242,7 +12262,7 @@
       }
     ],
     [
-      21924,
+      21925,
       {
         "block": 4884669,
         "op": {
@@ -12263,7 +12283,7 @@
       }
     ],
     [
-      21925,
+      21926,
       {
         "block": 4884684,
         "op": {
@@ -12287,7 +12307,7 @@
       }
     ],
     [
-      21926,
+      21927,
       {
         "block": 4885364,
         "op": {
@@ -12315,7 +12335,7 @@
       }
     ],
     [
-      21927,
+      21928,
       {
         "block": 4885364,
         "op": {
@@ -12336,7 +12356,7 @@
       }
     ],
     [
-      21928,
+      21929,
       {
         "block": 4886346,
         "op": {
@@ -12364,7 +12384,7 @@
       }
     ],
     [
-      21929,
+      21930,
       {
         "block": 4886346,
         "op": {
@@ -12385,7 +12405,7 @@
       }
     ],
     [
-      21930,
+      21931,
       {
         "block": 4886355,
         "op": {
@@ -12413,7 +12433,7 @@
       }
     ],
     [
-      21931,
+      21932,
       {
         "block": 4886355,
         "op": {
@@ -12434,7 +12454,7 @@
       }
     ],
     [
-      21932,
+      21933,
       {
         "block": 4887018,
         "op": {
@@ -12458,7 +12478,7 @@
       }
     ],
     [
-      21933,
+      21934,
       {
         "block": 4887445,
         "op": {
@@ -12486,7 +12506,7 @@
       }
     ],
     [
-      21934,
+      21935,
       {
         "block": 4887445,
         "op": {
@@ -12507,7 +12527,7 @@
       }
     ],
     [
-      21935,
+      21936,
       {
         "block": 4887456,
         "op": {
@@ -12535,7 +12555,7 @@
       }
     ],
     [
-      21936,
+      21937,
       {
         "block": 4887456,
         "op": {
@@ -12556,7 +12576,7 @@
       }
     ],
     [
-      21937,
+      21938,
       {
         "block": 4887469,
         "op": {
@@ -12580,7 +12600,7 @@
       }
     ],
     [
-      21938,
+      21939,
       {
         "block": 4887978,
         "op": {
@@ -12589,6 +12609,7 @@
             "comment_author": "anwenbaumeister",
             "comment_permlink": "a-peek-into-pre-columbian-worldviews-found-in-agricultural-practices-duality-complementarity-cyclicity-and-reciprocity",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70557284",
               "nai": "@@000000037",
@@ -12605,7 +12626,7 @@
       }
     ],
     [
-      21939,
+      21940,
       {
         "block": 4889041,
         "op": {
@@ -12633,7 +12654,7 @@
       }
     ],
     [
-      21940,
+      21941,
       {
         "block": 4889041,
         "op": {
@@ -12651,34 +12672,6 @@
         "trx_id": "b1888d99f9d5919cc21f6a8075f14a2f5d2757b9",
         "trx_in_block": 2,
         "virtual_op": 0
-      }
-    ],
-    [
-      21941,
-      {
-        "block": 4889045,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "shadowspub",
-            "pending_payout": {
-              "amount": "68",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "re-camilla-there-is-a-land-far-far-north-20160911t210552014z",
-            "rshares": "211244174496",
-            "total_vote_weight": "925324455796039880",
-            "voter": "camilla",
-            "weight": "925324455796039880"
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-11T22:47:42",
-        "trx_id": "ccc6d704e4f1c97b4d9cb5bf5745d7a9b46b1b58",
-        "trx_in_block": 3,
-        "virtual_op": 1
       }
     ],
     [
@@ -12686,6 +12679,34 @@
       {
         "block": 4889045,
         "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "shadowspub",
+            "pending_payout": {
+              "amount": "68",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-camilla-there-is-a-land-far-far-north-20160911t210552014z",
+            "rshares": "211244174496",
+            "total_vote_weight": "925324455796039880",
+            "voter": "camilla",
+            "weight": "925324455796039880"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-11T22:47:42",
+        "trx_id": "ccc6d704e4f1c97b4d9cb5bf5745d7a9b46b1b58",
+        "trx_in_block": 3,
+        "virtual_op": 1
+      }
+    ],
+    [
+      21943,
+      {
+        "block": 4889045,
+        "op": {
           "type": "vote_operation",
           "value": {
             "author": "shadowspub",
@@ -12703,7 +12724,7 @@
       }
     ],
     [
-      21943,
+      21944,
       {
         "block": 4889061,
         "op": {
@@ -12731,7 +12752,7 @@
       }
     ],
     [
-      21944,
+      21945,
       {
         "block": 4889061,
         "op": {
@@ -12752,7 +12773,7 @@
       }
     ],
     [
-      21945,
+      21946,
       {
         "block": 4889077,
         "op": {
@@ -12776,7 +12797,7 @@
       }
     ],
     [
-      21946,
+      21947,
       {
         "block": 4889093,
         "op": {
@@ -12800,7 +12821,7 @@
       }
     ],
     [
-      21947,
+      21948,
       {
         "block": 4889132,
         "op": {
@@ -12823,7 +12844,7 @@
       }
     ],
     [
-      21948,
+      21949,
       {
         "block": 4889160,
         "op": {
@@ -12846,7 +12867,7 @@
       }
     ],
     [
-      21949,
+      21950,
       {
         "block": 4889162,
         "op": {
@@ -12869,7 +12890,7 @@
       }
     ],
     [
-      21950,
+      21951,
       {
         "block": 4889166,
         "op": {
@@ -12892,7 +12913,7 @@
       }
     ],
     [
-      21951,
+      21952,
       {
         "block": 4889197,
         "op": {
@@ -12916,7 +12937,7 @@
       }
     ],
     [
-      21952,
+      21953,
       {
         "block": 4889199,
         "op": {
@@ -12944,7 +12965,7 @@
       }
     ],
     [
-      21953,
+      21954,
       {
         "block": 4889199,
         "op": {
@@ -12965,7 +12986,7 @@
       }
     ],
     [
-      21954,
+      21955,
       {
         "block": 4889381,
         "op": {
@@ -12993,7 +13014,7 @@
       }
     ],
     [
-      21955,
+      21956,
       {
         "block": 4889381,
         "op": {
@@ -13014,7 +13035,7 @@
       }
     ],
     [
-      21956,
+      21957,
       {
         "block": 4889541,
         "op": {
@@ -13042,7 +13063,7 @@
       }
     ],
     [
-      21957,
+      21958,
       {
         "block": 4889541,
         "op": {
@@ -13063,7 +13084,7 @@
       }
     ],
     [
-      21958,
+      21959,
       {
         "block": 4891107,
         "op": {
@@ -13082,7 +13103,7 @@
       }
     ],
     [
-      21959,
+      21960,
       {
         "block": 4891910,
         "op": {
@@ -13104,6 +13125,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "colors-of-the-falling-leaves",
             "vesting_payout": {
               "amount": "72543343847",
@@ -13121,7 +13143,7 @@
       }
     ],
     [
-      21960,
+      21961,
       {
         "block": 4891910,
         "op": {
@@ -13161,7 +13183,7 @@
       }
     ],
     [
-      21961,
+      21962,
       {
         "block": 4891910,
         "op": {
@@ -13170,6 +13192,7 @@
             "comment_author": "runridefly",
             "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160910t233510136z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "12261710",
               "nai": "@@000000037",
@@ -13186,7 +13209,7 @@
       }
     ],
     [
-      21962,
+      21963,
       {
         "block": 4891910,
         "op": {
@@ -13195,6 +13218,7 @@
             "comment_author": "bullionstackers",
             "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160910t234539398z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "9196282",
               "nai": "@@000000037",
@@ -13211,7 +13235,7 @@
       }
     ],
     [
-      21963,
+      21964,
       {
         "block": 4891910,
         "op": {
@@ -13220,6 +13244,7 @@
             "comment_author": "sompitonov",
             "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160911t001828852z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70504834",
               "nai": "@@000000037",
@@ -13236,7 +13261,7 @@
       }
     ],
     [
-      21964,
+      21965,
       {
         "block": 4891910,
         "op": {
@@ -13245,6 +13270,7 @@
             "comment_author": "tmendieta",
             "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160911t034905376z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70504834",
               "nai": "@@000000037",
@@ -13261,7 +13287,7 @@
       }
     ],
     [
-      21965,
+      21966,
       {
         "block": 4891910,
         "op": {
@@ -13270,6 +13296,7 @@
             "comment_author": "alexft",
             "comment_permlink": "re-camilla-colors-of-the-falling-leaves-20160911t065104109z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70504834",
               "nai": "@@000000037",
@@ -13286,7 +13313,7 @@
       }
     ],
     [
-      21966,
+      21967,
       {
         "block": 4891910,
         "op": {
@@ -13295,6 +13322,7 @@
             "comment_author": "sompitonov",
             "comment_permlink": "re-camilla-re-sompitonov-re-camilla-colors-of-the-falling-leaves-20160911t093158180z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "67439406",
               "nai": "@@000000037",
@@ -13311,7 +13339,7 @@
       }
     ],
     [
-      21967,
+      21968,
       {
         "block": 4891910,
         "op": {
@@ -13320,6 +13348,7 @@
             "comment_author": "alexft",
             "comment_permlink": "re-camilla-re-alexft-re-camilla-colors-of-the-falling-leaves-20160911t113557524z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "67439406",
               "nai": "@@000000037",
@@ -13336,7 +13365,7 @@
       }
     ],
     [
-      21968,
+      21969,
       {
         "block": 4898733,
         "op": {
@@ -13360,7 +13389,7 @@
       }
     ],
     [
-      21969,
+      21970,
       {
         "block": 4901590,
         "op": {
@@ -13369,6 +13398,7 @@
             "comment_author": "royalmacro",
             "comment_permlink": "moonlit-night-an-original-abstract-art-and-a-poem",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70375405",
               "nai": "@@000000037",
@@ -13385,7 +13415,7 @@
       }
     ],
     [
-      21970,
+      21971,
       {
         "block": 4902469,
         "op": {
@@ -13394,6 +13424,7 @@
             "comment_author": "peskov",
             "comment_permlink": "a-cup-of-tea-featuring-vasily-peskov-as-author",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70363715",
               "nai": "@@000000037",
@@ -13410,7 +13441,7 @@
       }
     ],
     [
-      21971,
+      21972,
       {
         "block": 4903433,
         "op": {
@@ -13419,6 +13450,7 @@
             "comment_author": "smailer",
             "comment_permlink": "my-daytime-latte-art-tryings-200-followers-milestone",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "76468318",
               "nai": "@@000000037",
@@ -13435,7 +13467,7 @@
       }
     ],
     [
-      21972,
+      21973,
       {
         "block": 4903881,
         "op": {
@@ -13444,6 +13476,7 @@
             "comment_author": "complexring",
             "comment_permlink": "bypassing-the-great-firewall-of-china",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "91754176",
               "nai": "@@000000037",
@@ -13460,7 +13493,7 @@
       }
     ],
     [
-      21973,
+      21974,
       {
         "block": 4903978,
         "op": {
@@ -13482,6 +13515,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "there-is-a-land-far-far-north",
             "vesting_payout": {
               "amount": "11062290396",
@@ -13499,7 +13533,7 @@
       }
     ],
     [
-      21974,
+      21975,
       {
         "block": 4903978,
         "op": {
@@ -13539,7 +13573,7 @@
       }
     ],
     [
-      21975,
+      21976,
       {
         "block": 4903978,
         "op": {
@@ -13548,6 +13582,7 @@
             "comment_author": "sompitonov",
             "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t124743311z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "3058415",
               "nai": "@@000000037",
@@ -13564,7 +13599,7 @@
       }
     ],
     [
-      21976,
+      21977,
       {
         "block": 4903978,
         "op": {
@@ -13573,6 +13608,7 @@
             "comment_author": "kus-knee",
             "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t190836197z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "73401982",
               "nai": "@@000000037",
@@ -13589,7 +13625,7 @@
       }
     ],
     [
-      21977,
+      21978,
       {
         "block": 4903978,
         "op": {
@@ -13598,6 +13634,7 @@
             "comment_author": "shadowspub",
             "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t210552014z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "73401982",
               "nai": "@@000000037",
@@ -13614,7 +13651,7 @@
       }
     ],
     [
-      21978,
+      21979,
       {
         "block": 4903978,
         "op": {
@@ -13623,6 +13660,7 @@
             "comment_author": "mlialen",
             "comment_permlink": "re-camilla-there-is-a-land-far-far-north-20160911t212832160z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "73401982",
               "nai": "@@000000037",
@@ -13639,7 +13677,7 @@
       }
     ],
     [
-      21979,
+      21980,
       {
         "block": 4904290,
         "op": {
@@ -13648,6 +13686,7 @@
             "comment_author": "dumar022",
             "comment_permlink": "i-never-plan-to-get-a-new-cactus-but-it-happens-all-the-time",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "70339420",
               "nai": "@@000000037",
@@ -13664,7 +13703,7 @@
       }
     ],
     [
-      21980,
+      21981,
       {
         "block": 4904405,
         "op": {
@@ -13673,6 +13712,7 @@
             "comment_author": "xiaofang",
             "comment_permlink": "my-photography-flower-collections",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "73396053",
               "nai": "@@000000037",
@@ -13689,7 +13729,7 @@
       }
     ],
     [
-      21981,
+      21982,
       {
         "block": 4904867,
         "op": {
@@ -13698,6 +13738,7 @@
             "comment_author": "aaronkoenig",
             "comment_permlink": "steemit-meetup-berlin-with-ned-scott-and-steemians-from-hamburg",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "1128365664",
               "nai": "@@000000037",
@@ -13714,7 +13755,7 @@
       }
     ],
     [
-      21982,
+      21983,
       {
         "block": 4905213,
         "op": {
@@ -13723,6 +13764,7 @@
             "comment_author": "labradorsem",
             "comment_permlink": "diet-apple-pie-with-apples-and-pears",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "61154024",
               "nai": "@@000000037",
@@ -13739,7 +13781,7 @@
       }
     ],
     [
-      21983,
+      21984,
       {
         "block": 4906606,
         "op": {
@@ -13748,6 +13790,7 @@
             "comment_author": "terrycraft",
             "comment_permlink": "traveling-to-peru-to-the-wild-jungle-through-the-city-of-shamans-iquitos-puteshestvie-v-ikitos-featuring-njall-as-author",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "61137899",
               "nai": "@@000000037",
@@ -13764,7 +13807,7 @@
       }
     ],
     [
-      21984,
+      21985,
       {
         "block": 4906955,
         "op": {
@@ -13773,6 +13816,7 @@
             "comment_author": "opheliafu",
             "comment_permlink": "the-blue-raven",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "314839300",
               "nai": "@@000000037",
@@ -13789,7 +13833,7 @@
       }
     ],
     [
-      21985,
+      21986,
       {
         "block": 4910096,
         "op": {
@@ -13798,6 +13842,7 @@
             "comment_author": "kus-knee",
             "comment_permlink": "the-old-dog-investigates-the-curious-case-of-the-swiss-bomb-shelters",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "64152384",
               "nai": "@@000000037",
@@ -13814,7 +13859,7 @@
       }
     ],
     [
-      21986,
+      21987,
       {
         "block": 4911002,
         "op": {
@@ -13838,7 +13883,7 @@
       }
     ],
     [
-      21987,
+      21988,
       {
         "block": 4911002,
         "op": {
@@ -13857,7 +13902,7 @@
             "weight": 0
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-12T17:11:45",
         "trx_id": "e9de33a2769e3c56a2eb04cbca3068802148eb2d",
@@ -13866,7 +13911,7 @@
       }
     ],
     [
-      21988,
+      21989,
       {
         "block": 4911002,
         "op": {
@@ -13878,7 +13923,7 @@
             "weight": 10000
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-12T17:11:45",
         "trx_id": "e9de33a2769e3c56a2eb04cbca3068802148eb2d",
@@ -13887,7 +13932,7 @@
       }
     ],
     [
-      21989,
+      21990,
       {
         "block": 4911009,
         "op": {
@@ -13915,7 +13960,7 @@
       }
     ],
     [
-      21990,
+      21991,
       {
         "block": 4911009,
         "op": {
@@ -13936,7 +13981,7 @@
       }
     ],
     [
-      21991,
+      21992,
       {
         "block": 4911009,
         "op": {
@@ -13964,7 +14009,7 @@
       }
     ],
     [
-      21992,
+      21993,
       {
         "block": 4911009,
         "op": {
@@ -13985,7 +14030,7 @@
       }
     ],
     [
-      21993,
+      21994,
       {
         "block": 4911014,
         "op": {
@@ -14013,7 +14058,7 @@
       }
     ],
     [
-      21994,
+      21995,
       {
         "block": 4911014,
         "op": {
@@ -14034,7 +14079,7 @@
       }
     ],
     [
-      21995,
+      21996,
       {
         "block": 4911015,
         "op": {
@@ -14062,7 +14107,7 @@
       }
     ],
     [
-      21996,
+      21997,
       {
         "block": 4911015,
         "op": {
@@ -14083,7 +14128,7 @@
       }
     ],
     [
-      21997,
+      21998,
       {
         "block": 4911017,
         "op": {
@@ -14111,7 +14156,7 @@
       }
     ],
     [
-      21998,
+      21999,
       {
         "block": 4911017,
         "op": {
@@ -14132,7 +14177,7 @@
       }
     ],
     [
-      21999,
+      22000,
       {
         "block": 4911022,
         "op": {
@@ -14160,7 +14205,7 @@
       }
     ],
     [
-      22000,
+      22001,
       {
         "block": 4911022,
         "op": {
@@ -14181,7 +14226,7 @@
       }
     ],
     [
-      22001,
+      22002,
       {
         "block": 4911023,
         "op": {
@@ -14209,7 +14254,7 @@
       }
     ],
     [
-      22002,
+      22003,
       {
         "block": 4911023,
         "op": {
@@ -14230,7 +14275,7 @@
       }
     ],
     [
-      22003,
+      22004,
       {
         "block": 4911030,
         "op": {
@@ -14258,7 +14303,7 @@
       }
     ],
     [
-      22004,
+      22005,
       {
         "block": 4911030,
         "op": {
@@ -14279,7 +14324,7 @@
       }
     ],
     [
-      22005,
+      22006,
       {
         "block": 4911031,
         "op": {
@@ -14307,7 +14352,7 @@
       }
     ],
     [
-      22006,
+      22007,
       {
         "block": 4911031,
         "op": {
@@ -14328,7 +14373,7 @@
       }
     ],
     [
-      22007,
+      22008,
       {
         "block": 4911034,
         "op": {
@@ -14352,7 +14397,7 @@
       }
     ],
     [
-      22008,
+      22009,
       {
         "block": 4911070,
         "op": {
@@ -14380,7 +14425,7 @@
       }
     ],
     [
-      22009,
+      22010,
       {
         "block": 4911070,
         "op": {
@@ -14401,7 +14446,7 @@
       }
     ],
     [
-      22010,
+      22011,
       {
         "block": 4911072,
         "op": {
@@ -14429,7 +14474,7 @@
       }
     ],
     [
-      22011,
+      22012,
       {
         "block": 4911072,
         "op": {
@@ -14450,7 +14495,7 @@
       }
     ],
     [
-      22012,
+      22013,
       {
         "block": 4911077,
         "op": {
@@ -14478,7 +14523,7 @@
       }
     ],
     [
-      22013,
+      22014,
       {
         "block": 4911077,
         "op": {
@@ -14499,7 +14544,7 @@
       }
     ],
     [
-      22014,
+      22015,
       {
         "block": 4911102,
         "op": {
@@ -14527,7 +14572,7 @@
       }
     ],
     [
-      22015,
+      22016,
       {
         "block": 4911102,
         "op": {
@@ -14548,7 +14593,7 @@
       }
     ],
     [
-      22016,
+      22017,
       {
         "block": 4911115,
         "op": {
@@ -14576,7 +14621,7 @@
       }
     ],
     [
-      22017,
+      22018,
       {
         "block": 4911115,
         "op": {
@@ -14597,7 +14642,7 @@
       }
     ],
     [
-      22018,
+      22019,
       {
         "block": 4911130,
         "op": {
@@ -14625,7 +14670,7 @@
       }
     ],
     [
-      22019,
+      22020,
       {
         "block": 4911130,
         "op": {
@@ -14646,7 +14691,7 @@
       }
     ],
     [
-      22020,
+      22021,
       {
         "block": 4911136,
         "op": {
@@ -14670,7 +14715,7 @@
       }
     ],
     [
-      22021,
+      22022,
       {
         "block": 4911165,
         "op": {
@@ -14698,7 +14743,7 @@
       }
     ],
     [
-      22022,
+      22023,
       {
         "block": 4911165,
         "op": {
@@ -14719,7 +14764,7 @@
       }
     ],
     [
-      22023,
+      22024,
       {
         "block": 4911201,
         "op": {
@@ -14743,7 +14788,7 @@
       }
     ],
     [
-      22024,
+      22025,
       {
         "block": 4911203,
         "op": {
@@ -14771,7 +14816,7 @@
       }
     ],
     [
-      22025,
+      22026,
       {
         "block": 4911203,
         "op": {
@@ -14792,7 +14837,7 @@
       }
     ],
     [
-      22026,
+      22027,
       {
         "block": 4911205,
         "op": {
@@ -14820,7 +14865,7 @@
       }
     ],
     [
-      22027,
+      22028,
       {
         "block": 4911205,
         "op": {
@@ -14841,7 +14886,7 @@
       }
     ],
     [
-      22028,
+      22029,
       {
         "block": 4911208,
         "op": {
@@ -14869,7 +14914,7 @@
       }
     ],
     [
-      22029,
+      22030,
       {
         "block": 4911208,
         "op": {
@@ -14890,7 +14935,7 @@
       }
     ],
     [
-      22030,
+      22031,
       {
         "block": 4911209,
         "op": {
@@ -14914,7 +14959,7 @@
       }
     ],
     [
-      22031,
+      22032,
       {
         "block": 4911212,
         "op": {
@@ -14942,7 +14987,7 @@
       }
     ],
     [
-      22032,
+      22033,
       {
         "block": 4911212,
         "op": {
@@ -14963,7 +15008,7 @@
       }
     ],
     [
-      22033,
+      22034,
       {
         "block": 4911213,
         "op": {
@@ -14991,7 +15036,7 @@
       }
     ],
     [
-      22034,
+      22035,
       {
         "block": 4911213,
         "op": {
@@ -15012,7 +15057,7 @@
       }
     ],
     [
-      22035,
+      22036,
       {
         "block": 4911213,
         "op": {
@@ -15040,7 +15085,7 @@
       }
     ],
     [
-      22036,
+      22037,
       {
         "block": 4911213,
         "op": {
@@ -15061,7 +15106,7 @@
       }
     ],
     [
-      22037,
+      22038,
       {
         "block": 4911214,
         "op": {
@@ -15089,7 +15134,7 @@
       }
     ],
     [
-      22038,
+      22039,
       {
         "block": 4911214,
         "op": {
@@ -15110,7 +15155,7 @@
       }
     ],
     [
-      22039,
+      22040,
       {
         "block": 4911275,
         "op": {
@@ -15138,7 +15183,7 @@
       }
     ],
     [
-      22040,
+      22041,
       {
         "block": 4911275,
         "op": {
@@ -15159,7 +15204,7 @@
       }
     ],
     [
-      22041,
+      22042,
       {
         "block": 4911281,
         "op": {
@@ -15187,7 +15232,7 @@
       }
     ],
     [
-      22042,
+      22043,
       {
         "block": 4911281,
         "op": {
@@ -15208,7 +15253,7 @@
       }
     ],
     [
-      22043,
+      22044,
       {
         "block": 4911283,
         "op": {
@@ -15236,7 +15281,7 @@
       }
     ],
     [
-      22044,
+      22045,
       {
         "block": 4911283,
         "op": {
@@ -15257,7 +15302,7 @@
       }
     ],
     [
-      22045,
+      22046,
       {
         "block": 4911304,
         "op": {
@@ -15281,7 +15326,7 @@
       }
     ],
     [
-      22046,
+      22047,
       {
         "block": 4911312,
         "op": {
@@ -15305,7 +15350,7 @@
       }
     ],
     [
-      22047,
+      22048,
       {
         "block": 4911316,
         "op": {
@@ -15333,7 +15378,7 @@
       }
     ],
     [
-      22048,
+      22049,
       {
         "block": 4911316,
         "op": {
@@ -15354,7 +15399,7 @@
       }
     ],
     [
-      22049,
+      22050,
       {
         "block": 4911319,
         "op": {
@@ -15378,7 +15423,7 @@
       }
     ],
     [
-      22050,
+      22051,
       {
         "block": 4911322,
         "op": {
@@ -15406,7 +15451,7 @@
       }
     ],
     [
-      22051,
+      22052,
       {
         "block": 4911322,
         "op": {
@@ -15427,7 +15472,7 @@
       }
     ],
     [
-      22052,
+      22053,
       {
         "block": 4911324,
         "op": {
@@ -15455,7 +15500,7 @@
       }
     ],
     [
-      22053,
+      22054,
       {
         "block": 4911324,
         "op": {
@@ -15476,7 +15521,7 @@
       }
     ],
     [
-      22054,
+      22055,
       {
         "block": 4911343,
         "op": {
@@ -15504,7 +15549,7 @@
       }
     ],
     [
-      22055,
+      22056,
       {
         "block": 4911343,
         "op": {
@@ -15525,7 +15570,7 @@
       }
     ],
     [
-      22056,
+      22057,
       {
         "block": 4911347,
         "op": {
@@ -15553,7 +15598,7 @@
       }
     ],
     [
-      22057,
+      22058,
       {
         "block": 4911347,
         "op": {
@@ -15574,7 +15619,7 @@
       }
     ],
     [
-      22058,
+      22059,
       {
         "block": 4911373,
         "op": {
@@ -15598,7 +15643,7 @@
       }
     ],
     [
-      22059,
+      22060,
       {
         "block": 4911383,
         "op": {
@@ -15626,7 +15671,7 @@
       }
     ],
     [
-      22060,
+      22061,
       {
         "block": 4911383,
         "op": {
@@ -15647,7 +15692,7 @@
       }
     ],
     [
-      22061,
+      22062,
       {
         "block": 4911383,
         "op": {
@@ -15675,7 +15720,7 @@
       }
     ],
     [
-      22062,
+      22063,
       {
         "block": 4911383,
         "op": {
@@ -15696,7 +15741,7 @@
       }
     ],
     [
-      22063,
+      22064,
       {
         "block": 4911384,
         "op": {
@@ -15724,7 +15769,7 @@
       }
     ],
     [
-      22064,
+      22065,
       {
         "block": 4911384,
         "op": {
@@ -15745,7 +15790,7 @@
       }
     ],
     [
-      22065,
+      22066,
       {
         "block": 4911384,
         "op": {
@@ -15773,7 +15818,7 @@
       }
     ],
     [
-      22066,
+      22067,
       {
         "block": 4911384,
         "op": {
@@ -15794,7 +15839,7 @@
       }
     ],
     [
-      22067,
+      22068,
       {
         "block": 4911402,
         "op": {
@@ -15822,7 +15867,7 @@
       }
     ],
     [
-      22068,
+      22069,
       {
         "block": 4911402,
         "op": {
@@ -15843,7 +15888,7 @@
       }
     ],
     [
-      22069,
+      22070,
       {
         "block": 4911408,
         "op": {
@@ -15867,7 +15912,7 @@
       }
     ],
     [
-      22070,
+      22071,
       {
         "block": 4911427,
         "op": {
@@ -15895,7 +15940,7 @@
       }
     ],
     [
-      22071,
+      22072,
       {
         "block": 4911427,
         "op": {
@@ -15916,7 +15961,7 @@
       }
     ],
     [
-      22072,
+      22073,
       {
         "block": 4911434,
         "op": {
@@ -15944,7 +15989,7 @@
       }
     ],
     [
-      22073,
+      22074,
       {
         "block": 4911434,
         "op": {
@@ -15965,7 +16010,7 @@
       }
     ],
     [
-      22074,
+      22075,
       {
         "block": 4911444,
         "op": {
@@ -15993,7 +16038,7 @@
       }
     ],
     [
-      22075,
+      22076,
       {
         "block": 4911444,
         "op": {
@@ -16014,7 +16059,7 @@
       }
     ],
     [
-      22076,
+      22077,
       {
         "block": 4911449,
         "op": {
@@ -16038,7 +16083,7 @@
       }
     ],
     [
-      22077,
+      22078,
       {
         "block": 4911465,
         "op": {
@@ -16066,7 +16111,7 @@
       }
     ],
     [
-      22078,
+      22079,
       {
         "block": 4911465,
         "op": {
@@ -16087,7 +16132,7 @@
       }
     ],
     [
-      22079,
+      22080,
       {
         "block": 4911512,
         "op": {
@@ -16111,7 +16156,7 @@
       }
     ],
     [
-      22080,
+      22081,
       {
         "block": 4911521,
         "op": {
@@ -16139,7 +16184,7 @@
       }
     ],
     [
-      22081,
+      22082,
       {
         "block": 4911521,
         "op": {
@@ -16160,7 +16205,7 @@
       }
     ],
     [
-      22082,
+      22083,
       {
         "block": 4911525,
         "op": {
@@ -16188,7 +16233,7 @@
       }
     ],
     [
-      22083,
+      22084,
       {
         "block": 4911525,
         "op": {
@@ -16209,7 +16254,7 @@
       }
     ],
     [
-      22084,
+      22085,
       {
         "block": 4911534,
         "op": {
@@ -16233,7 +16278,7 @@
       }
     ],
     [
-      22085,
+      22086,
       {
         "block": 4911579,
         "op": {
@@ -16261,7 +16306,7 @@
       }
     ],
     [
-      22086,
+      22087,
       {
         "block": 4911579,
         "op": {
@@ -16282,7 +16327,7 @@
       }
     ],
     [
-      22087,
+      22088,
       {
         "block": 4911582,
         "op": {
@@ -16310,7 +16355,7 @@
       }
     ],
     [
-      22088,
+      22089,
       {
         "block": 4911582,
         "op": {
@@ -16331,7 +16376,7 @@
       }
     ],
     [
-      22089,
+      22090,
       {
         "block": 4911583,
         "op": {
@@ -16359,7 +16404,7 @@
       }
     ],
     [
-      22090,
+      22091,
       {
         "block": 4911583,
         "op": {
@@ -16380,7 +16425,7 @@
       }
     ],
     [
-      22091,
+      22092,
       {
         "block": 4911584,
         "op": {
@@ -16408,7 +16453,7 @@
       }
     ],
     [
-      22092,
+      22093,
       {
         "block": 4911584,
         "op": {
@@ -16429,7 +16474,7 @@
       }
     ],
     [
-      22093,
+      22094,
       {
         "block": 4911587,
         "op": {
@@ -16457,7 +16502,7 @@
       }
     ],
     [
-      22094,
+      22095,
       {
         "block": 4911587,
         "op": {
@@ -16478,7 +16523,7 @@
       }
     ],
     [
-      22095,
+      22096,
       {
         "block": 4911589,
         "op": {
@@ -16506,7 +16551,7 @@
       }
     ],
     [
-      22096,
+      22097,
       {
         "block": 4911589,
         "op": {
@@ -16527,7 +16572,7 @@
       }
     ],
     [
-      22097,
+      22098,
       {
         "block": 4911600,
         "op": {
@@ -16555,7 +16600,7 @@
       }
     ],
     [
-      22098,
+      22099,
       {
         "block": 4911600,
         "op": {
@@ -16576,7 +16621,7 @@
       }
     ],
     [
-      22099,
+      22100,
       {
         "block": 4911614,
         "op": {
@@ -16604,7 +16649,7 @@
       }
     ],
     [
-      22100,
+      22101,
       {
         "block": 4911614,
         "op": {
@@ -16625,7 +16670,7 @@
       }
     ],
     [
-      22101,
+      22102,
       {
         "block": 4911616,
         "op": {
@@ -16653,7 +16698,7 @@
       }
     ],
     [
-      22102,
+      22103,
       {
         "block": 4911616,
         "op": {
@@ -16674,7 +16719,7 @@
       }
     ],
     [
-      22103,
+      22104,
       {
         "block": 4911617,
         "op": {
@@ -16702,7 +16747,7 @@
       }
     ],
     [
-      22104,
+      22105,
       {
         "block": 4911617,
         "op": {
@@ -16723,7 +16768,7 @@
       }
     ],
     [
-      22105,
+      22106,
       {
         "block": 4911619,
         "op": {
@@ -16751,7 +16796,7 @@
       }
     ],
     [
-      22106,
+      22107,
       {
         "block": 4911619,
         "op": {
@@ -16772,7 +16817,7 @@
       }
     ],
     [
-      22107,
+      22108,
       {
         "block": 4911622,
         "op": {
@@ -16800,7 +16845,7 @@
       }
     ],
     [
-      22108,
+      22109,
       {
         "block": 4911622,
         "op": {
@@ -16821,7 +16866,7 @@
       }
     ],
     [
-      22109,
+      22110,
       {
         "block": 4911623,
         "op": {
@@ -16849,7 +16894,7 @@
       }
     ],
     [
-      22110,
+      22111,
       {
         "block": 4911623,
         "op": {
@@ -16870,7 +16915,7 @@
       }
     ],
     [
-      22111,
+      22112,
       {
         "block": 4911623,
         "op": {
@@ -16898,7 +16943,7 @@
       }
     ],
     [
-      22112,
+      22113,
       {
         "block": 4911623,
         "op": {
@@ -16919,7 +16964,7 @@
       }
     ],
     [
-      22113,
+      22114,
       {
         "block": 4911631,
         "op": {
@@ -16947,7 +16992,7 @@
       }
     ],
     [
-      22114,
+      22115,
       {
         "block": 4911631,
         "op": {
@@ -16968,7 +17013,7 @@
       }
     ],
     [
-      22115,
+      22116,
       {
         "block": 4911633,
         "op": {
@@ -16996,7 +17041,7 @@
       }
     ],
     [
-      22116,
+      22117,
       {
         "block": 4911633,
         "op": {
@@ -17017,7 +17062,7 @@
       }
     ],
     [
-      22117,
+      22118,
       {
         "block": 4911634,
         "op": {
@@ -17045,7 +17090,7 @@
       }
     ],
     [
-      22118,
+      22119,
       {
         "block": 4911634,
         "op": {
@@ -17066,7 +17111,7 @@
       }
     ],
     [
-      22119,
+      22120,
       {
         "block": 4911635,
         "op": {
@@ -17094,7 +17139,7 @@
       }
     ],
     [
-      22120,
+      22121,
       {
         "block": 4911635,
         "op": {
@@ -17115,7 +17160,7 @@
       }
     ],
     [
-      22121,
+      22122,
       {
         "block": 4911641,
         "op": {
@@ -17143,7 +17188,7 @@
       }
     ],
     [
-      22122,
+      22123,
       {
         "block": 4911641,
         "op": {
@@ -17164,7 +17209,7 @@
       }
     ],
     [
-      22123,
+      22124,
       {
         "block": 4911642,
         "op": {
@@ -17192,7 +17237,7 @@
       }
     ],
     [
-      22124,
+      22125,
       {
         "block": 4911642,
         "op": {
@@ -17213,7 +17258,7 @@
       }
     ],
     [
-      22125,
+      22126,
       {
         "block": 4911643,
         "op": {
@@ -17241,7 +17286,7 @@
       }
     ],
     [
-      22126,
+      22127,
       {
         "block": 4911643,
         "op": {
@@ -17262,7 +17307,7 @@
       }
     ],
     [
-      22127,
+      22128,
       {
         "block": 4911646,
         "op": {
@@ -17290,7 +17335,7 @@
       }
     ],
     [
-      22128,
+      22129,
       {
         "block": 4911646,
         "op": {
@@ -17311,7 +17356,7 @@
       }
     ],
     [
-      22129,
+      22130,
       {
         "block": 4911654,
         "op": {
@@ -17339,7 +17384,7 @@
       }
     ],
     [
-      22130,
+      22131,
       {
         "block": 4911654,
         "op": {
@@ -17360,7 +17405,7 @@
       }
     ],
     [
-      22131,
+      22132,
       {
         "block": 4911656,
         "op": {
@@ -17388,7 +17433,7 @@
       }
     ],
     [
-      22132,
+      22133,
       {
         "block": 4911656,
         "op": {
@@ -17409,7 +17454,7 @@
       }
     ],
     [
-      22133,
+      22134,
       {
         "block": 4911666,
         "op": {
@@ -17437,7 +17482,7 @@
       }
     ],
     [
-      22134,
+      22135,
       {
         "block": 4911666,
         "op": {
@@ -17458,7 +17503,7 @@
       }
     ],
     [
-      22135,
+      22136,
       {
         "block": 4911670,
         "op": {
@@ -17482,7 +17527,7 @@
       }
     ],
     [
-      22136,
+      22137,
       {
         "block": 4911671,
         "op": {
@@ -17510,7 +17555,7 @@
       }
     ],
     [
-      22137,
+      22138,
       {
         "block": 4911671,
         "op": {
@@ -17531,7 +17576,7 @@
       }
     ],
     [
-      22138,
+      22139,
       {
         "block": 4911675,
         "op": {
@@ -17559,7 +17604,7 @@
       }
     ],
     [
-      22139,
+      22140,
       {
         "block": 4911675,
         "op": {
@@ -17580,7 +17625,7 @@
       }
     ],
     [
-      22140,
+      22141,
       {
         "block": 4911677,
         "op": {
@@ -17608,7 +17653,7 @@
       }
     ],
     [
-      22141,
+      22142,
       {
         "block": 4911677,
         "op": {
@@ -17629,7 +17674,7 @@
       }
     ],
     [
-      22142,
+      22143,
       {
         "block": 4911678,
         "op": {
@@ -17657,7 +17702,7 @@
       }
     ],
     [
-      22143,
+      22144,
       {
         "block": 4911678,
         "op": {
@@ -17678,7 +17723,7 @@
       }
     ],
     [
-      22144,
+      22145,
       {
         "block": 4911688,
         "op": {
@@ -17706,7 +17751,7 @@
       }
     ],
     [
-      22145,
+      22146,
       {
         "block": 4911688,
         "op": {
@@ -17727,7 +17772,7 @@
       }
     ],
     [
-      22146,
+      22147,
       {
         "block": 4911693,
         "op": {
@@ -17755,7 +17800,7 @@
       }
     ],
     [
-      22147,
+      22148,
       {
         "block": 4911693,
         "op": {
@@ -17776,7 +17821,7 @@
       }
     ],
     [
-      22148,
+      22149,
       {
         "block": 4911694,
         "op": {
@@ -17804,7 +17849,7 @@
       }
     ],
     [
-      22149,
+      22150,
       {
         "block": 4911694,
         "op": {
@@ -17825,7 +17870,7 @@
       }
     ],
     [
-      22150,
+      22151,
       {
         "block": 4911696,
         "op": {
@@ -17853,7 +17898,7 @@
       }
     ],
     [
-      22151,
+      22152,
       {
         "block": 4911696,
         "op": {
@@ -17874,7 +17919,7 @@
       }
     ],
     [
-      22152,
+      22153,
       {
         "block": 4911701,
         "op": {
@@ -17902,7 +17947,7 @@
       }
     ],
     [
-      22153,
+      22154,
       {
         "block": 4911701,
         "op": {
@@ -17923,7 +17968,7 @@
       }
     ],
     [
-      22154,
+      22155,
       {
         "block": 4911715,
         "op": {
@@ -17951,7 +17996,7 @@
       }
     ],
     [
-      22155,
+      22156,
       {
         "block": 4911715,
         "op": {
@@ -17972,7 +18017,7 @@
       }
     ],
     [
-      22156,
+      22157,
       {
         "block": 4911717,
         "op": {
@@ -18000,7 +18045,7 @@
       }
     ],
     [
-      22157,
+      22158,
       {
         "block": 4911717,
         "op": {
@@ -18021,7 +18066,7 @@
       }
     ],
     [
-      22158,
+      22159,
       {
         "block": 4911761,
         "op": {
@@ -18049,7 +18094,7 @@
       }
     ],
     [
-      22159,
+      22160,
       {
         "block": 4911761,
         "op": {
@@ -18070,7 +18115,7 @@
       }
     ],
     [
-      22160,
+      22161,
       {
         "block": 4911819,
         "op": {
@@ -18098,7 +18143,7 @@
       }
     ],
     [
-      22161,
+      22162,
       {
         "block": 4911819,
         "op": {
@@ -18119,7 +18164,7 @@
       }
     ],
     [
-      22162,
+      22163,
       {
         "block": 4911840,
         "op": {
@@ -18147,7 +18192,7 @@
       }
     ],
     [
-      22163,
+      22164,
       {
         "block": 4911840,
         "op": {
@@ -18168,7 +18213,7 @@
       }
     ],
     [
-      22164,
+      22165,
       {
         "block": 4912206,
         "op": {
@@ -18196,7 +18241,7 @@
       }
     ],
     [
-      22165,
+      22166,
       {
         "block": 4912206,
         "op": {
@@ -18217,7 +18262,7 @@
       }
     ],
     [
-      22166,
+      22167,
       {
         "block": 4912541,
         "op": {
@@ -18241,7 +18286,7 @@
       }
     ],
     [
-      22167,
+      22168,
       {
         "block": 4912631,
         "op": {
@@ -18269,7 +18314,7 @@
       }
     ],
     [
-      22168,
+      22169,
       {
         "block": 4912631,
         "op": {
@@ -18290,7 +18335,7 @@
       }
     ],
     [
-      22169,
+      22170,
       {
         "block": 4912642,
         "op": {
@@ -18314,7 +18359,7 @@
       }
     ],
     [
-      22170,
+      22171,
       {
         "block": 4912716,
         "op": {
@@ -18338,7 +18383,7 @@
       }
     ],
     [
-      22171,
+      22172,
       {
         "block": 4912719,
         "op": {
@@ -18366,7 +18411,7 @@
       }
     ],
     [
-      22172,
+      22173,
       {
         "block": 4912719,
         "op": {
@@ -18387,7 +18432,7 @@
       }
     ],
     [
-      22173,
+      22174,
       {
         "block": 4912746,
         "op": {
@@ -18415,7 +18460,7 @@
       }
     ],
     [
-      22174,
+      22175,
       {
         "block": 4912746,
         "op": {
@@ -18436,7 +18481,7 @@
       }
     ],
     [
-      22175,
+      22176,
       {
         "block": 4912961,
         "op": {
@@ -18464,7 +18509,7 @@
       }
     ],
     [
-      22176,
+      22177,
       {
         "block": 4912961,
         "op": {
@@ -18485,7 +18530,7 @@
       }
     ],
     [
-      22177,
+      22178,
       {
         "block": 4913092,
         "op": {
@@ -18513,7 +18558,7 @@
       }
     ],
     [
-      22178,
+      22179,
       {
         "block": 4913092,
         "op": {
@@ -18534,7 +18579,7 @@
       }
     ],
     [
-      22179,
+      22180,
       {
         "block": 4913106,
         "op": {
@@ -18558,7 +18603,7 @@
       }
     ],
     [
-      22180,
+      22181,
       {
         "block": 4913113,
         "op": {
@@ -18586,7 +18631,7 @@
       }
     ],
     [
-      22181,
+      22182,
       {
         "block": 4913113,
         "op": {
@@ -18607,7 +18652,7 @@
       }
     ],
     [
-      22182,
+      22183,
       {
         "block": 4913127,
         "op": {
@@ -18631,7 +18676,7 @@
       }
     ],
     [
-      22183,
+      22184,
       {
         "block": 4913184,
         "op": {
@@ -18655,7 +18700,7 @@
       }
     ],
     [
-      22184,
+      22185,
       {
         "block": 4913269,
         "op": {
@@ -18683,7 +18728,7 @@
       }
     ],
     [
-      22185,
+      22186,
       {
         "block": 4913269,
         "op": {
@@ -18704,7 +18749,7 @@
       }
     ],
     [
-      22186,
+      22187,
       {
         "block": 4913334,
         "op": {
@@ -18732,7 +18777,7 @@
       }
     ],
     [
-      22187,
+      22188,
       {
         "block": 4913334,
         "op": {
@@ -18753,7 +18798,7 @@
       }
     ],
     [
-      22188,
+      22189,
       {
         "block": 4913349,
         "op": {
@@ -18777,7 +18822,7 @@
       }
     ],
     [
-      22189,
+      22190,
       {
         "block": 4913588,
         "op": {
@@ -18801,7 +18846,7 @@
       }
     ],
     [
-      22190,
+      22191,
       {
         "block": 4913806,
         "op": {
@@ -18829,7 +18874,7 @@
       }
     ],
     [
-      22191,
+      22192,
       {
         "block": 4913806,
         "op": {
@@ -18850,7 +18895,7 @@
       }
     ],
     [
-      22192,
+      22193,
       {
         "block": 4914122,
         "op": {
@@ -18873,7 +18918,7 @@
       }
     ],
     [
-      22193,
+      22194,
       {
         "block": 4914123,
         "op": {
@@ -18896,7 +18941,7 @@
       }
     ],
     [
-      22194,
+      22195,
       {
         "block": 4914131,
         "op": {
@@ -18919,7 +18964,7 @@
       }
     ],
     [
-      22195,
+      22196,
       {
         "block": 4914133,
         "op": {
@@ -18942,7 +18987,7 @@
       }
     ],
     [
-      22196,
+      22197,
       {
         "block": 4914134,
         "op": {
@@ -18965,7 +19010,7 @@
       }
     ],
     [
-      22197,
+      22198,
       {
         "block": 4915014,
         "op": {
@@ -18974,6 +19019,7 @@
             "comment_author": "jamielefay",
             "comment_permlink": "ahe-ey-allegiance-an-original-novel-part-18",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "1147565547",
               "nai": "@@000000037",
@@ -18990,7 +19036,7 @@
       }
     ],
     [
-      22198,
+      22199,
       {
         "block": 4916296,
         "op": {
@@ -19014,7 +19060,7 @@
       }
     ],
     [
-      22199,
+      22200,
       {
         "block": 4916296,
         "op": {
@@ -19033,7 +19079,7 @@
             "weight": 0
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-12T21:37:27",
         "trx_id": "80c965965523ce8acfc51f73b884e7a054a35cd2",
@@ -19042,7 +19088,7 @@
       }
     ],
     [
-      22200,
+      22201,
       {
         "block": 4916296,
         "op": {
@@ -19054,7 +19100,7 @@
             "weight": 10000
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-12T21:37:27",
         "trx_id": "80c965965523ce8acfc51f73b884e7a054a35cd2",
@@ -19063,7 +19109,7 @@
       }
     ],
     [
-      22201,
+      22202,
       {
         "block": 4916302,
         "op": {
@@ -19091,7 +19137,7 @@
       }
     ],
     [
-      22202,
+      22203,
       {
         "block": 4916302,
         "op": {
@@ -19112,7 +19158,7 @@
       }
     ],
     [
-      22203,
+      22204,
       {
         "block": 4916318,
         "op": {
@@ -19140,7 +19186,7 @@
       }
     ],
     [
-      22204,
+      22205,
       {
         "block": 4916318,
         "op": {
@@ -19161,7 +19207,7 @@
       }
     ],
     [
-      22205,
+      22206,
       {
         "block": 4916323,
         "op": {
@@ -19189,7 +19235,7 @@
       }
     ],
     [
-      22206,
+      22207,
       {
         "block": 4916323,
         "op": {
@@ -19210,7 +19256,7 @@
       }
     ],
     [
-      22207,
+      22208,
       {
         "block": 4916338,
         "op": {
@@ -19238,7 +19284,7 @@
       }
     ],
     [
-      22208,
+      22209,
       {
         "block": 4916338,
         "op": {
@@ -19259,7 +19305,7 @@
       }
     ],
     [
-      22209,
+      22210,
       {
         "block": 4916338,
         "op": {
@@ -19287,7 +19333,7 @@
       }
     ],
     [
-      22210,
+      22211,
       {
         "block": 4916338,
         "op": {
@@ -19308,7 +19354,7 @@
       }
     ],
     [
-      22211,
+      22212,
       {
         "block": 4916360,
         "op": {
@@ -19332,7 +19378,7 @@
       }
     ],
     [
-      22212,
+      22213,
       {
         "block": 4916366,
         "op": {
@@ -19356,7 +19402,7 @@
       }
     ],
     [
-      22213,
+      22214,
       {
         "block": 4916369,
         "op": {
@@ -19384,7 +19430,7 @@
       }
     ],
     [
-      22214,
+      22215,
       {
         "block": 4916369,
         "op": {
@@ -19405,7 +19451,7 @@
       }
     ],
     [
-      22215,
+      22216,
       {
         "block": 4916400,
         "op": {
@@ -19428,7 +19474,7 @@
       }
     ],
     [
-      22216,
+      22217,
       {
         "block": 4916410,
         "op": {
@@ -19456,7 +19502,7 @@
       }
     ],
     [
-      22217,
+      22218,
       {
         "block": 4916410,
         "op": {
@@ -19477,7 +19523,7 @@
       }
     ],
     [
-      22218,
+      22219,
       {
         "block": 4916412,
         "op": {
@@ -19501,7 +19547,7 @@
       }
     ],
     [
-      22219,
+      22220,
       {
         "block": 4916444,
         "op": {
@@ -19529,7 +19575,7 @@
       }
     ],
     [
-      22220,
+      22221,
       {
         "block": 4916444,
         "op": {
@@ -19550,7 +19596,7 @@
       }
     ],
     [
-      22221,
+      22222,
       {
         "block": 4916475,
         "op": {
@@ -19578,7 +19624,7 @@
       }
     ],
     [
-      22222,
+      22223,
       {
         "block": 4916475,
         "op": {
@@ -19599,7 +19645,7 @@
       }
     ],
     [
-      22223,
+      22224,
       {
         "block": 4916492,
         "op": {
@@ -19627,7 +19673,7 @@
       }
     ],
     [
-      22224,
+      22225,
       {
         "block": 4916492,
         "op": {
@@ -19648,7 +19694,7 @@
       }
     ],
     [
-      22225,
+      22226,
       {
         "block": 4916571,
         "op": {
@@ -19676,7 +19722,7 @@
       }
     ],
     [
-      22226,
+      22227,
       {
         "block": 4916571,
         "op": {
@@ -19697,7 +19743,7 @@
       }
     ],
     [
-      22227,
+      22228,
       {
         "block": 4916587,
         "op": {
@@ -19725,7 +19771,7 @@
       }
     ],
     [
-      22228,
+      22229,
       {
         "block": 4916587,
         "op": {
@@ -19746,7 +19792,7 @@
       }
     ],
     [
-      22229,
+      22230,
       {
         "block": 4916675,
         "op": {
@@ -19774,7 +19820,7 @@
       }
     ],
     [
-      22230,
+      22231,
       {
         "block": 4916675,
         "op": {
@@ -19795,7 +19841,7 @@
       }
     ],
     [
-      22231,
+      22232,
       {
         "block": 4916677,
         "op": {
@@ -19823,7 +19869,7 @@
       }
     ],
     [
-      22232,
+      22233,
       {
         "block": 4916677,
         "op": {
@@ -19844,7 +19890,7 @@
       }
     ],
     [
-      22233,
+      22234,
       {
         "block": 4916692,
         "op": {
@@ -19872,7 +19918,7 @@
       }
     ],
     [
-      22234,
+      22235,
       {
         "block": 4916692,
         "op": {
@@ -19893,7 +19939,7 @@
       }
     ],
     [
-      22235,
+      22236,
       {
         "block": 4916736,
         "op": {
@@ -19917,7 +19963,7 @@
       }
     ],
     [
-      22236,
+      22237,
       {
         "block": 4916748,
         "op": {
@@ -19945,7 +19991,7 @@
       }
     ],
     [
-      22237,
+      22238,
       {
         "block": 4916748,
         "op": {
@@ -19966,7 +20012,7 @@
       }
     ],
     [
-      22238,
+      22239,
       {
         "block": 4916749,
         "op": {
@@ -19994,7 +20040,7 @@
       }
     ],
     [
-      22239,
+      22240,
       {
         "block": 4916749,
         "op": {
@@ -20015,7 +20061,7 @@
       }
     ],
     [
-      22240,
+      22241,
       {
         "block": 4916756,
         "op": {
@@ -20043,7 +20089,7 @@
       }
     ],
     [
-      22241,
+      22242,
       {
         "block": 4916756,
         "op": {
@@ -20064,7 +20110,7 @@
       }
     ],
     [
-      22242,
+      22243,
       {
         "block": 4916757,
         "op": {
@@ -20092,7 +20138,7 @@
       }
     ],
     [
-      22243,
+      22244,
       {
         "block": 4916757,
         "op": {
@@ -20113,7 +20159,7 @@
       }
     ],
     [
-      22244,
+      22245,
       {
         "block": 4916758,
         "op": {
@@ -20141,7 +20187,7 @@
       }
     ],
     [
-      22245,
+      22246,
       {
         "block": 4916758,
         "op": {
@@ -20162,7 +20208,7 @@
       }
     ],
     [
-      22246,
+      22247,
       {
         "block": 4916758,
         "op": {
@@ -20190,7 +20236,7 @@
       }
     ],
     [
-      22247,
+      22248,
       {
         "block": 4916758,
         "op": {
@@ -20211,7 +20257,7 @@
       }
     ],
     [
-      22248,
+      22249,
       {
         "block": 4916780,
         "op": {
@@ -20239,7 +20285,7 @@
       }
     ],
     [
-      22249,
+      22250,
       {
         "block": 4916780,
         "op": {
@@ -20260,7 +20306,7 @@
       }
     ],
     [
-      22250,
+      22251,
       {
         "block": 4916808,
         "op": {
@@ -20288,7 +20334,7 @@
       }
     ],
     [
-      22251,
+      22252,
       {
         "block": 4916808,
         "op": {
@@ -20309,7 +20355,7 @@
       }
     ],
     [
-      22252,
+      22253,
       {
         "block": 4916810,
         "op": {
@@ -20337,7 +20383,7 @@
       }
     ],
     [
-      22253,
+      22254,
       {
         "block": 4916810,
         "op": {
@@ -20358,7 +20404,7 @@
       }
     ],
     [
-      22254,
+      22255,
       {
         "block": 4916984,
         "op": {
@@ -20386,7 +20432,7 @@
       }
     ],
     [
-      22255,
+      22256,
       {
         "block": 4916984,
         "op": {
@@ -20407,7 +20453,7 @@
       }
     ],
     [
-      22256,
+      22257,
       {
         "block": 4917019,
         "op": {
@@ -20431,7 +20477,7 @@
       }
     ],
     [
-      22257,
+      22258,
       {
         "block": 4917068,
         "op": {
@@ -20450,7 +20496,7 @@
       }
     ],
     [
-      22258,
+      22259,
       {
         "block": 4917086,
         "op": {
@@ -20469,7 +20515,7 @@
       }
     ],
     [
-      22259,
+      22260,
       {
         "block": 4917112,
         "op": {
@@ -20497,7 +20543,7 @@
       }
     ],
     [
-      22260,
+      22261,
       {
         "block": 4917112,
         "op": {
@@ -20518,7 +20564,7 @@
       }
     ],
     [
-      22261,
+      22262,
       {
         "block": 4917164,
         "op": {
@@ -20546,7 +20592,7 @@
       }
     ],
     [
-      22262,
+      22263,
       {
         "block": 4917164,
         "op": {
@@ -20567,7 +20613,7 @@
       }
     ],
     [
-      22263,
+      22264,
       {
         "block": 4917165,
         "op": {
@@ -20595,7 +20641,7 @@
       }
     ],
     [
-      22264,
+      22265,
       {
         "block": 4917165,
         "op": {
@@ -20616,7 +20662,7 @@
       }
     ],
     [
-      22265,
+      22266,
       {
         "block": 4917752,
         "op": {
@@ -20644,7 +20690,7 @@
       }
     ],
     [
-      22266,
+      22267,
       {
         "block": 4917752,
         "op": {
@@ -20665,7 +20711,7 @@
       }
     ],
     [
-      22267,
+      22268,
       {
         "block": 4917799,
         "op": {
@@ -20689,7 +20735,7 @@
       }
     ],
     [
-      22268,
+      22269,
       {
         "block": 4917804,
         "op": {
@@ -20717,7 +20763,7 @@
       }
     ],
     [
-      22269,
+      22270,
       {
         "block": 4917804,
         "op": {
@@ -20738,7 +20784,7 @@
       }
     ],
     [
-      22270,
+      22271,
       {
         "block": 4918292,
         "op": {
@@ -20766,7 +20812,7 @@
       }
     ],
     [
-      22271,
+      22272,
       {
         "block": 4918292,
         "op": {
@@ -20787,7 +20833,7 @@
       }
     ],
     [
-      22272,
+      22273,
       {
         "block": 4919558,
         "op": {
@@ -20815,7 +20861,7 @@
       }
     ],
     [
-      22273,
+      22274,
       {
         "block": 4919558,
         "op": {
@@ -20836,7 +20882,7 @@
       }
     ],
     [
-      22274,
+      22275,
       {
         "block": 4919579,
         "op": {
@@ -20864,7 +20910,7 @@
       }
     ],
     [
-      22275,
+      22276,
       {
         "block": 4919579,
         "op": {
@@ -20885,7 +20931,7 @@
       }
     ],
     [
-      22276,
+      22277,
       {
         "block": 4919592,
         "op": {
@@ -20913,7 +20959,7 @@
       }
     ],
     [
-      22277,
+      22278,
       {
         "block": 4919592,
         "op": {
@@ -20934,7 +20980,7 @@
       }
     ],
     [
-      22278,
+      22279,
       {
         "block": 4920186,
         "op": {
@@ -20962,7 +21008,7 @@
       }
     ],
     [
-      22279,
+      22280,
       {
         "block": 4920186,
         "op": {
@@ -20983,7 +21029,7 @@
       }
     ],
     [
-      22280,
+      22281,
       {
         "block": 4920201,
         "op": {
@@ -21011,7 +21057,7 @@
       }
     ],
     [
-      22281,
+      22282,
       {
         "block": 4920201,
         "op": {
@@ -21032,7 +21078,7 @@
       }
     ],
     [
-      22282,
+      22283,
       {
         "block": 4920233,
         "op": {
@@ -21041,6 +21087,7 @@
             "comment_author": "shadowspub",
             "comment_permlink": "sunday-ramble-through-steemit-notes-on-my-favourite-reads-sept-11th",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "97569025",
               "nai": "@@000000037",
@@ -21057,7 +21104,7 @@
       }
     ],
     [
-      22283,
+      22284,
       {
         "block": 4921186,
         "op": {
@@ -21066,6 +21113,7 @@
             "comment_author": "sirwinchester",
             "comment_permlink": "bitcoin-exchange-berlin-meetup-with-ned-on-skype",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "164618133",
               "nai": "@@000000037",
@@ -21082,7 +21130,7 @@
       }
     ],
     [
-      22284,
+      22285,
       {
         "block": 4922034,
         "op": {
@@ -21110,7 +21158,7 @@
       }
     ],
     [
-      22285,
+      22286,
       {
         "block": 4922034,
         "op": {
@@ -21131,7 +21179,7 @@
       }
     ],
     [
-      22286,
+      22287,
       {
         "block": 4922045,
         "op": {
@@ -21155,7 +21203,7 @@
       }
     ],
     [
-      22287,
+      22288,
       {
         "block": 4922381,
         "op": {
@@ -21183,7 +21231,7 @@
       }
     ],
     [
-      22288,
+      22289,
       {
         "block": 4922381,
         "op": {
@@ -21204,7 +21252,7 @@
       }
     ],
     [
-      22289,
+      22290,
       {
         "block": 4922572,
         "op": {
@@ -21232,7 +21280,7 @@
       }
     ],
     [
-      22290,
+      22291,
       {
         "block": 4922572,
         "op": {
@@ -21253,7 +21301,7 @@
       }
     ],
     [
-      22291,
+      22292,
       {
         "block": 4924088,
         "op": {
@@ -21272,7 +21320,7 @@
       }
     ],
     [
-      22292,
+      22293,
       {
         "block": 4924088,
         "op": {
@@ -21291,7 +21339,7 @@
       }
     ],
     [
-      22293,
+      22294,
       {
         "block": 4924088,
         "op": {
@@ -21310,7 +21358,7 @@
       }
     ],
     [
-      22294,
+      22295,
       {
         "block": 4924088,
         "op": {
@@ -21329,7 +21377,7 @@
       }
     ],
     [
-      22295,
+      22296,
       {
         "block": 4924088,
         "op": {
@@ -21348,7 +21396,7 @@
       }
     ],
     [
-      22296,
+      22297,
       {
         "block": 4924088,
         "op": {
@@ -21367,7 +21415,7 @@
       }
     ],
     [
-      22297,
+      22298,
       {
         "block": 4924088,
         "op": {
@@ -21386,7 +21434,7 @@
       }
     ],
     [
-      22298,
+      22299,
       {
         "block": 4925961,
         "op": {
@@ -21414,7 +21462,7 @@
       }
     ],
     [
-      22299,
+      22300,
       {
         "block": 4925961,
         "op": {
@@ -21435,7 +21483,7 @@
       }
     ],
     [
-      22300,
+      22301,
       {
         "block": 4926223,
         "op": {
@@ -21463,7 +21511,7 @@
       }
     ],
     [
-      22301,
+      22302,
       {
         "block": 4926223,
         "op": {
@@ -21484,7 +21532,7 @@
       }
     ],
     [
-      22302,
+      22303,
       {
         "block": 4926263,
         "op": {
@@ -21508,7 +21556,7 @@
       }
     ],
     [
-      22303,
+      22304,
       {
         "block": 4928546,
         "op": {
@@ -21536,7 +21584,7 @@
       }
     ],
     [
-      22304,
+      22305,
       {
         "block": 4928546,
         "op": {
@@ -21557,7 +21605,7 @@
       }
     ],
     [
-      22305,
+      22306,
       {
         "block": 4929416,
         "op": {
@@ -21585,7 +21633,7 @@
       }
     ],
     [
-      22306,
+      22307,
       {
         "block": 4929416,
         "op": {
@@ -21606,7 +21654,7 @@
       }
     ],
     [
-      22307,
+      22308,
       {
         "block": 4929419,
         "op": {
@@ -21634,7 +21682,7 @@
       }
     ],
     [
-      22308,
+      22309,
       {
         "block": 4929419,
         "op": {
@@ -21655,7 +21703,7 @@
       }
     ],
     [
-      22309,
+      22310,
       {
         "block": 4929479,
         "op": {
@@ -21683,7 +21731,7 @@
       }
     ],
     [
-      22310,
+      22311,
       {
         "block": 4929479,
         "op": {
@@ -21704,7 +21752,7 @@
       }
     ],
     [
-      22311,
+      22312,
       {
         "block": 4929501,
         "op": {
@@ -21732,7 +21780,7 @@
       }
     ],
     [
-      22312,
+      22313,
       {
         "block": 4929501,
         "op": {
@@ -21753,7 +21801,7 @@
       }
     ],
     [
-      22313,
+      22314,
       {
         "block": 4929505,
         "op": {
@@ -21781,7 +21829,7 @@
       }
     ],
     [
-      22314,
+      22315,
       {
         "block": 4929505,
         "op": {
@@ -21802,7 +21850,7 @@
       }
     ],
     [
-      22315,
+      22316,
       {
         "block": 4929545,
         "op": {
@@ -21821,7 +21869,7 @@
       }
     ],
     [
-      22316,
+      22317,
       {
         "block": 4929545,
         "op": {
@@ -21840,7 +21888,7 @@
       }
     ],
     [
-      22317,
+      22318,
       {
         "block": 4930158,
         "op": {
@@ -21868,7 +21916,7 @@
       }
     ],
     [
-      22318,
+      22319,
       {
         "block": 4930158,
         "op": {
@@ -21889,7 +21937,7 @@
       }
     ],
     [
-      22319,
+      22320,
       {
         "block": 4930528,
         "op": {
@@ -21917,7 +21965,7 @@
       }
     ],
     [
-      22320,
+      22321,
       {
         "block": 4930528,
         "op": {
@@ -21938,7 +21986,7 @@
       }
     ],
     [
-      22321,
+      22322,
       {
         "block": 4930534,
         "op": {
@@ -21966,7 +22014,7 @@
       }
     ],
     [
-      22322,
+      22323,
       {
         "block": 4930534,
         "op": {
@@ -21987,7 +22035,7 @@
       }
     ],
     [
-      22323,
+      22324,
       {
         "block": 4932009,
         "op": {
@@ -22006,7 +22054,7 @@
       }
     ],
     [
-      22324,
+      22325,
       {
         "block": 4932009,
         "op": {
@@ -22025,7 +22073,7 @@
       }
     ],
     [
-      22325,
+      22326,
       {
         "block": 4932009,
         "op": {
@@ -22044,7 +22092,7 @@
       }
     ],
     [
-      22326,
+      22327,
       {
         "block": 4932009,
         "op": {
@@ -22063,7 +22111,7 @@
       }
     ],
     [
-      22327,
+      22328,
       {
         "block": 4932009,
         "op": {
@@ -22085,6 +22133,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "re-spetey-re-camilla-re-spetey-re-clains-free-will-and-conscious-freedom-20160814t111905211z",
             "vesting_payout": {
               "amount": "611497524",
@@ -22102,7 +22151,7 @@
       }
     ],
     [
-      22328,
+      22329,
       {
         "block": 4932009,
         "op": {
@@ -22142,7 +22191,7 @@
       }
     ],
     [
-      22329,
+      22330,
       {
         "block": 4932009,
         "op": {
@@ -22161,7 +22210,7 @@
       }
     ],
     [
-      22330,
+      22331,
       {
         "block": 4932204,
         "op": {
@@ -22189,7 +22238,7 @@
       }
     ],
     [
-      22331,
+      22332,
       {
         "block": 4932204,
         "op": {
@@ -22210,7 +22259,7 @@
       }
     ],
     [
-      22332,
+      22333,
       {
         "block": 4932837,
         "op": {
@@ -22238,7 +22287,7 @@
       }
     ],
     [
-      22333,
+      22334,
       {
         "block": 4932837,
         "op": {
@@ -22259,7 +22308,7 @@
       }
     ],
     [
-      22334,
+      22335,
       {
         "block": 4933254,
         "op": {
@@ -22287,7 +22336,7 @@
       }
     ],
     [
-      22335,
+      22336,
       {
         "block": 4933254,
         "op": {
@@ -22308,7 +22357,7 @@
       }
     ],
     [
-      22336,
+      22337,
       {
         "block": 4939802,
         "op": {
@@ -22317,6 +22366,7 @@
             "comment_author": "alex2016",
             "comment_permlink": "my-new-works-from-genuine-leather",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "57718574",
               "nai": "@@000000037",
@@ -22333,7 +22383,7 @@
       }
     ],
     [
-      22337,
+      22338,
       {
         "block": 4939875,
         "op": {
@@ -22342,6 +22392,7 @@
             "comment_author": "kalipo",
             "comment_permlink": "raptor-art-drawing-all-day",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "60755575",
               "nai": "@@000000037",
@@ -22358,7 +22409,7 @@
       }
     ],
     [
-      22338,
+      22339,
       {
         "block": 4939951,
         "op": {
@@ -22386,7 +22437,7 @@
       }
     ],
     [
-      22339,
+      22340,
       {
         "block": 4939951,
         "op": {
@@ -22407,7 +22458,7 @@
       }
     ],
     [
-      22340,
+      22341,
       {
         "block": 4939952,
         "op": {
@@ -22435,7 +22486,7 @@
       }
     ],
     [
-      22341,
+      22342,
       {
         "block": 4939952,
         "op": {
@@ -22456,7 +22507,7 @@
       }
     ],
     [
-      22342,
+      22343,
       {
         "block": 4939955,
         "op": {
@@ -22484,7 +22535,7 @@
       }
     ],
     [
-      22343,
+      22344,
       {
         "block": 4939955,
         "op": {
@@ -22505,7 +22556,7 @@
       }
     ],
     [
-      22344,
+      22345,
       {
         "block": 4940027,
         "op": {
@@ -22529,7 +22580,7 @@
       }
     ],
     [
-      22345,
+      22346,
       {
         "block": 4940035,
         "op": {
@@ -22557,7 +22608,7 @@
       }
     ],
     [
-      22346,
+      22347,
       {
         "block": 4940035,
         "op": {
@@ -22578,7 +22629,7 @@
       }
     ],
     [
-      22347,
+      22348,
       {
         "block": 4940038,
         "op": {
@@ -22606,7 +22657,7 @@
       }
     ],
     [
-      22348,
+      22349,
       {
         "block": 4940038,
         "op": {
@@ -22627,7 +22678,7 @@
       }
     ],
     [
-      22349,
+      22350,
       {
         "block": 4940040,
         "op": {
@@ -22655,7 +22706,7 @@
       }
     ],
     [
-      22350,
+      22351,
       {
         "block": 4940040,
         "op": {
@@ -22676,7 +22727,7 @@
       }
     ],
     [
-      22351,
+      22352,
       {
         "block": 4940041,
         "op": {
@@ -22704,7 +22755,7 @@
       }
     ],
     [
-      22352,
+      22353,
       {
         "block": 4940041,
         "op": {
@@ -22722,34 +22773,6 @@
         "trx_id": "89e62eb2882d6ff5c4f4141fbd13df2ee4411df4",
         "trx_in_block": 2,
         "virtual_op": 0
-      }
-    ],
-    [
-      22353,
-      {
-        "block": 4940043,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "camilla",
-            "pending_payout": {
-              "amount": "0",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "zendoodle-drawing",
-            "rshares": 317878634,
-            "total_vote_weight": 0,
-            "voter": "helle",
-            "weight": 0
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-13T17:29:21",
-        "trx_id": "d3b5cda99c5a76f057848434b15d6c38d50c0e35",
-        "trx_in_block": 1,
-        "virtual_op": 1
       }
     ],
     [
@@ -22757,6 +22780,34 @@
       {
         "block": 4940043,
         "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "camilla",
+            "pending_payout": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "zendoodle-drawing",
+            "rshares": 317878634,
+            "total_vote_weight": 0,
+            "voter": "helle",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-13T17:29:21",
+        "trx_id": "d3b5cda99c5a76f057848434b15d6c38d50c0e35",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      22355,
+      {
+        "block": 4940043,
+        "op": {
           "type": "vote_operation",
           "value": {
             "author": "camilla",
@@ -22774,7 +22825,7 @@
       }
     ],
     [
-      22355,
+      22356,
       {
         "block": 4940047,
         "op": {
@@ -22802,7 +22853,7 @@
       }
     ],
     [
-      22356,
+      22357,
       {
         "block": 4940047,
         "op": {
@@ -22820,34 +22871,6 @@
         "trx_id": "252a7b954eaaf3f654d493f7aafcd82886267c50",
         "trx_in_block": 0,
         "virtual_op": 0
-      }
-    ],
-    [
-      22357,
-      {
-        "block": 4940048,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "camilla",
-            "pending_payout": {
-              "amount": "0",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "bluebird-on-golden-cup",
-            "rshares": 311391315,
-            "total_vote_weight": 0,
-            "voter": "helle",
-            "weight": 0
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-13T17:29:36",
-        "trx_id": "df480401e8a6e086b6e5f7c6a3a3b3b084da84dd",
-        "trx_in_block": 3,
-        "virtual_op": 1
       }
     ],
     [
@@ -22855,6 +22878,34 @@
       {
         "block": 4940048,
         "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "camilla",
+            "pending_payout": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "bluebird-on-golden-cup",
+            "rshares": 311391315,
+            "total_vote_weight": 0,
+            "voter": "helle",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-13T17:29:36",
+        "trx_id": "df480401e8a6e086b6e5f7c6a3a3b3b084da84dd",
+        "trx_in_block": 3,
+        "virtual_op": 1
+      }
+    ],
+    [
+      22359,
+      {
+        "block": 4940048,
+        "op": {
           "type": "vote_operation",
           "value": {
             "author": "camilla",
@@ -22872,7 +22923,7 @@
       }
     ],
     [
-      22359,
+      22360,
       {
         "block": 4940050,
         "op": {
@@ -22900,7 +22951,7 @@
       }
     ],
     [
-      22360,
+      22361,
       {
         "block": 4940050,
         "op": {
@@ -22921,7 +22972,7 @@
       }
     ],
     [
-      22361,
+      22362,
       {
         "block": 4940051,
         "op": {
@@ -22949,7 +23000,7 @@
       }
     ],
     [
-      22362,
+      22363,
       {
         "block": 4940051,
         "op": {
@@ -22970,7 +23021,7 @@
       }
     ],
     [
-      22363,
+      22364,
       {
         "block": 4940052,
         "op": {
@@ -22991,7 +23042,7 @@
       }
     ],
     [
-      22364,
+      22365,
       {
         "block": 4940056,
         "op": {
@@ -23012,7 +23063,7 @@
       }
     ],
     [
-      22365,
+      22366,
       {
         "block": 4940058,
         "op": {
@@ -23033,7 +23084,7 @@
       }
     ],
     [
-      22366,
+      22367,
       {
         "block": 4940060,
         "op": {
@@ -23054,7 +23105,7 @@
       }
     ],
     [
-      22367,
+      22368,
       {
         "block": 4940064,
         "op": {
@@ -23082,7 +23133,7 @@
       }
     ],
     [
-      22368,
+      22369,
       {
         "block": 4940064,
         "op": {
@@ -23100,34 +23151,6 @@
         "trx_id": "0be7622f8865a3e2ad0418d971538f2bc5c0f7eb",
         "trx_in_block": 0,
         "virtual_op": 0
-      }
-    ],
-    [
-      22369,
-      {
-        "block": 4940066,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "camilla",
-            "pending_payout": {
-              "amount": "0",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "my-lsd-spirits",
-            "rshares": 304903995,
-            "total_vote_weight": 0,
-            "voter": "helle",
-            "weight": 0
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-09-13T17:30:30",
-        "trx_id": "4fa3108991be26a460f47632e63448ad80befcf2",
-        "trx_in_block": 6,
-        "virtual_op": 1
       }
     ],
     [
@@ -23135,6 +23158,34 @@
       {
         "block": 4940066,
         "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "camilla",
+            "pending_payout": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "my-lsd-spirits",
+            "rshares": 304903995,
+            "total_vote_weight": 0,
+            "voter": "helle",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-13T17:30:30",
+        "trx_id": "4fa3108991be26a460f47632e63448ad80befcf2",
+        "trx_in_block": 6,
+        "virtual_op": 1
+      }
+    ],
+    [
+      22371,
+      {
+        "block": 4940066,
+        "op": {
           "type": "vote_operation",
           "value": {
             "author": "camilla",
@@ -23152,7 +23203,7 @@
       }
     ],
     [
-      22371,
+      22372,
       {
         "block": 4940599,
         "op": {
@@ -23174,6 +23225,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "apple-and-leaves",
             "vesting_payout": {
               "amount": "2906758714",
@@ -23191,7 +23243,7 @@
       }
     ],
     [
-      22372,
+      22373,
       {
         "block": 4940599,
         "op": {
@@ -23231,7 +23283,7 @@
       }
     ],
     [
-      22373,
+      22374,
       {
         "block": 4940599,
         "op": {
@@ -23240,6 +23292,7 @@
             "comment_author": "goldmatters",
             "comment_permlink": "re-camilla-apple-and-leaves-20160912t171320575z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "27336288",
               "nai": "@@000000037",
@@ -23256,7 +23309,7 @@
       }
     ],
     [
-      22374,
+      22375,
       {
         "block": 4940599,
         "op": {
@@ -23265,6 +23318,7 @@
             "comment_author": "ashwim",
             "comment_permlink": "re-camilla-apple-and-leaves-20160912t171828553z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "18224192",
               "nai": "@@000000037",
@@ -23281,7 +23335,7 @@
       }
     ],
     [
-      22375,
+      22376,
       {
         "block": 4940599,
         "op": {
@@ -23290,6 +23344,7 @@
             "comment_author": "acidyo",
             "comment_permlink": "re-camilla-apple-and-leaves-20160912t172139964z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "45560481",
               "nai": "@@000000037",
@@ -23306,7 +23361,7 @@
       }
     ],
     [
-      22376,
+      22377,
       {
         "block": 4940599,
         "op": {
@@ -23315,6 +23370,7 @@
             "comment_author": "aavkc",
             "comment_permlink": "re-camilla-apple-and-leaves-20160912t172202293z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "9112096",
               "nai": "@@000000037",
@@ -23331,7 +23387,7 @@
       }
     ],
     [
-      22377,
+      22378,
       {
         "block": 4940599,
         "op": {
@@ -23340,6 +23396,7 @@
             "comment_author": "pixielolz",
             "comment_permlink": "re-camilla-apple-and-leaves-20160912t182902111z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "6074730",
               "nai": "@@000000037",
@@ -23356,7 +23413,7 @@
       }
     ],
     [
-      22378,
+      22379,
       {
         "block": 4940599,
         "op": {
@@ -23365,6 +23422,7 @@
             "comment_author": "shortcut",
             "comment_permlink": "re-camilla-re-shortcut-re-camilla-apple-and-leaves-20160912t190120534z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "12149461",
               "nai": "@@000000037",
@@ -23381,7 +23439,7 @@
       }
     ],
     [
-      22379,
+      22380,
       {
         "block": 4940599,
         "op": {
@@ -23390,6 +23448,7 @@
             "comment_author": "shortcut",
             "comment_permlink": "re-camilla-re-shortcut-re-camilla-re-shortcut-re-camilla-apple-and-leaves-20160912t192137286z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "18224192",
               "nai": "@@000000037",
@@ -23406,7 +23465,7 @@
       }
     ],
     [
-      22380,
+      22381,
       {
         "block": 4941317,
         "op": {
@@ -23415,6 +23474,7 @@
             "comment_author": "zivile",
             "comment_permlink": "pumpkin-pie-with-meat",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "54665193",
               "nai": "@@000000037",
@@ -23431,7 +23491,7 @@
       }
     ],
     [
-      22381,
+      22382,
       {
         "block": 4942131,
         "op": {
@@ -23459,7 +23519,7 @@
       }
     ],
     [
-      22382,
+      22383,
       {
         "block": 4942131,
         "op": {
@@ -23480,7 +23540,7 @@
       }
     ],
     [
-      22383,
+      22384,
       {
         "block": 4942425,
         "op": {
@@ -23489,6 +23549,7 @@
             "comment_author": "curie",
             "comment_permlink": "project-curie-s-daily-curation-list-11-sept-12-sept-2016",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "60726492",
               "nai": "@@000000037",
@@ -23505,7 +23566,7 @@
       }
     ],
     [
-      22384,
+      22385,
       {
         "block": 4945441,
         "op": {
@@ -23514,6 +23575,7 @@
             "comment_author": "acidyo",
             "comment_permlink": "sketch-kitty-cat-oc",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "324702661",
               "nai": "@@000000037",
@@ -23530,7 +23592,7 @@
       }
     ],
     [
-      22385,
+      22386,
       {
         "block": 4945441,
         "op": {
@@ -23539,6 +23601,7 @@
             "comment_author": "acidyo",
             "comment_permlink": "re-camilla-re-acidyo-sketch-kitty-cat-oc-20160912t173408484z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "21242230",
               "nai": "@@000000037",
@@ -23555,7 +23618,7 @@
       }
     ],
     [
-      22386,
+      22387,
       {
         "block": 4947246,
         "op": {
@@ -23577,6 +23640,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "girl-with-a-pink-bow",
             "vesting_payout": {
               "amount": "1689702606",
@@ -23594,7 +23658,7 @@
       }
     ],
     [
-      22387,
+      22388,
       {
         "block": 4947246,
         "op": {
@@ -23634,7 +23698,7 @@
       }
     ],
     [
-      22388,
+      22389,
       {
         "block": 4947246,
         "op": {
@@ -23643,6 +23707,7 @@
             "comment_author": "karenb54",
             "comment_permlink": "re-camilla-girl-with-a-pink-bow-20160912t225246008z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "57637970",
               "nai": "@@000000037",
@@ -23659,7 +23724,7 @@
       }
     ],
     [
-      22389,
+      22390,
       {
         "block": 4947246,
         "op": {
@@ -23668,6 +23733,7 @@
             "comment_author": "sompitonov",
             "comment_permlink": "re-camilla-girl-with-a-pink-bow-20160913t055737074z",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "60671547",
               "nai": "@@000000037",
@@ -23684,7 +23750,7 @@
       }
     ],
     [
-      22390,
+      22391,
       {
         "block": 4947620,
         "op": {
@@ -23693,6 +23759,7 @@
             "comment_author": "anwenbaumeister",
             "comment_permlink": "what-is-culture-a-look-into-various-explanations-of-culture-and-forming-my-own-definition",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "500505034",
               "nai": "@@000000037",
@@ -23709,7 +23776,7 @@
       }
     ],
     [
-      22391,
+      22392,
       {
         "block": 4949022,
         "op": {
@@ -23718,6 +23785,7 @@
             "comment_author": "timsaid",
             "comment_permlink": "life-explorers-the-human-senses-part-iii-touch",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "227442475",
               "nai": "@@000000037",
@@ -23734,7 +23802,7 @@
       }
     ],
     [
-      22392,
+      22393,
       {
         "block": 4949759,
         "op": {
@@ -23743,6 +23811,7 @@
             "comment_author": "dollarvigilante",
             "comment_permlink": "boom-end-game-nears-as-central-banks-buying-up-gold-mining-companies",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "200121755",
               "nai": "@@000000037",
@@ -23759,7 +23828,7 @@
       }
     ],
     [
-      22393,
+      22394,
       {
         "block": 4952412,
         "op": {
@@ -23787,7 +23856,7 @@
       }
     ],
     [
-      22394,
+      22395,
       {
         "block": 4952412,
         "op": {
@@ -23808,7 +23877,7 @@
       }
     ],
     [
-      22395,
+      22396,
       {
         "block": 4952416,
         "op": {
@@ -23836,7 +23905,7 @@
       }
     ],
     [
-      22396,
+      22397,
       {
         "block": 4952416,
         "op": {
@@ -23857,7 +23926,7 @@
       }
     ],
     [
-      22397,
+      22398,
       {
         "block": 4952416,
         "op": {
@@ -23885,7 +23954,7 @@
       }
     ],
     [
-      22398,
+      22399,
       {
         "block": 4952416,
         "op": {
@@ -23906,7 +23975,7 @@
       }
     ],
     [
-      22399,
+      22400,
       {
         "block": 4957270,
         "op": {
@@ -23915,6 +23984,7 @@
             "comment_author": "yangyang",
             "comment_permlink": "my-happy-whale",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "57529742",
               "nai": "@@000000037",
@@ -23931,7 +24001,7 @@
       }
     ],
     [
-      22400,
+      22401,
       {
         "block": 4957832,
         "op": {
@@ -23953,6 +24023,7 @@
               "nai": "@@000000021",
               "precision": 3
             },
+            "payout_must_be_claimed": false,
             "permlink": "re-laivi-this-is-how-coloured-hats-make-norwegians-flirt-in-the-mountains-20160814t224155942z",
             "vesting_payout": {
               "amount": "735697523",
@@ -23970,7 +24041,7 @@
       }
     ],
     [
-      22401,
+      22402,
       {
         "block": 4957832,
         "op": {
@@ -24010,7 +24081,7 @@
       }
     ],
     [
-      22402,
+      22403,
       {
         "block": 4957832,
         "op": {
@@ -24029,7 +24100,7 @@
       }
     ],
     [
-      22403,
+      22404,
       {
         "block": 4958047,
         "op": {
@@ -24038,6 +24109,7 @@
             "comment_author": "elfkitchen",
             "comment_permlink": "i-want-to-take-you-into-the-chinese-vegetable-market",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "63576246",
               "nai": "@@000000037",
@@ -24054,7 +24126,7 @@
       }
     ],
     [
-      22404,
+      22405,
       {
         "block": 4958215,
         "op": {
@@ -24063,6 +24135,7 @@
             "comment_author": "aldentan",
             "comment_permlink": "from-weak-ass-bitch-to-ripped-my-fight-with-hyperthyroidism",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "39355477",
               "nai": "@@000000037",
@@ -24079,7 +24152,7 @@
       }
     ],
     [
-      22405,
+      22406,
       {
         "block": 4959301,
         "op": {
@@ -24088,6 +24161,7 @@
             "comment_author": "hisnameisolllie",
             "comment_permlink": "the-last-12-weeks-at-the-university-of-steemit-where-has-the-time-gone",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "108962269",
               "nai": "@@000000037",
@@ -24104,7 +24178,7 @@
       }
     ],
     [
-      22406,
+      22407,
       {
         "block": 4959683,
         "op": {
@@ -24113,6 +24187,7 @@
             "comment_author": "smailer",
             "comment_permlink": "my-daytime-latte-art-tryings-crown",
             "curator": "camilla",
+            "payout_must_be_claimed": false,
             "reward": {
               "amount": "93821903",
               "nai": "@@000000037",
@@ -24129,7 +24204,7 @@
       }
     ],
     [
-      22407,
+      22408,
       {
         "block": 4968236,
         "op": {
@@ -24157,7 +24232,7 @@
       }
     ],
     [
-      22408,
+      22409,
       {
         "block": 4968236,
         "op": {
@@ -24178,7 +24253,7 @@
       }
     ],
     [
-      22409,
+      22410,
       {
         "block": 4968238,
         "op": {
@@ -24206,7 +24281,7 @@
       }
     ],
     [
-      22410,
+      22411,
       {
         "block": 4968238,
         "op": {
@@ -24227,7 +24302,7 @@
       }
     ],
     [
-      22411,
+      22412,
       {
         "block": 4968239,
         "op": {
@@ -24255,7 +24330,7 @@
       }
     ],
     [
-      22412,
+      22413,
       {
         "block": 4968239,
         "op": {
@@ -24276,7 +24351,7 @@
       }
     ],
     [
-      22413,
+      22414,
       {
         "block": 4968242,
         "op": {
@@ -24304,7 +24379,7 @@
       }
     ],
     [
-      22414,
+      22415,
       {
         "block": 4968242,
         "op": {
@@ -24325,7 +24400,7 @@
       }
     ],
     [
-      22415,
+      22416,
       {
         "block": 4968253,
         "op": {
@@ -24353,7 +24428,7 @@
       }
     ],
     [
-      22416,
+      22417,
       {
         "block": 4968253,
         "op": {
@@ -24374,7 +24449,7 @@
       }
     ],
     [
-      22417,
+      22418,
       {
         "block": 4991895,
         "op": {
@@ -24398,7 +24473,7 @@
       }
     ],
     [
-      22418,
+      22419,
       {
         "block": 4991898,
         "op": {
@@ -24426,7 +24501,7 @@
       }
     ],
     [
-      22419,
+      22420,
       {
         "block": 4991898,
         "op": {
@@ -24447,7 +24522,7 @@
       }
     ],
     [
-      22420,
+      22421,
       {
         "block": 4997949,
         "op": {
