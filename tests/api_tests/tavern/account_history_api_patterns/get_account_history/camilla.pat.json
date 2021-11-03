@@ -5,20 +5,47 @@
       {
         "block": 1364796,
         "op": {
-          "type": "account_created_operation",
+          "type": "account_create_operation",
           "value": {
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5weDe4DrNTc1Nrgi3puni6ABCvAiQnAmY2iMZ32PEoFcfLsKJK",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
             "creator": "steem",
-            "initial_delegation": {
-              "amount": "0",
-              "nai": "@@000000037",
-              "precision": 6
+            "fee": {
+              "amount": "10000",
+              "nai": "@@000000021",
+              "precision": 3
             },
-            "initial_vesting_shares": {
-              "amount": "107211450002",
-              "nai": "@@000000037",
-              "precision": 6
+            "json_metadata": "",
+            "memo_key": "STM5G989HCZJMoc6rT5vxEigV8nSMm7t8cGNpFQo8y6neYtXze6fT",
+            "new_account_name": "camilla",
+            "owner": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5YFkx87y8yBz5es3XBDGZ32J9XnExHPTiGSNHWL5mmAoc8adZX",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
             },
-            "new_account_name": "camilla"
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5nYML8BLcAjEWmNs2e5zvjyDH1WtMGXFH3TAa7WYcGJYhwdKT6",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
           }
         },
         "op_in_trx": 0,
@@ -26,7 +53,7 @@
         "timestamp": "2016-05-11T21:11:09",
         "trx_id": "f06f79e658cebfca176eaa7f225376c3ad1174d7",
         "trx_in_block": 0,
-        "virtual_op": 1
+        "virtual_op": 0
       }
     ]
   ]

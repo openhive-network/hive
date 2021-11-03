@@ -7,10 +7,15 @@ from yaml import load, Loader
 from json import dump
 from requests import post
 from sys import argv
+from argparse import ArgumentParser
 
-if len(argv) < 2 or '-h' in argv or '--help' in argv:
-	print("not enough arguments. Example usage: ./refresh_patterns.py http://localhost:8091")
-	exit(1)
+engine = ArgumentParser()
+engine.add_argument('URL', type=str, help='reference node, which will provide pattern data (Ex. http://localhost:8091)')
+engine.add_argument('-s', dest='SUFIX', type=str, default=None, help='this suffix will be attached to file extension, which is handy for fast removal of patterns (Ex. "xxx", which allows to execute command: `find . | grep \'json.xxx\' | xargs rm` )')
+args = engine.parse_args(argv[1:])
+
+URL = args.URL
+SUFIX = f'.{args.SUFIX}' if args.SUFIX else ''
 
 def load_yaml(filename : str) -> dict:
 	with open(filename, 'rt') as file:
@@ -18,8 +23,7 @@ def load_yaml(filename : str) -> dict:
 		return load(file, Loader)
 
 def create_pattern(url : str, tav_file : str, directory : str):
-	# PATTERN_FILE = tav_file.split('.')[0] + '.pat.json.xxx'
-	PATTERN_FILE = tav_file.split('.')[0] + '.pat.json'
+	PATTERN_FILE = tav_file.split('.')[0] + '.pat.json' + SUFIX
 	TAVERN_FILE = join(directory, tav_file)
 	OUTPUT_PATTERN_FILE = join(directory, f'{PATTERN_FILE}')
 
@@ -38,8 +42,8 @@ def create_pattern(url : str, tav_file : str, directory : str):
 
 	with open(OUTPUT_PATTERN_FILE, 'wt') as file:
 		dump(parsed, file, indent=2, sort_keys=True)
+		file.write('\n')
 
-URL = argv[1] # Ex. 'http://localhost:8091'
 from concurrent.futures import ProcessPoolExecutor
 
 futures = []
