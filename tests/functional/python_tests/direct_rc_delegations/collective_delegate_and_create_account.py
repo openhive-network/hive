@@ -12,7 +12,7 @@ def test_direct_rc_delegations(world):
 
     client_accounts = []
     number_of_accounts_in_one_transaction = 400
-    number_of_transactions = 2500
+    number_of_transactions = 2
     number_of_accounts = number_of_accounts_in_one_transaction * number_of_transactions
     account_number_absolute = 0
 
