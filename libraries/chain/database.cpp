@@ -4421,14 +4421,24 @@ try {
         if( has_hardfork( HIVE_HARDFORK_0_14__230 ) )
         {
           // This block limits the effective median price to force HBD to remain at or
-          // below 10% of the combined market cap of HIVE and HBD. The reason is to prevent
-          // individual with a lot of HBD to use sharp decline in HIVE price to make
-          // in-chain-but-out-of-market conversion to HIVE and take over the blockchain
+          // below HIVE_HBD_HARD_LIMIT of the combined market cap of HIVE and HBD.
+          // The reason is to prevent individual with a lot of HBD to use sharp decline
+          // in HIVE price to make in-chain-but-out-of-market conversion to HIVE and take
+          // over the blockchain
           //
-          // For example, if we have 500 HIVE and 100 HBD, the price is limited to
-          // 900 HBD / 500 HIVE which works out to be $1.80.  At this price, 500 HIVE
-          // would be valued at 500 * $1.80 = $900.  100 HBD is by definition always $100,
+          // For example (for 10% hard limit), if we have 500 HIVE and 100 HBD, the price is
+          // limited to 900 HBD / 500 HIVE which works out to be $1.80. At this price, 500 HIVE
+          // would be valued at 500 * $1.80 = $900. 100 HBD is by definition always $100,
           // so the combined market cap is $900 + $100 = $1000.
+          // 
+          // Generalized formula:
+          // With minimal price we want existing amount of HBD (X) to be HIVE_HBD_HARD_LIMIT (L) of
+          // combined market cap (CMC), meaning the existing amount of HIVE (Y) has to be 100%-L of CMC.
+          // X + Y*price = CMC, X = L*CMC, Y*price = (100%-L)*CMC
+          // (100% - L)*CMC = (100% - L)*X/L = (100%/L - 1)*X therefore minimal price is
+          // (100%/L - 1)*X HBD per Y HIVE
+          // the above has one big problem - accuracy; f.e. with L = 30% the price will be the same
+          // as for L = 33%; for better accuracy we can express the price as (100%-L)*X HBD per L*Y HIVE
 
           const auto& dgpo = get_dynamic_global_properties();
           auto hbd_supply = dgpo.get_current_hbd_supply();
@@ -4436,13 +4446,38 @@ try {
             hbd_supply -= get_treasury().get_hbd_balance();
           if( hbd_supply.amount > 0 )
           {
-            price min_price( asset( 9 * hbd_supply.amount, HBD_SYMBOL ), dgpo.get_current_supply() );
+            uint16_t limit = HIVE_HBD_HARD_LIMIT_PRE_HF26;
+            if( has_hardfork( HIVE_HARDFORK_1_26_HBD_HARD_CAP ) )
+              limit = HIVE_HBD_HARD_LIMIT;
+            static_assert( ( HIVE_HBD_HARD_LIMIT % HIVE_1_PERCENT ) == 0, "Hard cap has to be expressed in full percentage points" );
+            limit /= HIVE_1_PERCENT; //ABW: this is just to have two more levels of magnitude bigger margin;
+              //even without it we can still fit within 64bit value, even though numbers used here are pretty big
+            price min_price( asset( ( HIVE_100_PERCENT/HIVE_1_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
+                             asset( limit * dgpo.get_current_supply().amount, HIVE_SYMBOL ) );
+
+            /*
+            ilog( "GREP${daily}: ${block}, ${minfeed}, ${medfeed}, ${maxfeed}, ${minprice}, ${medprice}, ${maxprice}, ${capprice}, ${debt}, ${hbdinfl}, ${hivesup}, ${virtsup}, ${hbdsup}",
+              ( "daily", ( ( head_block_num() % ( 24 * HIVE_FEED_INTERVAL_BLOCKS ) ) == 0 ) ? "24" : "" )( "block", head_block_num() )
+              ( "minfeed", double( feeds.front().base.amount.value ) / double( feeds.front().quote.amount.value ) )
+              ( "medfeed", double( median_feed.base.amount.value ) / double( median_feed.quote.amount.value ) )
+              ( "maxfeed", double( feeds.back().base.amount.value ) / double( feeds.back().quote.amount.value ) )
+              ( "minprice", double( fho.current_min_history.base.amount.value ) / double( fho.current_min_history.quote.amount.value ) )
+              ( "medprice", double( fho.current_median_history.base.amount.value ) / double( fho.current_median_history.quote.amount.value ) )
+              ( "maxprice", double( fho.current_max_history.base.amount.value ) / double( fho.current_max_history.quote.amount.value ) )
+              ( "capprice", double( min_price.base.amount.value ) / double( min_price.quote.amount.value ) )
+              ( "debt", double( calculate_HBD_percent() ) / 100.0 )
+              ( "hbdinfl", double( dgpo.get_hbd_interest_rate() ) / 100.0 )
+              ( "hivesup", dgpo.get_current_supply().amount.value )
+              ( "virtsup", dgpo.virtual_supply.amount.value )
+              ( "hbdsup", hbd_supply.amount.value )
+            );
+            */
 
             if( min_price > fho.current_median_history )
             {
               push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
-                "HIVE price corrected upward due to 10% HBD cutoff rule, from ${actual} to ${corrected}",
-                ( "actual", fho.current_median_history )( "corrected", min_price ) ).get_message() ) );
+                "HIVE price corrected upward due to ${limit}% HBD cutoff rule, from ${actual} to ${corrected}",
+                ( "limit", limit )( "actual", fho.current_median_history )( "corrected", min_price )).get_message()));
 
               fho.current_median_history = min_price;
             }
@@ -5016,10 +5051,10 @@ void database::update_virtual_supply()
     {
       uint16_t percent_hbd = calculate_HBD_percent();
 
-      if( percent_hbd <= dgp.hbd_start_percent )
-        dgp.hbd_print_rate = HIVE_100_PERCENT;
-      else if( percent_hbd >= dgp.hbd_stop_percent )
+      if( percent_hbd >= dgp.hbd_stop_percent )
         dgp.hbd_print_rate = 0;
+      else if( percent_hbd <= dgp.hbd_start_percent )
+        dgp.hbd_print_rate = HIVE_100_PERCENT;
       else
         dgp.hbd_print_rate = ( ( dgp.hbd_stop_percent - percent_hbd ) * HIVE_100_PERCENT ) / ( dgp.hbd_stop_percent - dgp.hbd_start_percent );
     }
@@ -6275,6 +6310,15 @@ void database::apply_hardfork( uint32_t hardfork )
         gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
         gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
       });
+      break;
+    }
+    case HIVE_HARDFORK_1_26:
+    {
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF26;
+        gpo.hbd_start_percent = HIVE_HBD_START_PERCENT_HF26;
+      } );
       break;
     }
     case HIVE_SMT_HARDFORK:

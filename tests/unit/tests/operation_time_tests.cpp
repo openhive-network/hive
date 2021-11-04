@@ -2732,18 +2732,17 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
   FC_LOG_AND_RETHROW()
 }
 
-// This test is too intensive without optimizations. Disable it when we build in debug
 BOOST_AUTO_TEST_CASE( hbd_stability )
 {
-  #ifndef DEBUG
   try
   {
-    db_plugin->debug_update( [=]( database& db )
+    auto& dgpo = db->get_dynamic_global_properties();
+
+    db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
         gpo.sps_fund_percent = 0;
-        gpo.content_reward_percent = 75 * HIVE_1_PERCENT;
       });
     }, database::skip_witness_signature );
 
@@ -2751,7 +2750,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     auto debug_key = "5JdouSvkK75TKWrJixYufQgePT21V7BAVWbNUWt3ktqhPmy8Z78"; //get_dev_key debug node
 
-    ACTORS( (alice)(bob)(sam)(dave)(greg) );
+    ACTORS( (alice)(bob)(sam) );
 
     fund( "alice", 10000 );
     fund( "bob", 10000 );
@@ -2762,7 +2761,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) );
     set_price_feed( exchange_rate );
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() == HIVE_100_PERCENT );
+    BOOST_REQUIRE( dgpo.get_hbd_print_rate() == HIVE_100_PERCENT );
 
     comment_operation comment;
     comment.author = "alice";
@@ -2794,11 +2793,10 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     db_plugin->debug_generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
 
-    auto& gpo = db->get_dynamic_global_properties();
-
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
-    asset hbd_balance = asset( ( gpo.virtual_supply.amount * ( gpo.hbd_stop_percent + 112 ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
+    int correction = ( dgpo.hbd_stop_percent * dgpo.hbd_stop_percent ) / ( HIVE_100_PERCENT - dgpo.hbd_stop_percent ) + 1;
+    asset hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_stop_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
@@ -2807,12 +2805,12 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       });
     }, database::skip_witness_signature );
 
-    db_plugin->debug_update( [=]( database& db )
+    db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
         gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
-        gpo.virtual_supply = gpo.virtual_supply + hbd_balance * exchange_rate;
+        gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
       });
     }, database::skip_witness_signature );
 
@@ -2820,57 +2818,59 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
 
-    auto comment_reward = ( gpo.get_total_reward_fund_hive().amount + 2000 ) - ( ( gpo.get_total_reward_fund_hive().amount + 2000 ) * 25 * HIVE_1_PERCENT ) / HIVE_100_PERCENT ;
-    comment_reward /= 2;
-    auto hbd_reward = ( comment_reward * gpo.get_hbd_print_rate() ) / HIVE_100_PERCENT;
-    auto alice_hbd = get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) + asset( hbd_reward, HIVE_SYMBOL ) * exchange_rate;
-    auto alice_hive = get_balance( "alice" ) + get_rewards( "alice" ) ;
+    BOOST_TEST_MESSAGE( "Checking printing HBD has stopped" );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), 0 );
 
-    BOOST_TEST_MESSAGE( "Checking printing HBD has slowed" );
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() < HIVE_100_PERCENT );
+    auto& _alice = db->get_account( "alice" );
+    auto alice_hbd = _alice.get_hbd_balance() + _alice.get_hbd_rewards();
+    BOOST_REQUIRE_EQUAL( alice_hbd.amount.value, 0 );
+    auto alice_hive = _alice.get_balance() + _alice.get_rewards();
+    BOOST_REQUIRE_EQUAL( alice_hive.amount.value, 0 );
 
     BOOST_TEST_MESSAGE( "Pay out comment and check rewards are paid as HIVE" );
     db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
 
     validate_database();
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) == alice_hbd );
-    BOOST_REQUIRE( get_balance( "alice" ) + get_rewards( "alice" ) > alice_hive );
+    BOOST_REQUIRE( _alice.get_hbd_balance() + _alice.get_hbd_rewards() == alice_hbd );
+    BOOST_REQUIRE( _alice.get_balance() + _alice.get_rewards() > alice_hive );
 
     BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
 
-    // Get close to hbd_start_percent for printing HBD to start again, but not all the way
+    // Get slightly above hbd_start_percent (about 10% of distance between start and stop)
+    uint16_t percent = ( dgpo.hbd_stop_percent - dgpo.hbd_start_percent ) / 10;
+    percent += dgpo.hbd_start_percent;
+    correction = ( percent * percent ) / ( HIVE_100_PERCENT - percent ) + 1;
+    hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_start_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.hbd_balance = asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL );
+        a.hbd_balance = hbd_balance;
       });
     }, database::skip_witness_signature );
 
-    auto current_hbd_supply = alice_hbd + asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL ) + db->get_treasury().get_hbd_balance();
-
-    db_plugin->debug_update( [=]( database& db )
+    db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = current_hbd_supply;
-      });
+        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
+        gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
+      } );
     }, database::skip_witness_signature );
 
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
     validate_database();
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() < HIVE_100_PERCENT );
+    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+    BOOST_REQUIRE( dgpo.get_hbd_print_rate() < HIVE_100_PERCENT );
 
-    auto last_print_rate = db->get_dynamic_global_properties().get_hbd_print_rate();
+    auto last_print_rate = dgpo.get_hbd_print_rate();
 
     // Keep producing blocks until printing HBD is back
-    while( ( db->get_dynamic_global_properties().get_current_hbd_supply() * exchange_rate ).amount >= ( db->get_dynamic_global_properties().virtual_supply.amount * db->get_dynamic_global_properties().hbd_start_percent ) / HIVE_100_PERCENT )
+    while( db->calculate_HBD_percent() >= dgpo.hbd_start_percent )
     {
-      auto& gpo = db->get_dynamic_global_properties();
-      BOOST_REQUIRE( gpo.get_hbd_print_rate() >= last_print_rate );
-      last_print_rate = gpo.get_hbd_print_rate();
+      BOOST_REQUIRE( dgpo.get_hbd_print_rate() >= last_print_rate );
+      last_print_rate = dgpo.get_hbd_print_rate();
       db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
       if( db->head_block_num() % 1000 == 0 )
         validate_database();
@@ -2878,10 +2878,9 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     validate_database();
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() == HIVE_100_PERCENT );
+    BOOST_REQUIRE( dgpo.get_hbd_print_rate() == HIVE_100_PERCENT );
   }
   FC_LOG_AND_RETHROW()
-  #endif
 }
 
 BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
