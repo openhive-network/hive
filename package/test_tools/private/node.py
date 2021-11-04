@@ -276,14 +276,6 @@ class Node:
     def get_block_log(self, include_index=True):
         return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
 
-    def __any_line_in_stderr(self, predicate):
-        with open(self.__process.get_stderr_file_path()) as output:
-            for line in output:
-                if predicate(line):
-                    return True
-
-        return False
-
     def wait_number_of_blocks(self, blocks_to_wait, *, timeout=math.inf):
         assert blocks_to_wait > 0
         self.wait_for_block_with_number(self.get_last_block_number() + blocks_to_wait, timeout=timeout)
