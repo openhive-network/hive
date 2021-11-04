@@ -4455,7 +4455,8 @@ try {
             price min_price( asset( ( HIVE_100_PERCENT/HIVE_1_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
                              asset( limit * dgpo.get_current_supply().amount, HIVE_SYMBOL ) );
 
-            ilog( "GREP${daily}: ${block}, ${minfeed}, ${medfeed}, ${maxfeed}, ${minprice}, ${medprice}, ${maxprice}, ${capprice}, ${debt}, ${hbdinfl}, ${hivesup}, ${virtsup}",
+            /*
+            ilog( "GREP${daily}: ${block}, ${minfeed}, ${medfeed}, ${maxfeed}, ${minprice}, ${medprice}, ${maxprice}, ${capprice}, ${debt}, ${hbdinfl}, ${hivesup}, ${virtsup}, ${hbdsup}",
               ( "daily", ( ( head_block_num() % ( 24 * HIVE_FEED_INTERVAL_BLOCKS ) ) == 0 ) ? "24" : "" )( "block", head_block_num() )
               ( "minfeed", double( feeds.front().base.amount.value ) / double( feeds.front().quote.amount.value ) )
               ( "medfeed", double( median_feed.base.amount.value ) / double( median_feed.quote.amount.value ) )
@@ -4468,7 +4469,9 @@ try {
               ( "hbdinfl", double( dgpo.get_hbd_interest_rate() ) / 100.0 )
               ( "hivesup", dgpo.get_current_supply().amount.value )
               ( "virtsup", dgpo.virtual_supply.amount.value )
+              ( "hbdsup", hbd_supply.amount.value )
             );
+            */
 
             if( min_price > fho.current_median_history )
             {
