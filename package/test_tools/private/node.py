@@ -401,7 +401,7 @@ class Node:
             load_snapshot_from=None,
             replay_from=None,
             stop_at_block=None,
-            exit_before_synchronization=False,
+            exit_before_synchronization: bool = False,
             wait_for_live=None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
             time_offset=None,
