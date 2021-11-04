@@ -191,6 +191,7 @@ class Node:
             self.p2p_endpoint: Optional[str] = None
 
             self.synchronization_started_event = Event()
+            self.live_mode_entered_event = Event()
 
             self.replay_finished_event = Event()
 
@@ -221,6 +222,8 @@ class Node:
                     self.snapshot_dumped_event.set()
                 elif details['current_status'] == 'syncing':
                     self.synchronization_started_event.set()
+                elif details['current_status'] == 'entering live mode':
+                    self.live_mode_entered_event.set()
             elif message['name'] == 'P2P listening':
                 details = message['value']
                 endpoint = f'{details["address"].replace("0.0.0.0", "127.0.0.1")}:{details["port"]}'
@@ -236,6 +239,7 @@ class Node:
             self.ws_listening_event.clear()
             self.p2p_plugin_started_event.clear()
             self.synchronization_started_event.clear()
+            self.live_mode_entered_event.clear()
             self.replay_finished_event.clear()
             self.snapshot_dumped_event.clear()
 
@@ -492,6 +496,10 @@ class Node:
 
             wait_for_event(self.__notifications.ws_listening_event, deadline=deadline,
                            exception_message='WS server didn\'t start listening on time.')
+
+            if wait_for_live:
+                wait_for_event(self.__notifications.live_mode_entered_event, deadline=deadline,
+                               exception_message='Live mode not activated on time.')
 
         self.__log_run_summary()
 
