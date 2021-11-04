@@ -7,7 +7,7 @@ import signal
 import subprocess
 from threading import Event
 import time
-from typing import Optional
+from typing import Optional, Union
 import weakref
 
 from test_tools import communication, constants, network, paths_to_executables
@@ -503,7 +503,7 @@ class Node:
 
         self.__log_run_summary()
 
-    def __handle_loading_snapshot(self, snapshot_source: Snapshot, additional_arguments: list):
+    def __handle_loading_snapshot(self, snapshot_source: Union[str, Path, Snapshot], additional_arguments: list):
         if not isinstance(snapshot_source, Snapshot):
             snapshot_source = Snapshot(
                 snapshot_source,
