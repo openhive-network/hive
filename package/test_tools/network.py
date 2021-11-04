@@ -97,9 +97,5 @@ class Network(NodesCreator):
         for node in self._nodes:
             node.set_allowed_nodes([])
 
-    def wait_for_live_on_all_nodes(self):
-        for node in self._nodes:
-            node.wait_for_live()
-
     def set_clean_up_policy(self, policy: constants.NetworkCleanUpPolicy):
         self.__clean_up_policy = policy

@@ -276,11 +276,6 @@ class Node:
     def get_block_log(self, include_index=True):
         return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
 
-    def __is_live(self):
-        return self.__any_line_in_stderr(
-            lambda line: 'transactions on block' in line or 'Generated block #' in line
-        )
-
     def __any_line_in_stderr(self, predicate):
         with open(self.__process.get_stderr_file_path()) as output:
             for line in output:
@@ -312,10 +307,6 @@ class Node:
     def __wait_for_p2p_plugin_start(self, timeout=10):
         if not self.__notifications.p2p_plugin_started_event.wait(timeout=timeout):
             raise TimeoutError(f'Waiting too long for start of {self} p2p plugin')
-
-    def wait_for_live(self, timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT):
-        wait_for(self.__is_live, timeout=timeout,
-                 timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
     def send(self, method, params=None, jsonrpc='2.0', id_=1, *, only_result: bool = True):
         if self.config.webserver_http_endpoint is None:
@@ -490,8 +481,6 @@ class Node:
             self.__notifications.replay_finished_event.wait()
 
         self.__produced_files = True
-        if wait_for_live:
-            self.wait_for_live(timeout)
 
         self.__log_run_summary()
 
