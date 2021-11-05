@@ -6,7 +6,7 @@ import pytest
 from test_tools import Account, Wallet
 from test_tools.exceptions import CommunicationError
 
-# from ..cli_wallet_extended_tests.utilities import result_of
+from ..cli_wallet_extended_tests.utilities import result_of
 
 
 @pytest.fixture
@@ -206,7 +206,3 @@ def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
 
 def test_exit_from_wallet(configured_wallet: Wallet):
     configured_wallet.api.exit()
-
-def result_of( method, *args):
-    response = method(*args)
-    return response['result']
