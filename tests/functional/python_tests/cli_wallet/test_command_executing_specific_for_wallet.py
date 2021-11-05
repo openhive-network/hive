@@ -6,7 +6,7 @@ import pytest
 from test_tools import Account, Wallet
 from test_tools.exceptions import CommunicationError
 
-from ..cli_wallet_extended_tests.utilities import result_of
+# from ..cli_wallet_extended_tests.utilities import result_of
 
 
 @pytest.fixture
@@ -115,7 +115,6 @@ def test_import_keys(unconfigured_online_wallet, node):
     assert len(keys) == 0
 
     unconfigured_online_wallet.api.import_keys([Account('initminer').private_key, Account('alice').private_key])
-
     keys = result_of(unconfigured_online_wallet.api.list_keys)
     assert len(keys) == 2
     assert keys[0][1] == Account('alice').private_key
@@ -205,7 +204,9 @@ def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
     assert result_of(configured_wallet.api.decrypt_memo, encrypted) == 'this is memo'
 
 
-def test_exit_from_wallet(wallet: Wallet):
-    configured_wallet = wallet
+def test_exit_from_wallet(configured_wallet: Wallet):
     configured_wallet.api.exit()
-    assert configured_wallet.is_running() is False
+
+def result_of( method, *args):
+    response = method(*args)
+    return response['result']
