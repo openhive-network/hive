@@ -203,3 +203,9 @@ def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: Wallet, node):
     wallet_temp.api.create_account('initminer', 'alice', '{}')
     encrypted = result_of(wallet_temp.api.get_encrypted_memo, 'alice', 'initminer', '#this is memo')
     assert result_of(configured_wallet.api.decrypt_memo, encrypted) == 'this is memo'
+
+
+def test_exit_from_wallet(wallet: Wallet):
+    configured_wallet = wallet
+    configured_wallet.api.exit()
+    assert configured_wallet.is_running() is False
