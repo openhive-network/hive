@@ -319,6 +319,9 @@ class Wallet(ScopedObject):
         def import_key(self, wif_key, only_result: bool = True):
             return self.__send('import_key', wif_key=wif_key, only_result=only_result)
 
+        def import_keys(self, wif_keys, only_result: bool = True):
+            return self.__send('import_keys', wif_keys=wif_keys, only_result=only_result)
+
         def info(self, only_result: bool = True):
             return self.__send('info', only_result=only_result)
 
