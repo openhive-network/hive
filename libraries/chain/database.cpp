@@ -3001,6 +3001,7 @@ void database::process_comment_cashout()
     return;
 
   const auto& gpo = get_dynamic_global_properties();
+  auto _now = head_block_time();
   util::comment_reward_context ctx;
   ctx.current_hive_price = get_feed_history().current_median_history;
 
@@ -3021,8 +3022,11 @@ void database::process_comment_cashout()
       else
         decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF17;
 
-      rfo.recent_claims -= ( rfo.recent_claims * ( head_block_time() - rfo.last_update ).to_seconds() ) / decay_time.to_seconds();
-      rfo.last_update = head_block_time();
+      if( ( _now - rfo.last_update ) <= decay_time || !has_hardfork( HIVE_HARDFORK_1_26_CLAIM_UNDERFLOW ) ) //TODO: remove hardfork part after HF26
+        rfo.recent_claims -= ( rfo.recent_claims * ( _now - rfo.last_update ).to_seconds() ) / decay_time.to_seconds();
+      else
+        rfo.recent_claims = 0; // this should never happen - requires chain to be inactive for more than decay_time
+      rfo.last_update = _now;
     });
 
     reward_fund_context rf_ctx;
@@ -3042,7 +3046,7 @@ void database::process_comment_cashout()
   // add all rshares about to be cashed out to the reward funds. This ensures equal satoshi per rshare payment
   if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
   {
-    while( _current != cidx.end() && _current->get_cashout_time() <= head_block_time() )
+    while( _current != cidx.end() && _current->get_cashout_time() <= _now )
     {
       if( _current->get_net_rshares() > 0 )
       {
@@ -3070,7 +3074,7 @@ void database::process_comment_cashout()
     * the global state updated each payout. After the hardfork, each payout is done
     * against a reward fund state that is snapshotted before all payouts in the block.
     */
-  while( _current != cidx.end() && _current->get_cashout_time() <= head_block_time() )
+  while( _current != cidx.end() && _current->get_cashout_time() <= _now )
   {
     if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
     {
