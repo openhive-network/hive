@@ -133,17 +133,6 @@ class Node:
                     # Files opened here have to exist longer than current scope
                     self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w')
 
-        def workaround_stderr_parsing_problem(self):
-            file = self.__files['stderr']
-            if file is None:
-                return
-
-            file.close()
-
-            # pylint: disable=consider-using-with
-            # File stderr.txt was opened earlier and have to be opened after this function end
-            self.__files['stderr'] = open(self.__directory.joinpath('stderr.txt'), 'w')
-
         def close(self):
             if self.__process is None:
                 return
@@ -440,13 +429,6 @@ class Node:
         self.directory.mkdir(parents=True, exist_ok=True)
 
         self.__set_unset_endpoints()
-
-        # This is temporary workaround, for stderr parsing solution.
-        # When node is restarted, old stderr is parsed first, because
-        # new logs are at the bottom. Parser reads wrong informations.
-        # This workaround removes old logs.
-        self.__process.workaround_stderr_parsing_problem()
-        # ------------------------- End of workaround -------------------------
 
         log_message = f'Running {self}'
         if time_offset is not None:
