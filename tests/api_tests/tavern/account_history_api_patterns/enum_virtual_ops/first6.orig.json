@@ -1,0 +1,127 @@
+{
+  "next_block_range_begin": 100976,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 1,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "initminer",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036854775808",
+      "timestamp": "2016-03-24T16:05:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1093,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "dark",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036854775817",
+      "timestamp": "2016-03-24T17:00:09",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1094,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "admin",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036854775822",
+      "timestamp": "2016-03-24T17:00:12",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1095,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "nxt1",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036854775829",
+      "timestamp": "2016-03-24T17:00:15",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1114,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "moderator",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036854775868",
+      "timestamp": "2016-03-24T17:01:12",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1115,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "nxt",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036854775870",
+      "timestamp": "2016-03-24T17:01:15",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+      ],
+  "ops_by_block": []
+}
