@@ -216,6 +216,20 @@ def test_large_rc_delegation(node, wallet: Wallet):
     assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc
 
 
+def test_out_of_uint64_rc_delegation(node, wallet: Wallet):
+    accounts = []
+    number_of_accounts_in_one_transaction = 10
+    number_of_transactions = 1
+    for number_of_transaction in range(number_of_transactions):
+        with wallet.in_single_transaction():
+            for account_number in range(number_of_accounts_in_one_transaction):
+                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
+                accounts.append(f'account-{account_number}')
+
+    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(2000))
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 18446744073709551616)
+
+
 def test_delegations_rc_to_one_receiver(wallet: Wallet):
     accounts = []
     number_of_accounts = 120
