@@ -1544,10 +1544,13 @@ namespace fc {
     //Compatibility with older shape of asset
     bool old_legacy_enabled = dynamic_serializer::legacy_enabled;
     dynamic_serializer::legacy_enabled = true;
+    auto const restore_legacy_flag = [&] { dynamic_serializer::legacy_enabled = old_legacy_enabled; };
 
-    to_variant( a.value, var );
-
-    dynamic_serializer::legacy_enabled = old_legacy_enabled;
+    try
+    {
+      to_variant( a.value, var );
+      restore_legacy_flag();
+    } FC_CAPTURE_CALL_LOG_AND_RETHROW( restore_legacy_flag, () );
   }
 
   template<typename T>
@@ -1556,10 +1559,13 @@ namespace fc {
     //Compatibility with older shape of asset
     bool old_legacy_enabled = dynamic_serializer::legacy_enabled;
     dynamic_serializer::legacy_enabled = true;
+    auto const restore_legacy_flag = [&] { dynamic_serializer::legacy_enabled = old_legacy_enabled; };
 
-    from_variant( var, a.value );
-
-    dynamic_serializer::legacy_enabled = old_legacy_enabled;
+    try
+    {
+      from_variant( var, a.value );
+      restore_legacy_flag();
+    } FC_CAPTURE_CALL_LOG_AND_RETHROW( restore_legacy_flag, () );
   }
 
 } // fc
