@@ -108,7 +108,7 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     assert keys[1][1] == Account('initminer').private_key
 
 
-def test_import_keys(unconfigured_wallet, node):
+def test_import_keys(unconfigured_wallet: Wallet):
     unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
     unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
     keys = result_of(unconfigured_wallet.api.list_keys)
@@ -186,7 +186,6 @@ def test_set_transaction_expiration(world):
     expiration_time_point = datetime.strptime(transaction['expiration'], '%Y-%m-%dT%H:%M:%S')
     expiration_time_point = expiration_time_point.replace(tzinfo=timezone.utc)
     expiration_time = expiration_time_point - last_block_time_point
-    
     assert expiration_time == timedelta(seconds=set_expiration_time)
 
 
