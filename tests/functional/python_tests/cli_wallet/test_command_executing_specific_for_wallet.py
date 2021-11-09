@@ -106,6 +106,19 @@ def test_list_keys_and_import_key(unconfigured_wallet: Wallet):
     assert keys[1][1] == Account('initminer').private_key
 
 
+def test_import_keys(unconfigured_wallet: Wallet):
+    unconfigured_wallet.api.set_password(unconfigured_wallet.DEFAULT_PASSWORD)
+    unconfigured_wallet.api.unlock(unconfigured_wallet.DEFAULT_PASSWORD)
+    keys = unconfigured_wallet.api.list_keys()
+    assert len(keys) == 0
+
+    unconfigured_wallet.api.import_keys([Account('initminer').private_key, Account('alice').private_key])
+    keys = unconfigured_wallet.api.list_keys()
+    assert len(keys) == 2
+    assert keys[0][1] == Account('alice').private_key
+    assert keys[1][1] == Account('initminer').private_key
+
+
 def test_generate_keys(configured_wallet: Wallet):
     result = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
     assert len(result) == 2
