@@ -571,7 +571,7 @@ namespace fc {
   {
     try
     {
-      if( var.is_string() )
+      if( hive::protocol::dynamic_serializer::legacy_enabled )
       {
         hive::protocol::legacy_asset a;
         from_variant( var, a );

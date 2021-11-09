@@ -1553,7 +1553,13 @@ namespace fc {
   template<typename T>
   inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
   {
+    //Compatibility with older shape of asset
+    bool old_legacy_enabled = dynamic_serializer::legacy_enabled;
+    dynamic_serializer::legacy_enabled = true;
+
     from_variant( var, a.value );
+
+    dynamic_serializer::legacy_enabled = old_legacy_enabled;
   }
 
 } // fc
