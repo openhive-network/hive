@@ -354,11 +354,12 @@ def test_cofniecie_delegacji_rc_większej_niż_pierwotna(node, wallet: Wallet):
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
     rc3 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
     rc4 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
-
+    #sprawdz regeneracje przed delegacją, po wydelegowaniu i po odebraniu delegacji , zórb ine konto z dużą ilością vest
     pass
+
 def test_minus_rc_delegation(wallet: Wallet):
 
-    #todo możliwa ujemna delegacja, dziwna sprawa przy kolejnej delgacji ujemnej
+    # BUG-  possible is do a minus value delegation. Weird behavior during second minus delegation.
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -372,11 +373,13 @@ def test_minus_rc_delegation(wallet: Wallet):
 
     rc0 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
     wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
+
     rc1 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    rc2 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
-    # wallet.api.delegate_rc(accounts[0], [accounts[1]], -10)
-    # rc3 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    rc4 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
+    assert rc1 == rc0 - 3
+    assert rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana'] == 0
+    assert rc_account_info(accounts[1], 'max_rc', wallet) == -100
+
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], -10)
 
 
 def test_power_up_delegator(wallet: Wallet):
