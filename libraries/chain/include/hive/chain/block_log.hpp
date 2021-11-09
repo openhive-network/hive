@@ -53,20 +53,11 @@ namespace hive { namespace chain {
       optional< signed_block > read_block_by_num( uint32_t block_num )const;
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
-      /**
-        * Return offset of block in file, or block_log::npos if it does not exist.
-        */
-      uint64_t get_block_pos( uint32_t block_num ) const;
       signed_block read_head()const;
       const boost::shared_ptr<signed_block> head() const;
 
-      static const uint64_t npos = std::numeric_limits<uint64_t>::max();
-
     private:
       void construct_index( bool resume = false, uint64_t index_pos = 0 );
-
-      std::pair< signed_block, uint64_t > read_block_helper( uint64_t file_pos )const;
-      uint64_t get_block_pos_helper( uint32_t block_num ) const;
 
       std::unique_ptr<detail::block_log_impl> my;
   };
