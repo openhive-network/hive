@@ -102,7 +102,7 @@ struct extended_serialization_functor
         return name_map;
     }();
 
-    if( !v.is_array() )
+    if( !hive::protocol::dynamic_serializer::legacy_enabled )
       return false;
 
     auto ar = v.get_array();
