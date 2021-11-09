@@ -1,32 +1,28 @@
 #pragma once
 #include <fc/network/http/connection.hpp>
 #include <fc/shared_ptr.hpp>
-#include <fc/network/http/processor.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <vector>
-#include <functional>
-#include <type_traits>
 #include <memory>
 
 namespace fc { namespace http {
 
-  typedef connection                         http_connection;
+
+  class http_connection : public connection
+  {
+  public:
+    http_connection() = default;
+    virtual ~http_connection() = default;
+
+    virtual std::string send_message( cosnt std::string& message ) = 0;
+
+    virtual bool is_server()const = 0;
+  };
+
   typedef std::shared_ptr< http_connection > http_connection_ptr;
 
   namespace detail {
-    typedef boost::asio::ssl::context       ssl_context;
-    typedef std::shared_ptr< ssl_context >  ssl_context_ptr;
-    typedef boost::asio::io_service*        io_service_ptr;
-    typedef std::shared_ptr< processor >    processor_ptr;
-
     class http_server_impl;
-    class http_unsecure_server_impl;
     class http_tls_server_impl;
-    class http_client_impl;
-    class http_unsecure_client_impl;
-    class http_tls_client_impl;
   } // detail
 
   class http_server : public server
@@ -41,7 +37,7 @@ namespace fc { namespace http {
     virtual void start_accept() override;
 
   private:
-    typedef std::unique_ptr< detail::http_unsecure_server_impl > server_impl_ptr;
+    typedef std::unique_ptr< detail::http_server_impl > server_impl_ptr;
     server_impl_ptr my;
   };
 

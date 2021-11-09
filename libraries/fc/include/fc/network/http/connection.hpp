@@ -14,20 +14,21 @@ namespace fc { namespace http {
   public:
     connection() = default;
     virtual ~connection() = default;
-    virtual void send_message( const std::string& message ) = 0;
+
     virtual void close( int64_t code, const std::string& reason ) = 0;
-    void on_message( const std::string& message ) { _on_message(message); }
 
-    void on_message_handler( const std::function<void(const std::string&)>& h ) { _on_message = h; }
+    void on_http_handler( const std::function<std::string(const std::string&)>& h ) { _on_http = h; }
+    string on_http( const std::string& message ) { return _on_http(message); }
 
-    void   set_session_data( fc::any d ){ _session_data = std::move(d); }
-    fc::any& get_session_data() { return _session_data; }
+    virtual bool is_server()const = 0;
 
     fc::signal<void()> closed;
 
   protected:
-    fc::any                   _session_data;
-    std::function<void(const std::string&)>   _on_message;
+    bool                                    _is_server;
+
+  private:
+    std::function<string(const std::string&)> _on_http;
   };
 
   typedef std::shared_ptr< connection > connection_ptr;

@@ -11,15 +11,15 @@ BOOST_AUTO_TEST_CASE(http_test)
   try
   {
     fc::http::http_client client;
-    fc::http::connection_ptr s_conn, c_conn;
+    fc::http::http_connection_ptr s_conn, c_conn;
 
     {
       fc::http::http_server server;
 
       server.on_connection( [&]( const fc::http::connection_ptr& c ){
         s_conn = c;
-        s_conn->on_message_handler( [&](const std::string& s){
-          s_conn->send_message("echo: " + s);
+        s_conn->on_http_handler( [&](const std::string& s) -> std::string {
+          return "echo: " + s;
         } );
       } );
 
@@ -28,30 +28,18 @@ BOOST_AUTO_TEST_CASE(http_test)
 
       std::string echo;
       c_conn = client.connect( "http://localhost:8093" );
-      c_conn->on_message_handler( [&](const std::string& s){
-        echo = s;
-      } );
 
-      c_conn->send_message( "hello world" );
-      fc::usleep( fc::seconds(1) );
-      BOOST_CHECK_EQUAL("echo: hello world", echo);
+      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_message( "hello world" ) );
 
-      c_conn->send_message( "again" );
-      fc::usleep( fc::seconds(1) );
-      BOOST_CHECK_EQUAL("echo: again", echo);
+      BOOST_CHECK_EQUAL( "echo: again", c_conn->send_message( "again" ) );
 
       s_conn->close(0, "test");
       fc::usleep( fc::seconds(1) );
       BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );
 
       c_conn = client.connect( "http://localhost:8093" );
-      c_conn->on_message_handler( [&](const std::string& s){
-        echo = s;
-      } );
 
-      c_conn->send_message( "hello world" );
-      fc::usleep( fc::seconds(1) );
-      BOOST_CHECK_EQUAL("echo: hello world", echo);
+      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_message( "hello world" ) ho);
     }
 
     BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );

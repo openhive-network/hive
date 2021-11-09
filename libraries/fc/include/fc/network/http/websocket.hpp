@@ -21,14 +21,16 @@ namespace fc { namespace http {
       virtual ~websocket_connection() = default;
 
       virtual void send_message( const std::string& message ) = 0;
+
       virtual void close( int64_t code, const std::string& reason ) = 0;
 
-      void on_http_handler( const std::function<std::string(const std::string&)>& h ) { _on_http = h; }
+      virtual bool is_server()const = 0;
 
-      string on_http( const std::string& message ) { return _on_http(message); }
+      void on_message( const std::string& message ) { _on_message(message); }
+      void on_message_handler( const std::function<void(const std::string&)>& h ) { _on_message = h; }
 
    private:
-      std::function<string(const std::string&)> _on_http;
+    std::function<void(const std::string&)> _on_message;
    };
 
    typedef std::shared_ptr< websocket_connection > websocket_connection_ptr;

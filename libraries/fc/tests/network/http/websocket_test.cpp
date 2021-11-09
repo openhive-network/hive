@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
   try
   {
     fc::http::websocket_client client;
-    fc::http::connection_ptr s_conn, c_conn;
+    fc::http::websocket_connection_ptr s_conn, c_conn;
 
     {
       fc::http::websocket_server server;
