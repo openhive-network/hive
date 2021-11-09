@@ -2,7 +2,7 @@
 
 namespace hive { namespace protocol {
 
-bool dynamic_serializer::legacy_enabled = false;
+thread_local bool dynamic_serializer::legacy_enabled = false;
 
 std::string trim_legacy_typename_namespace( const std::string& name )
 {
