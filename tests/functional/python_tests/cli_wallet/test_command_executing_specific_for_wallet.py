@@ -184,7 +184,6 @@ def test_set_transaction_expiration(world):
     expiration_time_point = datetime.strptime(transaction['expiration'], '%Y-%m-%dT%H:%M:%S')
     expiration_time_point = expiration_time_point.replace(tzinfo=timezone.utc)
     expiration_time = expiration_time_point - last_block_time_point
-    
     assert expiration_time == timedelta(seconds=set_expiration_time)
 
 
