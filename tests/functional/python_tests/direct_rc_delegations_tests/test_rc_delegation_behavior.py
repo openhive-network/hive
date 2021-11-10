@@ -347,15 +347,23 @@ def test_decrease_of_delegation(node, wallet: Wallet):
                 wallet.api.create_account('initminer', f'account-{account_number}', '{}')
                 accounts.append(f'account-{account_number}')
 
+    wallet.api.transfer_to_vesting('initminer', accounts[9], Asset.Test(100000))
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
 
     rc0 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
     rc1 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
     rc2 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
+    state1 = wallet.api.get_account(accounts[0])
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
     rc3 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
     rc4 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
+    state2 = wallet.api.get_account(accounts[0])
+    node.wait_number_of_blocks(30)
+    state3 = wallet.api.get_account(accounts[0])
+    rc5 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
+    rc6 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
+
     #sprawdz regeneracje przed delegacją, po wydelegowaniu i po odebraniu delegacji , zórb ine konto z dużą ilością vest
     pass
 
