@@ -335,6 +335,26 @@ def test_back_of_waste_rc(wallet: Wallet):
     assert rc3 == rc1
 
 
+def test_wrong_sign_in_transaction(wallet: Wallet):
+
+    accounts = []
+    number_of_accounts_in_one_transaction = 10
+    number_of_transactions = 1
+    for number_of_transaction in range(number_of_transactions):
+        with wallet.in_single_transaction():
+            for account_number in range(number_of_accounts_in_one_transaction):
+                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
+                accounts.append(f'account-{account_number}')
+
+    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
+
+    x = wallet.api.delegate_rc(accounts[0], [accounts[1]], 100, broadcast=False)
+    x['result']['operations'][0][1]['required_posting_auths'][0] = accounts[1]
+
+    with pytest.raises(exceptions.CommunicationError):
+        wallet.api.sign_transaction(x['result'])
+
+
 def test_decrease_of_delegation(node, wallet: Wallet):
 
     #TODO delegacja nie wraca do nadawcy (ŻĄDNA),
