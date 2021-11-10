@@ -415,6 +415,43 @@ void operation_get_impacted_accounts( const operation& op, flat_set<account_name
   op.visit( vtor );
 }
 
+namespace /// anonymous
+{
+
+struct impacted_balance_collector
+{
+  impacted_balance_data result;
+
+  typedef void result_type;
+
+  template <class T>
+  void operator()(const T&) 
+  {
+    if(result.empty())
+    {
+      result.emplace_back(account_name_type("blocktrades"), asset(12345, HIVE_SYMBOL));
+      result.emplace_back(account_name_type("sender2"), asset(-12345, HIVE_SYMBOL));
+
+      result.emplace_back(account_name_type("blocktrades"), asset(54321, HBD_SYMBOL));
+      result.emplace_back(account_name_type("receiver"), asset(-54321, HBD_SYMBOL));
+
+      result.emplace_back(account_name_type("blocktrades"), asset(54321, VESTS_SYMBOL));
+      result.emplace_back(account_name_type("receiver"), asset(-54321, VESTS_SYMBOL));
+    }
+  }
+};
+
+} /// anonymous
+
+impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op)
+{
+  impacted_balance_collector collector;
+
+  op.visit(collector);
+  
+  return std::move(collector.result);
+}
+
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )
 {
   for( const auto& op : tx.operations )

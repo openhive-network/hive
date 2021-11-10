@@ -6,13 +6,16 @@
 
 #include <fc/string.hpp>
 
-namespace hive { namespace app {
+#include <vector>
 
-using namespace fc;
+namespace hive { namespace app {
 
 void operation_get_impacted_accounts(
   const hive::protocol::operation& op,
   fc::flat_set<protocol::account_name_type>& result );
+
+typedef std::vector<std::pair<protocol::account_name_type, protocol::asset>> impacted_balance_data;
+impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op);
 
 void transaction_get_impacted_accounts(
   const hive::protocol::transaction& tx,
