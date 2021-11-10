@@ -699,6 +699,7 @@ namespace chain {
       void clear_expired_orders();
       void clear_expired_delegations();
       void process_header_extensions( const signed_block& next_block, required_automated_actions& req_actions, optional_automated_actions& opt_actions );
+      void process_genesis_accounts(const uint32_t next_block);
 
       void generate_required_actions();
       void generate_optional_actions();
