@@ -689,9 +689,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   else
     my->flush_interval = 10000;
 
-  if(options.count( "exit-after-replay" ) > 0)
+  if(options.at( "exit-after-replay" ).as<bool>())
   {
-    my->exit_after_replay = options.at( "exit-after-replay" ).as<bool>();
+    my->exit_after_replay = true;
     wlog("flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync` flag instead");
   }
 
