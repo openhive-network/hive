@@ -200,7 +200,7 @@ def test_delete_rc_delegation(node, wallet: Wallet):
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
-#TODO BUGGGGGGGGGGGGGGGGGGGGGGGGGGg (dziwny komunikat)
+#probably BUG
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -212,6 +212,8 @@ def test_large_rc_delegation(node, wallet: Wallet):
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(200000000))
     rc = int(rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana'])
+    x = node.api.rc.get_resource_pool()
+    y = node.api.rc.get_resource_params()
     wallet.api.delegate_rc(accounts[0], [accounts[1]], rc - 100)
     assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc
 
@@ -305,8 +307,8 @@ def test_signification_of_delegations(wallet: Wallet):
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
     state1 = wallet.api.list_rc_direct_delegations([accounts[0], accounts[1]], 1000, 'by_from_to_sort')
 
-def test_withdrawal_of_waste_rc(wallet: Wallet):
-    #TODO Verify maanabar, dziwne wartości są po delegowaniu zera.
+def test_back_of_waste_rc(wallet: Wallet):
+    #TODO Verify maanabar, dziwne wartości są po delegowaniu zera, czy cofanie delegacji musi trwać ?
     accounts = []
     number_of_accounts = 10
 
@@ -330,12 +332,12 @@ def test_withdrawal_of_waste_rc(wallet: Wallet):
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 0)
     assert rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana'] == 0
     rc3 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    assert rc3 == rc1 - 10000 - 3
+    assert rc3 == rc1
 
 
-def test_cofniecie_delegacji_rc_większej_niż_pierwotna(node, wallet: Wallet):
+def test_decrease_of_delegation(node, wallet: Wallet):
 
-    #TODO delegacja nie wraca do nadawcy (ŻĄDNA), nie zabezpiecozna delegacja ujemna
+    #TODO delegacja nie wraca do nadawcy (ŻĄDNA),
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
