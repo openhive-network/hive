@@ -414,16 +414,7 @@ def test_minus_rc_delegation(wallet: Wallet):
                 accounts.append(f'account-{account_number}')
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
-
-    rc0 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
     wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
-
-    rc1 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    assert rc1 == rc0 - 3
-    assert rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana'] == 0
-    assert rc_account_info(accounts[1], 'max_rc', wallet) == -100
-
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], -10)
 
 
 def test_power_up_delegator(wallet: Wallet):
