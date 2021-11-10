@@ -27,7 +27,7 @@ void delegate_rc_operation::validate()const
     FC_ASSERT( delegatee != from, "cannot delegate rc to yourself" );
   }
 
-  FC_ASSERT( max_rc >= 0, "amount of rc delegated cannot be negative" ); // Cannot happen because max_rc is an uint but it doesn't hurt to pre-emptively have a validate if in the future it gets changed to int
+  FC_ASSERT( max_rc >= 0, "amount of rc delegated cannot be negative" );
 }
 
 void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
@@ -54,7 +54,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     if (!delegation) {
       FC_ASSERT(op.max_rc != 0, "Cannot delegate 0 if you are creating the rc delegation");
     } else {
-      FC_ASSERT(delegation->delegated_rc != op.max_rc, "A delegation to that user with the same amount of RC already exist");
+      FC_ASSERT(delegation->delegated_rc != uint64_t(op.max_rc), "A delegation to that user with the same amount of RC already exist");
       already_delegated_rc = delegation->delegated_rc;
     }
 
