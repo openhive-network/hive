@@ -29,7 +29,12 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_validate )
     op.max_rc = 10;
     op.validate();
 
-    // alice- is an invalid accoutn name
+    // max_rc cannot be negative
+    op.max_rc = -1;
+    BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.max_rc = 10;
+
+    // alice- is an invalid account name
     op.from = "alice-";
     BOOST_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
@@ -105,7 +110,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_direct_delegation_object* delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation->from == alice_id );
     BOOST_REQUIRE( delegation->to == bob_id );
-    BOOST_REQUIRE( delegation->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( delegation->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
@@ -134,7 +139,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_direct_delegation_object* delegation_decreased = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_decreased->from == alice_id );
     BOOST_REQUIRE( delegation_decreased->to == bob_id );
-    BOOST_REQUIRE( delegation_decreased->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( delegation_decreased->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_account_object& from_rc_account_decreased = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
@@ -156,7 +161,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_direct_delegation_object* delegation_increased = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_increased->from == alice_id );
     BOOST_REQUIRE( delegation_increased->to == bob_id );
-    BOOST_REQUIRE( delegation_increased->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( delegation_increased->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_account_object& from_rc_account_increased = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account_increased = db->get< rc_account_object, by_name >( "bob" );
@@ -233,7 +238,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     const rc_direct_delegation_object* delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation->from == alice_id );
     BOOST_REQUIRE( delegation->to == bob_id );
-    BOOST_REQUIRE( delegation->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( delegation->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
@@ -268,12 +273,12 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     const rc_direct_delegation_object* delegation_decreased_bob = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_decreased_bob->from == alice_id );
     BOOST_REQUIRE( delegation_decreased_bob->to == bob_id );
-    BOOST_REQUIRE( delegation_decreased_bob->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( delegation_decreased_bob->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_direct_delegation_object* delegation_decreased_dave = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
     BOOST_REQUIRE( delegation_decreased_dave->from == alice_id );
     BOOST_REQUIRE( delegation_decreased_dave->to == dave_id );
-    BOOST_REQUIRE( delegation_decreased_dave->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( delegation_decreased_dave->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_account_object& from_rc_account_decreased = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& bob_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
@@ -300,10 +305,10 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     BOOST_REQUIRE( bob_delegation_increased->from == alice_id );
     BOOST_REQUIRE( bob_delegation_increased->to == bob_id );
-    BOOST_REQUIRE( bob_delegation_increased->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( bob_delegation_increased->delegated_rc == uint64_t(op.max_rc) );
     BOOST_REQUIRE( dan_delegation_created->from == alice_id );
     BOOST_REQUIRE( dan_delegation_created->to == dan_id );
-    BOOST_REQUIRE( dan_delegation_created->delegated_rc == op.max_rc );
+    BOOST_REQUIRE( dan_delegation_created->delegated_rc == uint64_t(op.max_rc) );
 
     const rc_account_object& alice_rc_account_increased = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& dan_rc_account_created = db->get< rc_account_object, by_name >( "dan" );

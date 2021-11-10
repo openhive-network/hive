@@ -18,7 +18,7 @@ struct delegate_rc_operation : base_operation
 {
   account_name_type     from;
   flat_set< account_name_type > delegatees;
-  uint64_t              max_rc = 0;
+  int64_t              max_rc = 0;
   extensions_type       extensions;
 
   void validate()const;

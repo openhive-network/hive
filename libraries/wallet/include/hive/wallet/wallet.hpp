@@ -1398,12 +1398,6 @@ class wallet_api
 
     fc::signal<void(bool)> lock_changed;
 
-  private:
-    std::shared_ptr<detail::wallet_api_impl> my;
-    fc::promise< int >::ptr&                 exit_promise;
-    bool                                     is_daemon;
-    void encrypt_keys();
-
     /**
     *  Delegate Rc
     *
@@ -1415,7 +1409,7 @@ class wallet_api
     serializer_wrapper<annotated_signed_transaction> delegate_rc(
           const account_name_type& from,
           const flat_set<account_name_type>& delegatees,
-          uint64_t max_rc,
+          int64_t max_rc,
           bool broadcast );
 
 
@@ -1438,26 +1432,24 @@ class wallet_api
           uint32_t limit,
           rc::sort_order_type order );
 
-  /**
-   *  List direct RC delegations.
-   *
-   *  @param start    Starting value for querying results,
-   *  @param limit   The limit of returned results
-   *  @param order   The sort order
-   */
-  serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> list_rc_direct_delegations(
+    /**
+     *  List direct RC delegations.
+     *
+     *  @param start    Starting value for querying results,
+     *  @param limit   The limit of returned results
+     *  @param order   The sort order
+     */
+    serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> list_rc_direct_delegations(
           fc::variant start,
           uint32_t limit,
           rc::sort_order_type order );
 
-    std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
+    private:
+      std::shared_ptr<detail::wallet_api_impl> my;
+      fc::promise< int >::ptr&                 exit_promise;
+      bool                                     is_daemon;
+      void encrypt_keys();
 
-    fc::signal<void(bool)> lock_changed;
-
-  private:
-    std::shared_ptr<detail::wallet_api_impl> my;
-    std::shared_ptr<fc::rpc::cli> cli;
-    void encrypt_keys();
 };
 
 struct plain_keys {
