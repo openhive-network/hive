@@ -418,26 +418,166 @@ void operation_get_impacted_accounts( const operation& op, flat_set<account_name
 namespace /// anonymous
 {
 
+/**
+ * @brief Visitor collects changes to account balances to be involved by given operation.
+*/
 struct impacted_balance_collector
 {
   impacted_balance_data result;
 
   typedef void result_type;
 
+  void operator()(const fill_vesting_withdraw_operation& o)
+  {
+    result.emplace_back(o.to_account, o.deposited);
+    result.emplace_back(o.from_account, -o.withdrawn);
+  }
+
+  void operator()(const producer_reward_operation& o)
+  {
+    result.emplace_back(o.producer, o.vesting_shares);
+  }
+
+  void operator()(const claim_account_operation& o)
+  {
+    result.emplace_back(o.creator, -o.fee);
+    result.emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+  }
+
+  void operator()(const account_create_operation& o)
+  {
+    result.emplace_back(o.creator, -o.fee);
+    result.emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+  }
+
+  void operator()(const account_create_with_delegation_operation& o)
+  {
+    result.emplace_back(o.creator, -o.fee);
+    result.emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+  }
+
+  void operator()(const hardfork_hive_restore_operation& o)
+  {
+    if(o.hbd_transferred.amount != 0)
+    {
+      result.emplace_back(o.account, o.hbd_transferred);
+      result.emplace_back(o.treasury, -o.hbd_transferred);
+    }
+    if(o.hive_transferred.amount != 0)
+    {
+      result.emplace_back(o.account, o.hive_transferred);
+      result.emplace_back(o.treasury, -o.hive_transferred);
+    }
+  }
+
+  void operator()(const fill_recurrent_transfer_operation& o)
+  {
+    result.emplace_back(o.to, o.amount);
+    result.emplace_back(o.from, -o.amount);
+  }
+
+  void operator()(const fill_transfer_from_savings_operation& o)
+  {
+    result.emplace_back(o.to, o.amount);
+  }
+
+  void operator()(const liquidity_reward_operation& o)
+  {
+    result.emplace_back(o.owner, o.payout);
+  }
+
+  void operator()(const fill_convert_request_operation& o)
+  {
+    result.emplace_back(o.owner, o.amount_out);
+  }
+
+  void operator()(const fill_collateralized_convert_request_operation& o)
+  {
+    result.emplace_back(o.owner, o.excess_collateral);
+  }
+
+  void operator()(const escrow_transfer_operation& o)
+  {
+    if(o.hive_amount.amount != 0)
+      result.emplace_back(o.from, -(o.hive_amount + o.fee));
+  
+    if(o.hbd_amount.amount != 0)
+      result.emplace_back(o.from, -(o.hbd_amount + o.fee));
+  }
+
+  void operator()(const escrow_release_operation& o)
+  {
+    if(o.hive_amount.amount != 0)
+      result.emplace_back(o.receiver, o.hive_amount);
+
+    if(o.hbd_amount.amount != 0)
+      result.emplace_back(o.receiver, o.hbd_amount);
+  }
+
+  void operator()(const transfer_operation& o)
+  {
+    result.emplace_back(o.from, -o.amount);
+    result.emplace_back(o.to, o.amount);
+  }
+
+  void operator()(const transfer_to_vesting_operation& o)
+  {
+    /// Nothing to do in favor to transfer_to_vesting_completed_operation
+  }
+
+  void operator()(const transfer_to_vesting_completed_operation& o)
+  {
+    result.emplace_back(o.to_account, o.vesting_shares_received);
+    result.emplace_back(o.from_account, -o.hive_vested);
+  }
+
+  void operator()(const pow_reward_operation& o)
+  {
+    result.emplace_back(o.worker, o.reward);
+  }
+
+  void operator()(const limit_order_create_operation& o)
+  {
+    result.emplace_back(o.owner, -o.amount_to_sell);
+  }
+
+  void operator()(const limit_order_create2_operation& o)
+  {
+    result.emplace_back(o.owner, -o.amount_to_sell);
+  }
+
+  void operator()(const transfer_to_savings_operation& o)
+  {
+    result.emplace_back(o.from, -o.amount);
+  }
+
+  void operator()(const claim_reward_balance_operation& o)
+  {
+    if(o.reward_hive.amount != 0)
+      result.emplace_back(o.account, o.reward_hive);
+    if(o.reward_hbd.amount != 0)
+      result.emplace_back(o.account, o.reward_hbd);
+    if(o.reward_vests.amount != 0)
+      result.emplace_back(o.account, o.reward_vests);
+  }
+
+  void operator()(const proposal_pay_operation& o)
+  {
+    result.emplace_back(o.receiver, o.payment);
+    result.emplace_back(o.payer, -o.payment);
+  }
+
+  void operator()(const sps_convert_operation& o)
+  {
+    result.emplace_back(o.fund_account, -o.hive_amount_in);
+    result.emplace_back(o.fund_account, o.hbd_amount_out);
+  }
+  
+
   template <class T>
   void operator()(const T&) 
   {
-    if(result.empty())
-    {
-      result.emplace_back(account_name_type("blocktrades"), asset(12345, HIVE_SYMBOL));
-      result.emplace_back(account_name_type("sender2"), asset(-12345, HIVE_SYMBOL));
-
-      result.emplace_back(account_name_type("blocktrades"), asset(54321, HBD_SYMBOL));
-      result.emplace_back(account_name_type("receiver"), asset(-54321, HBD_SYMBOL));
-
-      result.emplace_back(account_name_type("blocktrades"), asset(54321, VESTS_SYMBOL));
-      result.emplace_back(account_name_type("receiver"), asset(-54321, VESTS_SYMBOL));
-    }
+    /// Nothing to do for non-financial ops.
   }
 };
 
