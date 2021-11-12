@@ -37,6 +37,7 @@ def test_undelegated_rc_account_reject_execute_ops(wallet: Wallet):
 
 
 def test_delegations_when_delegator_lost_power(wallet: Wallet):
+#problem with withdraw vests
     accounts = []
     number_of_accounts_in_one_transaction = 10
     with wallet.in_single_transaction():
@@ -218,7 +219,8 @@ def test_large_rc_delegation(node, wallet: Wallet):
     assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc
 
 
-def test_out_of_uint64_rc_delegation(node, wallet: Wallet):
+def test_out_of_uint64_rc_delegation(wallet: Wallet):
+#uncorrect error message
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -274,6 +276,7 @@ def test_reject_of_delegation_of_delegated_rc(wallet: Wallet):
 
 
 def test_cost_of_doing_transaction(wallet: Wallet):
+#this test is incorrect, cost of transaction is not constant
     accounts = []
     number_of_accounts = 10
 
@@ -294,21 +297,10 @@ def test_cost_of_doing_transaction(wallet: Wallet):
     number_of_rc = rc_account_info(accounts[0], 'max_rc', wallet)
     assert number_of_mana == number_of_rc - 3 - 3
 
-def test_signification_of_delegations(wallet: Wallet):
-    accounts = []
-    number_of_accounts = 10
-
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
-
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
-    state1 = wallet.api.list_rc_direct_delegations([accounts[0], accounts[1]], 1000, 'by_from_to_sort')
 
 def test_back_of_waste_rc(wallet: Wallet):
-    #TODO Verify maanabar, dziwne wartości są po delegowaniu zera, czy cofanie delegacji musi trwać ?
+#Weird situation during delegate 0, how long is back of RC, Probably test is impossible in API,
+# problem with mana regeneration
     accounts = []
     number_of_accounts = 10
 
@@ -356,8 +348,7 @@ def test_wrong_sign_in_transaction(wallet: Wallet):
 
 
 def test_decrease_of_delegation(node, wallet: Wallet):
-
-    #TODO delegacja nie wraca do nadawcy (ŻĄDNA),
+# Probably not to test in API, problem with mana regeneration
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -402,8 +393,6 @@ def test_decrease_of_delegation(node, wallet: Wallet):
 
 
 def test_minus_rc_delegation(wallet: Wallet):
-
-    # BUG-  possible is do a minus value delegation. Weird behavior during second minus delegation.
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
