@@ -362,7 +362,8 @@ def test_minus_rc_delegation(wallet: Wallet):
                 accounts.append(f'account-{account_number}')
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
+    with pytest.raises(exceptions.CommunicationError):
+        wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
 
 
 def test_power_up_delegator(wallet: Wallet):
