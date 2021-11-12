@@ -25,7 +25,6 @@ def test_undelegated_rc_account_reject_execute_ops(wallet: Wallet):
             accounts.append(f'account-{account_number}')
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
-    wallet.api.transfer('initminer', accounts[0], Asset.Test(1), '')
 
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
     wallet.api.create_account(accounts[1], 'alice', '{}')
@@ -60,11 +59,8 @@ def test_delegations_when_delegator_lost_power(wallet: Wallet):
     state4 = wallet.api.find_rc_accounts([accounts[0]])
     state5 = wallet.api.get_account(accounts[0])
 
-    pass
-
 
 def test_same_value_rc_delegation(node, wallet: Wallet):
-
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -99,8 +95,8 @@ def test_same_value_rc_delegation(node, wallet: Wallet):
         # Can not make same delegation RC two times
         wallet.api.delegate_rc(accounts[0], [accounts[6]], 10)
 
-def test_less_value_rc_delegation(node, wallet: Wallet):
 
+def test_less_value_rc_delegation(wallet: Wallet):
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -132,8 +128,7 @@ def test_less_value_rc_delegation(node, wallet: Wallet):
     assert rc_account_info(accounts[7], 'max_rc', wallet) == 5
 
 
-def test_bigger_value_rc_delegation(node, wallet: Wallet):
-
+def test_bigger_value_rc_delegation(wallet: Wallet):
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -177,11 +172,11 @@ def test_large_rc_delegation(node, wallet: Wallet):
                 accounts.append(f'account-{account_number}')
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(200000000))
-    rc = int(rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana'])
+    rc_to_delegate = int(rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']) - 11100
     x = node.api.rc.get_resource_pool()
     y = node.api.rc.get_resource_params()
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], rc - 100)
-    assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], rc_to_delegate)
+    assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc_to_delegate
 
 
 def test_out_of_uint64_rc_delegation(wallet: Wallet):
@@ -293,7 +288,6 @@ def test_back_of_waste_rc(wallet: Wallet):
 
 
 def test_wrong_sign_in_transaction(wallet: Wallet):
-
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
