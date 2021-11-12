@@ -280,7 +280,7 @@ struct filtering_visitor
   (sps_convert_operation)(expired_account_notification_operation)(changed_recovery_account_operation)
   (transfer_to_vesting_completed_operation)(pow_reward_operation)(vesting_shares_split_operation)
   (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
-  (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation) )
+  (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation)(limit_order_cancelled_operation))
 
 private:
   uint64_t _filter = 0;
