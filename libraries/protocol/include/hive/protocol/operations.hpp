@@ -121,7 +121,8 @@ namespace hive { namespace protocol {
         fill_collateralized_convert_request_operation, // last_regular + 32
         system_warning_operation, // last_regular + 33,
         fill_recurrent_transfer_operation, // last_regular + 34
-        failed_recurrent_transfer_operation // last_regular + 35
+        failed_recurrent_transfer_operation, // last_regular + 35
+        limit_order_cancelled_operation  // last_regular + 36
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

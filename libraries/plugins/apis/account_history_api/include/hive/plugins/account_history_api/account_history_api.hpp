@@ -128,6 +128,7 @@ enum enum_vops_filter : uint64_t
   system_warning_operation                      = 0x1'00000000ull,
   fill_recurrent_transfer_operation             = 0x2'00000000ull,
   failed_recurrent_transfer_operation           = 0x4'00000000ull,
+  limit_order_cancelled_operation               = 0x8'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.

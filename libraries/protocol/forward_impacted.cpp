@@ -263,6 +263,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.open_owner );
   }
 
+  void operator()(const limit_order_cancelled_operation& op)
+  {
+    _impacted.insert(op.seller);
+  }
+
   void operator()( const fill_transfer_from_savings_operation& op )
   {
     _impacted.insert( op.from );
@@ -551,6 +556,17 @@ struct impacted_balance_collector
     result.emplace_back(o.from, -o.amount);
   }
 
+  void operator()(const fill_order_operation& o)
+  {
+    result.emplace_back(o.open_owner, o.current_pays);
+    result.emplace_back(o.current_owner, -o.open_pays);
+  }
+
+  void operator()(const limit_order_cancelled_operation& o)
+  {
+    result.emplace_back(o.seller, o.amount_back);
+  }
+  
   void operator()(const claim_reward_balance_operation& o)
   {
     if(o.reward_hive.amount != 0)

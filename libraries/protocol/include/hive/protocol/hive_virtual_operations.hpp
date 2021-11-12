@@ -189,6 +189,16 @@ namespace hive { namespace protocol {
     asset             open_pays;
   };
 
+  struct limit_order_cancelled_operation : public virtual_operation
+  {
+    limit_order_cancelled_operation() = default;
+    limit_order_cancelled_operation(const string& _seller, uint32_t _order_id, const asset& _amount_back)
+      :seller(_seller), orderid(_order_id), amount_back(_amount_back) {}
+
+    account_name_type seller;
+    uint32_t          orderid = 0;
+    asset             amount_back;
+  };
 
   struct fill_transfer_from_savings_operation : public virtual_operation
   {
@@ -421,6 +431,7 @@ FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
+FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )

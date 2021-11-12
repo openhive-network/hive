@@ -5528,7 +5528,11 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
 
 void database::cancel_order( const limit_order_object& order )
 {
-  adjust_balance( order.seller, order.amount_for_sale() );
+  auto amount_back = order.amount_for_sale();
+
+  adjust_balance( order.seller, amount_back );
+  push_virtual_operation(limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
+
   remove(order);
 }
 
@@ -5626,12 +5630,15 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
     switch( delta.symbol.asset_num )
     {
       case HIVE_ASSET_NUM_HIVE:
+      {
         acnt.balance += delta;
+
         if( check_balance )
         {
           FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
         }
         break;
+      }
       case HIVE_ASSET_NUM_HBD:
         /// Starting from HF 25 HBD interest will be paid only from saving balance.
         if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )

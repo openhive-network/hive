@@ -407,6 +407,7 @@ struct count_operation_visitor
   void operator()( const interest_operation& ) const {}
   void operator()( const fill_vesting_withdraw_operation& ) const {}
   void operator()( const fill_order_operation& ) const {}
+  void operator()( const limit_order_cancelled_operation&) const {} 
   void operator()( const shutdown_witness_operation& ) const {}
   void operator()( const fill_transfer_from_savings_operation& ) const {}
   void operator()( const hardfork_operation& ) const {}
