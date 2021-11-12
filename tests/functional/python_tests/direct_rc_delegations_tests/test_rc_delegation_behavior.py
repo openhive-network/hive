@@ -165,41 +165,6 @@ def test_bigger_value_rc_delegation(node, wallet: Wallet):
     assert rc_account_info(accounts[7], 'max_rc', wallet) == 10
 
 
-def test_delete_rc_delegation(node, wallet: Wallet):
-
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for number_of_transaction in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
-
-    with wallet.in_single_transaction():
-        wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[1], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[3], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[4], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[5], Asset.Test(10))
-
-    with wallet.in_single_transaction():
-        wallet.api.delegate_rc(accounts[0], [accounts[6]], 6)
-        wallet.api.delegate_rc(accounts[1], [accounts[6]], 7)
-        wallet.api.delegate_rc(accounts[3], [accounts[6]], 8)
-        wallet.api.delegate_rc(accounts[4], [accounts[6]], 9)
-        wallet.api.delegate_rc(accounts[5], [accounts[6]], 10)
-    assert rc_account_info(accounts[6], 'max_rc', wallet) == 40
-
-    with wallet.in_single_transaction():
-        wallet.api.delegate_rc(accounts[0], [accounts[6]], 0)
-        wallet.api.delegate_rc(accounts[1], [accounts[6]], 0)
-        wallet.api.delegate_rc(accounts[3], [accounts[6]], 0)
-        wallet.api.delegate_rc(accounts[4], [accounts[6]], 0)
-        wallet.api.delegate_rc(accounts[5], [accounts[6]], 0)
-    assert rc_account_info(accounts[6], 'max_rc', wallet) == 0
-
-
 def test_large_rc_delegation(node, wallet: Wallet):
 #probably BUG
     accounts = []
