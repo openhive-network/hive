@@ -794,6 +794,8 @@ namespace chain {
       uint32_t                      _current_op_in_trx    = 0;
       uint32_t                      _current_virtual_op   = 0;
 
+      const struct operation_notification* _current_applied_operation_info = nullptr;
+
       optional< block_id_type >     _currently_processing_block_id;
 
       flat_map<uint32_t,block_id_type>  _checkpoints;
