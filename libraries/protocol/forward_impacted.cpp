@@ -559,7 +559,7 @@ struct impacted_balance_collector
   void operator()(const fill_order_operation& o)
   {
     result.emplace_back(o.open_owner, o.current_pays);
-    result.emplace_back(o.current_owner, -o.open_pays);
+    result.emplace_back(o.current_owner, o.open_pays);
   }
 
   void operator()(const limit_order_cancelled_operation& o)
