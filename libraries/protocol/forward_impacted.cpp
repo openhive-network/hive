@@ -503,11 +503,18 @@ struct impacted_balance_collector
 
   void operator()(const escrow_transfer_operation& o)
   {
-    if(o.hive_amount.amount != 0)
-      result.emplace_back(o.from, -(o.hive_amount + o.fee));
+    asset hive_spent = o.hive_amount;
+    asset hbd_spent = o.hbd_amount;
+    if(o.fee.symbol == HIVE_SYMBOL)
+      hive_spent += o.fee;
+    else
+      hbd_spent += o.fee;
+
+    if(hive_spent.amount != 0)
+      result.emplace_back(o.from, -hive_spent);
   
-    if(o.hbd_amount.amount != 0)
-      result.emplace_back(o.from, -(o.hbd_amount + o.fee));
+    if(hbd_spent.amount != 0)
+      result.emplace_back(o.from, -hbd_spent);
   }
 
   void operator()(const escrow_release_operation& o)
