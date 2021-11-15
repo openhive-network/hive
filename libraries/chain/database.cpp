@@ -2658,7 +2658,6 @@ void database::process_vesting_withdrawals()
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
-
             operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, vests, routed );
 
             pre_push_virtual_operation( vop );
