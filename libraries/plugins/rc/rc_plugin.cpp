@@ -268,6 +268,7 @@ void use_account_rcs(
   if( whitelist.count( account_name ) ) return;
 #endif
 
+  // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
   const account_object& account = db.get< account_object, by_name >( account_name );
   const rc_account_object& rc_account = db.get< rc_account_object, by_name >( account_name );
 
@@ -280,6 +281,7 @@ void use_account_rcs(
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
+
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
     if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -822,11 +824,12 @@ typedef pre_apply_operation_visitor pre_apply_optional_action_vistor;
 
 struct account_regen_info
 {
-  account_regen_info( const account_name_type& a, bool r = true )
-    : account_name(a), fill_new_mana(r) {}
+  account_regen_info( const account_name_type& a, bool r = true, bool u = false )
+    : account_name(a), fill_new_mana(r), update_outdel_overflow(u)  {}
 
   account_name_type         account_name;
   bool                      fill_new_mana = true;
+  bool                      update_outdel_overflow = false;
 };
 
 struct post_apply_operation_visitor
@@ -841,63 +844,13 @@ struct post_apply_operation_visitor
 
   post_apply_operation_visitor(
     vector< account_regen_info >& ma,
+    flat_set< account_name_type >& oua,
     database& db,
     uint32_t t,
     uint32_t b,
     const account_name_type& w
     ) : _mod_accounts(ma), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
   {}
-
-  void update_outdel_overflow( const account_name_type& account ) const
-  {
-    const auto& from_rc_account = _db.get< rc_account_object, by_name >( account );
-    const auto& from_account = _db.get< account_object, by_name >( account );
-
-    int64_t new_max_rc = get_maximum_rc(from_account, from_rc_account, false );
-
-    int64_t returned_rcs = 0;
-    uint32_t now = _db.get_dynamic_global_properties().time.sec_since_epoch();
-
-    if( new_max_rc < from_rc_account.max_rc_creation_adjustment.amount.value && from_rc_account.delegated_rc > 0 ) {
-      // If the account dips below max_rc_creation_adjustment, we bring it back to this level.
-      int64_t needed_rcs = from_rc_account.max_rc_creation_adjustment.amount.value - new_max_rc;
-
-      const auto& rc_del_idx = _db.get_index< rc_direct_delegation_object_index, by_from_to >();
-      // start_id just means we iterate over all the rc delegations
-      auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( from_account.get_id(), account_id_type::start_id() ) );
-
-      while( needed_rcs > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == from_account.get_id() )
-      {
-        uint64_t delta_rc = std::min( needed_rcs, int64_t(rc_del_itr->delegated_rc) );
-        returned_rcs += delta_rc;
-        needed_rcs -= delta_rc;
-
-        const account_object* to_account = _db.find< account_object, by_id >( rc_del_itr->to  );
-        const auto& to_rc_account = _db.get< rc_account_object, by_name >( to_account->name );
-        update_rc_account_after_delegation(_db, to_rc_account, to_account, now, -delta_rc);
-
-        // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
-        if( rc_del_itr->delegated_rc > delta_rc )
-        {
-          _db.modify( *rc_del_itr, [&]( rc_direct_delegation_object& rc_del )
-          {
-            rc_del.delegated_rc -= delta_rc;
-          });
-        }
-        else
-        {
-          // Otherwise, we remove it
-          _db.remove( *rc_del_itr );
-        }
-        ++rc_del_itr;
-      }
-
-      _db.modify(from_rc_account, [&](rc_account_object &rca) {
-        rca.last_max_rc = get_maximum_rc(from_account, rca) + returned_rcs;
-        rca.delegated_rc -= returned_rcs;
-      });
-    }
-  }
 
   void operator()( const account_create_operation& op )const
   {
@@ -939,15 +892,13 @@ struct post_apply_operation_visitor
 
   void operator()( const withdraw_vesting_operation& op )const
   {
-    _mod_accounts.emplace_back( op.account, false );
-    update_outdel_overflow( op.account );
+    _mod_accounts.emplace_back( op.account, false, true );
   }
 
   void operator()( const delegate_vesting_shares_operation& op )const
   {
-    _mod_accounts.emplace_back( op.delegator );
+    _mod_accounts.emplace_back( op.delegator, true, true );
     _mod_accounts.emplace_back( op.delegatee );
-    update_outdel_overflow( op.delegator );
   }
 
   void operator()( const author_reward_operation& op )const
@@ -968,9 +919,8 @@ struct post_apply_operation_visitor
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
-    _mod_accounts.emplace_back( op.from_account );
-    _mod_accounts.emplace_back( op.to_account, op.deposited.symbol == VESTS_SYMBOL ); // If the value is in vests, it means we are auto vesting, so it increases the amount of rc
-    update_outdel_overflow( op.from_account );
+    _mod_accounts.emplace_back( op.from_account, true, true );
+    _mod_accounts.emplace_back( op.to_account );
   }
 
   void operator()( const claim_reward_balance_operation& op )const
@@ -1118,12 +1068,65 @@ void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notif
   // If we wanted to pre-handle other plugin operations, we could put pre_apply_custom_op_type< other_plugin_operation >( note )
 }
 
+void update_outdel_overflow( database& db, const account_object& from_account, const rc_account_object& from_rc_account)
+{
+  //const auto &from_rc_account = db.get<rc_account_object, by_name>(account);
+  //const auto &from_account = db.get<account_object, by_name>(account);
+
+  int64_t new_max_rc = get_maximum_rc(from_account, from_rc_account, false);
+
+  int64_t returned_rcs = 0;
+  uint32_t now = db.get_dynamic_global_properties().time.sec_since_epoch();
+
+  if (new_max_rc < from_rc_account.max_rc_creation_adjustment.amount.value && from_rc_account.delegated_rc > 0) {
+    // If the account dips below max_rc_creation_adjustment, we bring it back to this level.
+    int64_t needed_rcs = from_rc_account.max_rc_creation_adjustment.amount.value - new_max_rc;
+
+    const auto &rc_del_idx = db.get_index<rc_direct_delegation_object_index, by_from_to>();
+    // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
+    // start_id just means we iterate over all the rc delegations
+    auto rc_del_itr = rc_del_idx.lower_bound(boost::make_tuple(from_account.get_id(), account_id_type::start_id()));
+
+    while (needed_rcs > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == from_account.get_id()) {
+      uint64_t delta_rc = std::min(needed_rcs, int64_t(rc_del_itr->delegated_rc));
+      returned_rcs += delta_rc;
+      needed_rcs -= delta_rc;
+
+      const account_object *to_account = db.find<account_object, by_id>(rc_del_itr->to);
+      const auto &to_rc_account = db.get<rc_account_object, by_name>(to_account->name);
+      update_rc_account_after_delegation(db, to_rc_account, to_account, now, -delta_rc);
+
+      // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
+      if (rc_del_itr->delegated_rc > delta_rc) {
+        // We don't update last_max_rc and the manabars because update_modified_accounts will do it
+        db.modify(*rc_del_itr, [&](rc_direct_delegation_object &rc_del) {
+          rc_del.delegated_rc -= delta_rc;
+        });
+      } else {
+        // Otherwise, we remove it
+        db.remove(*rc_del_itr);
+      }
+      ++rc_del_itr;
+    }
+
+    // We don't update last_max_rc and the manabars because update_modified_accounts will do it
+    db.modify(from_rc_account, [&](rc_account_object &rca) {
+      rca.delegated_rc -= returned_rcs;
+    });
+  }
+}
+
 void update_modified_accounts( database& db, const std::vector< account_regen_info >& modified_accounts )
 {
   for( const account_regen_info& regen_info : modified_accounts )
   {
     const account_object& account = db.get< account_object, by_name >( regen_info.account_name );
     const rc_account_object& rc_account = db.get< rc_account_object, by_name >( regen_info.account_name );
+
+    // Update the outgoing rc delegations
+    if (regen_info.update_outdel_overflow == true) {
+      update_outdel_overflow(db, account, rc_account);
+    }
 
     int64_t new_last_max_rc = get_maximum_rc( account, rc_account );
     int64_t drc = new_last_max_rc - rc_account.last_max_rc;
@@ -1146,9 +1149,9 @@ void rc_plugin_impl::on_post_apply_operation( const operation_notification& note
   const uint32_t now = gpo.time.sec_since_epoch();
 
   vector< account_regen_info > modified_accounts;
-
+  flat_set< account_name_type > outdel_update_accounts;
   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_operation_visitor vtor( modified_accounts, outdel_update_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   note.op.visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
@@ -1165,9 +1168,9 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
   const uint32_t now = gpo.time.sec_since_epoch();
 
   vector< account_regen_info > modified_accounts;
-
+  flat_set< account_name_type > outdel_update_accounts;
   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_operation_visitor vtor( modified_accounts, outdel_update_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   op->visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
@@ -1201,8 +1204,9 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   const uint32_t now = gpo.time.sec_since_epoch();
 
   vector< account_regen_info > modified_accounts;
+  flat_set< account_name_type > outdel_update_accounts;
 
-  post_apply_optional_action_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_optional_action_visitor vtor( modified_accounts, outdel_update_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   note.action.visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
