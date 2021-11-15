@@ -969,7 +969,7 @@ struct post_apply_operation_visitor
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
     _mod_accounts.emplace_back( op.from_account );
-    _mod_accounts.emplace_back( op.to_account );
+    _mod_accounts.emplace_back( op.to_account, op.deposited.symbol == VESTS_SYMBOL ); // If the value is in vests, it means we are auto vesting, so it increases the amount of rc
     update_outdel_overflow( op.from_account );
   }
 
@@ -1132,7 +1132,7 @@ void update_modified_accounts( database& db, const std::vector< account_regen_in
     db.modify( rc_account, [&]( rc_account_object& rca )
     {
       rca.last_max_rc = new_last_max_rc;
-      rca.rc_manabar.current_mana += std::max( drc, int64_t( 0 ) );
+      rca.rc_manabar.current_mana = std::max( rca.rc_manabar.current_mana + drc, int64_t( 0 ) );
     } );
   }
 }
