@@ -235,29 +235,6 @@ def test_reject_of_delegation_of_delegated_rc(wallet: Wallet):
         wallet.api.delegate_rc(accounts[1], [accounts[2]], 50)
 
 
-def test_cost_of_doing_transaction(wallet: Wallet):
-#this test is incorrect, cost of transaction is not constant
-    accounts = []
-    number_of_accounts = 10
-
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
-
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
-
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
-    number_of_mana = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    number_of_rc = rc_account_info(accounts[0], 'max_rc', wallet)
-    assert number_of_mana == number_of_rc - 3  # cost of operation is 3
-
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 3000)
-    number_of_mana = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    number_of_rc = rc_account_info(accounts[0], 'max_rc', wallet)
-    assert number_of_mana == number_of_rc - 3 - 3
-
-
 def test_back_of_waste_rc(wallet: Wallet):
 #Weird situation during delegate 0, how long is back of RC, Probably test is impossible in API,
 # problem with mana regeneration
