@@ -3,7 +3,7 @@ import pytest
 from test_tools import Asset, exceptions, Wallet
 
 
-def test_delegated_rc_account_execute_ops(wallet: Wallet):
+def test_delegated_rc_account_execute_operation(wallet: Wallet):
     accounts = []
     number_of_accounts_in_one_transaction = 10
     with wallet.in_single_transaction():
@@ -16,7 +16,7 @@ def test_delegated_rc_account_execute_ops(wallet: Wallet):
     wallet.api.create_account(accounts[1], 'alice', '{}')
 
 
-def test_undelegated_rc_account_reject_execute_ops(wallet: Wallet):
+def test_undelegated_rc_account_reject_execute_operation(wallet: Wallet):
     accounts = []
     number_of_accounts_in_one_transaction = 10
     with wallet.in_single_transaction():
