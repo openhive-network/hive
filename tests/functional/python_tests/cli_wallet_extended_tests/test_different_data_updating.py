@@ -11,7 +11,7 @@ def test_update(wallet):
 
     response = wallet.api.get_account('alice')
 
-    _posting = response['result']['posting']
+    _posting = response['posting']
     _account_auths = _posting['account_auths']
     assert len(_account_auths) == 1
     __account_auths = _account_auths[0]
@@ -23,7 +23,7 @@ def test_update(wallet):
 
     response = wallet.api.get_account('alice')
 
-    _posting = response['result']['posting']
+    _posting = response['posting']
     _key_auths = _posting['key_auths']
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
@@ -35,7 +35,7 @@ def test_update(wallet):
 
     response = wallet.api.get_account('alice')
 
-    _posting = response['result']['posting']
+    _posting = response['posting']
     _key_auths = _posting['key_auths']
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
@@ -46,27 +46,19 @@ def test_update(wallet):
 
     response = wallet.api.get_account('alice')
 
-    assert response['result']['memo_key'] == 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ'
+    assert response['memo_key'] == 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ'
 
     wallet.api.update_account_meta('alice', '{ "test" : 4 }')
 
-    response = wallet.api.get_account('alice')
-    _result = response['result']
-
-    assert json.loads(response['result']['json_metadata']) == { "test" : 4 }
+    assert json.loads(wallet.api.get_account('alice')['json_metadata']) == { "test" : 4 }
 
     key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
 
     wallet.api.update_account('alice', '{}', key, key, key, key)
 
-    response = wallet.api.get_account('alice')
+    check_keys( wallet.api.get_account('alice'), key, key, key, key )
 
-    _result = response['result']
-    check_keys( _result, key, key, key, key )
-
-    response = wallet.api.get_owner_history('alice')
-
-    _result = response['result']
+    _result = wallet.api.get_owner_history('alice')
     assert len(_result) == 1
     assert 'account' in _result[0]
     assert _result[0]['account'] == 'alice'

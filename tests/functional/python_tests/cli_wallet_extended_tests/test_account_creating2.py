@@ -2,9 +2,7 @@ from test_tools import Account, logger, World, Asset
 from utilities import check_keys
 
 def test_account_creation_in_different_ways(node, wallet):
-    response = wallet.api.list_accounts('a', 100)
-
-    old_accounts_number = len(response['result'])
+    old_accounts_number = len(wallet.api.list_accounts('a', 100))
 
     logger.info('Waiting...')
     node.wait_number_of_blocks(18)
@@ -17,7 +15,7 @@ def test_account_creation_in_different_ways(node, wallet):
 
     response = wallet.api.create_account_with_keys('initminer', 'alice1', '{}', key, key, key, key)
 
-    _operations = response['result']['operations']
+    _operations = response['operations']
     check_keys( _operations[0][1], key, key, key, key )
 
     response = wallet.api.get_account('alice1')
@@ -26,9 +24,7 @@ def test_account_creation_in_different_ways(node, wallet):
 
     wallet.api.create_funded_account_with_keys('initminer', 'alice2', Asset.Test(2), 'banana', '{}', key, key, key, key)
 
-    response = wallet.api.list_accounts('a', 100)
-
-    assert old_accounts_number + 2 == len(response['result'])
+    assert old_accounts_number + 2 == len(wallet.api.list_accounts('a', 100))
 
 def test_account_creation_with_exception(wallet):
     try:

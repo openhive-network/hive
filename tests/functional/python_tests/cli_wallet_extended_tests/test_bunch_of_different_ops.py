@@ -93,12 +93,11 @@ def test_complex(wallet):
         wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
         wallet.api.transfer_to_vesting('initminer', 'dan', Asset.Test(100))
 
-    trx_response = transaction.get_response()
-    _result_trx_response = trx_response['result']
+    _result_trx_response = transaction.get_response()
 
     response = wallet.api.sign_transaction(_result_trx_response)
 
-    assert len(response['result']['operations']) == 8
+    assert len(response['operations']) == 8
 
     with wallet.in_single_transaction(broadcast=False) as transaction:
         wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
@@ -108,12 +107,11 @@ def test_complex(wallet):
         wallet.api.vote('dan', 'carol', 'hello-world3', 98)
         wallet.api.vote('alice', 'dan', 'hello-world4', 97)
 
-    trx_response = transaction.get_response()
-    _result_trx_response = trx_response['result']
+    _result_trx_response = transaction.get_response()
 
     response = wallet.api.sign_transaction(_result_trx_response)
 
-    assert len(response['result']['operations']) == 6
+    assert len(response['operations']) == 6
 
     with wallet.in_single_transaction() as transaction:
         for cnt in range(10):
@@ -121,7 +119,7 @@ def test_complex(wallet):
 
     trx_response = transaction.get_response()
 
-    assert len(trx_response['result']['operations']) == 10
+    assert len(trx_response['operations']) == 10
 
     with wallet.in_single_transaction() as transaction:
         wallet.api.update_account('alice', '{}', key2, key, key, key)
@@ -129,9 +127,7 @@ def test_complex(wallet):
         wallet.api.update_account('carol', '{}', key, key, key2, key)
         wallet.api.update_account('dan', '{}', key, key, key, key2)
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol', 'dan'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol', 'dan'])
     assert len(_result) == 4
     check_keys( _result[0], key2, key, key, key )
     check_keys( _result[1], key, key2, key, key )

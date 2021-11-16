@@ -52,7 +52,3 @@ def check_keys( result, key_owner, key_active, key_posting, key_memo ):
 def create_accounts( wallet, creator, accounts ):
     for account in accounts:
         wallet.api.create_account(creator, account, '{}')
-
-def result_of( method, *args):
-    response = method(*args)
-    return response['result']

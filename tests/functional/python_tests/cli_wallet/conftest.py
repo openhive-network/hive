@@ -80,7 +80,8 @@ def create_proposal(wallet : Wallet, funded_account : funded_account_info, creat
   prepared_proposal = prepare_proposal(funded_account, 'initial', author_is_creator=creator_is_propsal_creator)
   wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
   wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
-  response = wallet.api.list_proposals(start=[''], limit=50, order_by='by_creator', order_type='ascending', status='all')['result']
+  response = wallet.api.list_proposals(start=[''], limit=50, order_by='by_creator', order_type='ascending',
+                                       status='all')
   for prop in response:
     if prop['permlink'] == prepared_proposal.permlink:
       return prepared_proposal_data_with_id(base = prepared_proposal, id =prop['id'])
