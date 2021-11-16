@@ -274,9 +274,6 @@ class Wallet(ScopedObject):
         def get_prototype_operation(self, operation_type):
             return self.__send('get_prototype_operation', operation_type=operation_type)
 
-        def get_state(self, url):
-            return self.__send('get_state', url=url)
-
         def get_transaction(self, trx_id):
             return self.__send('get_transaction', trx_id=trx_id)
 
