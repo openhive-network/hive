@@ -281,7 +281,7 @@ class Wallet(ScopedObject):
             return self.__send('get_transaction', trx_id=trx_id)
 
         def get_withdraw_routes(self, account, type_):
-            return self.__send('get_withdraw_routes', account=account, type=type_)
+            return self.__send('get_withdraw_routes', account=account, type_=type_)
 
         def get_witness(self, owner_account):
             return self.__send('get_witness', owner_account=owner_account)
@@ -410,15 +410,15 @@ class Wallet(ScopedObject):
                                active=active, posting=posting, memo=memo, broadcast=broadcast)
 
         def update_account_auth_account(self, account_name, type_, auth_account, weight, broadcast=None):
-            return self.__send('update_account_auth_account', account_name=account_name, type=type_,
+            return self.__send('update_account_auth_account', account_name=account_name, type_=type_,
                                auth_account=auth_account, weight=weight, broadcast=broadcast)
 
         def update_account_auth_key(self, account_name, type_, key, weight, broadcast=None):
-            return self.__send('update_account_auth_key', account_name=account_name, type=type_, key=key, weight=weight,
-                               broadcast=broadcast)
+            return self.__send('update_account_auth_key', account_name=account_name, type_=type_, key=key,
+                               weight=weight, broadcast=broadcast)
 
         def update_account_auth_threshold(self, account_name, type_, threshold, broadcast=None):
-            return self.__send('update_account_auth_threshold', account_name=account_name, type=type_,
+            return self.__send('update_account_auth_threshold', account_name=account_name, type_=type_,
                                threshold=threshold, broadcast=broadcast)
 
         def update_account_memo_key(self, account_name, key, broadcast=None):
