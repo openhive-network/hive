@@ -98,6 +98,14 @@ class Wallet(ScopedObject):
         def __is_transaction_build_in_progress(self):
             return self.__transaction_builder is not None
 
+        # Below code is machine generated. Don't update it manually.
+        #
+        # If you updated wallet API in C++ sources and you want to synchronize TestTools with it,
+        # run following script: test_tools/package/test_tools/private/scripts/update_wallet_api.py
+        #
+        # If you want to introduce some other changes, you need to modify mentioned script and rerun it.
+        #
+        # Begin of machine generated code
         def about(self):
             return self.__send('about')
 
@@ -447,6 +455,7 @@ class Wallet(ScopedObject):
 
         def withdraw_vesting(self, from_, vesting_shares, broadcast=None):
             return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast)
+        # End of machine generated code
 
     def __init__(self,
                  *,
