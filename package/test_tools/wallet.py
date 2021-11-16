@@ -58,7 +58,7 @@ class Wallet(ScopedObject):
 
             return self.sign_transaction(transaction, broadcast=broadcast) if transaction is not None else None
 
-        def __send(self, method_, jsonrpc='2.0', id_=0, **params):
+        def __send(self, method_, jsonrpc='2.0', id_=0, *, only_result: bool = True, **params):
             if 'broadcast' in params:
                 self.__handle_broadcast_parameter(params)
 
@@ -67,7 +67,7 @@ class Wallet(ScopedObject):
             if self.__is_transaction_build_in_progress():
                 self.__transaction_builder.append_operation(response)
 
-            return response
+            return response['result'] if only_result else response
 
         def __handle_broadcast_parameter(self, params):
             if params['broadcast'] is None:
@@ -106,355 +106,397 @@ class Wallet(ScopedObject):
         # If you want to introduce some other changes, you need to modify mentioned script and rerun it.
         #
         # Begin of machine generated code
-        def about(self):
-            return self.__send('about')
+        def about(self, only_result: bool = True):
+            return self.__send('about', only_result=only_result)
 
-        def cancel_order(self, owner, orderid, broadcast=None):
-            return self.__send('cancel_order', owner=owner, orderid=orderid, broadcast=broadcast)
+        def cancel_order(self, owner, orderid, broadcast=None, only_result: bool = True):
+            return self.__send('cancel_order', owner=owner, orderid=orderid, broadcast=broadcast,
+                               only_result=only_result)
 
-        def cancel_transfer_from_savings(self, from_, request_id, broadcast=None):
-            return self.__send('cancel_transfer_from_savings', from_=from_, request_id=request_id, broadcast=broadcast)
+        def cancel_transfer_from_savings(self, from_, request_id, broadcast=None, only_result: bool = True):
+            return self.__send('cancel_transfer_from_savings', from_=from_, request_id=request_id, broadcast=broadcast,
+                               only_result=only_result)
 
-        def change_recovery_account(self, owner, new_recovery_account, broadcast=None):
+        def change_recovery_account(self, owner, new_recovery_account, broadcast=None, only_result: bool = True):
             return self.__send('change_recovery_account', owner=owner, new_recovery_account=new_recovery_account,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def claim_account_creation(self, creator, fee, broadcast=None):
-            return self.__send('claim_account_creation', creator=creator, fee=fee, broadcast=broadcast)
+        def claim_account_creation(self, creator, fee, broadcast=None, only_result: bool = True):
+            return self.__send('claim_account_creation', creator=creator, fee=fee, broadcast=broadcast,
+                               only_result=only_result)
 
-        def claim_account_creation_nonblocking(self, creator, fee, broadcast=None):
-            return self.__send('claim_account_creation_nonblocking', creator=creator, fee=fee, broadcast=broadcast)
+        def claim_account_creation_nonblocking(self, creator, fee, broadcast=None, only_result: bool = True):
+            return self.__send('claim_account_creation_nonblocking', creator=creator, fee=fee, broadcast=broadcast,
+                               only_result=only_result)
 
-        def claim_reward_balance(self, account, reward_hive, reward_hbd, reward_vests, broadcast=None):
+        def claim_reward_balance(self, account, reward_hive, reward_hbd, reward_vests, broadcast=None,
+                                 only_result: bool = True):
             return self.__send('claim_reward_balance', account=account, reward_hive=reward_hive, reward_hbd=reward_hbd,
-                               reward_vests=reward_vests, broadcast=broadcast)
+                               reward_vests=reward_vests, broadcast=broadcast, only_result=only_result)
 
-        def convert_hbd(self, from_, amount, broadcast=None):
-            return self.__send('convert_hbd', from_=from_, amount=amount, broadcast=broadcast)
+        def convert_hbd(self, from_, amount, broadcast=None, only_result: bool = True):
+            return self.__send('convert_hbd', from_=from_, amount=amount, broadcast=broadcast, only_result=only_result)
 
-        def convert_hive_with_collateral(self, from_, collateral_amount, broadcast=None):
+        def convert_hive_with_collateral(self, from_, collateral_amount, broadcast=None, only_result: bool = True):
             return self.__send('convert_hive_with_collateral', from_=from_, collateral_amount=collateral_amount,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def create_account(self, creator, new_account_name, json_meta, broadcast=None):
+        def create_account(self, creator, new_account_name, json_meta, broadcast=None, only_result: bool = True):
             return self.__send('create_account', creator=creator, new_account_name=new_account_name,
-                               json_meta=json_meta, broadcast=broadcast)
+                               json_meta=json_meta, broadcast=broadcast, only_result=only_result)
 
         def create_account_delegated(self, creator, hive_fee, delegated_vests, new_account_name, json_meta,
-                                     broadcast=None):
+                                     broadcast=None, only_result: bool = True):
             return self.__send('create_account_delegated', creator=creator, hive_fee=hive_fee,
                                delegated_vests=delegated_vests, new_account_name=new_account_name, json_meta=json_meta,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def create_account_with_keys(self, creator, newname, json_meta, owner, active, posting, memo, broadcast=None):
+        def create_account_with_keys(self, creator, newname, json_meta, owner, active, posting, memo, broadcast=None,
+                                     only_result: bool = True):
             return self.__send('create_account_with_keys', creator=creator, newname=newname, json_meta=json_meta,
-                               owner=owner, active=active, posting=posting, memo=memo, broadcast=broadcast)
+                               owner=owner, active=active, posting=posting, memo=memo, broadcast=broadcast,
+                               only_result=only_result)
 
         def create_account_with_keys_delegated(self, creator, hive_fee, delegated_vests, newname, json_meta, owner,
-                                               active, posting, memo, broadcast=None):
+                                               active, posting, memo, broadcast=None, only_result: bool = True):
             return self.__send('create_account_with_keys_delegated', creator=creator, hive_fee=hive_fee,
                                delegated_vests=delegated_vests, newname=newname, json_meta=json_meta, owner=owner,
-                               active=active, posting=posting, memo=memo, broadcast=broadcast)
+                               active=active, posting=posting, memo=memo, broadcast=broadcast, only_result=only_result)
 
         def create_funded_account_with_keys(self, creator, new_account_name, initial_amount, memo, json_meta, owner_key,
-                                            active_key, posting_key, memo_key, broadcast=None):
+                                            active_key, posting_key, memo_key, broadcast=None,
+                                            only_result: bool = True):
             return self.__send('create_funded_account_with_keys', creator=creator, new_account_name=new_account_name,
                                initial_amount=initial_amount, memo=memo, json_meta=json_meta, owner_key=owner_key,
-                               active_key=active_key, posting_key=posting_key, memo_key=memo_key, broadcast=broadcast)
+                               active_key=active_key, posting_key=posting_key, memo_key=memo_key, broadcast=broadcast,
+                               only_result=only_result)
 
         def create_order(self, owner, order_id, amount_to_sell, min_to_receive, fill_or_kill, expiration,
-                         broadcast=None):
+                         broadcast=None, only_result: bool = True):
             return self.__send('create_order', owner=owner, order_id=order_id, amount_to_sell=amount_to_sell,
                                min_to_receive=min_to_receive, fill_or_kill=fill_or_kill, expiration=expiration,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def create_proposal(self, creator, receiver, start_date, end_date, daily_pay, subject, permlink,
-                            broadcast=None):
+        def create_proposal(self, creator, receiver, start_date, end_date, daily_pay, subject, permlink, broadcast=None,
+                            only_result: bool = True):
             return self.__send('create_proposal', creator=creator, receiver=receiver, start_date=start_date,
                                end_date=end_date, daily_pay=daily_pay, subject=subject, permlink=permlink,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def decline_voting_rights(self, account, decline, broadcast=None):
-            return self.__send('decline_voting_rights', account=account, decline=decline, broadcast=broadcast)
+        def decline_voting_rights(self, account, decline, broadcast=None, only_result: bool = True):
+            return self.__send('decline_voting_rights', account=account, decline=decline, broadcast=broadcast,
+                               only_result=only_result)
 
-        def decrypt_memo(self, memo):
-            return self.__send('decrypt_memo', memo=memo)
+        def decrypt_memo(self, memo, only_result: bool = True):
+            return self.__send('decrypt_memo', memo=memo, only_result=only_result)
 
-        def delegate_vesting_shares(self, delegator, delegatee, vesting_shares, broadcast=None):
+        def delegate_vesting_shares(self, delegator, delegatee, vesting_shares, broadcast=None,
+                                    only_result: bool = True):
             return self.__send('delegate_vesting_shares', delegator=delegator, delegatee=delegatee,
-                               vesting_shares=vesting_shares, broadcast=broadcast)
+                               vesting_shares=vesting_shares, broadcast=broadcast, only_result=only_result)
 
         def delegate_vesting_shares_and_transfer(self, delegator, delegatee, vesting_shares, transfer_amount,
-                                                 transfer_memo, broadcast=None):
+                                                 transfer_memo, broadcast=None, only_result: bool = True):
             return self.__send('delegate_vesting_shares_and_transfer', delegator=delegator, delegatee=delegatee,
                                vesting_shares=vesting_shares, transfer_amount=transfer_amount,
-                               transfer_memo=transfer_memo, broadcast=broadcast)
+                               transfer_memo=transfer_memo, broadcast=broadcast, only_result=only_result)
 
         def delegate_vesting_shares_and_transfer_nonblocking(self, delegator, delegatee, vesting_shares,
-                                                             transfer_amount, transfer_memo, broadcast=None):
+                                                             transfer_amount, transfer_memo, broadcast=None,
+                                                             only_result: bool = True):
             return self.__send('delegate_vesting_shares_and_transfer_nonblocking', delegator=delegator,
                                delegatee=delegatee, vesting_shares=vesting_shares, transfer_amount=transfer_amount,
-                               transfer_memo=transfer_memo, broadcast=broadcast)
+                               transfer_memo=transfer_memo, broadcast=broadcast, only_result=only_result)
 
-        def delegate_vesting_shares_nonblocking(self, delegator, delegatee, vesting_shares, broadcast=None):
+        def delegate_vesting_shares_nonblocking(self, delegator, delegatee, vesting_shares, broadcast=None,
+                                                only_result: bool = True):
             return self.__send('delegate_vesting_shares_nonblocking', delegator=delegator, delegatee=delegatee,
-                               vesting_shares=vesting_shares, broadcast=broadcast)
+                               vesting_shares=vesting_shares, broadcast=broadcast, only_result=only_result)
 
-        def escrow_approve(self, from_, to, agent, who, escrow_id, approve, broadcast=None):
+        def escrow_approve(self, from_, to, agent, who, escrow_id, approve, broadcast=None, only_result: bool = True):
             return self.__send('escrow_approve', from_=from_, to=to, agent=agent, who=who, escrow_id=escrow_id,
-                               approve=approve, broadcast=broadcast)
+                               approve=approve, broadcast=broadcast, only_result=only_result)
 
-        def escrow_dispute(self, from_, to, agent, who, escrow_id, broadcast=None):
+        def escrow_dispute(self, from_, to, agent, who, escrow_id, broadcast=None, only_result: bool = True):
             return self.__send('escrow_dispute', from_=from_, to=to, agent=agent, who=who, escrow_id=escrow_id,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def escrow_release(self, from_, to, agent, who, receiver, escrow_id, hbd_amount, hive_amount, broadcast=None):
+        def escrow_release(self, from_, to, agent, who, receiver, escrow_id, hbd_amount, hive_amount, broadcast=None,
+                           only_result: bool = True):
             return self.__send('escrow_release', from_=from_, to=to, agent=agent, who=who, receiver=receiver,
-                               escrow_id=escrow_id, hbd_amount=hbd_amount, hive_amount=hive_amount, broadcast=broadcast)
+                               escrow_id=escrow_id, hbd_amount=hbd_amount, hive_amount=hive_amount, broadcast=broadcast,
+                               only_result=only_result)
 
         def escrow_transfer(self, from_, to, agent, escrow_id, hbd_amount, hive_amount, fee, ratification_deadline,
-                            escrow_expiration, json_meta, broadcast=None):
+                            escrow_expiration, json_meta, broadcast=None, only_result: bool = True):
             return self.__send('escrow_transfer', from_=from_, to=to, agent=agent, escrow_id=escrow_id,
                                hbd_amount=hbd_amount, hive_amount=hive_amount, fee=fee,
                                ratification_deadline=ratification_deadline, escrow_expiration=escrow_expiration,
-                               json_meta=json_meta, broadcast=broadcast)
+                               json_meta=json_meta, broadcast=broadcast, only_result=only_result)
 
-        def estimate_hive_collateral(self, hbd_amount_to_get):
-            return self.__send('estimate_hive_collateral', hbd_amount_to_get=hbd_amount_to_get)
+        def estimate_hive_collateral(self, hbd_amount_to_get, only_result: bool = True):
+            return self.__send('estimate_hive_collateral', hbd_amount_to_get=hbd_amount_to_get, only_result=only_result)
 
-        def exit(self):
-            return self.__send('exit')
+        def exit(self, only_result: bool = True):
+            return self.__send('exit', only_result=only_result)
 
-        def find_proposals(self, proposal_ids):
-            return self.__send('find_proposals', proposal_ids=proposal_ids)
+        def find_proposals(self, proposal_ids, only_result: bool = True):
+            return self.__send('find_proposals', proposal_ids=proposal_ids, only_result=only_result)
 
-        def find_recurrent_transfers(self, from_):
-            return self.__send('find_recurrent_transfers', from_=from_)
+        def find_recurrent_transfers(self, from_, only_result: bool = True):
+            return self.__send('find_recurrent_transfers', from_=from_, only_result=only_result)
 
-        def follow(self, follower, following, what, broadcast=None):
-            return self.__send('follow', follower=follower, following=following, what=what, broadcast=broadcast)
+        def follow(self, follower, following, what, broadcast=None, only_result: bool = True):
+            return self.__send('follow', follower=follower, following=following, what=what, broadcast=broadcast,
+                               only_result=only_result)
 
-        def get_account(self, account_name):
-            return self.__send('get_account', account_name=account_name)
+        def get_account(self, account_name, only_result: bool = True):
+            return self.__send('get_account', account_name=account_name, only_result=only_result)
 
-        def get_account_history(self, account, from_, limit):
-            return self.__send('get_account_history', account=account, from_=from_, limit=limit)
+        def get_account_history(self, account, from_, limit, only_result: bool = True):
+            return self.__send('get_account_history', account=account, from_=from_, limit=limit,
+                               only_result=only_result)
 
-        def get_accounts(self, account_names):
-            return self.__send('get_accounts', account_names=account_names)
+        def get_accounts(self, account_names, only_result: bool = True):
+            return self.__send('get_accounts', account_names=account_names, only_result=only_result)
 
-        def get_active_witnesses(self):
-            return self.__send('get_active_witnesses')
+        def get_active_witnesses(self, only_result: bool = True):
+            return self.__send('get_active_witnesses', only_result=only_result)
 
-        def get_block(self, num):
-            return self.__send('get_block', num=num)
+        def get_block(self, num, only_result: bool = True):
+            return self.__send('get_block', num=num, only_result=only_result)
 
-        def get_collateralized_conversion_requests(self, owner):
-            return self.__send('get_collateralized_conversion_requests', owner=owner)
+        def get_collateralized_conversion_requests(self, owner, only_result: bool = True):
+            return self.__send('get_collateralized_conversion_requests', owner=owner, only_result=only_result)
 
-        def get_conversion_requests(self, owner):
-            return self.__send('get_conversion_requests', owner=owner)
+        def get_conversion_requests(self, owner, only_result: bool = True):
+            return self.__send('get_conversion_requests', owner=owner, only_result=only_result)
 
-        def get_encrypted_memo(self, from_, to, memo):
-            return self.__send('get_encrypted_memo', from_=from_, to=to, memo=memo)
+        def get_encrypted_memo(self, from_, to, memo, only_result: bool = True):
+            return self.__send('get_encrypted_memo', from_=from_, to=to, memo=memo, only_result=only_result)
 
-        def get_feed_history(self):
-            return self.__send('get_feed_history')
+        def get_feed_history(self, only_result: bool = True):
+            return self.__send('get_feed_history', only_result=only_result)
 
-        def get_open_orders(self, accountname):
-            return self.__send('get_open_orders', accountname=accountname)
+        def get_open_orders(self, accountname, only_result: bool = True):
+            return self.__send('get_open_orders', accountname=accountname, only_result=only_result)
 
-        def get_ops_in_block(self, block_num, only_virtual):
-            return self.__send('get_ops_in_block', block_num=block_num, only_virtual=only_virtual)
+        def get_ops_in_block(self, block_num, only_virtual, only_result: bool = True):
+            return self.__send('get_ops_in_block', block_num=block_num, only_virtual=only_virtual,
+                               only_result=only_result)
 
-        def get_order_book(self, limit):
-            return self.__send('get_order_book', limit=limit)
+        def get_order_book(self, limit, only_result: bool = True):
+            return self.__send('get_order_book', limit=limit, only_result=only_result)
 
-        def get_owner_history(self, account):
-            return self.__send('get_owner_history', account=account)
+        def get_owner_history(self, account, only_result: bool = True):
+            return self.__send('get_owner_history', account=account, only_result=only_result)
 
-        def get_private_key(self, pubkey):
-            return self.__send('get_private_key', pubkey=pubkey)
+        def get_private_key(self, pubkey, only_result: bool = True):
+            return self.__send('get_private_key', pubkey=pubkey, only_result=only_result)
 
-        def get_private_key_from_password(self, account, role, password):
-            return self.__send('get_private_key_from_password', account=account, role=role, password=password)
+        def get_private_key_from_password(self, account, role, password, only_result: bool = True):
+            return self.__send('get_private_key_from_password', account=account, role=role, password=password,
+                               only_result=only_result)
 
-        def get_prototype_operation(self, operation_type):
-            return self.__send('get_prototype_operation', operation_type=operation_type)
+        def get_prototype_operation(self, operation_type, only_result: bool = True):
+            return self.__send('get_prototype_operation', operation_type=operation_type, only_result=only_result)
 
-        def get_transaction(self, trx_id):
-            return self.__send('get_transaction', trx_id=trx_id)
+        def get_transaction(self, trx_id, only_result: bool = True):
+            return self.__send('get_transaction', trx_id=trx_id, only_result=only_result)
 
-        def get_withdraw_routes(self, account, type_):
-            return self.__send('get_withdraw_routes', account=account, type_=type_)
+        def get_withdraw_routes(self, account, type_, only_result: bool = True):
+            return self.__send('get_withdraw_routes', account=account, type_=type_, only_result=only_result)
 
-        def get_witness(self, owner_account):
-            return self.__send('get_witness', owner_account=owner_account)
+        def get_witness(self, owner_account, only_result: bool = True):
+            return self.__send('get_witness', owner_account=owner_account, only_result=only_result)
 
-        def gethelp(self, method):
-            return self.__send('gethelp', method=method)
+        def gethelp(self, method, only_result: bool = True):
+            return self.__send('gethelp', method=method, only_result=only_result)
 
-        def help(self):
-            return self.__send('help')
+        def help(self, only_result: bool = True):
+            return self.__send('help', only_result=only_result)
 
-        def import_key(self, wif_key):
-            return self.__send('import_key', wif_key=wif_key)
+        def import_key(self, wif_key, only_result: bool = True):
+            return self.__send('import_key', wif_key=wif_key, only_result=only_result)
 
-        def info(self):
-            return self.__send('info')
+        def info(self, only_result: bool = True):
+            return self.__send('info', only_result=only_result)
 
-        def is_locked(self):
-            return self.__send('is_locked')
+        def is_locked(self, only_result: bool = True):
+            return self.__send('is_locked', only_result=only_result)
 
-        def is_new(self):
-            return self.__send('is_new')
+        def is_new(self, only_result: bool = True):
+            return self.__send('is_new', only_result=only_result)
 
-        def list_accounts(self, lowerbound, limit):
-            return self.__send('list_accounts', lowerbound=lowerbound, limit=limit)
+        def list_accounts(self, lowerbound, limit, only_result: bool = True):
+            return self.__send('list_accounts', lowerbound=lowerbound, limit=limit, only_result=only_result)
 
-        def list_keys(self):
-            return self.__send('list_keys')
+        def list_keys(self, only_result: bool = True):
+            return self.__send('list_keys', only_result=only_result)
 
-        def list_my_accounts(self):
-            return self.__send('list_my_accounts')
+        def list_my_accounts(self, only_result: bool = True):
+            return self.__send('list_my_accounts', only_result=only_result)
 
-        def list_proposal_votes(self, start, limit, order_by, order_type, status):
+        def list_proposal_votes(self, start, limit, order_by, order_type, status, only_result: bool = True):
             return self.__send('list_proposal_votes', start=start, limit=limit, order_by=order_by,
-                               order_type=order_type, status=status)
+                               order_type=order_type, status=status, only_result=only_result)
 
-        def list_proposals(self, start, limit, order_by, order_type, status):
+        def list_proposals(self, start, limit, order_by, order_type, status, only_result: bool = True):
             return self.__send('list_proposals', start=start, limit=limit, order_by=order_by, order_type=order_type,
-                               status=status)
+                               status=status, only_result=only_result)
 
-        def list_witnesses(self, lowerbound, limit):
-            return self.__send('list_witnesses', lowerbound=lowerbound, limit=limit)
+        def list_witnesses(self, lowerbound, limit, only_result: bool = True):
+            return self.__send('list_witnesses', lowerbound=lowerbound, limit=limit, only_result=only_result)
 
-        def load_wallet_file(self, wallet_filename):
-            return self.__send('load_wallet_file', wallet_filename=wallet_filename)
+        def load_wallet_file(self, wallet_filename, only_result: bool = True):
+            return self.__send('load_wallet_file', wallet_filename=wallet_filename, only_result=only_result)
 
-        def lock(self):
-            return self.__send('lock')
+        def lock(self, only_result: bool = True):
+            return self.__send('lock', only_result=only_result)
 
-        def normalize_brain_key(self, s):
-            return self.__send('normalize_brain_key', s=s)
+        def normalize_brain_key(self, s, only_result: bool = True):
+            return self.__send('normalize_brain_key', s=s, only_result=only_result)
 
-        def post_comment(self, author, permlink, parent_author, parent_permlink, title, body, json, broadcast=None):
+        def post_comment(self, author, permlink, parent_author, parent_permlink, title, body, json, broadcast=None,
+                         only_result: bool = True):
             return self.__send('post_comment', author=author, permlink=permlink, parent_author=parent_author,
-                               parent_permlink=parent_permlink, title=title, body=body, json=json, broadcast=broadcast)
+                               parent_permlink=parent_permlink, title=title, body=body, json=json, broadcast=broadcast,
+                               only_result=only_result)
 
-        def publish_feed(self, witness, exchange_rate, broadcast=None):
-            return self.__send('publish_feed', witness=witness, exchange_rate=exchange_rate, broadcast=broadcast)
+        def publish_feed(self, witness, exchange_rate, broadcast=None, only_result: bool = True):
+            return self.__send('publish_feed', witness=witness, exchange_rate=exchange_rate, broadcast=broadcast,
+                               only_result=only_result)
 
-        def recover_account(self, account_to_recover, recent_authority, new_authority, broadcast=None):
+        def recover_account(self, account_to_recover, recent_authority, new_authority, broadcast=None,
+                            only_result: bool = True):
             return self.__send('recover_account', account_to_recover=account_to_recover,
-                               recent_authority=recent_authority, new_authority=new_authority, broadcast=broadcast)
+                               recent_authority=recent_authority, new_authority=new_authority, broadcast=broadcast,
+                               only_result=only_result)
 
-        def recurrent_transfer(self, from_, to, amount, memo, recurrence, executions, broadcast=None):
+        def recurrent_transfer(self, from_, to, amount, memo, recurrence, executions, broadcast=None,
+                               only_result: bool = True):
             return self.__send('recurrent_transfer', from_=from_, to=to, amount=amount, memo=memo,
-                               recurrence=recurrence, executions=executions, broadcast=broadcast)
+                               recurrence=recurrence, executions=executions, broadcast=broadcast,
+                               only_result=only_result)
 
-        def remove_proposal(self, deleter, ids, broadcast=None):
-            return self.__send('remove_proposal', deleter=deleter, ids=ids, broadcast=broadcast)
+        def remove_proposal(self, deleter, ids, broadcast=None, only_result: bool = True):
+            return self.__send('remove_proposal', deleter=deleter, ids=ids, broadcast=broadcast,
+                               only_result=only_result)
 
-        def request_account_recovery(self, recovery_account, account_to_recover, new_authority, broadcast=None):
+        def request_account_recovery(self, recovery_account, account_to_recover, new_authority, broadcast=None,
+                                     only_result: bool = True):
             return self.__send('request_account_recovery', recovery_account=recovery_account,
-                               account_to_recover=account_to_recover, new_authority=new_authority, broadcast=broadcast)
+                               account_to_recover=account_to_recover, new_authority=new_authority, broadcast=broadcast,
+                               only_result=only_result)
 
-        def save_wallet_file(self, wallet_filename):
-            return self.__send('save_wallet_file', wallet_filename=wallet_filename)
+        def save_wallet_file(self, wallet_filename, only_result: bool = True):
+            return self.__send('save_wallet_file', wallet_filename=wallet_filename, only_result=only_result)
 
-        def serialize_transaction(self, tx):
-            return self.__send('serialize_transaction', tx=tx)
+        def serialize_transaction(self, tx, only_result: bool = True):
+            return self.__send('serialize_transaction', tx=tx, only_result=only_result)
 
-        def set_password(self, password):
-            return self.__send('set_password', password=password)
+        def set_password(self, password, only_result: bool = True):
+            return self.__send('set_password', password=password, only_result=only_result)
 
-        def set_transaction_expiration(self, seconds):
-            return self.__send('set_transaction_expiration', seconds=seconds)
+        def set_transaction_expiration(self, seconds, only_result: bool = True):
+            return self.__send('set_transaction_expiration', seconds=seconds, only_result=only_result)
 
-        def set_voting_proxy(self, account_to_modify, proxy, broadcast=None):
+        def set_voting_proxy(self, account_to_modify, proxy, broadcast=None, only_result: bool = True):
             return self.__send('set_voting_proxy', account_to_modify=account_to_modify, proxy=proxy,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def set_withdraw_vesting_route(self, from_, to, percent, auto_vest, broadcast=None):
+        def set_withdraw_vesting_route(self, from_, to, percent, auto_vest, broadcast=None, only_result: bool = True):
             return self.__send('set_withdraw_vesting_route', from_=from_, to=to, percent=percent, auto_vest=auto_vest,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def sign_transaction(self, tx, broadcast=None):
-            return self.__send('sign_transaction', tx=tx, broadcast=broadcast)
+        def sign_transaction(self, tx, broadcast=None, only_result: bool = True):
+            return self.__send('sign_transaction', tx=tx, broadcast=broadcast, only_result=only_result)
 
-        def suggest_brain_key(self):
-            return self.__send('suggest_brain_key')
+        def suggest_brain_key(self, only_result: bool = True):
+            return self.__send('suggest_brain_key', only_result=only_result)
 
-        def transfer(self, from_, to, amount, memo, broadcast=None):
-            return self.__send('transfer', from_=from_, to=to, amount=amount, memo=memo, broadcast=broadcast)
+        def transfer(self, from_, to, amount, memo, broadcast=None, only_result: bool = True):
+            return self.__send('transfer', from_=from_, to=to, amount=amount, memo=memo, broadcast=broadcast,
+                               only_result=only_result)
 
-        def transfer_from_savings(self, from_, request_id, to, amount, memo, broadcast=None):
+        def transfer_from_savings(self, from_, request_id, to, amount, memo, broadcast=None, only_result: bool = True):
             return self.__send('transfer_from_savings', from_=from_, request_id=request_id, to=to, amount=amount,
-                               memo=memo, broadcast=broadcast)
+                               memo=memo, broadcast=broadcast, only_result=only_result)
 
-        def transfer_nonblocking(self, from_, to, amount, memo, broadcast=None):
+        def transfer_nonblocking(self, from_, to, amount, memo, broadcast=None, only_result: bool = True):
             return self.__send('transfer_nonblocking', from_=from_, to=to, amount=amount, memo=memo,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def transfer_to_savings(self, from_, to, amount, memo, broadcast=None):
-            return self.__send('transfer_to_savings', from_=from_, to=to, amount=amount, memo=memo, broadcast=broadcast)
+        def transfer_to_savings(self, from_, to, amount, memo, broadcast=None, only_result: bool = True):
+            return self.__send('transfer_to_savings', from_=from_, to=to, amount=amount, memo=memo, broadcast=broadcast,
+                               only_result=only_result)
 
-        def transfer_to_vesting(self, from_, to, amount, broadcast=None):
-            return self.__send('transfer_to_vesting', from_=from_, to=to, amount=amount, broadcast=broadcast)
+        def transfer_to_vesting(self, from_, to, amount, broadcast=None, only_result: bool = True):
+            return self.__send('transfer_to_vesting', from_=from_, to=to, amount=amount, broadcast=broadcast,
+                               only_result=only_result)
 
-        def transfer_to_vesting_nonblocking(self, from_, to, amount, broadcast=None):
+        def transfer_to_vesting_nonblocking(self, from_, to, amount, broadcast=None, only_result: bool = True):
             return self.__send('transfer_to_vesting_nonblocking', from_=from_, to=to, amount=amount,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def unlock(self, password):
-            return self.__send('unlock', password=password)
+        def unlock(self, password, only_result: bool = True):
+            return self.__send('unlock', password=password, only_result=only_result)
 
-        def update_account(self, accountname, json_meta, owner, active, posting, memo, broadcast=None):
+        def update_account(self, accountname, json_meta, owner, active, posting, memo, broadcast=None,
+                           only_result: bool = True):
             return self.__send('update_account', accountname=accountname, json_meta=json_meta, owner=owner,
-                               active=active, posting=posting, memo=memo, broadcast=broadcast)
+                               active=active, posting=posting, memo=memo, broadcast=broadcast, only_result=only_result)
 
-        def update_account_auth_account(self, account_name, type_, auth_account, weight, broadcast=None):
+        def update_account_auth_account(self, account_name, type_, auth_account, weight, broadcast=None,
+                                        only_result: bool = True):
             return self.__send('update_account_auth_account', account_name=account_name, type_=type_,
-                               auth_account=auth_account, weight=weight, broadcast=broadcast)
+                               auth_account=auth_account, weight=weight, broadcast=broadcast, only_result=only_result)
 
-        def update_account_auth_key(self, account_name, type_, key, weight, broadcast=None):
+        def update_account_auth_key(self, account_name, type_, key, weight, broadcast=None, only_result: bool = True):
             return self.__send('update_account_auth_key', account_name=account_name, type_=type_, key=key,
-                               weight=weight, broadcast=broadcast)
+                               weight=weight, broadcast=broadcast, only_result=only_result)
 
-        def update_account_auth_threshold(self, account_name, type_, threshold, broadcast=None):
+        def update_account_auth_threshold(self, account_name, type_, threshold, broadcast=None,
+                                          only_result: bool = True):
             return self.__send('update_account_auth_threshold', account_name=account_name, type_=type_,
-                               threshold=threshold, broadcast=broadcast)
+                               threshold=threshold, broadcast=broadcast, only_result=only_result)
 
-        def update_account_memo_key(self, account_name, key, broadcast=None):
-            return self.__send('update_account_memo_key', account_name=account_name, key=key, broadcast=broadcast)
+        def update_account_memo_key(self, account_name, key, broadcast=None, only_result: bool = True):
+            return self.__send('update_account_memo_key', account_name=account_name, key=key, broadcast=broadcast,
+                               only_result=only_result)
 
-        def update_account_meta(self, account_name, json_meta, broadcast=None):
+        def update_account_meta(self, account_name, json_meta, broadcast=None, only_result: bool = True):
             return self.__send('update_account_meta', account_name=account_name, json_meta=json_meta,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def update_proposal(self, proposal_id, creator, daily_pay, subject, permlink, end_date, broadcast=None):
+        def update_proposal(self, proposal_id, creator, daily_pay, subject, permlink, end_date, broadcast=None,
+                            only_result: bool = True):
             return self.__send('update_proposal', proposal_id=proposal_id, creator=creator, daily_pay=daily_pay,
-                               subject=subject, permlink=permlink, end_date=end_date, broadcast=broadcast)
+                               subject=subject, permlink=permlink, end_date=end_date, broadcast=broadcast,
+                               only_result=only_result)
 
-        def update_proposal_votes(self, voter, proposals, approve, broadcast=None):
+        def update_proposal_votes(self, voter, proposals, approve, broadcast=None, only_result: bool = True):
             return self.__send('update_proposal_votes', voter=voter, proposals=proposals, approve=approve,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def update_witness(self, witness_name, url, block_signing_key, props, broadcast=None):
+        def update_witness(self, witness_name, url, block_signing_key, props, broadcast=None, only_result: bool = True):
             return self.__send('update_witness', witness_name=witness_name, url=url,
-                               block_signing_key=block_signing_key, props=props, broadcast=broadcast)
+                               block_signing_key=block_signing_key, props=props, broadcast=broadcast,
+                               only_result=only_result)
 
-        def vote(self, voter, author, permlink, weight, broadcast=None):
+        def vote(self, voter, author, permlink, weight, broadcast=None, only_result: bool = True):
             return self.__send('vote', voter=voter, author=author, permlink=permlink, weight=weight,
-                               broadcast=broadcast)
+                               broadcast=broadcast, only_result=only_result)
 
-        def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=None):
+        def vote_for_witness(self, account_to_vote_with, witness_to_vote_for, approve, broadcast=None,
+                             only_result: bool = True):
             return self.__send('vote_for_witness', account_to_vote_with=account_to_vote_with,
-                               witness_to_vote_for=witness_to_vote_for, approve=approve, broadcast=broadcast)
+                               witness_to_vote_for=witness_to_vote_for, approve=approve, broadcast=broadcast,
+                               only_result=only_result)
 
-        def withdraw_vesting(self, from_, vesting_shares, broadcast=None):
-            return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast)
+        def withdraw_vesting(self, from_, vesting_shares, broadcast=None, only_result: bool = True):
+            return self.__send('withdraw_vesting', from_=from_, vesting_shares=vesting_shares, broadcast=broadcast,
+                               only_result=only_result)
         # End of machine generated code
 
     def __init__(self,
@@ -629,7 +671,7 @@ class Wallet(ScopedObject):
         return None
 
     def __is_password_set(self) -> bool:
-        return not self.api.is_new()['result']
+        return not self.api.is_new()
 
     def connect_to(self, node):
         self.connected_node = node

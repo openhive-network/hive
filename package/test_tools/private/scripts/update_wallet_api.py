@@ -96,6 +96,9 @@ class WalletApiTranslator:
             if parameter.name == 'broadcast':
                 result += '=None'
 
+        # Append 'only_result' parameter
+        result += ', only_result: bool = True'
+
         return result
 
     @classmethod
@@ -118,6 +121,9 @@ class WalletApiTranslator:
         for parameter in method.parameters:
             sanitized_name = cls.__sanitize_name(parameter.name)
             result += f', {sanitized_name}={sanitized_name}'
+
+        # Append 'only_result' parameter
+        result += ', only_result=only_result'
 
         return result
 

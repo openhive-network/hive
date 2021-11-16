@@ -24,7 +24,7 @@ def test_sending_transaction_with_multiple_operations(wallet):
             wallet.api.transfer('initminer', account, amount, 'memo')
 
     for account, expected_balance in accounts_and_balances.items():
-        balance = wallet.api.get_account(account)['result']['balance']
+        balance = wallet.api.get_account(account)['balance']
         assert balance == expected_balance
 
 
@@ -37,7 +37,7 @@ def test_sending_transaction_with_multiple_operations_without_broadcast(wallet):
 
     # Transaction isn't send
     response = wallet.api.list_accounts('', 100)
-    assert 'alice' not in response['result']
+    assert 'alice' not in response
 
 
 def test_setting_broadcast_when_building_transaction(wallet):
