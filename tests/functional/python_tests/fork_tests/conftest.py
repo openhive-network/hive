@@ -85,7 +85,7 @@ def world_with_witnesses():
 
         # Network should be set up at this time, with 21 active witnesses, enough participation rate
         # and irreversible block number lagging behind around 15-20 blocks head block number
-        result = wallet.api.info()["result"]
+        result = wallet.api.info()
         irreversible = result["last_irreversible_block_num"]
         head = result["head_block_num"]
         logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')

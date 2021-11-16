@@ -70,11 +70,11 @@ def test_update_proposal_xxx(wallet : Wallet, funded_account : funded_account_in
     for bn in range(block_number, block_number + 5):
       logger.info(f"checking block: {bn}")
       response = wallet.api.get_ops_in_block(block_num=bn, only_virtual=False)
-      if len(response['result']) > 0:
+      if len(response) > 0:
         logger.info(f'got_ops_in_block response: {response}')
         break
 
-    op = response['result'][0]['op']
+    op = response[0]['op']
     extensions = op[1]['extensions'][0]
     return extensions[0] == 'update_proposal_end_date' and extensions[1]['end_date'] == end_date
 
@@ -100,10 +100,10 @@ def test_update_proposal_xxx(wallet : Wallet, funded_account : funded_account_in
     "permlink": prepared_proposal.permlink,
     "end_date": format_datetime(prepared_proposal.end_date - timedelta(days=2))
   }
-  block = wallet.api.update_proposal(**update_args)['result']['ref_block_num'] + 1
+  block = wallet.api.update_proposal(**update_args)['ref_block_num'] + 1
   assert check_is_proposal_update_exists(block, update_args["end_date"])
 
-  proposal = wallet.api.find_proposals([proposal_id])['result'][0]
+  proposal = wallet.api.find_proposals([proposal_id])[0]
 
   assert proposal['daily_pay'] == current_daily_pay
   assert proposal['subject'] == update_args['subject']
@@ -121,7 +121,7 @@ def test_update_proposal_xxx(wallet : Wallet, funded_account : funded_account_in
   update_args['end_date'] = None
 
   wallet.api.update_proposal(**update_args)
-  proposal = wallet.api.find_proposals([proposal_id])['result'][0]
+  proposal = wallet.api.find_proposals([proposal_id])[0]
 
   assert proposal['daily_pay'] == current_daily_pay
   assert proposal['subject'] == update_args['subject']

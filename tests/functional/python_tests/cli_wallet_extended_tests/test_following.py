@@ -10,7 +10,7 @@ def test_following(wallet):
     wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
 
     response = wallet.api.follow('alice', 'bob', ['blog'])
-    operation = response['result']['operations'][0]
+    operation = response['operations'][0]
     operation_type, operation_json = operation[0], json.loads(operation[1]['json'])
 
     assert operation_type == 'custom_json'

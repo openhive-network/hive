@@ -18,7 +18,7 @@ def test_enum_virtual_ops(world_with_witnesses):
         # We broadcast transactions (with non virtual operations).
         wallet.api.transfer_to_vesting('initminer', account_name, Asset.Test(1))
 
-        head_block = wallet.api.info()["result"]["head_block_number"]
+        head_block = wallet.api.info()["head_block_number"]
         block_to_check = head_block - 1
 
         # VERIFY

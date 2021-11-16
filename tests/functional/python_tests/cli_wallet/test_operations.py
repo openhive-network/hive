@@ -7,7 +7,7 @@ from test_tools.wallet import Wallet
 def test_delayed_voting(wallet: Wallet, funded_account : funded_account_info, creator : Account):
   account = funded_account.account
   def count_votes():
-    dv = [int(item['val']) for item in wallet.api.get_account( account_name=account.name )['result']['delayed_votes']]
+    dv = [int(item['val']) for item in wallet.api.get_account( account_name=account.name )['delayed_votes']]
     return sum(dv)
 
   votes_before = count_votes()
@@ -24,7 +24,7 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
   AMOUNT_TO_SELL_2 = Asset.Tbd(10)
   MIN_TO_RECEIVE_2 = Asset.Test(1000)
 
-  result_before = wallet.api.get_open_orders(accountname=user.name)['result']
+  result_before = wallet.api.get_open_orders(accountname=user.name)
   assert len(result_before) == 0
 
   logger.info( f"testing buy order: {AMOUNT_TO_SELL_1} for {MIN_TO_RECEIVE_1} created by user {user.name}" )
@@ -36,7 +36,7 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
     fill_or_kill=False, 
     expiration=9999
   )
-  result_sell = wallet.api.get_open_orders(accountname=user.name)['result']
+  result_sell = wallet.api.get_open_orders(accountname=user.name)
   assert len(result_sell) == 1
   assert result_sell[0]['orderid'] == 1
   assert result_sell[0]['seller'] == user.name
@@ -54,7 +54,7 @@ def test_get_open_orders(wallet : Wallet, funded_account : funded_account_info):
     fill_or_kill=False, 
     expiration=9999
   )
-  result_buy = wallet.api.get_open_orders(accountname=user.name)['result']
+  result_buy = wallet.api.get_open_orders(accountname=user.name)
   assert len(result_buy) == 2
   assert result_buy[1]['orderid'] == 2
   assert result_buy[1]['seller'] == user.name
@@ -69,7 +69,7 @@ def test_create_recurent_transfer(wallet : Wallet, funded_account : funded_accou
   RECURRENCE=24
   EXECUTIONS=6
 
-  recurrent_transfers_before_count = len(wallet.api.find_recurrent_transfers(from_=creator.name)['result'])
+  recurrent_transfers_before_count = len(wallet.api.find_recurrent_transfers(from_=creator.name))
   logger.info(f"recurrent_transfers: {recurrent_transfers_before_count}")
 
   wallet.api.recurrent_transfer(
@@ -81,7 +81,7 @@ def test_create_recurent_transfer(wallet : Wallet, funded_account : funded_accou
     executions=EXECUTIONS
   )
 
-  recurrent_transfers = wallet.api.find_recurrent_transfers(from_=creator.name)['result']
+  recurrent_transfers = wallet.api.find_recurrent_transfers(from_=creator.name)
   recurrent_transfers_after_count = len(recurrent_transfers)
   recurrent_transfer = recurrent_transfers[recurrent_transfers_after_count - 1]
   logger.info(f"recurrent_transfers_after_countL {recurrent_transfers_after_count}")

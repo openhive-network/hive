@@ -17,7 +17,7 @@ def test_comment(wallet):
 
     response = wallet.api.post_comment('alice', 'test-permlink', '', 'xyz', 'śćą', 'DEBUG    test_tools.wallet.World.InitNodeWallet0:wallet.py:462 Closed with 0 return code', '{}')
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
     assert _ops[0][0] == 'comment'
     assert _ops[0][1]['author'] == 'alice'
     assert _ops[0][1]['title'] == 'u015bu0107u0105'
@@ -25,7 +25,7 @@ def test_comment(wallet):
 
     response = wallet.api.post_comment('alice', 'test-permlink', '', 'xyz', 'TITLE NR 2', 'BODY NR 2', '{}')
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
 
     assert _ops[0][0] == 'comment'
     assert _ops[0][1]['author'] == 'alice'
@@ -34,7 +34,7 @@ def test_comment(wallet):
 
     response = wallet.api.post_comment('bob', 'bob-permlink', 'alice', 'test-permlink', 'TITLE NR 3', 'BODY NR 3', '{}')
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
 
     assert _ops[0][0] == 'comment'
     assert _ops[0][1]['author'] == 'bob'
@@ -44,7 +44,7 @@ def test_comment(wallet):
 
     response = wallet.api.vote('bob', 'bob', 'bob-permlink', 100)
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
     assert _ops[0][0] == 'vote'
     assert _ops[0][1]['voter'] == 'bob'
     assert _ops[0][1]['author'] == 'bob'
@@ -52,7 +52,7 @@ def test_comment(wallet):
     assert _ops[0][1]['weight'] == 10000
 
     response = wallet.api.decline_voting_rights('alice', True)
-    _ops = response['result']['operations']
+    _ops = response['operations']
 
     assert _ops[0][0] == 'decline_voting_rights'
     assert _ops[0][1]['account'] == 'alice'

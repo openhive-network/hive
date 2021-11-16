@@ -16,9 +16,7 @@ def test_escrow(wallet):
 
     wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol'])
     assert len(_result) == 3
 
     _alice = _result[0]
@@ -35,9 +33,7 @@ def test_escrow(wallet):
 
     wallet.api.escrow_transfer('alice', 'bob', 'carol', 99, Asset.Tbd(1), Asset.Test(2), Asset.Tbd(5), '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol'])
     assert len(_result) == 3
 
     _alice = _result[0]
@@ -56,9 +52,7 @@ def test_escrow(wallet):
 
     wallet.api.escrow_approve('alice', 'bob', 'carol', 'carol', 99, True)
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol'])
     assert len(_result) == 3
 
     _alice = _result[0]
@@ -75,9 +69,7 @@ def test_escrow(wallet):
 
     wallet.api.escrow_approve('alice', 'bob', 'carol', 'bob', 99, True)
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol'])
     assert len(_result) == 3
 
     _alice = _result[0]
@@ -94,9 +86,7 @@ def test_escrow(wallet):
 
     wallet.api.escrow_dispute('alice', 'bob', 'carol', 'alice', 99)
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol'])
     assert len(_result) == 3
 
     _alice = _result[0]
@@ -113,9 +103,7 @@ def test_escrow(wallet):
 
     wallet.api.escrow_release('alice', 'bob', 'carol', 'carol', 'bob', 99, Asset.Tbd(1), Asset.Test(2))
 
-    response = wallet.api.get_accounts(['alice', 'bob', 'carol'])
-
-    _result = response['result']
+    _result = wallet.api.get_accounts(['alice', 'bob', 'carol'])
     assert len(_result) == 3
 
     _alice = _result[0]

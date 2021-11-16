@@ -5,38 +5,28 @@ def test_witness(wallet):
 
     wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
 
-    response = wallet.api.get_active_witnesses()
-
-    _result = response['result']
+    _result = wallet.api.get_active_witnesses()
     assert len(_result) > 1
     assert _result[0] == 'initminer'
     assert _result[1] == ''
 
-    response = wallet.api.list_witnesses('a', 4)
-
-    _result = response['result']
+    _result = wallet.api.list_witnesses('a', 4)
     assert len(_result) == 1
     assert _result[0] == 'initminer'
 
     wallet.api.update_witness('alice', 'http:\\url.html', 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', { 'account_creation_fee':'2789.030 TESTS', 'maximum_block_size' : 131072, 'hbd_interest_rate' : 1000 } )
 
-    response = wallet.api.get_active_witnesses()
-
-    _result = response['result']
+    _result = wallet.api.get_active_witnesses()
     assert len(_result) > 1
     assert _result[0] == 'initminer'
     assert _result[1] == ''
 
-    response = wallet.api.list_witnesses('a', 4)
-
-    _result = response['result']
+    _result = wallet.api.list_witnesses('a', 4)
     assert len(_result) == 2
     assert _result[0] == 'alice'
     assert _result[1] == 'initminer'
 
-    response = wallet.api.get_witness('alice')
-
-    _result = response['result']
+    _result = wallet.api.get_witness('alice')
     assert _result['owner'] == 'alice'
 
     _props = _result['props']
@@ -44,7 +34,7 @@ def test_witness(wallet):
 
     response = wallet.api.publish_feed('alice', {"base":"1.167 TBD", "quote":"1.111 TESTS"})
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
 
     assert _ops[0][0] == 'feed_publish'
 
@@ -54,7 +44,7 @@ def test_witness(wallet):
 
     response = wallet.api.vote_for_witness('initminer', 'alice', True)
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
 
     assert _ops[0][0] == 'account_witness_vote'
 
@@ -64,7 +54,7 @@ def test_witness(wallet):
 
     response = wallet.api.set_voting_proxy('alice', 'initminer')
 
-    _ops = response['result']['operations']
+    _ops = response['operations']
 
     assert _ops[0][0] == 'account_witness_proxy'
 

@@ -8,15 +8,15 @@ from test_tools import Asset
 
 def test_format_in_list_my_accounts(wallet):
     response = wallet.api.create_account('initminer', 'alice', '{}')
-    owner_key = response['result']['operations'][0][1]['owner']['key_auths'][0][0]
+    owner_key = response['operations'][0][1]['owner']['key_auths'][0][0]
 
     response = wallet.api.list_my_accounts([owner_key])
-    assert response['result'][0]['balance'] == Asset.Test(0)
-    assert response['result'][0]['savings_balance'] == Asset.Test(0)
+    assert response[0]['balance'] == Asset.Test(0)
+    assert response[0]['savings_balance'] == Asset.Test(0)
 
 
 def test_format_in_get_account(wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
 
     response = wallet.api.get_account('alice')
-    assert response['result']['hbd_balance'] == Asset.Tbd(0)
+    assert response['hbd_balance'] == Asset.Tbd(0)

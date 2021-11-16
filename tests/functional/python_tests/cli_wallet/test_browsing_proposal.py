@@ -67,7 +67,7 @@ def test_find_proposals(wallet : Wallet, creator : Account):
   [ inline_create_proposal( input_account=acc ) for acc in accounts ]
 
   for proposal_test_case in PROPOSAL_ID_TEST_SCHEME:
-    result = wallet.api.find_proposals(proposal_ids=proposal_test_case)["result"]
+    result = wallet.api.find_proposals(proposal_ids=proposal_test_case)
     assert len(result) == len(proposal_test_case), f"result: {result}"
     result_ids = [ item['id'] for item in result ]
     assert proposal_test_case == result_ids, f'expected: {proposal_test_case}\ngiven:{result_ids}'

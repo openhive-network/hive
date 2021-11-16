@@ -20,32 +20,24 @@ def test_delegate(node, wallet):
 
     wallet.api.delegate_vesting_shares('alice', 'bob', Asset.Vest(1.123456))
 
-    response = wallet.api.get_account('alice')
-
-    _result = response['result']
+    _result = wallet.api.get_account('alice')
     assert _result['delegated_vesting_shares'] == Asset.Vest(1.123456)
     assert _result['balance'] == Asset.Test(125)
     assert _result['hbd_balance'] == Asset.Tbd(100)
 
-    response = wallet.api.get_account('bob')
-
-    _result = response['result']
+    _result = wallet.api.get_account('bob')
     assert _result['received_vesting_shares'] == Asset.Vest(1.123456)
     assert _result['balance'] == Asset.Test(50)
     assert _result['hbd_balance'] == Asset.Tbd(0)
 
     wallet.api.delegate_vesting_shares_and_transfer('alice', 'bob', Asset.Vest(1), Asset.Tbd(6.666), 'watermelon')
 
-    response = wallet.api.get_account('alice')
-
-    _result = response['result']
+    _result = wallet.api.get_account('alice')
     assert _result['delegated_vesting_shares'] == Asset.Vest(1.123456)
     assert _result['balance'] == Asset.Test(125)
     assert _result['hbd_balance'] == Asset.Tbd(93.334)
 
-    response = wallet.api.get_account('bob')
-
-    _result = response['result']
+    _result = wallet.api.get_account('bob')
     assert _result['received_vesting_shares'] == Asset.Vest(1)
     assert _result['balance'] == Asset.Test(50)
     assert _result['hbd_balance'] == Asset.Tbd(6.666)
@@ -55,17 +47,13 @@ def test_delegate(node, wallet):
     logger.info('Waiting...')
     node.wait_number_of_blocks(1)
 
-    response = wallet.api.get_account('alice')
-
-    _result = response['result']
+    _result = wallet.api.get_account('alice')
     assert _result['delegated_vesting_shares'] == Asset.Vest(1.123456)
     assert _result['received_vesting_shares'] == Asset.Vest(0.1)
     assert _result['balance'] == Asset.Test(125)
     assert _result['hbd_balance'] == Asset.Tbd(93.334)
 
-    response = wallet.api.get_account('bob')
-
-    _result = response['result']
+    _result = wallet.api.get_account('bob')
     assert _result['delegated_vesting_shares'] == Asset.Vest(0.1)
     assert _result['received_vesting_shares'] == Asset.Vest(1)
     assert _result['balance'] == Asset.Test(50)
@@ -76,17 +64,13 @@ def test_delegate(node, wallet):
     logger.info('Waiting...')
     node.wait_number_of_blocks(1)
 
-    response = wallet.api.get_account('alice')
-
-    _result = response['result']
+    _result = wallet.api.get_account('alice')
     assert _result['delegated_vesting_shares'] == Asset.Vest(1.123456)
     assert _result['received_vesting_shares'] == Asset.Vest(0.1)
     assert _result['balance'] == Asset.Test(125)
     assert _result['hbd_balance'] == Asset.Tbd(99.889)
 
-    response = wallet.api.get_account('bob')
-
-    _result = response['result']
+    _result = wallet.api.get_account('bob')
     assert _result['delegated_vesting_shares'] == Asset.Vest(0.1)
     assert _result['received_vesting_shares'] == Asset.Vest(1)
     assert _result['balance'] == Asset.Test(50)

@@ -20,7 +20,7 @@ def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
 
 
 def check_account_history_duplicates(node, wallet):
-    last_irreversible_block = wallet.api.info()["result"]["last_irreversible_block_num"]
+    last_irreversible_block = wallet.api.info()["last_irreversible_block_num"]
     node_reward_operations = count_ops_by_type(node, 'producer_reward_operation', last_irreversible_block, limit=50)
     assert sum(i==1 for i in node_reward_operations.values()) == 50
 

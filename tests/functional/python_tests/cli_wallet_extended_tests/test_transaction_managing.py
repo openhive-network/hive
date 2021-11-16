@@ -1,7 +1,7 @@
 from test_tools import Account, logger, World, Asset
 import dateutil.parser as dp
 import datetime
-from utilities import result_of
+
 
 def test_transaction(wallet):
     wallet.api.create_account('initminer', 'carol', '{}')
@@ -11,25 +11,18 @@ def test_transaction(wallet):
         wallet.api.transfer('initminer', 'carol', Asset.Test(500), 'kiwi')
         wallet.api.transfer('initminer', 'carol', Asset.Tbd(50), 'orange')
 
-    trx_response = transaction.get_response()
-    _result_trx_response = trx_response['result']
+    _result_trx_response = transaction.get_response()
 
-    response = wallet.api.get_account('carol')
-
-    _result = response['result']
+    _result = wallet.api.get_account('carol')
     assert _result['balance'] == Asset.Test(0)
     assert _result['hbd_balance'] == Asset.Tbd(0)
     assert _result['vesting_shares'] == Asset.Vest(0)
 
-    response = wallet.api.serialize_transaction(_result_trx_response)
-
-    assert response['result'] != '00000000000000000000000000'
+    assert wallet.api.serialize_transaction(_result_trx_response) != '00000000000000000000000000'
 
     wallet.api.sign_transaction(_result_trx_response)
 
-    response = wallet.api.get_account('carol')
-
-    _result = response['result']
+    _result = wallet.api.get_account('carol')
     assert _result['balance'] == Asset.Test(500)
     assert _result['hbd_balance'] == Asset.Tbd(50)
     assert _result['vesting_shares'] != Asset.Vest(0)
@@ -40,7 +33,7 @@ def test_transaction(wallet):
 
     response = wallet.api.transfer_to_savings('initminer', 'carol', Asset.Test(0.007), 'plum')
 
-    _expiration = response['result']['expiration']
+    _expiration = response['expiration']
 
     parsed_t = dp.parse(_expiration)
     t_in_seconds = parsed_t.timestamp()
@@ -49,7 +42,7 @@ def test_transaction(wallet):
     _val = t_in_seconds - _before_seconds
     assert _val == 30 or _val == 31
 
-    assert result_of(wallet.api.set_transaction_expiration, 678) is None
+    assert wallet.api.set_transaction_expiration(678) is None
 
 
     _time = datetime.datetime.utcnow()
@@ -58,7 +51,7 @@ def test_transaction(wallet):
 
     response = wallet.api.transfer_to_savings('initminer', 'carol', Asset.Test(0.008), 'lemon')
 
-    _expiration = response['result']['expiration']
+    _expiration = response['expiration']
 
     parsed_t = dp.parse(_expiration)
     t_in_seconds = parsed_t.timestamp()

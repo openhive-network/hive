@@ -2,7 +2,7 @@
 # https://gitlab.syncad.com/hive/hive/-/issues/113
 
 from test_tools import Account, logger, Asset
-from utilities import result_of
+
 
 def test_getting_key_references_of_claimed_created_account(node, wallet):
     logger.info('Waiting until initminer will be able to create account...')
@@ -15,5 +15,4 @@ def test_getting_key_references_of_claimed_created_account(node, wallet):
         'initminer', account.name, Asset.Test(0), 'memo', '{}', key, key, key, key
     )
 
-    assert result_of(node.api.condenser.get_key_references, [account.public_key]) == [[account.name]]
-
+    assert node.api.condenser.get_key_references([account.public_key])['result'] == [[account.name]]
