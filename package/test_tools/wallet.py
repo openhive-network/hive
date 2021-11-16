@@ -229,11 +229,11 @@ class Wallet(ScopedObject):
         def get_account(self, account_name):
             return self.__send('get_account', account_name=account_name)
 
-        def get_accounts(self, account_names):
-            return self.__send('get_accounts', account_names=account_names)
-
         def get_account_history(self, account, from_, limit):
             return self.__send('get_account_history', account=account, from_=from_, limit=limit)
+
+        def get_accounts(self, account_names):
+            return self.__send('get_accounts', account_names=account_names)
 
         def get_active_witnesses(self):
             return self.__send('get_active_witnesses')
