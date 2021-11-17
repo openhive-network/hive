@@ -10,7 +10,7 @@ def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
     count = {}
     for i in range(start, start-limit, -1):
         response = node.api.account_history.get_ops_in_block(block_num=i, only_virtual=False)
-        ops = response["result"]["ops"]
+        ops = response["ops"]
         count[i] = 0
         for op in ops:
             this_op_type = op["op"]["type"]

@@ -28,7 +28,7 @@ def test_enum_virtual_ops(world_with_witnesses):
 
 def assert_only_virtual_operations(node, block_to_check):
     response = node.api.account_history.enum_virtual_ops(block_range_begin=block_to_check, block_range_end=block_to_check+1, include_reversible=True)
-    ops = response["result"]["ops"]
+    ops = response["ops"]
     logger.info(str([op["op"]["type"] for op in ops]) + f" in block  {block_to_check}")
 
     for op in ops:
