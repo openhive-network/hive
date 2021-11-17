@@ -287,6 +287,20 @@ def test_power_up_delegator(wallet: Wallet):
     assert rc0 == rc1
 
 
+def test_multidelegation(wallet: Wallet):
+    accounts = []
+    number_of_accounts_in_one_transaction = 100
+    number_of_transactions = 1
+    for number_of_transaction in range(number_of_transactions):
+        with wallet.in_single_transaction():
+            for account_number in range(number_of_accounts_in_one_transaction):
+                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
+                accounts.append(f'account-{account_number}')
+
+    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(1000))
+    wallet.api.delegate_rc(accounts[0], accounts[1:number_of_accounts_in_one_transaction], 5)
+
+
 def rc_account_info(account, name_of_data, wallet):
     data_set = wallet.api.find_rc_accounts([account])['result'][0]
     specyfic_data = data_set[name_of_data]
