@@ -25,7 +25,10 @@ namespace fc { namespace http {
       typedef typename std::decay<T>::type connection_ptr;
 
       websocket_connection_impl( bool is_server, connection_ptr con )
-        : _is_server( is_server ), _ws_connection( con ) {}
+        : _ws_connection( con )
+      {
+        websocket_connection::_is_server = is_server;
+      }
 
       virtual ~websocket_connection_impl() {}
 
@@ -42,7 +45,7 @@ namespace fc { namespace http {
 
       bool is_server()const override
       {
-        return _is_server;
+        return websocket_connection::_is_server;
       }
 
       connection_ptr _ws_connection;

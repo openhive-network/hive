@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
       fc::http::websocket_server server;
 
       server.on_connection( [&]( const fc::http::connection_ptr& c ){
-        s_conn = c;
+        s_conn = std::static_pointer_cast< fc::http::websocket_connection >( c );
         s_conn->on_message_handler( [&](const std::string& s){
           s_conn->send_message("echo: " + s);
         } );
@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
       server.start_accept();
 
       std::string echo;
-      c_conn = client.connect( "ws://localhost:8090" );
+      c_conn = std::static_pointer_cast< fc::http::websocket_connection >( client.connect( "ws://localhost:8090" ) );
       c_conn->on_message_handler( [&](const std::string& s){
         echo = s;
       } );
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
       fc::usleep( fc::seconds(1) );
       BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );
 
-      c_conn = client.connect( "ws://localhost:8090" );
+      c_conn = std::static_pointer_cast< fc::http::websocket_connection >( client.connect( "ws://localhost:8090" ) );
       c_conn->on_message_handler( [&](const std::string& s){
         echo = s;
       } );

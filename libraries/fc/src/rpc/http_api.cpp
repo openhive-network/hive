@@ -1,5 +1,5 @@
 
-#include <fc/rpc/network_api_connection.hpp>
+#include <fc/rpc/http_api.hpp>
 #include <fc/network/http/connection.hpp>
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
@@ -7,15 +7,17 @@
 
 namespace fc { namespace rpc {
 
-network_api_connection::~network_api_connection()
+http_api_connection::~http_api_connection()
 {
 }
 
-network_api_connection::network_api_connection( fc::http::connection& c )
+http_api_connection::http_api_connection( fc::http::http_connection& c )
    : _connection(c)
 {
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
+      // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
+      // it should be consolidated into one place instead of copy-pasted
       FC_ASSERT( args.size() == 3 && args[2].is_array() );
       api_id_type api_id;
       if( args[0].is_string() )
@@ -28,8 +30,6 @@ network_api_connection::network_api_connection( fc::http::connection& c )
       else
          api_id = args[0].as_uint64();
 
-      idump( (args) );
-
       return this->receive_call(
          api_id,
          args[1].as_string(),
@@ -39,68 +39,60 @@ network_api_connection::network_api_connection( fc::http::connection& c )
    _rpc_state.add_method( "notice", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 2 && args[1].is_array() );
-      this->receive_notice( args[0].as_uint64(), args[1].get_array() );
+      this->receive_notice(
+         args[0].as_uint64(),
+         args[1].get_array() );
       return variant();
    } );
 
    _rpc_state.add_method( "callback", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 2 && args[1].is_array() );
-      this->receive_callback( args[0].as_uint64(), args[1].get_array() );
+      this->receive_callback(
+         args[0].as_uint64(),
+         args[1].get_array() );
       return variant();
    } );
 
-   _rpc_state.on_unhandled( [&]( const std::string& method_name, const variants& args )
-   {
-      return this->receive_call( 0, method_name, args );
-   } );
-
-   _connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
+   _connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg); } );
    _connection.closed.connect( [this](){ closed(); } );
 }
 
-variant network_api_connection::send_call(
+variant http_api_connection::send_call(
    api_id_type api_id,
    string method_name,
    variants args /* = variants() */ )
 {
-   idump( (api_id)(method_name)(args) );
-   auto request = _rpc_state.start_remote_call(  "call", {api_id, std::move(method_name), std::move(args) } );
-   idump( (request) );
-   _connection.send_message( fc::json::to_string(request) );
-   return _rpc_state.wait_for_response( *request.id );
+   // HTTP has no way to do this, so do nothing
+   return variant();
 }
 
-variant network_api_connection::send_call(
+variant http_api_connection::send_call(
    string api_name,
    string method_name,
-   variants args )
+   variants args /* = variants() */ )
 {
-   auto request = _rpc_state.start_remote_call(  "call", {std::move(api_name), std::move(method_name), std::move(args) } );
-   _connection.send_message( fc::json::to_string(request) );
-   return _rpc_state.wait_for_response( *request.id );
+   // HTTP has no way to do this, so do nothing
+   return variant();
 }
 
-variant network_api_connection::send_callback(
+variant http_api_connection::send_callback(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   auto request = _rpc_state.start_remote_call( "callback", {callback_id, std::move(args) } );
-   _connection.send_message( fc::json::to_string(request) );
-   return _rpc_state.wait_for_response( *request.id );
+   // HTTP has no way to do this, so do nothing
+   return variant();
 }
 
-void network_api_connection::send_notice(
+void http_api_connection::send_notice(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   fc::rpc::request req{ "2.0", optional<uint64_t>(), "notice", {callback_id, std::move(args)}};
-   _connection.send_message( fc::json::to_string(req) );
+   // HTTP has no way to do this, so do nothing
+   return;
 }
 
-std::string network_api_connection::on_message(
-   const std::string& message,
-   bool send_message /* = true */ )
+std::string http_api_connection::on_message( const std::string& message )
 {
    wdump((message));
    try
@@ -133,8 +125,6 @@ std::string network_api_connection::on_message(
                if( call.id )
                {
                   auto reply = fc::json::to_string( fc::rpc::response( *call.id, result ) );
-                  if( send_message )
-                     _connection.send_message( reply );
                   return reply;
                }
             }
@@ -150,8 +140,6 @@ std::string network_api_connection::on_message(
          if( optexcept ) {
 
                auto reply = fc::json::to_string( fc::rpc::response( *call.id, fc::rpc::error_object{ 1, optexcept->to_detail_string(), fc::variant(*optexcept)}  ) );
-               if( send_message )
-                  _connection.send_message( reply );
 
                return reply;
          }

@@ -203,7 +203,7 @@ set( fc_sources
      src/rpc/json_connection.cpp
      src/rpc/state.cpp
      src/rpc/bstate.cpp
-     src/rpc/network_api_connection.cpp
+     src/rpc/http_api.cpp
      src/rpc/websocket_api.cpp
      src/log/log_message.cpp
      src/log/logger.cpp

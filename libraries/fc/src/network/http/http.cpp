@@ -25,14 +25,19 @@ namespace fc { namespace http {
       typedef typename std::decay<T>::type connection_ptr;
 
       http_connection_impl( bool is_server, connection_ptr con )
-        : _is_server( is_server ), _http_connection( con ) {}
+        : _http_connection( con )
+      {
+        http_connection::_is_server = is_server;
+      }
 
       virtual ~http_connection_impl() {}
 
       virtual std::string send_message( const std::string& message )override
       {
-        FC_ASSERT( !is_server, "Server cannot send messages" );
+        FC_ASSERT( !is_server(), "Server cannot send messages" );
         idump((message));
+
+        return ""; // TODO: Response
       }
       virtual void close( int64_t code, const std::string& reason )override
       {
@@ -41,7 +46,7 @@ namespace fc { namespace http {
 
       bool is_server()const override
       {
-        return _is_server;
+        return http_connection::_is_server;
       }
 
       connection_ptr _http_connection;

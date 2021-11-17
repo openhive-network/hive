@@ -78,11 +78,6 @@ namespace
     exit_promise->set_value(signal);
   }
 
-  std::shared_ptr< fc::http::client > get_client_type( const std::string& _url_str, const std::string& server_auth = std::string{} )
-  {
-    fc::url _url{ url_str };
-  }
-
   std::shared_ptr< fc::api_connection > get_api_connection( const fc::url& _url, fc::http::connection_ptr& con )
   {
     if( _url.proto().substr( 0, 2 ) == "ws" )
