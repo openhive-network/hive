@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Wallet
+from test_tools import Asset, Wallet
 from test_tools.exceptions import CommunicationError
 
 
@@ -20,4 +20,4 @@ def test_if_raise_when_parameters_are_bad(wallet):
 def test_if_raise_when_operation_is_invalid(wallet):
     with pytest.raises(CommunicationError):
         # Operation is invalid because account "alice" doesn't exists
-        wallet.api.transfer('initminer', 'alice', '1.000 TESTS', 'memo')
+        wallet.api.transfer('initminer', 'alice', Asset.Test(1), 'memo')
