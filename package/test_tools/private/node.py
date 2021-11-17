@@ -7,7 +7,7 @@ import signal
 import subprocess
 from threading import Event
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 import warnings
 import weakref
 
@@ -415,6 +415,7 @@ class Node:
             stop_at_block=None,
             exit_before_synchronization: bool = False,
             wait_for_live=None,
+            arguments: Union[List[str], Tuple[str, ...]] = (),
             environment_variables: Optional[Dict] = None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
             time_offset=None,
@@ -423,6 +424,8 @@ class Node:
         :param wait_for_live: Stops execution until node will generate or receive blocks.
         :param timeout: If wait_for_live is set to True, this parameter sets how long waiting can take. When
                         timeout is reached, TimeoutError exception is thrown.
+        :param arguments: Additional arguments passed to node during running. Should be separated in the same way as in
+                          `subprocess.run` function.
         :param environment_variables: Additional environment variables passed to node run environment. If variable name
                                       is already defined, its value will be overwritten with one provided by this
                                       parameter.
@@ -450,7 +453,7 @@ class Node:
         if time_offset is not None:
             log_message += f' with time offset {time_offset}'
 
-        additional_arguments = []
+        additional_arguments = [*arguments]
         if load_snapshot_from is not None:
             self.__handle_loading_snapshot(load_snapshot_from, additional_arguments)
             log_message += ', loading snapshot'
