@@ -283,51 +283,6 @@ def test_wrong_sign_in_transaction(wallet: Wallet):
         wallet.api.sign_transaction(x['result'])
 
 
-def test_decrease_of_delegation(node, wallet: Wallet):
-# Probably not to test in API, problem with mana regeneration
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for number_of_transaction in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
-
-    wallet.api.transfer_to_vesting('initminer', accounts[9], Asset.Test(10000000))
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
-
-    rc0 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
-    rc1 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    rc2 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
-    state1 = wallet.api.get_account(accounts[0])
-
-    # Zużywanie vestów przez Accounts[0]
-    accounts_vest = []
-    number_of_accounts_in_one_transaction = 200
-    with wallet.in_single_transaction():
-        for account_number in range(100, number_of_accounts_in_one_transaction):
-            wallet.api.create_account(accounts[0], f'accountvest-{account_number}', '{}')
-            accounts_vest.append(f'account-{account_number}')
-
-    rc7 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    rc8 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
-
-
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
-    rc3 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    rc4 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
-    state2 = wallet.api.get_account(accounts[0])
-    node.wait_number_of_blocks(100)
-    state3 = wallet.api.get_account(accounts[0])
-    rc5 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    rc6 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
-    wallet.api.claim_account_creation()
-    #sprawdz regeneracje przed delegacją, po wydelegowaniu i po odebraniu delegacji , zórb ine konto z dużą ilością vest
-    # wallet.api.claim_account_creation()
-
-
 def test_minus_rc_delegation(wallet: Wallet):
     accounts = []
     number_of_accounts_in_one_transaction = 10
