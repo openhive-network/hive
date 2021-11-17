@@ -161,7 +161,7 @@ def test_set_transaction_expiration(world):
 
     response = node.api.condenser.get_block(23)
     time_format = '%Y-%m-%dT%H:%M:%S'
-    last_block_time_point = datetime.strptime(response['result']['timestamp'], time_format).replace(tzinfo=timezone.utc)
+    last_block_time_point = datetime.strptime(response['timestamp'], time_format).replace(tzinfo=timezone.utc)
 
     wallet = Wallet(attach_to=node)
 

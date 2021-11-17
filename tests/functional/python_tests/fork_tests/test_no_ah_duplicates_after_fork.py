@@ -31,12 +31,12 @@ def trigger_fork(alpha_net, beta_net):
     logger.info(f'Disconnected {alpha_net} and {beta_net}')
 
     # wait until irreversible block number increases in both subnetworks
-    irreversible_block_number_during_disconnection = alpha_node.api.database.get_dynamic_global_properties()["result"]["last_irreversible_block_num"]
+    irreversible_block_number_during_disconnection = alpha_node.api.database.get_dynamic_global_properties()["last_irreversible_block_num"]
     logger.info(f'irreversible_block_number_during_disconnection: {irreversible_block_number_during_disconnection}')
     logger.info('Waiting until irreversible block number increases in both subnetworks')
     for node in [alpha_node, beta_node]:
         while True:
-            current_irreversible_block = node.api.database.get_dynamic_global_properties()["result"]["last_irreversible_block_num"]
+            current_irreversible_block = node.api.database.get_dynamic_global_properties()["last_irreversible_block_num"]
             logger.info(f'Irreversible in {node}: {current_irreversible_block}')
             if current_irreversible_block > irreversible_block_number_during_disconnection:
                 break

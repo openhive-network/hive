@@ -15,4 +15,4 @@ def test_getting_key_references_of_claimed_created_account(node, wallet):
         'initminer', account.name, Asset.Test(0), 'memo', '{}', key, key, key, key
     )
 
-    assert node.api.condenser.get_key_references([account.public_key])['result'] == [[account.name]]
+    assert node.api.condenser.get_key_references([account.public_key]) == [[account.name]]

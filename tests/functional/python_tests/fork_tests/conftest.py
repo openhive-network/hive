@@ -74,7 +74,7 @@ def world_with_witnesses():
 
         logger.info("Witness state after voting")
         response = api_node.api.database.list_witnesses(start=0, limit=100, order='by_name')
-        active_witnesses = response["result"]["witnesses"]
+        active_witnesses = response["witnesses"]
         active_witnesses_names = [witness["owner"] for witness in active_witnesses]
         logger.info(active_witnesses_names)
         assert len(active_witnesses_names) == 21
