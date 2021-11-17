@@ -235,35 +235,6 @@ def test_reject_of_delegation_of_delegated_rc(wallet: Wallet):
         wallet.api.delegate_rc(accounts[1], [accounts[2]], 50)
 
 
-def test_back_of_waste_rc(wallet: Wallet):
-#Weird situation during delegate 0, how long is back of RC, Probably test is impossible in API,
-# problem with mana regeneration
-    accounts = []
-    number_of_accounts = 10
-
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
-
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(1000))
-    rc1 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 10000)
-    rc2 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    assert rc1 - 10000 -3 == rc2
-    assert rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana'] == 10000
-
-    wallet.api.post_comment(accounts[1], 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
-    wallet.api.vote(accounts[1], accounts[1], 'hello-world', 99)
-    assert rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana'] == 10000 - 6
-
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 0)
-    assert rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana'] == 0
-    rc3 = rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']
-    assert rc3 == rc1
-
-
 def test_wrong_sign_in_transaction(wallet: Wallet):
     accounts = []
     number_of_accounts_in_one_transaction = 10
