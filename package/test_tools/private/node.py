@@ -250,7 +250,7 @@ class Node:
 
     def get_last_block_number(self):
         response = self.api.database.get_dynamic_global_properties()
-        return response['result']['head_block_number']
+        return response['head_block_number']
 
     def _wait_for_p2p_plugin_start(self, timeout=10):
         wait_for(self.__is_p2p_plugin_started, timeout=timeout,
@@ -260,7 +260,7 @@ class Node:
         wait_for(self.__is_live, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} live (to start produce or receive blocks)')
 
-    def send(self, method, params=None, jsonrpc='2.0', id_=1):
+    def send(self, method, params=None, jsonrpc='2.0', id_=1, *, only_result: bool = True):
         if self.config.webserver_http_endpoint is None:
             raise Exception('Webserver http endpoint is unknown')
 
@@ -271,7 +271,7 @@ class Node:
         message = NodeMessage(method, params, jsonrpc, id_).as_json()
         response = communication.request(endpoint, message)
 
-        return response
+        return response['result'] if only_result else response
 
     def __wait_for_http_listening(self, timeout=10):
         wait_for(self.__is_http_listening, timeout=timeout,
@@ -279,7 +279,7 @@ class Node:
 
     def get_id(self):
         response = self.api.network_node.get_info()
-        return response['result']['node_id']
+        return response['node_id']
 
     def set_allowed_nodes(self, nodes):
         return self.api.network_node.set_allowed_peers(allowed_peers=[node.get_id() for node in nodes])

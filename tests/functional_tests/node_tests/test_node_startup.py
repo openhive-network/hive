@@ -105,7 +105,7 @@ def make_transaction_for_test(node):
 
 def assert_that_transaction_for_test_has_effect(node):
     response = node.api.database.find_accounts(accounts=['alice'], delayed_votes_active=False)
-    assert response['result']['accounts'][0]['name'] == 'alice'
+    assert response['accounts'][0]['name'] == 'alice'
 
 
 def generate_blocks(node, number_of_blocks):

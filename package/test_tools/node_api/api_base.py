@@ -8,13 +8,14 @@ class NodeApiCallProxy:
             'id': id_,
         }
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, only_result: bool = True, **kwargs):
         self.__message['params'] = self._prepare_params(*args, **kwargs)
         return self.__node.send(
             self.__message['method'],
             self.__message['params'],
             jsonrpc=self.__message['jsonrpc'],
-            id_=self.__message['id']
+            id_=self.__message['id'],
+            only_result=only_result,
         )
 
     @staticmethod
