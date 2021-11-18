@@ -32,7 +32,7 @@
   { fc::time_point current_time = fc::time_point::now(); \
     fc::microseconds delay = current_time - start_time; \
     if (delay > log_threshold) { \
-      double delay_seconds = (delay.count() / 1000) / 1000.0; \
+      double delay_seconds = double(int64_t(delay.count() / 1000)) / 1000.0; \
       std::ostringstream os; \
       os << std::fixed << std::setprecision(3) << delay_seconds; \
       ulog(msg ": ${delay_seconds} s", ("delay_seconds", os.str())); \
