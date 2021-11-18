@@ -430,6 +430,9 @@ class Node:
                                       is already defined, its value will be overwritten with one provided by this
                                       parameter.
         """
+        # pylint: disable=too-many-branches
+        # This pylint warning is right, but this refactor has low priority. Will be done later...
+
         assert timeout >= 0
         deadline = time.time() + timeout
 
@@ -462,12 +465,14 @@ class Node:
             self.__handle_replay(replay_from, stop_at_block, additional_arguments)
             log_message += ', replaying'
 
-        if exit_before_synchronization:
+        if exit_before_synchronization or '--exit-after-replay' in additional_arguments:
             if wait_for_live is not None:
                 raise RuntimeError('wait_for_live can\'t be used with exit_before_synchronization')
 
             wait_for_live = False
-            additional_arguments.append('--exit-before-sync')
+
+            if exit_before_synchronization:
+                additional_arguments.append('--exit-before-sync')
 
             self.__logger.info(f'{log_message} and waiting for close...')
         elif wait_for_live is None:
@@ -476,6 +481,7 @@ class Node:
         else:
             self.__logger.info(f'{log_message} and NOT waiting for live...')
 
+        exit_before_synchronization = exit_before_synchronization or '--exit-after-replay' in additional_arguments
         self.__run_process(
             blocking=exit_before_synchronization,
             with_arguments=additional_arguments,
