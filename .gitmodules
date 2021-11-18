@@ -3,11 +3,11 @@
 	url = https://github.com/cryptonomex/secp256k1-zkp.git
 [submodule "tests/tests_api"]
 	path = tests/tests_api
-	url = https://gitlab.syncad.com/hive/tests_api.git
+	url = ../tests_api.git
 	branch = mi_tests_import
 [submodule "tests/test_tools"]
 	path = tests/test_tools
-	url = https://gitlab.syncad.com/hive/test-tools.git
+	url = ../test-tools.git
 [submodule "libraries/fc/vendor/websocketpp"]
 	path = libraries/fc/vendor/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
