@@ -47,6 +47,15 @@ def test_exit_before_sync(world : World, block_log : Path):
   assert not init.is_running()
 
 
+def test_bug_exit_after_replay_no_exception(world: World):
+  node = world.create_init_node()
+  node.run()
+
+  with open(node.directory / 'stderr.txt') as file:
+    stderr = file.read()
+
+  warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
+  assert not warning in stderr
 
 
 def test_bug_exit_after_replay_exception(world: World, block_log: Path):
