@@ -1,6 +1,12 @@
-from test_tools import World
+from os import remove
+from os.path import join
 from pathlib import Path
+from shutil import rmtree
+
+from test_tools import World
+
 from .conftest import BLOCK_COUNT
+
 
 def test_dump_config(world : World):
   node = world.create_init_node('init_0')
