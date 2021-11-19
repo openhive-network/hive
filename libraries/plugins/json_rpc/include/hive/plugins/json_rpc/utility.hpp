@@ -84,6 +84,20 @@ BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _a
 #define DEFINE_LOCKLESS_APIS( class, METHODS ) \
   BOOST_PP_SEQ_FOR_EACH( DEFINE_LOCKLESS_API_HELPER, class, METHODS )
 
+#define LOG_DELAY_EX(start_time, log_threshold, msg, e) \
+  { fc::time_point current_time = fc::time_point::now(); \
+    fc::microseconds delay = current_time - start_time; \
+    if (delay > log_threshold) { \
+      double delay_seconds = (static_cast<double>(delay.count()) / 1000) / 1000.0; \
+      std::ostringstream os; \
+      os << std::fixed << std::setprecision(3) << delay_seconds; \
+      ulog( msg ": ${delay_seconds} s", ("delay_seconds", os.str())e ); \
+      } \
+  }
+
+#define LOG_DELAY(start_time, log_threshold, msg) \
+  LOG_DELAY_EX(start_time, log_threshold, msg,)
+
 namespace hive { namespace plugins { namespace json_rpc {
 
 struct void_type {};

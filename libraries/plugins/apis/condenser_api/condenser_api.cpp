@@ -1,6 +1,8 @@
 #include <hive/plugins/condenser_api/condenser_api.hpp>
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 
+#include <hive/plugins/json_rpc/utility.hpp>
+
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
@@ -27,17 +29,6 @@
   FC_ASSERT( args.size() == s, "Expected #s argument(s), was ${n}", ("n", args.size()) );
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
-
-#define LOG_DELAY(start_time, log_threshold, msg, e) \
-  { fc::time_point current_time = fc::time_point::now(); \
-    fc::microseconds delay = current_time - start_time; \
-    if (delay > log_threshold) { \
-      double delay_seconds = double(int64_t(delay.count() / 1000)) / 1000.0; \
-      std::ostringstream os; \
-      os << std::fixed << std::setprecision(3) << delay_seconds; \
-      ulog(msg ": ${delay_seconds} s",("delay_seconds",os.str())e); \
-      } \
-  }
 
 namespace hive { namespace plugins { namespace condenser_api {
 
@@ -935,7 +926,7 @@ namespace detail
       _callback_expirations[ trx.expiration ].push_back( txid );
     }
 
-    LOG_DELAY(api_start_time, fc::seconds(1), "Excessive delay to setup callback",);
+    LOG_DELAY(api_start_time, fc::seconds(1), "Excessive delay to setup callback");
     fc::time_point callback_setup_time = fc::time_point::now();
 
     try
@@ -952,7 +943,7 @@ namespace detail
     }
     catch( fc::exception& e )
     {
-      LOG_DELAY(callback_setup_time, fc::seconds(1), "Exccesive delay to validate & broadcast trx ${e}", (e) );
+      LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Exccesive delay to validate & broadcast trx ${e}", (e) );
 
       boost::lock_guard< boost::mutex > guard( _mtx );
       // The callback may have been cleared in the meantine, so we need to check for existence.
@@ -963,7 +954,7 @@ namespace detail
     }
     catch( ... )
     {
-      LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx",);
+      LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
 
       boost::lock_guard< boost::mutex > guard( _mtx );
       // The callback may have been cleared in the meantine, so we need to check for existence.
@@ -974,7 +965,7 @@ namespace detail
         std::current_exception() );
     }
 
-    LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx",);
+    LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
     return p.get_future().get();
   }
 
