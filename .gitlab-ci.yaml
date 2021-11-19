@@ -7,9 +7,12 @@ variables:
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
-  RUNTIME_IMAGE_TAG: "@sha256:0923dee91073e21a99e95a2f5e73b167775f552089e18e2de5c2818e8f9c8006"
-  BUILDER_IMAGE_TAG: "@sha256:d3d1a51a198b34ce451b039d381e689b852c1666a9fb4f86b13ddf173b67ee53"
-  TEST_IMAGE_TAG: "@sha256:dc3376d1a48c5f5af4df066c25053e03480caab79972d4c13153f48bbecba3da"
+  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04
+  RUNTIME_IMAGE_TAG: "@sha256:06023cfc269a051b1bd45178e0ef0639fc561172e73d921eee53cc8532ab2279"
+  #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04
+  BUILDER_IMAGE_TAG: "@sha256:089f5fc0f2f92635dc5b20f3ccdf31240909255e6d2895692f64421ce94da735"
+  #points registry.gitlab.syncad.com/hive/hive/test:ubuntu-20.04
+  TEST_IMAGE_TAG: "@sha256:547fe256a28a61a334a88b05623c8adeb25ff9e42361362162ed3954ee11fb5a"
 
 testnet_node_build:
   stage: build
