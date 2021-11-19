@@ -39,3 +39,30 @@ def test_exit_before_sync(world : World, block_log : Path):
   remove( join( str(init.directory), 'blockchain', 'shared_memory.bin' ) )
   init.run(load_snapshot_from=snap, exit_before_synchronization=True)
   assert not init.is_running()
+
+
+def test_exit_after_replay_behavior(world: World, block_log: Path):
+  net = world.create_network()
+
+  init = net.create_api_node(name='node_1')
+  half_way = int(BLOCK_COUNT / 2.0)
+
+  init.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
+  assert not init.is_running()
+
+  background_node = net.create_init_node()
+  background_node.run(replay_from=block_log, wait_for_live=True)
+  background_node.wait_number_of_blocks(2)
+
+  rmtree( join( str(init.directory), 'blockchain' ), ignore_errors=True)
+  init.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
+  assert not init.is_running()
+
+  background_node.close()
+
+  snap = init.dump_snapshot(close=True)
+  assert not init.is_running()
+
+  remove( join( str(init.directory), 'blockchain', 'shared_memory.bin' ) )
+  init.run(load_snapshot_from=snap, with_arguments=['--exit-after-replay'])
+  assert not init.is_running()
