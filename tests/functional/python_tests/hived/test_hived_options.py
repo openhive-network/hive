@@ -13,6 +13,7 @@ def test_dump_config(world : World):
 
   assert node.config.__dict__ == old_config
 
+
 def test_exit_before_sync(world : World, block_log : Path):
   net = world.create_network()
 
