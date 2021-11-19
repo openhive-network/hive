@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y 
 FROM runtime AS builder-tester-base
 
 RUN apt-get update && \
-    apt-get install -y git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libicu66 libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs && \
+    apt-get install -y git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libicu66 libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates && \
     apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
