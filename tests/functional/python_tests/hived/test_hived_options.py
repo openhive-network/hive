@@ -47,6 +47,23 @@ def test_exit_before_sync(world : World, block_log : Path):
   assert not init.is_running()
 
 
+
+
+def test_bug_exit_after_replay_exception(world: World, block_log: Path):
+  net = world.create_network()
+
+  init = net.create_api_node(name='node_1')
+  half_way = int(BLOCK_COUNT / 2.0)
+
+  init.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
+
+  with open(init.directory / 'stderr.txt') as file:
+    stderr = file.read()
+
+  warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
+  assert  warning in stderr
+
+
 def test_exit_after_replay_behavior(world: World, block_log: Path):
   net = world.create_network()
 
