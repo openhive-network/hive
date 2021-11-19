@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from test_tools import World
-from .conftest import BLOCK_COUNT
 
 def test_snapshots_content_binary(world : World, block_log : Path):
   node = [None]
@@ -23,7 +22,7 @@ def test_snapshots_content_binary(world : World, block_log : Path):
   assert snap[1] == snap[2]
 
 
-def test_snapshots_existing_dir(world : World, block_log : Path):
+def test_snapshots_existing_dir(world : World, block_log : Path, block_log_length: int):
   def clear_state(node):
     from shutil import rmtree
     from os.path import join as join_paths
@@ -40,7 +39,7 @@ def test_snapshots_existing_dir(world : World, block_log : Path):
 
   clear_state(node)
   node.run(load_snapshot_from=snap_0)
-  node.wait_for_block_with_number(number=BLOCK_COUNT + 5)
+  node.wait_for_block_with_number(block_log_length + 5)
   node.close()
 
   node.dump_snapshot(close=True)
@@ -59,5 +58,5 @@ def test_snapshots_existing_dir(world : World, block_log : Path):
   clear_state(node)
   node.run(load_snapshot_from=snap_0)
 
-  node.wait_for_block_with_number(number=BLOCK_COUNT + 7)
+  node.wait_for_block_with_number(block_log_length + 7)
   node.close()
