@@ -14,19 +14,23 @@ def test_dump_config(world : World):
   assert node.config.__dict__ == old_config
 
 def test_exit_before_sync(world : World, block_log : Path):
-  from shutil import rmtree
-  from os import remove
-  from os.path import join
+  net = world.create_network()
 
-  init = world.create_api_node(name='node_1')
+  init = net.create_api_node(name='node_1')
   half_way = int(BLOCK_COUNT / 2.0)
 
   init.run(replay_from=block_log, stop_at_block=half_way, exit_before_synchronization=True)
   assert not init.is_running()
 
+  background_node = net.create_init_node()
+  background_node.run(replay_from=block_log, wait_for_live=True)
+  background_node.wait_number_of_blocks(2)
+
   rmtree( join( str(init.directory), 'blockchain' ), ignore_errors=True)
   init.run(replay_from=block_log, exit_before_synchronization=True)
   assert not init.is_running()
+
+  background_node.close()
 
   snap = init.dump_snapshot(close=True)
   assert not init.is_running()
