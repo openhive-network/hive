@@ -1,25 +1,26 @@
 # for building the consensus_node/fat_node images, set CI_REGISTRY_IMAGE to the 
 # project's registry (e.g. registry.gitlab.syncad.com/hive/hive)
 ARG CI_REGISTRY_IMAGE
-ARG RUNTIME_IMAGE_TAG=:latest
+ARG RUNTIME_IMAGE_TAG=:ubuntu-20.04
 
-FROM ubuntu:18.04 AS runtime
+# don't use ubuntu:20.04 source image, since if fails at tzdata configuration
+FROM phusion/baseimage:focal-1.0.0 AS runtime
 ENV LANG=en_US.UTF-8
 
-RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y libsnappy1v5 libreadline7 && apt-get clean && rm -r /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y libsnappy1v5 libreadline8 && apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
 FROM runtime AS builder-tester-base
 
 RUN apt-get update && \
-    apt-get install -y git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libicu60 libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs && \
+    apt-get install -y git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libicu66 libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs && \
     apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
 FROM builder-tester-base AS builder
 
 RUN apt-get update && \
-    apt-get install -y autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-chrono-dev libboost-context-dev libboost-coroutine-dev libboost-date-time-dev libboost-filesystem-dev libboost-iostreams-dev libboost-locale-dev libboost-program-options-dev libboost-serialization-dev libboost-signals-dev libboost-system-dev libboost-test-dev libboost-thread-dev doxygen libncurses5-dev libreadline-dev perl ninja-build && \
+    apt-get install -y autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build && \
     apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
@@ -53,4 +54,3 @@ COPY consensus_build/config-for-docker.ini datadir/config.ini
 RUN chmod 755 hived.run
 
 CMD "${install_base_dir}/consensus/hived.run"
-
