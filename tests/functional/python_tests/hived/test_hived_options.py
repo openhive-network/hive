@@ -16,7 +16,6 @@ def test_dump_config(world : World):
   node.wait_number_of_blocks(2)
   node.close()
   node.dump_config()
-
   assert node.config.__dict__ == old_config
 
 
