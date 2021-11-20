@@ -1,6 +1,8 @@
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/webserver/local_endpoint.hpp>
 
+#include <hive/plugins/json_rpc/utility.hpp>
+
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <fc/network/ip.hpp>
@@ -27,17 +29,6 @@
 #include <thread>
 #include <memory>
 #include <iostream>
-
-#define LOG_DELAY(start_time, log_threshold, msg) \
-  { fc::time_point current_time = fc::time_point::now(); \
-    fc::microseconds delay = current_time - start_time; \
-    if (delay > log_threshold) { \
-      double delay_seconds = double(int64_t(delay.count() / 1000)) / 1000.0; \
-      std::ostringstream os; \
-      os << std::fixed << std::setprecision(3) << delay_seconds; \
-      ulog(msg ": ${delay_seconds} s", ("delay_seconds", os.str())); \
-      } \
-  }
 
 namespace hive { namespace plugins { namespace webserver {
 
