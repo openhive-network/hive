@@ -7,9 +7,12 @@ variables:
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
-  RUNTIME_IMAGE_TAG: "@sha256:e1995e7b44d58436ce97fbcd28a5200d8e877f476c9c4bd3e1cc394c17be050b"
-  BUILDER_IMAGE_TAG: "@sha256:13933b563395cc3c6ea8bcbd95b717eb4c9fcc33c4cd7194e620713aca03180d"
-  TEST_IMAGE_TAG: "@sha256:fc78e92864645317c82c4703edd5b679c3d22c24bb7253612fb350b629681637"
+  # Latest ubuntu 18.04 based image
+  RUNTIME_IMAGE_TAG: "@sha256:0923dee91073e21a99e95a2f5e73b167775f552089e18e2de5c2818e8f9c8006"
+  # Latest ubuntu 18.04 based image
+  BUILDER_IMAGE_TAG: "@sha256:d3d1a51a198b34ce451b039d381e689b852c1666a9fb4f86b13ddf173b67ee53"
+  # Latest ubuntu 18.04 based image
+  TEST_IMAGE_TAG: "@sha256:dc3376d1a48c5f5af4df066c25053e03480caab79972d4c13153f48bbecba3da"
 
 testnet_node_build:
   stage: build
