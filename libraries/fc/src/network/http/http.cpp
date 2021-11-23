@@ -32,12 +32,44 @@ namespace fc { namespace http {
 
       virtual ~http_connection_impl() {}
 
-      virtual std::string send_message( const std::string& message )override
+      virtual std::string send_request( const std::string& method, const std::string& path, const std::string& body )override
       {
         FC_ASSERT( !is_server(), "Server cannot send messages" );
-        idump((message));
 
-        return ""; // TODO: Response
+        typename asio_with_stub_log::request_type req;
+
+        req.set_method( method );
+        req.set_uri( path );
+        req.set_version( "HTTP/1.1" );
+
+        req.replace_header( "Host", _http_connection->get_host() + ":" + std::to_string( _http_connection->get_port() ) );
+        req.replace_header( "Accept", "*/*" );
+        req.replace_header( "Content-Type", "application/json" );
+
+        req.set_body( body );
+
+        // Send the request.
+        auto request_str = req.raw();
+        boost::system::error_code ec;
+        boost::asio::write(
+          _http_connection->get_socket(),
+          boost::asio::buffer( request_str.c_str(), request_str.size() ),
+          boost::asio::transfer_at_least( request_str.size() ),
+          ec
+        );
+        FC_ASSERT( !ec, "Transfer error: ${ecm}", ("ecm",ec.message()) );
+
+        boost::asio::streambuf response_buf;
+        while( boost::asio::read( _http_connection->get_socket(), response_buf, boost::asio::transfer_at_least(1), ec ) );
+        FC_ASSERT( !ec || ec == boost::asio::error::eof, "Receive error: ${ecm}", ("ecm",ec.message()) );
+
+        std::istream res_is( &response_buf );
+        typename asio_with_stub_log::response_type res;
+        res.consume( res_is );
+        auto response_body = res.get_body();
+
+        wdump((response_body));
+        return response_body;
       }
       virtual void close( int64_t code, const std::string& reason )override
       {

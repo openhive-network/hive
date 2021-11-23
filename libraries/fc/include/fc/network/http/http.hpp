@@ -13,7 +13,7 @@ namespace fc { namespace http {
     http_connection() = default;
     virtual ~http_connection() = default;
 
-    virtual std::string send_message( const std::string& message ) = 0;
+    virtual std::string send_request( const std::string& method, const std::string& path, const std::string& body ) = 0;
 
     virtual bool is_server()const = 0;
   };

@@ -19,6 +19,7 @@ BOOST_AUTO_TEST_CASE(http_test)
       server.on_connection( [&]( const fc::http::connection_ptr& c ){
         s_conn = std::static_pointer_cast< fc::http::http_connection >( c );
         s_conn->on_http_handler( [&](const std::string& s) -> std::string {
+          idump((s));
           return "echo: " + s;
         } );
       } );
@@ -26,23 +27,28 @@ BOOST_AUTO_TEST_CASE(http_test)
       server.listen( 8093 );
       server.start_accept();
 
-      std::string echo;
-      c_conn = std::static_pointer_cast< fc::http::http_connection >( client.connect( "http://localhost:8093" ) );
+      const auto reconnect = [&]
+      {
+        c_conn = std::static_pointer_cast< fc::http::http_connection >( client.connect( "http://localhost:8093" ) );
+      };
 
-      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_message( "hello world" ) );
+      reconnect();
+      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_request( "GET", "/", "hello world" ) );
 
-      BOOST_CHECK_EQUAL( "echo: again", c_conn->send_message( "again" ) );
+      reconnect();
+      BOOST_CHECK_EQUAL( "echo: again", c_conn->send_request( "GET", "/", "again" ) );
 
+      reconnect();
       s_conn->close(0, "test");
       fc::usleep( fc::seconds(1) );
-      BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( c_conn->send_request( "GET", "/", "again" ), fc::assert_exception );
 
       c_conn = std::static_pointer_cast< fc::http::http_connection >( client.connect( "http://localhost:8093" ) );
 
-      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_message( "hello world" ) );
+      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_request( "GET", "/", "hello world" ) );
     }
 
-    BOOST_REQUIRE_THROW( c_conn->send_message( "again" ), fc::assert_exception );
+    BOOST_REQUIRE_THROW( c_conn->send_request( "GET", "/", "again" ), fc::assert_exception );
 
     BOOST_REQUIRE_THROW( client.connect( "http://localhost:8093" ), fc::exception );
 
