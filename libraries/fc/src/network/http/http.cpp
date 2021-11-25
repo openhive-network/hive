@@ -49,23 +49,20 @@ namespace fc { namespace http {
         req.set_body( body );
 
         // Send the request.
-        auto request_str = req.raw();
         boost::system::error_code ec;
         boost::asio::write(
           _http_connection->get_socket(),
-          boost::asio::buffer( request_str.c_str(), request_str.size() ),
-          boost::asio::transfer_at_least( request_str.size() ),
+          boost::asio::buffer( req.raw() ),
           ec
         );
         FC_ASSERT( !ec, "Transfer error: ${ecm}", ("ecm",ec.message()) );
 
         boost::asio::streambuf response_buf;
-        while( boost::asio::read( _http_connection->get_socket(), response_buf, boost::asio::transfer_at_least(1), ec ) );
+        while( boost::asio::read( _http_connection->get_socket(), response_buf, ec ) );
         FC_ASSERT( !ec || ec == boost::asio::error::eof, "Receive error: ${ecm}", ("ecm",ec.message()) );
 
-        std::istream res_is( &response_buf );
         typename asio_with_stub_log::response_type res;
-        res.consume( res_is );
+        res.consume( static_cast< const char* >( response_buf.data().data() ), response_buf.size() );
         auto response_body = res.get_body();
 
         wdump((response_body));
