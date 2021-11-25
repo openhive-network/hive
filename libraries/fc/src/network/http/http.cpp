@@ -1,7 +1,5 @@
 #include <fc/network/http/http.hpp>
 #include <fc/network/http/websocketpp_types.hpp>
-#include <websocketpp/server.hpp>
-#include <websocketpp/client.hpp>
 
 #include <future>
 #include <type_traits>
@@ -12,7 +10,7 @@
 #include <fc/asio.hpp>
 #include <fc/network/http/connection.hpp>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio.hpp>
 
 namespace fc { namespace http {
 
@@ -62,7 +60,8 @@ namespace fc { namespace http {
         FC_ASSERT( !ec, "Transfer error: ${ecm}", ("ecm",ec.message()) );
 
         boost::asio::streambuf response_buf;
-        while( boost::asio::read( _http_connection->get_socket(), response_buf, ec ) );
+        while( ec != boost::asio::error::eof ) // Wait using blocking way for the client to close the connection
+          boost::asio::read( _http_connection->get_socket(), response_buf, ec );
         FC_ASSERT( !ec || ec == boost::asio::error::eof, "Receive error: ${ecm}", ("ecm",ec.message()) );
 
         typename asio_with_stub_log::response_type res;
