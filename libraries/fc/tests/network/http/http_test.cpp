@@ -35,17 +35,10 @@ BOOST_AUTO_TEST_CASE(http_test)
       reconnect();
       BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_request( "GET", "/", "hello world" ) );
 
-      reconnect();
-      BOOST_CHECK_EQUAL( "echo: again", c_conn->send_request( "GET", "/", "again" ) );
-
-      reconnect();
-      s_conn->close(0, "test");
-      fc::usleep( fc::seconds(1) );
       BOOST_REQUIRE_THROW( c_conn->send_request( "GET", "/", "again" ), fc::assert_exception );
 
-      c_conn = std::static_pointer_cast< fc::http::http_connection >( client.connect( "http://localhost:8093" ) );
-
-      BOOST_CHECK_EQUAL( "echo: hello world", c_conn->send_request( "GET", "/", "hello world" ) );
+      reconnect();
+      BOOST_CHECK_EQUAL( "echo: again", c_conn->send_request( "GET", "/", "again" ) );
     }
 
     BOOST_REQUIRE_THROW( c_conn->send_request( "GET", "/", "again" ), fc::assert_exception );
