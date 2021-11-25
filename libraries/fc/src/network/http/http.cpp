@@ -50,10 +50,14 @@ namespace fc { namespace http {
 
         // Send the request.
         boost::system::error_code ec;
-        boost::asio::write(
-          _http_connection->get_socket(),
-          boost::asio::buffer( req.raw() ),
-          ec
+        FC_ASSERT(
+          boost::asio::write(
+            _http_connection->get_socket(),
+            boost::asio::buffer( req.raw() ),
+            ec
+          ),
+          "Nothing has been transferred",
+          ("request",req.raw())
         );
         FC_ASSERT( !ec, "Transfer error: ${ecm}", ("ecm",ec.message()) );
 
