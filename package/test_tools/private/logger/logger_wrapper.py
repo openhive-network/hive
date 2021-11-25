@@ -1,12 +1,10 @@
-import inspect
 import logging
-from pathlib import Path
 import sys
 from typing import Optional
 
 
 class LoggerWrapper:
-    __FORMATTER = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s (%(file_name)s:%(line_number)s)')
+    __FORMATTER = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s (%(filename)s:%(lineno)s)')
 
     def __init__(self, name, *, parent: Optional['LoggerWrapper'], level=logging.DEBUG, propagate=True):
         self.parent = parent
@@ -49,29 +47,16 @@ class LoggerWrapper:
         logging.root.addHandler(self.__stream_handler)
 
     def debug(self, message, stacklevel=0):
-        self.internal_logger.debug(message, extra=self.capture_call_place(stacklevel + 1))
+        self.internal_logger.debug(message, stacklevel=stacklevel + 2)
 
     def info(self, message, stacklevel=0):
-        self.internal_logger.info(message, extra=self.capture_call_place(stacklevel + 1))
+        self.internal_logger.info(message, stacklevel=stacklevel + 2)
 
     def warning(self, message, stacklevel=0):
-        self.internal_logger.warning(message, extra=self.capture_call_place(stacklevel + 1))
+        self.internal_logger.warning(message, stacklevel=stacklevel + 2)
 
     def error(self, message, stacklevel=0):
-        self.internal_logger.error(message, extra=self.capture_call_place(stacklevel + 1))
+        self.internal_logger.error(message, stacklevel=stacklevel + 2)
 
     def critical(self, message, stacklevel=0):
-        self.internal_logger.critical(message, extra=self.capture_call_place(stacklevel + 1))
-
-    @staticmethod
-    def capture_call_place(stack_frames_above):
-        # When Python 3.8+ will be available use stacklevel keyword argument instead below hacking
-        # Example: logger.info('example', stacklevel=1)  # I don't know if 1 is OK
-
-        stack = inspect.stack()
-        caller_frame = stack[stack_frames_above + 1]
-
-        return {
-            'file_name': Path(caller_frame.filename).name,
-            'line_number': caller_frame.lineno
-        }
+        self.internal_logger.critical(message, stacklevel=stacklevel + 2)
