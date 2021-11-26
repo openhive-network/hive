@@ -38,7 +38,6 @@ class ScopesStack:
 
         root_scope = self.__current_scope
         logger = LoggerWrapper('root', parent=None)
-        logger.log_to_stdout()
         root_scope.context.set_logger(logger)
 
         atexit.register(self.__terminate)
@@ -87,3 +86,5 @@ if is_manual_test():
 
     root_logger = current_scope.context.get_logger()
     current_scope.context.set_logger(root_logger.create_child_logger('main'))
+
+    root_logger.log_to_stdout()
