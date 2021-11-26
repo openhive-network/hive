@@ -273,17 +273,18 @@ void database::load_state_initial_data(const open_args& args)
 
 uint32_t database::reindex_internal( const open_args& args, signed_block& block )
 {
-  uint64_t skip_flags =
-    skip_witness_signature |
-    skip_transaction_signatures |
-    skip_transaction_dupe_check |
-    skip_tapos_check |
-    skip_merkle_check |
-    skip_witness_schedule_check |
-    skip_authority_check |
-    skip_validate | /// no need to validate operations
-    skip_validate_invariants |
-    skip_block_log;
+  uint64_t skip_flags = skip_validate_invariants | skip_block_log;
+  if( !args.validate_during_replay )
+  {
+    skip_flags |= skip_witness_signature |
+      skip_transaction_signatures |
+      skip_transaction_dupe_check |
+      skip_tapos_check |
+      skip_merkle_check |
+      skip_witness_schedule_check |
+      skip_authority_check |
+      skip_validate; /// no need to validate operations
+  }
 
   uint32_t last_block_num = _block_log.head()->block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
@@ -380,6 +381,7 @@ uint32_t database::reindex( const open_args& args )
       note.max_block_number = 0;//anyway later an assert is triggered
 
     note.force_replay = args.force_replay || _head_block_num == 0;
+    note.validate_during_replay = args.validate_during_replay;
 
     HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
 
@@ -1573,25 +1575,25 @@ asset calculate_vesting( database& db, const asset& liquid, bool to_reward_balan
   };
 
 #ifdef HIVE_ENABLE_SMT
-    if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
-    {
-      FC_ASSERT( liquid.symbol.is_vesting() == false );
-      // Get share price.
-      const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
-      FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
-      price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
-      // Calculate new vesting from provided liquid using share price.
-      return calculate_new_vesting( vesting_share_price );
-    }
-#endif
-
-    FC_ASSERT( liquid.symbol == HIVE_SYMBOL );
-    // ^ A novelty, needed but risky in case someone managed to slip HBD/TESTS here in blockchain history.
+  if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
+  {
+    FC_ASSERT( liquid.symbol.is_vesting() == false );
     // Get share price.
-    const auto& cprops = db.get_dynamic_global_properties();
-    price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+    const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
+    FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
+    price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
     // Calculate new vesting from provided liquid using share price.
     return calculate_new_vesting( vesting_share_price );
+  }
+#endif
+
+  FC_ASSERT( liquid.symbol == HIVE_SYMBOL );
+  // ^ A novelty, needed but risky in case someone managed to slip HBD/TESTS here in blockchain history.
+  // Get share price.
+  const auto& cprops = db.get_dynamic_global_properties();
+  price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+  // Calculate new vesting from provided liquid using share price.
+  return calculate_new_vesting( vesting_share_price );
 }
 
 asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )

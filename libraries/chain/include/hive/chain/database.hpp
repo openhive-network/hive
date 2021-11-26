@@ -93,6 +93,7 @@ namespace chain {
     uint32_t stop_replay_at = 0;
     bool exit_after_replay = false;
     bool force_replay = false;
+    bool validate_during_replay = false;
     TBenchmark benchmark = TBenchmark(0, [](uint32_t, const chainbase::database::abstract_index_cntr_t&) {});
     };
 
@@ -912,6 +913,7 @@ namespace chain {
     reindex_notification( const open_args& a ) : args( a ) {}
 
     bool force_replay = false;
+    bool validate_during_replay = false;
     bool reindex_success = false;
     uint32_t last_block_number = 0;
     const open_args& args;
