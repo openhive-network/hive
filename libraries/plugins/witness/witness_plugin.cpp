@@ -64,7 +64,6 @@ namespace detail {
 
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
-    void on_post_apply_operation( const chain::operation_notification& note );
 
     void schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop();
@@ -82,7 +81,6 @@ namespace detail {
     chain::database&              _db;
     boost::signals2::connection   _post_apply_block_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
-    boost::signals2::connection   _post_apply_operation_conn;
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
   };
@@ -166,14 +164,66 @@ namespace detail {
 
   struct operation_visitor
   {
-    operation_visitor( const chain::database& db ) : _db( db ) {}
+    operation_visitor( chain::database& db ) : _db( db ) {}
 
-    const chain::database& _db;
+    chain::database& _db;
 
     typedef void result_type;
 
     template< typename T >
     void operator()( const T& )const {}
+
+    void limit_custom_op_count( const operation& op )const
+    {
+      flat_set< account_name_type > impacted;
+      app::operation_get_impacted_accounts( op, impacted );
+
+      for( const account_name_type& account : impacted )
+      {
+        // Possible alternative implementation:  Don't call find(), simply catch
+        // the exception thrown by db.create() when violating uniqueness (std::logic_error).
+        //
+        // This alternative implementation isn't "idiomatic" (i.e. AFAICT no existing
+        // code uses this approach).  However, it may improve performance.
+
+        const witness_custom_op_object* coo = _db.find< witness_custom_op_object, by_account >( account );
+
+        if( !coo )
+        {
+          _db.create< witness_custom_op_object >( [&]( witness_custom_op_object& o )
+          {
+            o.account = account;
+            o.count = 1;
+          } );
+        }
+        else
+        {
+          HIVE_ASSERT( coo->count < WITNESS_CUSTOM_OP_BLOCK_LIMIT, plugin_exception,
+            "Account ${a} already submitted ${n} custom json operation(s) this block.",
+            ( "a", account )( "n", WITNESS_CUSTOM_OP_BLOCK_LIMIT ) );
+
+          _db.modify( *coo, [&]( witness_custom_op_object& o )
+          {
+            o.count++;
+          } );
+        }
+      }
+    }
+
+    void operator()( const custom_operation& o )const
+    {
+      limit_custom_op_count( o );
+    }
+
+    void operator()( const custom_json_operation& o )const
+    {
+      limit_custom_op_count( o );
+    }
+
+    void operator()( const custom_binary_operation& o )const
+    {
+      limit_custom_op_count( o );
+    }
 
     void operator()( const comment_options_operation& o )const
     {
@@ -233,58 +283,9 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::on_post_apply_operation( const chain::operation_notification& note )
-  {
-    switch( note.op.which() )
-    {
-      case operation::tag< custom_operation >::value:
-      case operation::tag< custom_json_operation >::value:
-      case operation::tag< custom_binary_operation >::value:
-        if( _db.is_producing() )
-        {
-          flat_set< account_name_type > impacted;
-          app::operation_get_impacted_accounts( note.op, impacted );
-
-          for( const account_name_type& account : impacted )
-          {
-            // Possible alternative implementation:  Don't call find(), simply catch
-            // the exception thrown by db.create() when violating uniqueness (std::logic_error).
-            //
-            // This alternative implementation isn't "idiomatic" (i.e. AFAICT no existing
-            // code uses this approach).  However, it may improve performance.
-
-            const witness_custom_op_object* coo = _db.find< witness_custom_op_object, by_account >( account );
-
-            if( !coo )
-            {
-              _db.create< witness_custom_op_object >( [&]( witness_custom_op_object& o )
-              {
-                o.account = account;
-                o.count = 1;
-              });
-            }
-            else
-            {
-              HIVE_ASSERT( coo->count < WITNESS_CUSTOM_OP_BLOCK_LIMIT, plugin_exception,
-                "Account ${a} already submitted ${n} custom json operation(s) this block.",
-                ("a", account)("n", WITNESS_CUSTOM_OP_BLOCK_LIMIT) );
-
-              _db.modify( *coo, [&]( witness_custom_op_object& o )
-              {
-                o.count++;
-              });
-            }
-          }
-        }
-
-        break;
-      default:
-        break;
-    }
-  }
-
   void witness_plugin_impl::on_post_apply_block( const block_notification& note )
   {
+    //note that we can't use clear on mutable version of this index because it bypasses undo sessions
     const auto& idx = _db.get_index< witness_custom_op_index >().indices().get< by_id >();
     while( true )
     {
@@ -518,8 +519,6 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
   my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
     [&]( const chain::operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0);
-  my->_post_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
-    [&]( const chain::operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0);
 
   //if a producing witness, allow up to 1/3 of the block interval for writing blocks/transactions (2x a normal node)
   if( my->_witnesses.size() && my->_private_keys.size() )
@@ -556,7 +555,6 @@ void witness_plugin::plugin_shutdown()
   {
     chain::util::disconnect_signal( my->_post_apply_block_conn );
     chain::util::disconnect_signal( my->_pre_apply_operation_conn );
-    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 
     my->_timer.cancel();
   }
