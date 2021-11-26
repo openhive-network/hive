@@ -387,7 +387,7 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
         std::stringstream s;
         s << "unknown exception: " << e.what();
         con->send( s.str() );
-	ulog("${e}", ("e", s.str()) );
+        ulog("${e}", ("e", s.str()) );
       }
     }
   });
@@ -437,7 +437,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
         s << "unknown exception: " << e.what();
         con->set_body( s.str() );
         con->set_status( websocketpp::http::status_code::internal_server_error );
-	ulog("${e}", ("e", s.str()) );
+        ulog("${e}", ("e", s.str()) );
       }
     }
 
