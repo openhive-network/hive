@@ -11,16 +11,17 @@ def test_dump_config(world : World):
   logger.info(f'http_endpoint = {node.get_http_endpoint()}')
   http_endpoint = node.get_http_endpoint()
   http_endpoint_clean = http_endpoint.replace("'","")
+  node.wait_number_of_blocks(10)
   process = subprocess.Popen(
     [
       'hive',
       'sync',
       "--database-url=" + database,
-      "--steemd-url='{" + '"default" : "' + http_endpoint_clean + '"}' + "'"
+      "--steemd-url={" + '"default" : "' + http_endpoint_clean + '"}'
 
     ]
   )
-  node.wait_number_of_blocks(5)
+  node.wait_number_of_blocks(20)
   node.close()
 
   # process = subprocess.Popen(
@@ -35,3 +36,5 @@ def test_dump_config(world : World):
   #       stdout = self.stdout_file,
   #                stderr = self.stderr_file
   # )
+
+# "--steemd-url='{" + '"default" : "' + http_endpoint_clean + '"}' + "'"
