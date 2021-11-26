@@ -111,6 +111,7 @@ class chain_plugin_impl
     bool                             exit_after_replay = false;
     bool                             exit_before_sync = false;
     bool                             force_replay = false;
+    bool                             validate_during_replay = false;
     uint32_t                         benchmark_interval = 0;
     uint32_t                         flush_interval = 0;
     bool                             replay_in_memory = false;
@@ -454,6 +455,7 @@ void chain_plugin_impl::initial_settings()
   db_open_args.stop_replay_at = stop_replay_at;
   db_open_args.exit_after_replay = exit_after_replay;
   db_open_args.force_replay = force_replay;
+  db_open_args.validate_during_replay = validate_during_replay;
   db_open_args.benchmark_is_enabled = benchmark_is_enabled;
   db_open_args.database_cfg = database_config;
   db_open_args.replay_in_memory = replay_in_memory;
@@ -641,6 +643,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
       ("exit-before-sync", bpo::bool_switch()->default_value(false), "Exits before starting sync, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
+      ("validate-during-replay", bpo::bool_switch()->default_value(false), "Runs all validations that are normally turned off during replay")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
@@ -675,6 +678,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   my->chainbase_flags |= options.at( "force-open" ).as< bool >() ? chainbase::skip_env_check : chainbase::skip_nothing;
 
   my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
+  my->validate_during_replay =
+    options.count( "validate-during-replay" ) ? options.at( "validate-during-replay" ).as<bool>() : false;
   my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
