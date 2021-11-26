@@ -4,17 +4,22 @@ class CommunicationError(Exception):
         self.request = request
         self.response = response
 
+
 class MissingPathToExecutable(Exception):
     pass
+
+
+class NameAlreadyInUse(Exception):
+    pass
+
 
 class NodeIsNotRunning(Exception):
     pass
 
+
 class NotSupported(Exception):
     pass
 
-class ParseError(Exception):
-    pass
 
-class NameAlreadyInUse(Exception):
+class ParseError(Exception):
     pass
