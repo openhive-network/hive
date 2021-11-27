@@ -162,6 +162,11 @@ void database::initialize_state_independent_data(const open_args& args)
   }
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
+  if( _benchmark_dumper.is_enabled() &&
+      ( !_pre_apply_operation_signal.empty() || !_post_apply_operation_signal.empty() ) )
+  {
+    wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
+  }
 
   with_write_lock([&]()
   {
@@ -2458,14 +2463,15 @@ void database::process_recurrent_transfers()
 
   // uint16_t is okay because we stop at 1000, if the limit changes, make sure to check if it fits in the integer.
   uint16_t processed_transfers = 0;
-
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
   while( itr != recurrent_transfers_by_date.end() && itr->get_trigger_date() <= now )
   {
     // Since this is an intensive process, we don't want to process too many recurrent transfers in a single block
     if (processed_transfers >= HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK)
     {
       ilog("Reached max processed recurrent transfers this block");
-      return;
+      break;
     }
 
     auto &current_recurrent_transfer = *itr;
@@ -2545,6 +2551,8 @@ void database::process_recurrent_transfers()
 
     processed_transfers++;
   }
+  if( _benchmark_dumper.is_enabled() && processed_transfers )
+    _benchmark_dumper.end( "process_recurrent_transfers", processed_transfers );
 }
 
 /**
@@ -2584,9 +2592,12 @@ void database::process_vesting_withdrawals()
 
   const auto& cprops = get_dynamic_global_properties();
 
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
   while( current != widx.end() && current->next_vesting_withdrawal <= head_block_time() )
   {
-    const auto& from_account = *current; ++current;
+    const auto& from_account = *current; ++current; ++count;
 
     /**
     *  Let T = total tokens in vesting fund
@@ -2737,6 +2748,8 @@ void database::process_vesting_withdrawals()
 
     post_push_virtual_operation( vop );
   }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "process_vesting_withdrawals", count );
 }
 
 /**
@@ -3076,6 +3089,9 @@ void database::process_comment_cashout()
     * the global state updated each payout. After the hardfork, each payout is done
     * against a reward fund state that is snapshotted before all payouts in the block.
     */
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
   while( _current != cidx.end() && _current->get_cashout_time() <= _now )
   {
     if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
@@ -3087,6 +3103,7 @@ void database::process_comment_cashout()
       const comment_object& _comment = get_comment( *_current );
       funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *_current,
         find_comment_cashout_ex( _comment ), forward_curation_remainder );
+      ++count;
     }
     else
     {
@@ -3102,6 +3119,7 @@ void database::process_comment_cashout()
         const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment_cashout );
         auto reward = cashout_comment_helper( ctx, comment, *comment_cashout, &comment_cashout_ex );
+        ++count;
 
         if( reward > 0 )
         {
@@ -3117,6 +3135,8 @@ void database::process_comment_cashout()
       remove( *_current );
     _current = cidx.begin();
   }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "process_comment_cashout", count );
 
   // Write the cached fund state back to the database
   if( funds.size() )
@@ -3244,7 +3264,12 @@ void database::process_savings_withdraws()
 {
   const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
   auto itr = idx.begin();
-  while( itr != idx.end() ) {
+
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
+  while( itr != idx.end() )
+  {
     if( itr->complete > head_block_time() )
       break;
     adjust_balance( get_account( itr->to ), itr->amount );
@@ -3258,7 +3283,10 @@ void database::process_savings_withdraws()
 
     remove( *itr );
     itr = idx.begin();
+    ++count;
   }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "process_savings_withdraws", count );
 }
 
 void database::process_subsidized_accounts()
@@ -3444,6 +3472,9 @@ void database::process_conversions()
   asset net_hive( 0, HIVE_SYMBOL );
 
   //regular requests
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
   {
     const auto& request_by_date = get_index< convert_request_index, by_conversion_date >();
     auto itr = request_by_date.begin();
@@ -3463,10 +3494,17 @@ void database::process_conversions()
 
       remove( *itr );
       itr = request_by_date.begin();
+
+      ++count;
     }
   }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "process_conversions convert_request", count );
 
   //collateralized requests
+  count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
   {
     const auto& request_by_date = get_index< collateralized_convert_request_index, by_conversion_date >();
     auto itr = request_by_date.begin();
@@ -3505,7 +3543,11 @@ void database::process_conversions()
 
       remove( *itr );
       itr = request_by_date.begin();
+
+      ++count;
     }
+    if( _benchmark_dumper.is_enabled() && count )
+      _benchmark_dumper.end( "process_conversions collateralized_convert_request", count );
   }
 
   //correct global supply (if needed)
@@ -3602,6 +3644,9 @@ void database::process_decline_voting_rights()
   const auto& request_idx = get_index< decline_voting_rights_request_index >().indices().get< by_effective_date >();
   auto itr = request_idx.begin();
 
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
   while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
   {
     const auto& account = get< account_object, by_name >( itr->account );
@@ -3617,7 +3662,10 @@ void database::process_decline_voting_rights()
 
     remove( *itr );
     itr = request_idx.begin();
+    ++count;
   }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "process_decline_voting_rights", count );
 }
 
 time_point_sec database::head_block_time()const
@@ -4162,6 +4210,9 @@ void database::_apply_block( const signed_block& next_block )
 
   if( !( skip & skip_merkle_check ) )
   {
+    if( _benchmark_dumper.is_enabled() )
+      _benchmark_dumper.begin();
+
     auto merkle_root = next_block.calculate_merkle_root();
 
     try
@@ -4176,6 +4227,9 @@ void database::_apply_block( const signed_block& next_block )
       if( itr == merkle_map.end() || itr->second != merkle_root )
         throw e;
     }
+
+    if( _benchmark_dumper.is_enabled() )
+      _benchmark_dumper.end( "merkle check" );
   }
 
   const witness_object& signing_witness = validate_block_header(skip, next_block);
@@ -4529,7 +4583,28 @@ void database::_apply_transaction(const signed_transaction& trx)
   uint32_t skip = get_node_properties().skip_flags;
 
   if( !(skip&skip_validate) )   /* issue #505 explains why this skip_flag is disabled */
-    trx.validate();
+  {
+    if( _benchmark_dumper.is_enabled() )
+    {
+      std::string name;
+      trx.validate( [&]( const operation& op, bool post )
+      {
+        if( !post )
+        {
+          name = _my->_evaluator_registry.get_evaluator( op ).get_name( op ) + " validate";
+          _benchmark_dumper.begin();
+        }
+        else
+        {
+          _benchmark_dumper.end( name );
+        }
+      } );
+    }
+    else
+    {
+      trx.validate();
+    }
+  }
 
   auto& trx_idx = get_index<transaction_index>();
   const chain_id_type& chain_id = get_chain_id();
@@ -4546,10 +4621,16 @@ void database::_apply_transaction(const signed_transaction& trx)
 
     try
     {
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.begin();
+
       trx.verify_authority( chain_id, get_active, get_owner, get_posting, HIVE_MAX_SIG_CHECK_DEPTH,
-        has_hardfork( HIVE_HARDFORK_0_20 ) || is_producing() ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
-        has_hardfork( HIVE_HARDFORK_0_20 ) || is_producing() ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
+        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
+        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
         has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.end( "verify_authority", trx.signatures.size() ); //TODO: check if it really strongly depends on number of signatures
     }
     catch( protocol::tx_missing_active_auth& e )
     {
@@ -4564,12 +4645,18 @@ void database::_apply_transaction(const signed_transaction& trx)
   {
     if( !(skip & skip_tapos_check) )
     {
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.begin();
+
       block_summary_object::id_type bsid( trx.ref_block_num );
       const auto& tapos_block_summary = get< block_summary_object >( bsid );
       //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
       HIVE_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
               "", ("trx.ref_block_prefix", trx.ref_block_prefix)
               ("tapos_block_summary",tapos_block_summary.block_id._hash[1]));
+
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.end( "tapos check" );
     }
 
     fc::time_point_sec now = head_block_time();
@@ -4584,11 +4671,17 @@ void database::_apply_transaction(const signed_transaction& trx)
   //Insert transaction into unique transactions database.
   if( !(skip & skip_transaction_dupe_check) )
   {
+    if( _benchmark_dumper.is_enabled() )
+      _benchmark_dumper.begin();
+
     create<transaction_object>([&](transaction_object& transaction) {
       transaction.trx_id = trx_id;
       transaction.expiration = trx.expiration;
       fc::raw::pack_to_buffer( transaction.packed_trx, trx );
     });
+
+    if( _benchmark_dumper.is_enabled() )
+      _benchmark_dumper.end( "transaction dupe check" );
   }
 
   notify_pre_apply_transaction( note );
@@ -4612,13 +4705,17 @@ void database::apply_operation(const operation& op)
   operation_notification note = create_operation_notification( op );
   notify_pre_apply_operation( note );
 
+  std::string name;
   if( _benchmark_dumper.is_enabled() )
+  {
+    name = _my->_evaluator_registry.get_evaluator( op ).get_name( op );
     _benchmark_dumper.begin();
+  }
 
   _my->_evaluator_registry.get_evaluator( op ).apply( op );
 
   if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.end< true/*APPLY_CONTEXT*/ >( _my->_evaluator_registry.get_evaluator( op ).get_name( op ) );
+    _benchmark_dumper.end( name );
 
   notify_post_apply_operation( note );
 }
@@ -4755,11 +4852,8 @@ struct fcall<TResult(TArgs...)>
 
   fcall() = default;
   fcall(const TNotification& func, util::advanced_benchmark_dumper& dumper,
-      const abstract_plugin& plugin, const std::string& item_name)
-      : _func(func), _benchmark_dumper(dumper)
-    {
-      _name = plugin.get_name() + item_name;
-    }
+    const abstract_plugin& plugin, const std::string& context, const std::string& item_name)
+    : _func(func), _benchmark_dumper(dumper), _context(context), _name(item_name) {}
 
   void operator () (TArgs&&... args)
   {
@@ -4769,12 +4863,13 @@ struct fcall<TResult(TArgs...)>
     _func(std::forward<TArgs>(args)...);
 
     if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end(_name);
+      _benchmark_dumper.end( _context, _name );
   }
 
 private:
   TNotification                    _func;
   util::advanced_benchmark_dumper& _benchmark_dumper;
+  std::string                      _context;
   std::string                      _name;
 };
 
@@ -4786,11 +4881,12 @@ struct fcall<std::function<TResult(TArgs...)>>
   using TBase::TBase;
 };
 
-template <typename TSignal, typename TNotification>
+template <bool IS_PRE_OPERATION, typename TSignal, typename TNotification>
 boost::signals2::connection database::connect_impl( TSignal& signal, const TNotification& func,
   const abstract_plugin& plugin, int32_t group, const std::string& item_name )
 {
-  fcall<TNotification> fcall_wrapper(func,_benchmark_dumper,plugin,item_name);
+  fcall<TNotification> fcall_wrapper( func, _benchmark_dumper, plugin,
+    util::advanced_benchmark_dumper::generate_context_desc<IS_PRE_OPERATION>( plugin.get_name() ), item_name );
 
   return signal.connect(group, fcall_wrapper);
 }
@@ -4799,14 +4895,15 @@ template< bool IS_PRE_OPERATION >
 boost::signals2::connection database::any_apply_operation_handler_impl( const apply_operation_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  auto complex_func = [this, func, &plugin]( const operation_notification& o )
+  std::string context = util::advanced_benchmark_dumper::generate_context_desc< IS_PRE_OPERATION >( plugin.get_name() );
+  auto complex_func = [this, func, &plugin, context]( const operation_notification& o )
   {
     std::string name;
 
     if (_benchmark_dumper.is_enabled())
     {
       if( _my->_evaluator_registry.is_evaluator( o.op ) )
-        name = _benchmark_dumper.generate_desc< IS_PRE_OPERATION >( plugin.get_name(), _my->_evaluator_registry.get_evaluator( o.op ).get_name( o.op ) );
+        name = _my->_evaluator_registry.get_evaluator( o.op ).get_name( o.op );
       else
         name = util::advanced_benchmark_dumper::get_virtual_operation_name();
 
@@ -4816,7 +4913,7 @@ boost::signals2::connection database::any_apply_operation_handler_impl( const ap
     func( o );
 
     if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( name );
+      _benchmark_dumper.end( context, name );
   };
 
   if( IS_PRE_OPERATION )
@@ -4828,25 +4925,25 @@ boost::signals2::connection database::any_apply_operation_handler_impl( const ap
 boost::signals2::connection database::add_pre_apply_required_action_handler( const apply_required_action_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_pre_apply_required_action_signal, func, plugin, group, "->required_action");
+  return connect_impl<true>(_pre_apply_required_action_signal, func, plugin, group, "required_action");
 }
 
 boost::signals2::connection database::add_post_apply_required_action_handler( const apply_required_action_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_post_apply_required_action_signal, func, plugin, group, "<-required_action");
+  return connect_impl<false>(_post_apply_required_action_signal, func, plugin, group, "required_action");
 }
 
 boost::signals2::connection database::add_pre_apply_optional_action_handler( const apply_optional_action_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_pre_apply_optional_action_signal, func, plugin, group, "->optional_action");
+  return connect_impl<true>(_pre_apply_optional_action_signal, func, plugin, group, "optional_action");
 }
 
 boost::signals2::connection database::add_post_apply_optional_action_handler( const apply_optional_action_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_post_apply_optional_action_signal, func, plugin, group, "<-optional_action");
+  return connect_impl<false>(_post_apply_optional_action_signal, func, plugin, group, "optional_action");
 }
 
 boost::signals2::connection database::add_pre_apply_operation_handler( const apply_operation_handler_t& func,
@@ -4864,81 +4961,81 @@ boost::signals2::connection database::add_post_apply_operation_handler( const ap
 boost::signals2::connection database::add_pre_apply_transaction_handler( const apply_transaction_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_pre_apply_transaction_signal, func, plugin, group, "->transaction");
+  return connect_impl<true>(_pre_apply_transaction_signal, func, plugin, group, "transaction");
 }
 
 boost::signals2::connection database::add_post_apply_transaction_handler( const apply_transaction_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_post_apply_transaction_signal, func, plugin, group, "<-transaction");
+  return connect_impl<false>(_post_apply_transaction_signal, func, plugin, group, "transaction");
 }
 
 boost::signals2::connection database::add_pre_apply_block_handler( const apply_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_pre_apply_block_signal, func, plugin, group, "->block");
+  return connect_impl<true>(_pre_apply_block_signal, func, plugin, group, "block");
 }
 
 boost::signals2::connection database::add_post_apply_block_handler( const apply_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_post_apply_block_signal, func, plugin, group, "<-block");
+  return connect_impl<false>(_post_apply_block_signal, func, plugin, group, "block");
 }
 
 boost::signals2::connection database::add_fail_apply_block_handler( const apply_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_fail_apply_block_signal, func, plugin, group, "<-block");
+  return connect_impl<false>(_fail_apply_block_signal, func, plugin, group, "failed block");
 }
 
 boost::signals2::connection database::add_irreversible_block_handler( const irreversible_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_on_irreversible_block, func, plugin, group, "<-irreversible");
+  return connect_impl<false>(_on_irreversible_block, func, plugin, group, "irreversible");
 }
 
 boost::signals2::connection database::add_switch_fork_handler( const switch_fork_handler_t& func,
                                                                       const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_switch_fork_signal, func, plugin, group, "<-switch_fork");
+  return connect_impl<false>(_switch_fork_signal, func, plugin, group, "switch_fork");
 }
 
 boost::signals2::connection database::add_pre_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_pre_reindex_signal, func, plugin, group, "->reindex");
+  return connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
 }
 
 boost::signals2::connection database::add_post_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_post_reindex_signal, func, plugin, group, "<-reindex");
+  return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");
 }
 
 boost::signals2::connection database::add_generate_optional_actions_handler(const generate_optional_actions_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_impl(_generate_optional_actions_signal, func, plugin, group, "->generate_optional_actions");
+  return connect_impl<true>(_generate_optional_actions_signal, func, plugin, group, "generate_optional_actions");
 }
 
 boost::signals2::connection database::add_prepare_snapshot_handler(const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_impl(_prepare_snapshot_signal, func, plugin, group, "->prepare_snapshot");
+  return connect_impl<true>(_prepare_snapshot_signal, func, plugin, group, "prepare_snapshot");
 }
 
 boost::signals2::connection database::add_snapshot_supplement_handler(const prepare_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_impl(_prepare_snapshot_supplement_signal, func, plugin, group, "->prepare_snapshot_data_supplement");
+  return connect_impl<true>(_prepare_snapshot_supplement_signal, func, plugin, group, "prepare_snapshot_data_supplement");
 }
 
 boost::signals2::connection database::add_snapshot_supplement_handler(const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_impl(_load_snapshot_supplement_signal, func, plugin, group, "->load_snapshot_data_supplement");
+  return connect_impl<true>(_load_snapshot_supplement_signal, func, plugin, group, "load_snapshot_data_supplement");
 }
 
 boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_impl(_comment_reward_signal, func, plugin, group, "->comment_reward");
+  return connect_impl<true>(_comment_reward_signal, func, plugin, group, "comment_reward");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const

@@ -6,7 +6,7 @@ namespace hive { namespace chain { namespace util {
 
   uint32_t advanced_benchmark_dumper::cnt = 0;
   std::string advanced_benchmark_dumper::virtual_operation_name = "virtual_operation";
-  std::string advanced_benchmark_dumper::apply_context_name = "apply_context--->";
+  std::string advanced_benchmark_dumper::apply_context_name = "";
 
   advanced_benchmark_dumper::advanced_benchmark_dumper()
   {
@@ -25,18 +25,23 @@ namespace hive { namespace chain { namespace util {
 
   void advanced_benchmark_dumper::begin()
   {
-    time_begin = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+    time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
   }
 
-  template< bool APPLY_CONTEXT >
-  void advanced_benchmark_dumper::end( const std::string& str )
+  void advanced_benchmark_dumper::end( const std::string& context, const std::string& str, uint64_t _count )
   {
-    uint64_t time = std::chrono::duration_cast<std::chrono::milliseconds>(
+    uint64_t time = std::chrono::duration_cast<std::chrono::nanoseconds>(
       std::chrono::system_clock::now().time_since_epoch() ).count() - time_begin;
-    auto res = info.emplace( APPLY_CONTEXT ? (apply_context_name + str) : str, time );
+    if( time_begin == 0 )
+    {
+      info.broken_measurement();
+      return;
+    }
+
+    auto res = info.emplace( context, str, time, _count );
 
     if( !res.second )
-      res.first->inc( time );
+      res.first->inc( time, _count );
 
     info.inc( time );
 
@@ -46,10 +51,9 @@ namespace hive { namespace chain { namespace util {
       flush_cnt = 0;
       dump();
     }
-  }
 
-  template void advanced_benchmark_dumper::end< true >( const std::string& str );
-  template void advanced_benchmark_dumper::end< false >( const std::string& str );
+    time_begin = 0;
+  }
 
   template< typename COLLECTION >
   void advanced_benchmark_dumper::dump_impl( const total_info< COLLECTION >& src, const std::string& src_file_name )
@@ -68,11 +72,11 @@ namespace hive { namespace chain { namespace util {
 
   void advanced_benchmark_dumper::dump()
   {
-    total_info< std::multiset< ritem > > rinfo( info.total_time );
+    total_info< std::multiset< ritem > > rinfo( info.total_time, info.broken_measurements );
     std::for_each(info.items.begin(), info.items.end(), [&rinfo]( const item& obj )
     {
-      //rinfo.items.emplace( obj.op_name, obj.time );
-      rinfo.emplace( obj.op_name, obj.time );
+      obj.calculate_time_per_count();
+      rinfo.emplace( obj.context, obj.op_name, obj.time, obj.count, obj.time_per_count );
     });
 
     dump_impl( info, file_name );

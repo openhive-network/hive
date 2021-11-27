@@ -39,6 +39,17 @@ void transaction::validate() const
     operation_validate(op);
 }
 
+void transaction::validate( const std::function<void( const operation& op, bool post )>& notify ) const
+{
+  FC_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("trx",*this) );
+  for( const auto& op : operations )
+  {
+    notify( op, false );
+    operation_validate(op);
+    notify( op, true );
+  }
+}
+
 hive::protocol::transaction_id_type hive::protocol::transaction::id() const
 {
   auto h = digest();
