@@ -377,8 +377,8 @@ namespace chain {
       void notify_comment_reward(const comment_reward_notification& note);
 
     private:
-      template <typename TSignal,
-              typename TNotification = std::function<typename TSignal::signature_type>>
+      template < bool IS_PRE_OPERATION, typename TSignal,
+                 typename TNotification = std::function<typename TSignal::signature_type> >
       boost::signals2::connection connect_impl( TSignal& signal, const TNotification& func,
         const abstract_plugin& plugin, int32_t group, const std::string& item_name = "" );
 

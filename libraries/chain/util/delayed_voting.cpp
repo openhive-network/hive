@@ -80,6 +80,9 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
   const auto& idx = db.get_index< account_index, by_delayed_voting >();
   auto current = idx.begin();
 
+  int count = 0;
+  if( db.get_benchmark_dumper().is_enabled() )
+    db.get_benchmark_dumper().begin();
   while( current != idx.end() &&
         current->get_the_earliest_time() != time_point_sec::maximum() &&
         head_time >= ( current->get_the_earliest_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
@@ -110,7 +113,10 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
     } );
 
     current = idx.begin();
+    ++count;
   }
+  if( db.get_benchmark_dumper().is_enabled() && count )
+    db.get_benchmark_dumper().end( "process_delayed_voting", count );
 }
 
 } } // namespace hive::chain

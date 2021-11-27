@@ -3,6 +3,7 @@
 #include <hive/protocol/sign_state.hpp>
 #include <hive/protocol/types.hpp>
 
+#include <functional>
 #include <numeric>
 
 namespace hive { namespace protocol {
@@ -22,6 +23,7 @@ using fc::ecc::canonical_signature_type;
     digest_type         digest()const;
     transaction_id_type id()const;
     void                validate() const;
+    void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
     digest_type         sig_digest( const chain_id_type& chain_id )const;
 
     void set_expiration( fc::time_point_sec expiration_time );
