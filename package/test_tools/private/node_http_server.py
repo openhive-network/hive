@@ -63,7 +63,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def do_PUT(self):  # pylint: disable=invalid-name
         content_length = int(self.headers['Content-Length'])
         message = self.rfile.read(content_length)
-        self.server.notify(json.loads(message, encoding='utf-8'))
+        self.server.notify(json.loads(message))
 
         self.__set_response()
 
