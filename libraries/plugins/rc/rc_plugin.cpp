@@ -268,7 +268,6 @@ void use_account_rcs(
   if( whitelist.count( account_name ) ) return;
 #endif
 
-  // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
   const account_object& account = db.get< account_object, by_name >( account_name );
   const rc_account_object& rc_account = db.get< rc_account_object, by_name >( account_name );
 
@@ -281,7 +280,9 @@ void use_account_rcs(
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-
+    if (account_name == "alice") {
+      idump((account_name)(rc)(rca.rc_manabar.current_mana));
+    }
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
     if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -865,7 +866,6 @@ struct post_apply_operation_visitor
       int64_t needed_rcs = from_rc_account.max_rc_creation_adjustment.amount.value - new_max_rc;
 
       const auto& rc_del_idx = _db.get_index< rc_direct_delegation_object_index, by_from_to >();
-      // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
       // start_id just means we iterate over all the rc delegations
       auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( from_account.get_id(), account_id_type::start_id() ) );
 
