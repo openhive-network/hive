@@ -8,7 +8,11 @@
 
 #include <boost/program_options.hpp>
 #include <boost/signals2.hpp>
+
 #include <iostream>
+#include <map>
+#include <utility>
+#include <vector>
 
 namespace hive
 {
@@ -16,14 +20,41 @@ namespace hive
   {
     namespace notifications
     {
-      struct notification_t
+      class notification_t
       {
+      public:
+
+        using key_t = fc::string;
+        using value_t = fc::variant;
+
         fc::time_point_sec time;
         fc::string name;
-        fc::variant value;
+        std::map<key_t, value_t> value;
 
-        explicit notification_t(const fc::string &notifi_name, const fc::variant &event_data = fc::nullptr_t{})
-            : time{fc::time_point::now()}, name{notifi_name}, value{event_data} {}
+        template <typename... Values>
+        notification_t(const fc::string &name, Values &&...values):
+          time{fc::time_point::now()},
+          name{name}
+        {
+          static_assert(sizeof...(values) % 2 == 0, "Inconsistency in amount of variadic arguments, expected even number ( series of pairs: [ fc::string, fc::variant ] )");
+          assign_values(values...);
+        }
+
+      private:
+
+        template <typename... Values>
+        void assign_values(key_t key, value_t value, Values &&...values)
+        {
+          auto it = this->value.emplace(key, value);
+          FC_ASSERT( it.second, "Duplicated key in map" );
+
+          assign_values(values...);
+        }
+
+        // Specialization for end recursion
+        void assign_values()
+        {
+        }
       };
 
       bool check_is_flag_set(const boost::program_options::variables_map &args);
@@ -41,9 +72,6 @@ namespace hive
           using signal_t = boost::signals2::signal<void(const notification_t &)>;
           using variant_map_t = std::map<fc::string, fc::variant>;
 
-          struct ___null_t
-          {
-          };
           class network_broadcaster
           {
             signal_connection_t connection;
@@ -70,32 +98,19 @@ namespace hive
           };
 
         public:
-          template <typename... Argv>
-          void broadcast(const fc::string &notifi_name, const fc::string &key, const fc::variant &var, Argv &&...args)
+          void broadcast(const notification_t &notification)
           {
-            static_assert(sizeof...(args) % 2 == 0, "inconsistency in amount of variadic arguments, expected even number ( series of pairs: [ fc::string, fc::variant ] )");
             if (!is_broadcasting_active())
               return;
 
-            variant_map_t values;
-            broadcast_impl(values, key, var, std::forward<Argv>(args)..., ___null_t{});
-            on_send(notification_t{notifi_name, fc::variant_object{values}});
+            on_send(notification);
           }
-          void broadcast(const fc::string &notifi_name);
           void setup(const std::vector<fc::ip::endpoint> &address_pool);
 
         private:
           signal_t on_send;
           std::unique_ptr<network_broadcaster> network;
 
-          template <typename... Argv>
-          void broadcast_impl(variant_map_t &object, const fc::string &key, const fc::variant &var, Argv &&...args)
-          {
-            add_variant(object, key, var);
-            broadcast_impl(object, std::forward<Argv>(args)...);
-          }
-          void broadcast_impl(variant_map_t &object, const fc::string &key, const fc::variant &var, const ___null_t);
-          void add_variant(variant_map_t &object, const fc::string &key, const fc::variant &var);
           bool is_broadcasting_active() const;
         };
       } // detail
@@ -107,17 +122,14 @@ namespace hive
   template <typename... KeyValuesTypes>
   inline void notify(
       const fc::string &name,
-      const fc::string &key = fc::string{},
-      const fc::variant &var = fc::variant{fc::nullptr_t{}},
       KeyValuesTypes &&...key_value_pairs) noexcept
   {
-    utilities::notifications::detail::error_handler([&]{
-      if (key.empty())
-        utilities::notifications::get_notification_handler_instance().broadcast(name);
-      else
-        utilities::notifications::get_notification_handler_instance().broadcast(
-          name, key, var, std::forward<KeyValuesTypes>(key_value_pairs)...
-        );
+    using namespace utilities::notifications;
+
+    detail::error_handler([&]{
+      get_notification_handler_instance().broadcast(
+        notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+      );
     });
   }
 
