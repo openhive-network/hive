@@ -79,31 +79,12 @@ void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_po
   }
 }
 
-void notification_handler::broadcast(const fc::string &notifi_name)
-{
-  if (!is_broadcasting_active())
-    return;
-
-  on_send(notification_t{notifi_name});
-}
-
-void notification_handler::broadcast_impl(notification_handler::variant_map_t &object, const fc::string &key, const fc::variant &var, notification_handler::___null_t)
-{
-  add_variant(object, key, var);
-}
-
-void notification_handler::add_variant(notification_handler::variant_map_t &object, const fc::string &key, const fc::variant &var)
-{
-  auto it = object.emplace(key, var);
-  FC_ASSERT( it.second, "duplicated key in map" );
-}
-
 bool notification_handler::is_broadcasting_active() const
 {
   return network.get() != nullptr;
 }
 
-void notification_handler::network_broadcaster::broadcast(const notification_t &ev) noexcept
+void notification_handler::network_broadcaster::broadcast(const notification_t &notification) noexcept
 {
   if (!allowed()) return;
 
@@ -117,7 +98,7 @@ void notification_handler::network_broadcaster::broadcast(const notification_t &
       {
         fc::http::connection_ptr con{new fc::http::connection{}};
         con->connect_to(address.first);
-        con->request("PUT", "", fc::json::to_string(ev));
+        con->request("PUT", "", fc::json::to_string(notification));
       }
     });
 
