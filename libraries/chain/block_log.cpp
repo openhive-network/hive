@@ -44,6 +44,12 @@ namespace hive { namespace chain {
 
   namespace detail {
 
+    struct storage_description
+    {
+      int       file_descriptor = -1;
+      fc::path  file;
+    };
+
     class helper {
       public:
 
@@ -122,8 +128,7 @@ namespace hive { namespace chain {
 
     class block_log_index
     {
-      int       block_index_fd = -1;
-      fc::path  index_file;
+      storage_description storage;
 
       private:
 
@@ -155,13 +160,13 @@ namespace hive { namespace chain {
 
     ssize_t block_log_index::open( const fc::path& file )
     {
-      index_file = fc::path( file.generic_string() + ".index" );
+      storage.file = fc::path( file.generic_string() + ".index" );
 
-      block_index_fd = ::open(index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-      if( block_index_fd == -1 )
-        FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", index_file)("error", strerror(errno)));
+      storage.file_descriptor = ::open( storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644 );
+      if( storage.file_descriptor == -1 )
+        FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", storage.file)("error", strerror(errno)));
 
-      return get_file_size( block_index_fd );
+      return get_file_size( storage.file_descriptor );
     }
 
     void block_log_index::prepare( const ssize_t index_size, const boost::shared_ptr<signed_block>& head_block, const ssize_t block_log_size, int block_log_fd )
@@ -180,7 +185,7 @@ namespace hive { namespace chain {
         // read the last 8 bytes of the block index to get the offset of the beginning of the 
         // head block
         uint64_t index_pos = 0;
-        bytes_read = detail::helper::pread_with_retry( block_index_fd, &index_pos, sizeof(index_pos), 
+        bytes_read = detail::helper::pread_with_retry( storage.file_descriptor, &index_pos, sizeof(index_pos), 
           index_size - sizeof(index_pos));
 
         FC_ASSERT(bytes_read == sizeof(index_pos));
@@ -206,9 +211,9 @@ namespace hive { namespace chain {
 
     bool block_log_index::close()
     {
-      if( block_index_fd != -1 )
+      if( storage.file_descriptor != -1 )
       {
-        ::close( block_index_fd );
+        ::close( storage.file_descriptor );
         return true;
       }
       return false;
@@ -239,10 +244,10 @@ namespace hive { namespace chain {
         ilog( "Reconstructing Block Log Index...resume=${resume},index_pos=${index_pos}",("resume",resume)("index_pos",index_pos) );
   #endif
         //close old index file if open, we'll reopen after we replace it
-        ::close(block_index_fd);
+        ::close( storage.file_descriptor );
 
         //create and size the new temporary index file (block_log.index.new)
-        fc::path new_index_file(index_file.generic_string() + ".new");
+        fc::path new_index_file( storage.file.generic_string() + ".new" );
         const size_t block_index_size = block_num * sizeof(uint64_t);
         int new_index_fd = ::open(new_index_file.generic_string().c_str(), O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
         if (new_index_fd == -1)
@@ -304,18 +309,18 @@ namespace hive { namespace chain {
           elog("error unmapping block_index: ${error}",("error",strerror(errno)));
   #endif  
         ::close(new_index_fd);
-        fc::remove_all(index_file);
-        fc::rename(new_index_file, index_file);
+        fc::remove_all( storage.file );
+        fc::rename( new_index_file, storage.file);
   #else //NOT USE_BACKWARDS_INDEX
         ilog( "Reconstructing Block Log Index in forward direction (old slower way, but allows for interruption)..." );
         std::fstream block_stream;
         std::fstream index_stream;
 
         if( !resume )
-          fc::remove_all( index_file );
+          fc::remove_all( storage.file );
 
-        block_stream.open( block_file.generic_string().c_str(), LOG_READ );
-        index_stream.open( index_file.generic_string().c_str(), LOG_WRITE );
+        block_stream.open( storage.file.generic_string().c_str(), LOG_READ );
+        index_stream.open( storage.file.generic_string().c_str(), LOG_WRITE );
 
         uint64_t pos = resume ? index_pos : 0;
         uint64_t end_pos;
@@ -350,16 +355,16 @@ namespace hive { namespace chain {
         /// Flush and reopen to be sure that given index file has been saved.
         /// Otherwise just executed replay, next stopped by ctrl+C can again corrupt this file. 
         index_stream.close();
-        ::close(block_index_fd);
+        ::close( storage.file_descriptor );
   #endif //NOT USE_BACKWARD_INDEX
 
         ilog("opening new block index");
-        block_index_fd = ::open(index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-        if (block_index_fd == -1)
-          FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", index_file)("error", strerror(errno)));
+        storage.file_descriptor = ::open( storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644 );
+        if (storage.file_descriptor == -1)
+          FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", storage.file)("error", strerror(errno)));
         //report size of new index file and verify it is the right size for the blocks in block log
         struct stat block_index_stat;
-        if (fstat(block_index_fd, &block_index_stat) == -1)
+        if (fstat( storage.file_descriptor, &block_index_stat ) == -1)
           elog("error: could not get size of block log index");
         idump((block_index_stat.st_size));
         FC_ASSERT(block_index_stat.st_size/sizeof(uint64_t) == block_num);
@@ -370,20 +375,20 @@ namespace hive { namespace chain {
     void block_log_index::non_empty_idx_info()
     {
       ilog( "Index is nonempty, remove and recreate it" );
-      if (ftruncate(block_index_fd, 0))
+      if (ftruncate( storage.file_descriptor, 0 ))
         FC_THROW("Error truncating block log: ${error}", ("error", strerror(errno)));
     }
 
     void block_log_index::append( const void* buf, size_t nbyte )
     {
-      detail::helper::write_with_retry( block_index_fd, buf, nbyte );
+      detail::helper::write_with_retry( storage.file_descriptor, buf, nbyte );
     }
 
     void block_log_index::read( uint32_t block_num, uint64_t& offset, uint64_t& size )
     {
       uint64_t offsets[2] = {0, 0};
       uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
-      auto bytes_read = detail::helper::pread_with_retry( block_index_fd, &offsets, sizeof(offsets),  offset_in_index );
+      auto bytes_read = detail::helper::pread_with_retry( storage.file_descriptor, &offsets, sizeof(offsets),  offset_in_index );
       FC_ASSERT(bytes_read == sizeof(offsets));
 
       offset = offsets[0];
@@ -413,7 +418,7 @@ namespace hive { namespace chain {
         // read all the offsets in one go
         std::unique_ptr<uint64_t[]> offsets(new uint64_t[number_of_blocks_to_read + 1]);
         uint64_t offset_of_first_offset = sizeof(uint64_t) * (first_block_num - 1);
-        detail::helper::pread_with_retry(block_index_fd, offsets.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
+        detail::helper::pread_with_retry( storage.file_descriptor, offsets.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
 
         // then read all the blocks in one go
         uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
@@ -443,8 +448,7 @@ namespace hive { namespace chain {
         boost::atomic_shared_ptr<signed_block> head;
 
         // these don't change after opening, don't need locking
-        int block_log_fd;
-        fc::path block_file;
+        storage_description storage;
 
         block_log_index block_log_idx;
 
@@ -456,25 +460,25 @@ namespace hive { namespace chain {
 
   block_log::block_log() : my( new detail::block_log_impl() )
   {
-    my->block_log_fd = -1;
+    my->storage.file_descriptor = -1;
   }
 
   block_log::~block_log()
   {
-    if (my->block_log_fd != -1)
-      ::close(my->block_log_fd);
+    if (my->storage.file_descriptor != -1)
+      ::close( my->storage.file_descriptor );
   }
 
   void block_log::open( const fc::path& file )
   {
     close();
 
-    my->block_file = file;
+    my->storage.file = file;
 
-    my->block_log_fd = ::open(my->block_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-    if (my->block_log_fd == -1)
-      FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
-    my->block_log_size = get_file_size(my->block_log_fd);
+    my->storage.file_descriptor = ::open(my->storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
+    if( my->storage.file_descriptor == -1 )
+      FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->storage.file)("error", strerror(errno)));
+    my->block_log_size = get_file_size( my->storage.file_descriptor );
 
     const ssize_t index_size = my->block_log_idx.open( file );
 
@@ -502,7 +506,7 @@ namespace hive { namespace chain {
       my->head.exchange(boost::make_shared<signed_block>(read_head()));
 
       boost::shared_ptr<signed_block> head_block = my->head.load();
-      my->block_log_idx.prepare( index_size, head_block, my->block_log_size, my->block_log_fd );
+      my->block_log_idx.prepare( index_size, head_block, my->block_log_size, my->storage.file_descriptor );
     }
     else if( index_size )
     {
@@ -550,20 +554,20 @@ namespace hive { namespace chain {
 
   void block_log::close()
   {
-    if (my->block_log_fd != -1) {
-      ::close(my->block_log_fd);
-      my->block_log_fd = -1;
+    if ( my->storage.file_descriptor != -1) {
+      ::close(my->storage.file_descriptor);
+      my->storage.file_descriptor = -1;
     }
 
     if( my->block_log_idx.close() ) {
-      my->block_log_fd = -1;
+      my->storage.file_descriptor = -1;
     }
     my->head.store(boost::shared_ptr<signed_block>());
   }
 
   bool block_log::is_open()const
   {
-    return my->block_log_fd != -1;
+    return my->storage.file_descriptor != -1;
   }
 
   // threading guarantees:
@@ -585,7 +589,7 @@ namespace hive { namespace chain {
       serialized_block.resize(serialized_byte_count + sizeof(uint64_t));
       *(uint64_t*)(serialized_block.data() + serialized_byte_count) = block_start_pos;
 
-      detail::helper::write_with_retry(my->block_log_fd, serialized_block.data(), serialized_block.size());
+      detail::helper::write_with_retry( my->storage.file_descriptor, serialized_block.data(), serialized_block.size() );
       my->block_log_size += serialized_block.size();
 
       // add it to the index
@@ -627,7 +631,7 @@ namespace hive { namespace chain {
       uint64_t _size    = 0;
       my->block_log_idx.read( block_num, _offset, _size );
 
-      return detail::helper::read_block_from_offset_and_size( my->block_log_fd, _offset, _size );
+      return detail::helper::read_block_from_offset_and_size( my->storage.file_descriptor, _offset, _size );
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -640,7 +644,7 @@ namespace hive { namespace chain {
       // will use it and then load the previous blocks from the block log
       boost::shared_ptr<signed_block> head_block = my->head.load();
 
-      return my->block_log_idx.read_block_range( first_block_num, count, my->block_log_fd, head_block );
+      return my->block_log_idx.read_block_range( first_block_num, count, my->storage.file_descriptor, head_block );
     }
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }
@@ -650,16 +654,16 @@ namespace hive { namespace chain {
   {
     try
     {
-      ssize_t block_log_size = get_file_size(my->block_log_fd);
+      ssize_t block_log_size = get_file_size( my->storage.file_descriptor );
 
       // read the last int64 of the block log into `head_block_offset`, 
       // that's the index of the start of the head block
       FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
       uint64_t head_block_offset;
-      detail::helper::pread_with_retry(my->block_log_fd, &head_block_offset, sizeof(head_block_offset), 
+      detail::helper::pread_with_retry(my->storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
                                                block_log_size - sizeof(head_block_offset));
 
-      return detail::helper::read_block_from_offset_and_size( my->block_log_fd, head_block_offset, block_log_size - head_block_offset - sizeof(head_block_offset) );
+      return detail::helper::read_block_from_offset_and_size( my->storage.file_descriptor, head_block_offset, block_log_size - head_block_offset - sizeof(head_block_offset) );
     }
     FC_LOG_AND_RETHROW()
   }
