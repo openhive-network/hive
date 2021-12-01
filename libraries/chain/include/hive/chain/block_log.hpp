@@ -57,7 +57,6 @@ namespace hive { namespace chain {
       const boost::shared_ptr<signed_block> head() const;
 
     private:
-      void construct_index( bool resume = false, uint64_t index_pos = 0 );
 
       std::unique_ptr<detail::block_log_impl> my;
   };
