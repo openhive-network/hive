@@ -27,6 +27,24 @@ namespace hive { namespace chain {
     close();
   }
 
+  int block_log_index::read_blocks_number( const ssize_t index_size, uint64_t block_pos )
+  {
+    // read the last 8 bytes of the block index to get the offset of the beginning of the 
+    // head block
+    uint64_t index_pos = 0;
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &index_pos, sizeof(index_pos), 
+      index_size - sizeof(index_pos));
+
+    FC_ASSERT(bytes_read == sizeof(index_pos));
+
+    if( block_pos < index_pos )
+      return 1;
+    else if( block_pos > index_pos )
+      return -1;
+
+    return 0;
+  }
+
   ssize_t block_log_index::open( const fc::path& file )
   {
     storage.file = fc::path( file.generic_string() + ".index" );
@@ -51,6 +69,7 @@ namespace hive { namespace chain {
 
       FC_ASSERT(bytes_read == sizeof(block_pos));
 
+      int cmp = read_blocks_number( index_size, block_pos );
       // read the last 8 bytes of the block index to get the offset of the beginning of the 
       // head block
       uint64_t index_pos = 0;
@@ -59,13 +78,13 @@ namespace hive { namespace chain {
 
       FC_ASSERT(bytes_read == sizeof(index_pos));
 
-      if( block_pos < index_pos )
+      if( cmp == 1 )
       {
         ilog( "block_pos < index_pos, close and reopen index_stream" );
         ddump((block_pos)(index_pos));
         construct_index( head_block, desc );
       }
-      else if( block_pos > index_pos )
+      else if( cmp == -1 )
       {
         ilog( "Index is incomplete" );
         construct_index( head_block, desc, true/*resume*/, index_pos );

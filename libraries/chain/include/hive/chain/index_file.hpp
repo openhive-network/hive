@@ -20,6 +20,8 @@ namespace hive { namespace chain {
 
       void construct_index( const boost::shared_ptr<signed_block>& head_block, const storage_description_ex& desc, bool resume = false, uint64_t index_pos = 0 );
 
+      int read_blocks_number( const ssize_t index_size, uint64_t block_pos );
+
     public:
 
       block_log_index();
