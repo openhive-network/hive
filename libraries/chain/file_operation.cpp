@@ -1,12 +1,14 @@
 #include <hive/chain/file_operation.hpp>
 
+#include <sys/stat.h>
+
 namespace hive { namespace chain {
 
   void file_operation::write_with_retry(int fd, const void* buf, size_t nbyte)
   {
     for (;;)
     {
-      ssize_t bytes_written = write(fd, buf, nbyte);
+      ssize_t bytes_written = write(fd, buf, nbyte); 
       if (bytes_written == -1)
         FC_THROW("Error writing ${nbytes} to file: ${error}", 
                   ("nbyte", nbyte)("error", strerror(errno)));
@@ -66,6 +68,14 @@ namespace hive { namespace chain {
     signed_block block;
     fc::raw::unpack_from_char_array(serialized_data.get(), size, block);
     return block;
+  }
+
+  ssize_t file_operation::get_file_size(int fd)
+  {
+    struct stat file_stats;
+    if (fstat(fd, &file_stats) == -1)
+      FC_THROW("Error getting size of file: ${error}", ("error", strerror(errno)));
+    return file_stats.st_size;
   }
 
 } } // hive::chain

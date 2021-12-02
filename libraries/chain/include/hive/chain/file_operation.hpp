@@ -15,6 +15,8 @@ namespace hive { namespace chain {
       static size_t pread_with_retry(int filedes, void* buf, size_t nbyte, off_t offset);
 
       static signed_block read_block_from_offset_and_size(int block_log_fd, uint64_t offset, uint64_t size);
+
+      static ssize_t get_file_size(int fd);
   };
 
 } } // hive::chain

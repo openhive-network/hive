@@ -23,6 +23,7 @@ add_library( hive_chain
              shared_authority.cpp
              block_log.cpp
              file_operation.cpp
+             index_file.cpp
 
              generic_custom_operation_interpreter.cpp
 
