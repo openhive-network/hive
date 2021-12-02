@@ -3,6 +3,8 @@
 
 #include <appbase/application.hpp>
 
+#include <fstream>
+
 #define MMAP_BLOCK_IO
 
 #ifdef MMAP_BLOCK_IO
@@ -114,7 +116,11 @@ namespace hive { namespace chain {
       const uint32_t block_num = head_block->block_num();
       idump((block_num));
 
-#define USE_BACKWARDS_INDEX
+//#define USE_BACKWARDS_INDEX
+      // Note: using backwards indexing has to be used when `block_api` plugin is enabled,
+      // because this plugin retrieves [block hash;witness public key] from `hashes.index` 
+      // when `block_api.get_block` or `block_api.get_block_range` is called
+
 #ifdef USE_BACKWARDS_INDEX
       // Note: the old implementation recreated the block index by reading the log
       // forwards, starting at the start of the block log and deserializing each block
@@ -172,7 +178,7 @@ namespace hive { namespace chain {
         memcpy(block_index_ptr + sizeof(block_pos) * (block_index - 1), &block_pos, sizeof(block_pos));
 #else
         //read next block pos offset from the block log
-        file_operation::pread_with_retry(block_log_fd, &block_pos, sizeof(block_pos), block_log_offset_of_block_pos);
+        file_operation::pread_with_retry(desc.file_descriptor, &block_pos, sizeof(block_pos), block_log_offset_of_block_pos);
         // write it to the right location in the new index file
         file_operation::pwrite_with_retry(new_index_fd, &block_pos, sizeof(block_pos), sizeof(block_pos) * (block_index - 1));
 #endif
@@ -206,7 +212,7 @@ namespace hive { namespace chain {
       if( !resume )
         fc::remove_all( storage.file );
 
-      block_stream.open( storage.file.generic_string().c_str(), LOG_READ );
+      block_stream.open( desc.file.generic_string().c_str(), LOG_READ );
       index_stream.open( storage.file.generic_string().c_str(), LOG_WRITE );
 
       uint64_t pos = resume ? index_pos : 0;
