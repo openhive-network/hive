@@ -14,21 +14,17 @@ namespace hive { namespace chain {
 
   class block_log_index
   {
-    storage_description storage;
-
-    private:
-
-      void construct_index( const boost::shared_ptr<signed_block>& head_block, const storage_description_ex& desc, bool resume = false, uint64_t index_pos = 0 );
-
-      int read_blocks_number( const ssize_t index_size, uint64_t block_pos );
+      void read_blocks_number( uint64_t block_pos );
 
     public:
 
-      block_log_index();
+      storage_description storage;
+
+      block_log_index( const storage_description::storage_type val );
       ~block_log_index();
 
-      ssize_t open( const fc::path& file );
-      void prepare( const ssize_t index_size, const boost::shared_ptr<signed_block>& head_block, const storage_description_ex& desc );
+      void open( const fc::path& file );
+      void prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc );
       void close();
 
       void non_empty_idx_info();

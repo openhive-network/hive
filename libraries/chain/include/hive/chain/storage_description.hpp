@@ -6,14 +6,23 @@ namespace hive { namespace chain {
 
   struct storage_description
   {
-    int       file_descriptor = -1;
-    fc::path  file;
-  };
+    enum status_type  : uint32_t { none, reopen, resume };
+    enum storage_type : uint32_t { block_log, block_log_idx, hash_idx };
 
-  struct storage_description_ex : public storage_description
-  {
+    status_type status = status_type::none;
+    const storage_type storage;
+
     // only accessed when appending a block, doesn't need locking
-    ssize_t block_log_size = 0;
+    ssize_t     size  = 0;
+    uint64_t    pos   = 0;
+
+    int         file_descriptor = -1;
+    fc::path    file;
+
+    storage_description( storage_type val ): storage( val )
+    {
+
+    }
   };
 
 } } // hive::chain

@@ -16,7 +16,11 @@ namespace hive { namespace chain {
 
       boost::atomic_shared_ptr<signed_block> head;
 
-      storage_description_ex storage;
+      storage_description storage;
+
+      block_log_file(): storage( storage_description::storage_type::block_log )
+      {
+      }
   };
 
 } } // hive::chain

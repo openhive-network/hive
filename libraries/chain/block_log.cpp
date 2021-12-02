@@ -1,5 +1,6 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/file_operation.hpp>
+#include <hive/chain/file_manager.hpp>
 
 #include <hive/chain/index_file.hpp>
 #include <hive/chain/block_log_file.hpp>
@@ -30,9 +31,17 @@ namespace hive { namespace chain {
     class block_log_impl
     {
       public:
+      
+        file_manager    file_mgr;
+
         block_log_file  block_log_data;
         block_log_index block_log_idx;
-        
+
+        block_log_impl(): block_log_idx( storage_description::storage_type::block_log_idx )
+        {
+
+        }
+
     };
 
   } // end namespace detail
@@ -57,9 +66,9 @@ namespace hive { namespace chain {
     my->block_log_data.storage.file_descriptor = ::open(my->block_log_data.storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
     if( my->block_log_data.storage.file_descriptor == -1 )
       FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_log_data.storage.file)("error", strerror(errno)));
-    my->block_log_data.storage.block_log_size = file_operation::get_file_size( my->block_log_data.storage.file_descriptor );
+    my->block_log_data.storage.size = file_operation::get_file_size( my->block_log_data.storage.file_descriptor );
 
-    const ssize_t index_size = my->block_log_idx.open( file );
+    my->block_log_idx.open( file );
 
     /* On startup of the block log, there are several states the log file and the index file can be
       * in relation to eachother.
@@ -79,15 +88,17 @@ namespace hive { namespace chain {
       *  - If the index file head is not in the log file, delete the index and replay.
       *  - If the index file head is in the log, but not up to date, replay from index head.
       */
-    if( my->block_log_data.storage.block_log_size )
+    if( my->block_log_data.storage.size )
     {
       ilog( "Log is nonempty" );
       my->block_log_data.head.exchange(boost::make_shared<signed_block>(read_head()));
 
       boost::shared_ptr<signed_block> head_block = my->block_log_data.head.load();
-      my->block_log_idx.prepare( index_size, head_block, my->block_log_data.storage );
+      my->block_log_idx.prepare( head_block, my->block_log_data.storage );
+
+      my->file_mgr.construct_index();
     }
-    else if( index_size )
+    else if( my->block_log_idx.storage.size )
     {
       my->block_log_idx.non_empty_idx_info();
     }
@@ -158,7 +169,7 @@ namespace hive { namespace chain {
   {
     try
     {
-      uint64_t block_start_pos = my->block_log_data.storage.block_log_size;
+      uint64_t block_start_pos = my->block_log_data.storage.size;
       std::vector<char> serialized_block = fc::raw::pack_to_vector(b);
 
       // what we write to the file is the serialized data, followed by the index of the start of the
@@ -168,7 +179,7 @@ namespace hive { namespace chain {
       *(uint64_t*)(serialized_block.data() + serialized_byte_count) = block_start_pos;
 
       file_operation::write_with_retry( my->block_log_data.storage.file_descriptor, serialized_block.data(), serialized_block.size() );
-      my->block_log_data.storage.block_log_size += serialized_block.size();
+      my->block_log_data.storage.size += serialized_block.size();
 
       // add it to the index
       my->block_log_idx.append(&block_start_pos, sizeof(block_start_pos));

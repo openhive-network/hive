@@ -24,6 +24,7 @@ add_library( hive_chain
              block_log.cpp
              file_operation.cpp
              index_file.cpp
+             file_manager.cpp
 
              generic_custom_operation_interpreter.cpp
 
