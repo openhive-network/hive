@@ -1,4 +1,6 @@
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/file_operation.hpp>
+
 #include <fstream>
 #include <fc/io/raw.hpp>
 
@@ -56,81 +58,6 @@ namespace hive { namespace chain {
       ssize_t block_log_size = 0;
     };
 
-    class helper {
-      public:
-
-        static void write_with_retry(int filedes, const void* buf, size_t nbyte);
-        static void pwrite_with_retry(int filedes, const void* buf, size_t nbyte, off_t offset);
-        static size_t pread_with_retry(int filedes, void* buf, size_t nbyte, off_t offset);
-
-        static signed_block read_block_from_offset_and_size(int block_log_fd, uint64_t offset, uint64_t size);
-    };
-
-    void helper::write_with_retry(int fd, const void* buf, size_t nbyte)
-    {
-      for (;;)
-      {
-        ssize_t bytes_written = write(fd, buf, nbyte);
-        if (bytes_written == -1)
-          FC_THROW("Error writing ${nbytes} to file: ${error}", 
-                   ("nbyte", nbyte)("error", strerror(errno)));
-        if (bytes_written == (ssize_t)nbyte)
-          return;
-        buf = ((const char*)buf) + bytes_written;
-        nbyte -= bytes_written;
-      }
-    }
-
-    void helper::pwrite_with_retry(int fd, const void* buf, size_t nbyte, off_t offset)
-    {
-      for (;;)
-      {
-        ssize_t bytes_written = pwrite(fd, buf, nbyte, offset);
-        if (bytes_written == -1)
-          FC_THROW("Error writing ${nbytes} to file at offset ${offset}: ${error}", 
-                   ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
-        if (bytes_written == (ssize_t)nbyte)
-          return;
-        buf = ((const char*)buf) + bytes_written;
-        offset += bytes_written;
-        nbyte -= bytes_written;
-      }
-    }
-
-    size_t helper::pread_with_retry(int fd, void* buf, size_t nbyte, off_t offset)
-    {
-      size_t total_read = 0;
-      for (;;)
-      {
-        ssize_t bytes_read = pread(fd, buf, nbyte, offset);
-        if (bytes_read == -1)
-          FC_THROW("Error reading ${nbytes} from file at offset ${offset}: ${error}", 
-                   ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
-
-        total_read += bytes_read;
-
-        if (bytes_read == 0 || bytes_read == (ssize_t)nbyte)
-          break;
-
-        buf = ((char*)buf) + bytes_read;
-        offset += bytes_read;
-        nbyte -= bytes_read;
-      }
-
-      return total_read;
-    }
-
-    signed_block helper::read_block_from_offset_and_size(int block_log_fd, uint64_t offset, uint64_t size)
-    {
-      std::unique_ptr<char[]> serialized_data(new char[size]);
-      auto total_read = pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
-
-      FC_ASSERT(total_read == size);
-
-      signed_block block;
-      fc::raw::unpack_from_char_array(serialized_data.get(), size, block);
-      return block;
-    }
 
     class block_log_index
     {
@@ -183,7 +110,7 @@ namespace hive { namespace chain {
         // read the last 8 bytes of the block log to get the offset of the beginning of the head 
         // block
         uint64_t block_pos = 0;
-        auto bytes_read = detail::helper::pread_with_retry(desc.file_descriptor, &block_pos, sizeof(block_pos), 
+        auto bytes_read = file_operation::pread_with_retry(desc.file_descriptor, &block_pos, sizeof(block_pos), 
           desc.block_log_size - sizeof(block_pos));
 
         FC_ASSERT(bytes_read == sizeof(block_pos));
@@ -191,7 +118,7 @@ namespace hive { namespace chain {
         // read the last 8 bytes of the block index to get the offset of the beginning of the 
         // head block
         uint64_t index_pos = 0;
-        bytes_read = detail::helper::pread_with_retry( storage.file_descriptor, &index_pos, sizeof(index_pos), 
+        bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &index_pos, sizeof(index_pos), 
           index_size - sizeof(index_pos));
 
         FC_ASSERT(bytes_read == sizeof(index_pos));
@@ -291,9 +218,9 @@ namespace hive { namespace chain {
           memcpy(block_index_ptr + sizeof(block_pos) * (block_index - 1), &block_pos, sizeof(block_pos));
   #else
           //read next block pos offset from the block log
-          detail::helper::pread_with_retry(block_log_fd, &block_pos, sizeof(block_pos), block_log_offset_of_block_pos);
+          file_operation::pread_with_retry(block_log_fd, &block_pos, sizeof(block_pos), block_log_offset_of_block_pos);
           // write it to the right location in the new index file
-          detail::helper::pwrite_with_retry(new_index_fd, &block_pos, sizeof(block_pos), sizeof(block_pos) * (block_index - 1));
+          file_operation::pwrite_with_retry(new_index_fd, &block_pos, sizeof(block_pos), sizeof(block_pos) * (block_index - 1));
   #endif
           if (higher_block_pos <= block_pos) //this is a sanity check on index values stored in the block log
             FC_THROW("bad block index at block ${block_index} because ${higher_block_pos} <= ${block_pos}",
@@ -387,14 +314,14 @@ namespace hive { namespace chain {
 
     void block_log_index::append( const void* buf, size_t nbyte )
     {
-      detail::helper::write_with_retry( storage.file_descriptor, buf, nbyte );
+      file_operation::write_with_retry( storage.file_descriptor, buf, nbyte );
     }
 
     void block_log_index::read( uint32_t block_num, uint64_t& offset, uint64_t& size )
     {
       uint64_t offsets[2] = {0, 0};
       uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
-      auto bytes_read = detail::helper::pread_with_retry( storage.file_descriptor, &offsets, sizeof(offsets),  offset_in_index );
+      auto bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &offsets, sizeof(offsets),  offset_in_index );
       FC_ASSERT(bytes_read == sizeof(offsets));
 
       offset = offsets[0];
@@ -424,13 +351,13 @@ namespace hive { namespace chain {
         // read all the offsets in one go
         std::unique_ptr<uint64_t[]> offsets(new uint64_t[number_of_blocks_to_read + 1]);
         uint64_t offset_of_first_offset = sizeof(uint64_t) * (first_block_num - 1);
-        detail::helper::pread_with_retry( storage.file_descriptor, offsets.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
+        file_operation::pread_with_retry( storage.file_descriptor, offsets.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
 
         // then read all the blocks in one go
         uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
         idump((size_of_all_blocks));
         std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
-        detail::helper::pread_with_retry(block_log_fd, block_data.get(), size_of_all_blocks,  offsets[0]);
+        file_operation::pread_with_retry(block_log_fd, block_data.get(), size_of_all_blocks,  offsets[0]);
 
         // now deserialize the blocks
         for (uint32_t i = 0; i <= last_block_num_from_disk - first_block_num; ++i)
@@ -593,7 +520,7 @@ namespace hive { namespace chain {
       serialized_block.resize(serialized_byte_count + sizeof(uint64_t));
       *(uint64_t*)(serialized_block.data() + serialized_byte_count) = block_start_pos;
 
-      detail::helper::write_with_retry( my->storage.file_descriptor, serialized_block.data(), serialized_block.size() );
+      file_operation::write_with_retry( my->storage.file_descriptor, serialized_block.data(), serialized_block.size() );
       my->storage.block_log_size += serialized_block.size();
 
       // add it to the index
@@ -635,7 +562,7 @@ namespace hive { namespace chain {
       uint64_t _size    = 0;
       my->block_log_idx.read( block_num, _offset, _size );
 
-      return detail::helper::read_block_from_offset_and_size( my->storage.file_descriptor, _offset, _size );
+      return file_operation::read_block_from_offset_and_size( my->storage.file_descriptor, _offset, _size );
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -664,10 +591,10 @@ namespace hive { namespace chain {
       // that's the index of the start of the head block
       FC_ASSERT(_actual_size >= (ssize_t)sizeof(uint64_t));
       uint64_t head_block_offset;
-      detail::helper::pread_with_retry(my->storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
+      file_operation::pread_with_retry(my->storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
                                                _actual_size - sizeof(head_block_offset));
 
-      return detail::helper::read_block_from_offset_and_size( my->storage.file_descriptor, head_block_offset, _actual_size - head_block_offset - sizeof(head_block_offset) );
+      return file_operation::read_block_from_offset_and_size( my->storage.file_descriptor, head_block_offset, _actual_size - head_block_offset - sizeof(head_block_offset) );
     }
     FC_LOG_AND_RETHROW()
   }
