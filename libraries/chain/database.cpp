@@ -1467,6 +1467,11 @@ void database::notify_comment_reward(const comment_reward_notification& note)
   HIVE_TRY_NOTIFY(_comment_reward_signal, note) 
 }
 
+void database::notify_end_of_syncing()
+{
+  HIVE_TRY_NOTIFY(_end_of_syncing_signal)
+}
+
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
@@ -5036,6 +5041,11 @@ boost::signals2::connection database::add_snapshot_supplement_handler(const load
 boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl<true>(_comment_reward_signal, func, plugin, group, "comment_reward");
+}
+
+boost::signals2::connection database::add_end_of_syncing_handler(const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl<false>(_end_of_syncing_signal, func, plugin, group, "->syncing_end");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const
