@@ -371,10 +371,12 @@ namespace chain {
       using prepare_snapshot_data_supplement_handler_t = std::function < void(const prepare_snapshot_supplement_notification&) >;
       using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
       using comment_reward_notification_handler_t = std::function < void(const comment_reward_notification&) >;
+      using end_of_syncing_notification_handler_t = std::function < void(void) >;
 
       void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
       void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
       void notify_comment_reward(const comment_reward_notification& note);
+      void notify_end_of_syncing();
 
     private:
       template < bool IS_PRE_OPERATION, typename TSignal,
@@ -426,6 +428,8 @@ namespace chain {
       boost::signals2::connection add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       boost::signals2::connection add_comment_reward_handler            (const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+
+      boost::signals2::connection add_end_of_syncing_handler            (const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
       //////////////////// db_witness_schedule.cpp ////////////////////
 
@@ -906,6 +910,8 @@ namespace chain {
       ///  Emitted when rewards for author and curators are paid out.
       /// </summary>
       fc::signal<void(const comment_reward_notification&)>          _comment_reward_signal;
+
+      fc::signal<void()> _end_of_syncing_signal;
   };
 
   struct reindex_notification

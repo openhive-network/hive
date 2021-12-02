@@ -313,6 +313,7 @@ void chain_plugin_impl::start_write_processing()
             if( is_syncing && fc::time_point::now() - db.head_block_time() < fc::minutes(1) )
             {
               is_syncing = false;
+              db.notify_end_of_syncing();
             }
 
             if( !is_syncing )
