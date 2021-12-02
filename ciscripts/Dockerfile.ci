@@ -20,7 +20,7 @@ RUN apt-get update && \
 FROM builder-tester-base AS builder
 
 RUN apt-get update && \
-    apt-get install -y autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build && \
+    apt-get install -y wget autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build && \
     apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
