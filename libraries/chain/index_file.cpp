@@ -78,14 +78,13 @@ namespace hive { namespace chain {
     }
   }
 
-  bool block_log_index::close()
+  void block_log_index::close()
   {
     if( storage.file_descriptor != -1 )
     {
       ::close( storage.file_descriptor );
-      return true;
+      storage.file_descriptor = -1;
     }
-    return false;
   }
 
   void block_log_index::construct_index( const boost::shared_ptr<signed_block>& head_block, const storage_description_ex& desc, bool resume, uint64_t index_pos )

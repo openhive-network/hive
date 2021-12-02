@@ -27,7 +27,7 @@ namespace hive { namespace chain {
 
       ssize_t open( const fc::path& file );
       void prepare( const ssize_t index_size, const boost::shared_ptr<signed_block>& head_block, const storage_description_ex& desc );
-      bool close();
+      void close();
 
       void non_empty_idx_info();
       void append( const void* buf, size_t nbyte );

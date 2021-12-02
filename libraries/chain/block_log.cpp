@@ -138,9 +138,8 @@ namespace hive { namespace chain {
       my->block_log_data.storage.file_descriptor = -1;
     }
 
-    if( my->block_log_idx.close() ) {
-      my->block_log_data.storage.file_descriptor = -1;
-    }
+    my->block_log_idx.close();
+
     my->block_log_data.head.store(boost::shared_ptr<signed_block>());
   }
 
