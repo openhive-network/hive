@@ -23,7 +23,7 @@ namespace hive { namespace chain {
   file_manager::file_manager()
   {
     idxs.push_back( p_base_index( new block_log_index( storage_description::storage_type::block_log_idx, ".index" ) ) );
-    idxs.push_back( p_base_index( new block_hash_witness_public_key( storage_description::storage_type::hash_idx, "_hash.index" ) ) );
+    idxs.push_back( p_base_index( new block_id_witness_public_key( storage_description::storage_type::hash_idx, "_hash.index" ) ) );
   }
 
   file_manager::~file_manager()

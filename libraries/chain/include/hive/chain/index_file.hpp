@@ -59,6 +59,7 @@ namespace hive { namespace chain {
   {
     protected:
 
+      const uint32_t ELEMENT_SIZE = sizeof(block_id_type) + sizeof(fc::ecc::public_key_data) + sizeof(uint64_t);
       void read_blocks_number( uint64_t block_pos ) override;
 
     public:
@@ -69,14 +70,14 @@ namespace hive { namespace chain {
       void check_consistency( uint32_t total_size ) override;
   };
   
-  constexpr uint32_t block_hash_witness_public_key_size = 7 + 1;
+  constexpr uint32_t block_id_witness_public_key_size = 49;
 
-  class block_hash_witness_public_key: public custom_index<block_hash_witness_public_key_size>
+  class block_id_witness_public_key: public custom_index<block_id_witness_public_key_size>
   {
     public:
 
-      block_hash_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val );
-      ~block_hash_witness_public_key();
+      block_id_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val );
+      ~block_id_witness_public_key();
 
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
   };

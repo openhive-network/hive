@@ -196,17 +196,30 @@ namespace hive { namespace chain {
     storage.calculate_status( block_pos );
   }
 
-  block_hash_witness_public_key::block_hash_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val )
+  block_id_witness_public_key::block_id_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val )
                                 :custom_index( val, file_name_ext_val )
   {
   }
   
-  block_hash_witness_public_key::~block_hash_witness_public_key()
+  block_id_witness_public_key::~block_id_witness_public_key()
   {
   }
 
-  void block_hash_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
+  void block_id_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
   {
+    //fc::ripemd160
+    auto _id = block.id();
+    char* _block_id = _id.data();
+
+    //fc::array<char,33>
+    auto _witness_public_key = block.signee();
+    fc::ecc::public_key_data _key = _witness_public_key.serialize();
+
+    FC_ASSERT( sizeof( position ) + _id.data_size() + _key.size() == ELEMENT_SIZE, "sizes are incorrect - calculated: ${sum} given: ${given}",
+                                                                                  ("sum", sizeof( position ) + _id.data_size() + _key.size())("given", ELEMENT_SIZE) );
+
     stream.write( (char*)&position, sizeof( position ) );
+    stream.write( _block_id, _id.data_size() );
+    stream.write( _key.begin(), _key.size() );
   }
 } } // hive::chain
