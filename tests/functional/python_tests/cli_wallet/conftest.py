@@ -4,7 +4,7 @@ from test_tools.private.node import Node
 from test_tools import Wallet
 from .shared_utilites import prepared_proposal_data_with_id, funded_account_info, prepare_proposal
 
-@pytest.fixture(scope='function')
+@pytest.fixture
 def node(world : World):
   node = world.create_init_node()
   node.run()
