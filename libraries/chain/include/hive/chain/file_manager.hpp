@@ -35,6 +35,8 @@ namespace hive { namespace chain {
       file_manager();
       ~file_manager();
 
+      void open( const fc::path& file );
+      void prepare( const signed_block& head_block );
       void close();
 
       block_log_file& get_block_log_file();

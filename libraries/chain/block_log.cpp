@@ -50,42 +50,8 @@ namespace hive { namespace chain {
   {
     close();
 
-    my->file_mgr.get_block_log_file().open( file );
-
-    my->file_mgr.get_block_log_idx()->open( file );
-
-    /* On startup of the block log, there are several states the log file and the index file can be
-      * in relation to eachother.
-      *
-      *                          Block Log
-      *                     Exists       Is New
-      *                 +------------+------------+
-      *          Exists |    Check   |   Delete   |
-      *   Index         |    Head    |    Index   |
-      *    File         +------------+------------+
-      *          Is New |   Replay   |     Do     |
-      *                 |    Log     |   Nothing  |
-      *                 +------------+------------+
-      *
-      * Checking the heads of the files has several conditions as well.
-      *  - If they are the same, do nothing.
-      *  - If the index file head is not in the log file, delete the index and replay.
-      *  - If the index file head is in the log, but not up to date, replay from index head.
-      */
-    if( my->file_mgr.get_block_log_file().storage.size )
-    {
-      ilog( "Log is nonempty" );
-      my->file_mgr.get_block_log_file().head.exchange(boost::make_shared<signed_block>(read_head()));
-
-      boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
-      my->file_mgr.get_block_log_idx()->prepare( head_block, my->file_mgr.get_block_log_file().storage );
-
-      my->file_mgr.construct_index();
-    }
-    else if( my->file_mgr.get_block_log_idx()->storage.size )
-    {
-      my->file_mgr.get_block_log_idx()->non_empty_idx_info();
-    }
+    my->file_mgr.open( file );
+    my->file_mgr.prepare( read_head() );
   }
 
   void block_log::rewrite(const fc::path& input_file, const fc::path& output_file, uint32_t max_block_num)

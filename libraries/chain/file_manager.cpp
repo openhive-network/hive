@@ -23,11 +23,63 @@ namespace hive { namespace chain {
   file_manager::file_manager()
   {
     idxs.push_back( p_base_index( new block_log_index( storage_description::storage_type::block_log_idx, ".index" ) ) );
-    //idxs.push_back( p_base_index( new block_log_index( storage_description::storage_type::hash_idx, "_hash.index" ) ) );
+    idxs.push_back( p_base_index( new block_log_index( storage_description::storage_type::hash_idx, "_hash.index" ) ) );
   }
 
   file_manager::~file_manager()
   {
+  }
+ 
+  void file_manager::open( const fc::path& file )
+  {
+    block_log.open( file );
+
+    for( auto& idx : idxs )
+      idx->open( file );
+  }
+
+  void  file_manager::prepare( const signed_block& head_block )
+  {
+    /* On startup of the block log, there are several states the log file and the index file can be
+      * in relation to eachother.
+      *
+      *                          Block Log
+      *                     Exists       Is New
+      *                 +------------+------------+
+      *          Exists |    Check   |   Delete   |
+      *   Index         |    Head    |    Index   |
+      *    File         +------------+------------+
+      *          Is New |   Replay   |     Do     |
+      *                 |    Log     |   Nothing  |
+      *                 +------------+------------+
+      *
+      * Checking the heads of the files has several conditions as well.
+      *  - If they are the same, do nothing.
+      *  - If the index file head is not in the log file, delete the index and replay.
+      *  - If the index file head is in the log, but not up to date, replay from index head.
+      */
+    if( block_log.storage.size )
+    {
+      ilog( "Log is nonempty" );
+      block_log.head.exchange(boost::make_shared<signed_block>( head_block ));
+
+      boost::shared_ptr<signed_block> head_block = block_log.head.load();
+
+      for( auto& idx : idxs )
+        idx->prepare( head_block, block_log.storage );
+
+      construct_index();
+    }
+    else
+    {
+      for( auto& idx : idxs )
+      {
+        if( idx->storage.size )
+        {
+          idx->non_empty_idx_info();    
+        }
+      }
+    }
   }
 
   void file_manager::close()
