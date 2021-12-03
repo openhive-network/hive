@@ -134,6 +134,7 @@ namespace hive
   }
 
   void notify_hived_status(const fc::string &current_status) noexcept;
+  void notify_hived_error(const fc::string &error_message) noexcept;
 } // hive
 
 FC_REFLECT(hive::utilities::notifications::notification_t, (time)(name)(value));
