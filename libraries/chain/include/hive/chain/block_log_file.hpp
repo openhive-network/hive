@@ -18,9 +18,10 @@ namespace hive { namespace chain {
 
       storage_description storage;
 
-      block_log_file(): storage( storage_description::storage_type::block_log )
-      {
-      }
+      block_log_file();
+
+      void open( const fc::path& file );
+      void close();
   };
 
 } } // hive::chain

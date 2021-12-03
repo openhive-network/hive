@@ -4,9 +4,6 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define LOG_READ  (std::ios::in | std::ios::binary)
-#define LOG_WRITE (std::ios::out | std::ios::binary | std::ios::app)
-
 namespace hive { namespace chain {
 
   block_log_index::block_log_index( const storage_description::storage_type val ): storage( val )
@@ -91,11 +88,7 @@ namespace hive { namespace chain {
 
   void block_log_index::close()
   {
-    if( storage.file_descriptor != -1 )
-    {
-      ::close( storage.file_descriptor );
-      storage.file_descriptor = -1;
-    }
+    storage.close();
   }
 
   void block_log_index::non_empty_idx_info()

@@ -31,44 +31,28 @@ namespace hive { namespace chain {
     class block_log_impl
     {
       public:
-      
-        file_manager    file_mgr;
-
-        block_log_file  block_log_data;
-        block_log_index block_log_idx;
-
-        block_log_impl(): block_log_idx( storage_description::storage_type::block_log_idx )
-        {
-
-        }
-
+        file_manager file_mgr;
     };
 
   } // end namespace detail
 
   block_log::block_log() : my( new detail::block_log_impl() )
   {
-    my->block_log_data.storage.file_descriptor = -1;
+    my->file_mgr.get_block_log_file().storage.file_descriptor = -1;
   }
 
   block_log::~block_log()
   {
-    if (my->block_log_data.storage.file_descriptor != -1)
-      ::close( my->block_log_data.storage.file_descriptor );
+    my->file_mgr.close();
   }
 
   void block_log::open( const fc::path& file )
   {
     close();
 
-    my->block_log_data.storage.file = file;
+    my->file_mgr.get_block_log_file().open( file );
 
-    my->block_log_data.storage.file_descriptor = ::open(my->block_log_data.storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-    if( my->block_log_data.storage.file_descriptor == -1 )
-      FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_log_data.storage.file)("error", strerror(errno)));
-    my->block_log_data.storage.size = file_operation::get_file_size( my->block_log_data.storage.file_descriptor );
-
-    my->block_log_idx.open( file );
+    my->file_mgr.get_block_log_idx().open( file );
 
     /* On startup of the block log, there are several states the log file and the index file can be
       * in relation to eachother.
@@ -88,19 +72,19 @@ namespace hive { namespace chain {
       *  - If the index file head is not in the log file, delete the index and replay.
       *  - If the index file head is in the log, but not up to date, replay from index head.
       */
-    if( my->block_log_data.storage.size )
+    if( my->file_mgr.get_block_log_file().storage.size )
     {
       ilog( "Log is nonempty" );
-      my->block_log_data.head.exchange(boost::make_shared<signed_block>(read_head()));
+      my->file_mgr.get_block_log_file().head.exchange(boost::make_shared<signed_block>(read_head()));
 
-      boost::shared_ptr<signed_block> head_block = my->block_log_data.head.load();
-      my->block_log_idx.prepare( head_block, my->block_log_data.storage );
+      boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
+      my->file_mgr.get_block_log_idx().prepare( head_block, my->file_mgr.get_block_log_file().storage );
 
       my->file_mgr.construct_index();
     }
-    else if( my->block_log_idx.storage.size )
+    else if( my->file_mgr.get_block_log_idx().storage.size )
     {
-      my->block_log_idx.non_empty_idx_info();
+      my->file_mgr.get_block_log_idx().non_empty_idx_info();
     }
   }
 
@@ -144,19 +128,12 @@ namespace hive { namespace chain {
 
   void block_log::close()
   {
-    if ( my->block_log_data.storage.file_descriptor != -1) {
-      ::close(my->block_log_data.storage.file_descriptor);
-      my->block_log_data.storage.file_descriptor = -1;
-    }
-
-    my->block_log_idx.close();
-
-    my->block_log_data.head.store(boost::shared_ptr<signed_block>());
+    my->file_mgr.close();
   }
 
   bool block_log::is_open()const
   {
-    return my->block_log_data.storage.file_descriptor != -1;
+    return my->file_mgr.get_block_log_file().storage.file_descriptor != -1;
   }
 
   // threading guarantees:
@@ -169,7 +146,7 @@ namespace hive { namespace chain {
   {
     try
     {
-      uint64_t block_start_pos = my->block_log_data.storage.size;
+      uint64_t block_start_pos = my->file_mgr.get_block_log_file().storage.size;
       std::vector<char> serialized_block = fc::raw::pack_to_vector(b);
 
       // what we write to the file is the serialized data, followed by the index of the start of the
@@ -178,15 +155,15 @@ namespace hive { namespace chain {
       serialized_block.resize(serialized_byte_count + sizeof(uint64_t));
       *(uint64_t*)(serialized_block.data() + serialized_byte_count) = block_start_pos;
 
-      file_operation::write_with_retry( my->block_log_data.storage.file_descriptor, serialized_block.data(), serialized_block.size() );
-      my->block_log_data.storage.size += serialized_block.size();
+      file_operation::write_with_retry( my->file_mgr.get_block_log_file().storage.file_descriptor, serialized_block.data(), serialized_block.size() );
+      my->file_mgr.get_block_log_file().storage.size += serialized_block.size();
 
       // add it to the index
-      my->block_log_idx.append(&block_start_pos, sizeof(block_start_pos));
+      my->file_mgr.get_block_log_idx().append(&block_start_pos, sizeof(block_start_pos));
 
       // and update our cached head block
       boost::shared_ptr<signed_block> new_head = boost::make_shared<signed_block>(b);
-      my->block_log_data.head.exchange(new_head);
+      my->file_mgr.get_block_log_file().head.exchange(new_head);
 
       return block_start_pos;
     }
@@ -207,7 +184,7 @@ namespace hive { namespace chain {
       // first, check if it's the current head block; if so, we can just return it.  If the
       // block number is less than than the current head, it's guaranteed to have been fully
       // written to the log+index
-      boost::shared_ptr<signed_block> head_block = my->block_log_data.head.load();
+      boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
       /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
       if (block_num == 0 || !head_block || block_num > head_block->block_num())
         return optional<signed_block>();
@@ -218,9 +195,9 @@ namespace hive { namespace chain {
 
       uint64_t _offset  = 0;
       uint64_t _size    = 0;
-      my->block_log_idx.read( block_num, _offset, _size );
+      my->file_mgr.get_block_log_idx().read( block_num, _offset, _size );
 
-      return file_operation::read_block_from_offset_and_size( my->block_log_data.storage.file_descriptor, _offset, _size );
+      return file_operation::read_block_from_offset_and_size( my->file_mgr.get_block_log_file().storage.file_descriptor, _offset, _size );
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -231,9 +208,9 @@ namespace hive { namespace chain {
     {
       // first, check if the last block we want is the current head block; if so, we can 
       // will use it and then load the previous blocks from the block log
-      boost::shared_ptr<signed_block> head_block = my->block_log_data.head.load();
+      boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
 
-      return my->block_log_idx.read_block_range( first_block_num, count, my->block_log_data.storage.file_descriptor, head_block );
+      return my->file_mgr.get_block_log_idx().read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage.file_descriptor, head_block );
     }
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }
@@ -243,23 +220,23 @@ namespace hive { namespace chain {
   {
     try
     {
-      ssize_t _actual_size = file_operation::get_file_size( my->block_log_data.storage.file_descriptor );
+      ssize_t _actual_size = file_operation::get_file_size( my->file_mgr.get_block_log_file().storage.file_descriptor );
 
       // read the last int64 of the block log into `head_block_offset`, 
       // that's the index of the start of the head block
       FC_ASSERT(_actual_size >= (ssize_t)sizeof(uint64_t));
       uint64_t head_block_offset;
-      file_operation::pread_with_retry(my->block_log_data.storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
+      file_operation::pread_with_retry(my->file_mgr.get_block_log_file().storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
                                                _actual_size - sizeof(head_block_offset));
 
-      return file_operation::read_block_from_offset_and_size( my->block_log_data.storage.file_descriptor, head_block_offset, _actual_size - head_block_offset - sizeof(head_block_offset) );
+      return file_operation::read_block_from_offset_and_size( my->file_mgr.get_block_log_file().storage.file_descriptor, head_block_offset, _actual_size - head_block_offset - sizeof(head_block_offset) );
     }
     FC_LOG_AND_RETHROW()
   }
 
   const boost::shared_ptr<signed_block> block_log::head()const
   {
-    return my->block_log_data.head.load();
+    return my->file_mgr.get_block_log_file().head.load();
   }
 
 } } // hive::chain

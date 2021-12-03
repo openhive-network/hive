@@ -22,17 +22,20 @@ namespace hive { namespace chain {
 
   file_manager::file_manager()
   {
-    idxs.insert( block_log_index( storage_description::storage_type::block_log_idx ) );
-    //idxs.insert( block_log_index( storage_description::storage_type::hash_idx ) );
+    idxs.push_back( block_log_index( storage_description::storage_type::block_log_idx ) );
+    //idxs.push_back( block_log_index( storage_description::storage_type::hash_idx ) );
   }
 
   file_manager::~file_manager()
   {
   }
 
-  bool file_manager::idx_cmp( const block_log_index& a, const block_log_index& b )
+  void file_manager::close()
   {
-    return a.storage.storage < b.storage.storage;
+    block_log.close();
+
+    for( auto& idx : idxs )
+      idx.close();
   }
 
   block_log_file& file_manager::get_block_log_file()
@@ -40,18 +43,16 @@ namespace hive { namespace chain {
     return block_log;
   }
 
-  const block_log_index& file_manager::get_block_log_idx() const
+  block_log_index& file_manager::get_block_log_idx()
   {
-    auto found = idxs.find( block_log_index( storage_description::storage_type::block_log_idx ) );
-    FC_ASSERT( found != idxs.end(), "lack of block_log index");
-    return *found;
+    FC_ASSERT( BLOCK_LOG_IDX < idxs.size(), "lack of block_log index");
+    return idxs[BLOCK_LOG_IDX];
   }
 
-  const block_log_index& file_manager::get_hash_idx() const
+  block_log_index& file_manager::get_hash_idx()
   {
-    auto found = idxs.find( block_log_index( storage_description::storage_type::hash_idx ) );
-    FC_ASSERT( found != idxs.end(), "lack of hash index");
-    return *found;
+    FC_ASSERT( HASH_IDX < idxs.size(), "lack of hash index");
+    return idxs[HASH_IDX];
   }
 
   bool file_manager::get_resume() const
@@ -240,8 +241,9 @@ namespace hive { namespace chain {
 
       ilog("opening new block index");
       for( auto& idx : idxs )
+      {
         idx.storage.file_descriptor = ::open( idx.storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644 );
-        if (storage.file_descriptor == -1)
+        if (idx.storage.file_descriptor == -1)
           FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", idx.storage.file)("error", strerror(errno)));
         //report size of new index file and verify it is the right size for the blocks in block log
         struct stat block_index_stat;
@@ -249,6 +251,7 @@ namespace hive { namespace chain {
           elog("error: could not get size of block log index");
         idump((block_index_stat.st_size));
         FC_ASSERT(block_index_stat.st_size/sizeof(uint64_t) == block_num);
+      }
     }
     FC_LOG_AND_RETHROW()
   }

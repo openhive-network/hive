@@ -13,16 +13,15 @@ namespace hive { namespace chain {
     const storage_type storage;
 
     // only accessed when appending a block, doesn't need locking
-    ssize_t     size  = 0;
-    uint64_t    pos   = 0;
+    ssize_t   size  = 0;
+    uint64_t  pos   = 0;
 
-    int         file_descriptor = -1;
-    fc::path    file;
+    int       file_descriptor = -1;
+    fc::path  file;
 
-    storage_description( storage_type val ): storage( val )
-    {
+    storage_description( storage_type val );
 
-    }
+    void close();
   };
 
 } } // hive::chain
