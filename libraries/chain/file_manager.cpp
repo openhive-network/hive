@@ -57,12 +57,13 @@ namespace hive { namespace chain {
 
   bool file_manager::get_resume() const
   {
-    std::set<bool> res;
+    size_t cnt = 0;
 
     for( auto& idx : idxs )
-      res.insert( idx.storage.status == storage_description::status_type::resume );
+      if( idx.storage.status == storage_description::status_type::resume )
+        ++cnt;
 
-    return res.size() == 1;
+    return cnt == idxs.size();
   }
 
   uint64_t file_manager::get_index_pos() const
