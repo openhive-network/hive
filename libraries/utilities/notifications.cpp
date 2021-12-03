@@ -120,4 +120,9 @@ void notify_hived_status(const fc::string& current_status) noexcept
   notify("hived_status", "current_status", current_status);
 }
 
+void notify_hived_error(const fc::string& error_message) noexcept
+{
+  notify("error", "message", error_message);
+}
+
 } // hive
