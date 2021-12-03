@@ -240,18 +240,11 @@ namespace hive { namespace chain {
 
 #endif //NOT USE_BACKWARD_INDEX
 
-      ilog("opening new block index");
+      ilog("opening new ${info}", ("info", ( idxs.size() == 1 ) ? "block index" : "indexes"));
       for( auto& idx : idxs )
       {
-        idx.storage.file_descriptor = ::open( idx.storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644 );
-        if (idx.storage.file_descriptor == -1)
-          FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", idx.storage.file)("error", strerror(errno)));
-        //report size of new index file and verify it is the right size for the blocks in block log
-        struct stat block_index_stat;
-        if (fstat( idx.storage.file_descriptor, &block_index_stat ) == -1)
-          elog("error: could not get size of block log index");
-        idump((block_index_stat.st_size));
-        FC_ASSERT(block_index_stat.st_size/sizeof(uint64_t) == block_num);
+        idx.open();
+        idx.check_consistency( block_num );
       }
     }
     FC_LOG_AND_RETHROW()

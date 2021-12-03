@@ -14,6 +14,10 @@ namespace hive { namespace chain {
 
   class block_log_index
   {
+    private:
+
+      const uint32_t ELEMENT_SIZE = 8;
+
       void read_blocks_number( uint64_t block_pos );
 
     public:
@@ -23,7 +27,9 @@ namespace hive { namespace chain {
       block_log_index( const storage_description::storage_type val );
       ~block_log_index();
 
+      void check_consistency( uint32_t total_size );
       void open( const fc::path& file );
+      void open();
       void prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc );
       void close();
 

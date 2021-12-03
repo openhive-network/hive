@@ -32,29 +32,21 @@ namespace hive { namespace chain {
       storage.status = storage_description::status_type::none;
   }
 
-  void block_log_index::open( const fc::path& file )
+  void block_log_index::check_consistency( uint32_t total_size )
   {
-    switch( storage.storage )
-    {
-      case storage_description::storage_type::block_log_idx: 
-        storage.file = fc::path( file.generic_string() + ".index" );
-        break;
-
-      case storage_description::storage_type::hash_idx: 
-        storage.file = fc::path( file.generic_string() + "_hash.index" );
-        break;
-
-      default:
-        FC_ASSERT( false, "invalid type of index" );
-    }
-
-    storage.file_descriptor = ::open( storage.file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644 );
-    if( storage.file_descriptor == -1 )
-      FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", storage.file)("error", strerror(errno)));
-
-    storage.size = file_operation::get_file_size( storage.file_descriptor );
+    storage.check_consistency( ELEMENT_SIZE, total_size );
   }
 
+  void block_log_index::open( const fc::path& file )
+  {
+    storage.open( file );
+  }
+
+  void block_log_index::open()
+  {
+    storage.open();
+  }
+ 
   void block_log_index::prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc )
   {
     if( storage.size )

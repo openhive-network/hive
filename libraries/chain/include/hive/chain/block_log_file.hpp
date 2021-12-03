@@ -21,6 +21,7 @@ namespace hive { namespace chain {
       block_log_file();
 
       void open( const fc::path& file );
+
       void close();
   };
 
