@@ -23,6 +23,7 @@ namespace hive { namespace chain {
 
     storage_description( storage_type val, const std::string& file_name_ext_val = "" );
 
+    void calculate_status( uint64_t block_pos );
     void check_consistency( uint32_t element_size, uint32_t total_size );
     void open( const fc::path& input_file );
     void open();

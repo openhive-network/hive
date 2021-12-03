@@ -41,10 +41,6 @@ namespace hive { namespace chain {
 
   class block_log_index: public base_index
   {
-    private:
-
-      const uint32_t ELEMENT_SIZE = 8;
-
     protected:
 
       void read_blocks_number( uint64_t block_pos ) override;
@@ -58,5 +54,31 @@ namespace hive { namespace chain {
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
   };
 
+  template<uint32_t ELEMENT_SIZE_VALUE>
+  class custom_index: public base_index
+  {
+    protected:
+
+      void read_blocks_number( uint64_t block_pos ) override;
+
+    public:
+
+      custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
+      ~custom_index();
+
+      void check_consistency( uint32_t total_size ) override;
+  };
+  
+  constexpr uint32_t block_hash_witness_public_key_size = 7 + 1;
+
+  class block_hash_witness_public_key: public custom_index<block_hash_witness_public_key_size>
+  {
+    public:
+
+      block_hash_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val );
+      ~block_hash_witness_public_key();
+
+      void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
+  };
 
 } } // hive::chain

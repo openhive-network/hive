@@ -14,6 +14,16 @@ namespace hive { namespace chain {
   {
   }
 
+  void storage_description::calculate_status( uint64_t block_pos )
+  {
+    if( block_pos < pos )
+      status = storage_description::status_type::reopen;
+    else if( block_pos > pos )
+      status = storage_description::status_type::resume;
+    else
+      status = storage_description::status_type::none;
+  }
+
   void storage_description::check_consistency( uint32_t element_size, uint32_t total_size )
   {
     //report size of new index file and verify it is the right size for the blocks in block log

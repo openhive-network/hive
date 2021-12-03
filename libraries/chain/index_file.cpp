@@ -146,7 +146,7 @@ namespace hive { namespace chain {
 
   void block_log_index::check_consistency( uint32_t total_size )
   {
-    storage.check_consistency( ELEMENT_SIZE, total_size );
+    storage.check_consistency( sizeof(uint64_t), total_size );
   }
 
   void block_log_index::read_blocks_number( uint64_t block_pos )
@@ -158,12 +158,7 @@ namespace hive { namespace chain {
 
     FC_ASSERT(bytes_read == sizeof(storage.pos));
 
-    if( block_pos < storage.pos )
-      storage.status = storage_description::status_type::reopen;
-    else if( block_pos > storage.pos )
-      storage.status = storage_description::status_type::resume;
-    else
-      storage.status = storage_description::status_type::none;
+    storage.calculate_status( block_pos );
   }
 
   void block_log_index::write( std::fstream& stream, const signed_block& block, uint64_t position )
@@ -171,4 +166,47 @@ namespace hive { namespace chain {
     stream.write( (char*)&position, sizeof( position ) );
   }
 
+  template<uint32_t ELEMENT_SIZE_VALUE>
+  custom_index<ELEMENT_SIZE_VALUE>::custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
+                  : base_index( val, file_name_ext_val )
+  {
+  }
+
+  template<uint32_t ELEMENT_SIZE_VALUE>
+  custom_index<ELEMENT_SIZE_VALUE>::~custom_index()
+  {
+  }
+
+  template<uint32_t ELEMENT_SIZE_VALUE>
+  void custom_index<ELEMENT_SIZE_VALUE>::check_consistency( uint32_t total_size )
+  {
+    storage.check_consistency( ELEMENT_SIZE_VALUE, total_size );
+  }
+
+  template<uint32_t ELEMENT_SIZE_VALUE>
+  void custom_index<ELEMENT_SIZE_VALUE>::read_blocks_number( uint64_t block_pos )
+  {
+    // read the last 8 bytes of the block index to get the offset of the beginning of the 
+    // head block
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos),
+      storage.size - ELEMENT_SIZE_VALUE);
+
+    FC_ASSERT(bytes_read == sizeof(storage.pos));
+
+    storage.calculate_status( block_pos );
+  }
+
+  block_hash_witness_public_key::block_hash_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val )
+                                :custom_index( val, file_name_ext_val )
+  {
+  }
+  
+  block_hash_witness_public_key::~block_hash_witness_public_key()
+  {
+  }
+
+  void block_hash_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
+  {
+    stream.write( (char*)&position, sizeof( position ) );
+  }
 } } // hive::chain
