@@ -9,6 +9,8 @@
 #include <fstream>
 #include <thread>
 
+#include <hive/utilities/notifications.hpp>
+
 namespace appbase {
 
 class quoted
@@ -459,7 +461,10 @@ abstract_plugin& application::get_plugin(const string& name)const
 {
   auto ptr = find_plugin(name);
   if(!ptr)
+  {
+    hive::notify_hived_error("Unable to find plugin: " + name);
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
+  }
   return *ptr;
 }
 
