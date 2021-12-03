@@ -22,8 +22,8 @@ namespace hive { namespace chain {
 
   file_manager::file_manager()
   {
-    idxs.push_back( block_log_index( storage_description::storage_type::block_log_idx ) );
-    //idxs.push_back( block_log_index( storage_description::storage_type::hash_idx ) );
+    idxs.push_back( block_log_index( storage_description::storage_type::block_log_idx, ".index" ) );
+    //idxs.push_back( block_log_index( storage_description::storage_type::hash_idx, "_hash.index" ) );
   }
 
   file_manager::~file_manager()

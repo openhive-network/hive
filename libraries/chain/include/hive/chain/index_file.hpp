@@ -24,7 +24,7 @@ namespace hive { namespace chain {
 
       storage_description storage;
 
-      block_log_index( const storage_description::storage_type val );
+      block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
       ~block_log_index();
 
       void check_consistency( uint32_t total_size );

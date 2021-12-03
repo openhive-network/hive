@@ -9,7 +9,8 @@
 
 namespace hive { namespace chain {
 
-  storage_description::storage_description( storage_description::storage_type val ): storage( val )
+  storage_description::storage_description( storage_description::storage_type val, const std::string& file_name_ext_val )
+                      : storage( val ), file_name_ext( file_name_ext_val )
   {
   }
 
@@ -23,26 +24,9 @@ namespace hive { namespace chain {
     FC_ASSERT(block_index_stat.st_size/element_size == total_size);
   }
 
-  void storage_description::create_file_name( const fc::path& input_file )
-  {
-    switch( storage )
-    {
-      case storage_type::block_log_idx: 
-        file = fc::path( input_file.generic_string() + ".index" );
-        break;
-
-      case storage_description::storage_type::hash_idx: 
-        file = fc::path( input_file.generic_string() + "_hash.index" );
-        break;
-
-      default:
-        FC_ASSERT( false, "invalid type of index" );
-    }
-  }
-
   void storage_description::open( const fc::path& input_file )
   {
-    create_file_name( input_file );
+    file = fc::path( input_file.generic_string() + file_name_ext );
     open();
   }
 

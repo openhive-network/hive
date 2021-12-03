@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-  block_log_index::block_log_index( const storage_description::storage_type val ): storage( val )
+  block_log_index::block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val ): storage( val, file_name_ext_val )
   {
   }
 
