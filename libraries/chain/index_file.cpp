@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
+#include <fstream>
+
 namespace hive { namespace chain {
 
   base_index::base_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
@@ -151,7 +153,7 @@ namespace hive { namespace chain {
   {
     // read the last 8 bytes of the block index to get the offset of the beginning of the 
     // head block
-    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos), 
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos),
       storage.size - sizeof(storage.pos));
 
     FC_ASSERT(bytes_read == sizeof(storage.pos));
@@ -162,6 +164,11 @@ namespace hive { namespace chain {
       storage.status = storage_description::status_type::resume;
     else
       storage.status = storage_description::status_type::none;
+  }
+
+  void block_log_index::write( std::fstream& stream, const signed_block& block, uint64_t position )
+  {
+    stream.write( (char*)&position, sizeof( position ) );
   }
 
 } } // hive::chain

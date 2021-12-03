@@ -273,9 +273,7 @@ namespace hive { namespace chain {
         fc::raw::unpack( block_stream, tmp );
 
         block_stream.read( (char*)&pos, sizeof( pos ) );
-
-        for( auto& index_stream : index_streams )
-          index_stream.write( (char*)&pos, sizeof( pos ) );
+        write( index_streams, tmp, pos );
       }
 
       if( appbase::app().is_interrupt_request() )
@@ -300,6 +298,16 @@ namespace hive { namespace chain {
       }
     }
     FC_LOG_AND_RETHROW()
+  }
+
+  void file_manager::write( std::vector<std::fstream>& streams, const signed_block& block, uint64_t position )
+  {
+      FC_ASSERT( idxs.size() == streams.size(), "incorrect number of streams");
+
+      size_t cnt = 0;
+
+      for( auto& idx : idxs )
+        idx->write( streams[cnt++], block, position );
   }
 
 } } // hive::chain

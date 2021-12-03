@@ -26,6 +26,8 @@ namespace hive { namespace chain {
       virtual ~base_index();
 
       virtual void check_consistency( uint32_t total_size ) = 0;
+      virtual void write( std::fstream& stream, const signed_block& block, uint64_t position ) = 0;
+
       void open( const fc::path& file );
       void open();
       void prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc );
@@ -53,6 +55,7 @@ namespace hive { namespace chain {
       ~block_log_index();
 
       void check_consistency( uint32_t total_size ) override;
+      void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
   };
 
 
