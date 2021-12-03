@@ -1,7 +1,6 @@
 import pytest
 
 from test_tools import Account, Asset, logger, Wallet, World
-from test_tools.private.node import Node
 
 from .shared_utilites import prepared_proposal_data_with_id, funded_account_info, prepare_proposal
 
@@ -13,11 +12,11 @@ def node(world : World):
   return node
 
 @pytest.fixture
-def wallet(node : Node):
+def wallet(node):
   return Wallet(attach_to=node)
 
 @pytest.fixture
-def creator(node : Node) -> Account:
+def creator(node) -> Account:
   result = Account('initminer', with_keys=False)
   result.private_key = node.config.private_key
   return result
