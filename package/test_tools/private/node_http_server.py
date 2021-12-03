@@ -50,6 +50,8 @@ class NodeHttpServer:
         self.__server = None
 
         self.__thread.join(timeout=2.0)
+        if self.__thread.is_alive():
+            raise RuntimeError('Unable to join server thread')
         self.__thread = None
 
     def notify(self, message):
