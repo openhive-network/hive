@@ -15,7 +15,8 @@ namespace hive { namespace chain {
   {
     public:
 
-      using index_collection = std::vector<block_log_index>;
+      using p_base_index      = std::shared_ptr<base_index>;
+      using index_collection  = std::vector<p_base_index>;
 
     private:
 
@@ -38,8 +39,8 @@ namespace hive { namespace chain {
 
       block_log_file& get_block_log_file();
 
-      block_log_index& get_block_log_idx();
-      block_log_index& get_hash_idx();
+      p_base_index& get_block_log_idx();
+      p_base_index& get_hash_idx();
 
       void construct_index();
   };

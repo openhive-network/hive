@@ -6,48 +6,27 @@
 
 namespace hive { namespace chain {
 
-  block_log_index::block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val ): storage( val, file_name_ext_val )
+  base_index::base_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
+              : storage( val, file_name_ext_val )
   {
   }
 
-  block_log_index::~block_log_index()
+  base_index::~base_index()
   {
     close();
   }
 
-  void block_log_index::read_blocks_number( uint64_t block_pos )
-  {
-    // read the last 8 bytes of the block index to get the offset of the beginning of the 
-    // head block
-    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos), 
-      storage.size - sizeof(storage.pos));
-
-    FC_ASSERT(bytes_read == sizeof(storage.pos));
-
-    if( block_pos < storage.pos )
-      storage.status = storage_description::status_type::reopen;
-    else if( block_pos > storage.pos )
-      storage.status = storage_description::status_type::resume;
-    else
-      storage.status = storage_description::status_type::none;
-  }
-
-  void block_log_index::check_consistency( uint32_t total_size )
-  {
-    storage.check_consistency( ELEMENT_SIZE, total_size );
-  }
-
-  void block_log_index::open( const fc::path& file )
+  void base_index::open( const fc::path& file )
   {
     storage.open( file );
   }
 
-  void block_log_index::open()
+  void base_index::open()
   {
     storage.open();
   }
  
-  void block_log_index::prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc )
+  void base_index::prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc )
   {
     if( storage.size )
     {
@@ -78,24 +57,24 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log_index::close()
+  void base_index::close()
   {
     storage.close();
   }
 
-  void block_log_index::non_empty_idx_info()
+  void base_index::non_empty_idx_info()
   {
     ilog( "Index is nonempty, remove and recreate it" );
     if (ftruncate( storage.file_descriptor, 0 ))
       FC_THROW("Error truncating block log: ${error}", ("error", strerror(errno)));
   }
 
-  void block_log_index::append( const void* buf, size_t nbyte )
+  void base_index::append( const void* buf, size_t nbyte )
   {
     file_operation::write_with_retry( storage.file_descriptor, buf, nbyte );
   }
 
-  void block_log_index::read( uint32_t block_num, uint64_t& offset, uint64_t& size )
+  void base_index::read( uint32_t block_num, uint64_t& offset, uint64_t& size )
   {
     uint64_t offsets[2] = {0, 0};
     uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
@@ -106,7 +85,7 @@ namespace hive { namespace chain {
     size = offsets[1] - offsets[0] - sizeof(uint64_t);
   }
 
-  vector<signed_block> block_log_index::read_block_range( uint32_t first_block_num, uint32_t count, int block_log_fd, const boost::shared_ptr<signed_block>& head_block )
+  vector<signed_block> base_index::read_block_range( uint32_t first_block_num, uint32_t count, int block_log_fd, const boost::shared_ptr<signed_block>& head_block )
   {
 
     vector<signed_block> result;
@@ -152,6 +131,37 @@ namespace hive { namespace chain {
       result.push_back(*head_block);
 
     return result;
+  }
+
+  block_log_index::block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
+                  : base_index( val, file_name_ext_val )
+  {
+  }
+
+  block_log_index::~block_log_index()
+  {
+  }
+
+  void block_log_index::check_consistency( uint32_t total_size )
+  {
+    storage.check_consistency( ELEMENT_SIZE, total_size );
+  }
+
+  void block_log_index::read_blocks_number( uint64_t block_pos )
+  {
+    // read the last 8 bytes of the block index to get the offset of the beginning of the 
+    // head block
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos), 
+      storage.size - sizeof(storage.pos));
+
+    FC_ASSERT(bytes_read == sizeof(storage.pos));
+
+    if( block_pos < storage.pos )
+      storage.status = storage_description::status_type::reopen;
+    else if( block_pos > storage.pos )
+      storage.status = storage_description::status_type::resume;
+    else
+      storage.status = storage_description::status_type::none;
   }
 
 } } // hive::chain

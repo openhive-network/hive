@@ -52,7 +52,7 @@ namespace hive { namespace chain {
 
     my->file_mgr.get_block_log_file().open( file );
 
-    my->file_mgr.get_block_log_idx().open( file );
+    my->file_mgr.get_block_log_idx()->open( file );
 
     /* On startup of the block log, there are several states the log file and the index file can be
       * in relation to eachother.
@@ -78,13 +78,13 @@ namespace hive { namespace chain {
       my->file_mgr.get_block_log_file().head.exchange(boost::make_shared<signed_block>(read_head()));
 
       boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
-      my->file_mgr.get_block_log_idx().prepare( head_block, my->file_mgr.get_block_log_file().storage );
+      my->file_mgr.get_block_log_idx()->prepare( head_block, my->file_mgr.get_block_log_file().storage );
 
       my->file_mgr.construct_index();
     }
-    else if( my->file_mgr.get_block_log_idx().storage.size )
+    else if( my->file_mgr.get_block_log_idx()->storage.size )
     {
-      my->file_mgr.get_block_log_idx().non_empty_idx_info();
+      my->file_mgr.get_block_log_idx()->non_empty_idx_info();
     }
   }
 
@@ -159,7 +159,7 @@ namespace hive { namespace chain {
       my->file_mgr.get_block_log_file().storage.size += serialized_block.size();
 
       // add it to the index
-      my->file_mgr.get_block_log_idx().append(&block_start_pos, sizeof(block_start_pos));
+      my->file_mgr.get_block_log_idx()->append(&block_start_pos, sizeof(block_start_pos));
 
       // and update our cached head block
       boost::shared_ptr<signed_block> new_head = boost::make_shared<signed_block>(b);
@@ -195,7 +195,7 @@ namespace hive { namespace chain {
 
       uint64_t _offset  = 0;
       uint64_t _size    = 0;
-      my->file_mgr.get_block_log_idx().read( block_num, _offset, _size );
+      my->file_mgr.get_block_log_idx()->read( block_num, _offset, _size );
 
       return file_operation::read_block_from_offset_and_size( my->file_mgr.get_block_log_file().storage.file_descriptor, _offset, _size );
     }
@@ -210,7 +210,7 @@ namespace hive { namespace chain {
       // will use it and then load the previous blocks from the block log
       boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
 
-      return my->file_mgr.get_block_log_idx().read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage.file_descriptor, head_block );
+      return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage.file_descriptor, head_block );
     }
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }

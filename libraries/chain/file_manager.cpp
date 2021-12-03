@@ -22,8 +22,8 @@ namespace hive { namespace chain {
 
   file_manager::file_manager()
   {
-    idxs.push_back( block_log_index( storage_description::storage_type::block_log_idx, ".index" ) );
-    //idxs.push_back( block_log_index( storage_description::storage_type::hash_idx, "_hash.index" ) );
+    idxs.push_back( p_base_index( new block_log_index( storage_description::storage_type::block_log_idx, ".index" ) ) );
+    //idxs.push_back( p_base_index( new block_log_index( storage_description::storage_type::hash_idx, "_hash.index" ) ) );
   }
 
   file_manager::~file_manager()
@@ -35,7 +35,7 @@ namespace hive { namespace chain {
     block_log.close();
 
     for( auto& idx : idxs )
-      idx.close();
+      idx->close();
   }
 
   block_log_file& file_manager::get_block_log_file()
@@ -43,13 +43,13 @@ namespace hive { namespace chain {
     return block_log;
   }
 
-  block_log_index& file_manager::get_block_log_idx()
+  file_manager::p_base_index& file_manager::get_block_log_idx()
   {
     FC_ASSERT( BLOCK_LOG_IDX < idxs.size(), "lack of block_log index");
     return idxs[BLOCK_LOG_IDX];
   }
 
-  block_log_index& file_manager::get_hash_idx()
+  file_manager::p_base_index& file_manager::get_hash_idx()
   {
     FC_ASSERT( HASH_IDX < idxs.size(), "lack of hash index");
     return idxs[HASH_IDX];
@@ -60,7 +60,7 @@ namespace hive { namespace chain {
     size_t cnt = 0;
 
     for( auto& idx : idxs )
-      if( idx.storage.status == storage_description::status_type::resume )
+      if( idx->storage.status == storage_description::status_type::resume )
         ++cnt;
 
     return cnt == idxs.size();
@@ -71,7 +71,7 @@ namespace hive { namespace chain {
     std::set<uint64_t> res;
 
     for( auto& idx : idxs )
-      res.insert( idx.storage.pos );
+      res.insert( idx->storage.pos );
 
     if( res.size() == 1 )
       return *res.begin();
@@ -188,13 +188,13 @@ namespace hive { namespace chain {
 
       if( !resume )
         for( auto& idx : idxs )
-          fc::remove_all( idx.storage.file );
+          fc::remove_all( idx->storage.file );
 
       block_stream.open( block_chain_storage.file.generic_string().c_str(), LOG_READ );
 
       uint32_t cnt = 0;
       for( auto& idx : idxs )
-        index_streams[ cnt++ ].open( idx.storage.file.generic_string().c_str(), LOG_WRITE );
+        index_streams[ cnt++ ].open( idx->storage.file.generic_string().c_str(), LOG_WRITE );
 
       uint64_t pos = resume ? index_pos : 0;
       uint64_t end_pos;
@@ -236,15 +236,15 @@ namespace hive { namespace chain {
         index_stream.close();
 
       for( auto& idx : idxs )
-        ::close( idx.storage.file_descriptor );
+        idx->close();
 
 #endif //NOT USE_BACKWARD_INDEX
 
       ilog("opening new ${info}", ("info", ( idxs.size() == 1 ) ? "block index" : "indexes"));
       for( auto& idx : idxs )
       {
-        idx.open();
-        idx.check_consistency( block_num );
+        idx->open();
+        idx->check_consistency( block_num );
       }
     }
     FC_LOG_AND_RETHROW()

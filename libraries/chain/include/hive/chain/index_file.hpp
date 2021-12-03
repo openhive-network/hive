@@ -12,22 +12,20 @@ namespace hive { namespace chain {
 
   using namespace hive::protocol;
 
-  class block_log_index
+  class base_index
   {
-    private:
+    protected:
 
-      const uint32_t ELEMENT_SIZE = 8;
-
-      void read_blocks_number( uint64_t block_pos );
+      virtual void read_blocks_number( uint64_t block_pos ) = 0;
 
     public:
 
       storage_description storage;
 
-      block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
-      ~block_log_index();
+      base_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
+      virtual ~base_index();
 
-      void check_consistency( uint32_t total_size );
+      virtual void check_consistency( uint32_t total_size ) = 0;
       void open( const fc::path& file );
       void open();
       void prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc );
@@ -38,5 +36,24 @@ namespace hive { namespace chain {
       void read( uint32_t block_num, uint64_t& offset, uint64_t& size );
       vector<signed_block> read_block_range( uint32_t first_block_num, uint32_t count, int block_log_fd, const boost::shared_ptr<signed_block>& head_block );
   };
+
+  class block_log_index: public base_index
+  {
+    private:
+
+      const uint32_t ELEMENT_SIZE = 8;
+
+    protected:
+
+      void read_blocks_number( uint64_t block_pos ) override;
+
+    public:
+
+      block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
+      ~block_log_index();
+
+      void check_consistency( uint32_t total_size ) override;
+  };
+
 
 } } // hive::chain
