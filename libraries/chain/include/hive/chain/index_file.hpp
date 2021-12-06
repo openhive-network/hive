@@ -54,11 +54,16 @@ namespace hive { namespace chain {
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
   };
 
+  template<uint32_t ELEMENT_SIZE>
   class custom_index: public base_index
   {
     protected:
 
-      const uint32_t ELEMENT_SIZE = sizeof(block_id_type) + sizeof(fc::ecc::public_key_data) + sizeof(uint64_t);
+      const uint32_t element_size = ELEMENT_SIZE;
+
+      using buffer_type = std::array<char, ELEMENT_SIZE>;
+      buffer_type buffer;
+
       void read_blocks_number( uint64_t block_pos ) override;
 
     public:
@@ -69,7 +74,16 @@ namespace hive { namespace chain {
       void check_consistency( uint32_t total_size ) override;
   };
 
-  class block_id_witness_public_key: public custom_index
+  struct sizes_type
+  {
+    const uint32_t BLOCK_NUMBER_SIZE  = sizeof(uint32_t);
+    const uint32_t BLOCK_ID_SIZE      = sizeof(block_id_type);
+    const uint32_t PUBLIC_KEY_SIZE    = sizeof(fc::ecc::public_key_data);
+  };
+
+  constexpr sizes_type sizes = sizes_type();
+  
+  class block_id_witness_public_key: public custom_index<sizes.BLOCK_NUMBER_SIZE + sizes.BLOCK_ID_SIZE + sizes.PUBLIC_KEY_SIZE>
   {
     public:
 
@@ -77,6 +91,7 @@ namespace hive { namespace chain {
       ~block_id_witness_public_key();
 
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
+      void read( uint32_t block_num, block_id_type& block_id, public_key_type& signing_key );
   };
 
 } } // hive::chain

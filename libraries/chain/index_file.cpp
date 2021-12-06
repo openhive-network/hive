@@ -166,21 +166,25 @@ namespace hive { namespace chain {
     stream.write( (char*)&position, sizeof( position ) );
   }
 
-  custom_index::custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
+  template<uint32_t ELEMENT_SIZE>
+  custom_index<ELEMENT_SIZE>::custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
                   : base_index( val, file_name_ext_val )
   {
   }
 
-  custom_index::~custom_index()
+  template<uint32_t ELEMENT_SIZE>
+  custom_index<ELEMENT_SIZE>::~custom_index()
   {
   }
 
-  void custom_index::check_consistency( uint32_t total_size )
+  template<uint32_t ELEMENT_SIZE>
+  void custom_index<ELEMENT_SIZE>::check_consistency( uint32_t total_size )
   {
     storage.check_consistency( ELEMENT_SIZE, total_size );
   }
 
-  void custom_index::read_blocks_number( uint64_t block_pos )
+  template<uint32_t ELEMENT_SIZE>
+  void custom_index<ELEMENT_SIZE>::read_blocks_number( uint64_t block_pos )
   {
     // read the last 8 bytes of the block index to get the offset of the beginning of the 
     // head block
@@ -211,11 +215,33 @@ namespace hive { namespace chain {
     auto _witness_public_key = block.signee();
     fc::ecc::public_key_data _key = _witness_public_key.serialize();
 
-    FC_ASSERT( sizeof( position ) + _id.data_size() + _key.size() == ELEMENT_SIZE, "sizes are incorrect - calculated: ${sum} given: ${given}",
-                                                                                  ("sum", sizeof( position ) + _id.data_size() + _key.size())("given", ELEMENT_SIZE) );
+    FC_ASSERT( sizeof( uint32_t ) == sizes.BLOCK_NUMBER_SIZE );
+    FC_ASSERT( _id.data_size()    == sizes.BLOCK_ID_SIZE );
+    FC_ASSERT( _key.size()        == sizes.PUBLIC_KEY_SIZE );
 
-    stream.write( (char*)&position, sizeof( position ) );
-    stream.write( _block_id, _id.data_size() );
-    stream.write( _key.begin(), _key.size() );
+    uint32_t _block_num = block.block_num();
+
+    stream.write( (char*)&_block_num, sizes.BLOCK_NUMBER_SIZE );
+    stream.write( _block_id,          sizes.BLOCK_ID_SIZE );
+    stream.write( _key.begin(),       sizes.PUBLIC_KEY_SIZE );
   }
+
+  void block_id_witness_public_key::read( uint32_t block_num, block_id_type& block_id, public_key_type& signing_key )
+  {
+    uint64_t offset_in_index = element_size * (block_num - 1);
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, buffer.data(), element_size, offset_in_index);
+    FC_ASSERT( bytes_read == element_size );
+
+    auto _memory_begin = buffer.data();
+
+    uint32_t _block_num = *( reinterpret_cast<uint32_t*>( _memory_begin ) );
+    FC_ASSERT(block_num == _block_num, "incorrect block has been read required: ${block_num} read: ${_block_num} ",("block_num", block_num)("_block_num", _block_num));
+    _memory_begin += sizes.BLOCK_NUMBER_SIZE;
+
+    block_id = fc::ripemd160::hash( _memory_begin, sizes.BLOCK_ID_SIZE );
+    _memory_begin += sizeof( sizes.BLOCK_ID_SIZE );
+
+    std::copy_n( _memory_begin, sizes.PUBLIC_KEY_SIZE, signing_key.key_data.begin() );
+  }
+
 } } // hive::chain
