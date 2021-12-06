@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from test_tools import World
+import pytest
+
+from test_tools import exceptions, World
 
 from .conftest import BLOCK_COUNT
 
@@ -41,3 +43,11 @@ def test_exit_before_sync(world: World, block_log: Path):
     remove(join(str(init.directory), 'blockchain', 'shared_memory.bin'))
     init.run(load_snapshot_from=snap, exit_before_synchronization=True)
     assert not init.is_running()
+
+
+def test_unsupported_plugin(world: World):
+    init_node = world.create_init_node()
+    init_node.config.plugin.append('UNSUPPORTED_PLUGIN')
+
+    with pytest.raises(exceptions.InternalNodeError):
+        init_node.run()
