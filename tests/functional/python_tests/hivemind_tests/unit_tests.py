@@ -12,11 +12,10 @@ def test_hivemind_start_sync(world: World):
         database_name='hivemind_pyt',
         database_user='dev',
         database_password='devdevdev',
-        sync_with=node_test
     )
-    hivemind.detabase_prepare()
-    hivemind.run()
-    time.sleep(10)
+    hivemind.run(sync_with=node_test)
+    # time.sleep(5)
     message = communication.request(url='http://localhost:8080', message={"jsonrpc":"2.0","id":0,"method":"hive.db_head_state","params":{}})
     print()
 
+    # run(sync_with=node_test, use_existing_db=True, run_sync=True, run_server=True)
