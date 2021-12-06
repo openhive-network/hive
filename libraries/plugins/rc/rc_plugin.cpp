@@ -280,9 +280,6 @@ void use_account_rcs(
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-    if (account_name == "alice") {
-      idump((account_name)(rc)(rca.rc_manabar.current_mana));
-    }
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
     if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
