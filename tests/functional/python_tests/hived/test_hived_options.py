@@ -55,7 +55,7 @@ def test_bug_exit_after_replay_no_exception(world: World):
         stderr = file.read()
 
     warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
-    assert not warning in stderr
+    assert warning not in stderr
 
 
 def test_bug_exit_after_replay_exception(world: World, block_log: Path):
