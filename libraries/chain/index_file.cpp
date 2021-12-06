@@ -41,7 +41,7 @@ namespace hive { namespace chain {
 
       FC_ASSERT(bytes_read == sizeof(block_pos));
 
-      read_blocks_number( block_pos );
+      read_last_element_num( get_last_element_num( head_block ? head_block->block_num() : 0, block_pos ) );
 
       if( storage.status == storage_description::status_type::reopen )
       {
@@ -149,7 +149,12 @@ namespace hive { namespace chain {
     storage.check_consistency( sizeof(uint64_t), total_size );
   }
 
-  void block_log_index::read_blocks_number( uint64_t block_pos )
+  uint64_t block_log_index::get_last_element_num( uint32_t block_num/*not used here*/, uint64_t block_pos )
+  {
+    return block_pos;
+  }
+
+  void block_log_index::read_last_element_num( uint64_t last_element_num )
   {
     // read the last 8 bytes of the block index to get the offset of the beginning of the 
     // head block
@@ -158,7 +163,7 @@ namespace hive { namespace chain {
 
     FC_ASSERT(bytes_read == sizeof(storage.pos));
 
-    storage.calculate_status( block_pos );
+    storage.calculate_status( last_element_num );
   }
 
   void block_log_index::write( std::fstream& stream, const signed_block& block, uint64_t position )
@@ -183,19 +188,6 @@ namespace hive { namespace chain {
     storage.check_consistency( ELEMENT_SIZE, total_size );
   }
 
-  template<uint32_t ELEMENT_SIZE>
-  void custom_index<ELEMENT_SIZE>::read_blocks_number( uint64_t block_pos )
-  {
-    // read the last 8 bytes of the block index to get the offset of the beginning of the 
-    // head block
-    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos),
-      storage.size - ELEMENT_SIZE);
-
-    FC_ASSERT(bytes_read == sizeof(storage.pos));
-
-    storage.calculate_status( block_pos );
-  }
-
   block_id_witness_public_key::block_id_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val )
                                 :custom_index( val, file_name_ext_val )
   {
@@ -203,6 +195,22 @@ namespace hive { namespace chain {
   
   block_id_witness_public_key::~block_id_witness_public_key()
   {
+  }
+
+  uint64_t block_id_witness_public_key::get_last_element_num( uint32_t block_num, uint64_t block_pos/*not used here*/ )
+  {
+    return block_num;
+  }
+
+  void block_id_witness_public_key::read_last_element_num( uint64_t last_element_num )
+  {
+    storage.pos = 0;
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizes.BLOCK_NUMBER_SIZE,
+      storage.size - element_size);
+
+    FC_ASSERT(bytes_read == sizeof(storage.pos));
+
+    storage.calculate_status( last_element_num );
   }
 
   void block_id_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
@@ -226,7 +234,7 @@ namespace hive { namespace chain {
     stream.write( _key.begin(),       sizes.PUBLIC_KEY_SIZE );
   }
 
-  void block_id_witness_public_key::read( uint32_t block_num, block_id_type& block_id, public_key_type& signing_key )
+  std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read( uint32_t block_num )
   {
     uint64_t offset_in_index = element_size * (block_num - 1);
     size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, buffer.data(), element_size, offset_in_index);
@@ -238,10 +246,13 @@ namespace hive { namespace chain {
     FC_ASSERT(block_num == _block_num, "incorrect block has been read required: ${block_num} read: ${_block_num} ",("block_num", block_num)("_block_num", _block_num));
     _memory_begin += sizes.BLOCK_NUMBER_SIZE;
 
-    block_id = fc::ripemd160::hash( _memory_begin, sizes.BLOCK_ID_SIZE );
+    block_id_type block_id = fc::ripemd160::hash( _memory_begin, sizes.BLOCK_ID_SIZE );
     _memory_begin += sizeof( sizes.BLOCK_ID_SIZE );
 
+    public_key_type signing_key;
     std::copy_n( _memory_begin, sizes.PUBLIC_KEY_SIZE, signing_key.key_data.begin() );
+
+    return { block_id, signing_key };
   }
 
 } } // hive::chain

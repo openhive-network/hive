@@ -38,7 +38,7 @@ namespace hive { namespace chain {
       idx->open( file );
   }
 
-  void  file_manager::prepare( const signed_block& head_block )
+  void file_manager::prepare( const signed_block& head_block )
   {
     /* On startup of the block log, there are several states the log file and the index file can be
       * in relation to eachother.
@@ -76,7 +76,7 @@ namespace hive { namespace chain {
       {
         if( idx->storage.size )
         {
-          idx->non_empty_idx_info();    
+          idx->non_empty_idx_info();
         }
       }
     }

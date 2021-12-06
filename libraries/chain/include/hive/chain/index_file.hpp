@@ -16,7 +16,8 @@ namespace hive { namespace chain {
   {
     protected:
 
-      virtual void read_blocks_number( uint64_t block_pos ) = 0;
+      virtual uint64_t get_last_element_num( uint32_t block_num, uint64_t block_pos ) = 0;
+      virtual void read_last_element_num( uint64_t last_element_num ) = 0;
 
     public:
 
@@ -43,7 +44,8 @@ namespace hive { namespace chain {
   {
     protected:
 
-      void read_blocks_number( uint64_t block_pos ) override;
+      uint64_t get_last_element_num( uint32_t block_num, uint64_t block_pos ) override;
+      void read_last_element_num( uint64_t last_element_num ) override;
 
     public:
 
@@ -64,8 +66,6 @@ namespace hive { namespace chain {
       using buffer_type = std::array<char, ELEMENT_SIZE>;
       buffer_type buffer;
 
-      void read_blocks_number( uint64_t block_pos ) override;
-
     public:
 
       custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
@@ -85,13 +85,18 @@ namespace hive { namespace chain {
   
   class block_id_witness_public_key: public custom_index<sizes.BLOCK_NUMBER_SIZE + sizes.BLOCK_ID_SIZE + sizes.PUBLIC_KEY_SIZE>
   {
+    private:
+
+      uint64_t get_last_element_num( uint32_t block_num, uint64_t block_pos ) override;
+      void read_last_element_num( uint64_t last_element_num ) override;
+
     public:
 
       block_id_witness_public_key( const storage_description::storage_type val, const std::string& file_name_ext_val );
       ~block_id_witness_public_key();
 
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
-      void read( uint32_t block_num, block_id_type& block_id, public_key_type& signing_key );
+      std::tuple< optional<block_id_type>, optional<public_key_type> > read( uint32_t block_num );
   };
 
 } } // hive::chain
