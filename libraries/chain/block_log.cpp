@@ -172,13 +172,18 @@ namespace hive { namespace chain {
   {
     try
     {
-      // first, check if the last block we want is the current head block; if so, we can 
+      // first, check if the last block we want is the current head block; if so, we can
       // will use it and then load the previous blocks from the block log
       boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
 
       return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage.file_descriptor, head_block );
     }
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
+  }
+
+  std::tuple< optional<block_id_type>, optional<public_key_type> > block_log::read( uint32_t block_num )
+  {
+    return my->file_mgr.get_hash_idx()->read( block_num );
   }
 
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
@@ -188,7 +193,7 @@ namespace hive { namespace chain {
     {
       ssize_t _actual_size = file_operation::get_file_size( my->file_mgr.get_block_log_file().storage.file_descriptor );
 
-      // read the last int64 of the block log into `head_block_offset`, 
+      // read the last int64 of the block log into `head_block_offset`,
       // that's the index of the start of the head block
       FC_ASSERT(_actual_size >= (ssize_t)sizeof(uint64_t));
       uint64_t head_block_offset;

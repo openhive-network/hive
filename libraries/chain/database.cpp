@@ -579,7 +579,7 @@ optional<signed_block> database::fetch_block_by_number( uint32_t block_num )cons
 
 // this version doesn't assume the caller has a read lock.  It will get its own lock for the
 // portion of the function that requires it.
-optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_num )
+std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > database::fetch_block_by_number_unlocked( uint32_t block_num, bool fetch_all )
 { try {
   shared_ptr< fork_item > fitem;
   with_read_lock( [&]()
@@ -588,9 +588,19 @@ optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_
   });
 
   if( fitem )
-    return fitem->data;
+    return { fitem->data, optional<block_id_type>(), optional<public_key_type>() };
   else
-    return _block_log.read_block_by_num( block_num ); 
+  {
+    if( fetch_all )
+    {
+      std::tuple< optional<block_id_type>, optional<public_key_type> > _additional_elements = _block_log.read( block_num );
+      return std::tuple_cat( std::make_tuple( _block_log.read_block_by_num( block_num ) ), _additional_elements );
+    }
+    else
+    {
+      return { _block_log.read_block_by_num( block_num ), optional<block_id_type>(), optional<public_key_type>() };
+    }
+  }
 } FC_LOG_AND_RETHROW() }
 
 std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )

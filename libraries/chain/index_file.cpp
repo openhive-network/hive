@@ -133,6 +133,12 @@ namespace hive { namespace chain {
       result.push_back(*head_block);
 
     return result;
+}
+
+  std::tuple< optional<block_id_type>, optional<public_key_type> > base_index::read( uint32_t block_num )
+  {
+    //returns empty results here
+    return{ optional<block_id_type>(), optional<public_key_type>() };
   }
 
   block_log_index::block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val )

@@ -53,7 +53,8 @@ DEFINE_API_IMPL( block_api_impl, get_block_header )
   get_block_header_return result;
   if( args.block_num <= _db.head_block_num() )
   {
-    optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
+    std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > _fetched = _db.fetch_block_by_number_unlocked( args.block_num, false/*fetch_all*/ );
+    optional<signed_block> block = std::get<0>( _fetched );
     if( block )
       result.header = *block;
   }
@@ -65,9 +66,14 @@ DEFINE_API_IMPL( block_api_impl, get_block )
   get_block_return result;
   if( args.block_num <= _db.head_block_num() )
   {
-    optional<signed_block> block = _db.fetch_block_by_number_unlocked( args.block_num );
+    std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > _fetched = _db.fetch_block_by_number_unlocked( args.block_num, true/*fetch_all*/ );
+
+    optional<signed_block> block          = std::get<0>( _fetched );
+    optional<block_id_type> block_id      = std::get<1>( _fetched );
+    optional<public_key_type> signing_key = std::get<2>( _fetched );
+
     if( block )
-      result.block = *block;
+      result.block = api_signed_block_object( *block, block_id, signing_key );
   }
   return result;
 }

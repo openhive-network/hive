@@ -15,15 +15,37 @@ using namespace hive::chain;
 
 struct api_signed_block_object : public signed_block
 {
+  api_signed_block_object( const signed_block& block, const optional<block_id_type>& block_id, const optional<public_key_type>& signing_key ) : signed_block( block )
+  {
+    block_id_type _block_id;
+    if( block_id.valid() )
+      _block_id = *block_id;
+    else
+      _block_id = id();
+
+    public_key_type _signing_key;
+    if( signing_key.valid() )
+      _signing_key = *signing_key;
+    else
+      _signing_key = signee();
+
+    init( _block_id, _signing_key );
+  }
+
   api_signed_block_object( const signed_block& block ) : signed_block( block )
   {
-    block_id = id();
-    signing_key = signee();
+    init( id(), signee() );
+  }
+  api_signed_block_object() {}
+
+  void init( const block_id_type& _block_id, const public_key_type& _signing_key )
+  {
+    block_id = _block_id;
+    signing_key = _signing_key;
     transaction_ids.reserve( transactions.size() );
     for( const signed_transaction& tx : transactions )
       transaction_ids.push_back( tx.id() );
   }
-  api_signed_block_object() {}
 
   block_id_type                 block_id;
   public_key_type               signing_key;

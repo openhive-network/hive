@@ -26,9 +26,6 @@ namespace hive { namespace chain {
       base_index( const storage_description::storage_type val, const std::string& file_name_ext_val );
       virtual ~base_index();
 
-      virtual void check_consistency( uint32_t total_size ) = 0;
-      virtual void write( std::fstream& stream, const signed_block& block, uint64_t position ) = 0;
-
       void open( const fc::path& file );
       void open();
       void prepare( const boost::shared_ptr<signed_block>& head_block, const storage_description& desc );
@@ -38,6 +35,10 @@ namespace hive { namespace chain {
       void append( const void* buf, size_t nbyte );
       void read( uint32_t block_num, uint64_t& offset, uint64_t& size );
       vector<signed_block> read_block_range( uint32_t first_block_num, uint32_t count, int block_log_fd, const boost::shared_ptr<signed_block>& head_block );
+
+      virtual void check_consistency( uint32_t total_size ) = 0;
+      virtual void write( std::fstream& stream, const signed_block& block, uint64_t position ) = 0;
+      virtual std::tuple< optional<block_id_type>, optional<public_key_type> > read( uint32_t block_num );
   };
 
   class block_log_index: public base_index
@@ -96,7 +97,7 @@ namespace hive { namespace chain {
       ~block_id_witness_public_key();
 
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
-      std::tuple< optional<block_id_type>, optional<public_key_type> > read( uint32_t block_num );
+      std::tuple< optional<block_id_type>, optional<public_key_type> > read( uint32_t block_num ) override;
   };
 
 } } // hive::chain
