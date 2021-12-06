@@ -783,6 +783,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
       const rc_direct_delegation_object* delegation_dave = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
       BOOST_REQUIRE( delegation_dave == nullptr );
     }
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }
@@ -901,16 +902,16 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
       const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
       const rc_account_object& dave_rc_account = db->get< rc_account_object, by_name >("dave");
 
-      idump((alice_rc_account.delegated_rc)(vesting_shares)(withdraw_rate.amount.value));
-      BOOST_REQUIRE( alice_rc_account.delegated_rc == uint64_t(vesting_shares - withdraw_rate.amount.value) );
+      BOOST_REQUIRE( alice_rc_account.delegated_rc == uint64_t(vesting_shares - (withdraw_rate.amount.value * 2 - withdraw_rate.amount.value / 2 )));
       BOOST_REQUIRE( alice_rc_account.received_delegated_rc == 0 );
-      BOOST_REQUIRE( alice_rc_account.rc_manabar.current_mana == creation_rc + withdraw_rate.amount.value / 2 ); //  withdraw_rate.amount.value is withdrew, but half is auto vested back
-      BOOST_REQUIRE( alice_rc_account.last_max_rc == creation_rc + withdraw_rate.amount.value / 2 );
+      BOOST_REQUIRE( alice_rc_account.rc_manabar.current_mana == creation_rc); //  withdraw_rate.amount.value is withdrew, but half is auto vested back
+      BOOST_REQUIRE( alice_rc_account.last_max_rc == creation_rc );
 
       // There wasn't enough to sustain the delegation to bob, so it got modified
-      BOOST_REQUIRE( bob_rc_account.rc_manabar.current_mana == delegated_rc + creation_rc - withdraw_rate.amount.value + withdraw_rate.amount.value / 4); //  + withdraw_rate.amount.value / 4 rc due to the auto vest
-      BOOST_REQUIRE( bob_rc_account.received_delegated_rc == uint64_t(delegated_rc - withdraw_rate.amount.value));
-      BOOST_REQUIRE( bob_rc_account.last_max_rc == delegated_rc + creation_rc - withdraw_rate.amount.value + withdraw_rate.amount.value / 4 );
+      // We remove *1.5 instead of *2 because alice auto vested half, so she only needed to remove 0.5 of the withdraw_rate to reach creation_rc this round
+      BOOST_REQUIRE( bob_rc_account.rc_manabar.current_mana == delegated_rc + creation_rc - withdraw_rate.amount.value * 1.5 + withdraw_rate.amount.value / 4);
+      BOOST_REQUIRE( bob_rc_account.received_delegated_rc == uint64_t(delegated_rc - withdraw_rate.amount.value * 1.5));
+      BOOST_REQUIRE( bob_rc_account.last_max_rc == delegated_rc + creation_rc - withdraw_rate.amount.value * 1.5  + withdraw_rate.amount.value / 4 );
 
       BOOST_REQUIRE( dave_rc_account.rc_manabar.current_mana == creation_rc + delegated_rc );
       BOOST_REQUIRE( dave_rc_account.last_max_rc == creation_rc + delegated_rc );
@@ -919,13 +920,14 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
       const rc_direct_delegation_object* delegation_bob = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
       BOOST_REQUIRE( delegation_bob->from == alice_id );
       BOOST_REQUIRE( delegation_bob->to == bob_id );
-      BOOST_REQUIRE( delegation_bob->delegated_rc == uint64_t(delegated_rc - withdraw_rate.amount.value) );
+      BOOST_REQUIRE( delegation_bob->delegated_rc == uint64_t(delegated_rc - withdraw_rate.amount.value * 1.5) );
       const rc_direct_delegation_object* delegation_dave = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
       BOOST_REQUIRE( delegation_dave->from == alice_id );
       BOOST_REQUIRE( delegation_dave->to == dave_id );
       BOOST_REQUIRE( delegation_dave->delegated_rc == uint64_t(delegated_rc) );
     }
 
+    validate_database();
   }
   FC_LOG_AND_RETHROW()
 }
