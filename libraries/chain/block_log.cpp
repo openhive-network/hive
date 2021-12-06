@@ -51,7 +51,7 @@ namespace hive { namespace chain {
     close();
 
     my->file_mgr.open( file );
-    my->file_mgr.prepare( read_head() );
+    my->file_mgr.prepare();
   }
 
   void block_log::rewrite(const fc::path& input_file, const fc::path& output_file, uint32_t max_block_num)
@@ -189,20 +189,7 @@ namespace hive { namespace chain {
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
   signed_block block_log::read_head()const
   {
-    try
-    {
-      ssize_t _actual_size = file_operation::get_file_size( my->file_mgr.get_block_log_file().storage.file_descriptor );
-
-      // read the last int64 of the block log into `head_block_offset`,
-      // that's the index of the start of the head block
-      FC_ASSERT(_actual_size >= (ssize_t)sizeof(uint64_t));
-      uint64_t head_block_offset;
-      file_operation::pread_with_retry(my->file_mgr.get_block_log_file().storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
-                                               _actual_size - sizeof(head_block_offset));
-
-      return file_operation::read_block_from_offset_and_size( my->file_mgr.get_block_log_file().storage.file_descriptor, head_block_offset, _actual_size - head_block_offset - sizeof(head_block_offset) );
-    }
-    FC_LOG_AND_RETHROW()
+    return my->file_mgr.read_head();
   }
 
   const boost::shared_ptr<signed_block> block_log::head()const

@@ -1,5 +1,7 @@
 #include <hive/chain/file_manager.hpp>
 
+#include <hive/chain/file_operation.hpp>
+
 #include <appbase/application.hpp>
 
 #include <fstream>
@@ -38,7 +40,7 @@ namespace hive { namespace chain {
       idx->open( file );
   }
 
-  void file_manager::prepare( const signed_block& head_block )
+  void file_manager::prepare()
   {
     /* On startup of the block log, there are several states the log file and the index file can be
       * in relation to eachother.
@@ -61,7 +63,7 @@ namespace hive { namespace chain {
     if( block_log.storage.size )
     {
       ilog( "Log is nonempty" );
-      block_log.head.exchange(boost::make_shared<signed_block>( head_block ));
+      block_log.head.exchange(boost::make_shared<signed_block>( read_head() ));
 
       boost::shared_ptr<signed_block> head_block = block_log.head.load();
 
@@ -88,6 +90,25 @@ namespace hive { namespace chain {
 
     for( auto& idx : idxs )
       idx->close();
+  }
+
+  // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
+  signed_block file_manager::read_head()const
+  {
+    try
+    {
+      ssize_t _actual_size = file_operation::get_file_size( block_log.storage.file_descriptor );
+
+      // read the last int64 of the block log into `head_block_offset`,
+      // that's the index of the start of the head block
+      FC_ASSERT(_actual_size >= (ssize_t)sizeof(uint64_t));
+      uint64_t head_block_offset;
+      file_operation::pread_with_retry(block_log.storage.file_descriptor, &head_block_offset, sizeof(head_block_offset), 
+                                               _actual_size - sizeof(head_block_offset));
+
+      return file_operation::read_block_from_offset_and_size( block_log.storage.file_descriptor, head_block_offset, _actual_size - head_block_offset - sizeof(head_block_offset) );
+    }
+    FC_LOG_AND_RETHROW()
   }
 
   block_log_file& file_manager::get_block_log_file()

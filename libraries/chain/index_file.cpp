@@ -198,7 +198,7 @@ namespace hive { namespace chain {
                                 :custom_index( val, file_name_ext_val )
   {
   }
-  
+
   block_id_witness_public_key::~block_id_witness_public_key()
   {
   }
@@ -214,7 +214,7 @@ namespace hive { namespace chain {
     size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizes.BLOCK_NUMBER_SIZE,
       storage.size - element_size);
 
-    FC_ASSERT(bytes_read == sizeof(storage.pos));
+    FC_ASSERT(bytes_read == sizes.BLOCK_NUMBER_SIZE);
 
     storage.calculate_status( last_element_num );
   }
