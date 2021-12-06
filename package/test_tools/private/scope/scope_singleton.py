@@ -3,6 +3,7 @@ from typing import List, Optional, TYPE_CHECKING
 import warnings
 
 from test_tools.private.logger.logger_wrapper import LoggerWrapper
+from test_tools.private.raise_exception_helper import RaiseExceptionHelper
 from test_tools.private.scope.context_internal_interface import ContextInternalHandle
 from test_tools.private.scope.scope import Scope
 from test_tools.private.utilities.disabled_keyboard_interrupt import DisabledKeyboardInterrupt
@@ -41,6 +42,8 @@ class ScopesStack:
         root_scope.context.set_logger(logger)
 
         atexit.register(self.__terminate)
+
+        RaiseExceptionHelper.initialize()
 
     def __repr__(self):
         return f'<ScopesStack: {", ".join(repr(scope) for scope in self.__scopes_stack)}>'
