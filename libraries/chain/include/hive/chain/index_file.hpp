@@ -54,7 +54,6 @@ namespace hive { namespace chain {
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
   };
 
-  template<uint32_t ELEMENT_SIZE_VALUE>
   class custom_index: public base_index
   {
     protected:
@@ -69,10 +68,8 @@ namespace hive { namespace chain {
 
       void check_consistency( uint32_t total_size ) override;
   };
-  
-  constexpr uint32_t block_id_witness_public_key_size = 49;
 
-  class block_id_witness_public_key: public custom_index<block_id_witness_public_key_size>
+  class block_id_witness_public_key: public custom_index
   {
     public:
 

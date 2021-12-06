@@ -166,30 +166,26 @@ namespace hive { namespace chain {
     stream.write( (char*)&position, sizeof( position ) );
   }
 
-  template<uint32_t ELEMENT_SIZE_VALUE>
-  custom_index<ELEMENT_SIZE_VALUE>::custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
+  custom_index::custom_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
                   : base_index( val, file_name_ext_val )
   {
   }
 
-  template<uint32_t ELEMENT_SIZE_VALUE>
-  custom_index<ELEMENT_SIZE_VALUE>::~custom_index()
+  custom_index::~custom_index()
   {
   }
 
-  template<uint32_t ELEMENT_SIZE_VALUE>
-  void custom_index<ELEMENT_SIZE_VALUE>::check_consistency( uint32_t total_size )
+  void custom_index::check_consistency( uint32_t total_size )
   {
-    storage.check_consistency( ELEMENT_SIZE_VALUE, total_size );
+    storage.check_consistency( ELEMENT_SIZE, total_size );
   }
 
-  template<uint32_t ELEMENT_SIZE_VALUE>
-  void custom_index<ELEMENT_SIZE_VALUE>::read_blocks_number( uint64_t block_pos )
+  void custom_index::read_blocks_number( uint64_t block_pos )
   {
     // read the last 8 bytes of the block index to get the offset of the beginning of the 
     // head block
     size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, &storage.pos, sizeof(storage.pos),
-      storage.size - ELEMENT_SIZE_VALUE);
+      storage.size - ELEMENT_SIZE);
 
     FC_ASSERT(bytes_read == sizeof(storage.pos));
 
