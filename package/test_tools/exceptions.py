@@ -5,6 +5,10 @@ class CommunicationError(Exception):
         self.response = response
 
 
+class InternalNodeError(Exception):
+    pass
+
+
 class MissingPathToExecutable(Exception):
     pass
 

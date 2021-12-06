@@ -10,10 +10,11 @@ import time
 from typing import Optional, Union
 import weakref
 
-from test_tools import communication, constants, network, paths_to_executables
+from test_tools import communication, constants, exceptions, network, paths_to_executables
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
+from test_tools.private.raise_exception_helper import RaiseExceptionHelper
 from test_tools.private.logger.logger_internal_interface import logger
 from test_tools.private.node_http_server import NodeHttpServer
 from test_tools.private.node_message import NodeMessage
@@ -218,6 +219,10 @@ class Node:
                 endpoint = f'{details["address"].replace("0.0.0.0", "127.0.0.1")}:{details["port"]}'
                 self.p2p_endpoint = Url(endpoint).as_string(with_protocol=False)
                 self.p2p_plugin_started_event.set()
+            elif message['name'] == 'error':
+                RaiseExceptionHelper.raise_exception_in_main_thread(
+                    exceptions.InternalNodeError(f'{self.node}: {message["value"]["message"]}')
+                )
 
             self.__logger.info(f'Received message: {message}')
 
