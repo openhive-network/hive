@@ -59,9 +59,7 @@ def test_bug_exit_after_replay_no_exception(world: World):
 
 
 def test_bug_exit_after_replay_exception(world: World, block_log: Path):
-    net = world.create_network()
-
-    init = net.create_api_node(name='node_1')
+    init = world.create_api_node(name='node_1')
     half_way = int(BLOCK_COUNT / 2.0)
 
     init.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
