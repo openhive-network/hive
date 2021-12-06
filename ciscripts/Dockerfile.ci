@@ -1,4 +1,4 @@
-# for building the consensus_node/fat_node images, set CI_REGISTRY_IMAGE to the 
+# for building the consensus_node/fat_node images, set CI_REGISTRY_IMAGE to the
 # project's registry (e.g. registry.gitlab.syncad.com/hive/hive)
 ARG CI_REGISTRY_IMAGE
 ARG RUNTIME_IMAGE_TAG=:ubuntu-20.04
@@ -7,7 +7,7 @@ ARG RUNTIME_IMAGE_TAG=:ubuntu-20.04
 FROM phusion/baseimage:focal-1.0.0 AS runtime
 ENV LANG=en_US.UTF-8
 
-RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y libsnappy1v5 libreadline8 && apt-get clean && rm -r /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
 FROM runtime AS builder-tester-base

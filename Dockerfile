@@ -37,7 +37,7 @@ COPY --from=consensus_node_builder ${src_dir}/build/install-root/ ${src_dir}/con
 COPY --from=consensus_node_builder ${src_dir}/contrib/config-for-docker.ini  datadir/config.ini
 
 RUN \
-   ls -la && \
+   mkdir -p datadir/blockchain && ls -la && \
    chmod +x hived.run
 
 # rpc service :
@@ -51,7 +51,6 @@ CMD "${install_base_dir}/consensus/hived.run"
 ###################################################################################################
 
 FROM builder AS general_node_builder
-
 
 ARG BUILD_HIVE_TESTNET
 ARG HIVE_LINT
@@ -79,7 +78,7 @@ COPY --from=general_node_builder ${src_dir}/build/install-root/ ${src_dir}/contr
 COPY --from=general_node_builder ${src_dir}/contrib/config-for-docker.ini  datadir/config.ini
 
 RUN \
-   ls -la && \
+   mkdir -p datadir/blockchain && ls -la && \
    chmod +x hived.run
 
 # rpc service :
@@ -114,4 +113,3 @@ RUN \
         python3 setup.py install --user && \
   cd ${src_dir} && \
         ${src_dir}/ciscripts/run_regressions.sh
-
