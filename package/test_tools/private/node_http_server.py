@@ -3,6 +3,8 @@ import json
 import threading
 from typing import Any, Optional
 
+from test_tools.private.raise_exception_helper import RaiseExceptionHelper
+
 
 class NodeHttpServer:
     __ADDRESS = ('127.0.0.1', 0)
@@ -39,7 +41,10 @@ class NodeHttpServer:
         self.__thread.start()
 
     def __thread_function(self):
-        self.__server.serve_forever()
+        try:
+            self.__server.serve_forever()
+        except Exception as exception:  # pylint: disable=broad-except
+            RaiseExceptionHelper.raise_exception_in_main_thread(exception)
 
     def close(self):
         if self.__thread is None:
