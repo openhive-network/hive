@@ -200,6 +200,7 @@ void application::set_program_options()
       ("help,h", "Print this help message and exit.")
       ("version,v", "Print version information.")
       ("dump-config", "Dump configuration and exit")
+      ("list-plugins", "Print names of all available plugins and exit")
       ("data-dir,d", bpo::value<bfs::path>(), data_dir_ss.str().c_str() )
       ("config,c", bpo::value<bfs::path>()->default_value( "config.ini" ), "Configuration file name relative to data-dir");
 
@@ -308,6 +309,16 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       std::cout << "\t" << quoted("data-dir") << ": " << quoted(my->_data_dir.string().c_str()) << ",\n";
       std::cout << "\t" << quoted("config") << ": " << quoted(config_file_name.string().c_str()) << "\n";
       std::cout << "}\n";
+      return false;
+    }
+
+    if(my->_args.count("list-plugins") > 0)
+    {
+      for(const auto& plugin: plugins)
+      {
+        std::cout << plugin.first << "\n";
+      }
+
       return false;
     }
 
