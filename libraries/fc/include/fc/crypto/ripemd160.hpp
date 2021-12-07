@@ -12,6 +12,7 @@ class ripemd160
 {
   public:
     ripemd160();
+    explicit ripemd160( const char* d, uint32_t dlen );
     explicit ripemd160( const string& hex_str );
 
     string str()const;

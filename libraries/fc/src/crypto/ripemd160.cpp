@@ -7,6 +7,7 @@
 #include <fc/crypto/sha512.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/variant.hpp>
+#include <fc/exception/exception.hpp>
 #include <vector>
 #include "_digest_common.hpp"
 
@@ -14,6 +15,12 @@ namespace fc
 {
   
 ripemd160::ripemd160() { memset( _hash, 0, sizeof(_hash) ); }
+
+ripemd160::ripemd160( const char* d, uint32_t dlen ) {
+  FC_ASSERT( dlen == sizeof(_hash), "dlen == sizeof(_hash)" );
+  std::memcpy( (char*)_hash, d, dlen );
+}
+
 ripemd160::ripemd160( const string& hex_str ) {
   fc::from_hex( hex_str, (char*)_hash, sizeof(_hash) );  
 }

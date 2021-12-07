@@ -36,6 +36,7 @@ struct api_signed_block_object : public signed_block
   {
     init( id(), signee() );
   }
+
   api_signed_block_object() {}
 
   void init( const block_id_type& _block_id, const public_key_type& _signing_key )

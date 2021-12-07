@@ -221,23 +221,19 @@ namespace hive { namespace chain {
 
   void block_id_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
   {
-    //fc::ripemd160
-    auto _id = block.id();
-    char* _block_id = _id.data();
+    block_id_type _id = block.id();
 
-    //fc::array<char,33>
-    auto _witness_public_key = block.signee();
-    fc::ecc::public_key_data _key = _witness_public_key.serialize();
+    public_key_type _key = block.signee();
 
-    FC_ASSERT( sizeof( uint32_t ) == sizes.BLOCK_NUMBER_SIZE );
-    FC_ASSERT( _id.data_size()    == sizes.BLOCK_ID_SIZE );
-    FC_ASSERT( _key.size()        == sizes.PUBLIC_KEY_SIZE );
+    FC_ASSERT( sizeof( uint32_t )   == sizes.BLOCK_NUMBER_SIZE );
+    FC_ASSERT( _id.data_size()      == sizes.BLOCK_ID_SIZE );
+    FC_ASSERT( _key.key_data.size() == sizes.PUBLIC_KEY_SIZE );
 
     uint32_t _block_num = block.block_num();
 
-    stream.write( (char*)&_block_num, sizes.BLOCK_NUMBER_SIZE );
-    stream.write( _block_id,          sizes.BLOCK_ID_SIZE );
-    stream.write( _key.begin(),       sizes.PUBLIC_KEY_SIZE );
+    stream.write( (char*)&_block_num,     sizes.BLOCK_NUMBER_SIZE );
+    stream.write( _id.data(),             sizes.BLOCK_ID_SIZE );
+    stream.write( _key.key_data.begin(),  sizes.PUBLIC_KEY_SIZE );
   }
 
   std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read( uint32_t block_num )
@@ -249,16 +245,16 @@ namespace hive { namespace chain {
     auto _memory_begin = buffer.data();
 
     uint32_t _block_num = *( reinterpret_cast<uint32_t*>( _memory_begin ) );
-    FC_ASSERT(block_num == _block_num, "incorrect block has been read required: ${block_num} read: ${_block_num} ",("block_num", block_num)("_block_num", _block_num));
+    FC_ASSERT(block_num == _block_num, "block required: ${block_num} block received: ${_block_num} ",("block_num", block_num)("_block_num", _block_num));
     _memory_begin += sizes.BLOCK_NUMBER_SIZE;
 
-    block_id_type block_id = fc::ripemd160::hash( _memory_begin, sizes.BLOCK_ID_SIZE );
-    _memory_begin += sizeof( sizes.BLOCK_ID_SIZE );
+    block_id_type _id = block_id_type( _memory_begin, sizes.BLOCK_ID_SIZE );
+    _memory_begin += sizes.BLOCK_ID_SIZE;
 
-    public_key_type signing_key;
-    std::copy_n( _memory_begin, sizes.PUBLIC_KEY_SIZE, signing_key.key_data.begin() );
+    public_key_type _key;
+    std::memcpy( _key.key_data.begin(), _memory_begin, sizes.PUBLIC_KEY_SIZE );
 
-    return { block_id, signing_key };
+    return { _id, _key };
   }
 
 } } // hive::chain
