@@ -136,10 +136,16 @@ namespace hive { namespace chain {
     return result;
 }
 
-  std::tuple< optional<block_id_type>, optional<public_key_type> > base_index::read( uint32_t block_num )
+  std::tuple< optional<block_id_type>, optional<public_key_type> > base_index::read_data_by_num( uint32_t block_num )
   {
     //returns empty results here
     return{ optional<block_id_type>(), optional<public_key_type>() };
+  }
+
+  std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > base_index::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
+  {
+    //returns empty results here
+    return{ { optional<block_id_type>(), optional<public_key_type>() } };
   }
 
   block_log_index::block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
@@ -237,25 +243,52 @@ namespace hive { namespace chain {
     stream.write( _key.key_data.begin(),  sizes.PUBLIC_KEY_SIZE );
   }
 
-  std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read( uint32_t block_num )
+  std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read_data_from_buffer( uint32_t block_num, char* buffer )
+  {
+    uint32_t _block_num = *( reinterpret_cast<uint32_t*>( buffer ) );
+    FC_ASSERT(block_num == _block_num, "block required: ${block_num} block received: ${_block_num} ",("block_num", block_num)("_block_num", _block_num));
+    buffer += sizes.BLOCK_NUMBER_SIZE;
+
+    block_id_type _id = block_id_type( buffer, sizes.BLOCK_ID_SIZE );
+    buffer += sizes.BLOCK_ID_SIZE;
+
+    public_key_type _key;
+    std::memcpy( _key.key_data.begin(), buffer, sizes.PUBLIC_KEY_SIZE );
+
+    return { _id, _key };
+  }
+
+  std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read_data_by_num( uint32_t block_num )
   {
     uint64_t offset_in_index = element_size * (block_num - 1);
     size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, buffer.data(), element_size, offset_in_index);
     FC_ASSERT( bytes_read == element_size );
 
-    auto _memory_begin = buffer.data();
+    auto _ptr = buffer.data();
 
-    uint32_t _block_num = *( reinterpret_cast<uint32_t*>( _memory_begin ) );
-    FC_ASSERT(block_num == _block_num, "block required: ${block_num} block received: ${_block_num} ",("block_num", block_num)("_block_num", _block_num));
-    _memory_begin += sizes.BLOCK_NUMBER_SIZE;
+    return read_data_from_buffer( block_num, _ptr );
+  }
 
-    block_id_type _id = block_id_type( _memory_begin, sizes.BLOCK_ID_SIZE );
-    _memory_begin += sizes.BLOCK_ID_SIZE;
+  std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > block_id_witness_public_key::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
+  {
+    std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > result;
 
-    public_key_type _key;
-    std::memcpy( _key.key_data.begin(), _memory_begin, sizes.PUBLIC_KEY_SIZE );
+    uint64_t offset_in_index = element_size * (first_block_num * count - 1);
 
-    return { _id, _key };
+    std::shared_ptr<char> _range_buffer( new char[ element_size * count ], std::default_delete<char[]>() );
+
+    size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, _range_buffer.get(), element_size * count, offset_in_index);
+    FC_ASSERT( bytes_read == element_size * count );
+
+    char* _ptr = _range_buffer.get();
+
+    for( uint32_t i = 0; i < count; i++ )
+    {
+      result.emplace_back( read_data_from_buffer( first_block_num + i, _ptr ) );
+      _ptr += element_size;
+    }
+
+    return result;
   }
 
 } } // hive::chain

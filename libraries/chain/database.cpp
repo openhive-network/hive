@@ -593,7 +593,7 @@ std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key
   {
     if( fetch_all )
     {
-      std::tuple< optional<block_id_type>, optional<public_key_type> > _additional_elements = _block_log.read( block_num );
+      std::tuple< optional<block_id_type>, optional<public_key_type> > _additional_elements = _block_log.read_data_by_num( block_num );
       return std::tuple_cat( std::make_tuple( _block_log.read_block_by_num( block_num ) ), _additional_elements );
     }
     else

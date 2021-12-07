@@ -53,7 +53,8 @@ namespace hive { namespace chain {
       optional< signed_block > read_block_by_num( uint32_t block_num )const;
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
-      std::tuple< optional<block_id_type>, optional<public_key_type> > read( uint32_t block_num );
+      std::tuple< optional<block_id_type>, optional<public_key_type> > read_data_by_num( uint32_t block_num );
+      std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > read_data_range_by_num( uint32_t first_block_num, uint32_t count );
 
       signed_block read_head()const;
       const boost::shared_ptr<signed_block> head() const;

@@ -179,9 +179,14 @@ namespace hive { namespace chain {
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }
 
-  std::tuple< optional<block_id_type>, optional<public_key_type> > block_log::read( uint32_t block_num )
+  std::tuple< optional<block_id_type>, optional<public_key_type> > block_log::read_data_by_num( uint32_t block_num )
   {
-    return my->file_mgr.get_hash_idx()->read( block_num );
+    return my->file_mgr.get_hash_idx()->read_data_by_num( block_num );
+  }
+
+  std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > block_log::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
+  {
+    return my->file_mgr.get_hash_idx()->read_data_range_by_num( first_block_num, count );
   }
 
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
