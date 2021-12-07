@@ -47,7 +47,7 @@ def test_exit_before_sync(world: World, block_log: Path):
     assert not init.is_running()
 
 
-def test_bug_exit_after_replay_no_exception(world: World):
+def test_deprecated_flag_exit_after_replay_no_exception(world: World):
     node = world.create_init_node()
     node.run()
 
@@ -58,7 +58,7 @@ def test_bug_exit_after_replay_no_exception(world: World):
     assert warning not in stderr
 
 
-def test_bug_exit_after_replay_exception(world: World, block_log: Path):
+def test_deprecated_flag_exit_after_replay_exception(world: World, block_log: Path):
     init = world.create_api_node(name='node_1')
     half_way = int(BLOCK_COUNT / 2.0)
 
