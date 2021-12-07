@@ -64,7 +64,7 @@ def test_exit_after_replay_not_run_from_half_way(world: World, block_log: Path):
 def test_exit_after_replay_stop_after_dump(world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
-    snap = node.dump_snapshot(close=True) #osobny test
+    snap = node.dump_snapshot(close=True)
     assert not node.is_running()
 
 
