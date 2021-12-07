@@ -19,7 +19,8 @@ def test_dump_config(world: World):
     node.dump_config()
     assert node.config.__dict__ == old_config
 
-def test_deprecated_flag_exit_after_replay_no_exception(world: World):
+
+def test_no_appearance_of_deprecated_flag_exception_in_run_without_flag_exit_after_replay(world: World):
     node = world.create_init_node()
     node.run()
 
@@ -29,7 +30,8 @@ def test_deprecated_flag_exit_after_replay_no_exception(world: World):
     warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
     assert warning not in stderr
 
-def test_deprecated_flag_exit_after_replay_exception(world: World, block_log: Path):
+
+def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_replay(world: World, block_log: Path):
     node = world.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
 
@@ -41,11 +43,13 @@ def test_deprecated_flag_exit_after_replay_exception(world: World, block_log: Pa
     warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
     assert warning in stderr
 
-def test_exit_after_replay_stop_in_half_way(world: World, block_log: Path):
+
+def test_stop_after_replay_with_flag_exit_after_replay(world: World, block_log: Path):
     node = world.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
     node.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
     assert not node.is_running()
+
 
 def test_exit_after_replay_not_run_from_half_way(world: World, block_log: Path):
     node = world.create_api_node()
@@ -61,6 +65,7 @@ def test_exit_after_replay_not_run_from_half_way(world: World, block_log: Path):
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
     assert not node.is_running()
 
+
 def test_exit_after_replay_stop_after_dump(world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
@@ -68,7 +73,7 @@ def test_exit_after_replay_stop_after_dump(world: World, block_log: Path):
     assert not node.is_running()
 
 
-def test_exit_after_replay_stop_after_load_snapshot(world: World, block_log: Path):
+def test_stop_after_replay_in_load_from_snapshot_with_flag_exit_after_replay(world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
     snap = node.dump_snapshot(close=True)
@@ -76,11 +81,13 @@ def test_exit_after_replay_stop_after_load_snapshot(world: World, block_log: Pat
     node.run(load_snapshot_from=snap, with_arguments=['--exit-after-replay'])
     assert not node.is_running()
 
-def test_exit_before_sync_stop_in_half_way(world: World, block_log: Path):
+
+def test_stop_after_replay_with_flag_exit_before_sync(world: World, block_log: Path):
     node = world.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
     node.run(replay_from=block_log, stop_at_block=half_way, exit_before_synchronization=True)
     assert not node.is_running()
+
 
 def test_exit_before_sync_not_run_from_half_way(world: World, block_log: Path):
     node = world.create_api_node()
@@ -96,13 +103,15 @@ def test_exit_before_sync_not_run_from_half_way(world: World, block_log: Path):
     node.run(replay_from=block_log, exit_before_synchronization=True)
     assert not node.is_running()
 
+
 def test_exit_before_sync_stop_after_dump(world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log, exit_before_synchronization=True)
     snap = node.dump_snapshot(close=True)
     assert not node.is_running()
 
-def test_exit_before_sync_stop_after_load_snapshot(world: World, block_log: Path):
+
+def test_stop_after_replay_in_load_from_snapshot_with_flag_exit_before_sync(world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log, exit_before_synchronization=True)
     snap = node.dump_snapshot(close=True)
