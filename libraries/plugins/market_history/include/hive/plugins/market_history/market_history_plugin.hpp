@@ -71,13 +71,13 @@ struct bucket_object_details
   share_type           close;
   share_type           volume;
 
-  void fill( const share_type& val )
+  void fill( const share_type& amount,  const share_type& price )
   {
-    high = val;
-    low = val;
-    open = val;
-    close = val;
-    volume = val;
+    high = price;
+    low = price;
+    open = price;
+    close = price;
+    volume = amount;
   }
 };
 

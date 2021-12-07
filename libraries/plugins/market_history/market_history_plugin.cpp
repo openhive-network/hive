@@ -11,6 +11,8 @@
 #define MH_BUCKET_SIZE "market-history-bucket-size"
 #define MH_BUCKETS_PER_SIZE "market-history-buckets-per-size"
 
+#define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
+
 namespace hive { namespace plugins { namespace market_history {
 
 namespace detail {
@@ -68,11 +70,17 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
           b.open = open;
           b.seconds = bucket;
 
-          b.hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
 #ifdef HIVE_ENABLE_SMT
           b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-          b.non_hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
+
+          if (op.open_pays.symbol == HIVE_SYMBOL) {
+            b.hive.fill( op.open_pays.amount, ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays) );
+            b.non_hive.fill( op.current_pays.amount, ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) );
+          } else {
+            b.hive.fill( op.current_pays.amount, ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) );
+            b.non_hive.fill( op.open_pays.amount, ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays) );
+          }
         });
       }
       else
@@ -85,45 +93,41 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
           if( op.open_pays.symbol == HIVE_SYMBOL )
           {
             b.hive.volume += op.open_pays.amount;
-            b.hive.close = op.open_pays.amount;
+            b.hive.close = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
 
             b.non_hive.volume += op.current_pays.amount;
-            b.non_hive.close = op.current_pays.amount;
+            b.non_hive.close = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
 
             if( b.high() < price( op.current_pays, op.open_pays ) )
             {
-              b.hive.high = op.open_pays.amount;
-
-              b.non_hive.high = op.current_pays.amount;
+              b.hive.high = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
+              b.non_hive.high = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
 
             if( b.low() > price( op.current_pays, op.open_pays ) )
             {
-              b.hive.low = op.open_pays.amount;
-
-              b.non_hive.low = op.current_pays.amount;
+              b.hive.low = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
+              b.non_hive.low = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
           }
           else
           {
             b.hive.volume += op.current_pays.amount;
-            b.hive.close = op.current_pays.amount;
+            b.hive.close = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
 
             b.non_hive.volume += op.open_pays.amount;
-            b.non_hive.close = op.open_pays.amount;
+            b.non_hive.close = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
 
             if( b.high() < price( op.open_pays, op.current_pays ) )
             {
-              b.hive.high = op.current_pays.amount;
-
-              b.non_hive.high = op.open_pays.amount;
+              b.hive.high = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
+              b.non_hive.high = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
             }
 
             if( b.low() > price( op.open_pays, op.current_pays ) )
             {
-              b.hive.low = op.current_pays.amount;
-
-              b.non_hive.low = op.open_pays.amount;
+              b.hive.low = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
+              b.non_hive.low = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
             }
           }
         });
