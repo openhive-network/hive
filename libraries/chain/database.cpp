@@ -603,7 +603,7 @@ std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key
   }
 } FC_LOG_AND_RETHROW() }
 
-std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )
+std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > > database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )
 { try {
   // for debugging, put the head block back so it should straddle the last irreversible
   // const uint32_t starting_block_num = head_block_num() - 30;
@@ -627,18 +627,40 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
   uint32_t remaining_count = fork_items.empty() ? count : fork_items.front().num - starting_block_num;
   idump((remaining_count));
   vector<signed_block> result;
+  std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > result_data;
 
   if (remaining_count)
-    result = _block_log.read_block_range_by_num(starting_block_num, remaining_count);
+  {
+    result      = _block_log.read_block_range_by_num(starting_block_num, remaining_count);
+    result_data = _block_log.read_data_range_by_num(starting_block_num, remaining_count);
+  }
 
   idump((result.size()));
+
   if (!result.empty())
     idump((result.front().block_num())(result.back().block_num()));
+
   result.reserve(result.size() + fork_items.size());
+
   for (fork_item& item : fork_items)
     result.emplace_back(std::move(item.data));
 
-  return result;
+  std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > > combined_result;
+
+  for( auto& block : result )
+  {
+    auto found = result_data.find( block.block_num() );
+    if( found != result_data.end() )
+    {
+      combined_result.emplace_back( std::make_tuple( block, std::get<0>( found->second ), std::get<1>( found->second ) ) );
+    }
+    else
+    {
+      combined_result.emplace_back( std::make_tuple( block, optional<block_id_type>(), optional<public_key_type>() ) );
+    }
+  }
+
+  return combined_result;
 } FC_LOG_AND_RETHROW() }
 
 const signed_transaction database::get_recent_transaction( const transaction_id_type& trx_id ) const

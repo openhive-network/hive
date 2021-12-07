@@ -142,10 +142,11 @@ namespace hive { namespace chain {
     return{ optional<block_id_type>(), optional<public_key_type>() };
   }
 
-  std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > base_index::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
+  std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > base_index::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
   {
     //returns empty results here
-    return{ { optional<block_id_type>(), optional<public_key_type>() } };
+    std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > _result;
+    return _result;
   }
 
   block_log_index::block_log_index( const storage_description::storage_type val, const std::string& file_name_ext_val )
@@ -269,9 +270,9 @@ namespace hive { namespace chain {
     return read_data_from_buffer( block_num, _ptr );
   }
 
-  std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > block_id_witness_public_key::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
+  std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > block_id_witness_public_key::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
   {
-    std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > result;
+    std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > _result;
 
     uint64_t offset_in_index = element_size * (first_block_num * count - 1);
 
@@ -284,11 +285,11 @@ namespace hive { namespace chain {
 
     for( uint32_t i = 0; i < count; i++ )
     {
-      result.emplace_back( read_data_from_buffer( first_block_num + i, _ptr ) );
+      _result.emplace( std::make_pair( first_block_num + i, read_data_from_buffer( first_block_num + i, _ptr ) ) );
       _ptr += element_size;
     }
 
-    return result;
+    return _result;
   }
 
 } } // hive::chain

@@ -89,9 +89,16 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
-    vector<signed_block> blocks = _db.fetch_block_range_unlocked( args.starting_block_num, count );
-    for (const signed_block& block : blocks)
-      result.blocks.push_back(block);
+    std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > > _items = _db.fetch_block_range_unlocked( args.starting_block_num, count );
+    for( auto& item : _items )
+    {
+      optional<signed_block> block          = std::get<0>( item );
+      optional<block_id_type> block_id      = std::get<1>( item );
+      optional<public_key_type> signing_key = std::get<2>( item );
+
+      if( block )
+        result.blocks.push_back( api_signed_block_object( *block, block_id, signing_key ) );
+    }
   }
   return result;
 }

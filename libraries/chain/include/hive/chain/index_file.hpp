@@ -39,7 +39,7 @@ namespace hive { namespace chain {
       virtual void check_consistency( uint32_t total_size ) = 0;
       virtual void write( std::fstream& stream, const signed_block& block, uint64_t position ) = 0;
       virtual std::tuple< optional<block_id_type>, optional<public_key_type> > read_data_by_num( uint32_t block_num );
-      virtual std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > read_data_range_by_num( uint32_t first_block_num, uint32_t count );
+      virtual std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > read_data_range_by_num( uint32_t first_block_num, uint32_t count );
   };
 
   class block_log_index: public base_index
@@ -100,7 +100,7 @@ namespace hive { namespace chain {
 
       void write( std::fstream& stream, const signed_block& block, uint64_t position ) override;
       std::tuple< optional<block_id_type>, optional<public_key_type> > read_data_by_num( uint32_t block_num ) override;
-      std::vector< std::tuple< optional<block_id_type>, optional<public_key_type> > > read_data_range_by_num( uint32_t first_block_num, uint32_t count ) override;
+      std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > read_data_range_by_num( uint32_t first_block_num, uint32_t count ) override;
   };
 
 } } // hive::chain
