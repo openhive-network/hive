@@ -6,7 +6,7 @@ namespace hive { namespace chain {
 
   struct storage_description
   {
-    enum status_type  : uint32_t { none, reopen, resume };
+    enum status_type  : uint32_t { none, empty, reopen, resume };
     enum storage_type : uint32_t { block_log, block_log_idx, hash_idx };
 
     status_type status = status_type::none;
@@ -15,6 +15,7 @@ namespace hive { namespace chain {
     // only accessed when appending a block, doesn't need locking
     ssize_t   size  = 0;
     uint64_t  pos   = 0;
+    uint64_t  diff  = 0;
 
     int       file_descriptor = -1;
 

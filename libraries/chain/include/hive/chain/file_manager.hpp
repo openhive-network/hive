@@ -27,8 +27,9 @@ namespace hive { namespace chain {
 
       index_collection idxs;
 
+      bool construct_index_allowed() const;
       bool get_resume() const;
-      uint64_t get_index_pos() const;
+      uint64_t get_index_pos();
 
     public:
 

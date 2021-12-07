@@ -19,7 +19,10 @@ namespace hive { namespace chain {
     if( block_pos < pos )
       status = storage_description::status_type::reopen;
     else if( block_pos > pos )
+    {
       status = storage_description::status_type::resume;
+      diff  = block_pos - pos;
+    }
     else
       status = storage_description::status_type::none;
   }

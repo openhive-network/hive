@@ -56,6 +56,7 @@ namespace hive { namespace chain {
     else
     {
       ilog( "Index is empty" );
+      storage.status = storage_description::status_type::empty;
     }
   }
 

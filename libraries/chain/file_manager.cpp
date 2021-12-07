@@ -71,7 +71,8 @@ namespace hive { namespace chain {
       for( auto& idx : idxs )
         idx->prepare( head_block, block_log.storage );
 
-      construct_index();
+      if( construct_index_allowed() )
+        construct_index();
     }
     else
     {
@@ -129,26 +130,41 @@ namespace hive { namespace chain {
     return idxs[HASH_IDX];
   }
 
+  bool file_manager::construct_index_allowed() const
+  {
+    for( auto& idx : idxs )
+    {
+      if( idx->storage.status != storage_description::status_type::none )
+        return true;
+    }
+    return false;
+  }
+
   bool file_manager::get_resume() const
   {
     size_t cnt = 0;
 
     for( auto& idx : idxs )
+    {
       if( idx->storage.status == storage_description::status_type::resume )
         ++cnt;
+    }
 
     return cnt == idxs.size();
   }
 
-  uint64_t file_manager::get_index_pos() const
+  uint64_t file_manager::get_index_pos()
   {
     std::set<uint64_t> res;
 
     for( auto& idx : idxs )
-      res.insert( idx->storage.pos );
+      res.insert( idx->storage.diff );
 
     if( res.size() == 1 )
-      return *res.begin();
+    {
+      p_base_index& _tmp_idx = get_block_log_idx();
+      return _tmp_idx->storage.pos;
+    }
     else
       return 0;
   }
@@ -324,12 +340,12 @@ namespace hive { namespace chain {
 
   void file_manager::write( std::vector<std::fstream>& streams, const signed_block& block, uint64_t position )
   {
-      FC_ASSERT( idxs.size() == streams.size(), "incorrect number of streams");
+    FC_ASSERT( idxs.size() == streams.size(), "incorrect number of streams");
 
-      size_t cnt = 0;
+    size_t cnt = 0;
 
-      for( auto& idx : idxs )
-        idx->write( streams[cnt++], block, position );
+    for( auto& idx : idxs )
+      idx->write( streams[cnt++], block, position );
   }
 
 } } // hive::chain
