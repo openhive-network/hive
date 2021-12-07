@@ -66,13 +66,6 @@ def test_exit_after_replay_not_run_from_half_way(world: World, block_log: Path):
     assert not node.is_running()
 
 
-def test_exit_after_replay_stop_after_dump(world: World, block_log: Path):
-    node = world.create_api_node()
-    node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
-    snap = node.dump_snapshot(close=True)
-    assert not node.is_running()
-
-
 def test_stop_after_replay_in_load_from_snapshot_with_flag_exit_after_replay(world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
@@ -101,13 +94,6 @@ def test_exit_before_sync_not_run_from_half_way(world: World, block_log: Path):
 
     rmtree(join(str(node.directory), 'blockchain'), ignore_errors=True)
     node.run(replay_from=block_log, exit_before_synchronization=True)
-    assert not node.is_running()
-
-
-def test_exit_before_sync_stop_after_dump(world: World, block_log: Path):
-    node = world.create_api_node()
-    node.run(replay_from=block_log, exit_before_synchronization=True)
-    snap = node.dump_snapshot(close=True)
     assert not node.is_running()
 
 
