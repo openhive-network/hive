@@ -1,6 +1,6 @@
 import re
 
-from test_tools.private.node_config_entry_types import Boolean, Integer, List, Plugin, String, Untouched
+from test_tools.private.node_config_entry_types import Boolean, Integer, List, String, Untouched
 
 
 class NodeConfig:
@@ -37,7 +37,7 @@ class NodeConfig:
         self.log_file_appender = Untouched()  # Set correct type
         self.log_logger = Untouched()  # Set correct type
         self.backtrace = Untouched()  # Set correct type
-        self.plugin = List(Plugin)
+        self.plugin = List(Untouched)
         self.account_history_track_account_range = Untouched()  # Set correct type
         self.track_account_range = Untouched()  # Set correct type
         self.account_history_whitelist_ops = Untouched()  # Set correct type
@@ -179,7 +179,6 @@ class NodeConfig:
 
     def validate(self):
         self.__assert_no_plugins_duplicates()
-        self.__assert_valid_plugins_names()
 
     def __assert_no_plugins_duplicates(self):
         plugin_occurences = {plugin: 0 for plugin in self.plugin}
@@ -194,10 +193,6 @@ class NodeConfig:
                 f'\n'
                 f'Remove places from code where you added them manually.'
             )
-
-    def __assert_valid_plugins_names(self):
-        for plugin in self.plugin:
-            Plugin.validate(plugin)
 
     def load_from_lines(self, lines):
         assert isinstance(lines, list)

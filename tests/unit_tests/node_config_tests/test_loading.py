@@ -29,13 +29,6 @@ def test_correct_plugins(config):
     assert all(plugin in config.plugin for plugin in ['witness', 'p2p', 'account_by_key'])
 
 
-def test_incorrect_plugins(config):
-    for incorrect_plugin in ['UNDEFINED_PLUGIN', 'witnness', 'p3p']:
-        with pytest.raises(ValueError):
-            config.load_from_lines([f'plugin = {incorrect_plugin}'])
-            pytest.fail(f'Exception was not raised for value: \"{incorrect_plugin}\"')
-
-
 def test_single_line_entry_loading(config):
     config.load_from_lines([
         'plugin = account_by_key',

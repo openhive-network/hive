@@ -5,7 +5,6 @@ import warnings
 from test_tools import Account, constants
 from test_tools.private.children_names import ChildrenNames
 from test_tools.private.node import Node
-from test_tools.private.node_config_entry_types import Plugin
 
 
 class NodesCreator:
@@ -89,7 +88,7 @@ class NodesCreator:
     def __enable_all_api_plugins(node):
         node.config.plugin.append('account_history_rocksdb')  # Required by account_history_api
 
-        all_api_plugins = [plugin for plugin in Plugin.SUPPORTED_PLUGINS if plugin.endswith('_api')]
+        all_api_plugins = [plugin for plugin in node.get_supported_plugins() if plugin.endswith('_api')]
         node.config.plugin.extend([plugin for plugin in all_api_plugins if plugin not in node.config.plugin])
 
     def nodes(self):
