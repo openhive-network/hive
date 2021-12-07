@@ -170,8 +170,6 @@ namespace hive { namespace chain {
   {
     try
     {
-      // first, check if the last block we want is the current head block; if so, we can
-      // will use it and then load the previous blocks from the block log
       boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
 
       return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage.file_descriptor, head_block );

@@ -95,6 +95,8 @@ namespace hive { namespace chain {
 
     uint32_t last_block_num = first_block_num + count - 1;
 
+    // first, check if the last block we want is the current head block; if so, we can
+    // will use it and then load the previous blocks from the block log
     if (!head_block || first_block_num > head_block->block_num())
       return result; // the caller is asking for blocks after the head block, we don't have them
 
@@ -134,7 +136,7 @@ namespace hive { namespace chain {
       result.push_back(*head_block);
 
     return result;
-}
+  }
 
   std::tuple< optional<block_id_type>, optional<public_key_type> > base_index::read_data_by_num( uint32_t block_num )
   {
