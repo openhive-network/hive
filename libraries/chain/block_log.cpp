@@ -38,12 +38,10 @@ namespace hive { namespace chain {
 
   block_log::block_log() : my( new detail::block_log_impl() )
   {
-    my->file_mgr.get_block_log_file().storage.file_descriptor = -1;
   }
 
   block_log::~block_log()
   {
-    my->file_mgr.close();
   }
 
   void block_log::open( const fc::path& file )
@@ -99,7 +97,7 @@ namespace hive { namespace chain {
 
   bool block_log::is_open()const
   {
-    return my->file_mgr.get_block_log_file().storage.file_descriptor != -1;
+    return my->file_mgr.get_block_log_file().storage.is_open();
   }
 
   // threading guarantees:

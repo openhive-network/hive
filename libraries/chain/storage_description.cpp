@@ -64,4 +64,9 @@ namespace hive { namespace chain {
     pos     = 0;
   }
 
+  bool storage_description::is_open() const
+  {
+    return file_descriptor != -1;
+  }
+
 } } // hive::chain

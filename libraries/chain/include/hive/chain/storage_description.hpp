@@ -28,6 +28,8 @@ namespace hive { namespace chain {
     void open( const fc::path& input_file );
     void open();
     void close();
+
+    bool is_open() const;
   };
 
 } } // hive::chain

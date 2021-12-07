@@ -30,6 +30,7 @@ namespace hive { namespace chain {
 
   file_manager::~file_manager()
   {
+    close();
   }
  
   void file_manager::open( const fc::path& file )
