@@ -30,12 +30,12 @@ def test_deprecated_flag_exit_after_replay_no_exception(world: World):
     assert warning not in stderr
 
 def test_deprecated_flag_exit_after_replay_exception(world: World, block_log: Path):
-    init = world.create_api_node()
+    node = world.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
 
-    init.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
+    node.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
 
-    with open(init.directory / 'stderr.txt') as file:
+    with open(node.directory / 'stderr.txt') as file:
         stderr = file.read()
 
     warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
