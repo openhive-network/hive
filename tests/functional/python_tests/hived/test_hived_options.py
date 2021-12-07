@@ -9,7 +9,7 @@ from .conftest import BLOCK_COUNT
 
 
 def test_dump_config(world: World):
-    node = world.create_init_node('init_0')
+    node = world.create_init_node()
     old_config = dict()
     for key, value in node.config.__dict__.items():
         old_config[key] = value
@@ -23,7 +23,7 @@ def test_dump_config(world: World):
 def test_exit_before_sync(world: World, block_log: Path):
     net = world.create_network()
 
-    init = net.create_api_node(name='node_1')
+    init = net.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
 
     init.run(replay_from=block_log, stop_at_block=half_way, exit_before_synchronization=True)
@@ -59,7 +59,7 @@ def test_deprecated_flag_exit_after_replay_no_exception(world: World):
 
 
 def test_deprecated_flag_exit_after_replay_exception(world: World, block_log: Path):
-    init = world.create_api_node(name='node_1')
+    init = world.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
 
     init.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
@@ -74,7 +74,7 @@ def test_deprecated_flag_exit_after_replay_exception(world: World, block_log: Pa
 def test_exit_after_replay_behavior(world: World, block_log: Path):
     net = world.create_network()
 
-    init = net.create_api_node(name='node_1')
+    init = net.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
 
     init.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
