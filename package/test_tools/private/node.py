@@ -7,7 +7,7 @@ import signal
 import subprocess
 from threading import Event
 import time
-from typing import Optional, Union
+from typing import List, Optional, Union
 import weakref
 
 from test_tools import communication, constants, exceptions, network, paths_to_executables
@@ -68,6 +68,10 @@ class Node:
         def get_build_commit_hash(self):
             output = self.__run_and_get_output('--version')
             return json.loads(f'{{{output}}}')['version']['hive_git_revision']
+
+        def get_supported_plugins(self) -> List[str]:
+            output = self.__run_and_get_output('--list-plugins')
+            return output.split('\n')
 
     class __Process:
         def __init__(self, owner, directory, executable, logger):
@@ -279,6 +283,9 @@ class Node:
 
     def get_block_log(self, include_index=True):
         return BlockLog(self, self.directory.joinpath('blockchain/block_log'), include_index=include_index)
+
+    def get_supported_plugins(self) -> List[str]:
+        return self.__executable.get_supported_plugins()
 
     def wait_number_of_blocks(self, blocks_to_wait, *, timeout=math.inf):
         assert blocks_to_wait > 0
