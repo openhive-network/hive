@@ -65,13 +65,13 @@ class market_history_plugin : public plugin< market_history_plugin >
 
 struct bucket_object_details
 {
-  share_type           high;
-  share_type           low;
-  share_type           open;
-  share_type           close;
+  double           high;
+  double           low;
+  double           open;
+  double           close;
   share_type           volume;
 
-  void fill( const share_type& amount,  const share_type& price )
+  void fill( const share_type& amount,  const double& price )
   {
     high = price;
     low = price;
