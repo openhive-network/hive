@@ -1,13 +1,10 @@
 from os import remove
 from os.path import join
 from pathlib import Path
-from shutil import rmtree
 
 import pytest
 
 from test_tools import World
-
-from .conftest import BLOCK_COUNT
 
 
 def test_dump_config(world: World):
