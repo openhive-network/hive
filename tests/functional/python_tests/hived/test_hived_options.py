@@ -44,7 +44,7 @@ def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_rep
 
 
 @pytest.mark.parametrize('way_to_stop', [
-                        {'with_arguments':['--exit-after-replay']},
+                        {'with_arguments': ['--exit-after-replay']},
                         {'exit_before_synchronization': True}])
 def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     node = world.create_api_node()
@@ -54,7 +54,7 @@ def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of
 
 
 @pytest.mark.parametrize('way_to_stop', [
-                        {'with_arguments':['--exit-after-replay']},
+                        {'with_arguments': ['--exit-after-replay']},
                         {'exit_before_synchronization': True}])
 def test_stop_after_replay_with_second_node_in_network(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     net = world.create_network()
@@ -73,7 +73,7 @@ def test_stop_after_replay_with_second_node_in_network(way_to_stop, world: World
 
 
 @pytest.mark.parametrize('way_to_stop', [
-                        {'with_arguments':['--exit-after-replay']},
+                        {'with_arguments': ['--exit-after-replay']},
                         {'exit_before_synchronization': True}])
 def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     node = world.create_api_node()
