@@ -47,7 +47,7 @@ def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_rep
 
 
 @pytest.mark.parametrize("param1, param2", [(False, ['--exit-after-replay']), (True, "")])
-def test_stop_after_replay_with_flag_exit_before_sync(param1, param2, world: World, block_log: Path):
+def test_stop_after_replay(param1, param2, world: World, block_log: Path):
     node = world.create_api_node()
     half_way = int(BLOCK_COUNT / 2.0)
     node.run(replay_from=block_log, stop_at_block=half_way,  exit_before_synchronization=param1, with_arguments=param2)
@@ -55,7 +55,7 @@ def test_stop_after_replay_with_flag_exit_before_sync(param1, param2, world: Wor
 
 
 @pytest.mark.parametrize("param1, param2", [(False, ['--exit-after-replay']), (True, "")])
-def test_separation_between_nodes_with_stop_by_exit_before_sync(param1, param2, world: World, block_log: Path):
+def test_stop_after_replay_with_second_node_in_network(param1, param2, world: World, block_log: Path):
     net = world.create_network()
     node = net.create_api_node()
 
@@ -72,7 +72,7 @@ def test_separation_between_nodes_with_stop_by_exit_before_sync(param1, param2, 
 
 
 @pytest.mark.parametrize("param1, param2", [(False, ['--exit-after-replay']), (True, "")])
-def test_stop_after_replay_in_load_from_snapshot_with_flag_exit_before_sync(param1, param2, world: World, block_log: Path):
+def test_stop_after_replay_in_load_from_snapshot(param1, param2, world: World, block_log: Path):
     node = world.create_api_node()
     node.run(replay_from=block_log,  exit_before_synchronization=param1, with_arguments=param2)
     snap = node.dump_snapshot(close=True)
