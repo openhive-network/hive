@@ -116,7 +116,7 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
               b.non_hive.high = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
 
-            if( b.hive.low > b.hive.high < ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) )
+            if( b.hive.low > ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) )
             {
               ilog("market_history: low() > price");
               b.hive.low = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
@@ -138,7 +138,7 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
               b.non_hive.high = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
             }
 
-            if( b.hive.low > b.hive.high < ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) )
+            if( b.hive.low > ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) )
             {
               b.hive.low = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
               b.non_hive.low = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
