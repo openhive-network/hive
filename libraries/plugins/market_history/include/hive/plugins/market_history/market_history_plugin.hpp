@@ -69,7 +69,7 @@ struct bucket_object_details
   double           low;
   double           open;
   double           close;
-  share_type           volume;
+  share_type       volume;
 
   void fill( const share_type& amount,  const double& price )
   {
