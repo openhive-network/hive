@@ -19,7 +19,7 @@ def test_dump_config(world: World):
     assert node.config.__dict__ == old_config
 
 
-def test_no_appearance_of_deprecated_flag_exception_in_run_without_flag_exit_after_replay(world: World):
+def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(world: World):
     node = world.create_init_node()
     node.run()
 
