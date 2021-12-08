@@ -172,7 +172,7 @@ namespace hive { namespace chain {
     {
       boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
 
-      return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage.file_descriptor, head_block );
+      return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage, head_block );
     }
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }

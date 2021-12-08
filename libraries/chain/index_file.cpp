@@ -88,7 +88,7 @@ namespace hive { namespace chain {
     size = offsets[1] - offsets[0] - sizeof(uint64_t);
   }
 
-  vector<signed_block> base_index::read_block_range( uint32_t first_block_num, uint32_t count, int block_log_fd, const boost::shared_ptr<signed_block>& head_block )
+  vector<signed_block> base_index::read_block_range( uint32_t first_block_num, uint32_t count, const storage_description& block_log_storage, const boost::shared_ptr<signed_block>& head_block )
   {
 
     vector<signed_block> result;
@@ -119,7 +119,7 @@ namespace hive { namespace chain {
       uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
       idump((size_of_all_blocks));
       std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
-      file_operation::pread_with_retry(storage.file_descriptor, block_data.get(), size_of_all_blocks,  offsets[0]);
+      file_operation::pread_with_retry(block_log_storage.file_descriptor, block_data.get(), size_of_all_blocks,  offsets[0]);
 
       // now deserialize the blocks
       for (uint32_t i = 0; i <= last_block_num_from_disk - first_block_num; ++i)
@@ -263,7 +263,7 @@ namespace hive { namespace chain {
 
   std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read_data_by_num( uint32_t block_num )
   {
-    uint64_t offset_in_index = element_size * (block_num - 1);
+    uint64_t offset_in_index = element_size * ( block_num - 1 );
     size_t bytes_read = file_operation::pread_with_retry( storage.file_descriptor, buffer.data(), element_size, offset_in_index);
     FC_ASSERT( bytes_read == element_size );
 
@@ -276,7 +276,7 @@ namespace hive { namespace chain {
   {
     std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > _result;
 
-    uint64_t offset_in_index = element_size * (first_block_num * count - 1);
+    uint64_t offset_in_index = element_size * ( first_block_num - 1 );
 
     std::shared_ptr<char> _range_buffer( new char[ element_size * count ], std::default_delete<char[]>() );
 

@@ -34,7 +34,7 @@ namespace hive { namespace chain {
       void non_empty_idx_info();
       void append( const void* buf, size_t nbyte );
       void read( uint32_t block_num, uint64_t& offset, uint64_t& size );
-      vector<signed_block> read_block_range( uint32_t first_block_num, uint32_t count, int block_log_fd, const boost::shared_ptr<signed_block>& head_block );
+      vector<signed_block> read_block_range( uint32_t first_block_num, uint32_t count, const storage_description& block_log_storage, const boost::shared_ptr<signed_block>& head_block );
 
       virtual void check_consistency( uint32_t total_size ) = 0;
       virtual void write( std::fstream& stream, const signed_block& block, uint64_t position ) = 0;
