@@ -54,11 +54,6 @@ namespace hive { namespace chain {
     my->file_mgr.close();
   }
 
-  bool block_log::is_open()const
-  {
-    return my->file_mgr.get_block_log_file().storage.is_open();
-  }
-
   // threading guarantees:
   // - this function may only be called by one thread at a time
   // - It is safe to call `append` while any number of other threads 
@@ -129,21 +124,27 @@ namespace hive { namespace chain {
   {
     try
     {
-      boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
-
-      return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file().storage, head_block );
+      return my->file_mgr.get_block_log_idx()->read_block_range( first_block_num, count, my->file_mgr.get_block_log_file() );
     }
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }
 
   std::tuple< optional<block_id_type>, optional<public_key_type> > block_log::read_data_by_num( uint32_t block_num )
   {
-    return my->file_mgr.get_hash_idx()->read_data_by_num( block_num );
+    try
+    {
+      return my->file_mgr.get_hash_idx()->read_data_by_num( block_num );
+    }
+    FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
 
   std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > block_log::read_data_range_by_num( uint32_t first_block_num, uint32_t count )
   {
-    return my->file_mgr.get_hash_idx()->read_data_range_by_num( first_block_num, count );
+    try
+    {
+      return my->file_mgr.get_hash_idx()->read_data_range_by_num( first_block_num, count );
+    }
+    FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }
 
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it

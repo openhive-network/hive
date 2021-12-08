@@ -83,10 +83,11 @@ namespace hive { namespace chain {
     size = offsets[1] - offsets[0] - sizeof(uint64_t);
   }
 
-  vector<signed_block> base_index::read_block_range( uint32_t first_block_num, uint32_t count, const storage_description& block_log_storage, const boost::shared_ptr<signed_block>& head_block )
+  vector<signed_block> base_index::read_block_range( uint32_t first_block_num, uint32_t count, block_log_file& block_log )
   {
-
     vector<signed_block> result;
+
+    boost::shared_ptr<signed_block> head_block = block_log.head.load();
 
     uint32_t last_block_num = first_block_num + count - 1;
 
@@ -114,7 +115,7 @@ namespace hive { namespace chain {
       uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
       idump((size_of_all_blocks));
       std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
-      file_operation::pread_with_retry(block_log_storage.file_descriptor, block_data.get(), size_of_all_blocks,  offsets[0]);
+      file_operation::pread_with_retry(block_log.storage.file_descriptor, block_data.get(), size_of_all_blocks,  offsets[0]);
 
       // now deserialize the blocks
       for (uint32_t i = 0; i <= last_block_num_from_disk - first_block_num; ++i)

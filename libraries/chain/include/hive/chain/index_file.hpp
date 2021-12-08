@@ -3,6 +3,7 @@
 #include <hive/protocol/block.hpp>
 
 #include <hive/chain/storage_description.hpp>
+#include <hive/chain/block_log_file.hpp>
 
 #include <fc/filesystem.hpp>
 
@@ -33,7 +34,7 @@ namespace hive { namespace chain {
 
       void non_empty_idx_info();
       void read( uint32_t block_num, uint64_t& offset, uint64_t& size );
-      vector<signed_block> read_block_range( uint32_t first_block_num, uint32_t count, const storage_description& block_log_storage, const boost::shared_ptr<signed_block>& head_block );
+      vector<signed_block> read_block_range( uint32_t first_block_num, uint32_t count, block_log_file& block_log );
 
       virtual void check_consistency( uint32_t total_size ) = 0;
       virtual void write( std::fstream& stream, const signed_block& block, uint64_t position ) = 0;

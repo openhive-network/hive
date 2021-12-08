@@ -43,7 +43,6 @@ namespace hive { namespace chain {
       void open( const fc::path& file );
 
       void close();
-      bool is_open()const;
 
       uint64_t append( const signed_block& b );
       void flush();
