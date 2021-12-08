@@ -99,20 +99,26 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
           if( op.open_pays.symbol == HIVE_SYMBOL )
           {
             ilog("market_history: open_pays.symbol == HIVE_SYMBOL");
+            ilog("market_history: incresing volume");
             b.hive.volume += op.open_pays.amount;
+            ilog("market_history: set close price");
             b.hive.close = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
 
+            ilog("market_history: incresing volume");
             b.non_hive.volume += op.current_pays.amount;
+            ilog("market_history: set close price");
             b.non_hive.close = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
 
             if( b.high() < price( op.current_pays, op.open_pays ) )
             {
+              ilog("market_history: high() < price");
               b.hive.high = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
               b.non_hive.high = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
 
             if( b.low() > price( op.current_pays, op.open_pays ) )
             {
+              ilog("market_history: low() > price");
               b.hive.low = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
               b.non_hive.low = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
