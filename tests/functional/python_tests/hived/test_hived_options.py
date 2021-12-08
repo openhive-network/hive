@@ -51,20 +51,20 @@ def test_stop_after_replay_with_flag_exit_after_replay(world: World, block_log: 
     assert not node.is_running()
 
 
-def test_exit_after_replay_not_run_from_half_way(world: World, block_log: Path):
-    node = world.create_api_node()
-    half_way = int(BLOCK_COUNT / 2.0)
+def test_separation_between_nodes_with_stop_by_exit_after_replay(world: World, block_log: Path):
+    net = world.create_network()
+    node = net.create_api_node()
 
-    node.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
-
-    background_node = world.create_init_node()
+    background_node = net.create_init_node()
     background_node.run(replay_from=block_log, wait_for_live=True)
-    background_node.wait_number_of_blocks(2)
+    background_node.wait_number_of_blocks(6)
 
-    rmtree(join(str(node.directory), 'blockchain'), ignore_errors=True)
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
     assert not node.is_running()
 
+    background_node.close()
+    node.run(wait_for_live=False)
+    assert node.get_last_block_number() == BLOCK_COUNT + 3
 
 def test_stop_after_replay_in_load_from_snapshot_with_flag_exit_after_replay(world: World, block_log: Path):
     node = world.create_api_node()
@@ -82,20 +82,20 @@ def test_stop_after_replay_with_flag_exit_before_sync(world: World, block_log: P
     assert not node.is_running()
 
 
-def test_exit_before_sync_not_run_from_half_way(world: World, block_log: Path):
-    node = world.create_api_node()
-    half_way = int(BLOCK_COUNT / 2.0)
+def test_separation_between_nodes_with_stop_by_exit_before_sync(world: World, block_log: Path):
+    net = world.create_network()
+    node = net.create_api_node()
 
-    node.run(replay_from=block_log, stop_at_block=half_way, exit_before_synchronization=True)
-
-    background_node = world.create_init_node()
+    background_node = net.create_init_node()
     background_node.run(replay_from=block_log, wait_for_live=True)
-    background_node.wait_number_of_blocks(2)
+    background_node.wait_number_of_blocks(6)
 
-    rmtree(join(str(node.directory), 'blockchain'), ignore_errors=True)
     node.run(replay_from=block_log, exit_before_synchronization=True)
     assert not node.is_running()
 
+    background_node.close()
+    node.run(wait_for_live=False)
+    assert node.get_last_block_number() == BLOCK_COUNT + 3
 
 def test_stop_after_replay_in_load_from_snapshot_with_flag_exit_before_sync(world: World, block_log: Path):
     node = world.create_api_node()
