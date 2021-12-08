@@ -30,9 +30,9 @@ def test_no_appearance_of_deprecated_flag_exception_in_run_without_flag_exit_aft
     assert warning not in stderr
 
 
-def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_replay(world: World, block_log: Path):
+def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_replay(world: World, block_log: Path, number_of_blocks: int):
     node = world.create_api_node()
-    half_way = int(BLOCK_COUNT / 2.0)
+    half_way = int(number_of_blocks / 2.0)
 
     node.run(replay_from=block_log, stop_at_block=half_way, with_arguments=['--exit-after-replay'])
 
@@ -43,16 +43,20 @@ def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_rep
     assert warning in stderr
 
 
-@pytest.mark.parametrize("param1, param2", [(False, ['--exit-after-replay']), (True, "")])
-def test_stop_after_replay(param1, param2, world: World, block_log: Path):
+@pytest.mark.parametrize('way_to_stop', [
+                        {'with_arguments':['--exit-after-replay']},
+                        {'exit_before_synchronization': True}])
+def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     node = world.create_api_node()
-    half_way = int(BLOCK_COUNT / 2.0)
-    node.run(replay_from=block_log, stop_at_block=half_way,  exit_before_synchronization=param1, with_arguments=param2)
+    half_way = int(number_of_blocks / 2.0)
+    node.run(replay_from=block_log, stop_at_block=half_way, **way_to_stop)
     assert not node.is_running()
 
 
-@pytest.mark.parametrize("param1, param2", [(False, ['--exit-after-replay']), (True, "")])
-def test_stop_after_replay_with_second_node_in_network(param1, param2, world: World, block_log: Path):
+@pytest.mark.parametrize('way_to_stop', [
+                        {'with_arguments':['--exit-after-replay']},
+                        {'exit_before_synchronization': True}])
+def test_stop_after_replay_with_second_node_in_network(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     net = world.create_network()
     node = net.create_api_node()
 
@@ -60,19 +64,21 @@ def test_stop_after_replay_with_second_node_in_network(param1, param2, world: Wo
     background_node.run(replay_from=block_log, wait_for_live=True)
     background_node.wait_number_of_blocks(6)
 
-    node.run(replay_from=block_log, exit_before_synchronization=param1, with_arguments=param2)
+    node.run(replay_from=block_log, **way_to_stop)
     assert not node.is_running()
 
     background_node.close()
     node.run(wait_for_live=False)
-    assert node.get_last_block_number() == BLOCK_COUNT + 3
+    assert node.get_last_block_number() == number_of_blocks
 
 
-@pytest.mark.parametrize("param1, param2", [(False, ['--exit-after-replay']), (True, "")])
-def test_stop_after_replay_in_load_from_snapshot(param1, param2, world: World, block_log: Path):
+@pytest.mark.parametrize('way_to_stop', [
+                        {'with_arguments':['--exit-after-replay']},
+                        {'exit_before_synchronization': True}])
+def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     node = world.create_api_node()
-    node.run(replay_from=block_log,  exit_before_synchronization=param1, with_arguments=param2)
+    node.run(replay_from=block_log,  **way_to_stop)
     snap = node.dump_snapshot(close=True)
     remove(join(str(node.directory), 'blockchain', 'shared_memory.bin'))
-    node.run(load_snapshot_from=snap,  exit_before_synchronization=param1, with_arguments=param2)
+    node.run(load_snapshot_from=snap,  **way_to_stop)
     assert not node.is_running()
