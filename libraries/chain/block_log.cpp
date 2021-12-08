@@ -52,44 +52,6 @@ namespace hive { namespace chain {
     my->file_mgr.prepare();
   }
 
-  void block_log::rewrite(const fc::path& input_file, const fc::path& output_file, uint32_t max_block_num)
-  {
-    std::ifstream intput_block_stream(input_file.generic_string().c_str(), std::ios::in | std::ios::binary);
-    std::ofstream output_block_stream(output_file.generic_string().c_str(), std::ios::out | std::ios::binary | std::ios::app);
-
-    uint64_t pos = 0;
-    uint64_t end_pos = 0;
-
-    intput_block_stream.seekg(-sizeof(uint64_t), std::ios::end);
-    intput_block_stream.read((char*)&end_pos, sizeof(end_pos));
-
-    intput_block_stream.seekg(pos);
-
-    uint32_t block_num = 0;
-
-    while(pos < end_pos)
-    {
-      signed_block tmp;
-      fc::raw::unpack(intput_block_stream, tmp);
-      intput_block_stream.read((char*)&pos, sizeof(pos));
-
-      uint64_t out_pos = output_block_stream.tellp();
-
-      if(out_pos != pos)
-        ilog("Block position mismatch");
-
-      auto data = fc::raw::pack_to_vector(tmp);
-      output_block_stream.write(data.data(), data.size());
-      output_block_stream.write((char*)&out_pos, sizeof(out_pos));
-
-      if(++block_num >= max_block_num)
-        break;
-
-      if(block_num % 1000 == 0)
-        printf("Rewritten block: %u\r", block_num);
-    }
-  }
-
   void block_log::close()
   {
     my->file_mgr.close();

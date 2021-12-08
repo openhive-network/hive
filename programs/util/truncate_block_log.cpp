@@ -1,5 +1,5 @@
 #include <hive/chain/database.hpp>
-#include <hive/protocol/block.hpp>
+#include <hive/chain/file_operation.hpp>
 #include <fc/io/raw.hpp>
 
 int main( int argc, char** argv, char** envp )
@@ -18,14 +18,10 @@ int main( int argc, char** argv, char** envp )
 
     uint32_t maxBlock = atoi(maxBlockNumber);
 
-    hive::chain::block_log log;
-
     ilog("Trying to open input block_log file: `${i}'", ("i", blockLogPath));
     ilog("Truncated block_log will be saved into file: `${i}'", ("i", outputBlockLogPath));
 
-    log.rewrite(blockLogPath, outputBlockLogPath, maxBlock);
-
-    log.close();
+    hive::chain::file_operation::rewrite(blockLogPath, outputBlockLogPath, maxBlock);
   }
   catch ( const std::exception& e )
   {

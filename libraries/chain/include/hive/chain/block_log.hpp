@@ -42,8 +42,6 @@ namespace hive { namespace chain {
 
       void open( const fc::path& file );
 
-      void rewrite(const fc::path& inputFile, const fc::path& outputFile, uint32_t maxBlockNo);
-
       void close();
       bool is_open()const;
 

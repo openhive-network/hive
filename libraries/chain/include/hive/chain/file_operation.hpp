@@ -17,6 +17,8 @@ namespace hive { namespace chain {
       static signed_block read_block_from_offset_and_size(int block_log_fd, uint64_t offset, uint64_t size);
 
       static ssize_t get_file_size(int fd);
+
+      static void rewrite(const fc::path& inputFile, const fc::path& outputFile, uint32_t maxBlockNo);
   };
 
 } } // hive::chain
