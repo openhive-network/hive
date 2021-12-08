@@ -647,18 +647,22 @@ std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, option
 
   std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > > combined_result;
 
+  uint32_t found_block_ids_signatures = 0;
   for( auto& block : result )
   {
     auto found = result_data.find( block.block_num() );
     if( found != result_data.end() )
     {
       combined_result.emplace_back( std::make_tuple( block, std::get<0>( found->second ), std::get<1>( found->second ) ) );
+      ++found_block_ids_signatures;
     }
     else
     {
       combined_result.emplace_back( std::make_tuple( block, optional<block_id_type>(), optional<public_key_type>() ) );
     }
   }
+
+  idump((found_block_ids_signatures));
 
   return combined_result;
 } FC_LOG_AND_RETHROW() }

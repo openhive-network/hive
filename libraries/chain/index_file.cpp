@@ -72,11 +72,6 @@ namespace hive { namespace chain {
       FC_THROW("Error truncating block log: ${error}", ("error", strerror(errno)));
   }
 
-  void base_index::append( const void* buf, size_t nbyte )
-  {
-    file_operation::write_with_retry( storage.file_descriptor, buf, nbyte );
-  }
-
   void base_index::read( uint32_t block_num, uint64_t& offset, uint64_t& size )
   {
     uint64_t offsets[2] = {0, 0};
@@ -184,7 +179,14 @@ namespace hive { namespace chain {
 
   void block_log_index::write( std::fstream& stream, const signed_block& block, uint64_t position )
   {
+    //`block` not used here
     stream.write( (char*)&position, sizeof( position ) );
+  }
+
+  void block_log_index::append( const signed_block& block, uint64_t position )
+  {
+    //`block` not used here
+    file_operation::write_with_retry( storage.file_descriptor, &position, sizeof(position) );
   }
 
   template<uint32_t ELEMENT_SIZE>
@@ -229,7 +231,7 @@ namespace hive { namespace chain {
     storage.calculate_status( last_element_num );
   }
 
-  void block_id_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
+  void block_id_witness_public_key::write_impl( const signed_block& block, std::function<void(char*, uint32_t length)> write_func )
   {
     block_id_type _id = block.id();
 
@@ -241,9 +243,30 @@ namespace hive { namespace chain {
 
     uint32_t _block_num = block.block_num();
 
-    stream.write( (char*)&_block_num,     sizes.BLOCK_NUMBER_SIZE );
-    stream.write( _id.data(),             sizes.BLOCK_ID_SIZE );
-    stream.write( _key.key_data.begin(),  sizes.PUBLIC_KEY_SIZE );
+    write_func( (char*)&_block_num,     sizes.BLOCK_NUMBER_SIZE );
+    write_func( _id.data(),             sizes.BLOCK_ID_SIZE );
+    write_func( _key.key_data.begin(),  sizes.PUBLIC_KEY_SIZE );
+  }
+
+  void block_id_witness_public_key::write( std::fstream& stream, const signed_block& block, uint64_t position )
+  {
+    //`position` not used here
+    auto write_func = [&stream]( char* ptr, uint32_t length )
+    {
+      stream.write( ptr, length );
+    };
+
+    write_impl( block, write_func );
+  }
+
+  void block_id_witness_public_key::append( const signed_block& block, uint64_t position )
+  {
+    auto write_func = [this]( char* ptr, uint32_t length )
+    {
+      file_operation::write_with_retry( storage.file_descriptor, ptr, length );
+    };
+
+    write_impl( block, write_func );
   }
 
   std::tuple< optional<block_id_type>, optional<public_key_type> > block_id_witness_public_key::read_data_from_buffer( uint32_t block_num, char* buffer )

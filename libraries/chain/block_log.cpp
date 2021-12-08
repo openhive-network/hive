@@ -123,7 +123,7 @@ namespace hive { namespace chain {
       my->file_mgr.get_block_log_file().storage.size += serialized_block.size();
 
       // add it to the index
-      my->file_mgr.get_block_log_idx()->append(&block_start_pos, sizeof(block_start_pos));
+      my->file_mgr.append( b, block_start_pos );
 
       // and update our cached head block
       boost::shared_ptr<signed_block> new_head = boost::make_shared<signed_block>(b);

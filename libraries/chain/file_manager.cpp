@@ -354,4 +354,10 @@ namespace hive { namespace chain {
       idx->write( streams[cnt++], block, position );
   }
 
+  void file_manager::append( const signed_block& block, uint64_t position )
+  {
+    for( auto& idx : idxs )
+      idx->append( block, position );
+  }
+
 } } // hive::chain

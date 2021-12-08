@@ -50,6 +50,7 @@ namespace hive { namespace chain {
       void construct_index();
 
       void write( std::vector<std::fstream>& streams, const signed_block& block, uint64_t position );
+      void append( const signed_block& block, uint64_t position );
   };
 
 } } // hive::chain
