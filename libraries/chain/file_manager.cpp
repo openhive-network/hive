@@ -5,6 +5,7 @@
 #include <appbase/application.hpp>
 
 #include <fstream>
+#include <chrono>
 
 #define MMAP_BLOCK_IO
 
@@ -72,7 +73,12 @@ namespace hive { namespace chain {
         idx->prepare( head_block, block_log.storage );
 
       if( construct_index_allowed() )
+      {
+        uint64_t _time_begin = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
         construct_index();
+        uint64_t _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin;
+        ilog( "Index/Indexes were created in ${time}[s]", ("time", _interval / 1000) );
+      }
     }
     else
     {
