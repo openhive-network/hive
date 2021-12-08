@@ -64,11 +64,8 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
       auto itr = bucket_idx.find( boost::make_tuple( seconds, open ) );
 
-      ilog("market_history: open_pays: ${open_pays}, current_pays: ${current_pays}, price: ${price}, price2: ${price2}", ("open_pays", op.open_pays.amount)("current_pays", op.current_pays.amount)("price", ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays))("price2", ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays)));
-
       if( itr == bucket_idx.end() )
       {
-        ilog("market_history: creating bucket");
         _db.create< bucket_object >( [&]( bucket_object& b )
         {
           b.open = open;
@@ -79,7 +76,6 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 #endif
 
           if (op.open_pays.symbol == HIVE_SYMBOL) {
-            ilog("market_history: filling bucket");
             b.hive.fill( op.open_pays.amount, ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays) );
             b.non_hive.fill( op.current_pays.amount, ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) );
           } else {
@@ -90,7 +86,6 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
       }
       else
       {
-        ilog("market_history: modifying bucket");
         _db.modify( *itr, [&]( bucket_object& b )
         {
 #ifdef HIVE_ENABLE_SMT
@@ -98,34 +93,26 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 #endif
           if( op.open_pays.symbol == HIVE_SYMBOL )
           {
-            ilog("market_history: open_pays.symbol == HIVE_SYMBOL");
-            ilog("market_history: incresing volume");
             b.hive.volume += op.open_pays.amount;
-            ilog("market_history: set close price");
             b.hive.close = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
 
-            ilog("market_history: incresing volume");
             b.non_hive.volume += op.current_pays.amount;
-            ilog("market_history: set close price");
             b.non_hive.close = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
 
             if( b.hive.high < ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) )
             {
-              ilog("market_history: high() < price");
               b.hive.high = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
               b.non_hive.high = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
 
             if( b.hive.low > ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays) )
             {
-              ilog("market_history: low() > price");
               b.hive.low = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
               b.non_hive.low = ASSET_TO_REAL(op.open_pays) / ASSET_TO_REAL(op.current_pays);
             }
           }
           else
           {
-            ilog("market_history: open_pays.symbol == HBD");
             b.hive.volume += op.current_pays.amount;
             b.hive.close = ASSET_TO_REAL(op.current_pays) / ASSET_TO_REAL(op.open_pays);
 
@@ -148,7 +135,6 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
         if( _maximum_history_per_bucket_size > 0 )
         {
-          ilog("market_history: truncating bucket");
           open = fc::time_point_sec();
           itr = bucket_idx.lower_bound( boost::make_tuple( seconds, open ) );
 
