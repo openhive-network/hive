@@ -46,10 +46,7 @@ namespace hive { namespace chain {
 
   void block_log::open( const fc::path& file )
   {
-    close();
-
-    my->file_mgr.open( file );
-    my->file_mgr.prepare();
+    my->file_mgr.prepare( file );
   }
 
   void block_log::close()

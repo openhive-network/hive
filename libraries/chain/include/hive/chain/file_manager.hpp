@@ -31,14 +31,16 @@ namespace hive { namespace chain {
       bool get_resume() const;
       uint64_t get_index_pos();
 
+      void prepare_all();
+
     public:
 
       file_manager();
       ~file_manager();
 
       void open( const fc::path& file );
-      void prepare();
       void close();
+      void prepare( const fc::path& file );
 
       signed_block read_head()const;
 

@@ -42,7 +42,7 @@ namespace hive { namespace chain {
       idx->open( file );
   }
 
-  void file_manager::prepare()
+  void file_manager::prepare_all()
   {
     /* On startup of the block log, there are several states the log file and the index file can be
       * in relation to eachother.
@@ -98,6 +98,13 @@ namespace hive { namespace chain {
 
     for( auto& idx : idxs )
       idx->close();
+  }
+
+  void file_manager::prepare( const fc::path& file )
+  {
+    close();
+    open( file );
+    prepare_all();
   }
 
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
