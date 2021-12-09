@@ -53,6 +53,8 @@
 
 #include <stdlib.h>
 
+#include <chrono>
+
 long next_hf_time()
 {
   // current "next hardfork" is HF26
@@ -607,6 +609,8 @@ std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, option
 { try {
   // for debugging, put the head block back so it should straddle the last irreversible
   // const uint32_t starting_block_num = head_block_num() - 30;
+  uint64_t _time_begin1 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
   FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
   FC_ASSERT(count > 0, "Why ask for zero blocks?");
   //FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
@@ -629,11 +633,27 @@ std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, option
   vector<signed_block> result;
   std::map< uint32_t, std::tuple< optional<block_id_type>, optional<public_key_type> > > result_data;
 
+  uint64_t _interval1 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin1;
+  ilog( "fetch(1) time: ${time}[ms]", ("time", _interval1) );
+
   if (remaining_count)
   {
+    uint64_t _time_begin2 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
     result      = _block_log.read_block_range_by_num(starting_block_num, remaining_count);
+
+    uint64_t _interval2 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin2;
+    ilog( "fetch(2) time: ${time}[ms]", ("time", _interval2) );
+
+    uint64_t _time_begin3 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
     result_data = _block_log.read_data_range_by_num(starting_block_num, remaining_count);
+
+    uint64_t _interval3 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin3;
+    ilog( "fetch(3) time: ${time}[ms]", ("time", _interval3) );
   }
+
+  uint64_t _time_begin4 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
 
   idump((result.size()));
 
@@ -644,6 +664,11 @@ std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, option
 
   for (fork_item& item : fork_items)
     result.emplace_back(std::move(item.data));
+
+  uint64_t _interval4 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin4;
+  ilog( "fetch(4) time: ${time}[ms]", ("time", _interval4) );
+
+  uint64_t _time_begin5 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
 
   std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > > combined_result;
 
@@ -661,6 +686,9 @@ std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, option
       combined_result.emplace_back( std::make_tuple( block, optional<block_id_type>(), optional<public_key_type>() ) );
     }
   }
+
+  uint64_t _interval5 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin5;
+  ilog( "fetch(5) time: ${time}[ms]", ("time", _interval5) );
 
   idump((found_block_ids_signatures));
 
