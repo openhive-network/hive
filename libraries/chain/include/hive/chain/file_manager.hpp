@@ -30,7 +30,9 @@ namespace hive { namespace chain {
       bool construct_index_allowed() const;
       bool get_resume() const;
       uint64_t get_index_pos();
+      void construct_index();
 
+      void open( const fc::path& file );
       void prepare_all();
 
     public:
@@ -38,7 +40,6 @@ namespace hive { namespace chain {
       file_manager();
       ~file_manager();
 
-      void open( const fc::path& file );
       void close();
       void prepare( const fc::path& file );
 
@@ -48,8 +49,6 @@ namespace hive { namespace chain {
 
       p_base_index& get_block_log_idx();
       p_base_index& get_hash_idx();
-
-      void construct_index();
 
       void write( std::vector<std::fstream>& streams, const signed_block& block, uint64_t position );
       void append( const signed_block& block, uint64_t position );
