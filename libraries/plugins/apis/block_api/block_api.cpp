@@ -6,6 +6,8 @@
 
 #include <hive/protocol/get_config.hpp>
 
+#include <chrono>
+
 namespace hive { namespace plugins { namespace block_api {
 
 class block_api_impl
@@ -89,7 +91,15 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
+    uint64_t _time_begin = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
     std::vector< std::tuple< optional<signed_block>, optional<block_id_type>, optional<public_key_type> > > _items = _db.fetch_block_range_unlocked( args.starting_block_num, count );
+
+    uint64_t _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin;
+    ilog( "fetch time: ${time}[ms]", ("time", _interval) );
+
+    uint64_t _time_begin2 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
     for( auto& item : _items )
     {
       optional<signed_block> block          = std::get<0>( item );
@@ -99,6 +109,9 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
       if( block )
         result.blocks.push_back( api_signed_block_object( *block, block_id, signing_key ) );
     }
+
+    uint64_t _interval2 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin2;
+    ilog( "push time: ${time}[ms]", ("time", _interval2) );
   }
   return result;
 }
