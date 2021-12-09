@@ -54,36 +54,11 @@ namespace hive { namespace chain {
     my->file_mgr.close();
   }
 
-  // threading guarantees:
-  // - this function may only be called by one thread at a time
-  // - It is safe to call `append` while any number of other threads 
-  //   are reading the block log.
-  // There is no real use-case for multiple writers so it's not worth
-  // adding a lock to allow it.
   uint64_t block_log::append( const signed_block& b )
   {
     try
     {
-      uint64_t block_start_pos = my->file_mgr.get_block_log_file().storage.size;
-      std::vector<char> serialized_block = fc::raw::pack_to_vector(b);
-
-      // what we write to the file is the serialized data, followed by the index of the start of the
-      // serialized data.  Append that index so we can do it in a single write.
-      unsigned serialized_byte_count = serialized_block.size();
-      serialized_block.resize(serialized_byte_count + sizeof(uint64_t));
-      *(uint64_t*)(serialized_block.data() + serialized_byte_count) = block_start_pos;
-
-      file_operation::write_with_retry( my->file_mgr.get_block_log_file().storage.file_descriptor, serialized_block.data(), serialized_block.size() );
-      my->file_mgr.get_block_log_file().storage.size += serialized_block.size();
-
-      // add it to the index
-      my->file_mgr.append( b, block_start_pos );
-
-      // and update our cached head block
-      boost::shared_ptr<signed_block> new_head = boost::make_shared<signed_block>(b);
-      my->file_mgr.get_block_log_file().head.exchange(new_head);
-
-      return block_start_pos;
+      return my->file_mgr.append( b );
     }
     FC_LOG_AND_RETHROW()
   }
@@ -99,23 +74,7 @@ namespace hive { namespace chain {
   {
     try
     {
-      // first, check if it's the current head block; if so, we can just return it.  If the
-      // block number is less than than the current head, it's guaranteed to have been fully
-      // written to the log+index
-      boost::shared_ptr<signed_block> head_block = my->file_mgr.get_block_log_file().head.load();
-      /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
-      if (block_num == 0 || !head_block || block_num > head_block->block_num())
-        return optional<signed_block>();
-      if (block_num == head_block->block_num())
-        return *head_block;
-      // if we're still here, we know that it's in the block log, and the block after it is also
-      // in the block log (which means we can determine its size)
-
-      uint64_t _offset  = 0;
-      uint64_t _size    = 0;
-      my->file_mgr.get_block_log_idx()->read( block_num, _offset, _size );
-
-      return file_operation::read_block_from_offset_and_size( my->file_mgr.get_block_log_file().storage.file_descriptor, _offset, _size );
+      return my->file_mgr.read_block_by_num( block_num );
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
