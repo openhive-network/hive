@@ -45,7 +45,10 @@ struct api_signed_block_object : public signed_block
     signing_key = _signing_key;
     transaction_ids.reserve( transactions.size() );
     for( const signed_transaction& tx : transactions )
-      transaction_ids.push_back( tx.id() );
+    {
+      FC_ASSERT( tx.ref_block_num >= 0 );
+      transaction_ids.push_back( block_id );
+    }
   }
 
   block_id_type                 block_id;
