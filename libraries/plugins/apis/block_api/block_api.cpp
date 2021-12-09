@@ -6,6 +6,8 @@
 
 #include <hive/protocol/get_config.hpp>
 
+#include <chrono>
+
 namespace hive { namespace plugins { namespace block_api {
 
 class block_api_impl
@@ -83,9 +85,20 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
+    uint64_t _time_begin = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
     vector<signed_block> blocks = _db.fetch_block_range_unlocked( args.starting_block_num, count );
+
+    uint64_t _interval = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin;
+    ilog( "fetch time: ${time}[ms]", ("time", _interval) );
+
+    uint64_t _time_begin2 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+
     for (const signed_block& block : blocks)
       result.blocks.push_back(block);
+
+    uint64_t _interval2 = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - _time_begin2;
+    ilog( "push time: ${time}[ms]", ("time", _interval2) );
   }
   return result;
 }
