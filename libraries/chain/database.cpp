@@ -56,7 +56,7 @@
 long next_hf_time()
 {
   // current "next hardfork" is HF26
-  long hfTime = 1640952000; //  Thursday, 31 December 2021 12:00:00 GMT
+  long hfTime = 1646136000; //   Tuesday, 1 March 2022 12:00:00
 
   const char* value = getenv("HIVE_HF26_TIME");
   if(value != nullptr)
