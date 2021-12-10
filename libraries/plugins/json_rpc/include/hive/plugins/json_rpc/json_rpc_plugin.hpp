@@ -6,6 +6,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/exception/exception.hpp>
+#include <fc/log/time_logger.hpp>
 
 #include <boost/config.hpp>
 #include <boost/any.hpp>
@@ -128,9 +129,15 @@ namespace detail {
         Ret* ret )
       {
         _json_rpc_plugin.add_api_method( _api_name, method_name,
-          [&plugin,method]( const fc::variant& args ) -> fc::variant
+          [&plugin,method,method_name]( const fc::variant& args ) -> fc::variant
           {
-            return fc::variant( (plugin.*method)( args.as< Args >(), /* lock= */ true ) ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
+            fc::time_logger _logger( "api-deserialization", method_name );
+
+            auto _response = (plugin.*method)( args.as< Args >(), /* lock= */ true ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
+
+            _logger.start( "api-serialization", method_name );
+
+            return fc::variant( std::move( _response ) );
           },
           api_method_signature{ fc::variant( Args() ), fc::variant( Ret() ) } );
       }
