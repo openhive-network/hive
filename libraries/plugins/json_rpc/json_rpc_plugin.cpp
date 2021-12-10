@@ -486,7 +486,9 @@ string json_rpc_plugin::call( const string& message )
   STATSD_START_TIMER( "jsonrpc", "overhead", "call", 1.0f );
   try
   {
+    fc::time_logger _logger( "api-request-from-string-to-variant", message );
     fc::variant v = fc::json::from_string( message );
+    _logger.stop();
 
     if( v.is_array() )
     {
@@ -500,6 +502,7 @@ string json_rpc_plugin::call( const string& message )
         for( auto& m : messages )
           responses.push_back( my->rpc( m ) );
 
+        fc::time_logger _logger( "api-response-from-variant-to-string", message );
         return fc::json::to_string( responses );
       }
       else
@@ -512,7 +515,10 @@ string json_rpc_plugin::call( const string& message )
     }
     else
     {
-      return fc::json::to_string( my->rpc( v ) );
+      auto _response = my->rpc( v );
+
+      fc::time_logger _logger( "api-response-from-variant-to-string", message );
+      return fc::json::to_string( std::move( _response ) );
     }
   }
   catch( fc::exception& e )
