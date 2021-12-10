@@ -131,11 +131,11 @@ namespace detail {
         _json_rpc_plugin.add_api_method( _api_name, method_name,
           [&plugin,method,method_name]( const fc::variant& args ) -> fc::variant
           {
-            fc::time_logger _logger( "api-deserialization", method_name );
+            fc::time_logger _logger( "api-method-exec", method_name );
 
             auto _response = (plugin.*method)( args.as< Args >(), /* lock= */ true ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
 
-            _logger.start( "api-serialization", method_name );
+            _logger.start( "api-to-variant", method_name );
 
             return fc::variant( std::move( _response ) );
           },

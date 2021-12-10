@@ -512,7 +512,11 @@ string json_rpc_plugin::call( const string& message )
     }
     else
     {
-      return fc::json::to_string( my->rpc( v ) );
+      auto _response = my->rpc( v );
+
+      fc::time_logger _logger( "api-serialization", message );
+
+      return fc::json::to_string( std::move( _response ) );
     }
   }
   catch( fc::exception& e )
