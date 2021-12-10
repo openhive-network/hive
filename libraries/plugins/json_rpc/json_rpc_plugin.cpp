@@ -514,7 +514,7 @@ string json_rpc_plugin::call( const string& message )
     {
       auto _response = my->rpc( v );
 
-      fc::time_logger _logger( "api-serialization", message );
+      fc::time_logger _logger( "api-response-from-variant-to-string", message );
 
       return fc::json::to_string( std::move( _response ) );
     }

@@ -135,7 +135,7 @@ namespace detail {
 
             auto _response = (plugin.*method)( args.as< Args >(), /* lock= */ true ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
 
-            _logger.start( "api-to-variant", method_name );
+            _logger.start( "api-response-to-variant", method_name );
 
             return fc::variant( std::move( _response ) );
           },
