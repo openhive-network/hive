@@ -50,18 +50,21 @@ namespace fc
         additional_info = _additional_info;
       }
 
-      void stop()
+      void stop( bool allow_display_message = true )
       {
         if( enabled )
         {
-          uint64_t _val = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - val;
-          if( additional_info.empty() )
+          if( allow_display_message )
           {
-            ilog("(${m}) ${t}[ms]", ( "m", info.c_str() )( "t", std::to_string(_val).c_str() ) );
-          }
-          else
-          {
-            ilog("(${m1})(${m2}) time: ${t}[ms]", ( "m1", info.c_str() )( "m2", additional_info.c_str() )( "t", std::to_string(_val).c_str() ) );
+            uint64_t _val = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - val;
+            if( additional_info.empty() )
+            {
+              ilog("(${m}) ${t}[ms]", ( "m", info.c_str() )( "t", std::to_string(_val).c_str() ) );
+            }
+            else
+            {
+              ilog("(${m1})(${m2}) time: ${t}[ms]", ( "m1", info.c_str() )( "m2", additional_info.c_str() )( "t", std::to_string(_val).c_str() ) );
+            }
           }
 
           enabled = false;

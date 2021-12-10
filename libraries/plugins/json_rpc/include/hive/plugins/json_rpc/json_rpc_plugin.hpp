@@ -132,11 +132,9 @@ namespace detail {
           [&plugin,method,method_name]( const fc::variant& args ) -> fc::variant
           {
             fc::time_logger _logger( "api-method-exec", method_name );
-
             auto _response = (plugin.*method)( args.as< Args >(), /* lock= */ true ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
 
             _logger.start( "api-response-to-variant", method_name );
-
             return fc::variant( std::move( _response ) );
           },
           api_method_signature{ fc::variant( Args() ), fc::variant( Ret() ) } );

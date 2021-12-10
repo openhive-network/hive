@@ -65,6 +65,7 @@
 #include <fc/thread/mutex.hpp>
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/log/logger.hpp>
+#include <fc/log/time_logger.hpp>
 #include <fc/io/json.hpp>
 #include <fc/io/enum_type.hpp>
 #include <fc/crypto/rand.hpp>
@@ -2848,7 +2849,9 @@ namespace graphene { namespace net {
       // if we sent them a block, update our record of the last block they've seen accordingly
       if (last_block_message_sent)
       {
+        fc::time_logger _logger( "p2p-fetch-items-message-get", "block" );
         graphene::net::block_message block = last_block_message_sent->as<graphene::net::block_message>();
+        _logger.stop();
         originating_peer->last_block_delegate_has_seen = block.block_id;
         originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(block.block_id);
       }
@@ -2856,7 +2859,12 @@ namespace graphene { namespace net {
       for (const message& reply : reply_messages)
       {
         if (reply.msg_type == block_message_type)
-          originating_peer->send_item(item_id(block_message_type, reply.as<graphene::net::block_message>().block_id));
+        {
+          fc::time_logger _logger( "p2p-fetch-items-message-send", "block" );
+          graphene::net::block_message block = reply.as<graphene::net::block_message>();
+          _logger.stop();
+          originating_peer->send_item(item_id(block_message_type, block.block_id));
+        }
         else
           originating_peer->send_message(reply);
       }
@@ -3616,7 +3624,10 @@ namespace graphene { namespace net {
       // (it's possible that we request an item during normal operation and then get kicked into sync
       // mode before we receive and process the item.  In that case, we should process the item as a normal
       // item to avoid confusing the sync code)
+      static uint32_t cnt = 0;
+      fc::time_logger _logger( "p2p-process-block-message", "block" );
       graphene::net::block_message block_message_to_process(message_to_process.as<graphene::net::block_message>());
+      _logger.stop( ( ++cnt % 10000 ) == 0 );
       auto item_iter = originating_peer->items_requested_from_peer.find(item_id(graphene::net::block_message_type, message_hash));
       if (item_iter != originating_peer->items_requested_from_peer.end())
       {
@@ -3980,7 +3991,9 @@ namespace graphene { namespace net {
         {
           if (message_to_process.msg_type == trx_message_type)
           {
+            fc::time_logger _logger( "p2p-ordinary-message", "trx" );
             trx_message transaction_message_to_process = message_to_process.as<trx_message>();
+            _logger.stop();
             dlog("passing message containing transaction ${trx} to client", ("trx", transaction_message_to_process.trx.id()));
             _delegate->handle_transaction(transaction_message_to_process);
           }
@@ -5054,13 +5067,17 @@ namespace graphene { namespace net {
       fc::uint160_t hash_of_message_contents;
       if( item_to_broadcast.msg_type == graphene::net::block_message_type )
       {
+        fc::time_logger _logger( "p2p-broadcast", "block" );
         graphene::net::block_message block_message_to_broadcast = item_to_broadcast.as<graphene::net::block_message>();
+        _logger.stop();
         hash_of_message_contents = block_message_to_broadcast.block_id; // for debugging
         _most_recent_blocks_accepted.push_back( block_message_to_broadcast.block_id );
       }
       else if( item_to_broadcast.msg_type == graphene::net::trx_message_type )
       {
+        fc::time_logger _logger( "p2p-broadcast", "trx" );
         graphene::net::trx_message transaction_message_to_broadcast = item_to_broadcast.as<graphene::net::trx_message>();
+        _logger.stop();
         hash_of_message_contents = transaction_message_to_broadcast.trx.id(); // for debugging
         dlog( "broadcasting trx: ${trx}", ("trx", transaction_message_to_broadcast) );
       }
@@ -5452,11 +5469,19 @@ namespace graphene { namespace net {
       {
         const message& message_to_deliver = destination_node->messages_to_deliver.front();
         if (message_to_deliver.msg_type == trx_message_type)
-          destination_node->delegate->handle_transaction(message_to_deliver.as<trx_message>());
+        {
+          fc::time_logger _logger( "p2p-message-send", "trx" );
+          graphene::net::trx_message trx = message_to_deliver.as<trx_message>();
+          _logger.stop();
+          destination_node->delegate->handle_transaction(trx);
+        }
         else if (message_to_deliver.msg_type == block_message_type)
         {
           std::vector<fc::uint160_t> contained_transaction_message_ids;
-          destination_node->delegate->handle_block(message_to_deliver.as<block_message>(), false, contained_transaction_message_ids);
+          fc::time_logger _logger( "p2p-message-send", "block" );
+          graphene::net::block_message block = message_to_deliver.as<block_message>();
+          _logger.stop();
+          destination_node->delegate->handle_block(block, false, contained_transaction_message_ids);
         }
         else
           destination_node->delegate->handle_message(message_to_deliver);

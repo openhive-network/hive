@@ -500,6 +500,7 @@ string json_rpc_plugin::call( const string& message )
         for( auto& m : messages )
           responses.push_back( my->rpc( m ) );
 
+        fc::time_logger _logger( "api-response-from-variant-to-string", message );
         return fc::json::to_string( responses );
       }
       else
@@ -515,7 +516,6 @@ string json_rpc_plugin::call( const string& message )
       auto _response = my->rpc( v );
 
       fc::time_logger _logger( "api-response-from-variant-to-string", message );
-
       return fc::json::to_string( std::move( _response ) );
     }
   }
