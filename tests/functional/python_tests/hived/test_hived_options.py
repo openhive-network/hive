@@ -1,5 +1,4 @@
 from os import remove
-from os.path import join
 from pathlib import Path
 
 import pytest
@@ -78,6 +77,6 @@ def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, bloc
     node = world.create_api_node()
     node.run(replay_from=block_log,  **way_to_stop)
     snap = node.dump_snapshot(close=True)
-    remove(join(str(node.directory), 'blockchain', 'shared_memory.bin'))
+    remove(node.directory / 'blockchain' / 'shared_memory.bin')
     node.run(load_snapshot_from=snap,  **way_to_stop)
     assert not node.is_running()
