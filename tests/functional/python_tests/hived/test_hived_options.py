@@ -29,7 +29,7 @@ def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(
     assert warning not in stderr
 
 
-def test_appearance_of_deprecated_flag_exception_in_run_with_flag_exit_after_replay(block_log, world: World):
+def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World):
     node = world.create_api_node()
 
     node.run(replay_from=block_log, with_arguments=['--exit-after-replay'])
