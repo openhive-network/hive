@@ -486,7 +486,9 @@ string json_rpc_plugin::call( const string& message )
   STATSD_START_TIMER( "jsonrpc", "overhead", "call", 1.0f );
   try
   {
+    fc::time_logger _logger( "api-request-from-string-to-variant", message );
     fc::variant v = fc::json::from_string( message );
+    _logger.stop();
 
     if( v.is_array() )
     {
