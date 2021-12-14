@@ -510,16 +510,12 @@ namespace
   template< typename T >
   T serialize_with_legacy( const std::string& data, bool legacy_enabled )
   {
-    bool old_legacy_enabled = dynamic_serializer::legacy_enabled;
-    dynamic_serializer::legacy_enabled = legacy_enabled;
-    auto const restore_legacy_flag = [&] { dynamic_serializer::legacy_enabled = old_legacy_enabled; };
-
     try
     {
+      legacy_switcher switcher( legacy_enabled );
       T result = fc::json::from_string( data ).as < T >();
-      restore_legacy_flag();
       return result;
-    } FC_CAPTURE_CALL_LOG_AND_RETHROW( restore_legacy_flag, () );
+    } FC_LOG_AND_RETHROW();
   }
 }
 

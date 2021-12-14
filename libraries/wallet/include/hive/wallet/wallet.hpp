@@ -1536,36 +1536,28 @@ FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
 
 namespace fc {
 
-  using hive::protocol::dynamic_serializer;
+  using hive::protocol::legacy_manager;
 
   template<typename T>
   inline void to_variant( const hive::wallet::serializer_wrapper<T>& a, fc::variant& var )
   {
-    //Compatibility with older shape of asset
-    bool old_legacy_enabled = dynamic_serializer::legacy_enabled;
-    dynamic_serializer::legacy_enabled = true;
-    auto const restore_legacy_flag = [&] { dynamic_serializer::legacy_enabled = old_legacy_enabled; };
-
-    try
+    auto _action = [&a, &var]()
     {
       to_variant( a.value, var );
-      restore_legacy_flag();
-    } FC_CAPTURE_CALL_LOG_AND_RETHROW( restore_legacy_flag, () );
+    };
+
+    legacy_manager::exec( _action );
   }
 
   template<typename T>
   inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
   {
-    //Compatibility with older shape of asset
-    bool old_legacy_enabled = dynamic_serializer::legacy_enabled;
-    dynamic_serializer::legacy_enabled = true;
-    auto const restore_legacy_flag = [&] { dynamic_serializer::legacy_enabled = old_legacy_enabled; };
-
-    try
+    auto _action = [&var, &a]()
     {
       from_variant( var, a.value );
-      restore_legacy_flag();
-    } FC_CAPTURE_CALL_LOG_AND_RETHROW( restore_legacy_flag, () );
+    };
+
+    legacy_manager::exec( _action );
   }
 
 } // fc
