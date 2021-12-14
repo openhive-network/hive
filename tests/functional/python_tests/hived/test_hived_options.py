@@ -45,16 +45,6 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World
                         {'with_arguments': ['--exit-after-replay']},
                         {'exit_before_synchronization': True}])
 def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
-    node = world.create_api_node()
-    half_way = int(number_of_blocks / 2.0)
-    node.run(replay_from=block_log, stop_at_block=half_way, **way_to_stop)
-    assert not node.is_running()
-
-
-@pytest.mark.parametrize('way_to_stop', [
-                        {'with_arguments': ['--exit-after-replay']},
-                        {'exit_before_synchronization': True}])
-def test_stop_after_replay_with_second_node_in_network(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     net = world.create_network()
     node = net.create_api_node()
 
