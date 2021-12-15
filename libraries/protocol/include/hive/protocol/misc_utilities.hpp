@@ -41,6 +41,15 @@ struct legacy_manager
   template< typename T>
   static void exec( T&& call )
   {
+    auto _exception_catcher = []()
+    {
+      try
+      {
+        auto eptr = std::current_exception();
+        std::rethrow_exception( eptr );
+      } FC_CAPTURE_AND_RETHROW()
+    };
+
     try
     {
       //Compatibility with older shape of asset
@@ -58,14 +67,14 @@ struct legacy_manager
           call();
         } FC_CAPTURE_AND_RETHROW()
       }
+      else
+      {
+        _exception_catcher();
+      }
     }
     catch(...) 
     {
-      try
-      {
-        auto eptr = std::current_exception();
-        std::rethrow_exception( eptr );
-      } FC_CAPTURE_AND_RETHROW()
+      _exception_catcher();
     }
   }
 };
