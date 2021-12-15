@@ -30,53 +30,11 @@ struct legacy_switcher
 
   static const std::string serialization_detector;
 
+  legacy_switcher();
   legacy_switcher( bool val );
   ~legacy_switcher();
 
   static bool try_another_serialization( const fc::bad_cast_exception& e );
-};
-
-struct legacy_manager
-{
-  template< typename T>
-  static void exec( T&& call )
-  {
-    auto _exception_catcher = []()
-    {
-      try
-      {
-        auto eptr = std::current_exception();
-        std::rethrow_exception( eptr );
-      } FC_CAPTURE_AND_RETHROW()
-    };
-
-    try
-    {
-      //Compatibility with older shape of asset
-      legacy_switcher switcher( true );
-      call();
-    }
-    catch( fc::bad_cast_exception& e )
-    {
-      if( legacy_switcher::try_another_serialization( e ) )
-      {
-        try
-        {
-          legacy_switcher switcher( false );
-          ilog("Change of serialization - a legacy is ${le} now", ( "le", dynamic_serializer::legacy_enabled ? "enabled" : "disabled" ) );
-          call();
-        } FC_CAPTURE_AND_RETHROW()
-      }
-      else
-      {
-        _exception_catcher();
-      }
-    }
-    catch(...) 
-    {
-      _exception_catcher();
-    }
-  }
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );
