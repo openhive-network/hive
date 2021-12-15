@@ -454,7 +454,9 @@ struct visitor {
       if( serialization_functor< fc::static_variant<T...> >()( v, s ) )
         return;
 
-      FC_ASSERT( v.is_object(), "Input data have to treated as object." );
+      if( !v.is_object() )
+        FC_THROW_EXCEPTION( bad_cast_exception, "Input data have to treated as object." );
+
       auto v_object = v.get_object();
 
       FC_ASSERT( v_object.contains( "type" ), "Type field doesn't exist." );

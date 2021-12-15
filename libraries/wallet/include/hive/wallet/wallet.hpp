@@ -1536,28 +1536,20 @@ FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
 
 namespace fc {
 
-  using hive::protocol::legacy_manager;
+  using hive::protocol::legacy_switcher;
 
   template<typename T>
   inline void to_variant( const hive::wallet::serializer_wrapper<T>& a, fc::variant& var )
   {
-    auto _action = [&a, &var]()
-    {
-      to_variant( a.value, var );
-    };
-
-    legacy_manager::exec( _action );
+    legacy_switcher switcher( true );
+    to_variant( a.value, var );
   }
 
   template<typename T>
   inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
   {
-    auto _action = [&var, &a]()
-    {
-      from_variant( var, a.value );
-    };
-
-    legacy_manager::exec( _action );
+    legacy_switcher switcher( true );
+    from_variant( var, a.value );
   }
 
 } // fc

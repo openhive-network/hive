@@ -3,6 +3,8 @@
 
 #include <hive/plugins/statsd/utility.hpp>
 
+#include <hive/protocol/misc_utilities.hpp>
+
 #include <boost/algorithm/string.hpp>
 
 #include <fc/log/logger_config.hpp>
@@ -15,6 +17,9 @@
 #define ENABLE_JSON_RPC_LOG
 
 namespace hive { namespace plugins { namespace json_rpc {
+
+using hive::protocol::dynamic_serializer;
+using hive::protocol::legacy_switcher;
 
 namespace detail
 {
@@ -338,7 +343,32 @@ namespace detail
               if( call )
               {
                 STATSD_START_TIMER( "jsonrpc", "api", method_name, 1.0f );
-                response.result = (*call)( func_args );
+                try
+                {
+                  response.result = (*call)( func_args );
+                }
+                catch( fc::bad_cast_exception& e )
+                {
+                  if(
+                      method_name == "network_broadcast_api.broadcast_transaction" ||
+                      method_name == "condenser_api.broadcast_transaction" ||
+                      method_name == "condenser_api.broadcast_transaction_synchronous"
+                    )
+                  {
+                    legacy_switcher switcher;
+                    ilog("Change of serialization - a legacy is ${le} now", ( "le", dynamic_serializer::legacy_enabled ? "enabled" : "disabled" ) );;
+                    response.result = (*call)( func_args );
+                  }
+                  else
+                  {
+                    throw e;
+                  }
+                }
+                catch(...)
+                {
+                  auto eptr = std::current_exception();
+                  std::rethrow_exception( eptr );
+                }
               }
             }
             catch( chainbase::lock_exception& e )
