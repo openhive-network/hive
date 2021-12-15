@@ -228,8 +228,8 @@ void sps_processor::remove_old_proposals( const block_notification& note )
 
   remove_proposals( head_time );
 
-  if( db.get_benchmark_dumper().is_enabled() )
-    db.get_benchmark_dumper().end( sps_processor::removing_name );
+  if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
+    db.get_benchmark_dumper().end( "block", sps_processor::removing_name );
 }
 
 void sps_processor::make_payments( const block_notification& note )
@@ -250,13 +250,13 @@ void sps_processor::make_payments( const block_notification& note )
   find_proposals( head_time, active_proposals, no_active_yet_proposals );
   if( active_proposals.empty() )
   {
-    if( db.get_benchmark_dumper().is_enabled() )
-      db.get_benchmark_dumper().end( sps_processor::calculating_name );
-
     calculate_votes( no_active_yet_proposals );
 
     //Set `new maintenance time` and `last budget time`
     update_settings( head_time );
+
+    if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
+      db.get_benchmark_dumper().end( "block", sps_processor::calculating_name );
     return;
   }
 
@@ -278,8 +278,8 @@ void sps_processor::make_payments( const block_notification& note )
   //Set `new maintenance time` and `last budget time`
   update_settings( head_time );
 
-  if( db.get_benchmark_dumper().is_enabled() )
-    db.get_benchmark_dumper().end( sps_processor::calculating_name );
+  if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
+    db.get_benchmark_dumper().end( "block", sps_processor::calculating_name );
 }
 
 const std::string& sps_processor::get_removing_name()

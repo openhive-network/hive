@@ -116,7 +116,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
     ++count;
   }
   if( db.get_benchmark_dumper().is_enabled() && count )
-    db.get_benchmark_dumper().end( "process_delayed_voting", count );
+    db.get_benchmark_dumper().end( "processing", "hive::protocol::transfer_to_vesting_operation", count );
 }
 
 } } // namespace hive::chain

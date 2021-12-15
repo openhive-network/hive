@@ -2557,7 +2557,7 @@ void database::process_recurrent_transfers()
     processed_transfers++;
   }
   if( _benchmark_dumper.is_enabled() && processed_transfers )
-    _benchmark_dumper.end( "process_recurrent_transfers", processed_transfers );
+    _benchmark_dumper.end( "processing", "hive::protocol::recurrent_transfer_operation", processed_transfers );
 }
 
 /**
@@ -2754,7 +2754,7 @@ void database::process_vesting_withdrawals()
     post_push_virtual_operation( vop );
   }
   if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "process_vesting_withdrawals", count );
+    _benchmark_dumper.end( "processing", "hive::protocol::withdraw_vesting_operation", count );
 }
 
 /**
@@ -3141,7 +3141,7 @@ void database::process_comment_cashout()
     _current = cidx.begin();
   }
   if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "process_comment_cashout", count );
+    _benchmark_dumper.end( "processing", "hive::protocol::comment_operation", count );
 
   // Write the cached fund state back to the database
   if( funds.size() )
@@ -3291,7 +3291,7 @@ void database::process_savings_withdraws()
     ++count;
   }
   if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "process_savings_withdraws", count );
+    _benchmark_dumper.end( "processing", "hive::protocol::transfer_from_savings_operation", count );
 }
 
 void database::process_subsidized_accounts()
@@ -3504,7 +3504,7 @@ void database::process_conversions()
     }
   }
   if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "process_conversions convert_request", count );
+    _benchmark_dumper.end( "processing", "hive::protocol::convert_operation", count );
 
   //collateralized requests
   count = 0;
@@ -3552,7 +3552,7 @@ void database::process_conversions()
       ++count;
     }
     if( _benchmark_dumper.is_enabled() && count )
-      _benchmark_dumper.end( "process_conversions collateralized_convert_request", count );
+      _benchmark_dumper.end( "processing", "hive::protocol::collateralized_convert_operation", count );
   }
 
   //correct global supply (if needed)
@@ -3670,7 +3670,7 @@ void database::process_decline_voting_rights()
     ++count;
   }
   if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "process_decline_voting_rights", count );
+    _benchmark_dumper.end( "processing", "hive::protocol::decline_voting_rights_operation", count );
 }
 
 time_point_sec database::head_block_time()const
@@ -4234,7 +4234,7 @@ void database::_apply_block( const signed_block& next_block )
     }
 
     if( _benchmark_dumper.is_enabled() )
-      _benchmark_dumper.end( "merkle check" );
+      _benchmark_dumper.end( "block", "merkle check" );
   }
 
   const witness_object& signing_witness = validate_block_header(skip, next_block);
@@ -4596,12 +4596,12 @@ void database::_apply_transaction(const signed_transaction& trx)
       {
         if( !post )
         {
-          name = _my->_evaluator_registry.get_evaluator( op ).get_name( op ) + " validate";
+          name = _my->_evaluator_registry.get_evaluator( op ).get_name( op );
           _benchmark_dumper.begin();
         }
         else
         {
-          _benchmark_dumper.end( name );
+          _benchmark_dumper.end( "validate", name );
         }
       } );
     }
@@ -4635,7 +4635,7 @@ void database::_apply_transaction(const signed_transaction& trx)
         has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
 
       if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.end( "verify_authority", trx.signatures.size() ); //TODO: check if it really strongly depends on number of signatures
+        _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() );
     }
     catch( protocol::tx_missing_active_auth& e )
     {
@@ -4661,7 +4661,7 @@ void database::_apply_transaction(const signed_transaction& trx)
               ("tapos_block_summary",tapos_block_summary.block_id._hash[1]));
 
       if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.end( "tapos check" );
+        _benchmark_dumper.end( "transaction", "tapos check" );
     }
 
     fc::time_point_sec now = head_block_time();
@@ -4686,7 +4686,7 @@ void database::_apply_transaction(const signed_transaction& trx)
     });
 
     if( _benchmark_dumper.is_enabled() )
-      _benchmark_dumper.end( "transaction dupe check" );
+      _benchmark_dumper.end( "transaction", "dupe check" );
   }
 
   notify_pre_apply_transaction( note );

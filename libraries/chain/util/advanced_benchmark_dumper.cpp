@@ -32,16 +32,13 @@ namespace hive { namespace chain { namespace util {
   {
     uint64_t time = std::chrono::duration_cast<std::chrono::nanoseconds>(
       std::chrono::system_clock::now().time_since_epoch() ).count() - time_begin;
-    if( time_begin == 0 )
-    {
-      info.broken_measurement();
-      return;
-    }
-
-    auto res = info.emplace( context, str, time, _count );
+    bool broken = ( time_begin == 0 );
+    auto res = info.emplace( context, str, time, _count, broken );
 
     if( !res.second )
-      res.first->inc( time, _count );
+      res.first->inc( time, _count, broken );
+    if( broken )
+      return;
 
     info.inc( time );
 
@@ -72,11 +69,11 @@ namespace hive { namespace chain { namespace util {
 
   void advanced_benchmark_dumper::dump()
   {
-    total_info< std::multiset< ritem > > rinfo( info.total_time, info.broken_measurements );
+    total_info< std::multiset< ritem > > rinfo( info.total_time );
     std::for_each(info.items.begin(), info.items.end(), [&rinfo]( const item& obj )
     {
       obj.calculate_time_per_count();
-      rinfo.emplace( obj.context, obj.op_name, obj.time, obj.count, obj.time_per_count );
+      rinfo.emplace( obj.context, obj.op_name, obj.time, obj.count, obj.time_per_count, obj.broken_measurements );
     });
 
     dump_impl( info, file_name );
