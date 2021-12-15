@@ -184,7 +184,7 @@ void database::initialize_state_independent_data(const open_args& args)
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
   /// Initialize all static (state independent) specific to hardforks
-  init_hardforks(); 
+  init_hardforks();
 }
 
 void database::load_state_initial_data(const open_args& args)
@@ -316,7 +316,7 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
     if( !appbase::app().is_interrupt_request() )
     {
       optional<signed_block> next_block = _block_log.read_block_by_num(cur_block_num + 1);
-      FC_ASSERT(next_block, "Unable to read block ${block_num} from the block log during reindexing, but it should be in the log", 
+      FC_ASSERT(next_block, "Unable to read block ${block_num} from the block log during reindexing, but it should be in the log",
                 ("block_num", cur_block_num + 1));
       block = std::move(*next_block);
     }
@@ -445,7 +445,7 @@ uint32_t database::reindex( const open_args& args )
       _fork_db.start_block( *_block_log.head() );
 
     auto end_time = fc::time_point::now();
-    ilog("Done reindexing, elapsed time: ${elapsed_time} sec", 
+    ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
          ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
 
     note.reindex_success = true;
@@ -579,7 +579,7 @@ optional<signed_block> database::fetch_block_by_number( uint32_t block_num )cons
   if( fitem )
     return fitem->data;
   else
-    return _block_log.read_block_by_num( block_num ); 
+    return _block_log.read_block_by_num( block_num );
 } FC_LOG_AND_RETHROW() }
 
 // this version doesn't assume the caller has a read lock.  It will get its own lock for the
@@ -595,7 +595,7 @@ optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_
   if( fitem )
     return fitem->data;
   else
-    return _block_log.read_block_by_num( block_num ); 
+    return _block_log.read_block_by_num( block_num );
 } FC_LOG_AND_RETHROW() }
 
 std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )
@@ -1459,12 +1459,12 @@ void database::notify_prepare_snapshot_data_supplement(const prepare_snapshot_su
 
 void database::notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& note)
 {
-  HIVE_TRY_NOTIFY(_load_snapshot_supplement_signal, note) 
+  HIVE_TRY_NOTIFY(_load_snapshot_supplement_signal, note)
 }
 
 void database::notify_comment_reward(const comment_reward_notification& note)
 {
-  HIVE_TRY_NOTIFY(_comment_reward_signal, note) 
+  HIVE_TRY_NOTIFY(_comment_reward_signal, note)
 }
 
 void database::notify_end_of_syncing()
@@ -4178,6 +4178,8 @@ void database::_apply_block( const signed_block& next_block )
 
   if( BOOST_UNLIKELY( next_block_num == 1 ) )
   {
+    process_genesis_accounts(next_block_num);
+
     // For every existing before the head_block_time (genesis time), apply the hardfork
     // This allows the test net to launch with past hardforks and apply the next harfork when running
 
@@ -4290,7 +4292,6 @@ void database::_apply_block( const signed_block& next_block )
   _current_op_in_trx = 0;
   _current_virtual_op = 0;
 
-  process_genesis_accounts(next_block_num);
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
 
@@ -4420,8 +4421,6 @@ void database::process_header_extensions( const signed_block& next_block, requir
 
 void database::process_genesis_accounts(const uint32_t next_block)
 {
-  if(BOOST_LIKELY( next_block != 1 )) return;
-
   /*
     This method is evaluated after processing all transactions,
     so parameters of vop notification (trx_in_block = -1)
@@ -4429,11 +4428,13 @@ void database::process_genesis_accounts(const uint32_t next_block)
 
     Calling this method before processing transaction makes
     notifications simillar to theese produced by normal operations,
-    which is invalid, because there is no such operation 
+    which is invalid, because there is no such operation
     to refer (no access to genesis [0] block).
   */
 
   // create virtual operations for accounts created in genesis
+  const int32_t trx_in_block_prev{ _current_trx_in_block };
+  _current_trx_in_block = -1;
   const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
   std::for_each(
       account_idx.begin()
@@ -4443,6 +4444,7 @@ void database::process_genesis_accounts(const uint32_t next_block)
           account_created_operation(obj.name, "", asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
   );
+  _current_trx_in_block = trx_in_block_prev;
 }
 
 void database::update_median_feed()
@@ -4512,7 +4514,7 @@ try {
           // limited to 900 HBD / 500 HIVE which works out to be $1.80. At this price, 500 HIVE
           // would be valued at 500 * $1.80 = $900. 100 HBD is by definition always $100,
           // so the combined market cap is $900 + $100 = $1000.
-          // 
+          //
           // Generalized formula:
           // With minimal price we want existing amount of HBD (X) to be HIVE_HBD_HARD_LIMIT (L) of
           // combined market cap (CMC), meaning the existing amount of HIVE (Y) has to be 100%-L of CMC.
@@ -6512,7 +6514,7 @@ void database::validate_invariants()const
     asset pending_vesting_hive = asset( 0, HIVE_SYMBOL );
     share_type total_vsf_votes = share_type( 0 );
     ushare_type total_delayed_votes = ushare_type( 0 );
-    
+
     uint64_t witness_no = 0;
     uint64_t account_no = 0;
     uint64_t convert_no = 0;
