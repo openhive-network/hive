@@ -27,13 +27,17 @@ class advanced_benchmark_dumper
     {
       std::string context;
       std::string op_name;
-      mutable uint64_t time;
-      mutable uint64_t count;
-      mutable uint64_t time_per_count; //calculated only during dump
+      mutable uint64_t time = 0;
+      mutable uint64_t count = 0;
+      mutable uint64_t time_per_count = 0; //calculated only during dump
+      mutable uint64_t broken_measurements = 0; //increased when nested measurement caused this outer one to reset
+        //broken measurements don't have any influence on collected time or count
 
-      item( std::string _context, std::string _op_name, uint64_t _time, uint64_t _count = 1 )
-        : context( std::move(_context) ), op_name( std::move(_op_name) ),
-          time( _time ), count( _count ), time_per_count( 0 ) {}
+      item( std::string _context, std::string _op_name, uint64_t _time, uint64_t _count = 1, bool broken = false )
+        : context( std::move(_context) ), op_name( std::move(_op_name) )
+      {
+        inc( time, _count, broken );
+      }
 
       bool operator<( const item& obj ) const
       {
@@ -42,8 +46,19 @@ class advanced_benchmark_dumper
         else
           return ( op_name == obj.op_name ) && ( context < obj.context );
       }
-      void inc( uint64_t _time, uint64_t _count = 1 ) const { time += _time; count += _count; }
-      void calculate_time_per_count() const { time_per_count = ( time + count - 1 ) / count; } //round up
+      void inc( uint64_t _time, uint64_t _count = 1, bool broken = false ) const
+      {
+        if( broken )
+        {
+          broken_measurements += _count;
+        }
+        else
+        {
+          time += _time;
+          count += _count;
+        }
+      }
+      void calculate_time_per_count() const { time_per_count = count ? ( time + count - 1 ) / count : 0; } //round up
     };
 
     struct ritem
@@ -53,10 +68,11 @@ class advanced_benchmark_dumper
       uint64_t time;
       uint64_t count;
       uint64_t time_per_count;
+      uint64_t broken_measurements;
 
-      ritem( std::string _context, std::string _op_name, uint64_t _time, uint64_t _count, uint64_t _tpc )
+      ritem( std::string _context, std::string _op_name, uint64_t _time, uint64_t _count, uint64_t _tpc, uint64_t _bm )
         : context( std::move(_context) ), op_name( std::move(_op_name) ),
-          time( _time ), count( _count ), time_per_count( _tpc ) {}
+          time( _time ), count( _count ), time_per_count( _tpc ), broken_measurements( _bm ) {}
 
       bool operator<( const ritem& obj ) const { return time > obj.time; }
     };
@@ -65,16 +81,14 @@ class advanced_benchmark_dumper
     struct total_info
     {
       uint64_t total_time = 0;
-      uint64_t broken_measurements = 0; //increased when nested measurement caused outer one to reset
 
       COLLECTION items;
       
       total_info(){}
-      total_info( uint64_t _total_time, uint64_t _bm = 0 )
-        : total_time( _total_time ), broken_measurements( _bm ){}
+      total_info( uint64_t _total_time )
+        : total_time( _total_time ) {}
 
       void inc( uint64_t _time ) { total_time += _time; }
-      void broken_measurement() { ++broken_measurements; }
 
       template <typename... TArgs>
       typename emplace_ret_value<COLLECTION>::type emplace(TArgs&&... args)
@@ -129,9 +143,9 @@ class advanced_benchmark_dumper
 
 } } } // hive::chain::util
 
-FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::item, (context)(op_name)(time)(count)(time_per_count) )
-FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::ritem, (context)(op_name)(time)(count)(time_per_count) )
+FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::item, (context)(op_name)(time)(count)(time_per_count)(broken_measurements) )
+FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::ritem, (context)(op_name)(time)(count)(time_per_count)(broken_measurements) )
 
-FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::total_info< std::set< hive::chain::util::advanced_benchmark_dumper::item > >, (total_time)(broken_measurements)(items) )
-FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::total_info< std::multiset< hive::chain::util::advanced_benchmark_dumper::ritem > >, (total_time)(broken_measurements)(items) )
+FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::total_info< std::set< hive::chain::util::advanced_benchmark_dumper::item > >, (total_time)(items) )
+FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::total_info< std::multiset< hive::chain::util::advanced_benchmark_dumper::ritem > >, (total_time)(items) )
 
