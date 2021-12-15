@@ -457,7 +457,6 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after_two.delegated_rc == uint64_t(vesting_amount) - 11 );
     BOOST_REQUIRE( alice_rc_after_two.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_after_two.last_max_rc == creation_rc );
-    idump((alice_rc_after_two.rc_manabar.current_mana)(creation_rc - (5007 + 4989)));
     BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - (5007 + 4989) );
 
     BOOST_REQUIRE( bob_rc_account_after_two.rc_manabar.current_mana == creation_rc );
@@ -1071,6 +1070,69 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     BOOST_REQUIRE(delta_delegation > delta_removed_delegation);
     BOOST_REQUIRE(delta_reduced_delegation > delta_removed_delegation);
     BOOST_REQUIRE(delta_removed_delegation == delta_no_delegation);
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
+{
+  try
+  {
+    generate_block();
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+      });
+    });
+    generate_block();
+
+    ACTORS_DEFAULT_FEE( (alice)(bob) )
+    generate_block();
+    transfer( HIVE_INIT_MINER_NAME, "bob", ASSET( "9000000.000 TESTS" ));
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1.000 TESTS" ) );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "delegating RC to bob" );
+    delegate_rc_operation drc_op;
+    drc_op.from = "alice";
+    drc_op.delegatees = {"bob"};
+    drc_op.max_rc = 100000;
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( drc_op ) );
+    push_transaction(custom_op, alice_private_key);
+    generate_block();
+
+    const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+    auto current_mana = bob_rc_account_initial.rc_manabar.current_mana;
+
+    // Magic number, it's hard to exactly hit 0 RC, but since we delegated 100k rc, removing the delegation would put us to 0
+    while (current_mana > 50000) {
+      signed_transaction tx;
+      transfer_to_vesting_operation op;
+      op.from = "bob";
+      op.to = "alice";
+      op.amount = ASSET( "0.001 TESTS" );
+      push_transaction(op, bob_private_key);
+      generate_block();
+      const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+      current_mana = bob_rc_account_current.rc_manabar.current_mana;
+    }
+
+    BOOST_TEST_MESSAGE( "Removing the RC delegation" );
+    drc_op.max_rc = 0;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( drc_op ) );
+    push_transaction(custom_op, alice_private_key);
+    generate_block();
+
+    const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
+    BOOST_REQUIRE(bob_rc_account.rc_manabar.current_mana == 0 );
+    BOOST_REQUIRE(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account) >= 0);
 
     validate_database();
   }
