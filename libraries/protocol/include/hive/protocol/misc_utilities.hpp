@@ -54,7 +54,7 @@ struct legacy_manager
         try
         {
           legacy_switcher switcher( false );
-          ilog("A serialization has been switched again. legacy-enabled: ${le}", ( "le", dynamic_serializer::legacy_enabled ) );
+          ilog("Change of serialization - a legacy is ${le} now", ( "le", dynamic_serializer::legacy_enabled ? "enabled" : "disabled" ) );
           call();
         } FC_CAPTURE_AND_RETHROW()
       }
