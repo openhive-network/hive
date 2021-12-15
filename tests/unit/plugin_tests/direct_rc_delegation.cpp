@@ -932,6 +932,122 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
+{
+  try
+  {
+    generate_block();
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+      });
+    });
+    generate_block();
+
+    ACTORS_DEFAULT_FEE( (alice)(bob) )
+    generate_block();
+
+    transfer( HIVE_INIT_MINER_NAME, "bob", ASSET( "100.000 TBD" ));
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1.000 TESTS" ) );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Fetching the baseLine with no RC delegations" );
+    const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+    auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
+    auto current_mana = initial_mana;
+
+    while (current_mana + 5000000 > initial_mana) {
+      transfer( "bob", "bob", ASSET( "1.000 TBD" ));
+      const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+      current_mana = bob_rc_account_current.rc_manabar.current_mana;
+    }
+
+    int64_t delta_no_delegation = 0;
+    {
+      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
+      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      auto bob_rc_manabar = bob_rc_account.rc_manabar;
+      // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
+      bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
+      delta_no_delegation = bob_rc_manabar.current_mana - current_mana;
+    }
+
+    BOOST_TEST_MESSAGE( "Delegating some RC" );
+    delegate_rc_operation drc_op;
+    drc_op.from = "alice";
+    drc_op.delegatees = {"bob"};
+    drc_op.max_rc = db->get_account( "alice" ).get_vesting().amount.value;
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( drc_op ) );
+    push_transaction(custom_op, alice_private_key);
+    generate_block();
+
+    {
+      const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+      auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
+      current_mana = initial_mana;
+
+      while (current_mana + 5000000 > initial_mana) {
+        transfer( "bob", "bob", ASSET( "1.000 TBD" ));
+        const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+        current_mana = bob_rc_account_current.rc_manabar.current_mana;
+      }
+    }
+
+    int64_t delta_delegation = 0;
+    {
+      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
+      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      auto bob_rc_manabar = bob_rc_account.rc_manabar;
+      // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
+      bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
+      delta_delegation = bob_rc_manabar.current_mana - current_mana;
+    }
+
+    BOOST_REQUIRE( delta_delegation > delta_no_delegation);
+
+    BOOST_TEST_MESSAGE( "Removing the RC delegation" );
+    drc_op.max_rc = 0;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( drc_op ) );
+    push_transaction(custom_op, alice_private_key);
+    generate_block();
+
+    {
+      const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+      auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
+      current_mana = initial_mana;
+
+      while (current_mana + 5000000 > initial_mana) {
+        transfer( "bob", "bob", ASSET( "1.000 TBD" ));
+        const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+        current_mana = bob_rc_account_current.rc_manabar.current_mana;
+      }
+    }
+
+    int64_t delta_removed_delegation = 0;
+    {
+      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
+      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      auto bob_rc_manabar = bob_rc_account.rc_manabar;
+      // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
+      bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
+      delta_removed_delegation = bob_rc_manabar.current_mana - current_mana;
+    }
+
+    idump((delta_delegation)(delta_removed_delegation)(delta_no_delegation));
+
+    BOOST_REQUIRE( delta_delegation > delta_removed_delegation);
+    BOOST_REQUIRE( delta_removed_delegation == delta_no_delegation);
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

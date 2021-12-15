@@ -391,7 +391,7 @@ class wallet_api
       * This method will claim a subsidized account creation.
       *
       * @param creator The account to receive the account creation credit
-      * @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
+      * @param fee The fee to pay for claiming the account (either 0 hive for a discounted account, or the full account fee)
       * @param broadcast true if you wish to broadcast the transaction
       */
     serializer_wrapper<annotated_signed_transaction> claim_account_creation( const string& creator,
