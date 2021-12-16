@@ -26,7 +26,6 @@ struct legacy_switcher
 {
   const bool old_legacy_enabled = false;
 
-  legacy_switcher();
   legacy_switcher( bool val );
   ~legacy_switcher();
 };

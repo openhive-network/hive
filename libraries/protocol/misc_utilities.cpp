@@ -4,11 +4,6 @@ namespace hive { namespace protocol {
 
 thread_local bool dynamic_serializer::legacy_enabled = false;
 
-legacy_switcher::legacy_switcher() : old_legacy_enabled( dynamic_serializer::legacy_enabled )
-{
-  dynamic_serializer::legacy_enabled = !dynamic_serializer::legacy_enabled;
-}
-
 legacy_switcher::legacy_switcher( bool val ) : old_legacy_enabled( dynamic_serializer::legacy_enabled )
 {
   dynamic_serializer::legacy_enabled = val;
