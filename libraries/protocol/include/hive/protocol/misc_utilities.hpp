@@ -1,8 +1,6 @@
 #pragma once
 
 #include <fc/reflect/reflect.hpp>
-#include <fc/exception/exception.hpp>
-#include <fc/log/logger.hpp>
 
 namespace hive { namespace protocol {
 
@@ -28,13 +26,9 @@ struct legacy_switcher
 {
   const bool old_legacy_enabled = false;
 
-  static const std::string serialization_detector;
-
   legacy_switcher();
   legacy_switcher( bool val );
   ~legacy_switcher();
-
-  static bool try_another_serialization( const fc::bad_cast_exception& e );
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );

@@ -1541,15 +1541,21 @@ namespace fc {
   template<typename T>
   inline void to_variant( const hive::wallet::serializer_wrapper<T>& a, fc::variant& var )
   {
-    legacy_switcher switcher( true );
-    to_variant( a.value, var );
+    try
+    {
+      legacy_switcher switcher( true );
+      to_variant( a.value, var );
+    } FC_CAPTURE_AND_RETHROW()
   }
 
   template<typename T>
   inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
   {
-    legacy_switcher switcher( true );
-    from_variant( var, a.value );
+    try
+    {
+      legacy_switcher switcher( true );
+      from_variant( var, a.value );
+    } FC_CAPTURE_AND_RETHROW()
   }
 
 } // fc
