@@ -349,11 +349,7 @@ namespace detail
                 }
                 catch( fc::bad_cast_exception& e )
                 {
-                  if(
-                      method_name == "network_broadcast_api.broadcast_transaction" ||
-                      method_name == "condenser_api.broadcast_transaction" ||
-                      method_name == "condenser_api.broadcast_transaction_synchronous"
-                    )
+                  if( method_name == "network_broadcast_api.broadcast_transaction" )
                   {
                     legacy_switcher switcher;
                     ilog("Change of serialization - a legacy is ${le} now", ( "le", dynamic_serializer::legacy_enabled ? "enabled" : "disabled" ) );;
