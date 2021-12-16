@@ -3,7 +3,8 @@ import re
 import subprocess
 import time
 
-from test_tools import Asset, communication, logger, Hivemind, World, Wallet
+from test_tools import Asset, Account, communication, logger, Hivemind, World, Wallet
+import functional.hive_utils
 
 def test_hivemind_start_sync(world: World):
     node_test = world.create_init_node()
@@ -25,6 +26,14 @@ def test_vote_bug(world:World):
     node_test.run()
     wallet = Wallet(attach_to=node_test)
 
+    wallet.api.create_account('initminer', 'alice', '{}')
+    wallet.api.create_account('initminer', 'bob', '{}')
+    wallet.api.transfer('initminer', 'alice', Asset.Tbd(70008.543), 'avocado')
+    wallet.api.transfer('initminer', 'bob', Asset.Tbd(78008.543), 'banana')
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(1000000))
+    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(1000000))
+    wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
+
     hivemind = Hivemind(
         database_name='hivemind_pyt',
         database_user='dev',
@@ -33,22 +42,15 @@ def test_vote_bug(world:World):
 
     hivemind.run(sync_with=node_test)
 
-    wallet.api.create_account('initminer', 'alice', '{}')
-    wallet.api.create_account('initminer', 'bob', '{}')
-    wallet.api.transfer('initminer', 'alice', Asset.Tbd(788.543), 'avocado')
-    wallet.api.transfer('initminer', 'bob', Asset.Tbd(788.543), 'banana')
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
-    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
-    wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
 
     node_test.wait_for_block_with_number(30)
     wallet.api.vote('bob', 'alice', 'hello-world2', 99)
 
-    node_test.wait_number_of_blocks(3)
-
-
-
-
+    XD = node_test.get_last_block_number()
+    logger.info('XD')
+    node_test.wait_for_block_with_number(XD+100)
+    logger.info('zrobione!!!!')
+    node_test.wait_for_block_with_number(XD+100+200)
 
 def test_accounts(world: World):
     node_test = world.create_init_node()
@@ -110,3 +112,22 @@ def test_accounts(world: World):
     message2 = communication.request(url='http://localhost:8080', message={"jsonrpc":"2.0","id":0,"method":"bridge.get_account_posts","params":{"account":"dan", "sort":"replies"}})
 
     print()
+
+
+def test_db_prepare(world:World):
+    hivemind = Hivemind(
+        database_name='hivemind_pyt',
+        database_user='dev',
+        database_password='devdevdev',
+    )
+
+    hivemind.database_prepare()
+
+def generate_blocks(node, number_of_blocks):
+    node.api.debug_node.debug_generate_blocks(
+        debug_key=Account('initminer').private_key,
+        count=number_of_blocks,
+        skip=0,
+        miss_blocks=0,
+        edit_if_needed=True
+    )
