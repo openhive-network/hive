@@ -178,9 +178,11 @@ namespace detail
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
+
+      chain::database& _db;
   };
 
-  json_rpc_plugin_impl::json_rpc_plugin_impl() {}
+  json_rpc_plugin_impl::json_rpc_plugin_impl(): _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
   json_rpc_plugin_impl::~json_rpc_plugin_impl() {}
 
   void json_rpc_plugin_impl::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
@@ -343,27 +345,35 @@ namespace detail
               if( call )
               {
                 STATSD_START_TIMER( "jsonrpc", "api", method_name, 1.0f );
-                try
+
+                if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) )
                 {
-                  response.result = (*call)( func_args );
-                }
-                catch( fc::bad_cast_exception& e )
-                {
-                  if( method_name == "network_broadcast_api.broadcast_transaction" )
+                  try
                   {
-                    legacy_switcher switcher;
-                    ilog("Change of serialization - a legacy is ${le} now", ( "le", dynamic_serializer::legacy_enabled ? "enabled" : "disabled" ) );;
                     response.result = (*call)( func_args );
                   }
-                  else
+                  catch( fc::bad_cast_exception& e )
                   {
-                    throw e;
+                    if( method_name == "network_broadcast_api.broadcast_transaction" )
+                    {
+                      legacy_switcher switcher( true );
+                      ilog("Change of serialization - a legacy is enabled now");
+                      response.result = (*call)( func_args );
+                    }
+                    else
+                    {
+                      throw e;
+                    }
+                  }
+                  catch(...)
+                  {
+                    auto eptr = std::current_exception();
+                    std::rethrow_exception( eptr );
                   }
                 }
-                catch(...)
+                else
                 {
-                  auto eptr = std::current_exception();
-                  std::rethrow_exception( eptr );
+                  response.result = (*call)( func_args );
                 }
               }
             }
@@ -461,7 +471,7 @@ using detail::json_rpc_error;
 using detail::json_rpc_response;
 using detail::json_rpc_logger;
 
-json_rpc_plugin::json_rpc_plugin() : my( new detail::json_rpc_plugin_impl() ) {}
+json_rpc_plugin::json_rpc_plugin(){}
 json_rpc_plugin::~json_rpc_plugin() {}
 
 void json_rpc_plugin::set_program_options( options_description& , options_description& cfg)
@@ -473,6 +483,8 @@ void json_rpc_plugin::set_program_options( options_description& , options_descri
 
 void json_rpc_plugin::plugin_initialize( const variables_map& options )
 {
+  my = std::make_unique< detail::json_rpc_plugin_impl >();
+
   my->initialize();
 
   if( options.count( "log-json-rpc" ) )
