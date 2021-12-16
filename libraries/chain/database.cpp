@@ -4178,7 +4178,7 @@ void database::_apply_block( const signed_block& next_block )
 
   if( BOOST_UNLIKELY( next_block_num == 1 ) )
   {
-    process_genesis_accounts(next_block_num);
+    process_genesis_accounts();
 
     // For every existing before the head_block_time (genesis time), apply the hardfork
     // This allows the test net to launch with past hardforks and apply the next harfork when running
@@ -4419,7 +4419,7 @@ void database::process_header_extensions( const signed_block& next_block, requir
     e.visit( _v );
 }
 
-void database::process_genesis_accounts(const uint32_t next_block)
+void database::process_genesis_accounts()
 {
   /*
     This method is evaluated after processing all transactions,

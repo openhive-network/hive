@@ -24,7 +24,7 @@
 #include <functional>
 #include <map>
 
-namespace hive { 
+namespace hive {
 
 namespace plugins {namespace chain
 {
@@ -48,7 +48,7 @@ namespace chain {
   struct load_snapshot_supplement_notification;
 
   class database;
-  
+
   struct hardfork_versions
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
@@ -169,7 +169,7 @@ namespace chain {
         * If returns `false`, then opening a node should be forbidden.
         *
         * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
-        * 
+        *
         * @return information if replaying was finished
         */
       bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
@@ -245,10 +245,10 @@ namespace chain {
       const account_object&  get_treasury()const { return get_account( get_treasury_name() ); }
       /// Returns true for any account name that was ever a treasury account
       bool                   is_treasury( const account_name_type& name )const;
-      
+
       const account_object&  get_account(  const account_id_type      id )const;
       const account_object*  find_account( const account_id_type&     id )const;
-      
+
       const account_object&  get_account(  const account_name_type& name )const;
       const account_object*  find_account( const account_name_type& name )const;
 
@@ -704,7 +704,7 @@ namespace chain {
       void clear_expired_orders();
       void clear_expired_delegations();
       void process_header_extensions( const signed_block& next_block, required_automated_actions& req_actions, optional_automated_actions& opt_actions );
-      void process_genesis_accounts(const uint32_t next_block);
+      void process_genesis_accounts();
 
       void generate_required_actions();
       void generate_optional_actions();
