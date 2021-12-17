@@ -18,7 +18,6 @@
 
 namespace hive { namespace plugins { namespace json_rpc {
 
-using hive::protocol::dynamic_serializer;
 using hive::protocol::legacy_switcher;
 
 namespace detail
