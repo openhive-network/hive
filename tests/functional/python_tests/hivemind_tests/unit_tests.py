@@ -20,7 +20,6 @@ def test_hivemind_start_sync(world: World):
     # message = communication.request(url='http://localhost:8080', message={"jsonrpc":"2.0","id":0,"method":"hive.db_head_state","params":{}})
     print()
 
-
 def test_vote_bug(world:World):
     node_test = world.create_init_node()
     node_test.run()
@@ -34,23 +33,33 @@ def test_vote_bug(world:World):
     wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(1000000))
     wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
 
-    hivemind = Hivemind(
-        database_name='hivemind_pyt',
-        database_user='dev',
-        database_password='devdevdev',
-    )
+    # hivemind = Hivemind(
+    #     database_name='hivemind_pyt',
+    #     database_user='dev',
+    #     database_password='devdevdev',
+    # )
+    # hivemind.run(sync_with=node_test)
 
-    hivemind.run(sync_with=node_test)
+    http_endpoint = node_test.get_http_endpoint()
+    logger.info(http_endpoint)
 
-
-    node_test.wait_for_block_with_number(30)
+    # node_test.wait_for_block_with_number(30)
     wallet.api.vote('bob', 'alice', 'hello-world2', 99)
 
-    XD = node_test.get_last_block_number()
-    logger.info('XD')
-    node_test.wait_for_block_with_number(XD+100)
-    logger.info('zrobione!!!!')
-    node_test.wait_for_block_with_number(XD+100+200)
+    time.sleep(10)
+    logger.info(node_test.get_last_block_number())
+    generate_blocks(node_test, 1300)
+    logger.info(node_test.get_last_block_number())
+    logger.info('ruszaj!')
+    logger.info(node_test.get_last_block_number())
+    time.sleep(20)
+    logger.info('Vote start')
+    generate_blocks(node_test, 5)
+    wallet.api.vote('initminer', 'alice', 'hello-world2', 99, False)
+    generate_blocks(node_test, 5)
+    logger.info('Vote end')
+    time.sleep(20)
+
 
 def test_accounts(world: World):
     node_test = world.create_init_node()
