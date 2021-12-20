@@ -5,6 +5,135 @@
 #include <sstream>
 
 namespace fc {
+
+  class custom_stream
+  {
+    private:
+
+      uint32_t    buffer_size = 0;
+
+      uint32_t    idx_write = 0;
+      uint32_t    idx_read  = 0;
+
+      std::string content;
+
+    public:
+
+      custom_stream( const std::string& input_str )
+      {
+        str( input_str );
+      }
+
+      void _write( const char& c )
+      {
+        if( idx_write < buffer_size )
+        {
+          content[ idx_write ] = c;
+        }
+        else
+        {
+          content.push_back( c );
+          ++buffer_size;
+        }
+        ++idx_write;
+      }
+
+      size_t _read( char* buf, size_t len, bool move )
+      {
+        if( buf == nullptr )
+          return 0;
+
+        size_t res = 0;
+        for( size_t i = 0; i < len; ++i )
+        {
+          if( idx_read < buffer_size )
+          {
+            ++res;
+            buf[i] = content[ idx_read ];
+            if( move )
+              ++idx_read;
+          }
+          else
+            break;
+        }
+
+        return res;
+      }
+
+      void _clear()
+      {
+        idx_write = 0;
+        idx_read  = 0;
+        content.clear();
+        content.resize( buffer_size );
+      }
+
+    public:
+
+      custom_stream( uint32_t _buffer_size = 16'000'000 ): buffer_size( _buffer_size )
+      {
+        content.resize( buffer_size );
+      }
+
+      void exceptions( std::ios_base::iostate except )
+      {
+        //nothing to do
+      }
+
+      const std::string str() const
+      {
+        return content;
+      }
+
+      void str( const std::string& s )
+      {
+        if( s.size() > buffer_size )
+        {
+          buffer_size = s.size();
+        }
+
+        _clear();
+        for( auto& c : s )
+          _write( c );
+
+        idx_write = 0;
+      }
+
+      void clear()
+      {
+        //nothing to do
+      }
+
+      void write( const char* buf, size_t len )
+      {
+        assert( buf && len > 0 );
+        for( uint32_t i = 0; i < len; ++i )
+          _write( buf[i] );
+      }
+
+      size_t readsome( char* buf, size_t len )
+      {
+        return _read( buf, len, true/*move*/ );
+      }
+
+      bool eof() const
+      {
+        return idx_read == idx_write;
+      }
+
+      void flush()
+      {
+        //nothing to do
+      }
+
+      char peek()
+      {
+        char c = EOF;
+        _read( &c, 1, false/*move*/ );
+        return c;
+      }
+  };
+
   class stringstream::impl {
     public:
     impl( fc::string&s )
@@ -17,7 +146,7 @@ namespace fc {
 
     impl(){ss.exceptions( std::stringstream::badbit ); }
     
-    std::stringstream ss;
+    custom_stream ss;
   };
 
   stringstream::stringstream( fc::string& s )
