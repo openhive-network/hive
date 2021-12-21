@@ -248,10 +248,10 @@ def test_wrong_sign_in_transaction(wallet: Wallet):
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
 
     x = wallet.api.delegate_rc(accounts[0], [accounts[1]], 100, broadcast=False)
-    x['result']['operations'][0][1]['required_posting_auths'][0] = accounts[1]
+    x['operations'][0][1]['required_posting_auths'][0] = accounts[1]
 
     with pytest.raises(exceptions.CommunicationError):
-        wallet.api.sign_transaction(x['result'])
+        wallet.api.sign_transaction(x)
 
 
 def test_minus_rc_delegation(wallet: Wallet):
