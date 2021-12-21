@@ -179,7 +179,7 @@ def test_large_rc_delegation(node, wallet: Wallet):
     assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc_to_delegate
 
 
-def test_out_of_uint64_rc_delegation(wallet: Wallet):
+def test_out_of_int64_rc_delegation(wallet: Wallet):
 #uncorrect error message
     accounts = []
     number_of_accounts_in_one_transaction = 10
@@ -191,7 +191,7 @@ def test_out_of_uint64_rc_delegation(wallet: Wallet):
                 accounts.append(f'account-{account_number}')
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(2000))
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 18446744073709551616)
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
 
 
 def test_delegations_rc_to_one_receiver(wallet: Wallet):
