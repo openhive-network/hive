@@ -10,6 +10,8 @@ namespace fc {
   {
     private:
 
+      bool        is_eof        = false;
+
       uint32_t    buffer_size   = 0;
       uint32_t    content_size  = 0;
 
@@ -34,21 +36,25 @@ namespace fc {
 
       size_t _read( char* buf, size_t len, bool move )
       {
-        if( buf == nullptr )
-          return 0;
+        assert( buf );
 
         size_t res = 0;
         for( size_t i = 0; i < len; ++i )
         {
           if( idx_read < content_size )
           {
+            is_eof = false;
+
             ++res;
             buf[i] = content[ idx_read ];
             if( move )
               ++idx_read;
           }
           else
+          {
+            is_eof = true;
             break;
+          }
         }
 
         return res;
@@ -117,7 +123,7 @@ namespace fc {
 
       bool eof() const
       {
-        return idx_read == content_size;
+        return is_eof;
       }
 
       void flush()
