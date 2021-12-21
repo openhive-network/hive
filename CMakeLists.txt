@@ -218,6 +218,15 @@ else()
    endif()
 endif( NOT CLANG_TIDY_EXE )
 
+OPTION( HIVE_FAIL_ON_WARNINGS "Treat compile warnings as errors. Auto-enabled with HIVE_LINT" HIVE_LINT )
+# Override rocksdb cmake FAIL_ON_WARNINGS option
+SET( FAIL_ON_WARNINGS ${HIVE_FAIL_ON_WARNINGS} CACHE BOOL "Treat compile warnings as errors" FORCE )
+if( HIVE_FAIL_ON_WARNINGS )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror" )
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror" )
+endif()
+MESSAGE( STATUS "HIVE_FAIL_ON_WARNINGS: ${HIVE_FAIL_ON_WARNINGS}" )
+
 IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
   set(Boost_USE_MULTITHREADED ON)
@@ -335,7 +344,7 @@ if(ENABLE_COVERAGE_TESTING)
 endif()
 
 # fc/src/compress/miniz.c breaks strict aliasing. The Linux kernel builds with no strict aliasing
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
