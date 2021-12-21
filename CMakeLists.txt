@@ -302,11 +302,11 @@ else( WIN32 ) # Apple AND Linux
     if( APPLE )
         # Apple Specific Options Here
         message( STATUS "Configuring Hive on OS X" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
     else( APPLE )
         # Linux Specific Options Here
         message( STATUS "Configuring Hive on Linux" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall" )
         set( rt_library rt )
         set( pthread_library pthread)
         if ( NOT DEFINED crypto_library )
