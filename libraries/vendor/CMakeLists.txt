@@ -4,6 +4,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(ROCKSDB_STATIC ${HIVE_STATIC_BUILD})
 
 #Configure needed build options of RocksDB.
+SET(FAIL_ON_WARNINGS OFF CACHE BOOL "Treat compile warnings as errors")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_SNAPPY ON CACHE BOOL "build with SNAPPY")
 SET(WITH_ZLIB OFF CACHE BOOL "build with ZLIB")
