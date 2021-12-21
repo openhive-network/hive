@@ -308,6 +308,6 @@ def rc_account_info(account, name_of_data, wallet):
 
 
 def account_info(account, name_of_data, wallet):
-    data_set = wallet.api.get_account(account)['result']
+    data_set = wallet.api.get_account(account)
     specyfic_data = data_set[name_of_data]
     return specyfic_data
