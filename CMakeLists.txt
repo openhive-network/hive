@@ -136,7 +136,7 @@ if( HIVE_CONVERTER_BUILD OR BUILD_HIVE_TESTNET )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_ALTERNATE_CHAIN_ID" )
 endif()
 
-SET( HIVE_LINT "OFF" CACHE STRING "Enable linting with clang-tidy during compilation" )
+OPTION( HIVE_LINT "Enable linting with clang-tidy during compilation" OFF )
 find_program(
    CLANG_TIDY_EXE
    NAMES "clang-tidy"
