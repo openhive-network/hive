@@ -70,9 +70,8 @@ class advanced_benchmark_dumper
       uint64_t time_per_count;
       uint64_t broken_measurements;
 
-      ritem( std::string _context, std::string _op_name, uint64_t _time, uint64_t _count, uint64_t _tpc, uint64_t _bm )
-        : context( std::move(_context) ), op_name( std::move(_op_name) ),
-          time( _time ), count( _count ), time_per_count( _tpc ), broken_measurements( _bm ) {}
+      ritem( const item& i ) : context( i.context ), op_name( i.op_name ), time( i.time ), count( i.count ),
+        time_per_count( i.time_per_count ), broken_measurements( i.broken_measurements ) {}
 
       bool operator<( const ritem& obj ) const { return time > obj.time; }
     };

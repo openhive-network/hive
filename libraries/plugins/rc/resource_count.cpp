@@ -389,6 +389,7 @@ struct count_operation_visitor
     market_op_count++;
   }
 
+  // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
   void operator()( const recover_account_operation& ) const {}
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
@@ -396,7 +397,7 @@ struct count_operation_visitor
   void operator()( const reset_account_operation& ) const {}
   void operator()( const set_reset_account_operation& ) const {}
 
-  // Virtual Ops
+  // Virtual Ops (their costs, be it hived or HM, should be added to operations that spawn them)
   void operator()( const fill_convert_request_operation& ) const {}
   void operator()( const fill_collateralized_convert_request_operation& ) const {}
   void operator()( const author_reward_operation& ) const {}

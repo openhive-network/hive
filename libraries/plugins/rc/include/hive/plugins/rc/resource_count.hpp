@@ -7,8 +7,6 @@
 #include <fc/reflect/reflect.hpp>
 #include <vector>
 
-#define HIVE_NUM_RESOURCE_TYPES     5
-
 namespace hive { namespace plugins { namespace rc {
 
 enum rc_resource_types
@@ -20,11 +18,26 @@ enum rc_resource_types
   resource_execution_time
 };
 
-typedef fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES > resource_count_type;
+} } } // hive::plugins::rc
+
+FC_REFLECT_ENUM( hive::plugins::rc::rc_resource_types,
+  (resource_history_bytes)
+  (resource_new_accounts)
+  (resource_market_bytes)
+  (resource_state_bytes)
+  (resource_execution_time)
+)
+
+namespace hive { namespace plugins { namespace rc {
+
+const auto HIVE_RC_NUM_RESOURCE_TYPES = fc::reflector< rc_resource_types >::total_member_count;
+
+typedef fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_count_type;
+typedef fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_cost_type;
 
 struct count_resources_result
 {
-  resource_count_type                            resource_count;
+  resource_count_type resource_count;
 };
 
 void count_resources(
@@ -38,14 +51,6 @@ void count_resources(
   );
 
 } } } // hive::plugins::rc
-
-FC_REFLECT_ENUM( hive::plugins::rc::rc_resource_types,
-    (resource_history_bytes)
-    (resource_new_accounts)
-    (resource_market_bytes)
-    (resource_state_bytes)
-    (resource_execution_time)
-  )
 
 FC_REFLECT( hive::plugins::rc::count_resources_result,
   (resource_count)

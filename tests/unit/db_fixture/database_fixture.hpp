@@ -347,6 +347,12 @@ struct hardfork_database_fixture : public clean_database_fixture
   virtual ~hardfork_database_fixture();
 };
 
+struct genesis_database_fixture : public clean_database_fixture
+{
+  genesis_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  virtual ~genesis_database_fixture();
+};
+
 struct curation_database_fixture : public clean_database_fixture
 {
   curation_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );

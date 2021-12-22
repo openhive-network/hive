@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <hive/protocol/config.hpp>
+
 #include <fc/saturation.hpp>
 #include <fc/uint128.hpp>
 #include <fc/time.hpp>
@@ -9,6 +11,8 @@
 #include <fc/reflect/reflect.hpp>
 
 namespace hive { namespace chain { namespace util {
+
+using fc::uint128_t;
 
 struct manabar_params
 {

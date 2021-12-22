@@ -73,7 +73,7 @@ namespace hive { namespace chain { namespace util {
     std::for_each(info.items.begin(), info.items.end(), [&rinfo]( const item& obj )
     {
       obj.calculate_time_per_count();
-      rinfo.emplace( obj.context, obj.op_name, obj.time, obj.count, obj.time_per_count, obj.broken_measurements );
+      rinfo.emplace( obj );
     });
 
     dump_impl( info, file_name );
