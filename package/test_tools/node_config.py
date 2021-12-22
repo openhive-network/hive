@@ -50,6 +50,7 @@ class NodeConfig:
         self.account_history_rocksdb_whitelist_ops = Untouched()  # Set correct type
         self.account_history_rocksdb_blacklist_ops = Untouched()  # Set correct type
         self.block_data_export_file = Untouched()  # Set correct type
+        self.block_data_skip_empty = Boolean()
         self.block_log_info_print_interval_seconds = Untouched()  # Set correct type
         self.block_log_info_print_irreversible = Untouched()  # Set correct type
         self.block_log_info_print_file = Untouched()  # Set correct type

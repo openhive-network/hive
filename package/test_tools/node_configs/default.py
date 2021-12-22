@@ -13,6 +13,7 @@ def create_default_config():
     config.history_disable_pruning = '0'
     config.account_history_rocksdb_path = 'blockchain/account-history-rocksdb-storage'
     config.block_data_export_file = 'NONE'
+    config.block_data_skip_empty = False
     config.block_log_info_print_interval_seconds = '86400'
     config.block_log_info_print_irreversible = '1'
     config.block_log_info_print_file = 'ILOG'
