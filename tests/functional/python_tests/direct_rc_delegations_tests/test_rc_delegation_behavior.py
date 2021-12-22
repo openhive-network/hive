@@ -191,7 +191,9 @@ def test_out_of_int64_rc_delegation(wallet: Wallet):
                 accounts.append(f'account-{account_number}')
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(2000))
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
+
+    with pytest.raises(exceptions.CommunicationError):
+        wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
 
 
 def test_delegations_rc_to_one_receiver(wallet: Wallet):
