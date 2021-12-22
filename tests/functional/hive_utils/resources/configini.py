@@ -11,6 +11,7 @@ class config:
 		self.history_disable_pruning = '0'
 		self.account_history_rocksdb_path = '"blockchain/account-history-rocksdb-storage"'
 		self.block_data_export_file = 'NONE'
+		self.block_data_skip_empty = '0'
 		self.block_log_info_print_interval_seconds = '86400'
 		self.block_log_info_print_irreversible = '1'
 		self.block_log_info_print_file = 'ILOG'

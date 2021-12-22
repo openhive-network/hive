@@ -34,7 +34,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_params )
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
   fc::mutable_variant_object resource_params_mvo;
 
-  for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
+  for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
   {
     std::string resource_name = fc::reflector< rc_resource_types >::to_string( i );
     result.resource_names.push_back( resource_name );
@@ -67,7 +67,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_pool )
   fc::mutable_variant_object mvo;
   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
 
-  for( size_t i=0; i<HIVE_NUM_RESOURCE_TYPES; i++ )
+  for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
   {
     resource_pool_api_object api_pool;
     api_pool.pool = pool_obj.pool_array[i];
