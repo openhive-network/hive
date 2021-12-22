@@ -67,12 +67,6 @@ namespace fc
          }
 
          template<typename T>
-         static string   to_string( T&& v, output_formatting format = stringify_large_ints_and_doubles )
-         {
-            return to_string( variant(v), format );
-         }
-
-         template<typename T>
          static string   to_pretty_string( const T& v, output_formatting format = stringify_large_ints_and_doubles )
          {
             return to_pretty_string( variant(v), format );
