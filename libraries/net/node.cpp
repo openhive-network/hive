@@ -1071,6 +1071,10 @@ namespace graphene { namespace net {
                   for( unsigned i = 0; i < peer->ids_of_items_to_get.size(); ++i )
                   {
                     item_hash_t item_to_potentially_request = peer->ids_of_items_to_get[i];
+                    if(have_already_received_sync_item(item_to_potentially_request) )
+                    {
+                      dlog("msob we have_already_received_sync_item ${s}", ("s", item_to_potentially_request));
+                    }
                     // if we don't already have this item in our temporary storage and we haven't requested from another syncing peer
                     if( !have_already_received_sync_item(item_to_potentially_request) && // already got it, but for some reson it's still in our list of items to fetch
                         sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end() &&  // we have already decided to request it from another peer during this iteration
@@ -2637,6 +2641,14 @@ namespace graphene { namespace net {
                      ("peer", originating_peer->get_remote_endpoint())
                      ("block_id", originating_peer->last_block_delegate_has_seen)
                      ("actual_block_num", _delegate->get_block_number(item_hashes_received.front())));
+
+                item_hashes_received.pop_front();
+              }
+              while (!item_hashes_received.empty() &&
+                     have_already_received_sync_item(item_hashes_received.front()))
+              {
+                assert(item_hashes_received.front() != item_hash_t());
+                dlog("msob popping item because we already have it");
 
                 item_hashes_received.pop_front();
               }
