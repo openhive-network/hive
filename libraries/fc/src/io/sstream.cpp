@@ -62,7 +62,7 @@ namespace fc {
 
     public:
 
-      custom_stream( uint32_t _buffer_size = 16'000'000 ): buffer_size( _buffer_size )
+      custom_stream( uint32_t _buffer_size = 10'000 ): buffer_size( _buffer_size )
       {
         content.resize( buffer_size );
       }
