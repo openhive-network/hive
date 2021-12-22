@@ -35,29 +35,29 @@ def test_undelegated_rc_account_reject_execute_operation(wallet: Wallet):
         wallet.api.create_account(accounts[1], 'bob', '{}')
 
 
-def test_delegations_when_delegator_lost_power(wallet: Wallet):
-#problem with withdraw vests
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts_in_one_transaction):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
-
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.01))
-    state1 = wallet.api.find_rc_accounts([accounts[0]])
-    state2 = wallet.api.get_account(accounts[0])
-    number_of_rc = rc_account_info(accounts[0], 'max_rc', wallet)
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], number_of_rc - 4)
-
-    assert rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana'] > 3
-
-    state3 = wallet.api.find_rc_accounts([accounts[0]])
-    vests_to_withdraw = account_info(accounts[0], 'vesting_shares', wallet)
-    wallet.api.withdraw_vesting(accounts[0], vests_to_withdraw)
-
-    state4 = wallet.api.find_rc_accounts([accounts[0]])
-    state5 = wallet.api.get_account(accounts[0])
+# def test_delegations_when_delegator_lost_power(wallet: Wallet):
+# #problem with withdraw vests
+#     accounts = []
+#     number_of_accounts_in_one_transaction = 10
+#     with wallet.in_single_transaction():
+#         for account_number in range(number_of_accounts_in_one_transaction):
+#             wallet.api.create_account('initminer', f'account-{account_number}', '{}')
+#             accounts.append(f'account-{account_number}')
+#
+#     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.01))
+#     state1 = wallet.api.find_rc_accounts([accounts[0]])
+#     state2 = wallet.api.get_account(accounts[0])
+#     number_of_rc = rc_account_info(accounts[0], 'max_rc', wallet)
+#     wallet.api.delegate_rc(accounts[0], [accounts[1]], number_of_rc - 300)
+#
+#     assert rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana'] <= 300
+#
+#     state3 = wallet.api.find_rc_accounts([accounts[0]])
+#     vests_to_withdraw = account_info(accounts[0], 'vesting_shares', wallet)
+#     wallet.api.withdraw_vesting(accounts[0], vests_to_withdraw)
+#
+#     state4 = wallet.api.find_rc_accounts([accounts[0]])
+#     state5 = wallet.api.get_account(accounts[0])
 
 
 def test_same_value_rc_delegation(node, wallet: Wallet):
