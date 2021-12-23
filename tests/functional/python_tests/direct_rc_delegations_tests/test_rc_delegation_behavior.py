@@ -161,7 +161,6 @@ def test_bigger_value_rc_delegation(wallet: Wallet):
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
-#probably BUG
     accounts = []
     number_of_accounts_in_one_transaction = 10
     number_of_transactions = 1
@@ -171,10 +170,9 @@ def test_large_rc_delegation(node, wallet: Wallet):
                 wallet.api.create_account('initminer', f'account-{account_number}', '{}')
                 accounts.append(f'account-{account_number}')
 
+    node.wait_for_block_with_number(3)
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(200000000))
     rc_to_delegate = int(rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']) - 11100
-    x = node.api.rc.get_resource_pool()
-    y = node.api.rc.get_resource_params()
     wallet.api.delegate_rc(accounts[0], [accounts[1]], rc_to_delegate)
     assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc_to_delegate
 
