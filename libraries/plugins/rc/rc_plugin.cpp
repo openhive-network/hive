@@ -760,6 +760,11 @@ struct pre_apply_operation_visitor
       regenerate( delegatee );
   }
 
+  void operator()( const producer_missed_operation& op )const
+  {
+    regenerate( op.producer );
+  }
+
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -1029,6 +1034,11 @@ struct post_apply_operation_visitor
 
   //nothing to do, all necessary RC updates are handled by the operation itself
   //void operator()( const delegate_rc_operation& op )const
+
+  void operator()( const producer_missed_operation& op )const
+  {
+    _mod_accounts.emplace_back( op.producer );
+  }
 
   template< typename Op >
   void operator()( const Op& op )const

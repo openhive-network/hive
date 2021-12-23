@@ -412,6 +412,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.to );
   }
 
+  void operator()( const producer_missed_operation& op )
+  {
+    _impacted.insert( op.producer );
+  }
+
   //void operator()( const operation& op ){}
 };
 
