@@ -399,7 +399,6 @@ struct get_impacted_account_visitor
     _impacted.insert( HIVE_INIT_MINER_NAME );
   }
 
-
   void operator()( const fill_recurrent_transfer_operation& op )
   {
     _impacted.insert( op.from );
@@ -415,6 +414,11 @@ struct get_impacted_account_visitor
   void operator()( const producer_missed_operation& op )
   {
     _impacted.insert( op.producer );
+  }
+
+  void operator()( const dhf_instant_conversion_operation& op )
+  {
+    _impacted.insert( op.from );
   }
 
   //void operator()( const operation& op ){}

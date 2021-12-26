@@ -123,7 +123,8 @@ namespace hive { namespace protocol {
         fill_recurrent_transfer_operation, // last_regular + 34
         failed_recurrent_transfer_operation, // last_regular + 35
         limit_order_cancelled_operation,  // last_regular + 36
-        producer_missed_operation // last_regular + 37
+        producer_missed_operation, // last_regular + 37
+        dhf_instant_conversion_operation // last_regular + 38
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

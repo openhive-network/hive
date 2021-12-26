@@ -1291,7 +1291,6 @@ void database::post_push_virtual_operation( const operation& op, const fc::optio
 
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
-  idump((note.op));
   HIVE_TRY_NOTIFY( _pre_apply_operation_signal, note )
 }
 
