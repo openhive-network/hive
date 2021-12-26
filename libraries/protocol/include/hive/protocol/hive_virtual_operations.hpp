@@ -423,11 +423,22 @@ namespace hive { namespace protocol {
      bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
  };
 
+ /*
+  *
+  struct shutdown_witness_operation : public virtual_operation
+  {
+    shutdown_witness_operation(){}
+    shutdown_witness_operation( const string& o ):owner(o) {}
+
+    account_name_type owner;
+  };
+
+  */
 
  struct producer_missed_operation : public virtual_operation {
    producer_missed_operation() {}
 
-   producer_missed_operation(const string &p) : producer(p) {}
+   producer_missed_operation(const account_name_type p) : producer(p) {}
 
    account_name_type producer;
  };
