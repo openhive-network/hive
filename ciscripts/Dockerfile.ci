@@ -27,7 +27,7 @@ RUN apt-get update && \
 FROM builder-tester-base AS test
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noniteractive apt-get install -y screen python3-pip python3-dateutil tzdata python3-junit.xml && \
+    DEBIAN_FRONTEND=noniteractive apt-get install -y screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil && \
     apt-get clean && rm -r /var/lib/apt/lists/* && \
     pip3 install -U secp256k1prp
 # the above will leave the timezone in UTC, if you want run:
