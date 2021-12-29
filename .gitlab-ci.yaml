@@ -91,7 +91,7 @@ plugin_test:
 
 .beem_setup : &beem_setup |
   python3 -m venv .python_tests
-  .python_tests/bin/activate
+  source .python_tests/bin/activate
   git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
   cd beem
   python3 -m pip install --upgrade pip
@@ -100,7 +100,6 @@ plugin_test:
   python3 setup.py install
   cd ..
   mkdir -p build/tests/hive-node-data
-  deactivate
 
 beem_tests:
   stage: test
@@ -112,7 +111,6 @@ beem_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - *beem_setup
-    - .python_tests/bin/activate
     - cd tests/functional/python_tests/dhf_tests
     - "python3 run_proposal_tests.py initminer hive.fund 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
     - rm -rf $CI_PROJECT_DIR/build/tests/hive-node-data
@@ -120,7 +118,6 @@ beem_tests:
     - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
     - cd ../hived
     - "python3 hived_test_hybrid_operations.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
-    - deactivate
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/artifacts/
@@ -143,10 +140,9 @@ list_proposals_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - *beem_setup
-    - .python_tests/bin/activate
     - cd tests/functional/python_tests/dhf_tests
     - "python3 list_proposals_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --junit-output=list_proposals_tests.xml"
-    - deactivate
+
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/hdf_list_proposal.log
