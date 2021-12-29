@@ -94,9 +94,9 @@ plugin_test:
   - python3 -m venv .python_tests
   - source .python_tests/bin/activate
   - python3 -m pip install --upgrade pip
-  - python3 -m pip install --upgrade -r requirements-test.txt
   - pip3 install junit-xml
   - cd beem
+  - python3 -m pip install --upgrade -r requirements-test.txt
   - python3 setup.py install
   - deactivate
   - cd ..
