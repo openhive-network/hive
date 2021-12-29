@@ -50,7 +50,7 @@ for test in Tests:
     try:
         proc = sub.run(
             [
-                "/usr/bin/python3",
+                "python3",
                 test,
                 args.creator,
                 args.treasury,

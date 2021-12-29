@@ -7,12 +7,12 @@ variables:
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
-  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04
-  RUNTIME_IMAGE_TAG: "@sha256:af171092c6253d072db7c83475f0669f12fb9253fca9e1f7fb4dd84c662a3b89"
-  #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04
-  BUILDER_IMAGE_TAG: "@sha256:26209d3f8692047ff51983d7941d66f24b1ef2e9c613de06a264159ed43e00b3"
-  #points registry.gitlab.syncad.com/hive/hive/test:ubuntu-20.04
-  TEST_IMAGE_TAG: "@sha256:d51375d4b2b3e45df2639154823e4efee73597c79192dbea5f6cd43e25b1fb58"
+  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-1
+  RUNTIME_IMAGE_TAG: "@sha256:b1f94fca1d7cd5fe4177340a97c4c14133814f641ad27db08b0fa4acd34034a7"
+  #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-1
+  BUILDER_IMAGE_TAG: "@sha256:a4e2cfc474c3a3696b88efd09f09bdc85342c9ee25cdec962944c49cc33bacd6"
+  #points registry.gitlab.syncad.com/hive/hive/test:ubuntu-20.04-1
+  TEST_IMAGE_TAG: "@sha256:a9ce76b0e6dc1c3b37172c7f6a3d42b2543b10197a94249e46fe790233715d80"
 
 testnet_node_build:
   stage: build
@@ -89,14 +89,18 @@ plugin_test:
   tags:
     - public-runner-docker
 
-.beem_setup : &beem_setup |
-  git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
-  cd beem
-  python3 -m pip install --upgrade pip
-  python3 -m pip install --upgrade -r requirements-test.txt
-  python3 setup.py install
-  cd ..
-  mkdir -p build/tests/hive-node-data
+.beem_setup : &beem_setup
+  - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
+  - python3 -m venv .python_tests
+  - source .python_tests/bin/activate
+  - python3 -m pip install --upgrade pip
+  - pip3 install junit-xml
+  - pip3 install python-dateutil
+  - cd beem
+  - python3 -m pip install --upgrade -r requirements-test.txt
+  - python3 setup.py install
+  - cd ..
+  - mkdir -p build/tests/hive-node-data
 
 beem_tests:
   stage: test
@@ -115,6 +119,7 @@ beem_tests:
     - "python3 beem_dhf_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --no-erase-proposal --junit-output=beem_dhf_test.xml"
     - cd ../hived
     - "python3 hived_test_hybrid_operations.py initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data"
+
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/artifacts/
@@ -139,6 +144,7 @@ list_proposals_tests:
     - *beem_setup
     - cd tests/functional/python_tests/dhf_tests
     - "python3 list_proposals_tests.py initminer initminer 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --run-hived $CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived --working-dir=$CI_PROJECT_DIR/build/tests/hive-node-data --junit-output=list_proposals_tests.xml"
+
   artifacts:
     paths:
     - tests/functional/python_tests/dhf_tests/hdf_list_proposal.log
