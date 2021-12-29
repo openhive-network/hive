@@ -12,7 +12,7 @@ variables:
   #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-1
   BUILDER_IMAGE_TAG: "@sha256:a4e2cfc474c3a3696b88efd09f09bdc85342c9ee25cdec962944c49cc33bacd6"
   #points registry.gitlab.syncad.com/hive/hive/test:ubuntu-20.04-1
-  TEST_IMAGE_TAG: "@sha256:da3e6fa6b8eaab075782e6a08a107baf9103f26f0f310c33f9704863d35e302e"
+  TEST_IMAGE_TAG: "@sha256:a9ce76b0e6dc1c3b37172c7f6a3d42b2543b10197a94249e46fe790233715d80"
 
 testnet_node_build:
   stage: build
