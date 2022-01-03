@@ -1,3 +1,4 @@
+import ctypes
 from pathlib import Path
 import re
 import subprocess
@@ -64,20 +65,39 @@ def test_vote_bug(world:World):
         database_user='dev',
         database_password='devdevdev',
     )
-    task2 = threading.Thread(target=hivemind_run, args=[hivemind, node_test])
-    task2.start()
-    time.sleep(20)
-    generate_blocks(node_test, 1)
-    time.sleep(5)
-    task1 = threading.Thread(target=votes_multi, args=[wallet, node_test])
-    task1.start()
+    hivemind.set_run_parameters(trial_blocks='0')
 
-    time.sleep(10)
+    task1 = threading.Thread(target=hivemind_run, args=[hivemind, node_test])
+    task1.start()
+    task1.join()
+
+    logger.info('Generacja bloków po w celu obudzenia synca')
     generate_blocks(node_test, 1)
+
+    logger.info(f'Ostatni blok po synchronizacji 1 {node_test.get_last_block_number()}')
+    task2 = threading.Thread(target=votes_multi, args=[wallet, node_test])
+    task2.start()
+    time.sleep(10)
+    # logger.info(f'Ostatni blok przed generacją w celu podpisania głosowania: {node_test.get_last_block_number()}')
+    # generate_blocks(node_test, 1)
+    # logger.info(f'Ostatni blok po generacji w celu podpisania głosowania: {node_test.get_last_block_number()}')
+
+    logger.info(f'Ostatni blok przed synchronizacją 2 {node_test.get_last_block_number()}')
     task3 = threading.Thread(target=hivemind_run2, args=[hivemind, node_test])
     task3.start()
-    time.sleep(40)
+    logger.info(f'Ostatni blok przed synchronizacji  2 {node_test.get_last_block_number()}')
+    task3.join()
 
+
+def hivemind_run(hivemind:Hivemind, node_test):
+    hivemind.run(sync_with=node_test, run_server=False, with_time_offset='+3898')
+    time.sleep(10)
+    hivemind.stop()
+
+def hivemind_run2(hivemind: Hivemind, node_test):
+    hivemind.run(sync_with=node_test, run_server=False, with_time_offset='+3898', database_prepare=False)
+    time.sleep(10)
+    hivemind.stop()
 
 def generate_blocks(node, number_of_blocks):
     node.api.debug_node.debug_generate_blocks(
@@ -88,6 +108,21 @@ def generate_blocks(node, number_of_blocks):
         edit_if_needed=True
     )
 
+def votes_multi(wallet:Wallet, node_test):
+    logger.info('Vote start')
+    logger.info(f'Ostatni blok przed głosowaniem: {node_test.get_last_block_number()}')
+    with wallet.in_single_transaction():
+        wallet.api.vote('initminer', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy0', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy1', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy2', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy3', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy4', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy5', 'alice', 'hello-world2', 99)
+        wallet.api.vote('tommy6', 'alice', 'hello-world2', 99)
+    logger.info(f'Ostatni blok po głosowaniu: {node_test.get_last_block_number()}')
+    logger.info('Vote end')
+
 def voter(wallet:Wallet, node_test):
     logger.info('Vote start')
     logger.info(node_test.get_last_block_number())
@@ -95,15 +130,7 @@ def voter(wallet:Wallet, node_test):
     logger.info(node_test.get_last_block_number())
     logger.info('Vote end')
 
-def hivemind_run(hivemind:Hivemind, node_test):
-    hivemind.run(sync_with=node_test, run_server=False, with_time_offset='+3898')
-    time.sleep(10)
-    hivemind.stop()
 
-def hivemind_run2(hivemind: Hivemind, node_test):
-    hivemind.run(sync_with=node_test, run_server=False, with_time_offset='+3898', database_prepare= False)
-    time.sleep(10)
-    hivemind.stop()
 
 def voter_with_stop(args, wallet:Wallet, node_test):
     t = threading.currentThread()
@@ -266,18 +293,3 @@ def test_vote_bug_multivote_manual(world: World):
     time.sleep(5)
     input('Glosowanie zakończone')
     time.sleep(60)
-
-def votes_multi(wallet:Wallet, node_test):
-    logger.info('Vote start')
-    logger.info(node_test.get_last_block_number())
-    with wallet.in_single_transaction():
-        wallet.api.vote('initminer', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy0', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy1', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy2', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy3', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy4', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy5', 'alice', 'hello-world2', 99)
-        wallet.api.vote('tommy6', 'alice', 'hello-world2', 99)
-    logger.info(node_test.get_last_block_number())
-    logger.info('Vote end')
