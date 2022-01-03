@@ -39,29 +39,18 @@ namespace fc
   {
     private:
 
-      uint32_t    buffer_size   = 0;
-      uint32_t    idx_write     = 0;
-
       std::string content;
 
       void _write( const char& c )
       {
-        if( idx_write < buffer_size )
-        {
-          content[ idx_write ] = c;
-        }
-        else
-        {
-          content.push_back( c );
-        }
-        ++idx_write;
+        content += c;
       }
 
     public:
 
-      fast_stream( uint32_t _buffer_size = 10'000'000 ): buffer_size( _buffer_size )
+      fast_stream( uint32_t _buffer_size = 10'000'000 )
       {
-        content.resize( buffer_size );
+        content.reserve( _buffer_size );
       }
 
       fast_stream& operator<<( const char& v )
@@ -90,9 +79,9 @@ namespace fc
         return *this;
       }
 
-      const std::string str() const
+      std::string str()
       {
-        return content.substr(0, idx_write);
+        return content;
       }
 
       void write( const char* buf, size_t len )
