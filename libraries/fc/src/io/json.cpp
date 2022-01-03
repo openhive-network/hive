@@ -24,7 +24,7 @@ namespace fc
     template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in, uint32_t depth = 0 );
     template<typename T, json::parse_type parser_type> variant number_from_stream( T& in, uint32_t depth = 0 );
     template<typename T> variant token_from_stream( T& in, uint32_t depth = 0 );
-    void escape_string( const string& str, ostream& os, uint32_t depth = 0 );
+    template<typename T> void escape_string( const string& str, T& os, uint32_t depth = 0 );
     template<typename T> void to_stream( T& os, const variants& a, json::output_formatting format );
     template<typename T> void to_stream( T& os, const variant_object& o, json::output_formatting format );
     template<typename T> void to_stream( T& os, const variant& v, json::output_formatting format );
@@ -35,6 +35,65 @@ namespace fc
 
 namespace fc
 {
+  class fast_stream
+  {
+    private:
+
+      std::string content;
+
+      void _write( const char& c )
+      {
+        content += c;
+      }
+
+    public:
+
+      fast_stream( uint32_t _buffer_size = 10'000'000 )
+      {
+        content.reserve( _buffer_size );
+      }
+
+      fast_stream& operator<<( const char& v )
+      {
+        write( &v, 1 );
+        return *this;
+      }
+
+      fast_stream& operator<<( const char* v )
+      {
+        write( v, std::strlen(v) );
+        return *this;
+      }
+
+      fast_stream& operator<<( const std::string& v )
+      {
+        write( v.c_str(), v.size() );
+        return *this;
+      }
+
+      template<typename T>
+      fast_stream& operator<<( const T& v )
+      {
+        auto _v = std::to_string( v );
+        write( _v.c_str(), _v.size() );
+        return *this;
+      }
+
+      std::string str()
+      {
+        return content;
+      }
+
+      void write( const char* buf, size_t len )
+      {
+        if( buf == nullptr )
+          return;
+
+        for( size_t i = 0; i < len; ++i )
+          _write( buf[i] );
+      }
+  };
+
    template<typename T>
    char parseEscape( T& in, uint32_t )
    {
@@ -525,7 +584,8 @@ namespace fc
     *
     *  All other characters are printed as UTF8.
     */
-   void escape_string( const string& str, ostream& os, uint32_t )
+   template<typename T>
+   void escape_string( const string& str, T& os, uint32_t )
    {
       os << '"';
       for( auto itr = str.begin(); itr != str.end(); ++itr )
@@ -695,7 +755,7 @@ namespace fc
 
    fc::string   json::to_string( const variant& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
    {
-      fc::stringstream ss;
+      fc::fast_stream ss;
       fc::to_stream( ss, v, format );
       return ss.str();
    }
