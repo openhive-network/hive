@@ -11,6 +11,8 @@
 #include <boost/config.hpp>
 #include <boost/any.hpp>
 
+#include <fstream>
+
 /**
   * This plugin holds bindings for all APIs and their methods
   * and can dispatch JSONRPC requests to the appropriate API.
@@ -134,8 +136,23 @@ namespace detail {
             fc::time_logger _logger( "api-method-exec", method_name );
             auto _response = (plugin.*method)( args.as< Args >(), /* lock= */ true ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
 
+            std::ofstream myfile;
+            myfile.open ("mario-time-log.csv");
+
+            fc::time_logger_ex::instance().clear();
+
             _logger.start( "api-response-to-variant", method_name );
-            return fc::variant( std::move( _response ) );
+            fc::variant _v = fc::variant( std::move( _response ) );
+            _logger.stop();
+
+            for( auto& item : fc::time_logger_ex::instance().data )
+            {
+              myfile<<item.first<<";"<<item.second<<std::endl;
+            }
+            
+            myfile.close();
+
+            return _v;
           },
           api_method_signature{ fc::variant( Args() ), fc::variant( Ret() ) } );
       }

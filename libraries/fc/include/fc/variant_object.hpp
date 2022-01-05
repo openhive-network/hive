@@ -70,18 +70,23 @@ namespace fc
 
       template<typename T>
       variant_object( const map<string,T>& values )
-      :_key_value( new std::vector<entry>() ) {
+      {
+         time_logger_ex::instance().start("variant_object( const map<string,T>& values )");
+         _key_value = std::make_shared<std::vector<entry> >();
          _key_value->reserve( values.size() );
          for( const auto& item : values ) {
             _key_value->emplace_back( entry( item.first, fc::variant(item.second) ) );
          }
+         time_logger_ex::instance().stop();
       }
        
       template<typename T>
       variant_object( string key, T&& val )
-      :_key_value( std::make_shared<std::vector<entry> >() )
       {
+         time_logger_ex::instance().start("variant_object( string key, T&& val )");
+         _key_value = std::make_shared<std::vector<entry> >();
          *this = variant_object( std::move(key), variant(forward<T>(val)) );
+         time_logger_ex::instance().stop();
       }
       variant_object( const variant_object& );
       variant_object( variant_object&& );
@@ -201,27 +206,33 @@ namespace fc
       explicit mutable_variant_object( T&& v )
       :_key_value( new std::vector<entry>() )
       {
+         time_logger_ex::instance().start("explicit mutable_variant_object( T&& v )");
           *this = variant(fc::forward<T>(v)).get_object();
+         time_logger_ex::instance().stop();
       }
 
       mutable_variant_object();
 
       template<typename T>
-      mutable_variant_object( const map<string,T>& values )
-      :_key_value( new std::vector<entry>() ) {
+      mutable_variant_object( const map<string,T>& values ) {
+         time_logger_ex::instance().start("mutable_variant_object( const map<string,T>& values )");
+         _key_value.reset( new std::vector<entry>() );
          _key_value->reserve( values.size() );
          for( const auto& item : values ) {
             _key_value->emplace_back( variant_object::entry( item.first, fc::variant(item.second) ) );
          }
+         time_logger_ex::instance().stop();
       }
 
       /** initializes the first key/value pair in the object */
       mutable_variant_object( string key, variant val );
       template<typename T>
       mutable_variant_object( string key, T&& val )
-      :_key_value( new std::vector<entry>() )
       {
+         time_logger_ex::instance().start("mutable_variant_object( string key, T&& val )");
+         _key_value.reset( new std::vector<entry>() );
          set( std::move(key), variant(forward<T>(val)) );
+         time_logger_ex::instance().stop();
       }
 
       mutable_variant_object( mutable_variant_object&& );
@@ -245,7 +256,9 @@ namespace fc
    template<typename T>
    void to_variant( const std::map<string, T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::map<string, T>& var,  variant& vo )");
        vo = variant_object( var );
+      time_logger_ex::instance().stop();
    }
 
    template<typename T>

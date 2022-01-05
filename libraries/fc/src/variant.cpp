@@ -100,14 +100,18 @@ variant::variant( bool val )
 
 variant::variant( char* str )
 {
+   time_logger_ex::instance().start("variant::variant( char* str )");
    *reinterpret_cast<string**>(this)  = new string( str );
    set_variant_type( this, string_type );
+   time_logger_ex::instance().stop();
 }
 
 variant::variant( const char* str )
 {
+   time_logger_ex::instance().start("variant::variant( const char* str )");
    *reinterpret_cast<string**>(this)  = new string( str );
    set_variant_type( this, string_type );
+   time_logger_ex::instance().stop();
 }
 
 // TODO: do a proper conversion to utf8
@@ -234,6 +238,7 @@ variant& variant::operator=( const variant& v )
    if( this == &v )
       return *this;
 
+   time_logger_ex::instance().start("variant& variant::operator=( const variant& v )");
    clear();
    switch( v.get_type() )
    {
@@ -253,6 +258,7 @@ variant& variant::operator=( const variant& v )
          memcpy( this, &v, sizeof(v) );
    }
    set_variant_type( this, v.get_type() );
+   time_logger_ex::instance().stop();
    return *this;
 }
 
@@ -656,9 +662,11 @@ void from_variant( const variant& var,  string& vo )
 
 void to_variant( const std::vector<char>& var,  variant& vo )
 {
+  time_logger_ex::instance().start("void to_variant( const std::vector<char>& var,  variant& vo )");
   if( var.size() )
       vo = variant(to_hex(var.data(),var.size()));
   else vo = "";
+  time_logger_ex::instance().stop();
 }
 void from_variant( const variant& var,  std::vector<char>& vo )
 {
@@ -675,6 +683,7 @@ void from_variant( const variant& var,  std::vector<char>& vo )
 
 string      format_string( const string& format, const variant_object& args )
 {
+   time_logger_ex::instance().start("string      format_string( const string& format, const variant_object& args )");
    stringstream ss;
    size_t prev = 0;
    auto next = format.find( '$' );
@@ -731,6 +740,7 @@ string      format_string( const string& format, const variant_object& args )
         next = format.find( '$', prev );
      }
    }
+   time_logger_ex::instance().stop();
    return ss.str();
 }
    #ifdef __APPLE__

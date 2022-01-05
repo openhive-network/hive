@@ -17,8 +17,57 @@
 #include <fc/smart_ref_fwd.hpp>
 #include <boost/multi_index_container_fwd.hpp>
 
+#include<chrono>
+
 namespace fc
 {
+class time_logger_ex
+{
+  private:
+
+    uint64_t val = 0;
+    std::string info;
+
+    time_logger_ex(){}
+
+  public:
+
+    std::map<std::string, uint64_t> data;
+
+    static time_logger_ex& instance()
+    {
+      static time_logger_ex _instance;
+      return _instance;
+    }
+
+    void clear()
+    {
+      data.clear();
+    }
+
+    void start( std::string _info )
+    {
+      info = _info;
+      val = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+    }
+
+    void stop()
+    {
+      uint64_t _val = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - val;
+
+      auto _found = data.find(info);
+      if( _found == data.end() )
+      {
+        data.insert( std::make_pair( info, _val ) );
+      }
+      else
+      {
+        _found->second += _val;
+      }
+    }
+
+};
+
    /**
     * @defgroup serializable Serializable _types
     * @brief Clas_ses that may be converted to/from an variant
@@ -394,11 +443,13 @@ namespace fc
    template<typename T>
    void to_variant( const std::unordered_set<T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::unordered_set<T>& var,  variant& vo )");
        std::vector<variant> vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = variant(*itr);
        vo = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename T>
    void from_variant( const variant& var,  std::unordered_set<T>& vo )
@@ -414,11 +465,13 @@ namespace fc
    template<typename K, typename T>
    void to_variant( const std::unordered_map<K, T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::unordered_map<K, T>& var,  variant& vo )");
        std::vector< variant > vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = fc::variant(*itr);
        vo = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename K, typename T>
    void from_variant( const variant& var,  std::unordered_map<K, T>& vo )
@@ -434,11 +487,13 @@ namespace fc
    template<typename K, typename T>
    void to_variant( const std::map<K, T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::map<K, T>& var,  variant& vo )");
        std::vector< variant > vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = fc::variant(*itr);
        vo = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename K, typename T>
    void from_variant( const variant& var,  std::map<K, T>& vo )
@@ -452,11 +507,13 @@ namespace fc
    template<typename K, typename T>
    void to_variant( const std::multimap<K, T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::multimap<K, T>& var,  variant& vo )");
        std::vector< variant > vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = fc::variant(*itr);
        vo = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename K, typename T>
    void from_variant( const variant& var,  std::multimap<K, T>& vo )
@@ -471,11 +528,13 @@ namespace fc
    template<typename... T>
    void to_variant( const std::set<T...>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::set<T...>& var,  variant& vo )");
        std::vector<variant> vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = variant(*itr);
        vo = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename... T>
    void from_variant( const variant& var,  std::set<T...>& vo )
@@ -490,11 +549,13 @@ namespace fc
    template<typename... T>
    void to_variant( const std::multiset<T...>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::multiset<T...>& var,  variant& vo )");
        std::vector<variant> vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = variant(*itr);
        vo = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename... T>
    void from_variant( const variant& var,  std::multiset<T...>& vo )
@@ -520,10 +581,12 @@ namespace fc
    template<typename T>
    void to_variant( const std::deque<T>& t, variant& v )
    {
+      time_logger_ex::instance().start("void to_variant( const std::deque<T>& t, variant& v )");
       std::vector<variant> vars(t.size());
       for( size_t i = 0; i < t.size(); ++i )
          vars[i] = variant(t[i]);
       v = std::move(vars);
+      time_logger_ex::instance().stop();
    }
 
 
@@ -542,10 +605,12 @@ namespace fc
    template<typename T>
    void to_variant( const std::vector<T>& t, variant& v )
    {
+      time_logger_ex::instance().start("void to_variant( const std::vector<T>& t, variant& v )");
       std::vector<variant> vars(t.size());
        for( size_t i = 0; i < t.size(); ++i )
           vars[i] = variant(t[i]);
        v = std::move(vars);
+      time_logger_ex::instance().stop();
    }
 
 
@@ -553,10 +618,12 @@ namespace fc
    template<typename A, typename B>
    void to_variant( const std::pair<A,B>& t, variant& v )
    {
+      time_logger_ex::instance().start("void to_variant( const std::pair<A,B>& t, variant& v )");
       std::vector<variant> vars(2);
       vars[0] = variant(t.first);
       vars[1] = variant(t.second);
        v = vars;
+      time_logger_ex::instance().stop();
    }
    template<typename A, typename B>
    void from_variant( const variant& v, std::pair<A,B>& p )
@@ -581,25 +648,31 @@ namespace fc
    template<typename T>
    void to_variant( const std::shared_ptr<T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::shared_ptr<T>& var,  variant& vo )");
       if( var ) to_variant( *var, vo );
       else vo = nullptr;
+      time_logger_ex::instance().stop();
    }
 
    template<typename T>
    void from_variant( const variant& var,  std::shared_ptr<T>& vo )
    {
+      time_logger_ex::instance().start("void from_variant( const variant& var,  std::shared_ptr<T>& vo )");
       if( var.is_null() ) vo = nullptr;
       else if( vo ) from_variant( var, *vo );
       else {
           vo = std::make_shared<T>();
           from_variant( var, *vo );
       }
+      time_logger_ex::instance().stop();
    }
    template<typename T>
    void to_variant( const std::unique_ptr<T>& var,  variant& vo )
    {
+      time_logger_ex::instance().start("void to_variant( const std::unique_ptr<T>& var,  variant& vo )");
       if( var ) to_variant( *var, vo );
       else vo = nullptr;
+      time_logger_ex::instance().stop();
    }
 
    template<typename T>
