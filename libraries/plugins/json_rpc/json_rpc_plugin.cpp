@@ -22,6 +22,8 @@ using hive::protocol::legacy_switcher;
 
 namespace detail
 {
+  hive::plugins::json_rpc::json_rpc_plugin* register_api_method_visitor::_json_rpc_plugin = nullptr;
+
   struct json_rpc_error
   {
     json_rpc_error()
@@ -172,11 +174,24 @@ namespace detail
           _logger->log(request, response);
       }
 
+      void time_log_start(const std::string _info, std::string _additional_info )
+      {
+        if(_time_logger)
+          _time_logger->start( _info, _additional_info );
+      }
+
+      void time_log_stop()
+      {
+        if(_time_logger)
+          _time_logger->stop();
+      }
+
       DECLARE_API(
         (get_methods)
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
+      std::unique_ptr< fc::time_logger >                 _time_logger;
 
       chain::database& _db;
   };
@@ -473,10 +488,14 @@ using detail::json_rpc_logger;
 json_rpc_plugin::json_rpc_plugin(){}
 json_rpc_plugin::~json_rpc_plugin() {}
 
-void json_rpc_plugin::set_program_options( options_description& , options_description& cfg)
+void json_rpc_plugin::set_program_options( options_description& cli, options_description& cfg)
 {
   cfg.add_options()
     ("log-json-rpc", bpo::value< string >(), "json-rpc log directory name.")
+    ;
+
+  cli.add_options()
+    ("log-json-performance-rpc", bpo::bool_switch()->default_value(false), "performance log is visible.")
     ;
 }
 
@@ -496,6 +515,11 @@ void json_rpc_plugin::plugin_initialize( const variables_map& options )
       fc::remove_all(p);
     fc::create_directories(p);
     my->_logger.reset(new json_rpc_logger(dir_name));
+  }
+
+  if( options.count( "log-json-performance-rpc" ) && options.at( "log-json-performance-rpc" ).as< bool >() )
+  {
+    my->_time_logger.reset(new fc::time_logger());
   }
 }
 
@@ -535,9 +559,13 @@ string json_rpc_plugin::call( const string& message )
         responses.reserve( messages.size() );
 
         for( auto& m : messages )
-          responses.push_back( my->rpc( m ) );
+          responses.emplace_back( my->rpc( m ) );
 
-        return fc::json::to_string( responses );
+        my->time_log_start( "api-response-from-variant-to-string", message );
+        auto _result = fc::json::to_string( responses );
+        my->time_log_stop();
+
+        return _result;
       }
       else
       {
@@ -549,7 +577,13 @@ string json_rpc_plugin::call( const string& message )
     }
     else
     {
-      return fc::json::to_string( my->rpc( v ) );
+      auto _response = my->rpc( v );
+
+      my->time_log_start( "api-response-from-variant-to-string", message );
+      auto _result = fc::json::to_string( _response );
+      my->time_log_stop();
+
+      return _result;
     }
   }
   catch( fc::exception& e )
@@ -566,6 +600,16 @@ string json_rpc_plugin::call( const string& message )
     return fc::json::to_string( response );
   }
 
+}
+
+void json_rpc_plugin::time_log_start( const std::string info, std::string additional_info )
+{
+  my->time_log_start( info, additional_info );
+}
+
+void json_rpc_plugin::time_log_stop()
+{
+  my->time_log_stop();
 }
 
 } } } // hive::plugins::json_rpc

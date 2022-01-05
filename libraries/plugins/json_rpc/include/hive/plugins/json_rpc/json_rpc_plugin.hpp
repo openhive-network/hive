@@ -8,6 +8,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/exception/exception.hpp>
+#include <fc/log/time_logger.hpp>
 
 #include <boost/config.hpp>
 #include <boost/any.hpp>
@@ -107,6 +108,9 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
     void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
     string call( const string& body );
 
+    void time_log_start( const std::string info, std::string additional_info );
+    void time_log_stop();
+
   private:
     std::unique_ptr< detail::json_rpc_plugin_impl > my;
 };
@@ -117,9 +121,10 @@ namespace detail {
   {
     public:
       register_api_method_visitor( const std::string& api_name )
-        : _api_name( api_name ),
-          _json_rpc_plugin( appbase::app().get_plugin< hive::plugins::json_rpc::json_rpc_plugin >() )
-      {}
+        : _api_name( api_name )
+      {
+        _json_rpc_plugin = appbase::app().find_plugin< hive::plugins::json_rpc::json_rpc_plugin >();
+      }
 
       template< typename Plugin, typename Method, typename Args, typename Ret >
       void operator()(
@@ -129,17 +134,27 @@ namespace detail {
         Args* args,
         Ret* ret )
       {
-        _json_rpc_plugin.add_api_method( _api_name, method_name,
-          [&plugin,method]( const fc::variant& args ) -> fc::variant
+        FC_ASSERT( _json_rpc_plugin, "JSON plugin has to exist" );
+        _json_rpc_plugin->add_api_method( _api_name, method_name,
+          [&plugin,method,method_name]( const fc::variant& args ) -> fc::variant
           {
-            return fc::variant( (plugin.*method)( args.as< Args >(), /* lock= */ true ) ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
+            FC_ASSERT( _json_rpc_plugin, "JSON plugin has to exist" );
+            _json_rpc_plugin->time_log_start( "api-method-exec", method_name );
+            auto _response = (plugin.*method)( args.as< Args >(), /* lock= */ true ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
+
+            _json_rpc_plugin->time_log_start( "api-response-to-variant", method_name );
+
+            auto _result = fc::variant( _response );
+            _json_rpc_plugin->time_log_stop();
+
+            return _result;
           },
           api_method_signature{ fc::variant( Args() ), fc::variant( Ret() ) } );
       }
 
     private:
       std::string _api_name;
-      hive::plugins::json_rpc::json_rpc_plugin& _json_rpc_plugin;
+      static hive::plugins::json_rpc::json_rpc_plugin* _json_rpc_plugin;
   };
 
 }
