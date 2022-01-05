@@ -73,9 +73,9 @@ namespace fc
         return *this;
       }
 
-      std::string str()
+      std::string&& str()
       {
-        return content;
+        return std::move( content );
       }
   };
 
