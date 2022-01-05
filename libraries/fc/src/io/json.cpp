@@ -41,56 +41,41 @@ namespace fc
 
       std::string content;
 
-      void _write( const char& c )
-      {
-        content += c;
-      }
-
     public:
 
-      fast_stream( uint32_t _buffer_size = 10'000'000 )
+      fast_stream( uint32_t buffer_size = 10'000'000 )
       {
-        content.reserve( _buffer_size );
+        content.reserve( buffer_size );
       }
 
       fast_stream& operator<<( const char& v )
       {
-        write( &v, 1 );
+        content += v;
         return *this;
       }
 
       fast_stream& operator<<( const char* v )
       {
-        write( v, std::strlen(v) );
+        content.append( v, std::strlen(v) );
         return *this;
       }
 
       fast_stream& operator<<( const std::string& v )
       {
-        write( v.c_str(), v.size() );
+        content.append( v );
         return *this;
       }
 
       template<typename T>
       fast_stream& operator<<( const T& v )
       {
-        auto _v = std::to_string( v );
-        write( _v.c_str(), _v.size() );
+        content.append( std::move( std::to_string( v ) ) );
         return *this;
       }
 
       std::string str()
       {
         return content;
-      }
-
-      void write( const char* buf, size_t len )
-      {
-        if( buf == nullptr )
-          return;
-
-        for( size_t i = 0; i < len; ++i )
-          _write( buf[i] );
       }
   };
 
