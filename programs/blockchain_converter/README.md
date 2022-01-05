@@ -67,3 +67,92 @@ Convert blocks from `api.deathwing.me` and send converted transactions to `127.0
 ```
 blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
+
+## Configuring altered P2P network
+If you have successfully converted your blockchain using one of the previously mentioned [conversion examples](#Example%20run), you can now create your altered peer-to-peer network.
+
+Our goal is to run two separate nodes that will see each other in the peer-to-peer network, producing and signing new blocks using the main 21 witnesses while simultaneously exchanging the information between each other.
+
+For that purpose, we will build and configure two nodes (remember to enable the `HIVE_CONVERTER_BUILD` option while running CMake. Otherwise you will be not able to change the chain id):
+* `alice-hived` with the configuration directory at `alice-data`
+* `bob-hived` with the configuration directory at `bob-data`
+
+First, you will have to replay nodes using the same altered `block_log` file (copy the converted block log to the `data/blockchain` directory).
+Also, we do not want them to synchronize with the network yet, so we will have to use the `exit-before-sync` flag:
+```
+alice-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+```
+```
+bob-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+```
+Remember the last irreversible block number.
+
+Now retrieve the main 21 witnesses. You can do that by - for example - iterating through the last 21 blocks starting from the last irreversible block (you can find this data on e.g. [hiveblocks.com](hiveblocks.com)).
+
+Then apply the proper config in your configuration file for the first node (add just one witness) (for example, it will be `gtg`):
+```
+# Enable the `witness` plugin
+plugin = witness
+
+# Run peer-to-peer endpoint on the node
+p2p-endpoint = 0.0.0.0:40401
+
+# Do not require any participation
+required-participation = 0
+
+# We should first enable the stale production
+enable-stale-production = true
+
+# main witness
+witness="gtg"
+
+# witness signing key
+private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+```
+Then you should run the first node (Alice):
+```
+alice-hived -d alice-data --chain-id 1
+```
+
+Just after running the first node, configure the second one (Bob) with P2P endpoint and seeds. You should also add the rest of the witnesses:
+```
+# Enable the `witness` plugin
+plugin = witness
+
+# Run peer-to-peer endpoint on the node and configure the seeds
+p2p-endpoint = 0.0.0.0:40402
+# Alice node:
+p2p-seed-node=127.0.0.1:40401
+
+# Do not require any participation
+required-participation = 0
+
+# We should first enable the stale production
+enable-stale-production = true
+
+# main witness
+witness="blocktrades"
+# ... (witnesses)
+witness="good-karma"
+
+# witness signing key
+private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+```
+Then run this node:
+```
+bob-hived -d bob-data --chain-id 1
+```
+
+After running the second node, stop the first one, open its configuration (Alice configuration) and add a seed node:
+```
+# Bob node:
+p2p-seed-node=127.0.0.1:40402
+```
+Re-run the node (Alice):
+```
+alice-hived -d alice-data --chain-id 1
+```
+
+Now your nodes should be able to communicate with each other and produce blocks.
+
+You can also now disable the stale production and increase the required participation in the configuration files.
