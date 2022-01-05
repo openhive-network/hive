@@ -23,6 +23,8 @@ struct api_operation_object
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
     trx_in_block( op_obj.trx_in_block ),
+    op_in_trx( op_obj.op_in_trx ),
+    virtual_op( op_obj.virtual_op ),
     timestamp( op_obj.timestamp )
   {
     op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op_obj.serialized_op );
