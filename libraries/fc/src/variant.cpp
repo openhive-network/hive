@@ -652,7 +652,9 @@ void from_variant( const variant& var,  float& vo )
 
 void to_variant( const std::string& s, variant& v )
 {
+  time_logger_ex::instance().start("void to_variant( const std::string& s, variant& v )");
     v = variant( fc::string(s) );
+  time_logger_ex::instance().stop();
 }
 
 void from_variant( const variant& var,  string& vo )

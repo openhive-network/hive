@@ -77,6 +77,7 @@ namespace fc
       {
          if( itr->key() == key )
          {
+            time_logger_ex::instance().stop();
             return itr;
          }
       }
@@ -235,6 +236,7 @@ namespace fc
       {
          if( itr->key() == key )
          {
+            time_logger_ex::instance().stop();
             return itr;
          }
       }
@@ -254,6 +256,7 @@ namespace fc
       {
          if( itr->key() == key )
          {
+            time_logger_ex::instance().stop();
             return itr;
          }
       }

@@ -189,7 +189,9 @@ namespace fc
   using namespace std;
   void to_variant( const hive::protocol::public_key_type& var,  fc::variant& vo )
   {
+    time_logger_ex::instance().start("void to_variant( const hive::protocol::public_key_type& var,  fc::variant& vo )");
     vo = std::string( var );
+    time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var,  hive::protocol::public_key_type& vo )
@@ -199,7 +201,9 @@ namespace fc
 
   void to_variant( const hive::protocol::extended_public_key_type& var, fc::variant& vo )
   {
+    time_logger_ex::instance().start("void to_variant( const hive::protocol::extended_public_key_type& var, fc::variant& vo )");
     vo = std::string( var );
+    time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var, hive::protocol::extended_public_key_type& vo )
@@ -209,7 +213,9 @@ namespace fc
 
   void to_variant( const hive::protocol::extended_private_key_type& var, fc::variant& vo )
   {
+    time_logger_ex::instance().start("void to_variant( const hive::protocol::extended_private_key_type& var, fc::variant& vo )");
     vo = std::string( var );
+    time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var, hive::protocol::extended_private_key_type& vo )
