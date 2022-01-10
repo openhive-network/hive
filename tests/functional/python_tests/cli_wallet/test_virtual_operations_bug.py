@@ -1,3 +1,4 @@
+import threading
 import time
 from datetime import datetime, timezone, timedelta
 import re
@@ -20,13 +21,19 @@ def test_get_account_history(wallet: Wallet, world: World):
     wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
     wallet.api.create_account('initminer', 'alice', '{}')
     node.wait_for_block_with_number(10)
-    with pytest.raises(exceptions.CommunicationError):
-        wallet.api.vote('alice', 'bob', 'hello-world', 97)
-    # wallet.api.vote('initminer', 'bob', 'hello-world', 97)
+    # with pytest.raises(exceptions.CommunicationError):
+    #     wallet.api.vote('alice', 'bob', 'hello-world', 97)
+    wallet.api.vote('initminer', 'bob', 'hello-world', 97)
 
     node.wait_for_block_with_number(31)
     api1 = node.api.account_history.get_account_history(
         account='initminer',
+        start=-1,
+        limit=1000
+    )
+
+    api2 = node.api.account_history.get_account_history(
+        account='bob',
         start=-1,
         limit=1000
     )
@@ -49,7 +56,7 @@ def test_enum_virtual_ops(wallet: Wallet, world: World):
 
     ##########################################################accounts creation
     client_accounts = []
-    number_of_accounts_in_one_transaction = 110
+    number_of_accounts_in_one_transaction = 210
     number_of_transactions = 1
     number_of_accounts = number_of_accounts_in_one_transaction * number_of_transactions
     account_number_absolute = 0
@@ -70,16 +77,16 @@ def test_enum_virtual_ops(wallet: Wallet, world: World):
     node.wait_for_block_with_number(15)
 
     with pytest.raises(exceptions.CommunicationError):
-        for y in range(2):
+        for y in range(1):
             with wallet.in_single_transaction():
-                for x in range(10):
+                for x in range(200):
                     wallet.api.vote(client_accounts[x], 'bob', 'hello-world', 98)
 
 
 
     node.wait_for_block_with_number(15 + 21)
     api1 = node.api.account_history.enum_virtual_ops(
-        block_range_begin=1,
+        block_range_begin=13,
         block_range_end=40,
         include_reversible=True,
         group_by_block=False,
@@ -131,3 +138,70 @@ def test_get_ops_in_block(wallet: Wallet, world: World):
     )
 
     time.sleep(23213)
+
+
+def test_two_huge_posts(wallet: Wallet, world: World):
+    node = world.create_api_node()
+    node.run(replay_from='/home/dev/src/hive/tests/functional/python_tests/cli_wallet/generated_during_test_virtual_operations_bug/test_replay_from_external_block_log/InitNode/blockchain/block_log', )
+    wallet = Wallet(attach_to=node)
+    z = node.get_http_endpoint()
+    logger.info(z)
+
+    #load files
+    with open('/home/dev/Downloads/output-onlinefiletools.txt', 'r') as file:
+        data1 = file.read().replace('\n', '')
+    with open('/home/dev/Downloads/output-onlinefiletools(1).txt', 'r') as file:
+        data2 = file.read().replace('\n', '')
+
+    wallet.api.create_account('initminer', 'alice', '{}')
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(20000000))
+
+    wallet.api.create_account('initminer', 'bob', '{}')
+    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(20000000))
+
+    # with wallet.in_single_transaction():
+    #     wallet.api.post_comment('alice', 'hello-world1', '', 'xyz1', 'something about world1', data1, '{}')
+    #     wallet.api.post_comment('bob', 'hello-world2', '', 'xyz2', 'something about world2', data2, '{}')
+    task1 = threading.Thread(target=post_comment, args=[wallet, data1, data2])
+    task1.start()
+
+    node.wait_for_block_with_number(31)
+
+    api1 = node.api.account_history.enum_virtual_ops(
+        block_range_begin=1,
+        block_range_end=40,
+        include_reversible=False,
+        group_by_block=False,
+        operation_begin=0
+    )
+
+    api2 = node.api.account_history.get_account_history(
+        account='alice',
+        start=-1,
+        limit=1000
+    )
+
+    api3 = node.api.account_history.get_account_history(
+        account='bob',
+        start=-1,
+        limit=1000
+    )
+
+    time.sleep(23213)
+
+def post_comment(wallet, data1, data2):
+    with wallet.in_single_transaction():
+        wallet.api.post_comment('alice', 'hello-world1', '', 'xyz1', 'something about world1', data1, '{}')
+        wallet.api.post_comment('bob', 'hello-world2', '', 'xyz2', 'something about world2', data2, '{}')
+
+
+# def test_replay_from_external_block_log(world):
+#     init_node = world.create_init_node()
+#     init_node.run()
+#     init_node.wait_for_block_with_number(10)
+#     init_node.close()
+#
+#     external_block_log_path = init_node.get_block_log().get_path()
+#
+#     replaying_node = world.create_api_node()
+#     # replaying_node.run(replay_from=external_block_log_path, stop_at_block=50, wait_for_live=False)
