@@ -70,6 +70,8 @@ class block_data_export_plugin : public appbase::plugin< block_data_export_plugi
       register_export_data_factory( name, []() -> std::shared_ptr< exportable_block_data > { return std::make_shared<T>(); } );
     }
 
+    void unregister_export_data( const std::string& name );
+
   private:
     std::unique_ptr< detail::block_data_export_plugin_impl > my;
 };

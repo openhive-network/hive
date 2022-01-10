@@ -14,24 +14,26 @@ namespace hive { namespace plugins { namespace rc {
 using hive::plugins::block_data_export::exportable_block_data;
 using hive::protocol::account_name_type;
 
-struct rc_transaction_info
+struct rc_info
 {
   account_name_type         resource_user;
   count_resources_result    usage;
-  fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES >
-                    cost;
+  resource_cost_type        cost;
 };
 
-typedef rc_transaction_info rc_optional_action_info;
+typedef rc_info rc_transaction_info;
+typedef rc_info rc_optional_action_info;
 
 struct rc_block_info
 {
-  resource_count_type       dt;
   resource_count_type       decay;
-  resource_count_type       budget;
+  resource_count_type       budget; //aside from pool of new accounts this is constant
   resource_count_type       usage;
-  resource_count_type       adjustment;
   resource_count_type       pool;
+  fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES >
+                            pool_share;
+  int64_t                   regen = 0;
+  int64_t                   new_accounts_adjustment = 0;
 };
 
 struct exp_rc_data
@@ -56,12 +58,13 @@ FC_REFLECT( hive::plugins::rc::rc_transaction_info,
 )
 
 FC_REFLECT( hive::plugins::rc::rc_block_info,
-  (dt)
   (decay)
   (budget)
   (usage)
-  (adjustment)
   (pool)
+  (pool_share)
+  (regen)
+  (new_accounts_adjustment)
 )
 
 FC_REFLECT( hive::plugins::rc::exp_rc_data,

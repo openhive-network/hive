@@ -190,6 +190,13 @@ hardfork_database_fixture::~hardfork_database_fixture()
 {
 }
 
+genesis_database_fixture::genesis_database_fixture( uint16_t shared_file_size_in_mb )
+  : clean_database_fixture( shared_file_size_in_mb, 0 )
+{}
+
+genesis_database_fixture::~genesis_database_fixture()
+{}
+
 curation_database_fixture::curation_database_fixture( uint16_t shared_file_size_in_mb )
   : clean_database_fixture( ( configuration_data.set_cashout_related_values( //apply HF25 mainnet values
     0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 ), shared_file_size_in_mb ) )

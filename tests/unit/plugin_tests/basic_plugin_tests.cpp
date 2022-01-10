@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
 
     BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_object ), 368u );
     //singleton
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 48u );
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 136u );
     //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 64u );
     //permanent, as many as account_object, 1.3M atm
@@ -52,6 +52,8 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
     //unused
     BOOST_CHECK_EQUAL( sizeof( rc::rc_outdel_drc_edge_object ), 64u );
     //unused
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_usage_bucket_object ), 48u );
+    //always HIVE_RC_WINDOW_BUCKET_COUNT objects
 
     BOOST_CHECK_EQUAL( sizeof( reputation::reputation_object ), 32u );
     //lasting, as many as account_object, 1.3M atm
