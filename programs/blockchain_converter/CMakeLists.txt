@@ -15,11 +15,11 @@ else()
   if( HIVE_STATIC_BUILD )
     target_link_libraries( blockchain_converter PRIVATE
                           "-static-libstdc++ -static-libgcc"
-                          hive_utilities hive_protocol hive_chain condenser_api_plugin block_api_plugin appbase fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
+                          hive_utilities hive_protocol hive_chain appbase fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
     )
   else( HIVE_STATIC_BUILD )
     target_link_libraries( blockchain_converter PRIVATE
-                          hive_utilities hive_protocol hive_chain condenser_api_plugin block_api_plugin appbase fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
+                          hive_utilities hive_protocol hive_chain appbase fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
     )
   endif( HIVE_STATIC_BUILD )
 
