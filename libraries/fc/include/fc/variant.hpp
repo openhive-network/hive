@@ -629,12 +629,10 @@ class time_logger_ex
    template<typename T>
    void to_variant( const std::vector<T>& t, variant& v )
    {
-      time_logger_ex::instance().start("void to_variant( const std::vector<T>& t, variant& v )");
       std::vector<variant> vars(t.size());
        for( size_t i = 0; i < t.size(); ++i )
           vars[i] = variant(t[i]);
        v = std::move(vars);
-      time_logger_ex::instance().stop();
    }
 
 

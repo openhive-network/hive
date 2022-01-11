@@ -142,7 +142,9 @@ namespace detail {
             fc::time_logger_ex::instance().clear();
 
             _logger.start( "api-response-to-variant", method_name );
+            fc::time_logger_ex::instance().start("START");
             fc::variant _v = fc::variant( std::move( _response ) );
+            fc::time_logger_ex::instance().stop();
             _logger.stop();
 
             for( auto& item : fc::time_logger_ex::instance().data )
