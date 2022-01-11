@@ -22,29 +22,12 @@ namespace fc
    class variant_object
    {
    public:
-      /** @brief a key/value pair */
-      class entry 
-      {
-      public:
-         entry();
-         entry( string k, variant v );
-         entry( entry&& e );
-         entry( const entry& e);
-         entry& operator=(const entry&);
-         entry& operator=(entry&&);
-                
-         const string&        key()const;
-         const variant& value()const;
-         void  set( variant v );
 
-         variant&       value();
-             
-      private:
-         string  _key;
-         variant _value;
-      };
+      using pair          = std::pair<string, variant>;
+      using items_type    = std::map<string, variant>;
+      using p_items_type  = std::shared_ptr< items_type >;
 
-      typedef std::vector< entry >::const_iterator iterator;
+      using iterator      = items_type::const_iterator;
 
       /**
          * @name Immutable Interface
@@ -56,9 +39,7 @@ namespace fc
       iterator begin()const;
       iterator end()const;
       iterator find( const string& key )const;
-      iterator find( const char* key )const;
       const variant& operator[]( const string& key )const;
-      const variant& operator[]( const char* key )const;
       size_t size()const;
       bool   contains( const char* key ) const { return find(key) != end(); }
       ///@}
@@ -72,10 +53,9 @@ namespace fc
       variant_object( const map<string,T>& values )
       {
          time_logger_ex::instance().start("variant_object( const map<string,T>& values )");
-         _key_value = std::make_shared<std::vector<entry> >();
-         _key_value->reserve( values.size() );
+         _key_value = p_items_type( new items_type() );
          for( const auto& item : values ) {
-            _key_value->emplace_back( entry( item.first, fc::variant(item.second) ) );
+            _key_value->emplace( std::make_pair( item.first, fc::variant(item.second) ) );
          }
          time_logger_ex::instance().stop();
       }
@@ -84,7 +64,7 @@ namespace fc
       variant_object( string key, T&& val )
       {
          time_logger_ex::instance().start("variant_object( string key, T&& val )");
-         _key_value = std::make_shared<std::vector<entry> >();
+         _key_value = p_items_type( new items_type() );
          *this = variant_object( std::move(key), variant(forward<T>(val)) );
          time_logger_ex::instance().stop();
       }
@@ -101,7 +81,7 @@ namespace fc
       variant_object& operator=( const mutable_variant_object& );
 
    private:
-      std::shared_ptr< std::vector< entry > > _key_value;
+      p_items_type _key_value;
       friend class mutable_variant_object;
    };
    /** @ingroup Serializable */
@@ -124,11 +104,12 @@ namespace fc
    class mutable_variant_object
    {
    public:
-      /** @brief a key/value pair */
-      typedef variant_object::entry  entry;
 
-      typedef std::vector< entry >::iterator       iterator;
-      typedef std::vector< entry >::const_iterator const_iterator;
+      using pair          = variant_object::pair;
+      using items_type    = variant_object::items_type;
+      using p_items_type  = std::unique_ptr< items_type >;
+
+      using iterator      = items_type::iterator;
 
       /**
          * @name Immutable Interface
@@ -140,7 +121,6 @@ namespace fc
       iterator begin()const;
       iterator end()const;
       iterator find( const string& key )const;
-      iterator find( const char* key )const;
       const variant& operator[]( const string& key )const;
       const variant& operator[]( const char* key )const;
       size_t size()const;
@@ -159,13 +139,6 @@ namespace fc
       iterator             begin();
       iterator             end();
       void                 erase( const string& key );
-      /**
-         *
-         * @return end() if key is not found
-         */
-      iterator             find( const string& key );
-      iterator             find( const char* key );
-
 
       /** replaces the value at \a key with \a var or insert's \a key if not found */
       mutable_variant_object& set( string key, variant var );
@@ -204,7 +177,7 @@ namespace fc
 
       template<typename T>
       explicit mutable_variant_object( T&& v )
-      :_key_value( new std::vector<entry>() )
+      :_key_value( new items_type() )
       {
          time_logger_ex::instance().start("explicit mutable_variant_object( T&& v )");
           *this = variant(fc::forward<T>(v)).get_object();
@@ -216,10 +189,9 @@ namespace fc
       template<typename T>
       mutable_variant_object( const map<string,T>& values ) {
          time_logger_ex::instance().start("mutable_variant_object( const map<string,T>& values )");
-         _key_value.reset( new std::vector<entry>() );
-         _key_value->reserve( values.size() );
+         _key_value.reset( new items_type() );
          for( const auto& item : values ) {
-            _key_value->emplace_back( variant_object::entry( item.first, fc::variant(item.second) ) );
+            _key_value->emplace( std::make_pair( item.first, fc::variant(item.second) ) );
          }
          time_logger_ex::instance().stop();
       }
@@ -230,7 +202,7 @@ namespace fc
       mutable_variant_object( string key, T&& val )
       {
          time_logger_ex::instance().start("mutable_variant_object( string key, T&& val )");
-         _key_value.reset( new std::vector<entry>() );
+         _key_value.reset( new items_type );
          set( std::move(key), variant(forward<T>(val)) );
          time_logger_ex::instance().stop();
       }
@@ -245,7 +217,7 @@ namespace fc
 
 
    private:
-      std::unique_ptr< std::vector< entry > > _key_value;
+      p_items_type _key_value;
       friend class variant_object;
    };
    /** @ingroup Serializable */
@@ -267,7 +239,7 @@ namespace fc
       const auto& obj = var.get_object();
       vo.clear();
       for( auto itr = obj.begin(); itr != obj.end(); ++itr )
-         vo[itr->key()] = itr->value().as<T>();
+        vo.insert( *itr );
    }
 
 } // namespace fc

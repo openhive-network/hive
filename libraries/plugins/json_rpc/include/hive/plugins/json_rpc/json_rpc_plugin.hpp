@@ -149,7 +149,12 @@ namespace detail {
             {
               myfile<<item.first<<";"<<item.second<<std::endl;
             }
-            
+
+            if( fc::time_logger_ex::instance().cnt != 0 )
+            {
+              myfile<<"average size of elements"<<";"<<fc::time_logger_ex::instance().total_size / (double)fc::time_logger_ex::instance().cnt <<std::endl;
+            }
+
             myfile.close();
 
             return _v;

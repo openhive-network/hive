@@ -713,13 +713,13 @@ string      format_string( const string& format, const variant_object& args )
            auto val = args.find( key );
            if( val != args.end() )
            {
-              if( val->value().is_object() || val->value().is_array() )
+              if( val->second.is_object() || val->second.is_array() )
               {
-                ss << json::to_string( val->value() );
+                ss << json::to_string( val->second );
               }
               else
               {
-                ss << val->value().as_string();
+                ss << val->second.as_string();
               }
            }
            else

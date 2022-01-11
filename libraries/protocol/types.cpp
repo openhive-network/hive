@@ -5,6 +5,7 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/io/raw.hpp>
+#include <fc/variant.hpp>
 
 namespace hive { namespace protocol {
 
@@ -44,11 +45,19 @@ namespace hive { namespace protocol {
 
   public_key_type::operator std::string() const
   {
+    fc::time_logger_ex::instance().start("public_key_type::operator std::string() const");
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
     auto data = fc::raw::pack_to_vector( k );
-    return HIVE_ADDRESS_PREFIX + fc::to_base58( data.data(), data.size() );
+
+    fc::time_logger_ex::instance().stop();
+
+    fc::time_logger_ex::instance().start("public_key_type-fc::to_base58");
+    auto _res = std::move( fc::to_base58( data.data(), data.size() ) );
+    fc::time_logger_ex::instance().stop();
+
+    return HIVE_ADDRESS_PREFIX + _res;
   }
 
   bool operator == ( const public_key_type& p1, const fc::ecc::public_key& p2)
@@ -98,11 +107,20 @@ namespace hive { namespace protocol {
 
   extended_public_key_type::operator std::string() const
   {
+    fc::time_logger_ex::instance().start("extended_public_key_type::operator std::string() const");
+
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
     auto data = fc::raw::pack_to_vector( k );
-    return HIVE_ADDRESS_PREFIX + fc::to_base58( data.data(), data.size() );
+
+    fc::time_logger_ex::instance().stop();
+
+    fc::time_logger_ex::instance().start("extended_public_key_type-fc::to_base58");
+    auto _result = std::move( fc::to_base58( data.data(), data.size() ) );
+    fc::time_logger_ex::instance().stop();
+
+    return HIVE_ADDRESS_PREFIX + _result;
   }
 
   bool operator == ( const extended_public_key_type& p1, const fc::ecc::extended_public_key& p2)

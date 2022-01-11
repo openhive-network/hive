@@ -124,8 +124,8 @@ namespace fc { namespace raw {
        pack( s, vs );
        for( auto itr = v.begin(); itr != v.end(); ++itr )
        {
-          pack( s, itr->key() );
-          pack( s, itr->value() );
+          pack( s, itr->first );
+          pack( s, itr->second );
        }
     }
     template<typename Stream> 

@@ -5,53 +5,6 @@
 
 namespace fc
 {
-   // ---------------------------------------------------------------
-   // entry
-
-   variant_object::entry::entry() {}
-   variant_object::entry::entry( string k, variant v ) : _key(fc::move(k)),_value(fc::move(v)) {}
-   variant_object::entry::entry( entry&& e ) : _key(fc::move(e._key)),_value(fc::move(e._value)) {}
-   variant_object::entry::entry( const entry& e ) : _key(e._key),_value(e._value) {}
-   variant_object::entry& variant_object::entry::operator=( const variant_object::entry& e )
-   {
-      time_logger_ex::instance().start("variant_object::entry& variant_object::entry::operator=( const variant_object::entry& e )");
-      if( this != &e ) 
-      {
-         _key = e._key;
-         _value = e._value;
-      }
-      time_logger_ex::instance().stop();
-      return *this;
-   }
-   variant_object::entry& variant_object::entry::operator=( variant_object::entry&& e )
-   {
-      time_logger_ex::instance().start("variant_object::entry& variant_object::entry::operator=( variant_object::entry&& e )");
-      fc_swap( _key, e._key );
-      fc_swap( _value, e._value );
-      time_logger_ex::instance().stop();
-      return *this;
-   }
-   
-   const string&        variant_object::entry::key()const
-   {
-      return _key;
-   }
-
-   const variant& variant_object::entry::value()const
-   {
-      return _value;
-   }
-   variant& variant_object::entry::value()
-   {
-      return _value;
-   }
-
-   void  variant_object::entry::set( variant v )
-   {
-      fc_swap( _value, v );
-   }
-
-   // ---------------------------------------------------------------
    // variant_object
 
    variant_object::iterator variant_object::begin() const
@@ -67,34 +20,21 @@ namespace fc
 
    variant_object::iterator variant_object::find( const string& key )const
    {
-      return find( key.c_str() );
-   }
-
-   variant_object::iterator variant_object::find( const char* key )const
-   {
-      time_logger_ex::instance().start("variant_object::iterator variant_object::find( const char* key )const");
-      for( auto itr = begin(); itr != end(); ++itr )
-      {
-         if( itr->key() == key )
-         {
-            time_logger_ex::instance().stop();
-            return itr;
-         }
-      }
+      time_logger_ex::instance().start("variant_object::iterator variant_object::find( const string& key )const");
+      assert( _key_value != nullptr );
+      auto res = std::move( _key_value->find( key ) );
       time_logger_ex::instance().stop();
-      return end();
+      return res;
    }
 
    const variant& variant_object::operator[]( const string& key )const
    {
-      return (*this)[key.c_str()];
-   }
+     variant_object::iterator result = find( key );
 
-   const variant& variant_object::operator[]( const char* key )const
-   {
-      auto itr = find( key );
-      if( itr != end() ) return itr->value();
-      FC_THROW_EXCEPTION( key_not_found_exception, "Key ${key}", ("key",key) );
+     if( result != _key_value->end() )
+      return result->second;
+
+     FC_THROW_EXCEPTION( key_not_found_exception, "Key ${key}", ("key",key) );
    }
 
    size_t variant_object::size() const
@@ -105,16 +45,15 @@ namespace fc
    variant_object::variant_object()
    {
       time_logger_ex::instance().start("variant_object::variant_object()");
-      _key_value = std::make_shared<std::vector<entry>>();
+      _key_value = p_items_type( new items_type() );
       time_logger_ex::instance().stop();
    }
 
    variant_object::variant_object( string key, variant val )
    {
       time_logger_ex::instance().start("variant_object::variant_object( string key, variant val )");
-       //_key_value->push_back(entry(fc::move(key), fc::move(val)));
-      _key_value = std::make_shared<std::vector<entry>>();
-       _key_value->emplace_back(entry(fc::move(key), fc::move(val)));
+      _key_value = p_items_type( new items_type() );
+       _key_value->emplace(std::make_pair(fc::move(key), fc::move(val)));
       time_logger_ex::instance().stop();
    }
 
@@ -130,7 +69,7 @@ namespace fc
    {
       time_logger_ex::instance().start("variant_object::variant_object( variant_object&& obj)");
       _key_value = fc::move(obj._key_value);
-      obj._key_value = std::make_shared<std::vector<entry>>();
+      obj._key_value = p_items_type( new items_type() );
       assert( _key_value != nullptr );
       time_logger_ex::instance().stop();
    }
@@ -138,7 +77,7 @@ namespace fc
    variant_object::variant_object( const mutable_variant_object& obj )
    {
       time_logger_ex::instance().start("variant_object::variant_object( const mutable_variant_object& obj )");
-      _key_value = std::make_shared<std::vector<entry>>(*obj._key_value);
+      _key_value = p_items_type( new items_type( *obj._key_value ) );
       time_logger_ex::instance().stop();
    }
 
@@ -175,7 +114,7 @@ namespace fc
    {
       time_logger_ex::instance().start("variant_object& variant_object::operator=( mutable_variant_object&& obj )");
       _key_value = fc::move(obj._key_value);
-      obj._key_value.reset( new std::vector<entry>() );
+      obj._key_value.reset( new items_type() );
       time_logger_ex::instance().stop();
       return *this;
    }
@@ -226,42 +165,12 @@ namespace fc
 
    mutable_variant_object::iterator mutable_variant_object::find( const string& key )const
    {
-      return find( key.c_str() );
-   }
-
-   mutable_variant_object::iterator mutable_variant_object::find( const char* key )const
-   {
-      time_logger_ex::instance().start("mutable_variant_object::iterator mutable_variant_object::find( const char* key )const");
-      for( auto itr = begin(); itr != end(); ++itr )
-      {
-         if( itr->key() == key )
-         {
-            time_logger_ex::instance().stop();
-            return itr;
-         }
-      }
+      time_logger_ex::instance().start("mutable_variant_object::iterator mutable_variant_object::find( const string& key )const");
+      assert( _key_value != nullptr );
+      auto res = std::move( _key_value->find( key ) );
       time_logger_ex::instance().stop();
-      return end();
-   }
-
-   mutable_variant_object::iterator mutable_variant_object::find( const string& key )
-   {
-      return find( key.c_str() );
-   }
-
-   mutable_variant_object::iterator mutable_variant_object::find( const char* key )
-   {
-      time_logger_ex::instance().start("mutable_variant_object::iterator mutable_variant_object::find( const char* key )");
-      for( auto itr = begin(); itr != end(); ++itr )
-      {
-         if( itr->key() == key )
-         {
-            time_logger_ex::instance().stop();
-            return itr;
-         }
-      }
-      time_logger_ex::instance().stop();
-      return end();
+      time_logger_ex::instance().add_size( _key_value->size() );
+      return res;
    }
 
    const variant& mutable_variant_object::operator[]( const string& key )const
@@ -272,7 +181,7 @@ namespace fc
    const variant& mutable_variant_object::operator[]( const char* key )const
    {
       auto itr = find( key );
-      if( itr != end() ) return itr->value();
+      if( itr != end() ) return itr->second;
       FC_THROW_EXCEPTION( key_not_found_exception, "Key ${key}", ("key",key) );
    }
    variant& mutable_variant_object::operator[]( const string& key )
@@ -284,10 +193,10 @@ namespace fc
    {
       time_logger_ex::instance().start("variant& mutable_variant_object::operator[]( const char* key )");
       auto itr = find( key );
-      if( itr != end() ) return itr->value();
-      _key_value->emplace_back(entry(key, variant()));
+      if( itr != end() ) return itr->second;
+      _key_value->emplace( std::make_pair( key, variant() ) );
       time_logger_ex::instance().stop();
-      return _key_value->back().value();
+      return _key_value->rbegin()->second;
    }
 
    size_t mutable_variant_object::size() const
@@ -298,29 +207,29 @@ namespace fc
    mutable_variant_object::mutable_variant_object() 
    {
       time_logger_ex::instance().start("mutable_variant_object::mutable_variant_object()");
-      _key_value.reset( new std::vector<entry>() );
+      _key_value.reset( new items_type() );
       time_logger_ex::instance().stop();
    }
 
    mutable_variant_object::mutable_variant_object( string key, variant val )
    {
       time_logger_ex::instance().start("mutable_variant_object::mutable_variant_object( string key, variant val )");
-        _key_value.reset( new std::vector<entry>() );
-       _key_value->push_back(entry(fc::move(key), fc::move(val)));
+        _key_value.reset( new items_type() );
+       _key_value->insert( std::make_pair( fc::move(key), fc::move(val) ) );
       time_logger_ex::instance().stop();
    }
 
    mutable_variant_object::mutable_variant_object( const variant_object& obj )
    {
       time_logger_ex::instance().start("mutable_variant_object::mutable_variant_object( const variant_object& obj )");
-      _key_value.reset( new std::vector<entry>(*obj._key_value) );
+      _key_value.reset( new items_type(*obj._key_value) );
       time_logger_ex::instance().stop();
    }
 
    mutable_variant_object::mutable_variant_object( const mutable_variant_object& obj )
    {
       time_logger_ex::instance().start("mutable_variant_object::mutable_variant_object( const mutable_variant_object& obj )");
-      _key_value.reset( new std::vector<entry>(*obj._key_value) );
+      _key_value.reset( new items_type(*obj._key_value) );
       time_logger_ex::instance().stop();
    }
 
@@ -362,21 +271,14 @@ namespace fc
    void mutable_variant_object::reserve( size_t s )
    {
       time_logger_ex::instance().start("void mutable_variant_object::reserve( size_t s )");
-      _key_value->reserve(s);
+      //_key_value->reserve(s);
       time_logger_ex::instance().stop();
    }
 
    void  mutable_variant_object::erase( const string& key )
    {
       time_logger_ex::instance().start("void  mutable_variant_object::erase( const string& key )");
-      for( auto itr = begin(); itr != end(); ++itr )
-      {
-         if( itr->key() == key )
-         {
-            _key_value->erase(itr);
-            return;
-         }
-      }
+      _key_value->erase( key );
       time_logger_ex::instance().stop();
    }
 
@@ -387,11 +289,11 @@ namespace fc
       auto itr = find( key.c_str() );
       if( itr != end() )
       {
-         itr->set( fc::move(var) );
+         fc_swap( itr->second, var );
       }
       else
       {
-         _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
+         _key_value->insert( std::make_pair( fc::move(key), fc::move(var) ) );
       }
       time_logger_ex::instance().stop();
       return *this;
@@ -403,7 +305,7 @@ namespace fc
    mutable_variant_object& mutable_variant_object::operator()( string key, variant var )
    {
       time_logger_ex::instance().start("mutable_variant_object& mutable_variant_object::operator()( string key, variant var )");
-      _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
+      _key_value->insert( std::make_pair( fc::move(key), fc::move(var) ) );
       time_logger_ex::instance().stop();
       return *this;
    }
@@ -411,8 +313,8 @@ namespace fc
    mutable_variant_object& mutable_variant_object::operator()( const variant_object& vo )
    {
       time_logger_ex::instance().start("mutable_variant_object& mutable_variant_object::operator()( const variant_object& vo )");
-      for( const variant_object::entry& e : vo )
-         set( e.key(), e.value() );
+      for( const variant_object::pair& e : vo )
+         set( e.first, e.second );
       time_logger_ex::instance().stop();
       return *this;
    }
@@ -422,8 +324,8 @@ namespace fc
       time_logger_ex::instance().start("mutable_variant_object& mutable_variant_object::operator()( const mutable_variant_object& mvo )");
       if( &mvo == this )     // mvo(mvo) is no-op
          return *this;
-      for( const mutable_variant_object::entry& e : mvo )
-         set( e.key(), e.value() );
+      for( const mutable_variant_object::pair& e : mvo )
+         set( e.first, e.second );
       time_logger_ex::instance().stop();
       return *this;
    }

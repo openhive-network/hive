@@ -2151,7 +2151,7 @@ void operator()( const char* name )const                                        
 {                                                                                  \
   auto itr = vo.find( name );                                                      \
   if( itr != vo.end() )                                                            \
-    from_variant( itr->value(), val.*member );                                     \
+    from_variant( itr->second, val.*member );                                     \
   else if( enable_obsolete_call_detection && ( false                               \
     BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_ALIAS_HANDLER, name, ALIASES )               \
   ) )                                                                              \

@@ -50,7 +50,7 @@ namespace fc
          {
             auto itr = vo.find(name);
             if( itr != vo.end() )
-               from_variant( itr->value(), val.*member );
+               from_variant( itr->second, val.*member );
          }
 
          const variant_object& vo;

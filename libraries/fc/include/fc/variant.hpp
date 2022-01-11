@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <stack>
 
 #include <string.h> // memset
 
@@ -25,14 +26,22 @@ class time_logger_ex
 {
   private:
 
-    uint64_t val = 0;
-    std::string info;
+    struct Stack
+    {
+      uint64_t val = 0;
+      std::string info;
+    };
+
+    std::stack<Stack> s;
 
     time_logger_ex(){}
 
   public:
 
     std::map<std::string, uint64_t> data;
+
+    uint64_t cnt = 0;
+    uint64_t total_size = 0;
 
     static time_logger_ex& instance()
     {
@@ -42,23 +51,38 @@ class time_logger_ex
 
     void clear()
     {
+      cnt         = 0;
+      total_size  = 0;
+
+      while( !s.empty() )
+        s.pop();
+
       data.clear();
+    }
+
+    void add_size( uint64_t size )
+    {
+      total_size += size;
+      ++cnt;
     }
 
     void start( std::string _info )
     {
-      info = _info;
-      val = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+      uint64_t _tmp = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+      s.push( Stack{ _tmp, _info } );
     }
 
     void stop()
     {
-      uint64_t _val = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() - val;
+      uint64_t _val = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+      Stack _top = s.top();
+      s.pop();
+      _val = _val - _top.val;
 
-      auto _found = data.find(info);
+      auto _found = data.find( _top.info );
       if( _found == data.end() )
       {
-        data.insert( std::make_pair( info, _val ) );
+        data.insert( std::make_pair( _top.info, _val ) );
       }
       else
       {

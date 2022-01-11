@@ -83,8 +83,8 @@ namespace fc { namespace rpc {
                         variant result;
                         if( p == obj.end() )
                         {
-                           auto pmi = _methods.find(m->value().as_string());
-                           auto nmi = _named_param_methods.find(m->value().as_string());
+                           auto pmi = _methods.find(m->second.as_string());
+                           auto nmi = _named_param_methods.find(m->second.as_string());
                            if( pmi != _methods.end()  )
                            {
                                result = pmi->second( variants() );
@@ -95,44 +95,44 @@ namespace fc { namespace rpc {
                            }
                            else // invalid method
                            {
-                              FC_THROW_EXCEPTION( exception, "Invalid Method '${method}'", ("method",m->value().as_string()));
+                              FC_THROW_EXCEPTION( exception, "Invalid Method '${method}'", ("method",m->second.as_string()));
                            }
                         }
-                        else if( p->value().is_array() )
+                        else if( p->second.is_array() )
                         {
-                           auto pmi = _methods.find(m->value().as_string());
+                           auto pmi = _methods.find(m->second.as_string());
                            if( pmi != _methods.end()  )
                            {
-                               result = pmi->second( p->value().get_array() );
+                               result = pmi->second( p->second.get_array() );
                            }
                            else // invalid method / param combo
                            {
                               FC_THROW_EXCEPTION( exception, "Invalid method or params  '${method}'",
-                                                  ("method",m->value().as_string()));
+                                                  ("method",m->second.as_string()));
                            }
 
                         }
-                        else if( p->value().is_object() )
+                        else if( p->second.is_object() )
                         {
-                           auto nmi = _named_param_methods.find(m->value().as_string());
+                           auto nmi = _named_param_methods.find(m->second.as_string());
                            if( nmi != _named_param_methods.end() )
                            {
-                               result = nmi->second( p->value().get_object() );
+                               result = nmi->second( p->second.get_object() );
                            }
                            else // invalid method / param combo?
                            {
                               FC_THROW_EXCEPTION( exception, "Invalid method or params  '${method}'",
-                                                  ("method",m->value().as_string()));
+                                                  ("method",m->second.as_string()));
                            }
                         }
                         else // invalid params
                         {
                             FC_THROW_EXCEPTION( exception, "Invalid Params for method ${method}",
-                                                    ("method",m->value().as_string()));
+                                                    ("method",m->second.as_string()));
                         }
                         if( i != obj.end() )
                         {
-                           send_result( i->value(), result );
+                           send_result( i->second, result );
                         }
                      }
                      catch ( fc::exception& e )
@@ -141,13 +141,13 @@ namespace fc { namespace rpc {
                         except = e;
                      }
                      if( exception_caught && i != obj.end() )
-                        send_error( i->value(), except );
+                        send_error( i->second, except );
                      else
                         fc_wlog( _logger, "json rpc exception: ${exception}", ("exception",except) );
                   }
                   else if( i != obj.end() ) //handle any received JSON response
                   {
-                     uint64_t id = i->value().as_int64();
+                     uint64_t id = i->second.as_int64();
                      auto await = _awaiting.find(id);
                      if( await != _awaiting.end() )
                      {
@@ -155,22 +155,22 @@ namespace fc { namespace rpc {
                         auto e = obj.find("error");
                         if( r != obj.end() ) //if regular result response
                         {
-                           await->second->set_value( r->value() );
+                           await->second->set_value( r->second );
                         }
                         else if( e != obj.end() ) //if error response
                         {
                           fc::exception_ptr eptr;
                           try
                           {
-                             auto err = e->value().get_object();
+                             auto err = e->second.get_object();
                              auto data = err.find( "data" );
                              if( data != err.end() )
                              {
-                                //wlog(  "exception: ${except}", ("except", data->value() ) );
-                                await->second->set_exception( data->value().as<exception>().dynamic_copy_exception() );
+                                //wlog(  "exception: ${except}", ("except", data->second ) );
+                                await->second->set_exception( data->second.as<exception>().dynamic_copy_exception() );
                              }
                              else
-                                await->second->set_exception( exception_ptr(new FC_EXCEPTION( exception, "${error}", ("error",e->value()) ) ) );
+                                await->second->set_exception( exception_ptr(new FC_EXCEPTION( exception, "${error}", ("error",e->second) ) ) );
                           }
                           catch ( fc::exception& e )
                           {

@@ -236,15 +236,15 @@ inline void from_variant( const fc::variant& var, hive::protocol::asset_symbol_t
 
     auto nai = o.find( ASSET_SYMBOL_NAI_KEY );
     FC_ASSERT( nai != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY) );
-    FC_ASSERT( nai->value().is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY) );
+    FC_ASSERT( nai->second.is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY) );
 
     auto decimals = o.find( ASSET_SYMBOL_DECIMALS_KEY );
     FC_ASSERT( decimals != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
-    FC_ASSERT( decimals->value().is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
-    FC_ASSERT( decimals->value().as_uint64() <= HIVE_ASSET_MAX_DECIMALS,
+    FC_ASSERT( decimals->second.is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
+    FC_ASSERT( decimals->second.as_uint64() <= HIVE_ASSET_MAX_DECIMALS,
       "Expected decimals to be less than or equal to ${num}", ("num", HIVE_ASSET_MAX_DECIMALS) );
 
-    sym = asset_symbol_type::from_nai_string( nai->value().as_string().c_str(), decimals->value().as< uint8_t >() );
+    sym = asset_symbol_type::from_nai_string( nai->second.as_string().c_str(), decimals->second.as< uint8_t >() );
   } FC_CAPTURE_AND_RETHROW()
 }
 

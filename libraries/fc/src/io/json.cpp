@@ -668,9 +668,9 @@ namespace fc
 
        while( itr != o.end() )
        {
-          escape_string( itr->key(), os );
+          escape_string( itr->first, os );
           os << ':';
-          to_stream( os, itr->value(), format );
+          to_stream( os, itr->second, format );
           ++itr;
           if( itr != o.end() )
              os << ',';
