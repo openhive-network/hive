@@ -1,6 +1,6 @@
-from test_tools import Account, logger, World, Asset
-import dateutil.parser as dp
 import datetime
+
+from test_tools import Account, logger, World, Asset
 
 
 def test_transaction(wallet):
@@ -35,7 +35,7 @@ def test_transaction(wallet):
 
     _expiration = response['expiration']
 
-    parsed_t = dp.parse(_expiration)
+    parsed_t = parse_datetime(_expiration)
     t_in_seconds = parsed_t.timestamp()
     logger.info('_time: {} seconds:{}...'.format(_expiration, t_in_seconds))
 
@@ -43,7 +43,6 @@ def test_transaction(wallet):
     assert _val == 30 or _val == 31
 
     assert wallet.api.set_transaction_expiration(678) is None
-
 
     _time = datetime.datetime.utcnow()
     _before_seconds = (int)(_time.timestamp())
@@ -53,9 +52,13 @@ def test_transaction(wallet):
 
     _expiration = response['expiration']
 
-    parsed_t = dp.parse(_expiration)
+    parsed_t = parse_datetime(_expiration)
     t_in_seconds = parsed_t.timestamp()
     logger.info('_time: {} seconds:{}...'.format(_expiration, t_in_seconds))
 
     _val = t_in_seconds - _before_seconds
     assert _val == 678 or _val == 679
+
+
+def parse_datetime(datetime_: str) -> datetime.datetime:
+    return datetime.datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
