@@ -467,13 +467,13 @@ class time_logger_ex
    template<typename T>
    void to_variant( const std::unordered_set<T>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::unordered_set<T>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::unordered_set<T>& var,  variant& vo )");
        std::vector<variant> vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = variant(*itr);
        vo = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename T>
    void from_variant( const variant& var,  std::unordered_set<T>& vo )
@@ -489,13 +489,13 @@ class time_logger_ex
    template<typename K, typename T>
    void to_variant( const std::unordered_map<K, T>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::unordered_map<K, T>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::unordered_map<K, T>& var,  variant& vo )");
        std::vector< variant > vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = fc::variant(*itr);
        vo = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename K, typename T>
    void from_variant( const variant& var,  std::unordered_map<K, T>& vo )
@@ -511,13 +511,13 @@ class time_logger_ex
    template<typename K, typename T>
    void to_variant( const std::map<K, T>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::map<K, T>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::map<K, T>& var,  variant& vo )");
        std::vector< variant > vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = fc::variant(*itr);
        vo = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename K, typename T>
    void from_variant( const variant& var,  std::map<K, T>& vo )
@@ -531,13 +531,13 @@ class time_logger_ex
    template<typename K, typename T>
    void to_variant( const std::multimap<K, T>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::multimap<K, T>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::multimap<K, T>& var,  variant& vo )");
        std::vector< variant > vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = fc::variant(*itr);
        vo = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename K, typename T>
    void from_variant( const variant& var,  std::multimap<K, T>& vo )
@@ -552,13 +552,13 @@ class time_logger_ex
    template<typename... T>
    void to_variant( const std::set<T...>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::set<T...>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::set<T...>& var,  variant& vo )");
        std::vector<variant> vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = variant(*itr);
        vo = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename... T>
    void from_variant( const variant& var,  std::set<T...>& vo )
@@ -573,13 +573,13 @@ class time_logger_ex
    template<typename... T>
    void to_variant( const std::multiset<T...>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::multiset<T...>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::multiset<T...>& var,  variant& vo )");
        std::vector<variant> vars(var.size());
        size_t i = 0;
        for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
           vars[i] = variant(*itr);
        vo = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename... T>
    void from_variant( const variant& var,  std::multiset<T...>& vo )
@@ -605,12 +605,12 @@ class time_logger_ex
    template<typename T>
    void to_variant( const std::deque<T>& t, variant& v )
    {
-      time_logger_ex::instance().start("void to_variant( const std::deque<T>& t, variant& v )");
+      //time_logger_ex::instance().start("void to_variant( const std::deque<T>& t, variant& v )");
       std::vector<variant> vars(t.size());
       for( size_t i = 0; i < t.size(); ++i )
          vars[i] = variant(t[i]);
       v = std::move(vars);
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
 
 
@@ -640,12 +640,12 @@ class time_logger_ex
    template<typename A, typename B>
    void to_variant( const std::pair<A,B>& t, variant& v )
    {
-      time_logger_ex::instance().start("void to_variant( const std::pair<A,B>& t, variant& v )");
+      //time_logger_ex::instance().start("void to_variant( const std::pair<A,B>& t, variant& v )");
       std::vector<variant> vars(2);
       vars[0] = variant(t.first);
       vars[1] = variant(t.second);
        v = vars;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename A, typename B>
    void from_variant( const variant& v, std::pair<A,B>& p )
@@ -670,31 +670,31 @@ class time_logger_ex
    template<typename T>
    void to_variant( const std::shared_ptr<T>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::shared_ptr<T>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::shared_ptr<T>& var,  variant& vo )");
       if( var ) to_variant( *var, vo );
       else vo = nullptr;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
 
    template<typename T>
    void from_variant( const variant& var,  std::shared_ptr<T>& vo )
    {
-      time_logger_ex::instance().start("void from_variant( const variant& var,  std::shared_ptr<T>& vo )");
+      //time_logger_ex::instance().start("void from_variant( const variant& var,  std::shared_ptr<T>& vo )");
       if( var.is_null() ) vo = nullptr;
       else if( vo ) from_variant( var, *vo );
       else {
           vo = std::make_shared<T>();
           from_variant( var, *vo );
       }
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
    template<typename T>
    void to_variant( const std::unique_ptr<T>& var,  variant& vo )
    {
-      time_logger_ex::instance().start("void to_variant( const std::unique_ptr<T>& var,  variant& vo )");
+      //time_logger_ex::instance().start("void to_variant( const std::unique_ptr<T>& var,  variant& vo )");
       if( var ) to_variant( *var, vo );
       else vo = nullptr;
-      time_logger_ex::instance().stop();
+      //time_logger_ex::instance().stop();
    }
 
    template<typename T>

@@ -84,14 +84,14 @@ namespace fc {
     v = fc::string( t );
   }
   void from_variant( const fc::variant& v, fc::time_point& t ) {
-    time_logger_ex::instance().start("void from_variant( const fc::variant& v, fc::time_point& t )");
+    //time_logger_ex::instance().start("void from_variant( const fc::variant& v, fc::time_point& t )");
     t = fc::time_point::from_iso_string( v.as_string() );
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
   void to_variant( const fc::time_point_sec& t, variant& v ) {
-    time_logger_ex::instance().start("void to_variant( const fc::time_point_sec& t, variant& v )");
+    //time_logger_ex::instance().start("void to_variant( const fc::time_point_sec& t, variant& v )");
     v = fc::string( t );
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
   void from_variant( const fc::variant& v, fc::time_point_sec& t ) {
     t = fc::time_point_sec::from_iso_string( v.as_string() );

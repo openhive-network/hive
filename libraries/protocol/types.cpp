@@ -45,17 +45,17 @@ namespace hive { namespace protocol {
 
   public_key_type::operator std::string() const
   {
-    fc::time_logger_ex::instance().start("public_key_type::operator std::string() const");
+    //fc:://time_logger_ex::instance().start("public_key_type::operator std::string() const");
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
     auto data = fc::raw::pack_to_vector( k );
 
-    fc::time_logger_ex::instance().stop();
+    //fc:://time_logger_ex::instance().stop();
 
-    fc::time_logger_ex::instance().start("public_key_type-fc::to_base58");
+    //fc:://time_logger_ex::instance().start("public_key_type-fc::to_base58");
     auto _res = std::move( fc::to_base58( data.data(), data.size() ) );
-    fc::time_logger_ex::instance().stop();
+    //fc:://time_logger_ex::instance().stop();
 
     return HIVE_ADDRESS_PREFIX + _res;
   }
@@ -107,18 +107,18 @@ namespace hive { namespace protocol {
 
   extended_public_key_type::operator std::string() const
   {
-    fc::time_logger_ex::instance().start("extended_public_key_type::operator std::string() const");
+    //fc:://time_logger_ex::instance().start("extended_public_key_type::operator std::string() const");
 
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
     auto data = fc::raw::pack_to_vector( k );
 
-    fc::time_logger_ex::instance().stop();
+    //fc:://time_logger_ex::instance().stop();
 
-    fc::time_logger_ex::instance().start("extended_public_key_type-fc::to_base58");
+    //fc:://time_logger_ex::instance().start("extended_public_key_type-fc::to_base58");
     auto _result = std::move( fc::to_base58( data.data(), data.size() ) );
-    fc::time_logger_ex::instance().stop();
+    //fc:://time_logger_ex::instance().stop();
 
     return HIVE_ADDRESS_PREFIX + _result;
   }
@@ -207,9 +207,9 @@ namespace fc
   using namespace std;
   void to_variant( const hive::protocol::public_key_type& var,  fc::variant& vo )
   {
-    time_logger_ex::instance().start("void to_variant( const hive::protocol::public_key_type& var,  fc::variant& vo )");
+    //time_logger_ex::instance().start("void to_variant( const hive::protocol::public_key_type& var,  fc::variant& vo )");
     vo = std::string( var );
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var,  hive::protocol::public_key_type& vo )
@@ -219,9 +219,9 @@ namespace fc
 
   void to_variant( const hive::protocol::extended_public_key_type& var, fc::variant& vo )
   {
-    time_logger_ex::instance().start("void to_variant( const hive::protocol::extended_public_key_type& var, fc::variant& vo )");
+    //time_logger_ex::instance().start("void to_variant( const hive::protocol::extended_public_key_type& var, fc::variant& vo )");
     vo = std::string( var );
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var, hive::protocol::extended_public_key_type& vo )
@@ -231,9 +231,9 @@ namespace fc
 
   void to_variant( const hive::protocol::extended_private_key_type& var, fc::variant& vo )
   {
-    time_logger_ex::instance().start("void to_variant( const hive::protocol::extended_private_key_type& var, fc::variant& vo )");
+    //time_logger_ex::instance().start("void to_variant( const hive::protocol::extended_private_key_type& var, fc::variant& vo )");
     vo = std::string( var );
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var, hive::protocol::extended_private_key_type& vo )

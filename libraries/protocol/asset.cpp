@@ -548,7 +548,7 @@ namespace fc {
 
   void to_variant( const hive::protocol::asset& var, fc::variant& vo )
   {
-    time_logger_ex::instance().start("void to_variant( const hive::protocol::asset& var, fc::variant& vo )");
+    //time_logger_ex::instance().start("void to_variant( const hive::protocol::asset& var, fc::variant& vo )");
     if( hive::protocol::dynamic_serializer::legacy_enabled )
       to_variant( hive::protocol::legacy_asset( var ), vo );
     else
@@ -561,14 +561,14 @@ namespace fc {
         vo = v;
       } FC_CAPTURE_AND_RETHROW()
     }
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
 
   void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var )
   {
-    time_logger_ex::instance().start("void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var )");
+    //time_logger_ex::instance().start("void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var )");
     var = a.to_string();
-    time_logger_ex::instance().stop();
+    //time_logger_ex::instance().stop();
   }
 
   void from_variant( const fc::variant& var, hive::protocol::asset& vo )

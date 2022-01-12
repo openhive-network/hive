@@ -139,25 +139,25 @@ namespace detail {
             std::ofstream myfile;
             myfile.open ("mario-time-log.csv");
 
-            fc::time_logger_ex::instance().clear();
+            //fc:://time_logger_ex::instance().clear();
 
             _logger.start( "api-response-to-variant", method_name );
-            fc::time_logger_ex::instance().start("START");
+            //fc:://time_logger_ex::instance().start("START");
             fc::variant _v = fc::variant( std::move( _response ) );
-            fc::time_logger_ex::instance().stop();
+            //fc:://time_logger_ex::instance().stop();
             _logger.stop();
 
-            for( auto& item : fc::time_logger_ex::instance().data )
-            {
-              myfile<<item.first<<";"<<item.second<<std::endl;
-            }
+            // for( auto& item : fc::time_logger_ex::instance().data )
+            // {
+            //   myfile<<item.first<<";"<<item.second<<std::endl;
+            // }
 
-            if( fc::time_logger_ex::instance().cnt != 0 )
-            {
-              myfile<<"average size of elements"<<";"<<fc::time_logger_ex::instance().total_size / (double)fc::time_logger_ex::instance().cnt <<std::endl;
-            }
+            // if( fc::time_logger_ex::instance().cnt != 0 )
+            // {
+            //   myfile<<"average size of elements"<<";"<<fc::time_logger_ex::instance().total_size / (double)fc::time_logger_ex::instance().cnt <<std::endl;
+            // }
 
-            myfile.close();
+            // myfile.close();
 
             return _v;
           },
