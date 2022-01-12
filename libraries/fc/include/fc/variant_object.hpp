@@ -25,7 +25,6 @@ namespace fc
 
       using pair          = std::pair<string, variant>;
       using items_type    = std::map<string, variant>;
-      using p_items_type  = std::shared_ptr< items_type >;
 
       using iterator      = items_type::const_iterator;
 
@@ -53,9 +52,8 @@ namespace fc
       variant_object( const map<string,T>& values )
       {
          time_logger_ex::instance().start("variant_object( const map<string,T>& values )");
-         _key_value = p_items_type( new items_type() );
          for( const auto& item : values ) {
-            _key_value->emplace( std::make_pair( item.first, fc::variant(item.second) ) );
+            _key_value.emplace( std::make_pair( item.first, fc::variant(item.second) ) );
          }
          time_logger_ex::instance().stop();
       }
@@ -64,7 +62,6 @@ namespace fc
       variant_object( string key, T&& val )
       {
          time_logger_ex::instance().start("variant_object( string key, T&& val )");
-         _key_value = p_items_type( new items_type() );
          *this = variant_object( std::move(key), variant(forward<T>(val)) );
          time_logger_ex::instance().stop();
       }
@@ -81,7 +78,7 @@ namespace fc
       variant_object& operator=( const mutable_variant_object& );
 
    private:
-      p_items_type _key_value;
+      items_type _key_value;
       friend class mutable_variant_object;
    };
    /** @ingroup Serializable */
@@ -105,11 +102,11 @@ namespace fc
    {
    public:
 
-      using pair          = variant_object::pair;
-      using items_type    = variant_object::items_type;
-      using p_items_type  = std::unique_ptr< items_type >;
+      using pair            = variant_object::pair;
+      using items_type      = variant_object::items_type;
 
-      using iterator      = items_type::iterator;
+      using iterator        = items_type::iterator;
+      using const_iterator  = items_type::const_iterator;
 
       /**
          * @name Immutable Interface
@@ -118,9 +115,9 @@ namespace fc
          * underlying type.
          */
       ///@{
-      iterator begin()const;
-      iterator end()const;
-      iterator find( const string& key )const;
+      const_iterator begin()const;
+      const_iterator end()const;
+      const_iterator find( const string& key )const;
       const variant& operator[]( const string& key )const;
       const variant& operator[]( const char* key )const;
       size_t size()const;
@@ -138,6 +135,7 @@ namespace fc
       void                 reserve( size_t s);
       iterator             begin();
       iterator             end();
+      iterator find( const string& key );
       void                 erase( const string& key );
 
       /** replaces the value at \a key with \a var or insert's \a key if not found */
@@ -179,7 +177,6 @@ namespace fc
 
       template<typename T>
       explicit mutable_variant_object( T&& v )
-      :_key_value( new items_type() )
       {
          time_logger_ex::instance().start("explicit mutable_variant_object( T&& v )");
           *this = variant(fc::forward<T>(v)).get_object();
@@ -191,9 +188,8 @@ namespace fc
       template<typename T>
       mutable_variant_object( const map<string,T>& values ) {
          time_logger_ex::instance().start("mutable_variant_object( const map<string,T>& values )");
-         _key_value.reset( new items_type() );
          for( const auto& item : values ) {
-            _key_value->emplace( std::make_pair( item.first, fc::variant(item.second) ) );
+            _key_value.emplace( std::make_pair( item.first, fc::variant(item.second) ) );
          }
          time_logger_ex::instance().stop();
       }
@@ -204,7 +200,6 @@ namespace fc
       mutable_variant_object( string key, T&& val )
       {
          time_logger_ex::instance().start("mutable_variant_object( string key, T&& val )");
-         _key_value.reset( new items_type );
          set( std::move(key), variant(forward<T>(val)) );
          time_logger_ex::instance().stop();
       }
@@ -219,7 +214,7 @@ namespace fc
 
 
    private:
-      p_items_type _key_value;
+      items_type _key_value;
       friend class variant_object;
    };
    /** @ingroup Serializable */
