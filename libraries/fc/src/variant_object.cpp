@@ -193,7 +193,11 @@ namespace fc
    {
       time_logger_ex::instance().start("variant& mutable_variant_object::operator[]( const char* key )");
       auto itr = find( key );
-      if( itr != end() ) return itr->second;
+      if( itr != end() )
+      {
+        time_logger_ex::instance().stop();
+        return itr->second;
+      }
       _key_value->emplace( std::make_pair( key, variant() ) );
       time_logger_ex::instance().stop();
       return _key_value->rbegin()->second;
@@ -286,20 +290,29 @@ namespace fc
    mutable_variant_object& mutable_variant_object::set( string key, variant var )
    {
       time_logger_ex::instance().start("mutable_variant_object& mutable_variant_object::set( string key, variant var )");
-      auto itr = find( key.c_str() );
-      if( itr != end() )
+
+      auto _result = _key_value->emplace( std::make_pair( fc::move(key), fc::move(var) ) );
+      if( !_result.second )
       {
-         fc_swap( itr->second, var );
+        fc_swap( _result.first->second, var );
       }
-      else
-      {
-         _key_value->insert( std::make_pair( fc::move(key), fc::move(var) ) );
-      }
+
+      // auto itr = find( key.c_str() );
+      // if( itr != end() )
+      // {
+      //    fc_swap( itr->second, var );
+      // }
+      // else
+      // {
+      //    _key_value->insert( std::make_pair( fc::move(key), fc::move(var) ) );
+      // }
+
       time_logger_ex::instance().stop();
       return *this;
    }
 
-   /** Appends \a key and \a var without checking for duplicates, designed to
+   /** Appends \a key and \a var 
+    * |thout checking for duplicates, designed to
     *  simplify construction of dictionaries using (key,val)(key2,val2) syntax 
     */
    mutable_variant_object& mutable_variant_object::operator()( string key, variant var )
@@ -323,7 +336,10 @@ namespace fc
    {
       time_logger_ex::instance().start("mutable_variant_object& mutable_variant_object::operator()( const mutable_variant_object& mvo )");
       if( &mvo == this )     // mvo(mvo) is no-op
+      {
+         time_logger_ex::instance().stop();
          return *this;
+      }
       for( const mutable_variant_object::pair& e : mvo )
          set( e.first, e.second );
       time_logger_ex::instance().stop();

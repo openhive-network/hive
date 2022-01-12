@@ -695,7 +695,10 @@ string      format_string( const string& format, const variant_object& args )
 
      // if we got to the end, return it.
      if( next == size_t(string::npos) )
+     {
+        time_logger_ex::instance().stop();
         return ss.str();
+     }
 
      // if we are not at the end, then update the start
      prev = next + 1;

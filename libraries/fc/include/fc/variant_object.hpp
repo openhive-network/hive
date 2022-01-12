@@ -161,7 +161,9 @@ namespace fc
       template<typename T>
       mutable_variant_object& operator()( string key, T&& var )
       {
+         //time_logger_ex::instance().start("mutable_variant_object& operator()( string key, T&& var )");
          set(std::move(key), variant( fc::forward<T>(var) ) );
+         //time_logger_ex::instance().stop();
          return *this;
       }
       /**
