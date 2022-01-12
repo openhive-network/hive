@@ -3,6 +3,8 @@
 #include <fc/shared_ptr.hpp>
 #include <fc/unique_ptr.hpp>
 
+#include <type_traits>
+
 namespace fc
 {
    using std::map;
@@ -197,7 +199,12 @@ namespace fc
       ///@}
 
 
-      template<typename T>
+      template<
+        typename T,
+        typename = typename std::enable_if_t<
+          not std::is_same<std::remove_cv_t<std::remove_reference_t<T>>, mutable_variant_object>::value
+        >
+      >
       explicit mutable_variant_object( T&& v )
       :_key_value( new std::vector<entry>() )
       {
