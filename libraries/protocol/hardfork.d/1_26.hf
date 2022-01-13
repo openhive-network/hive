@@ -17,5 +17,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_26_HBD_HARD_CAP (HIVE_HARDFORK_1_26)
 //prevent underflow during reward calculation when chain is reactivated after > 15 days (TODO: remove it after HF26)
 #define HIVE_HARDFORK_1_26_CLAIM_UNDERFLOW (HIVE_HARDFORK_1_26)
+//it's possible to change an authorization twice per hour
+#define HIVE_HARDFORK_1_26_AUTH_UPDATE (HIVE_HARDFORK_1_26)
 
 #endif

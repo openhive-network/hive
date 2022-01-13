@@ -549,6 +549,7 @@ struct api_account_object
     owner = authority( auth.owner );
     active = authority( auth.active );
     posting = authority( auth.posting );
+    previous_owner_update = auth.previous_owner_update;
     last_owner_update = auth.last_owner_update;
 #ifdef COLLECT_ACCOUNT_METADATA
     const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
@@ -584,6 +585,7 @@ struct api_account_object
   string            posting_json_metadata;
   account_name_type proxy;
 
+  time_point_sec    previous_owner_update;
   time_point_sec    last_owner_update;
   time_point_sec    last_account_update;
 
@@ -1170,7 +1172,7 @@ FC_REFLECT( hive::plugins::database_api::api_comment_vote_object,
         )
 
 FC_REFLECT( hive::plugins::database_api::api_account_object,
-          (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(posting_json_metadata)(proxy)(last_owner_update)(last_account_update)
+          (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(posting_json_metadata)(proxy)(previous_owner_update)(last_owner_update)(last_account_update)
           (created)(mined)
           (recovery_account)(last_account_recovery)(reset_account)
           (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)

@@ -284,6 +284,7 @@ namespace hive { namespace chain {
       shared_authority  active;  ///< used for all monetary operations, can set active or posting
       shared_authority  posting; ///< used for voting and posting
 
+      time_point_sec    previous_owner_update;
       time_point_sec    last_owner_update;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(account_authority_object, (owner)(active)(posting));
@@ -510,8 +511,6 @@ namespace hive { namespace chain {
     allocator< owner_authority_history_object >
   > owner_authority_history_index;
 
-  struct by_last_owner_update;
-
   typedef multi_index_container <
     account_authority_object,
     indexed_by <
@@ -523,13 +522,6 @@ namespace hive { namespace chain {
           const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
         >,
         composite_key_compare< std::less< account_name_type >, std::less< account_authority_id_type > >
-      >,
-      ordered_unique< tag< by_last_owner_update >,
-        composite_key< account_authority_object,
-          member< account_authority_object, time_point_sec, &account_authority_object::last_owner_update >,
-          const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
-        >,
-        composite_key_compare< std::greater< time_point_sec >, std::less< account_authority_id_type > >
       >
     >,
     allocator< account_authority_object >
@@ -649,7 +641,7 @@ FC_REFLECT( hive::chain::account_metadata_object,
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_metadata_object, hive::chain::account_metadata_index )
 
 FC_REFLECT( hive::chain::account_authority_object,
-          (id)(account)(owner)(active)(posting)(last_owner_update)
+          (id)(account)(owner)(active)(posting)(previous_owner_update)(last_owner_update)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_authority_object, hive::chain::account_authority_index )
 
