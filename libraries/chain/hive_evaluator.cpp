@@ -10,6 +10,7 @@
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/owner_update_limit_mgr.hpp>
 
 #include <fc/macros.hpp>
 
@@ -350,6 +351,8 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     auth.owner = o.owner;
     auth.active = o.active;
     auth.posting = o.posting;
+    if( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
+      auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
@@ -454,6 +457,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     auth.owner = o.owner;
     auth.active = o.active;
     auth.posting = o.posting;
+    if( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
+      auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
@@ -508,7 +513,8 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   {
 #if !defined(IS_TEST_NET) && !defined(HIVE_CONVERTER_BUILD)
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
-      FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
+      FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
+                                                      account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m",util::owner_update_limit_mgr::message) );
 #endif
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
@@ -575,7 +581,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   if( o.owner )
   {
 #ifndef IS_TEST_NET
-    FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
+                                                    account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m",util::owner_update_limit_mgr::message) );
 #endif
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -2492,6 +2499,8 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     auth.owner = o.owner;
     auth.active = o.active;
     auth.posting = o.posting;
+    if( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
+      auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
@@ -2565,7 +2574,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   const auto& account = _db.get_account( o.account_to_recover );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( _db.head_block_time() - account.last_account_recovery > HIVE_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.last_account_recovery ), "${m}", ("m",util::owner_update_limit_mgr::message) );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );

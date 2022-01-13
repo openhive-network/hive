@@ -2597,6 +2597,8 @@ void database::update_owner_authority( const account_object& account, const auth
   modify( get< account_authority_object, by_account >( account.name ), [&]( account_authority_object& auth )
   {
     auth.owner = owner_authority;
+    if( has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
+      auth.previous_owner_update = auth.last_owner_update;
     auth.last_owner_update = head_block_time();
   });
 }
