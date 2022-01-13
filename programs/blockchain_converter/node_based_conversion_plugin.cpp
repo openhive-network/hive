@@ -232,7 +232,7 @@ namespace detail {
       ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error on localhost
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-// #define HIVE_CONVERTER_DEBUG_TRANSMIT // TODO: Remove before merge
+//#define HIVE_CONVERTER_DEBUG_TRANSMIT // TODO: Remove before merge
 #ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
       std::string str_reply{ &*reply.body.begin(), reply.body.size() };
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
@@ -278,40 +278,41 @@ namespace detail {
   {
     size_t result_offset = num - last_block_range_start;
 
-    if( last_block_range_start != size_t(-1) ) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
-      if( result_offset + 1 > get_block_buffer().size() ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
-      {
-        std::cout << "Note: using uncached receive to save your computers memory on block " << num << '\r';
-        block_buffer_obj = fc::variant_object{}; // Clear block_buffer_obj to free now redundant memory
-        return receive_uncached( num );
-      }
-
     try
     {
       if(    num < last_block_range_start // Initial check ( when last_block_range_start is size_t(-1) )
           || num >= last_block_range_start + block_buffer_size // number out of buffered blocks range
         )
+      {
+        open( input_con, input_url );
+
+        last_block_range_start = block_buffer_size == 1 ? num : num - ( num % block_buffer_size == 0 ? block_buffer_size : num % block_buffer_size ) + 1;
+        auto reply = input_con.request( "POST", input_url,
+            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "},\"id\":1}"
+            /*,{ { "Content-Type", "application/json" } } */
+        );
+        FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
+        // TODO: Move to boost to support chunked transfer encoding in responses
+        FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+
+        std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+        fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+        FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+        FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", str_reply) );
+
+        block_buffer_obj = var_obj;
+
+        input_con.get_socket().close();
+      }
+      else if( last_block_range_start != size_t(-1) ) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
+      {
+        if( result_offset + 1 > get_block_buffer().size() ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
         {
-          open( input_con, input_url );
-
-          last_block_range_start = block_buffer_size == 1 ? num : num - ( num % block_buffer_size == 0 ? block_buffer_size : num % block_buffer_size ) + 1;
-          auto reply = input_con.request( "POST", input_url,
-              "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "},\"id\":1}"
-              /*,{ { "Content-Type", "application/json" } } */
-          );
-          FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
-          // TODO: Move to boost to support chunked transfer encoding in responses
-          FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
-
-          std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-          fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-          FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-          FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", str_reply) );
-
-          block_buffer_obj = var_obj;
-
-          input_con.get_socket().close();
+          std::cout << "Note: using uncached receive to save your computers memory on block " << num << '\r';
+          block_buffer_obj = fc::variant_object{}; // Clear block_buffer_obj to free now redundant memory
+          return receive_uncached( num );
         }
+      }
 
       const auto& block_buf = get_block_buffer();
       result_offset = num - last_block_range_start;
