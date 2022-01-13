@@ -69,7 +69,9 @@ namespace detail {
     fc::http::connection output_con;
     fc::url              output_url;
 
-    size_t               last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call // TODO: Maybe initial value should be 0
+    // Note: Since block numbers are stored as 32-bit integers in the current implementation of Hive, using a 64-bit integer
+    // as the type for the last_block_range_start variable is a safe way to indicate whether a converter is in an "uninitialized" state.
+    uint64_t             last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
     size_t               block_buffer_size;
     fc::variant_object   block_buffer_obj; // blocks buffer object containing lookup table
 
@@ -91,7 +93,6 @@ namespace detail {
     FC_ASSERT( this->input_url.port().valid() && this->output_url.port().valid(), "You have to specify the port in url", ("input_url",input_url)("output_url",output_url) );
   }
 
-  // TODO: Support HTTP encrypted using TLS or SSL (HTTPS)
   void node_based_conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
   {
     while( true )
@@ -229,10 +230,10 @@ namespace detail {
       auto reply = output_con.request( "POST", output_url,
         "{\"jsonrpc\":\"2.0\",\"method\":\"network_broadcast_api.broadcast_transaction\",\"params\":{\"trx\":" + fc::json::to_string( v ) + "},\"id\":1}"
         /*,{ { "Content-Type", "application/json" } } */
-      ); // FIXME: asio.cpp:24 - Boost asio - Broken pipe error on localhost
+      );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-//#define HIVE_CONVERTER_DEBUG_TRANSMIT // TODO: Remove before merge
+//#define HIVE_CONVERTER_DEBUG_TRANSMIT // Remove if you want to debug response data and throw on error message in the response
 #ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
       std::string str_reply{ &*reply.body.begin(), reply.body.size() };
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
@@ -254,7 +255,7 @@ namespace detail {
     {
       open( input_con, input_url );
 
-      auto reply = input_con.request( "POST", input_url, // XXX: Move to block_api - fix deserialization
+      auto reply = input_con.request( "POST", input_url,
           "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
           /*,{ { "Content-Type", "application/json" } } */
       );
@@ -276,11 +277,11 @@ namespace detail {
 
   fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
   {
-    size_t result_offset = num - last_block_range_start;
+    uint64_t result_offset = num - last_block_range_start;
 
     try
     {
-      if(    num < last_block_range_start // Initial check ( when last_block_range_start is size_t(-1) )
+      if(    num < last_block_range_start // Initial check ( when last_block_range_start is uint64_t(-1) )
           || num >= last_block_range_start + block_buffer_size // number out of buffered blocks range
         )
       {
@@ -292,7 +293,7 @@ namespace detail {
             /*,{ { "Content-Type", "application/json" } } */
         );
         FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
-        // TODO: Move to boost to support chunked transfer encoding in responses
+        // TODO: Move to boost to support SSL/TLS and chunked transfer encoding in responses
         FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
 
         std::string str_reply{ &*reply.body.begin(), reply.body.size() };
@@ -304,7 +305,7 @@ namespace detail {
 
         input_con.get_socket().close();
       }
-      else if( last_block_range_start != size_t(-1) ) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
+      else if( last_block_range_start != uint64_t(-1) ) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
       {
         if( result_offset + 1 > get_block_buffer().size() ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
         {
