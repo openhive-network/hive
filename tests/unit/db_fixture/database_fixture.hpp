@@ -524,6 +524,14 @@ struct hf24_database_fixture : public clean_database_fixture
   virtual ~hf24_database_fixture() {}
 };
 
+struct hf26_database_fixture : public clean_database_fixture
+{
+  hf26_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
+    : clean_database_fixture( shared_file_size_in_mb )
+  {}
+  virtual ~hf26_database_fixture() {}
+};
+
 struct delayed_vote_database_fixture : public virtual clean_database_fixture
 {
   public:
