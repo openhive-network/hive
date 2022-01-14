@@ -509,11 +509,17 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
   if( o.owner )
   {
-#if !defined(HIVE_CONVERTER_BUILD)
+// Blockchain converter uses the `account_update` operation to change the private keys of the pow-mined accounts within the same transaction
+// Due to that the value of `last_owner_update` is (in a standard environment) less than `HIVE_OWNER_UPDATE_LIMIT`
+// (see the blockchain converter `post_convert_transaction` function to understand the actual reason for this directive here)
+// Note: There is a similar `ifndef` directive in the `do_apply( account_update2_operation )` function for the `IS_TEST_NET` identifier,
+//       but not for the `HIVE_CONVERTER_BUILD`, because mining was removed in HF17 and the `account_update2` operation was first introduced
+//       in HF21, so only this operation is applicable to our needs
+# ifndef HIVE_CONVERTER_BUILD
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
                                                       account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
-#endif
+# endif
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
       verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
