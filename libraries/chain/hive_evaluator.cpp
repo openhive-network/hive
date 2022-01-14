@@ -511,10 +511,10 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
   if( o.owner )
   {
-#if !defined(IS_TEST_NET) && !defined(HIVE_CONVERTER_BUILD)
+#if !defined(HIVE_CONVERTER_BUILD)
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                      account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m",util::owner_update_limit_mgr::message) );
+                                                      account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
 #endif
 
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
@@ -580,10 +580,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   if( o.owner )
   {
-#ifndef IS_TEST_NET
     FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                    account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m",util::owner_update_limit_mgr::message) );
-#endif
+                                                    account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
@@ -2574,7 +2572,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   const auto& account = _db.get_account( o.account_to_recover );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.last_account_recovery ), "${m}", ("m",util::owner_update_limit_mgr::message) );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.last_account_recovery ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
