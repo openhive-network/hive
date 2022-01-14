@@ -19,20 +19,17 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
 
   fc::time_point_sec start_time = fc::variant( "2022-01-01T00:00:00" ).as< fc::time_point_sec >();
 
-  auto previous_time    = start_time + fc::minutes(100);
-  auto last_time        = start_time + fc::minutes(5);
-  auto head_block_time  = start_time + fc::minutes(5);
+  auto previous_time    = start_time + fc::seconds(1);
+  auto last_time        = start_time + fc::seconds(5);
+  auto head_block_time  = start_time + fc::seconds(5);
 
   {
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( head_block_time, last_time ), false );
 
-    head_block_time += fc::minutes(10);
+    head_block_time += fc::seconds(1);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( head_block_time, last_time ), false );
 
-    head_block_time += fc::minutes(49);
-    BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( head_block_time, last_time ), false );
-
-    head_block_time += fc::seconds(59);
+    head_block_time += fc::seconds(4);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( head_block_time, last_time ), false );
 
     head_block_time += fc::seconds(1);
@@ -43,15 +40,15 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
   }
 
   {
-    last_time           = start_time + fc::minutes(100);
-    head_block_time     = start_time + fc::minutes(100);
+    last_time           = start_time + fc::seconds(1);
+    head_block_time     = start_time + fc::seconds(1);
 
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
 
-    head_block_time += fc::minutes(10);
+    head_block_time += fc::seconds(1);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
 
-    head_block_time += fc::minutes(50);
+    head_block_time += fc::seconds(5);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
 
     head_block_time += fc::seconds(1);
@@ -59,39 +56,40 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
   }
 
   {
-    previous_time   = start_time + fc::minutes(100);
-    last_time       = start_time + fc::minutes(500);
-    head_block_time = start_time + fc::minutes(500);
+    previous_time   = start_time + fc::seconds(1);
+    last_time       = start_time + fc::seconds(5);
+    head_block_time = start_time + fc::seconds(5);
 
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
 
-    head_block_time += fc::minutes(60);
+    head_block_time += fc::seconds(6);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
 
     head_block_time += fc::seconds(1);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
+  }
+
+  {
+    previous_time   = start_time;
+    last_time       = start_time + fc::seconds(1);
+    head_block_time = start_time + fc::seconds(7);
+    BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
   }
 
   hardfork_is_activated = true;
 
   {
-    previous_time   = start_time + fc::minutes(100);
-    last_time       = start_time + fc::minutes(500);
-    head_block_time = start_time + fc::minutes(500);
+    previous_time   = start_time + fc::seconds(1);
+    last_time       = start_time + fc::seconds(50);
+    head_block_time = start_time + fc::seconds(50);
 
-    BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
-
-    head_block_time += fc::minutes(60);
-    BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
-
-    head_block_time += fc::seconds(1);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
 
   {
-    previous_time   = start_time + fc::minutes(10);
-    last_time       = start_time + fc::minutes(70);
-    head_block_time = start_time + fc::minutes(70);
+    previous_time   = start_time + fc::seconds(1);
+    last_time       = start_time + fc::seconds(7);
+    head_block_time = start_time + fc::seconds(7);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
 
     previous_time   -= fc::seconds(1);
@@ -99,58 +97,51 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
   }
 
   {
-    previous_time   = start_time + fc::minutes(10);
-    last_time       = start_time + fc::minutes(30);
-    head_block_time = start_time + fc::minutes(90);
+    previous_time   = start_time + fc::seconds(1);
+    last_time       = start_time + fc::seconds(3);
+    head_block_time = start_time + fc::seconds(9);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
 
   {
-    previous_time   = start_time + fc::minutes(30);
-    last_time       = start_time + fc::minutes(30);
-    head_block_time = start_time + fc::minutes(90);
+    previous_time   = start_time + fc::seconds(3);
+    last_time       = start_time + fc::seconds(3);
+    head_block_time = start_time + fc::seconds(9);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
   }
 
   {
-    previous_time   = start_time + fc::minutes(30) - fc::seconds(1);
-    last_time       = start_time + fc::minutes(30);
-    head_block_time = start_time + fc::minutes(90);
+    previous_time   = start_time + fc::seconds(3) - fc::seconds(1);
+    last_time       = start_time + fc::seconds(3);
+    head_block_time = start_time + fc::seconds(9);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
 
   {
-    previous_time   = start_time + fc::minutes(1);
-    last_time       = start_time + fc::minutes(1);
-    head_block_time = start_time + fc::minutes(61);
+    previous_time   = start_time + fc::seconds(1);
+    last_time       = start_time + fc::seconds(1);
+    head_block_time = start_time + fc::seconds(7);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), false );
   }
 
   {
-    previous_time   = start_time + fc::minutes(1);
-    last_time       = start_time + fc::minutes(1);
-    head_block_time = start_time + fc::minutes(61) + fc::seconds(1);
+    previous_time   = start_time + fc::seconds(1);
+    last_time       = start_time + fc::seconds(1);
+    head_block_time = start_time + fc::seconds(7) + fc::seconds(1);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
 
   {
-    previous_time   = start_time + fc::minutes(1) - fc::seconds(1);
-    last_time       = start_time + fc::minutes(1);
-    head_block_time = start_time + fc::minutes(61);
+    previous_time   = start_time;
+    last_time       = start_time + fc::seconds(1);
+    head_block_time = start_time + fc::seconds(7);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
 
   {
-    previous_time   = start_time + fc::minutes(1);
-    last_time       = start_time + fc::minutes(1) - fc::seconds(1);
-    head_block_time = start_time + fc::minutes(61);
-    BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
-  }
-
-  {
-    previous_time   = start_time + fc::minutes(1) - fc::seconds(1);
-    last_time       = start_time + fc::minutes(1) - fc::seconds(1);
-    head_block_time = start_time + fc::minutes(61);
+    previous_time   = start_time;
+    last_time       = start_time;
+    head_block_time = start_time + fc::seconds(7);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
 }
