@@ -324,8 +324,22 @@ namespace chain {
       void clear_pending();
 
       void push_virtual_operation( const operation& op );
-      void pre_push_virtual_operation( const operation& op );
-      void post_push_virtual_operation( const operation& op );
+
+      struct virtual_operation_pushing_handler
+      {
+         virtual_operation_pushing_handler(database& i_db, const operation& op, const bool pre_push = false);
+         ~virtual_operation_pushing_handler();
+
+         void pre_push();
+         void post_push();
+         operation op;
+
+      private:
+
+         database& m_db;
+         fc::optional<operation_notification> m_note;
+      };
+      friend struct virtual_operation_pushing_handler;
 
       /*
         * Pushing an action without specifying an execution time will execute at head block.
@@ -721,6 +735,7 @@ namespace chain {
       void modify_balance( const account_object& a, const asset& delta, bool check_balance );
       void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance );
 
+      uint32_t next_virtual_operation_id();
       operation_notification create_operation_notification( const operation& op )const
       {
         operation_notification note(op);

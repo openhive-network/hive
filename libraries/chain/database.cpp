@@ -1313,27 +1313,42 @@ void database::push_virtual_operation( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) );
   operation_notification note = create_operation_notification( op );
-  ++_current_virtual_op;
-  note.virtual_op = _current_virtual_op;
+  note.virtual_op = next_virtual_operation_id();
   notify_pre_apply_operation( note );
   notify_post_apply_operation( note );
 }
 
-void database::pre_push_virtual_operation( const operation& op )
+uint32_t database::next_virtual_operation_id()
 {
-  FC_ASSERT( is_virtual_operation( op ) );
-  operation_notification note = create_operation_notification( op );
-  ++_current_virtual_op;
-  note.virtual_op = _current_virtual_op;
-  notify_pre_apply_operation( note );
+  return ++_current_virtual_op;
 }
 
-void database::post_push_virtual_operation( const operation& op )
+database::virtual_operation_pushing_handler::virtual_operation_pushing_handler(database& i_db, const operation& i_op, const bool pre_push)
+   :op{i_op}, m_db{i_db}
 {
   FC_ASSERT( is_virtual_operation( op ) );
-  operation_notification note = create_operation_notification( op );
-  note.virtual_op = _current_virtual_op;
-  notify_post_apply_operation( note );
+  if(pre_push) this->pre_push();
+}
+
+database::virtual_operation_pushing_handler::~virtual_operation_pushing_handler()
+{
+  if(m_note.valid())
+   	wlog("virtual operation has been pre-pushed, but wasn't post-pushed!" );
+}
+
+void database::virtual_operation_pushing_handler::pre_push()
+{
+  m_note = m_db.create_operation_notification(op);
+  m_note->virtual_op = m_db.next_virtual_operation_id();
+  m_db.notify_pre_apply_operation(*m_note);
+}
+
+void database::virtual_operation_pushing_handler::post_push()
+{
+  FC_ASSERT( m_note.valid() , "virtual operation has not been pre-pushed" );
+
+  m_db.notify_post_apply_operation(*m_note);
+  m_note.reset();
 }
 
 void database::notify_pre_apply_operation( const operation_notification& note )
@@ -1890,15 +1905,15 @@ void database::clear_null_account_balance()
   if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
-  operation vop_op = clear_null_account_balance_operation();
-  clear_null_account_balance_operation& vop = vop_op.get< clear_null_account_balance_operation >();
+  virtual_operation_pushing_handler voph{ *this, clear_null_account_balance_operation{} };
+  clear_null_account_balance_operation& vop = voph.op.get< clear_null_account_balance_operation >();
   if( total_hive.amount.value > 0 )
     vop.total_cleared.push_back( total_hive );
   if( total_vests.amount.value > 0 )
     vop.total_cleared.push_back( total_vests );
   if( total_hbd.amount.value > 0 )
     vop.total_cleared.push_back( total_hbd );
-  pre_push_virtual_operation( vop_op );
+  voph.pre_push();
 
   /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1975,7 +1990,7 @@ void database::clear_null_account_balance()
   if( total_hbd.amount > 0 )
     adjust_supply( -total_hbd );
 
-  post_push_virtual_operation( vop_op );
+  voph.post_push();
 }
 
 void database::consolidate_treasury_balance()
@@ -1995,15 +2010,15 @@ void database::consolidate_treasury_balance()
 
   const auto& treasury_account = get_treasury();
 
-  operation vop_op = consolidate_treasury_balance_operation();
-  consolidate_treasury_balance_operation& vop = vop_op.get< consolidate_treasury_balance_operation >();
+  virtual_operation_pushing_handler voph{ *this, consolidate_treasury_balance_operation{} };
+  consolidate_treasury_balance_operation& vop = voph.op.get< consolidate_treasury_balance_operation >();
   if( total_hive.amount.value > 0 )
     vop.total_moved.push_back( total_hive );
   if( total_vests.amount.value > 0 )
     vop.total_moved.push_back( total_vests );
   if( total_hbd.amount.value > 0 )
     vop.total_moved.push_back( total_hbd );
-  pre_push_virtual_operation( vop_op );
+  voph.pre_push();
 
   /////////////////////////////////////////////////////////////////////////////////////
 
@@ -2085,7 +2100,7 @@ void database::consolidate_treasury_balance()
 
   //////////////////////////////////////////////////////////////
 
-  post_push_virtual_operation( vop_op );
+  voph.post_push();
 }
 
 void database::lock_account( const account_object& account )
@@ -2647,9 +2662,7 @@ void database::process_vesting_withdrawals()
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
 
-            operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, vests, routed );
-
-            pre_push_virtual_operation( vop );
+            virtual_operation_pushing_handler voph{ *this, fill_vesting_withdraw_operation{ from_account.name, to_account.name, vests, routed }, true };
 
             modify( to_account, [&]( account_object& a )
             {
@@ -2685,7 +2698,7 @@ void database::process_vesting_withdrawals()
               });
             }
 
-            post_push_virtual_operation( vop );
+            voph.post_push();
           }
         }
       }
@@ -2699,8 +2712,7 @@ void database::process_vesting_withdrawals()
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
     auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-    operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_hive );
-    pre_push_virtual_operation( vop );
+    virtual_operation_pushing_handler voph{ *this, fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_hive ), true };
 
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
@@ -2751,7 +2763,7 @@ void database::process_vesting_withdrawals()
         adjust_proxied_witness_votes( from_account, -to_withdraw );
     }
 
-    post_push_virtual_operation( vop );
+    voph.post_push();
   }
   if( _benchmark_dumper.is_enabled() && count )
     _benchmark_dumper.end( "processing", "hive::protocol::withdraw_vesting_operation", count );
@@ -2806,21 +2818,24 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         auto claim = ( ( max_rewards.value * weight ) / total_weight ).to_uint64();
         if( claim > 0 ) // min_amt is non-zero satoshis
         {
+
           unclaimed_rewards -= claim;
           const auto& voter = get( item->get_voter() );
-          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+          virtual_operation_pushing_handler voph{ *this,
+            curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) )
+          };
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
             {
-              vop.get< curation_reward_operation >().reward = reward;
-              pre_push_virtual_operation( vop );
+              voph.op.get< curation_reward_operation >().reward = reward;
+              voph.pre_push();
             } );
 
             modify( voter, [&]( account_object& a )
             {
               a.curation_rewards += claim;
             });
-          post_push_virtual_operation( vop );
+          voph.post_push();
         }
       } FC_CAPTURE_AND_RETHROW( (*item) ) }
     }
@@ -2879,7 +2894,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
           auto benefactor_tokens = ( author_tokens * b.weight ) / HIVE_100_PERCENT;
           auto benefactor_vesting_hive = benefactor_tokens;
-          auto vop = comment_benefactor_reward_operation( beneficiary.get_name(), comment_author, to_string( comment_cashout.get_permlink() ), asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ), asset( 0, VESTS_SYMBOL ) );
+          virtual_operation_pushing_handler voph{ *this,
+            comment_benefactor_reward_operation( beneficiary.get_name(), comment_author, to_string( comment_cashout.get_permlink() ), asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ), asset( 0, VESTS_SYMBOL ) )
+          };
+          auto& vop = voph.op.get<comment_benefactor_reward_operation>();
 
           if( has_hardfork( HIVE_HARDFORK_0_21__3343 ) && is_treasury( beneficiary.get_name() ) )
           {
@@ -2903,10 +2921,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           [&]( const asset& reward )
           {
             vop.vesting_payout = reward;
-            pre_push_virtual_operation( vop );
+            voph.pre_push();
           });
 
-          post_push_virtual_operation( vop );
+          voph.post_push();
           total_beneficiary += benefactor_tokens;
         }
 
@@ -2923,16 +2941,18 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         */
         auto curators_vesting_payout = calculate_vesting( *this, asset( curation_tokens, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
-        operation vop = author_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
-                                                curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+        virtual_operation_pushing_handler voph{ *this,
+          author_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
+                                   curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) )
+        };
 
         create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
           [&]( const asset& vesting_payout )
           {
-            vop.get< author_reward_operation >().vesting_payout = vesting_payout;
-            pre_push_virtual_operation( vop );
+            voph.op.get< author_reward_operation >().vesting_payout = vesting_payout;
+            voph.pre_push();
           } );
-        post_push_virtual_operation( vop );
+        voph.post_push();
 
         asset payout = hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) );
         asset curator_payout = to_hbd( asset( curation_tokens, HIVE_SYMBOL ) );
@@ -2947,10 +2967,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             beneficiary_payout = c_ex.get_beneficiary_payout();
           } );
         }
-        vop = comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
+        voph.op = comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
           to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens, payout, curator_payout, beneficiary_payout );
-        pre_push_virtual_operation( vop );
-        post_push_virtual_operation( vop );
+        voph.pre_push();
+        voph.post_push();
 
         modify( author, [&]( account_object& a )
         {
@@ -3232,14 +3252,14 @@ void database::process_funds()
       p.sps_interval_ledger += new_hbd;
     });
 
-    operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
+    virtual_operation_pushing_handler voph{ *this, producer_reward_operation{ cwit.owner, asset( 0, VESTS_SYMBOL ) }};
     create_vesting2( *this, get_account( cwit.owner ), asset( witness_reward, HIVE_SYMBOL ), false,
       [&]( const asset& vesting_shares )
       {
-        vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
-        pre_push_virtual_operation( vop );
+        voph.op.get< producer_reward_operation >().vesting_shares = vesting_shares;
+        voph.pre_push();
       } );
-    post_push_virtual_operation( vop );
+    voph.post_push();
   }
   else
   {
@@ -3355,14 +3375,14 @@ asset database::get_producer_reward()
   if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.vesting_shares.amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
-    operation vop = producer_reward_operation( witness_account.name, asset( 0, VESTS_SYMBOL ) );
+    virtual_operation_pushing_handler voph{ *this, producer_reward_operation{ witness_account.name, asset( 0, VESTS_SYMBOL ) } };
     create_vesting2( *this, witness_account, pay, false,
       [&]( const asset& vesting_shares )
       {
-        vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
-        pre_push_virtual_operation( vop );
+        voph.op.get< producer_reward_operation >().vesting_shares = vesting_shares;
+        voph.pre_push();
       } );
-    post_push_virtual_operation( vop );
+    voph.post_push();
   }
   else
   {
@@ -5590,9 +5610,9 @@ void database::clear_expired_delegations()
   while( itr != delegations_by_exp.end() && itr->get_expiration_time() < now )
   {
     auto& delegator = get_account( itr->get_delegator() );
-    operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
+    virtual_operation_pushing_handler voph{ *this, return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() ) };
     try{
-    pre_push_virtual_operation( vop );
+    voph.pre_push();
 
     modify( delegator, [&]( account_object& a )
     {
@@ -5609,11 +5629,11 @@ void database::clear_expired_delegations()
       a.delegated_vesting_shares -= itr->get_vesting();
     });
 
-    post_push_virtual_operation( vop );
+    voph.post_push();
 
     remove( *itr );
     itr = delegations_by_exp.begin();
-  } FC_CAPTURE_AND_RETHROW( (vop) ) }
+  } FC_CAPTURE_AND_RETHROW( (voph.op) ) }
 }
 #ifdef HIVE_ENABLE_SMT
 template< typename smt_balance_object_type, typename modifier_type >
@@ -5702,7 +5722,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             } );
           }
         }
-        
+
         auto b = acnt.hbd_balance;
         acnt.hbd_balance += delta;
 
@@ -6159,9 +6179,8 @@ void database::apply_hardfork( uint32_t hardfork )
 {
   if( _log_hardforks )
     elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
-  operation hardfork_vop = hardfork_operation( hardfork );
 
-  pre_push_virtual_operation( hardfork_vop );
+  virtual_operation_pushing_handler voph{ *this, hardfork_operation( hardfork ), true };
 
   switch( hardfork )
   {
@@ -6538,7 +6557,7 @@ void database::apply_hardfork( uint32_t hardfork )
     consolidate_treasury_balance();
   }
 
-  post_push_virtual_operation( hardfork_vop );
+  voph.post_push();
 }
 
 void database::retally_liquidity_weight() {
