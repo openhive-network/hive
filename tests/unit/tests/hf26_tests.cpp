@@ -9,79 +9,114 @@
 using namespace hive::chain;
 using namespace hive::chain::util;
 
-BOOST_FIXTURE_TEST_SUITE( hf26_tests, hf26_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( hf26_tests, cluster_database_fixture )
 
 BOOST_AUTO_TEST_CASE( update_operation )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing: update authorization before and after HF26" );
-
-    ACTORS( (alice) );
-    fund( "alice", 1000000 );
-    generate_block();
-
-    db_plugin->debug_update( [=]( database& db )
+    struct data
     {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = ASSET( "0.100 TESTS" );
-      });
-    });
+      std::string old_key;
+      std::string new_key;
 
-    generate_block();
-
-    BOOST_TEST_MESSAGE( "Creating account bob with alice" );
-
-    account_create_operation acc_create;
-    acc_create.fee = ASSET( "0.100 TESTS" );
-    acc_create.creator = "alice";
-    acc_create.new_account_name = "bob";
-    acc_create.owner = authority( 1, generate_private_key( "bob_owner" ).get_public_key(), 1 );
-    acc_create.active = authority( 1, generate_private_key( "bob_active" ).get_public_key(), 1 );
-    acc_create.posting = authority( 1, generate_private_key( "bob_posting" ).get_public_key(), 1 );
-    acc_create.memo_key = generate_private_key( "bob_memo" ).get_public_key();
-    acc_create.json_metadata = "";
-
-    signed_transaction tx;
-    tx.operations.push_back( acc_create );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ) );
-
-    auto exec_update_op = [this]( const std::string& old_key,  const std::string& new_key, bool is_exception = false )
-    {
-      BOOST_TEST_MESSAGE("============update of authorization============");
-      BOOST_TEST_MESSAGE( db->head_block_time().to_iso_string().c_str() );
-
-      signed_transaction tx;
-
-      account_update_operation acc_update;
-      acc_update.account = "bob";
-
-      acc_update.owner = authority( 1, generate_private_key( new_key ).get_public_key(), 1 );
-
-      tx.operations.push_back( acc_update );
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      sign( tx, generate_private_key( old_key ) );
-
-      if( is_exception )
-      {
-        HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
-      }
-      else
-      {
-        db->push_transaction( tx, 0 );
-      }
-
-      generate_block();
+      bool is_exception = false;
     };
 
-    exec_update_op( "bob_owner", "key numer 01" );
-    exec_update_op( "key numer 01", "key numer 02" );
-    exec_update_op( "key numer 02", "key numer 03", true/*is_exception*/ );
+    std::vector<data> _v
+    { 
+      { "bob_owner",    "key numer 01", false },
+      { "key numer 01", "key numer 02", true },
+      { "key numer 01", "key numer 03", true }
+    };
+
+    std::vector<data> _v_hf26 =
+    { 
+      { "bob_owner",    "key numer 01", false },
+      { "key numer 01", "key numer 02", false },
+      { "key numer 02", "key numer 03", true }
+    };
+
+    auto _content = [&_v]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: update authorization before and after HF26" );
+
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice) );
+      executor->fund( "alice", 1000000 );
+      executor->generate_block();
+
+      executor->db_plugin->debug_update( [=]( database& db )
+      {
+        db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+        {
+          wso.median_props.account_creation_fee = ASSET( "0.100 TESTS" );
+        });
+      });
+
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "Creating account bob with alice" );
+
+      account_create_operation acc_create;
+      acc_create.fee = ASSET( "0.100 TESTS" );
+      acc_create.creator = "alice";
+      acc_create.new_account_name = "bob";
+      acc_create.owner = authority( 1, executor->generate_private_key( "bob_owner" ).get_public_key(), 1 );
+      acc_create.active = authority( 1, executor->generate_private_key( "bob_active" ).get_public_key(), 1 );
+      acc_create.posting = authority( 1, executor->generate_private_key( "bob_posting" ).get_public_key(), 1 );
+      acc_create.memo_key = executor->generate_private_key( "bob_memo" ).get_public_key();
+      acc_create.json_metadata = "";
+
+      signed_transaction tx;
+      tx.operations.push_back( acc_create );
+      tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      executor->sign( tx, alice_private_key );
+      executor->db->push_transaction( tx, 0 );
+
+      executor->vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ) );
+
+      auto exec_update_op = [&]( const std::string& old_key,  const std::string& new_key, bool is_exception )
+      {
+        BOOST_TEST_MESSAGE("============update of authorization============");
+        BOOST_TEST_MESSAGE( executor->db->head_block_time().to_iso_string().c_str() );
+
+        signed_transaction tx;
+
+        account_update_operation acc_update;
+        acc_update.account = "bob";
+
+        acc_update.owner = authority( 1, executor->generate_private_key( new_key ).get_public_key(), 1 );
+
+        tx.operations.push_back( acc_update );
+        tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        executor->sign( tx, executor->generate_private_key( old_key ) );
+
+        if( is_exception )
+        {
+          HIVE_REQUIRE_THROW( executor->db->push_transaction( tx, 0 ), fc::assert_exception );
+        }
+        else
+        {
+          executor->db->push_transaction( tx, 0 );
+        }
+
+        executor->generate_block();
+      };
+
+      for( auto& data : _v )
+      {
+        exec_update_op( data.old_key, data.new_key, data.is_exception );
+      }
+    };
+
+    execute_hardfork<25>( _content );
+
+    _v = _v_hf26;
+
+    execute_hardfork<26>( _content );
+
   }
   FC_LOG_AND_RETHROW()
 }
