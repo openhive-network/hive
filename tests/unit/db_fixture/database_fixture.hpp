@@ -387,8 +387,13 @@ struct cluster_database_fixture
   cluster_database_fixture( uint16_t _shared_file_size_in_mb = database_fixture::shared_file_size_in_mb_512 );
   virtual ~cluster_database_fixture();
 
-  void execute_24( content_method content );
-  void execute_25( content_method content );
+  template<uint8_t hardfork>
+  void execute_hardfork( content_method content )
+  {
+    ptr_hardfork_database_fixture executor( new hardfork_database_fixture( shared_file_size_in_mb, hardfork ) );
+    content( executor );
+  }
+
 };
 
 struct live_database_fixture : public database_fixture
@@ -522,14 +527,6 @@ struct hf24_database_fixture : public clean_database_fixture
     : clean_database_fixture( shared_file_size_in_mb )
   {}
   virtual ~hf24_database_fixture() {}
-};
-
-struct hf26_database_fixture : public clean_database_fixture
-{
-  hf26_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
-    : clean_database_fixture( shared_file_size_in_mb )
-  {}
-  virtual ~hf26_database_fixture() {}
 };
 
 struct delayed_vote_database_fixture : public virtual clean_database_fixture

@@ -1318,8 +1318,8 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
       executor->validate_database();
     };
 
-    cluster.execute_24( hf24_content );
-    cluster.execute_25( hf25_content );
+    cluster.execute_hardfork<24>( hf24_content );
+    cluster.execute_hardfork<25>( hf25_content );
 
     if( restore_author_reward_curve )
     {
@@ -1584,8 +1584,8 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       executor->validate_database();
     };
 
-    cluster.execute_24( hf24_content );
-    cluster.execute_25( hf25_content );
+    cluster.execute_hardfork<24>( hf24_content );
+    cluster.execute_hardfork<25>( hf25_content );
 
     BOOST_REQUIRE_EQUAL(  comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
     BOOST_REQUIRE_GT(     comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
@@ -1778,8 +1778,8 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
       executor->validate_database();
     };
 
-    execute_24( hf24_content );
-    execute_25( hf25_content );
+    execute_hardfork<24>( hf24_content );
+    execute_hardfork<25>( hf25_content );
 
     BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
   }
@@ -1969,8 +1969,8 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
       executor->validate_database();
     };
 
-    execute_24( hf24_content );
-    execute_25( hf25_content );
+    execute_hardfork<24>( hf24_content );
+    execute_hardfork<25>( hf25_content );
 
     BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
   }
@@ -2202,8 +2202,8 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
       executor->validate_database();
     };
 
-    execute_24( hf24_content );
-    execute_25( hf25_content );
+    execute_hardfork<24>( hf24_content );
+    execute_hardfork<25>( hf25_content );
 
     BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
 
