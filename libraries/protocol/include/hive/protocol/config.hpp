@@ -42,6 +42,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::seconds(60)
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
+#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(6)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
 
 #define HIVE_INIT_SUPPLY                      (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
@@ -95,6 +96,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::days(30)
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::days(1)
+#define HIVE_OWNER_UPDATE_LIMIT                           fc::minutes(60)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  3186477
 
 #define HIVE_INIT_SUPPLY                      int64_t(0)
@@ -117,8 +119,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MID_VOTING_SECONDS_HF25             (48 * 60 * 60) /// 48 hours
 
 #endif
-
-#define HIVE_OWNER_UPDATE_LIMIT               fc::minutes(60)
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
 #define HIVE_SYMBOL   (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HIVE ) )
