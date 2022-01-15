@@ -638,12 +638,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
   const auto arguments = args.get_array()[0];
   FC_ASSERT( arguments.get_array()[0].is_string(),       "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
-  FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
 
   rc::list_rc_accounts_args api_lra_args;
   api_lra_args.start = arguments.get_array()[0];
   api_lra_args.limit = arguments.get_array()[1].as<uint32_t>();
-  api_lra_args.order = arguments.get_array()[2].as<rc::sort_order_type>();
 
   return _rc_api->list_rc_accounts(api_lra_args).rc_accounts;
 }
@@ -655,12 +653,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
   const auto arguments = args.get_array()[0];
 
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
-  FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
 
   rc::list_rc_direct_delegations_args api_lrdd_args;
   api_lrdd_args.start = arguments.get_array()[0];
   api_lrdd_args.limit = arguments.get_array()[1].as<uint32_t>();
-  api_lrdd_args.order = arguments.get_array()[2].as<rc::sort_order_type>();
 
   return _rc_api->list_rc_direct_delegations(api_lrdd_args).rc_direct_delegations;
 }

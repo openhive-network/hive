@@ -110,26 +110,17 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
   list_rc_accounts_return result;
   result.rc_accounts.reserve( args.limit );
 
-  switch( args.order )
+  auto& idx = _db.get_index< hive::plugins::rc::rc_account_index, hive::chain::by_name >();
+  auto itr = idx.lower_bound(  args.start.as< account_name_type >() );
+  auto filter = &filter_default< rc_account_object >;
+  auto end = idx.end();
+
+  while( result.rc_accounts.size() < args.limit && itr != end )
   {
-    case( sort_order_type::by_name ):
-    {
-      auto& idx = _db.get_index< hive::plugins::rc::rc_account_index, hive::chain::by_name >();
-      auto itr = idx.lower_bound(  args.start.as< account_name_type >() );
-      auto filter = &filter_default< rc_account_object >;
-      auto end = idx.end();
+    if( filter( *itr ) )
+      result.rc_accounts.emplace_back( *itr, _db );
 
-      while( result.rc_accounts.size() < args.limit && itr != end )
-      {
-        if( filter( *itr ) )
-          result.rc_accounts.emplace_back( *itr, _db );
-
-        ++itr;
-      }
-      break;
-    }
-    default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+    ++itr;
   }
 
   return result;
@@ -141,35 +132,30 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   list_rc_direct_delegations_return result;
   result.rc_direct_delegations.reserve( args.limit );
 
-  switch( args.order )
+  auto key = args.start.as< vector< fc::variant > >();
+  FC_ASSERT( key.size() == 2, "by_from start requires 2 value. (from, to)" );
+
+  const account_object* delegator = _db.find< account_object, hive::chain::by_name >( key[0].as< account_name_type >() );
+  // If the delegatee is not provided, we default to the first id
+  auto delegatee_id = account_id_type::start_id();
+  if (key[1].as< account_name_type >() != "") {
+    const account_object* delegatee = _db.find< account_object, hive::chain::by_name >( key[1].as< account_name_type >() );
+    FC_ASSERT( delegatee, "Account ${a} does not exist", ("a", key[1].as< account_name_type >()) );
+    delegatee_id = delegatee->get_id();
+  }
+
+  FC_ASSERT( delegator, "Account ${a} does not exist", ("a", key[0].as< account_name_type >()) );
+
+  auto& idx  = _db.get_index< rc_direct_delegation_object_index, by_from_to >();
+  auto itr = idx.lower_bound( boost::make_tuple( delegator->get_id(), delegatee_id));
+  auto end = idx.end();
+
+  while( result.rc_direct_delegations.size() < args.limit && itr != end )
   {
-    case( sort_order_type::by_from_to_sort ):
-    {
-      auto key = args.start.as< vector< fc::variant > >();
-      FC_ASSERT( key.size() == 2, "by_from start requires 2 value. (from, to)" );
-
-      const account_object* delegator = _db.find< account_object, hive::chain::by_name >( key[0].as< account_name_type >() );
-      const account_object* delegatee = _db.find< account_object, hive::chain::by_name >( key[1].as< account_name_type >() );
-
-      FC_ASSERT( delegator, "Account ${a} does not exist", ("a", key[0].as< account_name_type >()) );
-      FC_ASSERT( delegatee, "Account ${a} does not exist", ("a", key[1].as< account_name_type >()) );
-
-      auto& idx  = _db.get_index< rc_direct_delegation_object_index, by_from_to >();
-      auto itr = idx.lower_bound( boost::make_tuple( delegator->get_id(), delegatee->get_id()));
-      auto end = idx.end();
-
-      while( result.rc_direct_delegations.size() < args.limit && itr != end )
-      {
-        const rc_direct_delegation_object& rcdd = *itr;
-        const account_object& to_account = _db.get< account_object, by_id >( rcdd.to );
-        result.rc_direct_delegations.emplace_back(*itr, delegator->name, to_account.name);
-        ++itr;
-      }
-
-      break;
-    }
-    default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+    const rc_direct_delegation_object& rcdd = *itr;
+    const account_object& to_account = _db.get< account_object, by_id >( rcdd.to );
+    result.rc_direct_delegations.emplace_back(*itr, delegator->name, to_account.name);
+    ++itr;
   }
 
   return result;

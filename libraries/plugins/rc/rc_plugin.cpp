@@ -844,7 +844,6 @@ struct post_apply_operation_visitor
 
   post_apply_operation_visitor(
     vector< account_regen_info >& ma,
-    flat_set< account_name_type >& oua,
     database& db,
     uint32_t t,
     uint32_t b,
@@ -1149,9 +1148,8 @@ void rc_plugin_impl::on_post_apply_operation( const operation_notification& note
   const uint32_t now = gpo.time.sec_since_epoch();
 
   vector< account_regen_info > modified_accounts;
-  flat_set< account_name_type > outdel_update_accounts;
   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, outdel_update_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   note.op.visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
@@ -1168,9 +1166,8 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
   const uint32_t now = gpo.time.sec_since_epoch();
 
   vector< account_regen_info > modified_accounts;
-  flat_set< account_name_type > outdel_update_accounts;
   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, outdel_update_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   op->visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
@@ -1204,9 +1201,8 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   const uint32_t now = gpo.time.sec_since_epoch();
 
   vector< account_regen_info > modified_accounts;
-  flat_set< account_name_type > outdel_update_accounts;
 
-  post_apply_optional_action_visitor vtor( modified_accounts, outdel_update_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_optional_action_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   note.action.visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
@@ -1448,10 +1444,11 @@ int64_t get_maximum_rc( const account_object& account, const rc_account_object& 
 void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object* account, uint32_t now, uint64_t delta) {
   _db.modify< rc_account_object >( rc_account, [&]( rc_account_object& rca )
   {
-    hive::chain::util::manabar_params manabar_params(get_maximum_rc( *account, rc_account ), HIVE_RC_REGEN_TIME);
+    auto max_rc = get_maximum_rc( *account, rc_account );
+    hive::chain::util::manabar_params manabar_params(max_rc, HIVE_RC_REGEN_TIME);
     rca.rc_manabar.regenerate_mana( manabar_params, now );
     rca.rc_manabar.current_mana = std::max( int64_t(rca.rc_manabar.current_mana + delta), int64_t(0) );
-    rca.last_max_rc = get_maximum_rc( *account, rca ) + delta;
+    rca.last_max_rc = max_rc + delta;
     rca.received_delegated_rc += delta;
   });
 }

@@ -1429,8 +1429,7 @@ class wallet_api
      */
     serializer_wrapper<vector< rc::rc_account_api_object >> list_rc_accounts(
           const string& account,
-          uint32_t limit,
-          rc::sort_order_type order );
+          uint32_t limit);
 
     /**
      *  List direct RC delegations.
@@ -1441,8 +1440,7 @@ class wallet_api
      */
     serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> list_rc_direct_delegations(
           fc::variant start,
-          uint32_t limit,
-          rc::sort_order_type order );
+          uint32_t limit);
 
     private:
       std::shared_ptr<detail::wallet_api_impl> my;

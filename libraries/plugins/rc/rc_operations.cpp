@@ -32,7 +32,7 @@ void delegate_rc_operation::validate()const
 
 void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 {
-  if( !_db.has_hardfork( HIVE_HARDFORK_1_25 ) ) return;
+  if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) ) return;
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   uint32_t now = gpo.time.sec_since_epoch();
@@ -73,8 +73,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         _db.remove(*delegation);
       } else {
         _db.modify<rc_direct_delegation_object>(*delegation, [&](rc_direct_delegation_object &delegation) {
-          FC_ASSERT(delegation.delegated_rc + delta > 0, "Delegation would result in negative delegated RC");
-          delegation.delegated_rc += delta;
+          delegation.delegated_rc = op.max_rc;
         });
       }
     }
@@ -83,15 +82,13 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
   // Get the minimum between the current RC and the maximum RC without received rc, so that eve can't re-delegate delegated RC
   int64_t from_delegateable_rc = std::min(get_maximum_rc(from_account, from_rc_account, false), from_rc_account.rc_manabar.current_mana);
-  // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegateable_rc < delta_total and then be valid as some delegations may get modified to take less rc
+  // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegatable_rc < delta_total and then be valid as some delegations may get modified to take less rc
   FC_ASSERT(from_delegateable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ("a", op.from)("h", from_delegateable_rc)("n", delta_total));
 
   _db.modify< rc_account_object >( from_rc_account, [&]( rc_account_object& rca )
   {
-    FC_ASSERT( get_maximum_rc( from_account, rca, false ) - delta_total >= 0, "Delegation would result in negative maximum rc" );
     // Do not give current rc back when deleting/reducing a delegation
     if (delta_total > 0) {
-      FC_ASSERT( rca.rc_manabar.current_mana - delta_total >= 0, "Delegation would result in negative rc" );
       rca.rc_manabar.current_mana -= delta_total;
     }
     rca.last_max_rc = get_maximum_rc( from_account, rca ) - delta_total;

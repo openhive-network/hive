@@ -2969,19 +2969,17 @@ serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_acco
 
 serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
             const string& start,
-            uint32_t limit,
-            rc::sort_order_type order_by )
+            uint32_t limit)
 {
-  vector<variant> args{start , limit, order_by};
+  vector<variant> args{start , limit};
   return {my->_remote_wallet_bridge_api->list_rc_accounts( {args}, LOCK )};
 }
 
 serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> wallet_api::list_rc_direct_delegations(
             fc::variant start,
-            uint32_t limit,
-            rc::sort_order_type order_by )
+            uint32_t limit)
 {
-  vector<variant> args{std::move( start ), limit, order_by};
+  vector<variant> args{std::move( start ), limit};
   return {my->_remote_wallet_bridge_api->list_rc_direct_delegations( {args}, LOCK )};
 }
 

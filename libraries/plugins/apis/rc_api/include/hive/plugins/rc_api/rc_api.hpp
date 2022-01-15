@@ -17,17 +17,10 @@ namespace detail
   class rc_api_impl;
 }
 
-enum sort_order_type
-{
-  by_name,
-  by_from_to_sort // We add _sort at the end otherwise it gets confused with the index by_from_to since they both belong to the same namespace
-};
-
 struct list_object_args_type
 {
   fc::variant       start;
   uint32_t          limit;
-  sort_order_type   order;
 };
 
 using plugins::json_rpc::void_type;
@@ -145,15 +138,9 @@ class rc_api
 
 } } } // hive::plugins::rc
 
-FC_REFLECT_ENUM( hive::plugins::rc::sort_order_type,
-                 (by_name)
-                 (by_from_to_sort)
-                 )
-
 FC_REFLECT( hive::plugins::rc::list_object_args_type,
             (start)
             (limit)
-            (order)
             )
 
 FC_REFLECT( hive::plugins::rc::get_resource_params_return,

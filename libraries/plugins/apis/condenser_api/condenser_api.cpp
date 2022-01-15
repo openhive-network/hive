@@ -1223,7 +1223,6 @@ namespace detail
     rc::list_rc_accounts_args a;
     a.start = args[0].as< account_name_type >();
     a.limit = args[1].as< uint32_t >();
-    a.order = args[2].as< rc::sort_order_type >();
     return _rc_api->list_rc_accounts( a ).rc_accounts;
   }
 
@@ -1234,7 +1233,6 @@ namespace detail
     rc::list_rc_direct_delegations_args a;
     a.start = args[0].as< vector< fc::variant > >();
     a.limit = args[1].as< uint32_t >();
-    a.order = args[2].as< rc::sort_order_type >();
     return _rc_api->list_rc_direct_delegations( a ).rc_direct_delegations;
   }
 
