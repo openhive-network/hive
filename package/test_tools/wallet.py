@@ -354,11 +354,11 @@ class Wallet(ScopedObject):
             return self.__send('list_proposals', start=start, limit=limit, order_by=order_by, order_type=order_type,
                                status=status, only_result=only_result)
 
-        def list_rc_accounts(self, account, limit, order):
-            return self.__send('list_rc_accounts', account=account, limit=limit, order=order)
+        def list_rc_accounts(self, account, limit):
+            return self.__send('list_rc_accounts', account=account, limit=limit)
 
-        def list_rc_direct_delegations(self, start, limit, order):
-            return self.__send('list_rc_direct_delegations', start=start, limit=limit, order=order)
+        def list_rc_direct_delegations(self, start, limit):
+            return self.__send('list_rc_direct_delegations', start=start, limit=limit)
 
         def list_witnesses(self, lowerbound, limit, only_result: bool = True):
             return self.__send('list_witnesses', lowerbound=lowerbound, limit=limit, only_result=only_result)
