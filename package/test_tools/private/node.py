@@ -84,7 +84,8 @@ class Node:
             self.__logger.debug(' '.join(item for item in command))
 
             env = dict(os.environ)
-            # Concat the variables provided with the system ones, note that the env vars provided as param superseeds those provided by the system
+            # Concat the variables provided with the system ones
+            # note that the env vars provided as param superseeds those provided by the system
             if extra_env_variables is not None:
                 env.update(extra_env_variables)
             if with_time_offset is not None:
@@ -335,11 +336,23 @@ class Node:
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
-    def __run_process(self, *, blocking, write_config_before_run=True, with_arguments=(), with_time_offset=None, env=None):
+    def __run_process(self,
+                      *,
+                      blocking,
+                      write_config_before_run=True,
+                      with_arguments=(),
+                      with_time_offset=None,
+                      env=None
+    ):
         if write_config_before_run:
             self.config.write_to_file(self.__get_config_file_path())
 
-        self.__process.run(blocking=blocking, with_arguments=with_arguments, with_time_offset=with_time_offset, extra_env_variables=env)
+        self.__process.run(
+            blocking=blocking,
+            with_arguments=with_arguments,
+            with_time_offset=with_time_offset,
+            extra_env_variables=env
+        )
 
     def run(
             self,
