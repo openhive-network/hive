@@ -76,7 +76,7 @@ class Node:
                 'stderr': None,
             }
 
-        def run(self, *, blocking, with_arguments=(), with_time_offset=None):
+        def run(self, *, blocking, with_arguments=(), with_time_offset=None, extra_env_variables=None):
             self.__directory.mkdir(exist_ok=True)
             self.__prepare_files_for_streams()
 
@@ -84,6 +84,9 @@ class Node:
             self.__logger.debug(' '.join(item for item in command))
 
             env = dict(os.environ)
+            # Concat the variables provided with the system ones, note that the env vars provided as param superseeds those provided by the system
+            if extra_env_variables is not None:
+                env.update(extra_env_variables)
             if with_time_offset is not None:
                 self.__configure_fake_time(env, with_time_offset)
 
@@ -332,11 +335,11 @@ class Node:
         wait_for(self.__is_snapshot_dumped, timeout=timeout,
                  timeout_error_message=f'Waiting too long for {self} to dump snapshot')
 
-    def __run_process(self, *, blocking, write_config_before_run=True, with_arguments=(), with_time_offset=None):
+    def __run_process(self, *, blocking, write_config_before_run=True, with_arguments=(), with_time_offset=None, env=None):
         if write_config_before_run:
             self.config.write_to_file(self.__get_config_file_path())
 
-        self.__process.run(blocking=blocking, with_arguments=with_arguments, with_time_offset=with_time_offset)
+        self.__process.run(blocking=blocking, with_arguments=with_arguments, with_time_offset=with_time_offset, extra_env_variables=env)
 
     def run(
             self,
@@ -347,7 +350,8 @@ class Node:
             exit_before_synchronization=False,
             wait_for_live=None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
-            time_offset=None
+            time_offset=None,
+            env=None,
     ):
         """
         :param wait_for_live: Stops execution until node will generate or receive blocks.
@@ -407,7 +411,8 @@ class Node:
         self.__run_process(
             blocking=exit_before_synchronization,
             with_arguments=additional_arguments,
-            with_time_offset=time_offset
+            with_time_offset=time_offset,
+            env=env
         )
 
         self.__produced_files = True
