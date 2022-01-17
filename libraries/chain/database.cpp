@@ -1309,31 +1309,37 @@ void database::clear_pending()
   FC_CAPTURE_AND_RETHROW()
 }
 
-void database::push_virtual_operation( const operation& op )
+template< database::push_type push >
+void database::exec_push( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) );
   operation_notification note = create_operation_notification( op );
-  ++_current_virtual_op;
+
+  if( push != push_type::post_push_vop )
+    ++_current_virtual_op;
+
   note.virtual_op = _current_virtual_op;
-  notify_pre_apply_operation( note );
-  notify_post_apply_operation( note );
+
+  if( push != push_type::post_push_vop )
+    notify_pre_apply_operation( note );
+
+  if( push != push_type::pre_push_vop )
+    notify_post_apply_operation( note );
+}
+
+void database::push_virtual_operation( const operation& op )
+{
+  exec_push<push_type::push_vop>( op );
 }
 
 void database::pre_push_virtual_operation( const operation& op )
 {
-  FC_ASSERT( is_virtual_operation( op ) );
-  operation_notification note = create_operation_notification( op );
-  ++_current_virtual_op;
-  note.virtual_op = _current_virtual_op;
-  notify_pre_apply_operation( note );
+  exec_push<push_type::pre_push_vop>( op );
 }
 
 void database::post_push_virtual_operation( const operation& op )
 {
-  FC_ASSERT( is_virtual_operation( op ) );
-  operation_notification note = create_operation_notification( op );
-  note.virtual_op = _current_virtual_op;
-  notify_post_apply_operation( note );
+  exec_push<push_type::post_push_vop>( op );
 }
 
 void database::notify_pre_apply_operation( const operation_notification& note )

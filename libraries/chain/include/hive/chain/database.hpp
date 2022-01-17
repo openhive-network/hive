@@ -140,6 +140,8 @@ namespace chain {
         skip_block_log              = 1 << 13  ///< used to skip block logging on reindex
       };
 
+      enum class push_type : uint8_t { pre_push_vop, post_push_vop, push_vop };
+
       /**
         * @brief Open a database, creating a new one if necessary
         *
@@ -324,6 +326,9 @@ namespace chain {
       void pop_block();
       void clear_pending();
 
+      template< push_type push >
+      void exec_push( const operation& op );
+      
       void push_virtual_operation( const operation& op );
       void pre_push_virtual_operation( const operation& op );
       void post_push_virtual_operation( const operation& op );
