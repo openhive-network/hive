@@ -15,10 +15,13 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
+#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
+
+using hive::plugins::wallet_bridge_api::wallet_formatter;
 
 class wallet_bridge_api_impl
 {
@@ -40,6 +43,7 @@ class wallet_bridge_api_impl
         (get_active_witnesses)
         (get_withdraw_routes)
         (list_my_accounts)
+        (switch_format)
         (list_accounts)
         (get_dynamic_global_properties)
         (get_account)
@@ -82,6 +86,8 @@ class wallet_bridge_api_impl
     boost::mutex                                                    _mtx;
 
   private:
+
+    format_type format = format_type::text;
 
     protocol::signed_transaction get_trx( const variant& args );
 
@@ -344,7 +350,34 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
   for (const auto& arg : arg_keys)
     keys.push_back(arg.as<protocol::public_key_type>());
 
-  return _account_by_key_api->get_key_references( {keys} );
+  auto _refs = _account_by_key_api->get_key_references( {keys} );
+
+  set<string> names;
+  for( const auto& item : _refs.accounts )
+    for( const auto& name : item )
+      names.insert( name );
+
+  vector<database_api::api_account_object> _result;
+  _result.reserve( names.size() );
+  for( const auto& name : names )
+  {
+    fc::variants _v = { name };
+    _result.emplace_back( *( get_account( _v ) ) );
+  }
+
+  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, switch_format )
+{
+  verify_args( args, 1 );
+  FC_ASSERT(args.get_array()[0].is_array(), "switch_format needs at least one argument");
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+  FC_ASSERT( arguments.get_array()[0].is_string(), "Type of format is required as first argument" );
+
+  format = arguments.get_array()[0].as<format_type>();
+  return variant();
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
@@ -510,7 +543,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
   const uint32_t from = arguments.get_array()[1].as<uint32_t>();
   const uint32_t limit = arguments.get_array()[2].as<uint32_t>();
-  return _account_history_api->get_account_history({account, from, limit});
+
+  auto _result = _account_history_api->get_account_history({account, from, limit});
+
+  return wallet_formatter::get_account_history( _result, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposals )
@@ -750,6 +786,7 @@ DEFINE_READ_APIS(
   (get_active_witnesses)
   (get_withdraw_routes)
   (list_my_accounts)
+  (switch_format)
   (list_accounts)
   (get_dynamic_global_properties)
   (get_account)
