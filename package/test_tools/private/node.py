@@ -8,6 +8,7 @@ import subprocess
 from threading import Event
 import time
 from typing import List, Optional, Union
+import warnings
 import weakref
 
 from test_tools import communication, constants, exceptions, network, paths_to_executables
@@ -149,7 +150,7 @@ class Node:
             except subprocess.TimeoutExpired:
                 self.__process.kill()
                 self.__process.wait()
-                self.__logger.warning('Process was force-closed with SIGKILL, because didn\'t close before timeout')
+                warnings.warn('Process was force-closed with SIGKILL, because didn\'t close before timeout')
 
             self.__process = None
 
