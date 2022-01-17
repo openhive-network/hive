@@ -351,8 +351,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     auth.owner = o.owner;
     auth.active = o.active;
     auth.posting = o.posting;
-    if( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
-      auth.previous_owner_update = fc::time_point_sec::min();
+    auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
@@ -457,8 +456,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     auth.owner = o.owner;
     auth.active = o.active;
     auth.posting = o.posting;
-    if( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
-      auth.previous_owner_update = fc::time_point_sec::min();
+    auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
@@ -2497,8 +2495,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     auth.owner = o.owner;
     auth.active = o.active;
     auth.posting = o.posting;
-    if( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )
-      auth.previous_owner_update = fc::time_point_sec::min();
+    auth.previous_owner_update = fc::time_point_sec::min();
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
