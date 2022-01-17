@@ -141,8 +141,8 @@ def test_get_ops_in_block(wallet: Wallet, world: World):
 
 
 def test_two_huge_posts(wallet: Wallet, world: World):
-    node = world.create_api_node()
-    node.run(replay_from='/home/dev/src/hive/tests/functional/python_tests/cli_wallet/generated_during_test_virtual_operations_bug/test_replay_from_external_block_log/InitNode/blockchain/block_log', )
+    node = world.create_init_node('InitNode2')
+    node.run()
     wallet = Wallet(attach_to=node)
     z = node.get_http_endpoint()
     logger.info(z)
@@ -158,14 +158,16 @@ def test_two_huge_posts(wallet: Wallet, world: World):
 
     wallet.api.create_account('initminer', 'bob', '{}')
     wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(20000000))
+    
+    node.wait_number_of_blocks(21)
+    node.close()
 
-    # with wallet.in_single_transaction():
-    #     wallet.api.post_comment('alice', 'hello-world1', '', 'xyz1', 'something about world1', data1, '{}')
-    #     wallet.api.post_comment('bob', 'hello-world2', '', 'xyz2', 'something about world2', data2, '{}')
-    task1 = threading.Thread(target=post_comment, args=[wallet, data1, data2])
-    task1.start()
+    api_node = world.create_init_node()
+    api_node.run(replay_from=node.get_block_log(), wait_for_live=False)
+    wallet = Wallet(attach_to=api_node)
+    wallet.api.post_comment('alice', 'hello-world1', '', 'xyz1', 'something about world1', data1, '{}')
+    wallet.api.post_comment('bob', 'hello-world2', '', 'xyz2', 'something about world2', data2, '{}')
 
-    node.wait_for_block_with_number(31)
 
     api1 = node.api.account_history.enum_virtual_ops(
         block_range_begin=1,
