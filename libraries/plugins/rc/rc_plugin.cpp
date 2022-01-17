@@ -74,7 +74,8 @@ class rc_plugin_impl
     rc_plugin&                    _self;
 
     rc_plugin_skip_flags          _skip;
-    std::map< account_name_type, int64_t > _account_to_max_rc;
+    std::map< account_name_type, int64_t > _account_to_max_rc; //used only in commented out debug code
+    std::set< account_name_type > _hf23_affected_accounts; //accounts touched by HF23 - filled right before HF, used before and after
     uint32_t                      _enable_at_block = 1;
 
 #ifdef IS_TEST_NET
@@ -595,9 +596,11 @@ struct pre_apply_operation_visitor
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
   fc::optional< price >                    _vesting_share_price;
+  std::set< account_name_type >&           _hf23_affected_accounts;
   rc_plugin_skip_flags                     _skip;
 
-  pre_apply_operation_visitor( database& db ) : _db(db)
+  pre_apply_operation_visitor( std::set< account_name_type >& hf23_affected_accounts, database& db )
+    : _db(db), _hf23_affected_accounts( hf23_affected_accounts )
   {
     const auto& gpo = _db.get_dynamic_global_properties();
     _current_time = gpo.time.sec_since_epoch();
@@ -644,6 +647,16 @@ struct pre_apply_operation_visitor
     } FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
   }
 
+  void regenerate( const account_object& account )const
+  {
+    const rc_account_object* rc_account = _db.find< rc_account_object, by_name >( account.get_name() );
+    FC_ASSERT( rc_account != nullptr, "Unexpectedly, rc_account ${a} does not exist", ( "a", account.get_name() ) );
+    try
+    {
+      regenerate( account, *rc_account );
+    } FC_CAPTURE_AND_RETHROW( ( account )( *rc_account ) )
+  }
+
   template< bool account_may_not_exist = false >
   void regenerate( const account_name_type& name )const
   {
@@ -657,12 +670,7 @@ struct pre_apply_operation_visitor
     {
       FC_ASSERT( account != nullptr, "Unexpectedly, account ${a} does not exist", ("a", name) );
     }
-
-    const rc_account_object* rc_account = _db.find< rc_account_object, by_name >( name );
-    FC_ASSERT( rc_account != nullptr, "Unexpectedly, rc_account ${a} does not exist", ("a", name) );
-    try{
-    regenerate( *account, *rc_account );
-    } FC_CAPTURE_AND_RETHROW( (*account)(*rc_account) )
+    regenerate( *account );
   }
 
   void operator()( const account_create_with_delegation_operation& op )const
@@ -728,13 +736,49 @@ struct pre_apply_operation_visitor
 
   void operator()( const hardfork_operation& op )const
   {
-    if( op.hardfork_id == HIVE_HARDFORK_0_1 )
+    switch( op.hardfork_id )
     {
-      const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
-      for( auto it=idx.begin(); it!=idx.end(); ++it )
+      case HIVE_HARDFORK_0_1:
       {
-        regenerate( it->name );
-      }
+        const auto& idx = _db.get_index< account_index, by_id >();
+        for( auto it = idx.begin(); it != idx.end(); ++it )
+          regenerate( it->name );
+      } break;
+
+      case HIVE_HARDFORK_0_23:
+      {
+#ifndef IS_TEST_NET //testnet accounts have nothing to do with old steem accounts
+        for( auto& account_name : hardforkprotect::get_steemit_accounts() )
+        {
+          const auto* account_ptr = _db.find_account( account_name );
+          if( account_ptr == nullptr )
+            continue;
+          auto insert_info = _hf23_affected_accounts.emplace( account_name );
+          if( insert_info.second )
+            regenerate( *account_ptr );
+
+          const auto& delegation_idx = _db.get_index< vesting_delegation_index, by_delegation >();
+          auto delegation_itr = delegation_idx.lower_bound( account_ptr->get_id() );
+          while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account_ptr->get_id() )
+          {
+            auto& delegation = *delegation_itr;
+            ++delegation_itr;
+
+            const auto& delegatee = _db.get_account( delegation.get_delegatee() );
+            insert_info = _hf23_affected_accounts.emplace( delegatee.get_name() );
+            if( insert_info.second )
+              regenerate( delegatee );
+          }
+
+          //delegations targeted at "steemit account" are not cleared
+
+          //all other cleared objects (pending escrows, limit orders, conversion requests) modify only
+          //liquid balance (and also only "steemit account"), therefore not affecting RC of other accounts
+        }
+#endif
+      } break;
+
+      //HF24 gave airdrop to some accounts skipped in HF23, but only in liquid form - not affecting RC
     }
   }
 
@@ -818,6 +862,7 @@ struct post_apply_operation_visitor
   typedef void result_type;
 
   vector< account_regen_info >&            _mod_accounts;
+  std::set< account_name_type>&            _hf23_affected_accounts;
   database&                                _db;
   uint32_t                                 _current_time = 0;
   uint32_t                                 _current_block_number = 0;
@@ -825,11 +870,12 @@ struct post_apply_operation_visitor
 
   post_apply_operation_visitor(
     vector< account_regen_info >& ma,
+    std::set< account_name_type >& hf23a,
     database& db,
     uint32_t t,
     uint32_t b,
     const account_name_type& w
-    ) : _mod_accounts(ma), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
+    ) : _mod_accounts(ma), _hf23_affected_accounts( hf23a ), _db(db), _current_time(t), _current_block_number(b), _current_witness(w)
   {}
 
   void operator()( const account_create_operation& op )const
@@ -917,28 +963,34 @@ struct post_apply_operation_visitor
 
   void operator()( const hardfork_operation& op )const
   {
-    if( op.hardfork_id == HIVE_HARDFORK_0_1 )
+    switch( op.hardfork_id )
     {
-      const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
-      for( auto it=idx.begin(); it!=idx.end(); ++it )
+      case HIVE_HARDFORK_0_1:
       {
-        _mod_accounts.emplace_back( it->name );
-      }
-    }
+        const auto& idx = _db.get_index< account_index, by_id >();
+        for( auto it = idx.begin(); it != idx.end(); ++it )
+          _mod_accounts.emplace_back( it->name );
+      } break;
 
-    if( op.hardfork_id == HIVE_HARDFORK_0_20 )
-    {
-      const auto& params = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-
-      _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& p )
+      case HIVE_HARDFORK_0_20:
       {
-        for( size_t i = 0; i < HIVE_NUM_RESOURCE_TYPES; i++ )
+        const auto& params = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+
+        _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& p )
         {
-          p.pool_array[ i ] = int64_t( params.resource_param_array[ i ].resource_dynamics_params.max_pool_size );
-        }
+          for( size_t i = 0; i < HIVE_NUM_RESOURCE_TYPES; ++i )
+            p.pool_array[i] = int64_t( params.resource_param_array[i].resource_dynamics_params.max_pool_size );
 
-        p.pool_array[ resource_new_accounts ] = 0;
-      });
+          p.pool_array[ resource_new_accounts ] = 0;
+        } );
+      } break;
+
+      case HIVE_HARDFORK_0_23:
+      {
+        for( auto& account : _hf23_affected_accounts )
+          _mod_accounts.emplace_back( account );
+        _hf23_affected_accounts.clear();
+      } break;
     }
   }
 
@@ -1002,7 +1054,7 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
     return;
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  pre_apply_operation_visitor vtor( _db );
+  pre_apply_operation_visitor vtor( _hf23_affected_accounts, _db );
 
   // TODO: Add issue number to HF constant
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -1046,7 +1098,7 @@ void rc_plugin_impl::on_post_apply_operation( const operation_notification& note
   vector< account_regen_info > modified_accounts;
 
   // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_operation_visitor vtor( modified_accounts, _hf23_affected_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   note.op.visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );
@@ -1058,7 +1110,7 @@ void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notific
     return;
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  pre_apply_optional_action_vistor vtor( _db );
+  pre_apply_optional_action_vistor vtor( _hf23_affected_accounts, _db );
 
   vtor._current_witness = gpo.current_witness;
   vtor._skip = _skip;
@@ -1076,7 +1128,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   vector< account_regen_info > modified_accounts;
 
-  post_apply_optional_action_visitor vtor( modified_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
+  post_apply_optional_action_visitor vtor( modified_accounts, _hf23_affected_accounts, _db, now, gpo.head_block_number, gpo.current_witness );
   note.action.visit( vtor );
 
   update_modified_accounts( _db, modified_accounts );

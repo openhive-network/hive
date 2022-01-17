@@ -2376,7 +2376,7 @@ void database::clear_account( const account_object& account,
     remove( withdrawal );
   }
 
-  // Touch SDB balances (to be sure all interests are added to balances)
+  // Touch HBD balances (to be sure all interests are added to balances)
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     adjust_balance( account, asset( 0, HBD_SYMBOL ) );
