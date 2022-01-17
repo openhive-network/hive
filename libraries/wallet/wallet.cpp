@@ -836,11 +836,12 @@ public:
     {
       std::stringstream out;
 
-      auto accounts = result.as<vector<database_api::api_account_object>>();
+      auto accounts = result.as< vector< serializer_wrapper<database_api::api_account_object> > >();
       asset total_hive;
       asset total_vest(0, VESTS_SYMBOL );
       asset total_hbd(0, HBD_SYMBOL );
-      for( const auto& a : accounts ) {
+      for( const auto& account_in_wrapper : accounts ) {
+        auto a = account_in_wrapper.value;
         total_hive += a.balance;
         total_vest += a.vesting_shares;
         total_hbd  += a.hbd_balance;
@@ -866,20 +867,36 @@ public:
       ss << std::left << std::setw( 50 ) << "DETAILS" << "\n";
       ss << "---------------------------------------------------------------------------------------------------\n";
       const auto& results = result.get_array();
+
+      auto _get_op_content = []( bool legacy_style_exists, const variant& op )
+      {
+        if( legacy_style_exists )
+        {
+          const auto& opop = op["op"].get_array();
+          return std::make_pair( opop[0].as_string(), fc::json::to_string(opop[1]) );
+        }
+        else
+        {
+          const auto& opop = op["op"].get_object();
+          return std::make_pair( opop["type"].as_string(), fc::json::to_string(opop["value"]) );
+        }
+      };
+
       for( const auto& item : results )
       {
         ss << std::left << std::setw(8) << item.get_array()[0].as_string() << " ";
         const auto& op = item.get_array()[1].get_object();
         ss << std::left << std::setw(10) << op["block"].as_string() << " ";
         ss << std::left << std::setw(50) << op["trx_id"].as_string() << " ";
-        const auto& opop = op["op"].get_object();
-        ss << std::left << std::setw(20) << opop["type"].as_string() << " ";
-        ss << std::left << std::setw(50) << fc::json::to_string(opop["value"]) << "\n";
+
+        auto _op_content = _get_op_content( true/*legacy_style_exists*/, op );
+        ss << std::left << std::setw(20) << _op_content.first << " ";
+        ss << std::left << std::setw(50) << _op_content.second << "\n";
       }
       return ss.str();
     };
     m["get_open_orders"] = []( variant result, const fc::variants& a ) {
-        auto orders = result.as<vector<database_api::api_limit_order_object>>();
+        auto orders = result.as< vector< serializer_wrapper<database_api::api_limit_order_object> > >();
         std::stringstream ss;
 
         ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
@@ -888,8 +905,9 @@ public:
         ss << ' ' << setw( 14 ) << "Quantity";
         ss << ' ' << setw( 10 ) << "Type";
         ss << "\n===============================================================================\n";
-        for( const auto& o : orders )
+        for( const auto& order_in_wrapper : orders )
         {
+          auto o = order_in_wrapper.value;
           ss << ' ' << setw( 10 ) << o.orderid;
           ss << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
           ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
@@ -898,7 +916,8 @@ public:
         return ss.str();
     };
     m["get_order_book"] = []( variant result, const fc::variants& a ) {
-      auto orders = result.as< wallet_bridge_api::get_order_book_return >();
+      auto orders_in_wrapper = result.as< serializer_wrapper<wallet_bridge_api::get_order_book_return> >();
+      auto orders = orders_in_wrapper.value;
       std::stringstream ss;
       asset bid_sum = asset( 0, HBD_SYMBOL );
       asset ask_sum = asset( 0, HBD_SYMBOL );
