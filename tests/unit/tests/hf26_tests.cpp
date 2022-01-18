@@ -25,16 +25,16 @@ BOOST_AUTO_TEST_CASE( update_operation )
 
     std::vector<data> _v
     { 
-      { "bob_owner",    "key numer 01", false },
-      { "key numer 01", "key numer 02", true },
-      { "key numer 01", "key numer 03", true }
+      { "bob_owner",    "key number 01", false },
+      { "key number 01", "key number 02", true },
+      { "key number 01", "key number 03", true }
     };
 
     std::vector<data> _v_hf26 =
     { 
-      { "bob_owner",    "key numer 01", false },
-      { "key numer 01", "key numer 02", false },
-      { "key numer 02", "key numer 03", true }
+      { "bob_owner",    "key number 01", false },
+      { "key number 01", "key number 02", false },
+      { "key number 02", "key number 03", true }
     };
 
     auto _content = [&_v]( ptr_hardfork_database_fixture& executor )
