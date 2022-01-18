@@ -1472,6 +1472,16 @@ void database::notify_end_of_syncing()
   HIVE_TRY_NOTIFY(_end_of_syncing_signal)
 }
 
+void database::notify_pre_apply_custom_operation( const custom_operation_notification& note )
+{
+  HIVE_TRY_NOTIFY( _pre_apply_custom_operation_signal, note )
+}
+
+void database::notify_post_apply_custom_operation( const custom_operation_notification& note )
+{
+  HIVE_TRY_NOTIFY( _post_apply_custom_operation_signal, note )
+}
+
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
@@ -2144,7 +2154,9 @@ void database::restore_accounts( const std::set< std::string >& restored_account
 
     if( found == hardforks.h23_balances.end() )
     {
-      ilog( "The account ${acc} hadn't removed balances, balances can't be restored", ( "acc", name ) );
+      #ifndef IS_TEST_NET
+        ilog( "The account ${acc} hadn't removed balances, balances can't be restored", ( "acc", name ) );
+      #endif
       continue;
     }
 
@@ -2646,7 +2658,6 @@ void database::process_vesting_withdrawals()
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
-
             operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, vests, routed );
 
             pre_push_virtual_operation( vop );
@@ -4996,6 +5007,18 @@ boost::signals2::connection database::add_post_apply_transaction_handler( const 
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<false>(_post_apply_transaction_signal, func, plugin, group, "transaction");
+}
+
+boost::signals2::connection database::add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl< true/*IS_PRE_OPERATION*/ >(_pre_apply_custom_operation_signal, func, plugin, group, "->custom");
+}
+
+boost::signals2::connection database::add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl< false/*IS_PRE_OPERATION*/ >(_post_apply_custom_operation_signal, func, plugin, group, "<-custom");
 }
 
 boost::signals2::connection database::add_pre_apply_block_handler( const apply_block_handler_t& func,

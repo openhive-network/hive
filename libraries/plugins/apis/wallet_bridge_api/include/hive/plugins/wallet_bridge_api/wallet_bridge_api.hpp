@@ -46,6 +46,9 @@ class wallet_bridge_api
         (broadcast_transaction_synchronous)
         (broadcast_transaction)
         (find_recurrent_transfers)
+        (find_rc_accounts)
+        (list_rc_accounts)
+        (list_rc_direct_delegations)
     )
 
     void api_startup();
@@ -91,4 +94,7 @@ FC_API(
   (broadcast_transaction_synchronous)
   (broadcast_transaction)
   (find_recurrent_transfers)
+  (find_rc_accounts)
+  (list_rc_accounts)
+  (list_rc_direct_delegations)
 )

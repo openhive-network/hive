@@ -285,6 +285,15 @@ add_boost_test( plugin_test
     json_rpc/semantics_validation
     market_history/mh_test
     transaction_status/transaction_status_test
+    rc_direct_delegation/delegate_rc_operation_validate
+    rc_direct_delegation/delegate_rc_operation_apply_single
+    rc_direct_delegation/delegate_rc_operation_apply_many
+    rc_direct_delegation/update_outdel_overflow
+    rc_direct_delegation/update_outdel_overflow_many
+    rc_direct_delegation/direct_rc_delegation_vesting_withdrawal
+    rc_direct_delegation/direct_rc_delegation_vesting_withdrawal_routes
+    rc_direct_delegation/rc_delegation_regeneration
+    rc_direct_delegation/rc_delegation_removal_no_rc
 )
 
 target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
