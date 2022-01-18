@@ -1310,7 +1310,7 @@ void database::clear_pending()
 }
 
 template< database::push_type push >
-void database::exec_push( const operation& op )
+database::optional_vop_id_t database::exec_push( const operation& op, const database::optional_vop_id_t& vop_id)
 {
   FC_ASSERT( is_virtual_operation( op ) );
   operation_notification note = create_operation_notification( op );
@@ -1318,13 +1318,18 @@ void database::exec_push( const operation& op )
   if( push != push_type::post_push_vop )
     ++_current_virtual_op;
 
-  note.virtual_op = _current_virtual_op;
+  note.virtual_op = ( vop_id.valid() ? *vop_id : _current_virtual_op );
 
   if( push != push_type::post_push_vop )
+  {
     notify_pre_apply_operation( note );
+    return note.virtual_op;
+  }
 
   if( push != push_type::pre_push_vop )
     notify_post_apply_operation( note );
+
+  return database::optional_vop_id_t{};
 }
 
 void database::push_virtual_operation( const operation& op )
@@ -1332,14 +1337,14 @@ void database::push_virtual_operation( const operation& op )
   exec_push<push_type::push_vop>( op );
 }
 
-void database::pre_push_virtual_operation( const operation& op )
+int64_t database::pre_push_virtual_operation( const operation& op )
 {
-  exec_push<push_type::pre_push_vop>( op );
+  return *exec_push<push_type::pre_push_vop>( op );
 }
 
-void database::post_push_virtual_operation( const operation& op )
+void database::post_push_virtual_operation( const operation& op, const database::optional_vop_id_t& vop_id)
 {
-  exec_push<push_type::post_push_vop>( op );
+  exec_push<push_type::post_push_vop>( op, vop_id);
 }
 
 void database::notify_pre_apply_operation( const operation_notification& note )
@@ -5741,7 +5746,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             } );
           }
         }
-        
+
         auto b = acnt.hbd_balance;
         acnt.hbd_balance += delta;
 
@@ -6200,7 +6205,7 @@ void database::apply_hardfork( uint32_t hardfork )
     elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
   operation hardfork_vop = hardfork_operation( hardfork );
 
-  pre_push_virtual_operation( hardfork_vop );
+  const auto vop_id = pre_push_virtual_operation( hardfork_vop );
 
   switch( hardfork )
   {
@@ -6577,7 +6582,7 @@ void database::apply_hardfork( uint32_t hardfork )
     consolidate_treasury_balance();
   }
 
-  post_push_virtual_operation( hardfork_vop );
+  post_push_virtual_operation( hardfork_vop, vop_id );
 }
 
 void database::retally_liquidity_weight() {

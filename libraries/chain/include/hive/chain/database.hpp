@@ -326,12 +326,14 @@ namespace chain {
       void pop_block();
       void clear_pending();
 
+      using optional_vop_id_t = fc::optional<uint64_t>;
+
       template< push_type push >
-      void exec_push( const operation& op );
-      
+      optional_vop_id_t exec_push( const operation& op, const optional_vop_id_t& vop_id = optional_vop_id_t{} );
+
       void push_virtual_operation( const operation& op );
-      void pre_push_virtual_operation( const operation& op );
-      void post_push_virtual_operation( const operation& op );
+      int64_t pre_push_virtual_operation( const operation& op );
+      void post_push_virtual_operation( const operation& op, const optional_vop_id_t& vop_id = optional_vop_id_t{} );
 
       /*
         * Pushing an action without specifying an execution time will execute at head block.
