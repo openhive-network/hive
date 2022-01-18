@@ -9,6 +9,7 @@
 #include <hive/plugins/reputation_api/reputation_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
@@ -882,6 +883,9 @@ DEFINE_API_ARGS( list_proposals,                         vector< variant >,   ve
 DEFINE_API_ARGS( find_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   vector< database_api::api_proposal_vote_object > )
 DEFINE_API_ARGS( find_recurrent_transfers,               vector< variant >,   vector< database_api::api_recurrent_transfer_object > )
+DEFINE_API_ARGS( find_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
+DEFINE_API_ARGS( list_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
+DEFINE_API_ARGS( list_rc_direct_delegations,             vector< variant >,   vector< rc::rc_direct_delegation_api_object > )
 
 #undef DEFINE_API_ARGS
 
@@ -982,6 +986,9 @@ public:
     (find_proposals)
     (list_proposal_votes)
     (find_recurrent_transfers)
+    (find_rc_accounts)
+    (list_rc_accounts)
+    (list_rc_direct_delegations)
   )
 
   private:

@@ -203,7 +203,7 @@ class wallet_api
     /** Get the WIF private key corresponding to a public key.
       * The private key must already be in the wallet.
       *
-      * @param pubkey public key      
+      * @param pubkey public key
       *
       * @return private key
       */
@@ -391,7 +391,7 @@ class wallet_api
       * This method will claim a subsidized account creation.
       *
       * @param creator The account to receive the account creation credit
-      * @param fee The fee to pay for claiming the account (either 0 steem for a discounted account, or the full account fee)
+      * @param fee The fee to pay for claiming the account (either 0 hive for a discounted account, or the full account fee)
       * @param broadcast true if you wish to broadcast the transaction
       */
     serializer_wrapper<annotated_signed_transaction> claim_account_creation( const string& creator,
@@ -563,7 +563,7 @@ class wallet_api
       bool broadcast );
 
     /** This method updates the account of an authority for an exisiting account.
-      * 
+      *
       * Warning: You can create impossible authorities using this method. The method
       * will fail if you create an impossible owner authority, but will allow impossible
       * active and posting authorities.
@@ -687,7 +687,7 @@ class wallet_api
 
     // helper function
     serializer_wrapper<annotated_signed_transaction> delegate_vesting_shares_and_transfer_and_broadcast(
-      const string& delegator, const string& delegatee, const hive::protocol::asset& vesting_shares, 
+      const string& delegator, const string& delegatee, const hive::protocol::asset& vesting_shares,
       optional<hive::protocol::asset> transfer_amount, optional<string> transfer_memo,
       bool broadcast, bool blocking );
 
@@ -738,7 +738,7 @@ class wallet_api
     serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> get_collateralized_conversion_requests( const string& owner );
 
     /** Update witness properties for the given account.
-      * 
+      *
       * @param witness_name The name of the witness account.
       * @param url A URL containing some information about the witness. The empty string makes it remain the same.
       * @param block_signing_key The new block signing public key. The empty string disables block production.
@@ -773,12 +773,12 @@ class wallet_api
       bool broadcast = false);
 
     /** Vote for a witness
-      * 
+      *
       * You can vote for up to 30 witnesses where strength of each vote is
       * determined by the accounts vesting shares (delegations doesn't count)
       * Vote will remain until cancelled (\c approve set to \c false),
       * overridden by \c set_voting_proxy or expired if voting account
-      * will not execute any governance actions for at least 365 days 
+      * will not execute any governance actions for at least 365 days
       * (such as voting for witnesses or proposals)
       *
       * @param account_to_vote_with The account voting for a witness
@@ -811,7 +811,7 @@ class wallet_api
       bool broadcast = false);
 
     /** Transfer funds from one account to another using escrow. HIVE and HBD can be transferred.
-      * 
+      *
       * @param from The account the funds are coming from
       * @param to The account the funds are going to
       * @param agent The account acting as the agent in case of dispute
@@ -1389,7 +1389,6 @@ class wallet_api
 
   /**
       * Finds a recurrent transfer
-
       * @param from The account from which the funds are coming from
       */
   serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
@@ -1399,11 +1398,56 @@ class wallet_api
 
     fc::signal<void(bool)> lock_changed;
 
-  private:
-    std::shared_ptr<detail::wallet_api_impl> my;
-    fc::promise< int >::ptr&                 exit_promise;
-    bool                                     is_daemon;
-    void encrypt_keys();
+    /**
+    *  Delegate Rc
+    *
+    *  @param from The source account
+    *  @param delegatees The destination accounts
+    *  @param max_rc The amount to delegate
+    *  @param broadcast To broadcast this transaction or not
+    */
+    serializer_wrapper<annotated_signed_transaction> delegate_rc(
+          const account_name_type& from,
+          const flat_set<account_name_type>& delegatees,
+          int64_t max_rc,
+          bool broadcast );
+
+
+    /**
+     *  Retrieve RC information for the given accounts.
+     *
+     *  @param accounts The vector of accounts
+     */
+    serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( const vector< account_name_type >& accounts );
+
+    /**
+     *  List RC accounts.
+     *
+     *  @param account The starting account
+     *  @param limit   The limit of returned results
+     *  @param order   The sort order
+     */
+    serializer_wrapper<vector< rc::rc_account_api_object >> list_rc_accounts(
+          const string& account,
+          uint32_t limit);
+
+    /**
+     *  List direct RC delegations.
+     *
+     *  @param start    Starting value for querying results,
+     *  @param limit   The limit of returned results
+     *  @param order   The sort order
+     */
+    serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> list_rc_direct_delegations(
+          fc::variant start,
+          uint32_t limit);
+
+    private:
+      std::shared_ptr<detail::wallet_api_impl> my;
+      fc::promise< int >::ptr&                 exit_promise;
+      bool                                     is_daemon;
+      void encrypt_keys();
+
 };
 
 struct plain_keys {
@@ -1530,6 +1574,12 @@ FC_API( hive::wallet::wallet_api,
       (find_proposals)
       (list_proposal_votes)
       (remove_proposal)
+
+      /// rc api
+      (delegate_rc)
+      (find_rc_accounts)
+      (list_rc_accounts)
+      (list_rc_direct_delegations)
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )

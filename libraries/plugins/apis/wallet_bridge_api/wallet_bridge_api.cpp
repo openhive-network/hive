@@ -13,6 +13,8 @@
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
@@ -59,6 +61,9 @@ class wallet_bridge_api_impl
         (broadcast_transaction_synchronous)
         (broadcast_transaction)
         (find_recurrent_transfers)
+        (find_rc_accounts)
+        (list_rc_accounts)
+        (list_rc_direct_delegations)
     )
 
     chain::chain_plugin&                                            _chain;
@@ -69,6 +74,7 @@ class wallet_bridge_api_impl
     std::shared_ptr< block_api::block_api >                         _block_api;
     std::shared_ptr< market_history::market_history_api >           _market_history_api;
     std::shared_ptr< network_broadcast_api::network_broadcast_api>  _network_broadcast_api;
+    std::shared_ptr< rc::rc_api>                                    _rc_api;
     p2p::p2p_plugin*                                                _p2p = nullptr;
     map< protocol::transaction_id_type, confirmation_callback >     _callbacks;
     map< time_point_sec, vector< protocol::transaction_id_type > >  _callback_expirations;
@@ -131,6 +137,13 @@ void wallet_bridge_api::api_startup()
     my->_network_broadcast_api = network_broadcast_api->api;
   else
     not_enabled_plugins += "network_broadcast_api ";
+
+  //=====
+  auto rc_api = appbase::app().find_plugin< rc::rc_api_plugin >();
+  if (rc_api)
+    my->_rc_api = rc_api->api;
+  else
+    not_enabled_plugins += "rc_api_plugin";
 
   //=====
   auto p2p = appbase::app().find_plugin< p2p::p2p_plugin >();
@@ -605,6 +618,49 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
   return _database_api->find_recurrent_transfers( { acc_name } ).recurrent_transfers;
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
+{
+  FC_ASSERT( args.get_array()[0].is_array(), "Array of account names is required as first argument" );
+  const auto array_args = args.get_array()[0].get_array();
+
+  std::vector< protocol::account_name_type >  accounts;
+  accounts.reserve(array_args.size());
+  for (const auto& arg : array_args)
+    accounts.push_back(arg.as<protocol::account_name_type>());
+
+  return _rc_api->find_rc_accounts({ accounts }).rc_accounts;
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
+{
+  FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least three arguments");
+  const auto arguments = args.get_array()[0];
+  FC_ASSERT( arguments.get_array()[0].is_string(),       "Account name is required as first argument" );
+  FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
+
+  rc::list_rc_accounts_args api_lra_args;
+  api_lra_args.start = arguments.get_array()[0];
+  api_lra_args.limit = arguments.get_array()[1].as<uint32_t>();
+
+  return _rc_api->list_rc_accounts(api_lra_args).rc_accounts;
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
+{
+  FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least three arguments");
+  const auto arguments = args.get_array()[0];
+
+  FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
+
+  rc::list_rc_direct_delegations_args api_lrdd_args;
+  api_lrdd_args.start = arguments.get_array()[0];
+  api_lrdd_args.limit = arguments.get_array()[1].as<uint32_t>();
+
+  return _rc_api->list_rc_direct_delegations(api_lrdd_args).rc_direct_delegations;
+}
+
 DEFINE_LOCKLESS_APIS(
   wallet_bridge_api, 
   (get_version)
@@ -643,8 +699,9 @@ DEFINE_READ_APIS(
   (list_proposal_votes)
   (get_reward_fund)
   (find_recurrent_transfers)
+  (find_rc_accounts)
+  (list_rc_accounts)
+  (list_rc_direct_delegations)
 )
-
-
 
 } } } // hive::plugins::wallet_bridge_api

@@ -12,6 +12,10 @@
 
 #include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -1098,7 +1102,7 @@ vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, 
   result.reserve(accounts.size());
   for (const auto& acc : accounts)
     result.push_back(acc);
-  
+
   result.shrink_to_fit();
   return result;
 }
@@ -2928,6 +2932,55 @@ serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet
 {
   my->require_online();
   return { my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK ) };
+}
+
+serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
+            const account_name_type& from,
+            const flat_set<account_name_type>& delegatees,
+            int64_t max_rc,
+            bool broadcast )
+{
+  using namespace plugins::rc;
+  FC_ASSERT( !is_locked() );
+
+  delegate_rc_operation dro;
+  dro.from    = from;
+  dro.delegatees = delegatees;
+  dro.max_rc  = max_rc;
+
+  custom_json_operation op;
+  op.json = fc::json::to_string( rc_plugin_operation( dro ) );
+  op.id = HIVE_RC_PLUGIN_NAME;
+
+  flat_set< account_name_type > required_auths;
+  dro.get_required_posting_authorities( required_auths );
+  op.required_posting_auths = required_auths;
+
+  signed_transaction trx;
+  trx.operations.push_back( op );
+  trx.validate();
+  return {my->sign_transaction( trx, broadcast )};
+}
+
+serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( const vector< account_name_type >& accounts )
+{
+  return {my->_remote_wallet_bridge_api->find_rc_accounts( {variant( accounts )}, LOCK )};
+}
+
+serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
+            const string& start,
+            uint32_t limit)
+{
+  vector<variant> args{start , limit};
+  return {my->_remote_wallet_bridge_api->list_rc_accounts( {args}, LOCK )};
+}
+
+serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> wallet_api::list_rc_direct_delegations(
+            fc::variant start,
+            uint32_t limit)
+{
+  vector<variant> args{std::move( start ), limit};
+  return {my->_remote_wallet_bridge_api->list_rc_direct_delegations( {args}, LOCK )};
 }
 
 } } // hive::wallet

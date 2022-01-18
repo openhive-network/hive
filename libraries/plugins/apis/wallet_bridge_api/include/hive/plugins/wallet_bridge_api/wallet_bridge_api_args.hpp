@@ -7,6 +7,7 @@
 #include <hive/plugins/block_api/block_api.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
+#include <hive/plugins/rc_api/rc_api.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
@@ -145,6 +146,18 @@ typedef hive::plugins::json_rpc::void_type broadcast_transaction_return;
 /* find_recurrent_transfers */
 typedef variant                                               find_recurrent_transfers_args;
 typedef vector< database_api::api_recurrent_transfer_object > find_recurrent_transfers_return;
+
+/* find_rc_accounts */
+typedef variant                                               find_rc_accounts_args;
+typedef vector< rc::rc_account_api_object >                   find_rc_accounts_return;
+
+/* list_rc_accounts */
+typedef variant                                               list_rc_accounts_args;
+typedef vector< rc::rc_account_api_object >                   list_rc_accounts_return;
+
+/* list_rc_direct_delegations */
+typedef variant                                               list_rc_direct_delegations_args;
+typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_delegations_return;
 
 } } } // hive::plugins::wallet_bridge_api
 

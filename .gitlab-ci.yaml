@@ -268,3 +268,19 @@ test_tools_tests:
       junit: tests/test_tools/tests/report.xml
   tags:
     - public-runner-docker
+
+rc_direct_delegations_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - cd tests/functional/python_tests/direct_rc_delegations_tests
+    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/direct_rc_delegations_tests/report.xml
+  tags:
+    - public-runner-docker

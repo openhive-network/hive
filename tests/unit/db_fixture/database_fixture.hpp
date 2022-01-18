@@ -127,7 +127,7 @@ do {                                                              \
 #define REQUIRE_THROW_WITH_VALUE( op, field, value ) \
   REQUIRE_THROW_WITH_VALUE_2( op, field, value, fc::exception )
 
-///This simply resets v back to its default-constructed value. Requires v to have a working assingment operator and
+///This simply resets v back to its default-constructed value. Requires v to have a working assignment operator and
 /// default constructor.
 #define RESET(v) v = decltype(v)()
 ///This allows me to build consecutive test cases. It's pretty ugly, but it works well enough for unit tests.
@@ -146,6 +146,17 @@ do {                                                              \
 
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)
 #define ACTORS(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, ~, names) \
+  validate_database();
+
+
+// Generate accounts with the account creation fee instead of vesting 100 hive
+#define ACTOR_DEFAULT_FEE(name) \
+  PREP_ACTOR(name) \
+  const auto& name = account_create_default_fee(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+
+#define ACTORS_DEFAULT_FEE_IMPL(r, data, elem) ACTOR_DEFAULT_FEE(elem)
+#define ACTORS_DEFAULT_FEE(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_DEFAULT_FEE_IMPL, ~, names) \
   validate_database();
 
 #define PREP_ACTOR_EXT(object, name) \
@@ -273,6 +284,12 @@ struct database_fixture {
   );
 
   const account_object& account_create(
+    const string& name,
+    const public_key_type& key,
+    const public_key_type& post_key
+  );
+
+  const account_object& account_create_default_fee(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key

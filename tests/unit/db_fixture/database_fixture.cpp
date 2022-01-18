@@ -430,6 +430,26 @@ const account_object& database_fixture::account_create(
   FC_CAPTURE_AND_RETHROW( (name) );
 }
 
+const account_object& database_fixture::account_create_default_fee(
+  const string& name,
+  const public_key_type& key,
+  const public_key_type& post_key
+)
+{
+  try
+  {
+    return account_create(
+      name,
+      HIVE_INIT_MINER_NAME,
+      init_account_priv_key,
+      db->get_witness_schedule_object().median_props.account_creation_fee.amount,
+      key,
+      post_key,
+      "" );
+  }
+  FC_CAPTURE_AND_RETHROW( (name) );
+}
+
 const account_object& database_fixture::account_create(
   const string& name,
   const public_key_type& key

@@ -57,6 +57,7 @@ namespace chain {
 
   class database_impl;
   class custom_operation_interpreter;
+  class custom_operation_notification;
 
   namespace util {
     struct comment_reward_context;
@@ -357,12 +358,16 @@ namespace chain {
       void notify_switch_fork( uint32_t block_num );
       void notify_pre_apply_transaction( const transaction_notification& note );
       void notify_post_apply_transaction( const transaction_notification& note );
+      void notify_pre_apply_custom_operation( const custom_operation_notification& note );
+      void notify_post_apply_custom_operation( const custom_operation_notification& note );
+
 
       using apply_required_action_handler_t = std::function< void(const required_action_notification&) >;
       using apply_optional_action_handler_t = std::function< void(const optional_action_notification&) >;
       using apply_operation_handler_t = std::function< void(const operation_notification&) >;
       using apply_transaction_handler_t = std::function< void(const transaction_notification&) >;
       using apply_block_handler_t = std::function< void(const block_notification&) >;
+      using apply_custom_operation_handler_t = std::function< void(const custom_operation_notification&) >;
       using irreversible_block_handler_t = std::function< void(uint32_t) >;
       using switch_fork_handler_t = std::function< void(uint32_t) >;
       using reindex_handler_t = std::function< void(const reindex_notification&) >;
@@ -406,8 +411,11 @@ namespace chain {
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_generate_optional_actions_handler ( const generate_optional_actions_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
 
-      boost::signals2::connection add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+
+    boost::signals2::connection add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
       /// <summary>
       ///  All plugins storing data in different way than chainbase::generic_index (wrapping
       ///  a multi_index) should register to this handler to add its own data to the prepared snapshot.
@@ -829,7 +837,10 @@ namespace chain {
         */
       fc::signal<void(const operation_notification&)>       _post_apply_operation_signal;
 
-      /**
+      fc::signal<void(const custom_operation_notification&)> _pre_apply_custom_operation_signal;
+      fc::signal<void(const custom_operation_notification&)> _post_apply_custom_operation_signal;
+
+    /**
         *  This signal is emitted when we start processing a block.
         *
         *  You may not yield from this callback because the blockchain is holding
