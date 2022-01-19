@@ -1,25 +1,63 @@
-## How to start
+## Installation
 
-The easiest way of working with TestTools is to install them. Then package will know which executables (_hived_, _cli_wallet_, etc.) should use and your IDE will support code completion. It is recommended if you are a tester. But if you don't want to install anything, jump to **Run without installation** below. It might be better option if you want to run selected test only once.
+To use TestTools you have to install them and specify location of hive executables. Whole process is described below.
 
-### Installation
+### 1. Install package
 
-Run installation script. It will install TestTools and help you to select which _hived_, _cli_wallet_ and such executables should be used by TestTools.
+Select one of following methods (click to expand):
+
+<details>
+<summary>Install with PyCharm</summary>
+
+With opened project, select tab "Python Packages" at the bottom of window, click "Add Package" and then "From Disk".
+
+![Installation instructions](./documentation/installation_in_pycharm0.png)
+
+Select TestTools directory, mark "Install as editable" option and click OK.
+
+![Installation instructions](./documentation/installation_in_pycharm1.png)
+</details>
+
+<details>
+<summary>Install in virtual environment manually</summary>
+
 ```bash
-python3 hive/tests/test_tools/install.py
+cd ~/virtual_environments               # Select location for virtual environment
+python3.8 -m venv venv                  # Create virtual environment in current directory
+source venv/bin/activate                # Activate it
+pip install -e ~/hive/tests/test_tools  # Install TestTools
 ```
 
-### Running without installation
-
-Run tests in current directory:
+To deactivate virtual environment run:
 ```bash
-PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" pytest
+deactivate
+```
+</details>
+
+<details>
+<summary>Install in your operating system scope (not recommended)</summary>
+
+Enter following command in terminal:
+```bash
+pip3 install -e ~/hive/tests/test_tools/
+```
+</details>
+
+### 2. Define path to hive executables
+
+Define environment variable `HIVE_BUILD_ROOT_PATH` with path to hive build directory (containing _hived_, _cli_wallet_ and other executables). Add entry `HIVE_BUILD_ROOT_PATH="/home/dev/hive/build"` to `/etc/environment` and restart computer.
+
+<details>
+<summary>If you don't want to modify content of your `/etc/environment` file...</summary>
+
+...then you have to set this variable locally before every run of script, which uses TestTools. It can be done as in examples below:
+
+```bash
+HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" pytest
+HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" python3 your_script.py
 ```
 
-Run selected script:
-```bash
-PYTHONPATH="${PYTHONPATH}:/home/dev/hive/tests/test_tools/package" HIVE_BUILD_ROOT_PATH="/home/dev/hive/build" python3 your_script.py
-```
+</details>
 
 ## Tutorials
 
