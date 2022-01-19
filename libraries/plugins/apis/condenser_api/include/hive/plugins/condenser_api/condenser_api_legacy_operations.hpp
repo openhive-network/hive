@@ -1305,7 +1305,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     account_name_type account;
     account_name_type treasury;
-    std::vector< account_name_type >
+    fc::flat_set< account_name_type >
                       other_affected_accounts;
     legacy_asset      hbd_transferred;
     legacy_asset      hive_transferred;
