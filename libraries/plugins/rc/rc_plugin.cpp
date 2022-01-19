@@ -751,6 +751,13 @@ struct pre_apply_operation_visitor
     }
   }
 
+  void operator()( const hardfork_hive_operation& op )const
+  {
+    regenerate( op.account );
+    for( auto& account : op.other_affected_accounts )
+      regenerate( account );
+  }
+
   void operator()( const return_vesting_delegation_operation& op )const
   {
     regenerate( op.account );
@@ -959,6 +966,13 @@ struct post_apply_operation_visitor
         p.pool_array[ resource_new_accounts ] = 0;
       });
     }
+  }
+
+  void operator()( const hardfork_hive_operation& op )const
+  {
+    _mod_accounts.emplace_back( op.account );
+    for( auto& account : op.other_affected_accounts )
+      _mod_accounts.emplace_back( account );
   }
 
   void operator()( const return_vesting_delegation_operation& op )const

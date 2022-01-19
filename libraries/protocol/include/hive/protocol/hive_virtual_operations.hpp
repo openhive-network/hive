@@ -333,17 +333,20 @@ namespace hive { namespace protocol {
   struct hardfork_hive_operation : public virtual_operation
   {
     hardfork_hive_operation() {}
-    hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury,
-      const asset& s, const asset& st, const asset& v, const asset& cs )
-      : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st ), vests_converted( v ), total_hive_from_vests(cs)
+    //other_affected_accounts as well as assets transfered have to be filled during actual operation
+    hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury )
+    : account( acc ), treasury( _treasury ), hbd_transferred( 0, HBD_SYMBOL ), hive_transferred( 0, HIVE_SYMBOL ),
+      vests_converted( 0, VESTS_SYMBOL ), total_hive_from_vests( 0, HIVE_SYMBOL )
     {}
 
     account_name_type account;
     account_name_type treasury;
-    asset             hbd_transferred;
-    asset             hive_transferred;
-    asset             vests_converted; // Amount of converted vests
-    asset             total_hive_from_vests; // Resulting HIVE from conversion
+    fc::flat_set< account_name_type >
+                      other_affected_accounts; // delegatees that lost delegations from account - filled before pre notification
+    asset             hbd_transferred; // filled only in post notification
+    asset             hive_transferred; // filled only in post notification
+    asset             vests_converted; // Amount of converted vests - filled only in post notification
+    asset             total_hive_from_vests; // Resulting HIVE from conversion - filled only in post notification
   };
 
   struct hardfork_hive_restore_operation : public virtual_operation
@@ -445,7 +448,7 @@ FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_move
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::protocol::sps_convert_operation, (fund_account)(hive_amount_in)(hbd_amount_out) )
-FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
+FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )

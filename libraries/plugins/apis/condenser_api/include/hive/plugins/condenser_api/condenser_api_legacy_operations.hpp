@@ -1283,7 +1283,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   {
     legacy_hardfork_hive_operation() {}
     legacy_hardfork_hive_operation( const hardfork_hive_operation& op ) :
-      account( op.account ), treasury( op.treasury ),
+      account( op.account ), treasury( op.treasury ), other_affected_accounts( op.other_affected_accounts ),
       hbd_transferred( legacy_asset::from_asset( op.hbd_transferred ) ),
       hive_transferred( legacy_asset::from_asset( op.hive_transferred ) ),
       vests_converted( legacy_asset::from_asset( op.vests_converted ) ),
@@ -1292,9 +1292,10 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     operator hardfork_hive_operation()const
     {
-      legacy_hardfork_hive_operation op;
+      hardfork_hive_operation op;
       op.account = account;
       op.treasury = treasury;
+      op.other_affected_accounts = other_affected_accounts;
       op.hbd_transferred = hbd_transferred;
       op.hive_transferred = hive_transferred;
       op.vests_converted = vests_converted;
@@ -1304,6 +1305,8 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     account_name_type account;
     account_name_type treasury;
+    fc::flat_set< account_name_type >
+                      other_affected_accounts;
     legacy_asset      hbd_transferred;
     legacy_asset      hive_transferred;
     legacy_asset      vests_converted;
@@ -1321,7 +1324,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     operator hardfork_hive_restore_operation()const
     {
-      legacy_hardfork_hive_restore_operation op;
+      hardfork_hive_restore_operation op;
       op.account = account;
       op.treasury = treasury;
       op.hbd_transferred = hbd_transferred;
@@ -2243,7 +2246,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (propos
 FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
