@@ -1,7 +1,7 @@
 {
   "history": [
     [
-      2052,
+      2532,
       {
         "block": 2832389,
         "op": {
@@ -20,7 +20,7 @@
       }
     ],
     [
-      2055,
+      2537,
       {
         "block": 2832439,
         "op": {
@@ -39,7 +39,7 @@
       }
     ],
     [
-      2091,
+      2608,
       {
         "block": 2833513,
         "op": {
@@ -58,7 +58,7 @@
       }
     ],
     [
-      2099,
+      2623,
       {
         "block": 2833711,
         "op": {
@@ -72,44 +72,6 @@
         "operation_id": 0,
         "timestamp": "2016-07-02T01:49:12",
         "trx_id": "44b2ea943ac95e30b1bac5b8f96f19242c735eaa",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
-      2368,
-      {
-        "block": 2842098,
-        "op": {
-          "type": "limit_order_cancel_operation",
-          "value": {
-            "orderid": 1,
-            "owner": "adm"
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-07-02T08:49:24",
-        "trx_id": "f8fcf933d669a0f7d5a5bd482341bfe3f3e1d139",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
-      2969,
-      {
-        "block": 2863757,
-        "op": {
-          "type": "limit_order_cancel_operation",
-          "value": {
-            "orderid": 10001,
-            "owner": "adm"
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-07-03T02:54:33",
-        "trx_id": "6eed0bcc16b740f3857364df034bb0e5b0bdaf98",
         "trx_in_block": 0,
         "virtual_op": 0
       }
