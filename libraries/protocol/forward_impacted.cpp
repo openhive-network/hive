@@ -357,6 +357,7 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( op.treasury );
     _impacted.insert( op.account );
+    _impacted.insert( op.other_affected_accounts.begin(), op.other_affected_accounts.end() );
   }
 
   void operator()( const hardfork_hive_restore_operation& op )

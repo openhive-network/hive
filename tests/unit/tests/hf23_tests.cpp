@@ -478,6 +478,10 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
 
       BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == _2v.amount.value );
       BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == _1v.amount.value );
+
+      auto hf23_vop = get_last_operations(1)[0].get< hardfork_hive_operation >();
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.size() == 1 );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.find( "bob" ) != hf23_vop.other_affected_accounts.end() );
     }
     {
       const auto& _alice = db->get_account( "alice" );
@@ -490,6 +494,11 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
       BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
       BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == 0l );
       BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == 0l );
+
+      auto hf23_vop = get_last_operations(1)[0].get< hardfork_hive_operation >();
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.size() == 2 );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.find( "bob" ) != hf23_vop.other_affected_accounts.end() );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.find( "carol" ) != hf23_vop.other_affected_accounts.end() );
     }
 
     database_fixture::validate_database();
