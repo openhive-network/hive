@@ -1,0 +1,71 @@
+{
+  "history": [
+    [
+      6,
+      {
+        "block": 3880807,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "fatima992002",
+            "body": "Twenty years ago, Dr. Ryke Geerd Hamer, a German doctor with his own practice in Rome, Italy, received a call in the middle of the night. His 17-year old son had been shot while on holiday in the Mediterranean. Three months later, Dirk died and shortly after, Dr. Hamer, who had been healthy all his life, but who was utterly devastated by this catastrophe, found he had testicular cancer. Rather suspicious about this coincidence, he set about doing research on the personal histories of cancer patients to see whether they had suffered some shock, distress or trauma before their illness.\n\nIn time, after extensive research of thousands of patients, Dr. Hamer was finally able to conclude that disease is only brought about by a shock for which we are totally unprepared. This last point is very important. If we can in any way be prepared for the shocking event, we will not become ill. In fact, Dr. Hamer does not like to say \u2018cancer\u2019. Rather, it is a special biological response to an unusual situation, and when the \u2018shock\u2019 situation is resolved, the body sets about returning to normality. This is a very simplified account, of course. The books explain in detail the complete process.\n\nHe presented his work to the university in Germany with which he was affiliated. Without testing or proving his hypothesis, they asked him to deny his findings. Since he could not possibly contemplate denying what he had scientifically proven beyond the shadow of a doubt, he refused. As a result, his licence to practise medicine was withdrawn and the situation remains unchanged to this day. Even though the University of Tubingen was ordered by a court of law to hold tests to prove the theories, they have never done so.\n\nDr. Hamer\u2019s life has been a turmoil of events ever since, culminating in an eighteen-month prison sentence in Germany, served in cells with common criminals. Much of the opposition he has had to face has come from the fact that the person who accidentally killed Dirk was the Prince of Savoy, the last King of Italy\u2019s son. A complicated, difficult and delicate situation, as anyone can imagine.\n\nDr. Hamer believes very strongly that the present methods of dealing with cancer are barbarous, cruel and completely unnecessary. This opinion does not make him many friends.\n\nSince the discovery of the German New Medicine in 1981, Dr. Hamer has written several books on his medicine and his extraordinary findings. Some of the books have already been translated into several languages, and the work continues. Many physicians in Europe covertly practise his medicine, recognizing its exceptional diagnostic capability.\n\nThe lack of official recognition by \u201cofficial\u201d or \u201cconventional\u201d medicine is frustrating for both Dr. Hamer and for the public. We can only hope that the movement to change the status quo will come from the people who start to understand the way their bodies work and from insisting that their physicians, health care workers and institutions take notice.\n\nThe tireless work done by the ever-increasing alternative therapies and books such as written by Deepak Chopra and Dr. Andrew Weil, have contributed enormously to the shift in consciousness we see in the world, to the point where doctors and hospitals are sitting up and taking notice.\n\nBut once you have heard Dr. Hamer lecture or seen him at a seminar, read his books and had access to his Disease Chart, you understand that finally someone has made all the links, found all those connections that were missing.\n\nOver time, it is hoped that the work may be explained in ways that \u201cany intelligent person with no special training\u201d can understand. \nhttp://www.newmedicine.ca",
+            "json_metadata": "{\"tags\":[\"hammer\",\"medicine\",\"german\",\"new\",\"dr\"],\"links\":[\"http://www.newmedicine.ca\"]}",
+            "parent_author": "",
+            "parent_permlink": "hammer",
+            "permlink": "thev-new-germanic-medicine",
+            "title": "The new germanic Medicine"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-07T18:07:54",
+        "trx_id": "64a0564850120ac9ef48924260fce440227bb1ec",
+        "trx_in_block": 5,
+        "virtual_op": 0
+      }
+    ],
+    [
+      7,
+      {
+        "block": 3880855,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "fatima992002",
+            "body": "@@ -1,22 +1,4 @@\n-Twenty years ago, \n Dr. \n@@ -13,17 +13,19 @@\n rd Hamer\n-,\n+ is\n  a Germa\n@@ -69,17 +69,37 @@\n e, Italy\n-,\n+. Twenty years ago he\n  receive\n@@ -228,20 +228,23 @@\n  later, \n-Dirk\n+his son\n  died an\n",
+            "json_metadata": "{\"tags\":[\"hammer\",\"medicine\",\"german\",\"new\",\"dr\"],\"links\":[\"http://www.newmedicine.ca\"]}",
+            "parent_author": "",
+            "parent_permlink": "hammer",
+            "permlink": "thev-new-germanic-medicine",
+            "title": "The new germanic Medicine"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-07T18:10:18",
+        "trx_id": "7d5c1002d87fcf3aee395ecbb50f4ab63be30827",
+        "trx_in_block": 2,
+        "virtual_op": 0
+      }
+    ],
+    [
+      8,
+      {
+        "block": 4754408,
+        "op": {
+          "type": "comment_payout_update_operation",
+          "value": {
+            "author": "fatima992002",
+            "permlink": "thev-new-germanic-medicine"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-07T06:10:30",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ]
+  ]
+}

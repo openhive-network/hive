@@ -1,0 +1,53 @@
+{
+  "history": [
+    [
+      16,
+      {
+        "block": 4789592,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "retronic",
+            "pending_payout": {
+              "amount": "7",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "a-country-struggling-to-shake-off-the-remnants-of-its-totalitarian-past",
+            "rshares": "20111113595",
+            "total_vote_weight": "92534689577529887",
+            "voter": "thebluepanda",
+            "weight": "55982970361396594"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-08T11:32:00",
+        "trx_id": "ea8d0e3d04d23c2679e2c41a5cec21f566a7f417",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      17,
+      {
+        "block": 4789632,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "retronic",
+            "permlink": "a-country-struggling-to-shake-off-the-remnants-of-its-totalitarian-past",
+            "voter": "thesealover",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-08T11:34:00",
+        "trx_id": "f936c5d7f30fd1965e16e6c86746f063e0882f10",
+        "trx_in_block": 2,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

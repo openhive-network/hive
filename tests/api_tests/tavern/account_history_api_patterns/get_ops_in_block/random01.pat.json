@@ -1,0 +1,71 @@
+{
+  "ops": [
+    {
+      "block": 639639,
+      "op": {
+        "type": "transfer_to_vesting_operation",
+        "value": {
+          "amount": {
+            "amount": "750",
+            "nai": "@@000000021",
+            "precision": 3
+          },
+          "from": "tombstone50",
+          "to": "puppies"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-04-16T06:45:12",
+      "trx_id": "ba7410a78e25743f8622b8ac82271600e4650fa0",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    },
+    {
+      "block": 639639,
+      "op": {
+        "type": "transfer_to_vesting_completed_operation",
+        "value": {
+          "from_account": "tombstone50",
+          "hive_vested": {
+            "amount": "750",
+            "nai": "@@000000021",
+            "precision": 3
+          },
+          "to_account": "puppies",
+          "vesting_shares_received": {
+            "amount": "18325",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-04-16T06:45:12",
+      "trx_id": "ba7410a78e25743f8622b8ac82271600e4650fa0",
+      "trx_in_block": 0,
+      "virtual_op": 1
+    },
+    {
+      "block": 639639,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "tombstone21",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-04-16T06:45:18",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ]
+}

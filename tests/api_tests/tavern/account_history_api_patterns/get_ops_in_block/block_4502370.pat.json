@@ -1,0 +1,116 @@
+{
+  "ops": [
+    {
+      "block": 4502370,
+      "op": {
+        "type": "limit_order_create_operation",
+        "value": {
+          "amount_to_sell": {
+            "amount": "1770",
+            "nai": "@@000000021",
+            "precision": 3
+          },
+          "expiration": "2016-08-29T11:35:43",
+          "fill_or_kill": false,
+          "min_to_receive": {
+            "amount": "1683",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "orderid": 2654060548,
+          "owner": "fnait"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-08-29T11:33:54",
+      "trx_id": "7d239778828f81350f1346d9c5d3e7ec82fe4ada",
+      "trx_in_block": 0,
+      "virtual_op": 0
+    },
+    {
+      "block": 4502370,
+      "op": {
+        "type": "comment_operation",
+        "value": {
+          "author": "mark-waser",
+          "body": "<html>\n<p>Every Monday, I'm going to do a round-up of the interesting bee items &nbsp;that I found over the past week. If you find any interesting bee news &nbsp;(or write a bee article), please send me a link and I'll include it and &nbsp;credit (and follow) you. &nbsp;My company, D161T4L W15D0M, will be attempting &nbsp;to start up a <a href=\"https://steemit.com/active/bee\">#bee</a>/<a href=\"https://steemit.com/active/bees\">#bees</a> &nbsp;community on Steemit shortly -- please let me know in the comments if &nbsp;you wish to be included (or, better yet, create a post deserving and &nbsp;using one of those tags).&nbsp;</p>\n<h2><a href=\"https://steemit.com/bee/@jwaser/the-weekly-bee\">The Weekly Bee - 22 August 2019</a> (last week's round-up)</h2>\n<p>&nbsp;<img src=\"https://img1.steemit.com/0x0/https://www.steemimg.com/images/2016/08/19/Untitled488e5d.md.png\" width=\"500\" height=\"330\"/></p>\n<h1><a href=\"http://www.latimes.com/sns-bc-fl--exchange-bee-hive-thefts-20160828-story.html\">Theft of hives hits southwest Florida bee farmers</a></h1>\n<p><em><strong>28 August 2016 - &nbsp;None of the hundreds of stolen hives have been recovered, law enforcement agencies said.</strong></em> &nbsp;</p>\n<p>Southwest Florida bee farmers are having a difficult summer because &nbsp;thieves have been stealing their hives, lots of them, to the tune of &nbsp;$150,000 or more. &nbsp;More than 500 hives have been taken from large corporate-type bee &nbsp;farms to small, mom-and-pop operations since June in Lee and Charlotte &nbsp;counties. Statewide, around 1,200 hives have been taken this year. &nbsp;The thefts have prompted the formation of a multi-state &nbsp;task force and have hurt some smaller bee operations enough that some &nbsp;are considering quitting what had once been been viable honey and &nbsp;pollination operations. &nbsp;</p>\n<p><img src=\"https://www.dadant.com/wp-content/uploads/2012/04/2016/08/ABJ-Extra-Aug24-2016.jpg\" width=\"580\" height=\"326\"/></p>\n<h1><a href=\"https://www.dadant.com/news/nutrition-matters-stress-from-migratory-beekeeping-may-be-eased-by-access-to-food\">Nutrition Matters: Stress From Migratory Beekeeping May Be Eased by Access to Food</a></h1>\n<p><em><strong>24 August 2016 -</strong></em> &nbsp;In the first large-scale and comprehensive study on the impacts of &nbsp;transporting honey bees to pollinate various crops, research from North &nbsp;Carolina State University shows that travel can adversely affect bee &nbsp;health and lifespan. Some of these negative impacts may be reduced by &nbsp;moving bee colonies into patches with readily available food or by &nbsp;providing supplemental nutrition when there are few flowers for honey &nbsp;bees to visit, the researchers say. &nbsp;</p>\n<p><img src=\"https://img1.steemit.com/0x0/http://roypchel.ru/wp-content/uploads/2015/03/pchelovodstvo-450x333.jpg\" width=\"450\" height=\"333\"/></p>\n<h1><a href=\"https://steemit.com/beekeeper/@kental/the-answers-to-the-main-questions-for-the-beginners-beekeepers-bees\">The answers to the main questions for the beginners beekeepers! Bees.</a></h1>\n<p><em><strong>23 August 2016 - </strong></em>&nbsp;Hey dear friends. In the last article i told about the main &nbsp;issues that need to be addressed for the novice beekeeper! now I will &nbsp;answer all these questions.&nbsp; Read carefully! Each field has its own quirks.</p>\n<p><img src=\"https://img1.steemit.com/0x0/http://i.imgur.com/B8ldRBf.jpg\" width=\"2400\" height=\"1797\"/></p>\n<h1><a href=\"https://steemit.com/photography/@mweich/wait-is-that-a-blue-bee-steemit-colours\">Wait, is that a BLUE BEE! &nbsp;Steemit Colours!</a></h1>\n<p><em><strong>22 August 2016 -</strong></em> &nbsp;I was well aware that bees and wasps can come in many different &nbsp;colours, though usually varying degrees of black and yellow, sometimes &nbsp;white and black such as the Bald Faced Hornet in North America. &nbsp;I was &nbsp;quite surprised when I first spotted this blue bee buzzing about the &nbsp;cosmos flowers last year! I was even more surprised to learn that it is an endangered species! &nbsp;&nbsp;Cuckoo bees are cleptoparasites, laying their eggs in the hives of other &nbsp;bees, having the host colony raise their young for them! &nbsp;Not such &nbsp;friendly behaviour from a bee that looks a lot like Disney's Stitch!&nbsp;</p>\n<p><em><strong>[More and larger photos in the article]</strong></em></p>\n<p><img src=\"https://img1.steemit.com/0x0/https://pp.vk.me/c630118/v630118944/488e6/Ze9-kMBKCDQ.jpg\" width=\"1280\" height=\"853\"/></p>\n<h1><a href=\"https://steemit.com/travel/@victoriart/my-boyfriend-is-a-bee-keeper-and-one-of-his-bees-bit-me-a-jealousy-or-an-accident\">My boyfriend is a bee keeper and one of his bees stung me! - a jealousy or an accident?:)</a></h1>\n<p><em><strong>22 August 2016 -</strong></em> Yesterday I went to a bee farm with my boyfriend. He is a bee keeper. &nbsp;I have never been to a bee farm before, because I'm afraid of bees. But &nbsp;yesterday I thought that it is a high time to overcome my fear. When I &nbsp;came up to a beehive, I was amazed to watch these small noisy creatures. &nbsp;They were busy doing their duties and paid no attention to me. And my &nbsp;boyfriend told me that a bee's character (I mean whether it is &nbsp;aggressive or not) depends on its breed. His bees are kind.&nbsp;&nbsp;</p>\n<p>&nbsp;<img src=\"https://img1.steemit.com/0x0/http://i67.tinypic.com/2aj6tjb.jpg\" width=\"1600\" height=\"900\"/></p>\n<h1><a href=\"https://steemit.com/photography/@englishtchrivy/steemitphotochallenge-entry-macro-photography-bees-upclose-and-personal\">SteemitPhotoChallenge Entry Macro Photography : BEES - upclose and personal</a></h1>\n<p><em><strong>15 Aug 2016 - </strong></em>&nbsp;This is my entry, I posted it pretty early not knowing that the photo &nbsp;challenge is actually held on weekends and that there are things you &nbsp;have to have on your post to make it qualify. &nbsp;&nbsp;</p>\n<p><em><strong>[More and larger photos in the article]</strong></em></p>\n<p><img src=\"https://img1.steemit.com/0x0/http://i63.tinypic.com/30sik4l.jpg\" width=\"1600\" height=\"900\"/></p>\n<h1><a href=\"https://steemit.com/steemit/@englishtchrivy/smartphone-photography-bee-a-fingernail-close\">SMARTPHONE PHOTOGRAPHY : \" BEE A Fingernail Close ;)</a></h1>\n<p><em><strong>&nbsp;8 August 2016 - </strong></em>2 days ago, after 17:00, in my garden ...<br>\nWas having a break, was having &nbsp;a BEE moment ^ ^ ...<br>\nThey were there - just sitting and nipping a while<br>\nin that wonderful world of nectar haven of a passion flower &nbsp;~<br>\nand then there were three ...<br>\nHow lucky can I BEE :D to get this pretty close to such cute little BEES ?<br>\nThanks be to God for them BEES ^ ^.&nbsp;</p>\n<p><em><strong>[More and larger photos in the article]</strong></em></p>\n<p><img src=\"https://img1.steemit.com/0x0/http://i65.tinypic.com/j7ahe9.jpg\" width=\"1598\" height=\"847\"/></p>\n<h1><a href=\"https://steemit.com/steemit/@englishtchrivy/smartphone-photography-tips-on-how-to-capture-a-honey-bee-in-action\">SMARTPHONE PHOTOGRAPHY TIPS on How to Capture a Honey Bee in Action</a></h1>\n<p>7 August 2016 - &nbsp;Have you ever tried taking a picture of a honeybee in action using just your smartphone's camera? &nbsp;Yes! &nbsp;It is P O S S I B L E! &nbsp;If you've read my very first post about taking a picture of a hoverfly &nbsp;using just your smartphone camera, too then you know what my first tip &nbsp;is going to be. &nbsp;Honey bees are pretty friendly. &nbsp;You must know that like us warriors, &nbsp;they are very busy fulfilling their maximum potentials since their wings &nbsp;normally just last two - weeks the longest &nbsp;before they get worn out. &nbsp;&nbsp;This guy just went on nipping nectar while I kept pressing my shutter - &nbsp;off &nbsp;- Samsung galaxy A3 2016 edition phone's camera.&nbsp;</p>\n<p><em><strong>[More and larger photos in the article]</strong></em></p>\n<p>&nbsp;<img src=\"https://arlingtonmasternaturalists.files.wordpress.com/2016/02/aedes-aegypti-from-wikipedia.jpg?w=700&amp;h=475\" width=\"700\" height=\"467\"/></p>\n<h1><a href=\"https://armn.org/2016/02/19/how-to-control-mosquitoes-without-killing-pollinators-and-other-important-wildlife/\">How to Control Mosquitoes Without Killing Pollinators and Other Important&nbsp;Wildlife</a></h1>\n<p><em><strong>9 February 2016 - </strong></em>&nbsp;Warm weather and mosquitoes will be here before you know it, leading &nbsp;many of us to look for ways to enjoy the outdoors without being pestered &nbsp;by those annoying little\u2014and sometimes disease-bearing\u2014biters. There is a lot of information being disseminated by health organizations about health risks to humans from mosquito bites (<em>see</em> &nbsp;CDC links, below). But besides protecting ourselves from being targets, &nbsp;we need to work at eliminating mosquito&nbsp;habitat and controlling&nbsp;their &nbsp;numbers. There are a number of ways we can do this safely and &nbsp;effectively. Because mosquitoes have no trouble flying from yard to yard, the best &nbsp;way to combat them is to work with our neighbors to collectively &nbsp;identify and implement opportunities to reduce mosquito populations. &nbsp;Below is&nbsp;a set of approaches that are suggested by entomologists, public &nbsp;health organizations, and agricultural extension programs.&nbsp;</p>\n</html>",
+          "json_metadata": "{\"tags\":[\"bees\",\"bee\",\"news\",\"photography\",\"science\"],\"image\":[\"https://img1.steemit.com/0x0/https://www.steemimg.com/images/2016/08/19/Untitled488e5d.md.png\",\"https://www.dadant.com/wp-content/uploads/2012/04/2016/08/ABJ-Extra-Aug24-2016.jpg\",\"https://img1.steemit.com/0x0/http://roypchel.ru/wp-content/uploads/2015/03/pchelovodstvo-450x333.jpg\",\"https://img1.steemit.com/0x0/http://i.imgur.com/B8ldRBf.jpg\",\"https://img1.steemit.com/0x0/https://pp.vk.me/c630118/v630118944/488e6/Ze9-kMBKCDQ.jpg\",\"https://img1.steemit.com/0x0/http://i67.tinypic.com/2aj6tjb.jpg\",\"https://img1.steemit.com/0x0/http://i63.tinypic.com/30sik4l.jpg\",\"https://img1.steemit.com/0x0/http://i65.tinypic.com/j7ahe9.jpg\",\"https://arlingtonmasternaturalists.files.wordpress.com/2016/02/aedes-aegypti-from-wikipedia.jpg?w=700&h=475\"],\"links\":[\"https://steemit.com/active/bee\",\"https://steemit.com/active/bees\",\"https://steemit.com/bee/@jwaser/the-weekly-bee\",\"http://www.latimes.com/sns-bc-fl--exchange-bee-hive-thefts-20160828-story.html\",\"https://www.dadant.com/news/nutrition-matters-stress-from-migratory-beekeeping-may-be-eased-by-access-to-food\",\"https://steemit.com/beekeeper/@kental/the-answers-to-the-main-questions-for-the-beginners-beekeepers-bees\",\"https://steemit.com/photography/@mweich/wait-is-that-a-blue-bee-steemit-colours\",\"https://steemit.com/travel/@victoriart/my-boyfriend-is-a-bee-keeper-and-one-of-his-bees-bit-me-a-jealousy-or-an-accident\",\"https://steemit.com/photography/@englishtchrivy/steemitphotochallenge-entry-macro-photography-bees-upclose-and-personal\",\"https://steemit.com/steemit/@englishtchrivy/smartphone-photography-bee-a-fingernail-close\",\"https://steemit.com/steemit/@englishtchrivy/smartphone-photography-tips-on-how-to-capture-a-honey-bee-in-action\",\"https://armn.org/2016/02/19/how-to-control-mosquitoes-without-killing-pollinators-and-other-important-wildlife/\"]}",
+          "parent_author": "",
+          "parent_permlink": "bees",
+          "permlink": "the-weekly-bee-29-august-2016",
+          "title": "The Weekly Bee - 29 August 2016"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-08-29T11:33:54",
+      "trx_id": "ee9ed656d225e25c57ae99d296aa0c8e34b53c3a",
+      "trx_in_block": 1,
+      "virtual_op": 0
+    },
+    {
+      "block": 4502370,
+      "op": {
+        "type": "vote_operation",
+        "value": {
+          "author": "mark-waser",
+          "permlink": "the-weekly-bee-29-august-2016",
+          "voter": "mark-waser",
+          "weight": 10000
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-08-29T11:33:54",
+      "trx_id": "ee9ed656d225e25c57ae99d296aa0c8e34b53c3a",
+      "trx_in_block": 1,
+      "virtual_op": 0
+    },
+    {
+      "block": 4502370,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "mark-waser",
+          "pending_payout": {
+            "amount": "2",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "the-weekly-bee-29-august-2016",
+          "rshares": "5956219849",
+          "total_vote_weight": "27427374931569642",
+          "voter": "mark-waser",
+          "weight": 0
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-08-29T11:33:54",
+      "trx_id": "ee9ed656d225e25c57ae99d296aa0c8e34b53c3a",
+      "trx_in_block": 1,
+      "virtual_op": 1
+    },
+    {
+      "block": 4502370,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "xeldal",
+          "vesting_shares": {
+            "amount": "3308525856",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-08-29T11:33:57",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ]
+}

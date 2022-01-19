@@ -10,9 +10,9 @@
           "file": "account_history_api.cpp",
           "hostname": "",
           "level": "error",
-          "line": 254,
+          "line": 246,
           "method": "get_transaction",
-          "timestamp": "2021-11-03T14:06:06"
+          "timestamp": "2022-01-21T08:31:19"
         },
         "data": {
           "t": "1000000000000000000000000000000000000000"

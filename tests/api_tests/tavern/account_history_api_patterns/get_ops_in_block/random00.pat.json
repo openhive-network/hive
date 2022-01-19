@@ -1,0 +1,24 @@
+{
+  "ops": [
+    {
+      "block": 2072756,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "roadscape",
+          "vesting_shares": {
+            "amount": "7198349971",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-06-05T12:56:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ]
+}
