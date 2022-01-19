@@ -1,0 +1,52 @@
+{
+  "history": [
+    [
+      17,
+      {
+        "block": 3611366,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "isaac.asimov",
+            "body": "Hi! This post has a <a href=\"https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests\">Flesch-Kincaid</a> grade level of 10.4 and reading ease of 59%. This puts the writing level on par with Michael Crichton and Mitt Romney.",
+            "json_metadata": "",
+            "parent_author": "serhiy",
+            "parent_permlink": "crypto-tokens-and-the-coming-age-of-protocol-innovation",
+            "permlink": "re-crypto-tokens-and-the-coming-age-of-protocol-innovation-20160729t082152",
+            "title": "Flesch Kincaid Grade Level"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-29T08:21:54",
+        "trx_id": "e3118813eb9cfba987e5cfdaaf076ce431103b59",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ],
+    [
+      18,
+      {
+        "block": 3611381,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "cheetah",
+            "body": "Hi! I am a content-detection robot. This post is to help manual curators; I have NOT flagged you.\nHere is similar content:\nhttp://continuations.com/post/148098927445/crypto-tokens-and-the-coming-age-of-protocol\nNOTE: I cannot tell if you are the author, so ensure you have proper verification in your post (or in a reply to me), for humans to check!",
+            "json_metadata": "",
+            "parent_author": "serhiy",
+            "parent_permlink": "crypto-tokens-and-the-coming-age-of-protocol-innovation",
+            "permlink": "re-crypto-tokens-and-the-coming-age-of-protocol-innovation-20160729t082236",
+            "title": ""
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-29T08:22:39",
+        "trx_id": "2374079faa58c5e8f9377bca044025e020883261",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

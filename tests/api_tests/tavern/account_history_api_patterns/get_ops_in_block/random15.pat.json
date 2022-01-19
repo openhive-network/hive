@@ -1,0 +1,24 @@
+{
+  "ops": [
+    {
+      "block": 1768862,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "nextgencrypto",
+          "vesting_shares": {
+            "amount": "8374364705",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-05-25T22:46:42",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ]
+}

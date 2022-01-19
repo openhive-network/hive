@@ -1,0 +1,25 @@
+{
+  "block_num": 610458,
+  "expiration": "2016-04-15T06:14:03",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "withdraw_vesting_operation",
+      "value": {
+        "account": "justin",
+        "vesting_shares": {
+          "amount": "50000000",
+          "nai": "@@000000037",
+          "precision": 6
+        }
+      }
+    }
+  ],
+  "ref_block_num": 20633,
+  "ref_block_prefix": 1032014886,
+  "signatures": [
+    "201b17fba321a05087c8c6f74acf106bfadcf9168677f327ffdf9ffb19e136e843066ece42347d61e85cc21ceb7a725776516c73a0e974970d2949127334bf5744"
+  ],
+  "transaction_id": "d66afcaa468e6f346692144d4f4fb364677f8d01",
+  "transaction_num": 0
+}

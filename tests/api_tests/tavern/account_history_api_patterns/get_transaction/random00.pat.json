@@ -1,0 +1,23 @@
+{
+  "block_num": 4954344,
+  "expiration": "2016-09-14T05:26:40",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "vote_operation",
+      "value": {
+        "author": "dollarvigilante",
+        "permlink": "wells-fargo-and-other-banks-now-just-outright-stealing-people-s-money",
+        "voter": "pyro",
+        "weight": 10000
+      }
+    }
+  ],
+  "ref_block_num": 39142,
+  "ref_block_prefix": 2294839804,
+  "signatures": [
+    "2038e9256c0742ed8a6a6d63162519699fb9b333e68b361b7fd26c6c354ef4d66844c49cf32310caef02947d3dac6561fe9a3b7af1133f85069cbce724ac1d5e22"
+  ],
+  "transaction_id": "6716177230d1fb04ad99545a8ef29049511c6be9",
+  "transaction_num": 0
+}

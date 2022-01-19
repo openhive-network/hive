@@ -1,0 +1,132 @@
+{
+  "next_block_range_begin": 3506740,
+  "next_operation_begin": "9223372036862464763",
+  "ops": [
+    {
+      "block": 3506740,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "girlsgirlsgirls",
+          "pending_payout": {
+            "amount": "6",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "1021-klm-in-a-month-on-foot-yeah-on-foot-i-conquered-the-el-camino-de-santiago-challenge",
+          "rshares": 46666976,
+          "total_vote_weight": "23933506742336775",
+          "voter": "gaming",
+          "weight": "214657851936620"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036862464754",
+      "timestamp": "2016-07-25T16:24:21",
+      "trx_id": "4b9364373e83a65dd4f17f73a104f4e4ba0e3334",
+      "trx_in_block": 0,
+      "virtual_op": 1
+    },
+    {
+      "block": 3506740,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "shelly-dawson",
+          "pending_payout": {
+            "amount": "43",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "off-with-your-head",
+          "rshares": 116415003,
+          "total_vote_weight": "157502768850162716",
+          "voter": "ben99",
+          "weight": "216379946133873"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036862464756",
+      "timestamp": "2016-07-25T16:24:21",
+      "trx_id": "0f9d04ef8231f46c8320ccb32880ffcf784990f4",
+      "trx_in_block": 1,
+      "virtual_op": 1
+    },
+    {
+      "block": 3506740,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "r4fken",
+          "pending_payout": {
+            "amount": "16080",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "news-an-intriguing-look-behind-the-scenes-anonymous-confessions-of-a-steemit-insider",
+          "rshares": 14964652,
+          "total_vote_weight": "10604595232172165318",
+          "voter": "alexpopov",
+          "weight": "12472621992778"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036862464758",
+      "timestamp": "2016-07-25T16:24:21",
+      "trx_id": "45226ba51eb21b0c8dc28a00fd06e837ef8e21f6",
+      "trx_in_block": 2,
+      "virtual_op": 1
+    },
+    {
+      "block": 3506740,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "stellabelle",
+          "pending_payout": {
+            "amount": "3228236",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "my-addiction-to-danger-multi-vortex-tornado-disaster-photos-and-my-story-with-discovery-channel",
+          "rshares": "41420905017",
+          "total_vote_weight": "17730566325915304113",
+          "voter": "ratel",
+          "weight": "288042221224463"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036862464760",
+      "timestamp": "2016-07-25T16:24:21",
+      "trx_id": "355d4de299c6a28149886aeaf4277d30261056a3",
+      "trx_in_block": 3,
+      "virtual_op": 1
+    },
+    {
+      "block": 3506740,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "sirwinchester",
+          "pending_payout": {
+            "amount": "1454",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "hey-steemers-let-me-introduce-myself-i-m-tony-winchester-an-entrepreneur-bitcoin-millionaire-investor-programmer-specialist-in",
+          "rshares": "629276879668",
+          "total_vote_weight": "3486303628560818097",
+          "voter": "nanzo-scoop",
+          "weight": "2187906179130592628"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036862464762",
+      "timestamp": "2016-07-25T16:24:21",
+      "trx_id": "36626fe410b4d24820b46a906643cf0b81eb0b9a",
+      "trx_in_block": 4,
+      "virtual_op": 1
+    }
+  ],
+  "ops_by_block": []
+}

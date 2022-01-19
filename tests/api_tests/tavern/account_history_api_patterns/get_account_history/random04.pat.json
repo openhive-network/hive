@@ -1,0 +1,25 @@
+{
+  "history": [
+    [
+      14,
+      {
+        "block": 3814822,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "dragonanarchist",
+            "permlink": "the-dragon-anarchist-is-on-steemit-thanking-its-founders",
+            "voter": "li-enfield",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-05T10:54:42",
+        "trx_id": "f4187a20732d5f8453f7116e8cf9986683823924",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}
