@@ -661,9 +661,7 @@ namespace chain {
       //Clears all pending operations on account that involve balance, moves tokens to treasury account
       void gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance );
       void clear_accounts( const std::set< std::string >& cleared_accounts );
-      void clear_account( const account_object& account,
-        asset* transferred_hbd_ptr = nullptr, asset* transferred_hive_ptr = nullptr,
-        asset* converted_vests_ptr = nullptr, asset* hive_from_vests_ptr = nullptr );
+      void clear_account( const account_object& account );
 
   protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead

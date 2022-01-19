@@ -2197,26 +2197,19 @@ void database::clear_accounts( const std::set< std::string >& cleared_accounts )
     if( account_ptr == nullptr )
       continue;
 
-    asset total_transferred_hbd, total_transferred_hive, total_converted_vests, total_hive_from_vests;
-    clear_account( *account_ptr, &total_transferred_hbd, &total_transferred_hive, &total_converted_vests, &total_hive_from_vests );
-
-    gather_balance( account_name, total_transferred_hive, total_transferred_hbd );
-
-    operation vop = hardfork_hive_operation( account_name, treasury_name,
-      total_transferred_hbd, total_transferred_hive, total_converted_vests, total_hive_from_vests );
-    push_virtual_operation( vop );
+    clear_account( *account_ptr );
   }
 }
 
-void database::clear_account( const account_object& account,
-  asset* transferred_hbd_ptr, asset* transferred_hive_ptr,
-  asset* converted_vests_ptr, asset* hive_from_vests_ptr )
+void database::clear_account( const account_object& account )
 {
-  const auto& account_name = account.name;
+  const auto& account_name = account.get_name();
   FC_ASSERT( account_name != get_treasury_name(), "Can't clear treasury account" );
 
   const auto& treasury_account = get_treasury();
   const auto& cprops = get_dynamic_global_properties();
+
+  hardfork_hive_operation vop( account_name, treasury_account.get_name() );
 
   asset total_transferred_hive = asset( 0, HIVE_SYMBOL );
   asset total_transferred_hbd = asset( 0, HBD_SYMBOL );
@@ -2225,17 +2218,28 @@ void database::clear_account( const account_object& account,
 
   if( account.vesting_shares.amount > 0 )
   {
-    // Remove all delegations
-    asset freed_delegations = asset( 0, VESTS_SYMBOL );
+    // Collect delegations and their delegatees to capture all affected accounts before delegations are deleted
+    std::vector< std::pair< const vesting_delegation_object&, const account_object& > > delegations;
 
     const auto& delegation_idx = get_index< vesting_delegation_index, by_delegation >();
     auto delegation_itr = delegation_idx.lower_bound( account.get_id() );
     while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account.get_id() )
     {
-      auto& delegation = *delegation_itr;
+      delegations.emplace_back( *delegation_itr, get_account( delegation_itr->get_delegatee() ) );
+      vop.other_affected_accounts.emplace( delegations.back().second.get_name() );
       ++delegation_itr;
+    }
 
-      const auto& delegatee = get_account( delegation.get_delegatee() );
+    // emit vop with other_affected_accounts filled but before any change happened on the accounts
+    pre_push_virtual_operation( vop );
+
+    // Remove all delegations
+    asset freed_delegations = asset( 0, VESTS_SYMBOL );
+
+    for( auto& delegation_pair : delegations )
+    {
+      const auto& delegation = delegation_pair.first;
+      const auto& delegatee = delegation_pair.second;
 
       modify( delegatee, [&]( account_object& a )
       {
@@ -2302,6 +2306,11 @@ void database::clear_account( const account_object& account,
       o.total_vesting_fund_hive -= converted_hive;
       o.total_vesting_shares -= vests_to_convert;
     } );
+  }
+  else
+  {
+    // just emit empty vop, since there was nothing to fill it with so far
+    pre_push_virtual_operation( vop );
   }
 
   // Remove pending escrows (return balance to account - compare with expire_escrow_ratification())
@@ -2388,7 +2397,7 @@ void database::clear_account( const account_object& account,
     remove( withdrawal );
   }
 
-  // Touch SDB balances (to be sure all interests are added to balances)
+  // Touch HBD balances (to be sure all interests are added to balances)
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     adjust_balance( account, asset( 0, HBD_SYMBOL ) );
@@ -2437,14 +2446,14 @@ void database::clear_account( const account_object& account,
     a.reward_vesting_hive = asset( 0, HIVE_SYMBOL );
   } );
 
-  if( transferred_hbd_ptr != nullptr )
-    *transferred_hbd_ptr = total_transferred_hbd;
-  if( transferred_hive_ptr != nullptr )
-    *transferred_hive_ptr = total_transferred_hive;
-  if( converted_vests_ptr != nullptr )
-    *converted_vests_ptr = total_converted_vests;
-  if( hive_from_vests_ptr != nullptr )
-    *hive_from_vests_ptr = total_hive_from_vests;
+  vop.hbd_transferred = total_transferred_hbd;
+  vop.hive_transferred = total_transferred_hive;
+  vop.vests_converted = total_converted_vests;
+  vop.total_hive_from_vests = total_hive_from_vests;
+
+  gather_balance( account_name, vop.hive_transferred, vop.hbd_transferred );
+
+  post_push_virtual_operation( vop );
 }
 
 void database::process_proposals( const block_notification& note )
