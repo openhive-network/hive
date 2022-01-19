@@ -1,0 +1,57 @@
+{
+  "history": [
+    [
+      17,
+      {
+        "block": 3908683,
+        "op": {
+          "type": "producer_reward_operation",
+          "value": {
+            "producer": "supercomputing08",
+            "vesting_shares": {
+              "amount": "3760553749",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-08T17:30:33",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 1
+      }
+    ],
+    [
+      18,
+      {
+        "block": 3910212,
+        "op": {
+          "type": "account_update_operation",
+          "value": {
+            "account": "supercomputing08",
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM7gSBqxvF6B584kFQqNW65zA6X915DKBurpYaFweJtf3AXb5Ekn",
+                  1
+                ]
+              ],
+              "weight_threshold": 0
+            },
+            "json_metadata": "",
+            "memo_key": "STM79272DWY4jRQdjg6xurbNTJMiJjjibieqnWyqXs5iPqBFnA7ca"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-08T18:47:15",
+        "trx_id": "b584163a893f8e7cc8ad518a02d3cf5c88d97929",
+        "trx_in_block": 0,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

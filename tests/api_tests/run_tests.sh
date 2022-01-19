@@ -1,10 +1,11 @@
 #!/bin/bash
-#pip3 install tox
-#pip3 install tavern
 
-export HIVEMIND_ADDRESS=localhost
-export HIVEMIND_PORT=$1
+if [[ $1 == *":"* ]]; then
+    export HIVEMIND_ADDRESS=${1%:*}
+    export HIVEMIND_PORT=${1##*:}
+else
+    export HIVEMIND_ADDRESS=localhost
+    export HIVEMIND_PORT=$1
+fi
 export TAVERN_DIR="$2/tests/api_tests"
-pushd $2
-tox -e tavern -- -W ignore::pytest.PytestDeprecationWarning --workers auto --tests-per-worker auto -k account_history_api_patterns --junitxml=results.xml
-popd
+tox -e tavern -- --tb=long -W ignore::pytest.PytestDeprecationWarning --workers 1 --tests-per-worker auto -k account_history_api --junitxml=results.xml

@@ -1,0 +1,87 @@
+{
+  "next_block_range_begin": 1393164,
+  "next_operation_begin": "9223372036856526952",
+  "ops": [
+    {
+      "block": 1393161,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "au1nethyb1",
+          "vesting_shares": {
+            "amount": "10513429654",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036856526948",
+      "timestamp": "2016-05-12T20:51:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1393162,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "au1nethyb1",
+          "vesting_shares": {
+            "amount": "10513422587",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036856526949",
+      "timestamp": "2016-05-12T20:51:03",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1393163,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "xeldal",
+          "vesting_shares": {
+            "amount": "10513415520",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036856526950",
+      "timestamp": "2016-05-12T20:51:06",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    },
+    {
+      "block": 1393164,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "blocktrades",
+          "vesting_shares": {
+            "amount": "10513408453",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036856526951",
+      "timestamp": "2016-05-12T20:51:09",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ],
+  "ops_by_block": []
+}

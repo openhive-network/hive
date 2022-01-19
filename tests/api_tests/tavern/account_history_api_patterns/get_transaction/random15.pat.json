@@ -1,0 +1,26 @@
+{
+  "block_num": 3907068,
+  "expiration": "2016-08-08T16:09:48",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "comment_operation",
+      "value": {
+        "author": "inna3",
+        "body": "Good afternoon. Your article is very useful. I voted for you.",
+        "json_metadata": "{\"tags\":[\"introduceyourself\"]}",
+        "parent_author": "carrinm",
+        "parent_permlink": "introducing-mark-carrington-author-and-entrepreneur-frustrated-blogger-investor-and-fitness-fanatic",
+        "permlink": "re-carrinm-introducing-mark-carrington-author-and-entrepreneur-frustrated-blogger-investor-and-fitness-fanatic-20160808t160935219z",
+        "title": ""
+      }
+    }
+  ],
+  "ref_block_num": 40439,
+  "ref_block_prefix": 1338550252,
+  "signatures": [
+    "2003efbbc0ed2f341afbb128bea2b6c04d72bf61643628558856365ed6e8e799e553a201fd52e4dfa52e16309281f1fa57439ab071e4f7138dca0fb86b7e6ac202"
+  ],
+  "transaction_id": "aa6d8a01ae6a707252ae9be73ce7a03c30ececc1",
+  "transaction_num": 0
+}

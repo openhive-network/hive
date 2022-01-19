@@ -1,0 +1,61 @@
+{
+  "next_block_range_begin": 1838273,
+  "next_operation_begin": "9223372036857080076",
+  "ops": [],
+  "ops_by_block": [
+    {
+      "block": 1838272,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 1838272,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "riverhead",
+              "vesting_shares": {
+                "amount": "8072459899",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036857080074",
+          "timestamp": "2016-05-28T08:42:12",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-05-28T08:42:12"
+    },
+    {
+      "block": 1838273,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 1838273,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "steemed",
+              "vesting_shares": {
+                "amount": "8072455775",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036857080075",
+          "timestamp": "2016-05-28T08:42:15",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-05-28T08:42:15"
+    }
+  ]
+}

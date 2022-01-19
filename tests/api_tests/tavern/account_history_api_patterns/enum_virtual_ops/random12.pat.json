@@ -1,0 +1,27 @@
+{
+  "next_block_range_begin": 2505948,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 2505946,
+      "op": {
+        "type": "pow_reward_operation",
+        "value": {
+          "reward": {
+            "amount": "6003711911",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "worker": "dele-puppy"
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": "9223372036857974910",
+      "timestamp": "2016-06-20T15:36:15",
+      "trx_id": "b4f1cbe597c154c6a47f5a6508f73d10ce28c804",
+      "trx_in_block": 0,
+      "virtual_op": 1
+    }
+  ],
+  "ops_by_block": []
+}

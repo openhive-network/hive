@@ -3,6 +3,7 @@
 
   marks:
     - patterntest
+    - xfail
 
   includes:
     - !include ../../common.yaml
@@ -19,10 +20,11 @@
           id: 1
           method: "account_history_api.get_transaction"
           params: {"id":"1000"}
+        timeout: 1
       response:
         status_code: 200
-        verify_response_with:
-          function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            error_response: true
-            ignore_tags: ['context']
+        json:
+          error:
+            code: -32000
+        headers:
+          content-type: application/json

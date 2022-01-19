@@ -1,0 +1,142 @@
+{
+  "next_block_range_begin": 620766,
+  "next_operation_begin": 0,
+  "ops": [],
+  "ops_by_block": [
+    {
+      "block": 620761,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 620761,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "fid",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036855581956",
+          "timestamp": "2016-04-15T14:49:45",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-04-15T14:49:45"
+    },
+    {
+      "block": 620762,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 620762,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "coldstorage12",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036855581959",
+          "timestamp": "2016-04-15T14:49:48",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-04-15T14:49:48"
+    },
+    {
+      "block": 620763,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 620763,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "beta",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036855581960",
+          "timestamp": "2016-04-15T14:49:51",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-04-15T14:49:51"
+    },
+    {
+      "block": 620764,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 620764,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "www2a524246",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036855581961",
+          "timestamp": "2016-04-15T14:49:54",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-04-15T14:49:54"
+    },
+    {
+      "block": 620765,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 620765,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "albert",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 0,
+          "operation_id": "9223372036855581962",
+          "timestamp": "2016-04-15T14:49:57",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": 1
+        }
+      ],
+      "timestamp": "2016-04-15T14:49:57"
+    }
+  ]
+}

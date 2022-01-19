@@ -1,0 +1,33 @@
+{
+  "history": [
+    [
+      8,
+      {
+        "block": 4610734,
+        "op": {
+          "type": "transfer_to_vesting_completed_operation",
+          "value": {
+            "from_account": "blocktrades",
+            "hive_vested": {
+              "amount": "691177",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "to_account": "kripto",
+            "vesting_shares_received": {
+              "amount": "2237516892686",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-09-02T06:10:09",
+        "trx_id": "fb9b72683b90134df5f12e6e2f229b06e146c830",
+        "trx_in_block": 0,
+        "virtual_op": 1
+      }
+    ]
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "ops": [
+    {
+      "block": 1892517,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "benjojo",
+          "pending_payout": {
+            "amount": "27119",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "re-fuzzyvest-beyond-bitcoin-bitshares-allstar-awards--w-hangouts-20160528t083745901z",
+          "rshares": 540044718,
+          "total_vote_weight": "5115233879963",
+          "voter": "ppitonak",
+          "weight": 5
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-05-30T06:09:51",
+      "trx_id": "96480493f15ecc5caf7e08538d7942d13c456c25",
+      "trx_in_block": 0,
+      "virtual_op": 1
+    },
+    {
+      "block": 1892517,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "steemed",
+          "vesting_shares": {
+            "amount": "7851513763",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-05-30T06:09:54",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ]
+}

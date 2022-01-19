@@ -1,0 +1,130 @@
+{
+  "history": [
+    [
+      1,
+      {
+        "block": 4137635,
+        "op": {
+          "type": "account_created_operation",
+          "value": {
+            "creator": "steem",
+            "initial_delegation": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "initial_vesting_shares": {
+              "amount": "10717587476",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "new_account_name": "albertarocks"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-16T17:14:15",
+        "trx_id": "73e3617dcec3753d658315df502161c5008a0fd5",
+        "trx_in_block": 1,
+        "virtual_op": 1
+      }
+    ],
+    [
+      2,
+      {
+        "block": 4138802,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "albertarocks",
+            "body": "To all of you who know me from my past life of blogging AlbertarocksTA discussions, to all of you who know me from Twitter, to all of you who know me from my past life at Seeking Alpha, to all of you who know me from various articles I have written and that were published all over hell's half acre, to all of you who recognize me from my four years of reporting on the Hindenburg Omen, also on Seeking Alpha (accurately reporting I might add)... welcome to my first post on Steemit.\n\nSo what is Steemit?  I don't know... but I'm pretty stoked about what \"I think\" it is.  If it is a safe platform, a platform where I can say what it is I 'want' to say, on any topic I want to rant about... then Steemit might represent an exciting new venture.  I'm also not the slightest bit shy to admit that I don't know what \"Styling with Markdown\" is, but I assume it is a text editing platform.  I'll figure it out in due course and put it to work I'm sure.\n\nWho knows, Steemit might bring me out of my cave and rekindle my interest  in writing articles again.  And I assure you I have a lot to say.  Do any of you feel the rage that I do?  Do any of you have opinions like I do, about what we see going on out there in this crazy, dangerous plastic world the bankers have created for us.  Chemtrails?  Don't even get me started.  The vaccination scam?  My god these are horrible facts of life.  But those are discussions for another day, perhaps right here on Steemit.\n\nWhere have I been hiding?  Basically in my office where I continue to do my own TA analysis for my own personal account.  Just between you and me, I started loading up on Canadian gold and silver miners in early 2015.  As the saying goes... I'd rather be a year early than a day late.   And man, has that wisdom ever paid off.  I have also spent the past three years acting as business development manager for my son's company.  And I'm pleased to report that even though the economy in our part of the world is on very shaky ground, we as a company are in the midst of our fourth consecutive year of breaking sales records.  My son deserves 92.16% of the credit for that.  I can honestly say I have never met a harder working or more driven man in my life.  I am literally in awe of him... and I'm not the easiest guy to impress.  But I digress.  Where was I?\n\nOh yes!  Were you aware that the gold miners sector, depending on which index you care to consider, is up over 300% just in 2016 alone?  Some miners are up 1000%.  And yes... fortunately I caught all of that.  I never have behaved as a day trader but I continue to swing trade.  Day trading is too damned frantic for me and way too damned manipulated.  But as a swing trader, where technical analysis still works on individual stocks, man this is an exciting time.  Not to mention lucrative.  It turns out all the skills I have been honing as a technical analyst (since I was 11 years old... over half a century ago) work very well in today's market environment, but only in the sectors that the banking class are losing control of.\n\nSo that's it for now friends.  I plan to just sit back now and see what this first post on Steemit looks like.  I want to see what happens to it... if anything.  I'm interested to see if anybody reads it.  I also need to just spend some time observing Steemit and see how it evolves.  So although I'm kind of stoked to be sitting here banging out sentence after sentence... having fun writing for the first time in a long time... for all I know this might also be my 'only' post on Steemit.  I just don't know enough about it.  But I'm going to find out in the weeks ahead.\n\nSo long for now.  I kind of hope some of my old friends find me here :-)",
+            "json_metadata": "{\"tags\":[\"albertarocks\",\"gold\",\"\"]}",
+            "parent_author": "",
+            "parent_permlink": "albertarocks",
+            "permlink": "albertarocks-is-now-on-steemit",
+            "title": "Albertarocks Is Now On Steemit"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-16T18:12:45",
+        "trx_id": "c917c5a00679b7279b42c41580ed832602257831",
+        "trx_in_block": 2,
+        "virtual_op": 0
+      }
+    ],
+    [
+      3,
+      {
+        "block": 4138802,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "albertarocks",
+            "permlink": "albertarocks-is-now-on-steemit",
+            "voter": "albertarocks",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-08-16T18:12:45",
+        "trx_id": "c917c5a00679b7279b42c41580ed832602257831",
+        "trx_in_block": 2,
+        "virtual_op": 0
+      }
+    ],
+    [
+      4,
+      {
+        "block": 4138802,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "albertarocks",
+            "pending_payout": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "albertarocks-is-now-on-steemit",
+            "rshares": 54659696,
+            "total_vote_weight": "252069911298510",
+            "voter": "albertarocks",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-08-16T18:12:45",
+        "trx_id": "c917c5a00679b7279b42c41580ed832602257831",
+        "trx_in_block": 2,
+        "virtual_op": 1
+      }
+    ],
+    [
+      5,
+      {
+        "block": 4138959,
+        "op": {
+          "type": "comment_operation",
+          "value": {
+            "author": "albertarocks",
+            "body": "@@ -311,16 +311,22 @@\n you who \n+might \n recogniz\n",
+            "json_metadata": "{\"tags\":[\"albertarocks\",\"gold\",\"\"]}",
+            "parent_author": "",
+            "parent_permlink": "albertarocks",
+            "permlink": "albertarocks-is-now-on-steemit",
+            "title": "Albertarocks Is Now On Steemit"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-16T18:20:42",
+        "trx_id": "528d198cac724aa6474fae77afce5adb82e12da2",
+        "trx_in_block": 3,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}

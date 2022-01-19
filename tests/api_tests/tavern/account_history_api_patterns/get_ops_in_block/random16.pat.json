@@ -1,0 +1,24 @@
+{
+  "ops": [
+    {
+      "block": 1862285,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "au1nethyb1",
+          "vesting_shares": {
+            "amount": "7973109280",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-05-29T04:43:42",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": 1
+    }
+  ]
+}

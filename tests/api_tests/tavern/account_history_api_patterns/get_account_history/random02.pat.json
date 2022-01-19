@@ -1,0 +1,25 @@
+{
+  "history": [
+    [
+      6,
+      {
+        "block": 3588757,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "bitcoinsatan",
+            "permlink": "hello-steemers-it-s-my-first-post-and-it-s-pure-evil",
+            "voter": "espn",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-28T13:24:03",
+        "trx_id": "0ca9dc5378fc59a65a87ded27a8d97cac957d5ea",
+        "trx_in_block": 13,
+        "virtual_op": 0
+      }
+    ]
+  ]
+}
