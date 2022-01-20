@@ -636,7 +636,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least three arguments");
   const auto arguments = args.get_array()[0];
-  FC_ASSERT( arguments.get_array()[0].is_string(),       "Account name is required as first argument" );
+  FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
 
   rc::list_rc_accounts_args api_lra_args;

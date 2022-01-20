@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <hive/protocol/config.hpp>
+
 #include <fc/saturation.hpp>
 #include <fc/uint128.hpp>
 #include <fc/time.hpp>
