@@ -1,14 +1,19 @@
 from concurrent.futures import ThreadPoolExecutor
-from test_tools import Account, constants, logger, Wallet
+from test_tools import Account, Asset,  constants, logger, Wallet
 import time
 
 
 def test_direct_rc_delegations(world):
     node = world.create_init_node()
-    node.config.shared_file_size = '32G'
-    node.set_clean_up_policy(constants.NodeCleanUpPolicy.DO_NOT_REMOVE_FILES)
+    # node.config.shared_file_size = '32G'
+    # node.set_clean_up_policy(constants.NodeCleanUpPolicy.DO_NOT_REMOVE_FILES)
     node.run()
     wallet = Wallet(attach_to=node)
+
+    #przygotowanie postu
+    wallet.api.create_account('initminer', 'bob', '{}')
+    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(20000000))
+    wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
 
     client_accounts = []
     number_of_accounts_in_one_transaction = 400
@@ -34,34 +39,32 @@ def test_direct_rc_delegations(world):
     number_of_threads = 10
     wallets = []
     delegators = []
+    # for thread_number in range(number_of_threads):
+    #     wallet = Wallet(attach_to=node)
+    #     wallets.append(wallet)
+    #     wallet.api.create_account('initminer', f'delegator{thread_number}', '{}')
+    #     delegators.append(f'delegator{thread_number}')
+    #     wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', '100.010 TESTS')
 
-    for thread_number in range(number_of_threads):
-        wallet = Wallet(attach_to=node)
-        wallets.append(wallet)
-        wallet.api.create_account('initminer', f'delegator{thread_number}', '{}')
-        delegators.append(f'delegator{thread_number}')
-        wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', '100.010 TESTS')
-
-    accounts_to_delegate_packs = []
-    for thread_number in range(number_of_threads + 1):
-        accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
+    # accounts_to_delegate_packs = []
+    # for thread_number in range(number_of_threads + 1):
+    #     accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
 
     tasks_list = []
     executor = ThreadPoolExecutor(max_workers=number_of_threads)
-    for thread_number in range(number_of_threads):
-        tasks_list.append(executor.submit(delegation_rc, delegators[thread_number], wallets[thread_number],
-                                          accounts_to_delegate_packs[thread_number],
-                                          accounts_to_delegate_packs[thread_number + 1],
-                                          accounts_to_delegate, thread_number))
+    for thread_number in range(number_of_threads-1):
+        tasks_list.append(executor.submit(delegation_rc, wallets[thread_number],
+                                          accounts_to_delegate[thread_number], thread_number))
 
     for thread_number in tasks_list:
         thread_number.result()
 
 
-def delegation_rc(creator, wallet, first_accounts_pack, last_accounts_pack, accounts_to_delegate, thread_number):
+def delegation_rc(wallet, accounts_to_delegate, thread_number):
     logger.info(f'Thread {thread_number} work START')
-    for number_of_account_pack in range(first_accounts_pack, last_accounts_pack):
-        wallet.api.delegate_rc(creator, accounts_to_delegate[number_of_account_pack], 1)
+    with wallet.in_single_transaction():
+                for x in range(99):
+                    wallet.api.vote(accounts_to_delegate[x], 'bob', 'hello-world', 98)
     logger.info(f'Thread {thread_number} work END')
 
 
