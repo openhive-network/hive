@@ -4175,6 +4175,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 
 void database::_apply_block( const signed_block& next_block )
 {
+  uint32_t virtual_op_id_shift = 0; // this var is updated only in processing of first block
   block_notification note( next_block );
 
   try {
@@ -4231,6 +4232,7 @@ void database::_apply_block( const signed_block& next_block )
         } );
       }
     }
+    virtual_op_id_shift = _current_virtual_op;
   }
 
   if( !( skip & skip_merkle_check ) )
@@ -4308,7 +4310,7 @@ void database::_apply_block( const signed_block& next_block )
 
   _current_trx_in_block = -1;
   _current_op_in_trx = 0;
-  _current_virtual_op = 0;
+  _current_virtual_op = virtual_op_id_shift;
 
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
@@ -4748,6 +4750,9 @@ void database::apply_operation(const operation& op)
   operation_notification note = create_operation_notification( op );
 
   applied_operation_info_controller ctrlr(&_current_applied_operation_info, note);
+
+  if(!is_virtual_operation(op))
+    this->_current_virtual_op = 0;
 
   notify_pre_apply_operation( note );
 
@@ -5732,7 +5737,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             } );
           }
         }
-        
+
         auto b = acnt.hbd_balance;
         acnt.hbd_balance += delta;
 
