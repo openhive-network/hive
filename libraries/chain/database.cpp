@@ -2226,7 +2226,7 @@ void database::clear_account( const account_object& account )
     while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account.get_id() )
     {
       delegations.emplace_back( *delegation_itr, get_account( delegation_itr->get_delegatee() ) );
-      vop.other_affected_accounts.emplace( delegations.back().second.get_name() );
+      vop.other_affected_accounts.emplace_back( delegations.back().second.get_name() );
       ++delegation_itr;
     }
 

@@ -481,7 +481,7 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
 
       auto hf23_vop = get_last_operations(1)[0].get< hardfork_hive_operation >();
       BOOST_REQUIRE( hf23_vop.other_affected_accounts.size() == 1 );
-      BOOST_REQUIRE( hf23_vop.other_affected_accounts.find( "bob" ) != hf23_vop.other_affected_accounts.end() );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.back() == "bob" );
     }
     {
       const auto& _alice = db->get_account( "alice" );
@@ -497,8 +497,8 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
 
       auto hf23_vop = get_last_operations(1)[0].get< hardfork_hive_operation >();
       BOOST_REQUIRE( hf23_vop.other_affected_accounts.size() == 2 );
-      BOOST_REQUIRE( hf23_vop.other_affected_accounts.find( "bob" ) != hf23_vop.other_affected_accounts.end() );
-      BOOST_REQUIRE( hf23_vop.other_affected_accounts.find( "carol" ) != hf23_vop.other_affected_accounts.end() );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.front() == "bob" );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.back() == "carol" );
     }
 
     database_fixture::validate_database();

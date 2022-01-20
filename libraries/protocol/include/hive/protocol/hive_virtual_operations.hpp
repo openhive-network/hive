@@ -341,7 +341,7 @@ namespace hive { namespace protocol {
 
     account_name_type account;
     account_name_type treasury;
-    fc::flat_set< account_name_type >
+    std::vector< account_name_type >
                       other_affected_accounts; // delegatees that lost delegations from account - filled before pre notification
     asset             hbd_transferred; // filled only in post notification
     asset             hive_transferred; // filled only in post notification
