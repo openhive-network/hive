@@ -72,12 +72,6 @@ def test_less_value_rc_delegation(wallet: Wallet):
         wallet.api.delegate_rc(accounts[4], [accounts[5]], 6)
     assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 40
 
-    wallet.api.delegate_rc(accounts[0], [accounts[7]], 10)
-    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 10
-
-    wallet.api.delegate_rc(accounts[0], [accounts[7]], 5)
-    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 5
-
 
 def test_bigger_value_rc_delegation(wallet: Wallet):
     accounts = create_accounts(7, wallet)
@@ -97,11 +91,20 @@ def test_bigger_value_rc_delegation(wallet: Wallet):
         wallet.api.delegate_rc(accounts[4], [accounts[5]], 10)
     assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 40
 
-    wallet.api.delegate_rc(accounts[0], [accounts[7]], 5)
-    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 5
 
-    wallet.api.delegate_rc(accounts[0], [accounts[7]], 10)
-    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 10
+def test_overwriting_of_transactions(wallet:Wallet):
+    accounts = create_accounts(2, wallet)
+
+    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
+
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 5)
+    assert get_rc_account_info(accounts[1], wallet)['max_rc'] == 5
+
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
+    assert get_rc_account_info(accounts[1], wallet)['max_rc'] == 10
+
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 15)
+    assert get_rc_account_info(accounts[1], wallet)['max_rc'] == 15
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
