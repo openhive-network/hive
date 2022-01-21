@@ -48,27 +48,27 @@ def test_same_value_rc_delegation(node, wallet: Wallet):
     with wallet.in_single_transaction():
         wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
         wallet.api.transfer_to_vesting('initminer', accounts[1], Asset.Test(10))
+        wallet.api.transfer_to_vesting('initminer', accounts[2], Asset.Test(10))
         wallet.api.transfer_to_vesting('initminer', accounts[3], Asset.Test(10))
         wallet.api.transfer_to_vesting('initminer', accounts[4], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[5], Asset.Test(10))
 
     with wallet.in_single_transaction():
-        wallet.api.delegate_rc(accounts[0], [accounts[6]], 10)
-        wallet.api.delegate_rc(accounts[1], [accounts[6]], 10)
-        wallet.api.delegate_rc(accounts[3], [accounts[6]], 10)
-        wallet.api.delegate_rc(accounts[4], [accounts[6]], 10)
-        wallet.api.delegate_rc(accounts[5], [accounts[6]], 10)
-    assert get_rc_account_info(accounts[6], wallet)['max_rc'] == 50
+        wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
+        wallet.api.delegate_rc(accounts[1], [accounts[5]], 10)
+        wallet.api.delegate_rc(accounts[2], [accounts[5]], 10)
+        wallet.api.delegate_rc(accounts[3], [accounts[5]], 10)
+        wallet.api.delegate_rc(accounts[4], [accounts[5]], 10)
+    assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 50
 
     with pytest.raises(exceptions.CommunicationError):
         # Can not make same delegation RC two times
-        wallet.api.delegate_rc(accounts[0], [accounts[6]], 10)
+        wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
 
     node.wait_number_of_blocks(3)
 
     with pytest.raises(exceptions.CommunicationError):
         # Can not make same delegation RC two times
-        wallet.api.delegate_rc(accounts[0], [accounts[6]], 10)
+        wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
 
 
 def test_less_value_rc_delegation(wallet: Wallet):
