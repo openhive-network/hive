@@ -279,9 +279,3 @@ def test_multidelegation(wallet: Wallet):
 def get_rc_account_info(account, wallet):
     data_set = wallet.api.find_rc_accounts([account])[0]
     return data_set
-
-
-def account_info(account, name_of_data, wallet):
-    data_set = wallet.api.get_account(account)
-    specyfic_data = data_set[name_of_data]
-    return specyfic_data
