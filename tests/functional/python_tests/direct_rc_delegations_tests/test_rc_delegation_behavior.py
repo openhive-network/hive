@@ -4,12 +4,7 @@ from test_tools import Asset, exceptions, Wallet
 
 
 def test_delegated_rc_account_execute_operation(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts_in_one_transaction):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
@@ -17,12 +12,7 @@ def test_delegated_rc_account_execute_operation(wallet: Wallet):
 
 
 def test_undelegated_rc_account_reject_execute_operation(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts_in_one_transaction):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
 
@@ -36,14 +26,7 @@ def test_undelegated_rc_account_reject_execute_operation(wallet: Wallet):
 
 
 def test_same_value_rc_delegation(node, wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(6, wallet)
 
     with wallet.in_single_transaction():
         wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
@@ -72,14 +55,7 @@ def test_same_value_rc_delegation(node, wallet: Wallet):
 
 
 def test_less_value_rc_delegation(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(7, wallet)
 
     with wallet.in_single_transaction():
         wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
@@ -104,14 +80,7 @@ def test_less_value_rc_delegation(wallet: Wallet):
 
 
 def test_bigger_value_rc_delegation(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(7, wallet)
 
     with wallet.in_single_transaction():
         wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
@@ -136,14 +105,7 @@ def test_bigger_value_rc_delegation(wallet: Wallet):
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     node.wait_for_block_with_number(3)
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(200000000))
@@ -154,14 +116,7 @@ def test_large_rc_delegation(node, wallet: Wallet):
 
 def test_out_of_int64_rc_delegation(wallet: Wallet):
 #uncorrect error message
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(2000))
 
@@ -170,13 +125,7 @@ def test_out_of_int64_rc_delegation(wallet: Wallet):
 
 
 def test_delegations_rc_to_one_receiver(wallet: Wallet):
-    accounts = []
-    number_of_accounts = 120
-
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
+    accounts = create_accounts(100, wallet)
 
     number_of_transfers = 100
     account_number_absolute = 1
@@ -195,13 +144,7 @@ def test_delegations_rc_to_one_receiver(wallet: Wallet):
 
 
 def test_reject_of_delegation_of_delegated_rc(wallet: Wallet):
-    accounts = []
-    number_of_accounts = 10
-
-    with wallet.in_single_transaction():
-        for account_number in range(number_of_accounts):
-            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-            accounts.append(f'account-{account_number}')
+    accounts = create_accounts(3, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
@@ -211,14 +154,7 @@ def test_reject_of_delegation_of_delegated_rc(wallet: Wallet):
 
 
 def test_wrong_sign_in_transaction(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
 
@@ -230,14 +166,7 @@ def test_wrong_sign_in_transaction(wallet: Wallet):
 
 
 def test_minus_rc_delegation(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
     with pytest.raises(exceptions.CommunicationError):
@@ -245,14 +174,7 @@ def test_minus_rc_delegation(wallet: Wallet):
 
 
 def test_power_up_delegator(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 10
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
@@ -263,19 +185,22 @@ def test_power_up_delegator(wallet: Wallet):
 
 
 def test_multidelegation(wallet: Wallet):
-    accounts = []
-    number_of_accounts_in_one_transaction = 100
-    number_of_transactions = 1
-    for _ in range(number_of_transactions):
-        with wallet.in_single_transaction():
-            for account_number in range(number_of_accounts_in_one_transaction):
-                wallet.api.create_account('initminer', f'account-{account_number}', '{}')
-                accounts.append(f'account-{account_number}')
+    number_of_aacounts = 100
+    accounts = create_accounts(number_of_aacounts, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(1000))
-    wallet.api.delegate_rc(accounts[0], accounts[1:number_of_accounts_in_one_transaction], 5)
+    wallet.api.delegate_rc(accounts[0], accounts[1:number_of_aacounts], 5)
 
 
 def get_rc_account_info(account, wallet):
     data_set = wallet.api.find_rc_accounts([account])[0]
     return data_set
+
+def create_accounts(number_of_accounts, wallet):
+    accounts = []
+    with wallet.in_single_transaction():
+        for account_number in range(number_of_accounts):
+            wallet.api.create_account('initminer', f'account-{account_number}', '{}')
+            accounts.append(f'account-{account_number}')
+    return accounts
+    
