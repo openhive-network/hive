@@ -1,36 +1,6 @@
 {
   "history": [
     [
-      2844,
-      {
-        "block": 1278035,
-        "op": {
-          "type": "feed_publish_operation",
-          "value": {
-            "exchange_rate": {
-              "base": {
-                "amount": "299",
-                "nai": "@@000000013",
-                "precision": 3
-              },
-              "quote": {
-                "amount": "1000",
-                "nai": "@@000000021",
-                "precision": 3
-              }
-            },
-            "publisher": "blocktrades"
-          }
-        },
-        "op_in_trx": 0,
-        "operation_id": 0,
-        "timestamp": "2016-05-08T20:41:48",
-        "trx_id": "36143a87b602f7fd5fe7aaff7bb485dabbbf1df3",
-        "trx_in_block": 0,
-        "virtual_op": 0
-      }
-    ],
-    [
       5915,
       {
         "block": 1337175,

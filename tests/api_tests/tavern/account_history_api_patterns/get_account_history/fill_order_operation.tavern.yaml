@@ -18,7 +18,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.get_account_history"
-          params: {"account":"adm", "operation_filter_low": 144115188075855872, "start": 4000, "limit": 100}
+          params: {"account":"adm", "operation_filter_low": 144115188075855872, "start": 72000, "limit": 100}
       response:
         verify_response_with:
           function: validate_response:compare_response_with_pattern
