@@ -75,8 +75,7 @@ class Node:
             return output.split('\n')
 
     class __Process:
-        def __init__(self, owner, directory, executable, logger):
-            self.__owner = owner
+        def __init__(self, directory, executable, logger):
             self.__process = None
             self.__directory = Path(directory).absolute()
             self.__executable = executable
@@ -254,7 +253,7 @@ class Node:
         self.__logger = logger.create_child_logger(f'{self.__creator}.{self.__name}')
 
         self.__executable = self.__Executable()
-        self.__process = self.__Process(self, self.directory, self.__executable, self.__logger)
+        self.__process = self.__Process(self.directory, self.__executable, self.__logger)
         self.__notifications = self.__NotificationsServer(self, self.__logger)
         self.__clean_up_policy = None
 
