@@ -58,7 +58,7 @@ def test_same_value_rc_delegation(node, wallet: Wallet):
         wallet.api.delegate_rc(accounts[3], [accounts[6]], 10)
         wallet.api.delegate_rc(accounts[4], [accounts[6]], 10)
         wallet.api.delegate_rc(accounts[5], [accounts[6]], 10)
-    assert rc_account_info(accounts[6], 'max_rc', wallet) == 50
+    assert get_rc_account_info(accounts[6], wallet)['max_rc'] == 50
 
     with pytest.raises(exceptions.CommunicationError):
         # Can not make same delegation RC two times
@@ -94,13 +94,13 @@ def test_less_value_rc_delegation(wallet: Wallet):
         wallet.api.delegate_rc(accounts[3], [accounts[6]], 8)
         wallet.api.delegate_rc(accounts[4], [accounts[6]], 7)
         wallet.api.delegate_rc(accounts[5], [accounts[6]], 6)
-    assert rc_account_info(accounts[6], 'max_rc', wallet) == 40
+    assert get_rc_account_info(accounts[6], wallet)['max_rc'] == 40
 
     wallet.api.delegate_rc(accounts[0], [accounts[7]], 10)
-    assert rc_account_info(accounts[7], 'max_rc', wallet) == 10
+    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 10
 
     wallet.api.delegate_rc(accounts[0], [accounts[7]], 5)
-    assert rc_account_info(accounts[7], 'max_rc', wallet) == 5
+    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 5
 
 
 def test_bigger_value_rc_delegation(wallet: Wallet):
@@ -126,13 +126,13 @@ def test_bigger_value_rc_delegation(wallet: Wallet):
         wallet.api.delegate_rc(accounts[3], [accounts[6]], 8)
         wallet.api.delegate_rc(accounts[4], [accounts[6]], 9)
         wallet.api.delegate_rc(accounts[5], [accounts[6]], 10)
-    assert rc_account_info(accounts[6], 'max_rc', wallet) == 40
+    assert get_rc_account_info(accounts[6], wallet)['max_rc'] == 40
 
     wallet.api.delegate_rc(accounts[0], [accounts[7]], 5)
-    assert rc_account_info(accounts[7], 'max_rc', wallet) == 5
+    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 5
 
     wallet.api.delegate_rc(accounts[0], [accounts[7]], 10)
-    assert rc_account_info(accounts[7], 'max_rc', wallet) == 10
+    assert get_rc_account_info(accounts[7], wallet)['max_rc'] == 10
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
@@ -147,9 +147,9 @@ def test_large_rc_delegation(node, wallet: Wallet):
 
     node.wait_for_block_with_number(3)
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(200000000))
-    rc_to_delegate = int(rc_account_info(accounts[0], 'rc_manabar', wallet)['current_mana']) - 11100
+    rc_to_delegate = int(get_rc_account_info(accounts[0], wallet)['rc_manabar']['current_mana']) - 11100
     wallet.api.delegate_rc(accounts[0], [accounts[1]], rc_to_delegate)
-    assert int(rc_account_info(accounts[1], 'max_rc', wallet)) == rc_to_delegate
+    assert int(get_rc_account_info(accounts[1], wallet)['max_rc']) == rc_to_delegate
 
 
 def test_out_of_int64_rc_delegation(wallet: Wallet):
@@ -256,9 +256,9 @@ def test_power_up_delegator(wallet: Wallet):
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 100)
-    rc0 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
+    rc0 = get_rc_account_info(accounts[1], wallet)['rc_manabar']['current_mana']
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(100))
-    rc1 = rc_account_info(accounts[1], 'rc_manabar', wallet)['current_mana']
+    rc1 = get_rc_account_info(accounts[1], wallet)['rc_manabar']['current_mana']
     assert rc0 == rc1
 
 
@@ -276,10 +276,9 @@ def test_multidelegation(wallet: Wallet):
     wallet.api.delegate_rc(accounts[0], accounts[1:number_of_accounts_in_one_transaction], 5)
 
 
-def rc_account_info(account, name_of_data, wallet):
+def get_rc_account_info(account, wallet):
     data_set = wallet.api.find_rc_accounts([account])[0]
-    specyfic_data = data_set[name_of_data]
-    return specyfic_data
+    return data_set
 
 
 def account_info(account, name_of_data, wallet):
