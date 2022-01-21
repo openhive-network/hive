@@ -137,7 +137,7 @@ class Node:
                 if self.__files[name] is None:
                     # pylint: disable=consider-using-with
                     # Files opened here have to exist longer than current scope
-                    self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w')
+                    self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w', encoding='utf-8')
 
         def close(self):
             if self.__process is None:

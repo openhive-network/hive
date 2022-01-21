@@ -129,7 +129,7 @@ class WalletApiTranslator:
 
 
 def replace_file_content_between_tags(file_path: Path, new_content: List[str], begin_tag: str, end_tag: str) -> None:
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         file_content = file.read().split('\n')
 
     indentation = ''
@@ -149,7 +149,7 @@ def replace_file_content_between_tags(file_path: Path, new_content: List[str], b
 
     file_content[begin_tag_index + 1:end_tag_index] = [indentation + line if line else line for line in new_content]
 
-    with open(file_path, 'w') as file:
+    with open(file_path, 'w', encoding='utf-8') as file:
         file.write('\n'.join(file_content))
 
 

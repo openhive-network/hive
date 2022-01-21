@@ -174,7 +174,7 @@ class NodeConfig:
     def write_to_file(self, file_path):
         self.validate()
 
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w', encoding='utf-8') as file:
             file.write('\n'.join(self.write_to_lines()))
 
     def validate(self):
@@ -228,5 +228,5 @@ class NodeConfig:
             entry.clear()
 
     def load_from_file(self, file_path):
-        with open(file_path) as file:
+        with open(file_path, encoding='utf-8') as file:
             self.load_from_lines(file.readlines())

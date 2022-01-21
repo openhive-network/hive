@@ -19,7 +19,7 @@ class Snapshot:
                 self.state = None
                 return
 
-            with open(snapshot_state_path) as state_file:
+            with open(snapshot_state_path, encoding='utf-8') as state_file:
                 self.state = json.load(state_file)
 
     def copy_to(self, node_directory: Path):

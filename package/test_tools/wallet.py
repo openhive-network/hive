@@ -565,7 +565,7 @@ class Wallet(ScopedObject):
         return self.process.poll() is None
 
     def __is_ready(self):
-        with open(self.get_stderr_file_path()) as file:
+        with open(self.get_stderr_file_path(), encoding='utf-8') as file:
             for line in file:
                 if 'Entering Daemon Mode, ^C to exit' in line:
                     return True
@@ -610,8 +610,8 @@ class Wallet(ScopedObject):
 
         # pylint: disable=consider-using-with
         # Files opened here have to exist longer than current scope
-        self.stdout_file = open(self.get_stdout_file_path(), 'w')
-        self.stderr_file = open(self.get_stderr_file_path(), 'w')
+        self.stdout_file = open(self.get_stdout_file_path(), 'w', encoding='utf-8')
+        self.stderr_file = open(self.get_stderr_file_path(), 'w', encoding='utf-8')
 
         if self.__is_online():
             run_parameters.extend([f'--server-rpc-endpoint=ws://{self.connected_node.get_ws_endpoint()}'])
@@ -670,7 +670,7 @@ class Wallet(ScopedObject):
         return True
 
     def __get_http_server_endpoint(self):
-        with open(self.directory / 'stderr.txt') as output:
+        with open(self.directory / 'stderr.txt', encoding='utf-8') as output:
             for line in output:
                 if 'Listening for incoming HTTP RPC requests on' in line:
                     endpoint = re.match(r'^.*Listening for incoming HTTP RPC requests on ([\d\.]+\:\d+)\s*$', line)[1]
