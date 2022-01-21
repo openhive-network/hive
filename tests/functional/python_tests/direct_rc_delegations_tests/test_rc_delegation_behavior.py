@@ -74,7 +74,7 @@ def test_less_value_rc_delegation(wallet: Wallet):
 
 
 def test_bigger_value_rc_delegation(wallet: Wallet):
-    accounts = create_accounts(7, wallet)
+    accounts = create_accounts(6, wallet)
 
     with wallet.in_single_transaction():
         wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
