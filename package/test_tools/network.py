@@ -89,8 +89,7 @@ class Network(NodesCreator):
         network.allow_for_connections_only_between_nodes_in_network()
 
     def allow_for_connections_only_between_nodes_in_network(self):
-        for node_number in range(len(self._nodes)):
-            node = self._nodes[node_number]
+        for node_number, node in enumerate(self._nodes):
             node.set_allowed_nodes(self._nodes[:node_number] + self._nodes[node_number+1:])
 
     def allow_for_connections_with_anyone(self):
