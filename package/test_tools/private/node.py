@@ -133,8 +133,8 @@ class Node:
             env['TZ'] = 'UTC'
 
         def __prepare_files_for_streams(self):
-            for name in self.__files:
-                if self.__files[name] is None:
+            for name, file in self.__files.items():
+                if file is None:
                     # pylint: disable=consider-using-with
                     # Files opened here have to exist longer than current scope
                     self.__files[name] = open(self.__directory.joinpath(f'{name}.txt'), 'w', encoding='utf-8')
