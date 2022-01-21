@@ -1,9 +1,9 @@
 {
   "history": [
     [
-      15170,
+      14408,
       {
-        "block": 2931600,
+        "block": 2907600,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -17,16 +17,16 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T11:58:57",
+        "timestamp": "2016-07-04T15:53:27",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
       }
     ],
     [
-      15280,
+      14716,
       {
-        "block": 2932800,
+        "block": 2908800,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -40,16 +40,16 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T13:06:51",
+        "timestamp": "2016-07-04T16:53:36",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
       }
     ],
     [
-      15395,
+      14925,
       {
-        "block": 2934000,
+        "block": 2910000,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -63,16 +63,16 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T14:09:24",
+        "timestamp": "2016-07-04T17:53:57",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
       }
     ],
     [
-      15509,
+      15123,
       {
-        "block": 2935200,
+        "block": 2911200,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -86,16 +86,16 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T15:09:48",
+        "timestamp": "2016-07-04T18:54:12",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
       }
     ],
     [
-      15642,
+      15344,
       {
-        "block": 2936400,
+        "block": 2912400,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -109,16 +109,16 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T16:10:09",
+        "timestamp": "2016-07-04T19:54:27",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
       }
     ],
     [
-      15781,
+      15595,
       {
-        "block": 2937600,
+        "block": 2913600,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -132,16 +132,16 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T17:10:30",
+        "timestamp": "2016-07-04T20:54:45",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
       }
     ],
     [
-      15891,
+      15782,
       {
-        "block": 2938800,
+        "block": 2914800,
         "op": {
           "type": "liquidity_reward_operation",
           "value": {
@@ -155,7 +155,7 @@
         },
         "op_in_trx": 0,
         "operation_id": 0,
-        "timestamp": "2016-07-05T18:10:39",
+        "timestamp": "2016-07-04T21:55:00",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": 2
