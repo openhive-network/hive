@@ -1,6 +1,29 @@
 {
   "history": [
     [
+      11351,
+      {
+        "block": 4373677,
+        "op": {
+          "type": "withdraw_vesting_operation",
+          "value": {
+            "account": "ned",
+            "vesting_shares": {
+              "amount": "12890944083480711",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-24T23:30:00",
+        "trx_id": "3974a328960a22616fcfcba35af083366ca252bd",
+        "trx_in_block": 2,
+        "virtual_op": 0
+      }
+    ],
+    [
       15005,
       {
         "block": 4795273,
