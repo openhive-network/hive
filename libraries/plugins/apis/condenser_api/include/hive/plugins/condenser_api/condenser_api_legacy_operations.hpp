@@ -85,6 +85,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef ineffective_delete_comment_operation   legacy_ineffective_delete_comment_operation;
   typedef fill_recurrent_transfer_operation      legacy_fill_recurrent_transfer_operation;
   typedef failed_recurrent_transfer_operation    legacy_failed_recurrent_transfer_operation;
+  typedef producer_missed_operation              legacy_producer_missed_operation;
 
   struct legacy_price
   {
@@ -1405,26 +1406,12 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t          executions = 0;
   };
 
-  struct legacy_producer_missed_operation {
-    legacy_producer_missed_operation() {}
-
-    legacy_producer_missed_operation(const producer_missed_operation &op) :
-            producer(op.producer){}
-
-    operator producer_missed_operation() const {
-      producer_missed_operation op;
-      op.producer = producer;
-      return op;
-    }
-
-    account_name_type producer;
-  };
-
   struct legacy_dhf_instant_conversion_operation {
     legacy_dhf_instant_conversion_operation() {}
 
     legacy_dhf_instant_conversion_operation(const dhf_instant_conversion_operation &op) :
             from(op.from),
+            to(op.to),
             hive_amount_in(op.hive_amount_in),
             hbd_amount_out(op.hbd_amount_out)
             {}
@@ -1432,14 +1419,16 @@ namespace hive { namespace plugins { namespace condenser_api {
     operator dhf_instant_conversion_operation() const {
       dhf_instant_conversion_operation op;
       op.from = from;
+      op.to = to;
       op.hive_amount_in = hive_amount_in;
       op.hbd_amount_out = hbd_amount_out;
       return op;
     }
 
     account_name_type from;
-    asset hive_amount_in;
-    asset hbd_amount_out;
+    account_name_type to;
+    legacy_asset hive_amount_in;
+    legacy_asset hbd_amount_out;
   };
 
 
@@ -1580,6 +1569,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const ineffective_delete_comment_operation& op )const     { l_op = op; return true; }
     bool operator()( const fill_recurrent_transfer_operation& op )const        { l_op = op; return true; }
     bool operator()( const failed_recurrent_transfer_operation& op )const      { l_op = op; return true; }
+    bool operator()( const producer_missed_operation& op )const                { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
@@ -1851,12 +1841,6 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
-    bool operator()( const producer_missed_operation& op )const
-    {
-      l_op = legacy_producer_missed_operation( op );
-      return true;
-    }
-
     bool operator()( const dhf_instant_conversion_operation& op )const
     {
       l_op = legacy_dhf_instant_conversion_operation( op );
@@ -2099,11 +2083,6 @@ struct convert_from_legacy_operation_visitor
     return operation( recurrent_transfer_operation( op ) );
   }
 
-  operation operator()( const legacy_producer_missed_operation& op )const
-  {
-    return operation( producer_missed_operation( op ) );
-  }
-
   operation operator()( const legacy_dhf_instant_conversion_operation& op )const
   {
     return operation( dhf_instant_conversion_operation( op ) );
@@ -2316,7 +2295,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (accou
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_producer_missed_operation, (producer) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_instant_conversion_operation, (from)(hive_amount_in)(hbd_amount_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_instant_conversion_operation, (from)(to)(hive_amount_in)(hbd_amount_out) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

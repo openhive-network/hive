@@ -418,7 +418,7 @@ struct get_impacted_account_visitor
 
   void operator()( const dhf_instant_conversion_operation& op )
   {
-    _impacted.insert( op.from );
+    _impacted.insert( op.to );
   }
 
   //void operator()( const operation& op ){}

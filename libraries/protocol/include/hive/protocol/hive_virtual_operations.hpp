@@ -434,9 +434,10 @@ namespace hive { namespace protocol {
  struct dhf_instant_conversion_operation : public virtual_operation {
    dhf_instant_conversion_operation() {}
 
-   dhf_instant_conversion_operation(account_name_type f, const asset& c, const asset& a) : from(f), hive_amount_in( c ), hbd_amount_out( a ) {}
+   dhf_instant_conversion_operation(account_name_type f, account_name_type t, const asset& c, const asset& a) : from(f), to(t), hive_amount_in( c ), hbd_amount_out( a ) {}
 
    account_name_type from;
+   account_name_type to;
    asset hive_amount_in;
    asset hbd_amount_out;
  };
@@ -479,4 +480,4 @@ FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
-FC_REFLECT( hive::protocol::dhf_instant_conversion_operation, (from)(hive_amount_in)(hbd_amount_out) )
+FC_REFLECT( hive::protocol::dhf_instant_conversion_operation, (from)(to)(hive_amount_in)(hbd_amount_out) )
