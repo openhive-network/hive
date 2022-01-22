@@ -1,4 +1,3 @@
-
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
@@ -294,7 +293,7 @@ void use_account_rcs(
         if( !has_mana )
         {
           const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
-          ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
+          dlog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
             ("account", account_name)
             ("rc_needed", rc)
             ("rc_current", rca.rc_manabar.current_mana)
