@@ -49,7 +49,7 @@ BOOST_FIXTURE_TEST_SUITE( serialization_tests, clean_database_fixture )
 BOOST_AUTO_TEST_CASE(transaction_object_test)
 {
   ACTORS((alice)(bob))
-    transfer_operation op;
+  transfer_operation op;
   op.from = "alice";
   op.to = "bob";
   op.amount = asset(100, HIVE_SYMBOL);
@@ -891,6 +891,29 @@ BOOST_AUTO_TEST_CASE( unpack_recursion_test )
     }
 
     std::vector< fc::variant > v;
+    HIVE_REQUIRE_THROW( fc::raw::unpack( ss, v ), fc::assert_exception );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( unpack_array_limit_test )
+{
+  try
+  {
+    std::stringstream ss;
+    fc::raw::pack( ss, unsigned_int( MAX_ARRAY_ALLOC_SIZE-1 ) );
+    for( int i = 0; i < MAX_ARRAY_ALLOC_SIZE-1; ++i )
+      fc::raw::pack( ss, static_cast< uint8_t >( i % 256 ) );
+
+    std::vector< uint8_t > v;
+    fc::raw::unpack( ss, v );
+
+    // now increase size by one
+    fc::raw::pack( ss, static_cast< uint8_t >( (MAX_ARRAY_ALLOC_SIZE-1) % 256 ) );
+    ss.seekp( 0 );
+    fc::raw::pack( ss, unsigned_int( MAX_ARRAY_ALLOC_SIZE ) );
+    ss.seekg( 0 );
+    v.clear();
     HIVE_REQUIRE_THROW( fc::raw::unpack( ss, v ), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW();
