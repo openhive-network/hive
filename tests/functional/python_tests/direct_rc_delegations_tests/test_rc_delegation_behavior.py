@@ -108,17 +108,20 @@ def test_overwriting_of_transactions(wallet:Wallet):
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
+    # Wait for block is necessary because transactions must always enter the same specific blocks.
+    # This way, 'cost of transaction' is always same and is possible to delegate maximal, huge amount of RC.
     accounts = create_accounts(2, wallet)
 
+    cost_of_transaction = 11100
     node.wait_for_block_with_number(3)
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(200000000))
-    rc_to_delegate = int(get_rc_account_info(accounts[0], wallet)['rc_manabar']['current_mana']) - 11100
+    rc_to_delegate = int(get_rc_account_info(accounts[0], wallet)['rc_manabar']['current_mana']) - cost_of_transaction
     wallet.api.delegate_rc(accounts[0], [accounts[1]], rc_to_delegate)
     assert int(get_rc_account_info(accounts[1], wallet)['max_rc']) == rc_to_delegate
 
 
 def test_out_of_int64_rc_delegation(wallet: Wallet):
-#uncorrect error message
+    # uncorrect error message
     accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(2000))
