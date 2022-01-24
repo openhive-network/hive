@@ -128,11 +128,10 @@ def test_out_of_int64_rc_delegation(wallet: Wallet):
 
 
 def test_delegations_rc_to_one_receiver(wallet: Wallet):
-    accounts = create_accounts(101, wallet)
+    accounts = create_accounts(700, wallet)
 
     with wallet.in_single_transaction():
         for account in accounts[1:]:
-            dupa = account
             wallet.api.transfer_to_vesting('initminer', account, Asset.Test(100000))
             wallet.api.transfer('initminer', account, Asset.Test(10), '')
 
