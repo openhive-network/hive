@@ -7,6 +7,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <fc/log/time_logger.hpp>
 #include <fc/log/logger_config.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/macros.hpp>
@@ -22,8 +23,6 @@ using hive::protocol::legacy_switcher;
 
 namespace detail
 {
-  hive::plugins::json_rpc::json_rpc_plugin* register_api_method_visitor::_json_rpc_plugin = nullptr;
-
   struct json_rpc_error
   {
     json_rpc_error()
