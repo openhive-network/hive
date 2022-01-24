@@ -128,22 +128,17 @@ def test_out_of_int64_rc_delegation(wallet: Wallet):
 
 
 def test_delegations_rc_to_one_receiver(wallet: Wallet):
-    accounts = create_accounts(100, wallet)
+    accounts = create_accounts(101, wallet)
 
-    number_of_transfers = 100
-    account_number_absolute = 1
     with wallet.in_single_transaction():
-        for _ in range(number_of_transfers):
-            wallet.api.transfer_to_vesting('initminer', accounts[account_number_absolute], Asset.Test(100000))
-            wallet.api.transfer('initminer', accounts[account_number_absolute], Asset.Test(10), '')
-            account_number_absolute = account_number_absolute + 1
+        for account in accounts[1:]:
+            dupa = account
+            wallet.api.transfer_to_vesting('initminer', account, Asset.Test(100000))
+            wallet.api.transfer('initminer', account, Asset.Test(10), '')
 
-    number_of_delegations = 100
-    account_number_absolute = 1
     with wallet.in_single_transaction():
-        for _ in range(number_of_delegations):
-            wallet.api.delegate_rc(accounts[account_number_absolute], [accounts[0]], 10)
-            account_number_absolute = account_number_absolute + 1
+        for account in accounts[1:]:
+            wallet.api.delegate_rc(account, [accounts[0]], 10)
 
 
 def test_reject_of_delegation_of_delegated_rc(wallet: Wallet):
