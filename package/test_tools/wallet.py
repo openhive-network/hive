@@ -58,7 +58,7 @@ class Wallet(ScopedObject):
 
             return self.sign_transaction(transaction, broadcast=broadcast) if transaction is not None else None
 
-        def __send(self, method_, jsonrpc='2.0', id_=0, *, only_result: bool = True, **params):
+        def __send(self, method_, jsonrpc='2.0', id_=0, *, only_result: bool, **params):
             if 'broadcast' in params:
                 self.__handle_broadcast_parameter(params)
 
