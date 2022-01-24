@@ -1309,37 +1309,31 @@ void database::clear_pending()
   FC_CAPTURE_AND_RETHROW()
 }
 
-template< database::push_type push >
-void database::exec_push( const operation& op, const fc::optional<uint64_t>& vop_id )
+void database::push_virtual_operation( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) );
   operation_notification note = create_operation_notification( op );
-
-  if( push != push_type::post_push_vop )
-    ++_current_virtual_op;
-
-  note.virtual_op = ( vop_id.valid() ? *vop_id : _current_virtual_op );
-
-  if( push != push_type::post_push_vop )
-    notify_pre_apply_operation( note );
-
-  if( push != push_type::pre_push_vop )
-    notify_post_apply_operation( note );
-}
-
-void database::push_virtual_operation( const operation& op )
-{
-  exec_push<push_type::push_vop>( op );
+  ++_current_virtual_op;
+  note.virtual_op = _current_virtual_op;
+  notify_pre_apply_operation( note );
+  notify_post_apply_operation( note );
 }
 
 void database::pre_push_virtual_operation( const operation& op )
 {
-  exec_push<push_type::pre_push_vop>( op );
+  FC_ASSERT( is_virtual_operation( op ) );
+  operation_notification note = create_operation_notification( op );
+  ++_current_virtual_op;
+  note.virtual_op = _current_virtual_op;
+  notify_pre_apply_operation( note );
 }
 
 void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& vop_id )
 {
-  exec_push<push_type::post_push_vop>( op, vop_id );
+  FC_ASSERT( is_virtual_operation( op ) );
+  operation_notification note = create_operation_notification( op );
+  note.virtual_op = ( vop_id.valid() ? *vop_id : _current_virtual_op );
+  notify_post_apply_operation( note );
 }
 
 void database::notify_pre_apply_operation( const operation_notification& note )
@@ -5746,7 +5740,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             } );
           }
         }
-
+        
         auto b = acnt.hbd_balance;
         acnt.hbd_balance += delta;
 
