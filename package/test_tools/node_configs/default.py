@@ -4,7 +4,8 @@ from test_tools.node_config import NodeConfig
 def create_default_config():
     config = NodeConfig()
 
-    config.log_appender = '{"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}'
+    config.log_appender = '{"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"} '\
+                          '{"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}'
     config.log_logger = '{"name":"default","level":"info","appender":"stderr"} '\
                         '{"name":"user","level":"debug","appender":"stderr"} '\
                         '{"name":"p2p","level":"warn","appender":"p2p"}'
