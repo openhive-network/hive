@@ -5136,8 +5136,8 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
               push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
-#endif
           push_virtual_operation( producer_missed_operation( w.owner ) );
+#endif
         } );
       }
     }
