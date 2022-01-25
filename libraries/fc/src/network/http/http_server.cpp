@@ -66,6 +66,7 @@ namespace fc { namespace http {
         }
         catch (...) 
         {
+          wlog( "Caught unknown exception while closing tcp server and completing accepting loop" );
         }
 
         for (fc::future<void>& request_in_progress : requests_in_progress)
@@ -116,11 +117,19 @@ namespace fc { namespace http {
           request req = c->read_request();
           if( do_on_req ) 
             do_on_req( req, rep );
-          c->get_socket().close();
         } 
         catch ( fc::exception& e ) 
         {
-          wlog( "unable to read request ${1}", ("1", e.to_detail_string() ) );//fc::except_str().c_str());
+          wlog( "Unable to read or handle request ${1}", ("1", e.to_detail_string() ) );
+        }
+
+        try
+        {
+          c->get_socket().close();
+        }
+        catch ( fc::exception& e )
+        {
+          wlog( "Unable to close socket ${1}", ("1", e.to_detail_string() ) );
         }
         //wlog( "done handle connection" );
       }
