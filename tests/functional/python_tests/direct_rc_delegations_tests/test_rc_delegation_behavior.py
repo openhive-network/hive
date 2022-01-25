@@ -25,7 +25,7 @@ def test_undelegated_rc_account_reject_execute_operation(wallet: Wallet):
         wallet.api.create_account(accounts[1], 'bob', '{}')
 
 
-def test_same_value_rc_delegation(node, wallet: Wallet):
+def test_rc_delegation_to_same_receiver(node, wallet: Wallet):
     accounts = create_accounts(6, wallet)
 
     with wallet.in_single_transaction():
@@ -148,15 +148,16 @@ def test_power_up_delegator(wallet: Wallet):
 
 
 def test_multidelegation(wallet: Wallet):
-    number_of_aacounts = 100
-    accounts = create_accounts(number_of_aacounts, wallet)
+    number_of_accounts = 100
+    accounts = create_accounts(number_of_accounts, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(1000))
-    wallet.api.delegate_rc(accounts[0], accounts[1:number_of_aacounts], 5)
+    wallet.api.delegate_rc(accounts[0], accounts[1:number_of_accounts], 5)
 
 
 def get_rc_account_info(account, wallet):
     return wallet.api.find_rc_accounts([account])[0]
+
 
 def create_accounts(number_of_accounts, wallet):
     accounts = []
