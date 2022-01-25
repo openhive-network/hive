@@ -103,8 +103,8 @@ def test_overwriting_of_transactions(wallet:Wallet):
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
     assert get_rc_account_info(accounts[1], wallet)['max_rc'] == 10
 
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 15)
-    assert get_rc_account_info(accounts[1], wallet)['max_rc'] == 15
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 7)
+    assert get_rc_account_info(accounts[1], wallet)['max_rc'] == 7
 
 
 def test_large_rc_delegation(node, wallet: Wallet):
