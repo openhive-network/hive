@@ -37,62 +37,25 @@ def test_same_value_rc_delegation(node, wallet: Wallet):
 
     with wallet.in_single_transaction():
         wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
-        wallet.api.delegate_rc(accounts[1], [accounts[5]], 10)
-        wallet.api.delegate_rc(accounts[2], [accounts[5]], 10)
-        wallet.api.delegate_rc(accounts[3], [accounts[5]], 10)
-        wallet.api.delegate_rc(accounts[4], [accounts[5]], 10)
-    assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 50
+        wallet.api.delegate_rc(accounts[1], [accounts[5]], 2)
+        wallet.api.delegate_rc(accounts[2], [accounts[5]], 42)
+        wallet.api.delegate_rc(accounts[3], [accounts[5]], 13)
+        wallet.api.delegate_rc(accounts[4], [accounts[5]], 5)
+    assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 72
+
+
+def test_same_rc_delegation_rejection(node, wallet: Wallet):
+    accounts = create_accounts(2, wallet)
+
+    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
 
     with pytest.raises(exceptions.CommunicationError):
         # Can not make same delegation RC two times
-        wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
-
-    node.wait_number_of_blocks(3)
-
-    with pytest.raises(exceptions.CommunicationError):
-        # Can not make same delegation RC two times
-        wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
+        wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
 
 
-def test_less_value_rc_delegation(wallet: Wallet):
-    accounts = create_accounts(6, wallet)
-
-    with wallet.in_single_transaction():
-        wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[1], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[2], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[3], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[4], Asset.Test(10))
-
-    with wallet.in_single_transaction():
-        wallet.api.delegate_rc(accounts[0], [accounts[5]], 10)
-        wallet.api.delegate_rc(accounts[1], [accounts[5]], 9)
-        wallet.api.delegate_rc(accounts[2], [accounts[5]], 8)
-        wallet.api.delegate_rc(accounts[3], [accounts[5]], 7)
-        wallet.api.delegate_rc(accounts[4], [accounts[5]], 6)
-    assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 40
-
-
-def test_bigger_value_rc_delegation(wallet: Wallet):
-    accounts = create_accounts(6, wallet)
-
-    with wallet.in_single_transaction():
-        wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[1], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[2], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[3], Asset.Test(10))
-        wallet.api.transfer_to_vesting('initminer', accounts[4], Asset.Test(10))
-
-    with wallet.in_single_transaction():
-        wallet.api.delegate_rc(accounts[0], [accounts[5]], 6)
-        wallet.api.delegate_rc(accounts[1], [accounts[5]], 7)
-        wallet.api.delegate_rc(accounts[2], [accounts[5]], 8)
-        wallet.api.delegate_rc(accounts[3], [accounts[5]], 9)
-        wallet.api.delegate_rc(accounts[4], [accounts[5]], 10)
-    assert get_rc_account_info(accounts[5], wallet)['max_rc'] == 40
-
-
-def test_overwriting_of_transactions(wallet:Wallet):
+def test_overwriting_of_delegated_rc_value(wallet: Wallet):
     accounts = create_accounts(2, wallet)
 
     wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(10))
