@@ -326,7 +326,7 @@ namespace chain {
 
       void push_virtual_operation( const operation& op );
       void pre_push_virtual_operation( const operation& op );
-      void post_push_virtual_operation( const operation& op );
+      void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& vop_id = fc::optional<uint64_t>() );
 
       /*
         * Pushing an action without specifying an execution time will execute at head block.
