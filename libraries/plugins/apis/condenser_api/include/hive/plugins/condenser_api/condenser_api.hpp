@@ -70,7 +70,7 @@ struct api_operation_object
     trx_id( obj.trx_id ),
     block( obj.block ),
     trx_in_block( obj.trx_in_block ),
-    virtual_op( obj.virtual_op ),
+    virtual_op( hive::protocol::is_virtual_operation(obj.op) ),
     timestamp( obj.timestamp ),
     op( l_op )
   {}
@@ -79,7 +79,7 @@ struct api_operation_object
   uint32_t             block = 0;
   uint32_t             trx_in_block = 0;
   uint32_t             op_in_trx = 0;
-  uint32_t             virtual_op = 0;
+  bool                 virtual_op;
   fc::time_point_sec   timestamp;
   legacy_operation     op;
 };

@@ -326,7 +326,7 @@ namespace chain {
 
       void push_virtual_operation( const operation& op );
       void pre_push_virtual_operation( const operation& op );
-      void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& vop_id = fc::optional<uint64_t>() );
+      void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx = fc::optional<uint64_t>() );
 
       /*
         * Pushing an action without specifying an execution time will execute at head block.
@@ -798,7 +798,6 @@ namespace chain {
       uint32_t                      _current_block_num    = 0;
       int32_t                       _current_trx_in_block = 0;
       uint32_t                      _current_op_in_trx    = 0;
-      uint32_t                      _current_virtual_op   = 0;
 
       const struct operation_notification* _current_applied_operation_info = nullptr;
 
