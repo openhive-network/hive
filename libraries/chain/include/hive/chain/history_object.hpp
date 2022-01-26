@@ -21,11 +21,8 @@ namespace hive { namespace chain {
       uint32_t             block = 0;
       uint32_t             trx_in_block = 0;
       uint32_t             op_in_trx = 0;
-      uint32_t             virtual_op = 0;
       time_point_sec       timestamp;
       buffer_type          serialized_op;
-
-      uint64_t             get_virtual_op() const { return virtual_op; }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(operation_object, (serialized_op));
   };
@@ -62,7 +59,7 @@ namespace hive { namespace chain {
       account_name_type account;
       uint32_t          sequence = 0;
       operation_id_type op;
-    
+
     CHAINBASE_UNPACK_CONSTRUCTOR(account_history_object);
   };
 
@@ -85,7 +82,7 @@ namespace hive { namespace chain {
   > account_history_index;
 } }
 
-FC_REFLECT( hive::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
+FC_REFLECT( hive::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(timestamp)(serialized_op) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::operation_object, hive::chain::operation_index )
 
 FC_REFLECT( hive::chain::account_history_object, (id)(account)(sequence)(op) )
