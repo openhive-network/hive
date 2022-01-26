@@ -1053,6 +1053,7 @@ namespace graphene { namespace net {
         if (!_suspend_fetching_sync_blocks)
         {
           std::map<peer_connection_ptr, std::vector<item_hash_t> > sync_item_requests_to_send;
+          std::set<peer_connection_ptr> empty_requests_to_send;
 
           {
             ASSERT_TASK_NOT_PREEMPTED();
@@ -1083,6 +1084,8 @@ namespace graphene { namespace net {
                         break;
                     }
                   }
+                  if( sync_item_requests_to_send.count(peer) == 0 )
+                    empty_requests_to_send.insert(peer);
                 }
               }
             }
@@ -1091,7 +1094,8 @@ namespace graphene { namespace net {
           // make all the requests we scheduled in the loop above
           for( const auto& sync_item_request : sync_item_requests_to_send )
             request_sync_items_from_peer( sync_item_request.first, sync_item_request.second );
-          sync_item_requests_to_send.clear();
+          for( const auto& sync_item_request : empty_requests_to_send )
+            request_sync_items_from_peer( sync_item_request, std::vector<item_hash_t>() );
         }
         else
           dlog("fetch_sync_items_loop is suspended pending backlog processing");
@@ -3612,6 +3616,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
 
+      elog("msob process_block_message from  ${endpoint}", ("endpoint", originating_peer->get_remote_endpoint()));
       // find out whether we requested this item while we were synchronizing or during normal operation
       // (it's possible that we request an item during normal operation and then get kicked into sync
       // mode before we receive and process the item.  In that case, we should process the item as a normal
