@@ -33,4 +33,4 @@ def assert_only_virtual_operations(node, block_to_check):
 
     for op in ops:
         virtual_op = op["virtual_op"]
-        assert virtual_op>0
+        assert virtual_op

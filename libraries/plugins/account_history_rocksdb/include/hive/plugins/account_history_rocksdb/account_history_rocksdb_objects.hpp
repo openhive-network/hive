@@ -52,6 +52,7 @@ class rocksdb_operation_object
       block( o.block ),
       trx_in_block( o.trx_in_block ),
       op_in_trx( o.op_in_trx ),
+      is_virtual( o.is_virtual ),
       timestamp( o.timestamp )
     {
       serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
@@ -63,6 +64,7 @@ class rocksdb_operation_object
     uint32_t                   block = 0;
     uint32_t                   trx_in_block = 0;
     uint32_t                   op_in_trx = 0;
+    bool                       is_virtual;
     time_point_sec             timestamp;
     serialize_buffer_t         serialized_op;
 };
@@ -89,4 +91,4 @@ typedef multi_index_container<
 FC_REFLECT( hive::plugins::account_history_rocksdb::volatile_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op)(impacted) )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::account_history_rocksdb::volatile_operation_object, hive::plugins::account_history_rocksdb::volatile_operation_index )
 
-FC_REFLECT( hive::plugins::account_history_rocksdb::rocksdb_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(timestamp)(serialized_op) )
+FC_REFLECT( hive::plugins::account_history_rocksdb::rocksdb_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op) )
