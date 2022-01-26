@@ -534,6 +534,12 @@ struct impacted_balance_collector
     emplace_back(o.owner, o.excess_collateral);
   }
 
+  void operator()(const dhf_instant_conversion_operation& o)
+  {
+    result.emplace_back(o.to, -o.hive_amount_in);
+    result.emplace_back(o.to, o.hbd_amount_out);
+  }
+
   void operator()(const escrow_transfer_operation& o)
   {
     asset hive_spent = o.hive_amount;
