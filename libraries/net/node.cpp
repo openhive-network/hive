@@ -1054,10 +1054,12 @@ namespace graphene { namespace net {
         if (!_suspend_fetching_sync_blocks)
         {
           std::map<peer_connection_ptr, std::vector<item_hash_t> > sync_item_requests_to_send;
+          std::set<peer_connection_ptr> peers_we_need_item_ids;
 
           {
             ASSERT_TASK_NOT_PREEMPTED();
             std::set<item_hash_t> sync_items_to_request;
+
 
             // for each idle peer that we're syncing with
             for( const peer_connection_ptr& peer : _active_connections )
@@ -1084,6 +1086,8 @@ namespace graphene { namespace net {
                         break;
                     }
                   }
+                  if( peer->ids_of_items_to_get.size() > 0 && sync_item_requests_to_send[peer].size() == 0 )
+                    peers_we_need_item_ids.insert(peer);
                 }
               }
             }
@@ -1092,6 +1096,8 @@ namespace graphene { namespace net {
           // make all the requests we scheduled in the loop above
           for( const auto& sync_item_request : sync_item_requests_to_send )
             request_sync_items_from_peer( sync_item_request.first, sync_item_request.second );
+          for( const auto& peer : peers_we_need_item_ids )
+            fetch_next_batch_of_item_ids_from_peer(peer.get());
           sync_item_requests_to_send.clear();
         }
         else
