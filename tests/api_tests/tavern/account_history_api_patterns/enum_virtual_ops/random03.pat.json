@@ -2,5 +2,114 @@
   "next_block_range_begin": 688576,
   "next_operation_begin": 0,
   "ops": [],
-  "ops_by_block": []
+  "ops_by_block": [
+    {
+      "block": 688572,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 688572,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "recursive52",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": "9223372036855680506",
+          "timestamp": "2016-04-18T00:22:21",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-04-18T00:22:21"
+    },
+    {
+      "block": 688573,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 688573,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "remy",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": "9223372036855680507",
+          "timestamp": "2016-04-18T00:22:24",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-04-18T00:22:24"
+    },
+    {
+      "block": 688574,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 688574,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "hannah",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": "9223372036855680509",
+          "timestamp": "2016-04-18T00:22:27",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-04-18T00:22:27"
+    },
+    {
+      "block": 688575,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 688575,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "remi",
+              "vesting_shares": {
+                "amount": "1000",
+                "nai": "@@000000021",
+                "precision": 3
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": "9223372036855680510",
+          "timestamp": "2016-04-18T00:22:30",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-04-18T00:22:30"
+    }
+  ]
 }
