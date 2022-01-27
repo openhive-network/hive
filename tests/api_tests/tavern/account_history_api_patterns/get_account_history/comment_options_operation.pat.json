@@ -25,7 +25,7 @@
         "timestamp": "2016-09-14T21:57:48",
         "trx_id": "3ca1ef0fc0d035222245327ef524e724bc5d7de5",
         "trx_in_block": 4,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -53,7 +53,7 @@
         "timestamp": "2016-09-15T09:22:24",
         "trx_id": "10a97c80d2b757d6215f56740548360b87171b3b",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -81,7 +81,7 @@
         "timestamp": "2016-09-15T09:55:45",
         "trx_id": "ec31328dd62df34b8d3f934a94064dd7a9003da0",
         "trx_in_block": 3,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ]
   ]

@@ -53,7 +53,7 @@
         "timestamp": "2016-07-16T00:37:42",
         "trx_id": "b97a2782b30959b08954e3dba168e229c752ce74",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -77,12 +77,12 @@
             "new_account_name": "fleshtwinkie"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-07-16T00:37:42",
         "trx_id": "b97a2782b30959b08954e3dba168e229c752ce74",
         "trx_in_block": 0,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

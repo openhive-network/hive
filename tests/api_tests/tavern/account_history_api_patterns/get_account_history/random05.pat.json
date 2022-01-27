@@ -53,7 +53,7 @@
         "timestamp": "2016-09-02T03:44:30",
         "trx_id": "c9e419e559fcc793e5afbbfce93aab36ffd63bed",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -77,12 +77,12 @@
             "new_account_name": "axelcolesio80"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-02T03:44:30",
         "trx_id": "c9e419e559fcc793e5afbbfce93aab36ffd63bed",
         "trx_in_block": 0,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

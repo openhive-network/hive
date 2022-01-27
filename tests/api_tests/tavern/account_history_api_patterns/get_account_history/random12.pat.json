@@ -53,7 +53,7 @@
         "timestamp": "2016-07-24T14:43:54",
         "trx_id": "77cc5788a99583bb27caa81d908893f141f1d0d0",
         "trx_in_block": 7,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -77,12 +77,12 @@
             "new_account_name": "cherylmondor1522"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-07-24T14:43:54",
         "trx_id": "77cc5788a99583bb27caa81d908893f141f1d0d0",
         "trx_in_block": 7,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

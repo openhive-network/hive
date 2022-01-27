@@ -21,12 +21,12 @@
             "new_account_name": "leigh"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-04-27T19:23:30",
         "trx_id": "fd1f3339f3db5c3f29f0b7ff109a7715983b4d68",
         "trx_in_block": 0,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ],
     [
@@ -44,12 +44,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-04-27T21:04:18",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

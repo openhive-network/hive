@@ -1,341 +1,341 @@
 {
   "history": [
     [
-      5953,
+      74243,
       {
-        "block": 2889020,
+        "block": 4904843,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-first-post",
+            "comment_author": "adm",
+            "comment_permlink": "re-skeptic-dickbutt-has-taken-over-steemit-20160911t121510219z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "3386877857",
+              "amount": "3057915",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 6,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-12T12:02:48",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 198
+        "virtual_op": true
       }
     ],
     [
-      5954,
+      74246,
       {
-        "block": 2889020,
+        "block": 4905068,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-witness-post",
+            "comment_author": "pfunk",
+            "comment_permlink": "re-dailybest-sketch-4-birds-in-love-20160911t123342655z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "36810703386",
+              "amount": "9173354",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 4,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-12T12:14:09",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 205
+        "virtual_op": true
       }
     ],
     [
-      5955,
+      74251,
       {
-        "block": 2889020,
+        "block": 4910926,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-witness-post-re3",
+            "comment_author": "fubar-bdhr",
+            "comment_permlink": "re-boss-money-new-cars-for-2016-infiniti-20160910t203137711z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "3659084423",
+              "amount": "1056821075",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-12T17:08:00",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 217
+        "virtual_op": true
       }
     ],
     [
-      5956,
+      74252,
       {
-        "block": 2889020,
+        "block": 4911053,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "abit-witness-post-re3-re1",
+            "comment_author": "fubar-bdhr",
+            "comment_permlink": "re-boss-money-new-cars-for-2016-bentley-and-bugatti-20160910t202610048z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "335023466",
+              "amount": "1056795579",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-12T17:14:21",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 222
+        "virtual_op": true
       }
     ],
     [
-      5957,
+      74253,
       {
-        "block": 2889020,
+        "block": 4911309,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "come-on-miners",
+            "comment_author": "fubar-bdhr",
+            "comment_permlink": "re-boss-money-new-cars-for-2016-audi-20160910t203355239z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "3454929498",
+              "amount": "1044527400",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-12T17:27:12",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 259
+        "virtual_op": true
       }
     ],
     [
-      5958,
+      74260,
       {
-        "block": 2889020,
+        "block": 4922588,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "abit",
-            "comment_permlink": "re-masteryoda-test-post-test-20160612t105535643z",
+            "comment_author": "fubar-bdhr",
+            "comment_permlink": "re-promaxx-pumpkin-cheesecake-20160911t193335507z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "3821361415",
+              "amount": "953923376",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-13T02:53:03",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 10155
+        "virtual_op": true
       }
     ],
     [
-      5959,
+      74261,
       {
-        "block": 2889020,
+        "block": 4922873,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "mummyimperfect",
-            "comment_permlink": "8-weeks-ive-become-one-with-the-sofa-9th-jan-2016",
+            "comment_author": "steemcleaners",
+            "comment_permlink": "re-promaxx-the-best-recipes-of-cleansing-the-body-20160911t205657266z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "942253499",
+              "amount": "1005679839",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-13T03:07:21",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 33569
+        "virtual_op": true
       }
     ],
     [
-      5960,
+      74262,
       {
-        "block": 2889020,
+        "block": 4922873,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "gavvet",
-            "comment_permlink": "how-to-defeat-a-bot-add-a-little-chaos",
+            "comment_author": "predator",
+            "comment_permlink": "re-promaxx-the-best-recipes-of-cleansing-the-body-20160912t024850240z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "34277088420",
+              "amount": "146280703",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 6,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-13T03:07:21",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 40076
+        "virtual_op": true
       }
     ],
     [
-      5961,
+      74263,
       {
-        "block": 2889020,
+        "block": 4922873,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "alyssas",
-            "comment_permlink": "re-liondani-re-alyssas-re-abit-ned-started-voting-randomly-on-new-posts-20160602t152250745z",
+            "comment_author": "cheetah",
+            "comment_permlink": "re-re-promaxx-the-best-recipes-of-cleansing-the-body-20160912t024850240z-20160912t025022",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "3821361415",
+              "amount": "112758042",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 10,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-13T03:07:21",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 40206
+        "virtual_op": true
       }
     ],
     [
-      5962,
+      74264,
       {
-        "block": 2889020,
+        "block": 4937337,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "oholiab",
-            "comment_permlink": "vrhackspace-proof-of-concept",
+            "comment_author": "pfunk",
+            "comment_permlink": "re-s0lo-nikola-tesla-an-altered-state-of-consciousness-20160912t070708654z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "1245868516",
+              "amount": "1094122163",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-13T15:13:48",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 40222
+        "virtual_op": true
       }
     ],
     [
-      5963,
+      74265,
       {
-        "block": 2889020,
+        "block": 4937337,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "nanzo-scoop",
-            "comment_permlink": "an-idiots-to-what-the-dollar-figure-against-your-post-means-i-think",
+            "comment_author": "steemcleaners",
+            "comment_permlink": "re-pfunk-re-s0lo-nikola-tesla-an-altered-state-of-consciousness-20160912t135550554z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "5250445889",
+              "amount": "1069808337",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 6,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-13T15:13:48",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 41012
+        "virtual_op": true
       }
     ],
     [
-      5964,
+      74336,
       {
-        "block": 2889020,
+        "block": 4987847,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "gregory-f",
-            "comment_permlink": "clueless-users-guide-to-upgrading-to-version-0",
+            "comment_author": "robotev",
+            "comment_permlink": "re-lucylee-characters-based-on-the-steemit-logo-20160914t103319040z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "25456548715",
+              "amount": "421489938",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 6,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-15T09:31:45",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 50607
+        "virtual_op": true
       }
     ],
     [
-      5965,
+      74338,
       {
-        "block": 2889020,
+        "block": 4995505,
         "op": {
           "type": "curation_reward_operation",
           "value": {
-            "comment_author": "liondani",
-            "comment_permlink": "re-tuck-fheman-re-galina-hello-im-galina-and-you--20160610t154341363z",
+            "comment_author": "cryptos",
+            "comment_permlink": "re-alwaysfelicia-whats-your-animal-spirit-20160914t155147621z",
             "curator": "adm",
             "payout_must_be_claimed": false,
             "reward": {
-              "amount": "3774248740",
+              "amount": "102216075",
               "nai": "@@000000037",
               "precision": 6
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-04T00:00:06",
+        "timestamp": "2016-09-15T15:55:15",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 67269
+        "virtual_op": true
       }
     ]
   ]

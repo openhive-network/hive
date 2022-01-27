@@ -18,7 +18,7 @@
         "timestamp": "2016-07-28T13:24:03",
         "trx_id": "0ca9dc5378fc59a65a87ded27a8d97cac957d5ea",
         "trx_in_block": 13,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ]
   ]

@@ -21,12 +21,12 @@
             "requestid": 1468315395
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-19T09:23:18",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ]
   ]

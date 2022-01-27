@@ -21,12 +21,12 @@
             "new_account_name": "gruehl878"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-09-03T03:50:06",
         "trx_id": "9066160513e8b27309dbcc1a25ca9cd10cbaa696",
         "trx_in_block": 1,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

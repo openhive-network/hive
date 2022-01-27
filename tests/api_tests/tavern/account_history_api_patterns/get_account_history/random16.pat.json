@@ -53,7 +53,7 @@
         "timestamp": "2016-07-26T08:25:39",
         "trx_id": "4793b3ae537e4fec7600787849f905b4c5421570",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -77,12 +77,12 @@
             "new_account_name": "singapore"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-07-26T08:25:39",
         "trx_id": "4793b3ae537e4fec7600787849f905b4c5421570",
         "trx_in_block": 0,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

@@ -53,7 +53,7 @@
         "timestamp": "2016-03-30T07:05:03",
         "trx_id": "3c1eae5754cc4f70cf0efb12f9e4f9671a8df2a0",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -109,7 +109,7 @@
         "timestamp": "2016-03-30T07:05:03",
         "trx_id": "9a239d5e373d2cd076253231866a3dd3e41f4606",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -165,7 +165,7 @@
         "timestamp": "2016-03-30T07:05:03",
         "trx_id": "75906618242c596718f4d657de70c56cae6e7d74",
         "trx_in_block": 2,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -221,7 +221,7 @@
         "timestamp": "2016-03-30T07:05:03",
         "trx_id": "1f7ac7c1cf925d4240ab403a8a7384ce639f4033",
         "trx_in_block": 3,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -277,7 +277,7 @@
         "timestamp": "2016-03-30T07:06:24",
         "trx_id": "2ba97f6fd25566d987848fdcae45db6c48996ced",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -333,7 +333,7 @@
         "timestamp": "2016-03-30T07:07:30",
         "trx_id": "9bee9f3a0aaa15f267a8518e11d8dade70fba1da",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -389,7 +389,7 @@
         "timestamp": "2016-03-30T07:07:30",
         "trx_id": "f35a7022a2b0d882723ed231a436e4098d316e84",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -445,7 +445,7 @@
         "timestamp": "2016-03-30T07:07:30",
         "trx_id": "0a864615d5584e5fc32cd77666b02f611d00f0ba",
         "trx_in_block": 2,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -501,7 +501,7 @@
         "timestamp": "2016-03-30T07:07:30",
         "trx_id": "e3a2113b04f310953486f716175cf5284347ff0e",
         "trx_in_block": 3,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -557,7 +557,7 @@
         "timestamp": "2016-04-08T13:48:54",
         "trx_id": "ce087bce41cf248c357da740eb4ae4185c2c973b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ]
   ]
