@@ -21,12 +21,12 @@
           "new_account_name": "miners"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036854775808",
       "timestamp": "2016-03-24T16:00:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 1,
@@ -47,12 +47,12 @@
           "new_account_name": "null"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 2,
       "operation_id": "9223372036854775809",
       "timestamp": "2016-03-24T16:00:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 2
+      "virtual_op": true
     },
     {
       "block": 1,
@@ -73,12 +73,12 @@
           "new_account_name": "temp"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 3,
       "operation_id": "9223372036854775810",
       "timestamp": "2016-03-24T16:00:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 3
+      "virtual_op": true
     },
     {
       "block": 1,
@@ -99,12 +99,12 @@
           "new_account_name": "initminer"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 4,
       "operation_id": "9223372036854775811",
       "timestamp": "2016-03-24T16:00:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 4
+      "virtual_op": true
     },
     {
       "block": 1,
@@ -119,12 +119,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036854775812",
       "timestamp": "2016-03-24T16:05:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 5
+      "virtual_op": true
     },
     {
       "block": 2,
@@ -139,12 +139,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036854775813",
       "timestamp": "2016-03-24T16:05:36",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 3,
@@ -159,12 +159,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036854775814",
       "timestamp": "2016-03-24T16:05:39",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4,
@@ -179,12 +179,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036854775815",
       "timestamp": "2016-03-24T16:05:42",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 5,
@@ -199,12 +199,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036854775816",
       "timestamp": "2016-03-24T16:05:45",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ],
   "ops_by_block": []
