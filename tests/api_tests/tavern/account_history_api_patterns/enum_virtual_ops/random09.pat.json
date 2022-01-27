@@ -1,6 +1,27 @@
 {
-  "next_block_range_begin": 106980,
-  "next_operation_begin": 0,
-  "ops": [],
+  "next_block_range_begin": 106979,
+  "next_operation_begin": "9223372036854893661",
+  "ops": [
+    {
+      "block": 106978,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "sminer50",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": "9223372036854893660",
+      "timestamp": "2016-03-28T09:56:15",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
   "ops_by_block": []
 }

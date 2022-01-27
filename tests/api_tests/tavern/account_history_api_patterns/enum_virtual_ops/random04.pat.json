@@ -1,6 +1,47 @@
 {
   "next_block_range_begin": 1571292,
   "next_operation_begin": 0,
-  "ops": [],
+  "ops": [
+    {
+      "block": 1571290,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "clayop",
+          "vesting_shares": {
+            "amount": "9375388463",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": "9223372036856741427",
+      "timestamp": "2016-05-19T01:53:30",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 1571291,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "complexring",
+          "vesting_shares": {
+            "amount": "9375382867",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": "9223372036856741428",
+      "timestamp": "2016-05-19T01:53:33",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
   "ops_by_block": []
 }
