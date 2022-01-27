@@ -15,12 +15,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036860080618",
       "timestamp": "2016-07-16T17:58:30",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 3251965,
@@ -35,12 +35,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036860080619",
       "timestamp": "2016-07-16T17:58:33",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ],
   "ops_by_block": []

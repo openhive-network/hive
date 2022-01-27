@@ -20,12 +20,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036854834665",
           "timestamp": "2016-03-26T13:06:45",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-03-26T13:06:45"
@@ -47,12 +47,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036854834666",
           "timestamp": "2016-03-26T13:06:48",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-03-26T13:06:48"
