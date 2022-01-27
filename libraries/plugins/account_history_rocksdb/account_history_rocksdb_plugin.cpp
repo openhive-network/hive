@@ -1371,6 +1371,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
       if(limit.valid() && (cntLimit >= *limit))
       {
         nextElementAfterLimit = key.second;
+        lastFoundBlock = key.first;
         break;
       }
 

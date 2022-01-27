@@ -3,7 +3,6 @@
 
   marks:
     - patterntest
-    - xfail
 
   includes:
     - !include ../../common.yaml
@@ -19,7 +18,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.enum_virtual_ops"
-          params: {"block_range_begin": 1838272, "block_range_end": 1838276, "group_by_block": true, "operation_begin": 2, "limit": 2, "filter": 7810340274393554548}
+          params: {"block_range_begin": 1838272, "block_range_end": 1838276, "group_by_block": true, "operation_begin": 2, "limit": 2, "filter": 3905170137196777274}
         timeout: 1
       response:
         status_code: 200
