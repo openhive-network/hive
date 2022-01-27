@@ -18,12 +18,12 @@
           "weight": "568632284990"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "3a54f403e816f9b8b533039c1de72710526d4866",
       "trx_in_block": 0,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -43,12 +43,12 @@
           "weight": "420580428064964"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "c37b2f1811e3de2e8b7353d9c01d5fbcbae09d10",
       "trx_in_block": 1,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -68,12 +68,12 @@
           "weight": "35214316861460"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "efeb505339b61b658924e54d5ffb8ed1387d94eb",
       "trx_in_block": 2,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -93,12 +93,12 @@
           "weight": 0
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "aab2fa1b23cb85d1bb23f0d3272f64cbc598e39c",
       "trx_in_block": 3,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -118,12 +118,12 @@
           "weight": "413774656473490"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "472959268084d609e2b6f8112755bec8fa49572c",
       "trx_in_block": 4,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -143,12 +143,12 @@
           "weight": "130135269289370"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "836edb35dc86345e82b8ea7d9c7cfdb4e80d20f2",
       "trx_in_block": 5,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -168,12 +168,12 @@
           "weight": 0
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "a65b908bc81ecd1240977e4aa59922aeb83ddda5",
       "trx_in_block": 6,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -193,12 +193,12 @@
           "weight": "1069486812730121"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:00",
       "trx_id": "544fb24850b6bf36f968b5e5d05642fc9c948a63",
       "trx_in_block": 7,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4681046,
@@ -213,12 +213,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-04T16:56:03",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ]
 }

@@ -18,12 +18,12 @@
           "weight": "4181548112268826"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-08T11:10:30",
       "trx_id": "9e7b7fc6e6a94e227971c9f5fe47c0693dc695aa",
       "trx_in_block": 0,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4789163,
@@ -43,12 +43,12 @@
           "weight": 0
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-08T11:10:30",
       "trx_id": "6e11a2f822f28e224a79397a8f2ba8f60e32ea22",
       "trx_in_block": 1,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4789163,
@@ -63,12 +63,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-09-08T11:10:33",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ]
 }
