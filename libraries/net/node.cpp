@@ -846,6 +846,7 @@ namespace graphene { namespace net {
 
       for (const peer_connection_ptr& active_peer : _active_connections)
       {
+        ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
         fc::optional<fc::ip::endpoint> inbound_endpoint = active_peer->get_endpoint_for_connecting();
         if (inbound_endpoint)
         {
@@ -1156,8 +1157,11 @@ namespace graphene { namespace net {
 
         // initialize the fetch_messages_to_send with an empty set of items for all idle peers
         for (const peer_connection_ptr& peer : _active_connections)
+        {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
           if (peer->idle())
             items_by_peer.insert(peer_and_items_to_fetch(peer));
+        }
 
         // now loop over all items we want to fetch
         for (auto item_iter = _items_to_fetch.begin(); item_iter != _items_to_fetch.end();)
@@ -1275,6 +1279,7 @@ namespace graphene { namespace net {
 
         for (const peer_connection_ptr& peer : _active_connections)
         {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
           // only advertise to peers who are in sync with us
           //wdump((peer->peer_needs_sync_items_from_us));
           if( !peer->peer_needs_sync_items_from_us )
@@ -1707,8 +1712,11 @@ namespace graphene { namespace net {
     peer_connection_ptr node_impl::get_peer_by_node_id(const node_id_t& node_id)
     {
       for (const peer_connection_ptr& active_peer : _active_connections)
+      {
+        ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
         if (node_id == active_peer->node_id)
           return active_peer;
+      }
       for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
         if (node_id == handshaking_peer->node_id)
           return handshaking_peer;
@@ -1724,11 +1732,14 @@ namespace graphene { namespace net {
         return true;
       }
       for (const peer_connection_ptr& active_peer : _active_connections)
+      {
+        ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
         if (node_id == active_peer->node_id)
         {
           dlog("is_already_connected_to_id returning true because the peer is already in our active list");
           return true;
         }
+      }
       for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
         if (node_id == handshaking_peer->node_id)
         {
@@ -2205,6 +2216,7 @@ namespace graphene { namespace net {
         reply.addresses.reserve(_active_connections.size());
         for (const peer_connection_ptr& active_peer : _active_connections)
         {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
           fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*active_peer->get_remote_endpoint());
           if (updated_peer_record)
           {
@@ -2612,6 +2624,8 @@ namespace graphene { namespace net {
           {
             bool is_first_item_for_other_peer = false;
             for (const peer_connection_ptr& peer : _active_connections)
+            {
+              ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
               if (peer != originating_peer->shared_from_this() &&
                   !peer->ids_of_items_to_get.empty() &&
                   peer->ids_of_items_to_get.front() == blockchain_item_ids_inventory_message_received.item_hashes_available.front())
@@ -2622,6 +2636,7 @@ namespace graphene { namespace net {
                 is_first_item_for_other_peer = true;
                 break;
               }
+            }
             dlog("is_first_item_for_other_peer: ${is_first}.  item_hashes_received.size() = ${size}",
                  ("is_first", is_first_item_for_other_peer)("size", item_hashes_received.size()));
             if (!is_first_item_for_other_peer)
@@ -2922,6 +2937,7 @@ namespace graphene { namespace net {
         bool we_requested_this_item_from_a_peer = false;
         for (const peer_connection_ptr& peer : _active_connections)
         {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
           if (peer->inventory_advertised_to_peer.find(advertised_item_id) != peer->inventory_advertised_to_peer.end())
           {
             we_advertised_this_item_to_a_peer = true;
@@ -3383,6 +3399,7 @@ namespace graphene { namespace net {
               std::vector< peer_connection_ptr > peers_needing_next_batch;
               for (const peer_connection_ptr& peer : _active_connections)
               {
+                ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
                 auto items_being_processed_iter = peer->ids_of_items_being_processed.find(received_block_iter->block_id);
                 if (items_being_processed_iter != peer->ids_of_items_being_processed.end())
                 {
@@ -3544,6 +3561,7 @@ namespace graphene { namespace net {
           // that will be unable to process future blocks
           for (const peer_connection_ptr& peer : _active_connections)
           {
+            ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
             if (peer->last_known_fork_block_number != 0)
             {
               uint32_t next_fork_block_number = get_next_known_hard_fork_block_number(peer->last_known_fork_block_number);
@@ -3587,8 +3605,11 @@ namespace graphene { namespace net {
 
         peers_to_disconnect.insert( originating_peer->shared_from_this() );
         for (const peer_connection_ptr& peer : _active_connections)
+        {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
           if (!peer->ids_of_items_to_get.empty() && peer->ids_of_items_to_get.front() == block_message_to_process.block_id)
             peers_to_disconnect.insert(peer);
+        }
       }
 
       if (restart_sync_exception)
@@ -3712,6 +3733,7 @@ namespace graphene { namespace net {
     {
       for (const peer_connection_ptr& peer : _active_connections)
       {
+        ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
         if (firewall_check_state->expected_node_id != peer->node_id && // it's not the node who is asking us to test
             !peer->firewall_check_state && // the peer isn't already performing a check for another node
             firewall_check_state->nodes_already_tested.find(peer->node_id) == firewall_check_state->nodes_already_tested.end() &&
@@ -5166,8 +5188,11 @@ namespace graphene { namespace net {
       std::list<peer_connection_ptr> peers_to_disconnect;
       if (!_allowed_peers.empty())
         for (const peer_connection_ptr& peer : _active_connections)
+        {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
           if (_allowed_peers.find(peer->node_id) == _allowed_peers.end())
             peers_to_disconnect.push_back(peer);
+        }
       for (const peer_connection_ptr& peer : peers_to_disconnect)
         disconnect_from_peer(peer.get(), "My allowed_peers list has changed, and you're no longer allowed.  Bye.");
 #endif // ENABLE_P2P_DEBUGGING_API
