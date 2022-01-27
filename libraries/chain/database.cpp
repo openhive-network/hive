@@ -1312,9 +1312,8 @@ void database::clear_pending()
 void database::push_virtual_operation( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) );
+  _current_op_in_trx++;
   operation_notification note = create_operation_notification( op );
-  ++_current_virtual_op;
-  note.virtual_op = _current_virtual_op;
   notify_pre_apply_operation( note );
   notify_post_apply_operation( note );
 }
@@ -1322,17 +1321,16 @@ void database::push_virtual_operation( const operation& op )
 void database::pre_push_virtual_operation( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) );
+  _current_op_in_trx++;
   operation_notification note = create_operation_notification( op );
-  ++_current_virtual_op;
-  note.virtual_op = _current_virtual_op;
   notify_pre_apply_operation( note );
 }
 
-void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& vop_id )
+void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx )
 {
   FC_ASSERT( is_virtual_operation( op ) );
   operation_notification note = create_operation_notification( op );
-  note.virtual_op = ( vop_id.valid() ? *vop_id : _current_virtual_op );
+  if(op_in_trx.valid()) note.op_in_trx = *op_in_trx;
   notify_post_apply_operation( note );
 }
 
@@ -4178,7 +4176,6 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 
 void database::_apply_block( const signed_block& next_block )
 {
-  uint32_t virtual_op_id_shift = 0; // this var is updated only in processing of first block
   block_notification note( next_block );
 
   try {
@@ -4196,7 +4193,6 @@ void database::_apply_block( const signed_block& next_block )
 
   _current_block_num    = next_block_num;
   _current_trx_in_block = 0;
-  _current_virtual_op   = 0;
 
   if( BOOST_UNLIKELY( next_block_num == 1 ) )
   {
@@ -4235,7 +4231,6 @@ void database::_apply_block( const signed_block& next_block )
         } );
       }
     }
-    virtual_op_id_shift = _current_virtual_op;
   }
 
   if( !( skip & skip_merkle_check ) )
@@ -4313,7 +4308,6 @@ void database::_apply_block( const signed_block& next_block )
 
   _current_trx_in_block = -1;
   _current_op_in_trx = 0;
-  _current_virtual_op = virtual_op_id_shift;
 
   update_global_dynamic_data(next_block);
   update_signing_witness(signing_witness, next_block);
@@ -4608,7 +4602,6 @@ void database::_apply_transaction(const signed_transaction& trx)
   transaction_notification note(trx);
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;
-  _current_virtual_op = 0;
 
   uint32_t skip = get_node_properties().skip_flags;
 
@@ -4753,9 +4746,6 @@ void database::apply_operation(const operation& op)
   operation_notification note = create_operation_notification( op );
 
   applied_operation_info_controller ctrlr(&_current_applied_operation_info, note);
-
-  if(!is_virtual_operation(op))
-    this->_current_virtual_op = 0;
 
   notify_pre_apply_operation( note );
 
@@ -5740,7 +5730,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             } );
           }
         }
-        
+
         auto b = acnt.hbd_balance;
         acnt.hbd_balance += delta;
 
@@ -6200,7 +6190,7 @@ void database::apply_hardfork( uint32_t hardfork )
   operation hardfork_vop = hardfork_operation( hardfork );
 
   pre_push_virtual_operation( hardfork_vop );
-  auto _vop_id = _current_virtual_op;
+  const auto _op_in_trx = _current_op_in_trx;
 
   switch( hardfork )
   {
@@ -6577,7 +6567,7 @@ void database::apply_hardfork( uint32_t hardfork )
     consolidate_treasury_balance();
   }
 
-  post_push_virtual_operation( hardfork_vop, _vop_id );
+  post_push_virtual_operation( hardfork_vop, _op_in_trx );
 }
 
 void database::retally_liquidity_weight() {
