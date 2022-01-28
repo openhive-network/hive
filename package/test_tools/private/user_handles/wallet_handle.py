@@ -1,4 +1,6 @@
-from typing import Iterable, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from typing import Iterable, List, TYPE_CHECKING, Union
 
 from test_tools.private.user_handles.get_implementation import get_implementation
 from test_tools.wallet import Wallet
@@ -6,7 +8,7 @@ from test_tools.wallet import Wallet
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from test_tools import RemoteNode
+    from test_tools import Account, RemoteNode
     from test_tools.private.node import Node
 
 
@@ -90,6 +92,29 @@ class WalletHandle:
         """
 
         return self.__implementation.is_running()
+
+    def create_accounts(self, number_of_accounts: int, name_base: str = 'account',
+                        *, secret: str = 'secret', import_keys: bool = True) -> List[Account]:
+        """
+        Creates accounts in blockchain.
+
+        :param number_of_accounts: Number of accounts to create.
+        :param name_base: All account names are generated as "<name_base>-<index>",
+                          e.g.: account-0, account-1, account-2 and so on...
+        :param secret: Text using as seed for account keys generation.
+        :return: List of created accounts.
+        """
+
+        return self.__implementation.create_accounts(number_of_accounts, name_base, secret=secret,
+                                                     import_keys=import_keys)
+
+    def list_accounts(self) -> List[str]:
+        """
+        Gets names of all accounts in blockchain.
+
+        :return: List of account names.
+        """
+        return self.__implementation.list_accounts()
 
     @property
     def directory(self) -> 'Path':

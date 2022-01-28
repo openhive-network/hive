@@ -1,8 +1,11 @@
+import concurrent.futures
+import copy
+import math
 import re
 import shutil
 import signal
 import subprocess
-from typing import Iterable, Union
+from typing import Final, Iterable, List, Union
 import warnings
 
 from test_tools import communication, paths_to_executables
@@ -712,6 +715,65 @@ class Wallet(ScopedObject):
         for file in [self.stdout_file, self.stderr_file]:
             if file is not None:
                 file.close()
+
+    def create_accounts(self, number_of_accounts: int, name_base: str = 'account',
+                        *, secret: str = 'secret', import_keys: bool = True) -> List[Account]:
+        def send_transaction(accounts_):
+            transaction = copy.deepcopy(transaction_pattern)
+
+            for account in accounts_:
+                operation = copy.deepcopy(operation_pattern)
+
+                operation[1]['new_account_name'] = account.name
+                operation[1]['memo_key'] = account.public_key
+                for key_type in ('owner', 'active', 'posting'):
+                    operation[1][key_type]['key_auths'] = [[account.public_key, 1]]
+
+                transaction['operations'].append(operation)
+
+            return self.api.sign_transaction(transaction)
+
+        accounts = Account.create_multiple(number_of_accounts, name_base, secret=secret)
+
+        transaction_pattern = self.api.create_account_with_keys(
+            'initminer', accounts[0].name, '{}', *(4 * [accounts[0].public_key]), broadcast=False
+        )
+
+        operation_pattern: Final = transaction_pattern['operations'][0]
+        transaction_pattern['operations'].clear()
+
+        accounts_per_transaction: Final = 1000
+        max_threads: Final = 32
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=min(math.ceil(number_of_accounts / accounts_per_transaction), max_threads)) as executor:
+            futures = []
+            for i in range(0, len(accounts), accounts_per_transaction):
+                futures.append(executor.submit(send_transaction, accounts[i: i + accounts_per_transaction]))
+
+        for future in futures:
+            future.result()
+
+        if import_keys:
+            private_keys_per_transaction: Final = 10_000
+            for i in range(0, len(accounts), private_keys_per_transaction):
+                self.api.import_keys([account.private_key for account in accounts[i: i + private_keys_per_transaction]])
+
+        return accounts
+
+    def list_accounts(self) -> List[str]:
+        next_account = ''
+        all_accounts = []
+        while True:
+            result = self.api.list_accounts(next_account, 1000)
+
+            if len(result) == 1:
+                all_accounts.extend(result)
+                break
+
+            all_accounts.extend(result[:-1])
+            next_account = result[-1]
+
+        return all_accounts
 
     def set_executable_file_path(self, executable_file_path):
         self.executable_file_path = executable_file_path
