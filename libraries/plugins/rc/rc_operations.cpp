@@ -77,24 +77,22 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         });
       }
     }
-    update_rc_account_after_delegation(_db, to_rc_account, to_account, now, delta);
+    update_rc_account_after_delegation(_db, to_rc_account, *to_account, now, delta);
   }
 
-  // Get the minimum between the current RC and the maximum RC without received rc, so that eve can't re-delegate delegated RC
-  int64_t from_delegateable_rc = std::min(get_maximum_rc(from_account, from_rc_account, false), from_rc_account.rc_manabar.current_mana);
-  // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegatable_rc < delta_total and then be valid as some delegations may get modified to take less rc
-  FC_ASSERT(from_delegateable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ("a", op.from)("h", from_delegateable_rc)("n", delta_total));
+  // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
+  int64_t from_delegable_rc = std::min(get_maximum_rc(from_account, from_rc_account, true), from_rc_account.rc_manabar.current_mana);
+  // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegable_rc < delta_total and then be valid as some delegations may get modified to take less rc
+  FC_ASSERT(from_delegable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ("a", op.from)("h", from_delegable_rc)("n", delta_total));
 
   _db.modify< rc_account_object >( from_rc_account, [&]( rc_account_object& rca )
   {
-    // Do not give current rc back when deleting/reducing a delegation
-    if (delta_total > 0) {
+    // Do not give mana back when deleting/reducing rc delegation (note that regular delegations behave differently)
+    if (delta_total > 0)
       rca.rc_manabar.current_mana -= delta_total;
-    }
-    rca.last_max_rc = get_maximum_rc( from_account, rca ) - delta_total;
     rca.delegated_rc += delta_total;
-  });
-
+    rca.last_max_rc = get_maximum_rc( from_account, rca );
+  } );
 }
 
 } } } // hive::plugins::rc
