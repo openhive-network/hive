@@ -85,19 +85,19 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_PLUGIN_NAME;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Delegating to a non-existing account should fail
     op.delegatees = {"eve"};
     op.max_rc = 10;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
     op.delegatees = {"bob"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Successful delegation
     op.delegatees = {"bob"};
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 
     // Delegating the same amount shouldn't work
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
     
     // Decrease the delegation
     op.from = "alice";
@@ -214,19 +214,19 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.id = HIVE_RC_PLUGIN_NAME;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Delegating to a non-existing account should fail
     op.delegatees = {"bob", "eve"};
     op.max_rc = 10;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
     op.delegatees = {"dave", "bob"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Successful delegations
     op.delegatees = {"bob", "dave"};
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     // Delegating the same amount shouldn't work
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     op.delegatees = {"dave", "bob", "dan"};
     op.max_rc = 0;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key);, fc::exception );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
     // Decrease the delegations
     op.from = "alice";
@@ -393,7 +393,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     push_transaction(custom_op, alice_private_key);
     op.delegatees = {"dave"};
-    op.max_rc = vesting_amount - 10 ;
+    op.max_rc = vesting_amount - 10 + 1;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    //check that it is not possible to dip into creation_rc, nor will it be accepted at the cost of dropping bob
+    BOOST_CHECK_THROW( push_transaction( custom_op, alice_private_key ), fc::exception );
+
+    op.max_rc = vesting_amount - 10;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     push_transaction(custom_op, alice_private_key);
     generate_block();
@@ -545,8 +550,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     BOOST_REQUIRE( actor2_rc_account_before.received_delegated_rc == 10 );
 
     // we delegate 25 vests and it affects the first three delegations
-    // Delegate 25 vests out, alice has -15 remaining rc, it's lower than the max_rc_creation_adjustment
-    // So the first two delegations (to actor0 and actor2) are deleted while the delegation to actor2 is deleted
+    // Delegate 25 vests out, alice has rc deficit (she can't dip to creation_rc that results from max_rc_creation_adjustment)
+    // So the first two delegations (to actor0 and actor1) are deleted while the delegation to actor2 is halved
     delegate_vesting_shares_operation dvso;
     dvso.vesting_shares = ASSET( "0.000025 VESTS");
     dvso.delegator = "alice";

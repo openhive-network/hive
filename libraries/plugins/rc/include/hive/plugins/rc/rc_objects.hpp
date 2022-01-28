@@ -91,8 +91,8 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
   CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
 
-int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool add_received_delegated_rc = true );
-void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object* account, uint32_t now, uint64_t delta);
+int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool only_delegable_rc = false );
+void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object& account, uint32_t now, int64_t delta, bool regenerate_mana = false );
 
 typedef multi_index_container<
   rc_resource_param_object,
