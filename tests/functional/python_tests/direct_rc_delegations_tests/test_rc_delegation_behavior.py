@@ -1,6 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
-from test_tools import Asset, exceptions, Wallet
+from test_tools import Asset, exceptions, logger, Wallet
 
 
 def test_delegated_rc_account_execute_operation(wallet: Wallet):
@@ -148,11 +150,56 @@ def test_power_up_delegator(wallet: Wallet):
 
 
 def test_multidelegation(wallet: Wallet):
-    number_of_accounts = 100
-    accounts = create_accounts(number_of_accounts, wallet)
+    client_accounts = []
+    number_of_accounts_in_one_transaction = 400
+    number_of_transactions = 2
+    number_of_accounts = number_of_accounts_in_one_transaction * number_of_transactions
+    number_of_accounts = 100000
 
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(1000))
-    wallet.api.delegate_rc(accounts[0], accounts[1:number_of_accounts], 5)
+
+
+    accounts = wallet.create_accounts(number_of_accounts, 'receiver')
+    accounts_to_delegate = split_list(accounts, int(number_of_accounts / 100))
+    logger.info('End of splitting')
+
+    number_of_threads = 10
+    wallets = []
+    delegators = []
+
+    for thread_number in range(number_of_threads):
+        wallet = Wallet(attach_to=node)
+        wallets.append(wallet)
+        wallet.api.create_account('initminer', f'delegator{thread_number}', '{}')
+        delegators.append(f'delegator{thread_number}')
+        wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', '100.010 TESTS')
+
+    accounts_to_delegate_packs = []
+    for thread_number in range(number_of_threads + 1):
+        accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
+
+    tasks_list = []
+    executor = ThreadPoolExecutor(max_workers=number_of_threads)
+    for thread_number in range(number_of_threads):
+        tasks_list.append(executor.submit(delegation_rc, delegators[thread_number], wallets[thread_number],
+                                          accounts_to_delegate_packs[thread_number],
+                                          accounts_to_delegate_packs[thread_number + 1],
+                                          accounts_to_delegate, thread_number))
+
+    for thread_number in tasks_list:
+        thread_number.result()
+
+
+def delegation_rc(creator, wallet, first_accounts_pack, last_accounts_pack, accounts_to_delegate, thread_number):
+    logger.info(f'Thread {thread_number} work START')
+    for number_of_account_pack in range(first_accounts_pack, last_accounts_pack):
+        wallet.api.delegate_rc(creator, accounts_to_delegate[number_of_account_pack], 1)
+    logger.info(f'Thread {thread_number} work END')
+
+
+def split_list(alist, wanted_parts):
+    length = len(alist)
+    return [alist[i * length // wanted_parts: (i + 1) * length // wanted_parts]
+            for i in range(wanted_parts)]
 
 
 def get_rc_account_info(account, wallet):
