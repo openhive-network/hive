@@ -7,7 +7,7 @@ import signal
 import subprocess
 from threading import Event
 import time
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 import warnings
 import weakref
 
@@ -85,27 +85,27 @@ class Node:
                 'stderr': None,
             }
 
-        def run(self, *, blocking, with_arguments=(), with_time_offset=None, extra_env_variables=None):
+        def run(self, *, blocking, with_arguments=(), with_environment_variables=None, with_time_offset=None):
             self.__directory.mkdir(exist_ok=True)
             self.__prepare_files_for_streams()
 
             command = [str(self.__executable.get_path()), '-d', '.', *with_arguments]
             self.__logger.debug(' '.join(item for item in command))
 
-            env = dict(os.environ)
-            # Concat the variables provided with the system ones
-            # note that the env vars provided as param superseeds those provided by the system
-            if extra_env_variables is not None:
-                env.update(extra_env_variables)
+            environment_variables = dict(os.environ)
+
+            if with_environment_variables is not None:
+                environment_variables.update(with_environment_variables)
+
             if with_time_offset is not None:
-                self.__configure_fake_time(env, with_time_offset)
+                self.__configure_fake_time(environment_variables, with_time_offset)
 
             if blocking:
                 subprocess.run(
                     command,
                     cwd=self.__directory,
                     **self.__files,
-                    env=env,
+                    env=environment_variables,
                     check=True,
                 )
             else:
@@ -114,7 +114,7 @@ class Node:
                 self.__process = subprocess.Popen(
                     command,
                     cwd=self.__directory,
-                    env=env,
+                    env=environment_variables,
                     **self.__files,
                 )
 
@@ -390,8 +390,8 @@ class Node:
                       blocking,
                       write_config_before_run=True,
                       with_arguments=(),
+                      with_environment_variables=None,
                       with_time_offset=None,
-                      env=None
     ):
         self.__notifications.listen()
 
@@ -402,28 +402,30 @@ class Node:
             blocking=blocking,
             with_arguments=with_arguments,
             with_time_offset=with_time_offset,
-            extra_env_variables=env
+            with_environment_variables=with_environment_variables
         )
 
         if blocking:
             self.__notifications.close()
 
-    def run(
-            self,
+    def run(self,
             *,
             load_snapshot_from=None,
             replay_from=None,
             stop_at_block=None,
             exit_before_synchronization: bool = False,
             wait_for_live=None,
+            environment_variables: Optional[Dict] = None,
             timeout=__DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
             time_offset=None,
-            env=None,
     ):
         """
         :param wait_for_live: Stops execution until node will generate or receive blocks.
         :param timeout: If wait_for_live is set to True, this parameter sets how long waiting can take. When
                         timeout is reached, TimeoutError exception is thrown.
+        :param environment_variables: Additional environment variables passed to node run environment. If variable name
+                                      is already defined, its value will be overwritten with one provided by this
+                                      parameter.
         """
         assert timeout >= 0
         deadline = time.time() + timeout
@@ -475,7 +477,7 @@ class Node:
             blocking=exit_before_synchronization,
             with_arguments=additional_arguments,
             with_time_offset=time_offset,
-            env=env
+            with_environment_variables=environment_variables,
         )
 
         if replay_from is not None and not exit_before_synchronization:
