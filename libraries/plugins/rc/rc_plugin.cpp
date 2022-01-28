@@ -810,11 +810,6 @@ struct pre_apply_operation_visitor
 
   //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
 
-  void operator()( const delayed_voting_operation& op )const
-  {
-    regenerate( op.voter );
-  }
-
   void operator()( const pow_operation& op )const
   {
     regenerate< true >( op.worker_account );
@@ -827,30 +822,11 @@ struct pre_apply_operation_visitor
     regenerate< false >( _current_witness );
   }
 
-  void operator()( const create_proposal_operation& op )const
-  {
-    regenerate( op.creator );
-    regenerate( op.receiver );
-  }
-
-  void operator()( const update_proposal_operation& op )const
-  {
-    regenerate( op.creator );
-  }
-
-  void operator()( const update_proposal_votes_operation& op )const
-  {
-    regenerate( op.voter );
-  }
-
-  void operator()( const remove_proposal_operation& op )const
-  {
-    regenerate( op.proposal_owner );
-  }
-
   void operator()( const delegate_rc_operation& op )const
   {
     regenerate( op.from );
+    for( const auto& delegatee : op.delegatees )
+      regenerate( delegatee );
   }
 
   template< typename Op >
@@ -859,33 +835,118 @@ struct pre_apply_operation_visitor
 
 typedef pre_apply_operation_visitor pre_apply_optional_action_vistor;
 
-struct account_regen_info
-{
-  account_regen_info( const account_name_type& a, bool r = true, bool u = false )
-    : account_name(a), fill_new_mana(r), update_outdel_overflow(u)  {}
-
-  account_name_type         account_name;
-  bool                      fill_new_mana = true;
-  bool                      update_outdel_overflow = false;
-};
-
 struct post_apply_operation_visitor
 {
   typedef void result_type;
 
-  vector< account_regen_info >&            _mod_accounts;
   database&                                _db;
   uint32_t                                 _current_time = 0;
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
 
-  post_apply_operation_visitor( vector< account_regen_info >& ma, database& db )
-    : _mod_accounts(ma), _db(db)
+  post_apply_operation_visitor( database& db ) : _db(db)
   {
     const auto& dgpo = _db.get_dynamic_global_properties();
     _current_time = dgpo.time.sec_since_epoch();
     _current_block_number = dgpo.head_block_number;
     _current_witness = dgpo.current_witness;
+  }
+
+  void check_for_rc_delegation_overflow( const account_object& from_account, const rc_account_object& from_rc_account ) const
+  {
+    if( from_rc_account.delegated_rc <= 0 )
+      return; //quick exit for all the times before RC delegations are activated (HF26)
+
+    int64_t delegation_overflow = - get_maximum_rc( from_account, from_rc_account, true );
+
+    int64_t returned_rcs = 0;
+
+    if( delegation_overflow > 0 )
+    {
+      const auto& rc_del_idx = _db.get_index<rc_direct_delegation_object_index, by_from_to>();
+      // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
+      // start_id just means we iterate over all the rc delegations
+      auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( from_account.get_id(), account_id_type::start_id() ) );
+
+      while( delegation_overflow > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == from_account.get_id() )
+      {
+        const auto& rc_delegation = *rc_del_itr;
+        ++rc_del_itr;
+
+        int64_t delta_rc = std::min( delegation_overflow, int64_t( rc_delegation.delegated_rc ) );
+        returned_rcs += delta_rc;
+        delegation_overflow -= delta_rc;
+
+        const auto& to_account = _db.get<account_object, by_id>( rc_delegation.to );
+        const auto& to_rc_account = _db.get<rc_account_object, by_name>( to_account.get_name() );
+        //since to_account was not originally expected to be affected by operation that is being
+        //processed, we need to regenerate its mana before rc delegation is modified
+        update_rc_account_after_delegation( _db, to_rc_account, to_account, _current_time, -delta_rc, true );
+
+        // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
+        if( rc_delegation.delegated_rc > (uint64_t) delta_rc )
+        {
+          _db.modify( rc_delegation, [&]( rc_direct_delegation_object& rc_del )
+          {
+            rc_del.delegated_rc -= delta_rc;
+          } );
+        }
+        else
+        {
+          // Otherwise, we remove it
+          _db.remove( rc_delegation );
+        }
+      }
+
+      // We don't update last_max_rc and the manabars because update_modified_accounts will do it
+      _db.modify( from_rc_account, [&]( rc_account_object& rca )
+      {
+        rca.delegated_rc -= returned_rcs;
+      } );
+    }
+  }
+
+  void update_after_vest_change( const account_name_type& account_name, bool _fill_new_mana = true, bool _check_for_rc_delegation_overflow = false ) const
+  {
+    const account_object& account = _db.get< account_object, by_name >( account_name );
+    const rc_account_object& rc_account = _db.get< rc_account_object, by_name >( account_name );
+
+    if( rc_account.rc_manabar.last_update_time != _current_time )
+    {
+      //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
+      wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
+        ( "a", account.get_name() )( "b", _db.head_block_num() ) );
+    }
+
+    if( _check_for_rc_delegation_overflow )
+    {
+      //the following action is needed when given account lost VESTs and it now might has less
+      //than it already delegated with rc delegations
+      check_for_rc_delegation_overflow( account, rc_account );
+    }
+
+    int64_t new_last_max_rc = get_maximum_rc( account, rc_account );
+    int64_t drc = new_last_max_rc - rc_account.last_max_rc;
+    drc = _fill_new_mana ? drc : 0;
+
+    if( new_last_max_rc != rc_account.last_max_rc )
+    {
+      _db.modify( rc_account, [&]( rc_account_object& rca )
+      {
+        //note: rc delegations behave differently because if they behaved the following way there would
+        //be possible to easily fill up mana through giving and immediately taking away rc delegations
+        rca.last_max_rc = new_last_max_rc;
+        //only positive delta is applied directly to mana, so receiver can immediately start using it;
+        //negative delta is caused by either power down or reduced incoming delegation; in both cases
+        //there is a delay that makes transfered vests unusable for long time (not shorter than full
+        //rc regeneration) therefore we can skip applying negative delta without risk of "pumping" rc;
+        //by not applying negative delta we preserve mana that affected account "earned" so far...
+        rca.rc_manabar.current_mana += std::max( drc, int64_t( 0 ) );
+        //...however we have to reduce it when its current level would exceed new maximum (issue #191)
+        if( rca.rc_manabar.current_mana > rca.last_max_rc )
+          rca.rc_manabar.current_mana = rca.last_max_rc;
+      } );
+    }
   }
 
   void operator()( const account_create_operation& op )const
@@ -896,7 +957,7 @@ struct post_apply_operation_visitor
   void operator()( const account_create_with_delegation_operation& op )const
   {
     create_rc_account( _db, _current_time, op.new_account_name, op.fee );
-    _mod_accounts.emplace_back( op.creator );
+    update_after_vest_change( op.creator );
   }
 
   void operator()( const create_claimed_account_operation& op )const
@@ -908,66 +969,62 @@ struct post_apply_operation_visitor
   {
     // ilog( "handling post-apply pow_operation" );
     create_rc_account< true >( _db, _current_time, op.worker_account, asset( 0, HIVE_SYMBOL ) );
-    _mod_accounts.emplace_back( op.worker_account );
-    _mod_accounts.emplace_back( _current_witness );
+    update_after_vest_change( op.worker_account );
+    update_after_vest_change( _current_witness );
   }
 
   void operator()( const pow2_operation& op )const
   {
     auto worker_name = get_worker_name( op.work );
     create_rc_account< true >( _db, _current_time, worker_name, asset( 0, HIVE_SYMBOL ) );
-    _mod_accounts.emplace_back( worker_name );
-    _mod_accounts.emplace_back( _current_witness );
+    update_after_vest_change( worker_name );
+    update_after_vest_change( _current_witness );
   }
 
   void operator()( const transfer_to_vesting_operation& op )
   {
     account_name_type target = op.to.size() ? op.to : op.from;
-    _mod_accounts.emplace_back( target );
+    update_after_vest_change( target );
   }
 
   void operator()( const withdraw_vesting_operation& op )const
   {
-    _mod_accounts.emplace_back( op.account, false, true );
+    update_after_vest_change( op.account, false, true );
   }
 
   void operator()( const delegate_vesting_shares_operation& op )const
   {
-    _mod_accounts.emplace_back( op.delegator, true, true );
-    _mod_accounts.emplace_back( op.delegatee );
+    update_after_vest_change( op.delegator, true, true );
+    update_after_vest_change( op.delegatee );
   }
 
   void operator()( const author_reward_operation& op )const
   {
-    _mod_accounts.emplace_back( op.author );
+    update_after_vest_change( op.author );
+      //not needed, since HF17 rewards need to be claimed before they affect vest balance
   }
 
   void operator()( const curation_reward_operation& op )const
   {
-    _mod_accounts.emplace_back( op.curator );
-  }
-
-  // Is this one actually necessary?
-  void operator()( const comment_reward_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.author );
+    update_after_vest_change( op.curator );
+      //not needed, since HF17 rewards need to be claimed before they affect vest balance
   }
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
-    _mod_accounts.emplace_back( op.from_account, true, true );
-    _mod_accounts.emplace_back( op.to_account );
+    update_after_vest_change( op.from_account, true, true );
+    update_after_vest_change( op.to_account );
   }
 
   void operator()( const claim_reward_balance_operation& op )const
   {
-    _mod_accounts.emplace_back( op.account );
+    update_after_vest_change( op.account );
   }
 
 #ifdef HIVE_ENABLE_SMT
   void operator()( const claim_reward_balance2_operation& op )const
   {
-    _mod_accounts.emplace_back( op.account );
+    update_after_vest_change( op.account );
   }
 #endif
 
@@ -975,11 +1032,9 @@ struct post_apply_operation_visitor
   {
     if( op.hardfork_id == HIVE_HARDFORK_0_1 )
     {
-      const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
+      const auto& idx = _db.get_index< account_index, by_id >();
       for( auto it=idx.begin(); it!=idx.end(); ++it )
-      {
-        _mod_accounts.emplace_back( it->name );
-      }
+        update_after_vest_change( it->name );
     }
 
     if( op.hardfork_id == HIVE_HARDFORK_0_20 )
@@ -1000,61 +1055,49 @@ struct post_apply_operation_visitor
 
   void operator()( const hardfork_hive_operation& op )const
   {
-    _mod_accounts.emplace_back( op.account );
+    update_after_vest_change( op.account, true, true );
     for( auto& account : op.other_affected_accounts )
-      _mod_accounts.emplace_back( account );
+      update_after_vest_change( account, true, true );
   }
 
   void operator()( const return_vesting_delegation_operation& op )const
   {
-    _mod_accounts.emplace_back( op.account );
+    update_after_vest_change( op.account );
   }
 
   void operator()( const comment_benefactor_reward_operation& op )const
   {
-    _mod_accounts.emplace_back( op.benefactor );
+    update_after_vest_change( op.benefactor );
+      //not needed, since HF17 rewards need to be claimed before they affect vest balance
   }
 
   void operator()( const producer_reward_operation& op )const
   {
-    _mod_accounts.emplace_back( op.producer );
+    update_after_vest_change( op.producer );
   }
 
   void operator()( const clear_null_account_balance_operation& op )const
   {
-    _mod_accounts.emplace_back( HIVE_NULL_ACCOUNT );
+    update_after_vest_change( HIVE_NULL_ACCOUNT );
   }
 
-  //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
+  //not needed for treasury accounts (?)
+  //void operator()( const consolidate_treasury_balance_operation& op )const
 
-  void operator()( const delayed_voting_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.voter );
-  }
+  //changes power of governance vote, not vest balance
+  //void operator()( const delayed_voting_operation& op )const
 
-  void operator()( const create_proposal_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.creator );
-    _mod_accounts.emplace_back( op.receiver );
-  }
+  //pays fee in hbd, vest balance not touched
+  //void operator()( const create_proposal_operation& op )const
 
-  void operator()( const update_proposal_votes_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.voter );
-  }
+  //no change in vest balance
+  //void operator()( const update_proposal_votes_operation& op )const
 
-  void operator()( const remove_proposal_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.proposal_owner );
-  }
+  //no change in vest balance
+  //void operator()( const remove_proposal_operation& op )const
 
-  void operator()( const delegate_rc_operation& op )const
-  {
-    _mod_accounts.emplace_back( op.from );
-    for (const account_name_type& delegatee:op.delegatees) {
-      _mod_accounts.emplace_back( delegatee );
-    }
-  }
+  //nothing to do, all necessary RC updates are handled by the operation itself
+  //void operator()( const delegate_rc_operation& op )const
 
   template< typename Op >
   void operator()( const Op& op )const
@@ -1111,89 +1154,13 @@ void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notif
   // If we wanted to pre-handle other plugin operations, we could put pre_apply_custom_op_type< other_plugin_operation >( note )
 }
 
-void update_outdel_overflow( database& db, const account_object& from_account, const rc_account_object& from_rc_account)
-{
-  //const auto &from_rc_account = db.get<rc_account_object, by_name>(account);
-  //const auto &from_account = db.get<account_object, by_name>(account);
-
-  int64_t new_max_rc = get_maximum_rc(from_account, from_rc_account, false);
-
-  int64_t returned_rcs = 0;
-  uint32_t now = db.get_dynamic_global_properties().time.sec_since_epoch();
-
-  if (new_max_rc < from_rc_account.max_rc_creation_adjustment.amount.value && from_rc_account.delegated_rc > 0) {
-    // If the account dips below max_rc_creation_adjustment, we bring it back to this level.
-    int64_t needed_rcs = from_rc_account.max_rc_creation_adjustment.amount.value - new_max_rc;
-
-    const auto &rc_del_idx = db.get_index<rc_direct_delegation_object_index, by_from_to>();
-    // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
-    // start_id just means we iterate over all the rc delegations
-    auto rc_del_itr = rc_del_idx.lower_bound(boost::make_tuple(from_account.get_id(), account_id_type::start_id()));
-
-    while (needed_rcs > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == from_account.get_id()) {
-      uint64_t delta_rc = std::min(needed_rcs, int64_t(rc_del_itr->delegated_rc));
-      returned_rcs += delta_rc;
-      needed_rcs -= delta_rc;
-
-      const account_object *to_account = db.find<account_object, by_id>(rc_del_itr->to);
-      const auto &to_rc_account = db.get<rc_account_object, by_name>(to_account->name);
-      update_rc_account_after_delegation(db, to_rc_account, to_account, now, -delta_rc);
-
-      // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
-      if (rc_del_itr->delegated_rc > delta_rc) {
-        // We don't update last_max_rc and the manabars because update_modified_accounts will do it
-        db.modify(*rc_del_itr, [&](rc_direct_delegation_object &rc_del) {
-          rc_del.delegated_rc -= delta_rc;
-        });
-      } else {
-        // Otherwise, we remove it
-        db.remove(*rc_del_itr);
-      }
-      ++rc_del_itr;
-    }
-
-    // We don't update last_max_rc and the manabars because update_modified_accounts will do it
-    db.modify(from_rc_account, [&](rc_account_object &rca) {
-      rca.delegated_rc -= returned_rcs;
-    });
-  }
-}
-
-void update_modified_accounts( database& db, const std::vector< account_regen_info >& modified_accounts )
-{
-  for( const account_regen_info& regen_info : modified_accounts )
-  {
-    const account_object& account = db.get< account_object, by_name >( regen_info.account_name );
-    const rc_account_object& rc_account = db.get< rc_account_object, by_name >( regen_info.account_name );
-
-    // Update the outgoing rc delegations
-    if (regen_info.update_outdel_overflow == true) {
-      update_outdel_overflow(db, account, rc_account);
-    }
-
-    int64_t new_last_max_rc = get_maximum_rc( account, rc_account );
-    int64_t drc = new_last_max_rc - rc_account.last_max_rc;
-    drc = regen_info.fill_new_mana ? drc : 0;
-
-    db.modify( rc_account, [&]( rc_account_object& rca )
-    {
-      rca.last_max_rc = new_last_max_rc;
-      rca.rc_manabar.current_mana = std::max( rca.rc_manabar.current_mana + drc, int64_t( 0 ) );
-    } );
-  }
-}
-
 void rc_plugin_impl::on_post_apply_operation( const operation_notification& note )
 { try {
   if( before_first_block() )
     return;
-
-  vector< account_regen_info > modified_accounts;
-  // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, _db );
+  // dlog( "Calling post-vtor on ${op}", ("op", note.op) );
+  post_apply_operation_visitor vtor( _db );
   note.op.visit( vtor );
-
-  update_modified_accounts( _db, modified_accounts );
 } FC_CAPTURE_AND_RETHROW( (note.op) ) }
 
 template< typename OpType >
@@ -1202,13 +1169,9 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
   const OpType* op = note.find_get_op< OpType >();
   if( !op )
     return;
-
-  vector< account_regen_info > modified_accounts;
-  // ilog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( modified_accounts, _db );
+  // dlog( "Calling post-vtor on ${op}", ("op", note.op) );
+  post_apply_operation_visitor vtor( _db );
   op->visit( vtor );
-
-  update_modified_accounts( _db, modified_accounts );
 }
 
 void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_notification& note )
@@ -1238,12 +1201,8 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
 
   // There is no transaction equivalent for actions, so post apply transaction logic for actions goes here.
-  vector< account_regen_info > modified_accounts;
-
-  post_apply_optional_action_visitor vtor( modified_accounts, _db );
+  post_apply_optional_action_visitor vtor( _db );
   note.action.visit( vtor );
-
-  update_modified_accounts( _db, modified_accounts );
 
   rc_optional_action_info opt_action_info;
 
@@ -1437,31 +1396,44 @@ void exp_rc_data::to_variant( fc::variant& v )const
   fc::to_variant( *this, v );
 }
 
-int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool add_received_delegated_rc )
+int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool only_delegable_rc )
 {
   int64_t result = account.vesting_shares.amount.value;
   result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
-  result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
+  if( only_delegable_rc == false ) //cannot rc delegate virtual vests coming from account creation fee
+    result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
   result = fc::signed_sat_sub( result, detail::get_next_vesting_withdrawal( account ) );
   result = fc::signed_sat_sub( result, (int64_t) rc_account.delegated_rc );
-  // Used if we want to get the actual amount of RC and not real rc + received rc
-  if (add_received_delegated_rc) {
-    result = fc::signed_sat_add(result, (int64_t) rc_account.received_delegated_rc);
-  }
+  if( only_delegable_rc == false ) //cannot redelegate rc received from other accounts
+    result = fc::signed_sat_add( result, (int64_t) rc_account.received_delegated_rc );
   return result;
 }
 
-void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object* account, uint32_t now, uint64_t delta) {
+void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object& account,
+  uint32_t now, int64_t delta, bool regenerate_mana )
+{
   _db.modify< rc_account_object >( rc_account, [&]( rc_account_object& rca )
   {
-    auto max_rc = get_maximum_rc( *account, rc_account );
-    hive::chain::util::manabar_params manabar_params(max_rc, HIVE_RC_REGEN_TIME);
-    rca.rc_manabar.regenerate_mana( manabar_params, now );
-    rca.rc_manabar.current_mana = std::max( int64_t(rca.rc_manabar.current_mana + delta), int64_t(0) );
+    auto max_rc = get_maximum_rc( account, rc_account );
+    hive::chain::util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
+    if( regenerate_mana )
+    {
+      rca.rc_manabar.regenerate_mana( manabar_params, now );
+    }
+    else if( rc_account.rc_manabar.last_update_time != now )
+    {
+      //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
+      wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
+        ( "a", account.get_name() )( "b", _db.head_block_num() ) );
+    }
+    //rc delegation changes are immediately reflected in current_mana in both directions;
+    //if negative delta was not taking away delegated mana it would be easy to pump RC;
+    //note that it is different when actual VESTs are involved
+    rca.rc_manabar.current_mana = std::max( rca.rc_manabar.current_mana + delta, int64_t( 0 ) );
     rca.last_max_rc = max_rc + delta;
     rca.received_delegated_rc += delta;
-  });
+  } );
 }
 
 } } } // hive::plugins::rc
