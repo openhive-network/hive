@@ -1,0 +1,23 @@
+{
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "account_history_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 158,
+          "method": "get_account_history",
+          "timestamp": "2022-01-28T12:18:58"
+        },
+        "data": {},
+        "format": "args.start >= args.limit-1: start must be greater than or equal to limit-1 (start is 0-based index)"
+      }
+    ]
+  },
+  "message": "Assert Exception:args.start >= args.limit-1: start must be greater than or equal to limit-1 (start is 0-based index)"
+}

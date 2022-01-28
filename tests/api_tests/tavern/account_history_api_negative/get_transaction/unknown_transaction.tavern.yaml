@@ -3,7 +3,7 @@
 
   marks:
     - patterntest
-    - xfail
+    - negative
 
   includes:
     - !include ../../common.yaml
@@ -23,8 +23,9 @@
         timeout: 1
       response:
         status_code: 200
-        json:
-          error:
-            code: -32000
-        headers:
-          content-type: application/json
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            error_response: True
+            ignore_tags:
+              - stack
