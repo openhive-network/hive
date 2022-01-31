@@ -151,7 +151,6 @@ def test_power_up_delegator(wallet: Wallet):
 
 @pytest.mark.node_shared_file_size('16G')
 def test_multidelegation(wallet: Wallet):
-
     number_of_accounts = 100000
     logger.info('Start of account creation')
     accounts = get_accounts_name(wallet.create_accounts(number_of_accounts, 'receiver'))
@@ -170,7 +169,6 @@ def test_multidelegation(wallet: Wallet):
         for thread_number in range(number_of_threads):
             wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', Asset.Test(0.1))
 
-
     accounts_to_delegate_packs = []
     for thread_number in range(number_of_threads + 1):
         accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
@@ -188,7 +186,7 @@ def test_multidelegation(wallet: Wallet):
 
     assert get_rc_account_info(accounts[0], wallet)['received_delegated_rc'] == 1
     assert get_rc_account_info(accounts[-1], wallet)['received_delegated_rc'] == 1
-    assert get_rc_account_info(accounts[int(len(accounts)/2)], wallet)['received_delegated_rc'] == 1
+    assert get_rc_account_info(accounts[int(len(accounts) / 2)], wallet)['received_delegated_rc'] == 1
 
 
 def delegation_rc(creator, wallet, first_accounts_pack, last_accounts_pack, accounts_to_delegate, thread_number):
@@ -197,11 +195,13 @@ def delegation_rc(creator, wallet, first_accounts_pack, last_accounts_pack, acco
         wallet.api.delegate_rc(creator, accounts_to_delegate[number_of_account_pack], 1)
     logger.info(f'Delegation thread {thread_number} work END')
 
+
 def get_accounts_name(accounts):
     accounts_names = []
     for account_number in range(len(accounts)):
         accounts_names.append(accounts[account_number].name)
     return accounts_names
+
 
 def split_list(alist, wanted_parts):
     length = len(alist)
