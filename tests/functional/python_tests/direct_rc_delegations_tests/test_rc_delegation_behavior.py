@@ -153,11 +153,12 @@ def test_power_up_delegator(wallet: Wallet):
 def test_multidelegation(wallet: Wallet):
 
     number_of_accounts = 100000
-    accounts = wallet.create_accounts(number_of_accounts, 'receiver')
+    logger.info('Start of account creation')
+    accounts = get_accounts_name(wallet.create_accounts(number_of_accounts, 'receiver'))
     accounts_to_delegate = split_list(accounts, int(number_of_accounts / 100))
-    logger.info('End of splitting')
+    logger.info('End of account creation')
 
-    number_of_threads = 10
+    number_of_threads = 50
     delegators = []
 
     with wallet.in_single_transaction():
@@ -167,7 +168,8 @@ def test_multidelegation(wallet: Wallet):
 
     with wallet.in_single_transaction():
         for thread_number in range(number_of_threads):
-            wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', '100.010 TESTS')
+            wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', Asset.Test(0.1))
+
 
     accounts_to_delegate_packs = []
     for thread_number in range(number_of_threads + 1):
@@ -184,13 +186,22 @@ def test_multidelegation(wallet: Wallet):
     for thread_number in tasks_list:
         thread_number.result()
 
+    assert get_rc_account_info(accounts[0], wallet)['received_delegated_rc'] == 1
+    assert get_rc_account_info(accounts[-1], wallet)['received_delegated_rc'] == 1
+    assert get_rc_account_info(accounts[int(len(accounts)/2)], wallet)['received_delegated_rc'] == 1
+
 
 def delegation_rc(creator, wallet, first_accounts_pack, last_accounts_pack, accounts_to_delegate, thread_number):
-    logger.info(f'Thread {thread_number} work START')
+    logger.info(f'Delegation thread {thread_number} work START')
     for number_of_account_pack in range(first_accounts_pack, last_accounts_pack):
         wallet.api.delegate_rc(creator, accounts_to_delegate[number_of_account_pack], 1)
-    logger.info(f'Thread {thread_number} work END')
+    logger.info(f'Delegation thread {thread_number} work END')
 
+def get_accounts_name(accounts):
+    accounts_names = []
+    for account_number in range(len(accounts)):
+        accounts_names.append(accounts[account_number].name)
+    return accounts_names
 
 def split_list(alist, wanted_parts):
     length = len(alist)
