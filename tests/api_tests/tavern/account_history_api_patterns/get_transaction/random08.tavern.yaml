@@ -12,6 +12,7 @@
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
+        timeout: !int "{timeout:d}"
         headers:
           content-type: application/json
         json:
@@ -19,7 +20,6 @@
           id: 1
           method: "account_history_api.get_transaction"
           params: {"id": "a8c2d718de92815d3eebd116f78f14607e3091e2"}
-        timeout: 1
       response:
         status_code: 200
         verify_response_with:
