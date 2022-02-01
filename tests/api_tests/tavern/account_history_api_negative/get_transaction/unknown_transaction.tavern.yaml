@@ -28,4 +28,4 @@
           extra_kwargs:
             error_response: True
             ignore_tags:
-              - stack
+              - data
