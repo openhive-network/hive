@@ -262,7 +262,7 @@ namespace hive { namespace converter {
 #ifndef HIVE_BC_HF_N_CASE_MACRO
 #  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.timestamp.sec_since_epoch() >= HIVE_HARDFORK_ ##data ## _ ##n ## _TIME \
                                                         && current_hardfork < n ) { ++current_hardfork; \
-std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n'; }
+std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n' << std::flush; }
 #endif
 
 #ifndef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
