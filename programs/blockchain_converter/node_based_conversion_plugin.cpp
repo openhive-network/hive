@@ -239,6 +239,8 @@ namespace detail {
       }
     }
 
+    std::cout << "In order to resume your live conversion pass the \'-R " << start_block_num - 1 << "\' option to the converter next time" << std::endl;
+
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
   }
