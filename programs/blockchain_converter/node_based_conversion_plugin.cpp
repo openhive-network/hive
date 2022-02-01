@@ -67,6 +67,11 @@ namespace detail {
      */
     fc::variant_object get_dynamic_global_properties();
 
+    /**
+     * @brief Get the id of the block preceding the one with the given number from the output node
+     */
+    hp::block_id_type get_previous_from_block( uint32_t num );
+
     fc::http::connection input_con;
     fc::url              input_url;
 
@@ -141,7 +146,7 @@ namespace detail {
     auto gpo = get_dynamic_global_properties();
 
     if( !start_block_num )
-      start_block_num = gpo["head_block_number"].as_uint64() + 1;
+      start_block_num = gpo["head_block_number"].as< uint32_t >() + 1;
 
     std::cout << "Continuing conversion from the block with number " << start_block_num
                 << "\nValidating the chain id...\n";
@@ -166,6 +171,10 @@ namespace detail {
       }
     }
 
+    // Last irreversible block number and id for tapos generation
+    uint32_t lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+    hp::block_id_type lib_id = get_previous_from_block( lib_num );
+
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
       block = receive( start_block_num );
@@ -188,8 +197,6 @@ namespace detail {
         else
           std::cout << start_block_num << " blocks rewritten.\r";
         std::cout.flush();
-
-        gpo = get_dynamic_global_properties();
       }
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
@@ -204,7 +211,7 @@ namespace detail {
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      converter.convert_signed_block( *block, gpo["head_block_id"].as< hp::block_id_type >(), use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
+      converter.convert_signed_block( *block, lib_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
@@ -219,6 +226,17 @@ namespace detail {
           break;
         else
           transmit( trx );
+
+
+      // Update dynamic global properties object and check if there is a new irreversible block
+      // If so, then update lib id
+      gpo = get_dynamic_global_properties();
+      uint32_t new_lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+      if( lib_num != new_lib_num )
+      {
+        lib_num = new_lib_num;
+        lib_id  = get_previous_from_block( lib_num );
+      }
     }
 
     if( !appbase::app().is_interrupt_request() )
@@ -240,7 +258,7 @@ namespace detail {
       );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-//#define HIVE_CONVERTER_DEBUG_TRANSMIT // Remove if you want to debug response data and throw on error message in the response
+// #define HIVE_CONVERTER_DEBUG_TRANSMIT // Remove if you want to debug response data and throw on error message in the response
 #ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
       std::string str_reply{ &*reply.body.begin(), reply.body.size() };
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
@@ -389,6 +407,30 @@ namespace detail {
       output_con.get_socket().close();
 
       return var_obj["result"].get_object();
+    } FC_CAPTURE_AND_RETHROW()
+  }
+
+  hp::block_id_type node_based_conversion_plugin_impl::get_previous_from_block( uint32_t num )
+  {
+    try
+    {
+      open( output_con, output_url );
+
+      auto reply = output_con.request( "POST", output_url,
+        "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_header\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
+        /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+      FC_ASSERT( var_obj["result"].get_object().contains("header"), "No header in JSON response", ("body", str_reply) );
+
+      output_con.get_socket().close();
+
+      return var_obj["result"].get_object()["header"].get_object()["previous"].as< hp::block_id_type >();
     } FC_CAPTURE_AND_RETHROW()
   }
 
