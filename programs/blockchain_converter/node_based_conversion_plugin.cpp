@@ -61,7 +61,11 @@ namespace detail {
     const fc::variants& get_block_buffer()const;
 
     void validate_chain_id( const hp::chain_id_type& chain_id );
-    uint32_t get_output_head_block_num();
+
+    /**
+     * @brief Get the dynamic global properties object as variant_object from the output node
+     */
+    fc::variant_object get_dynamic_global_properties();
 
     fc::http::connection input_con;
     fc::url              input_url;
@@ -134,8 +138,10 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
+    auto gpo = get_dynamic_global_properties();
+
     if( !start_block_num )
-      start_block_num = get_output_head_block_num() + 1;
+      start_block_num = gpo["head_block_number"].as_uint64() + 1;
 
     std::cout << "Continuing conversion from the block with number " << start_block_num
                 << "\nValidating the chain id...\n";
@@ -145,14 +151,13 @@ namespace detail {
 
     fc::optional< hp::signed_block > block;
 
-    hp::block_id_type last_block_id;
     while( start_block_num > 1 && !block.valid() )
     {
       if( appbase::app().is_interrupt_request() ) break;
       block = receive_uncached( start_block_num - 1 );
       if( block.valid() )
       {
-        last_block_id = converter.convert_signed_block( *block, last_block_id );
+        converter.convert_signed_block( *block, gpo["head_block_id"].as< hp::block_id_type >() );
       }
       else
       {
@@ -183,6 +188,8 @@ namespace detail {
         else
           std::cout << start_block_num << " blocks rewritten.\r";
         std::cout.flush();
+
+        gpo = get_dynamic_global_properties();
       }
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
@@ -197,7 +204,7 @@ namespace detail {
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
+      converter.convert_signed_block( *block, gpo["head_block_id"].as< hp::block_id_type >(), use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
       {
@@ -361,7 +368,7 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (chain_id) )
   }
 
-  uint32_t node_based_conversion_plugin_impl::get_output_head_block_num()
+  fc::variant_object node_based_conversion_plugin_impl::get_dynamic_global_properties()
   {
     try
     {
@@ -381,7 +388,7 @@ namespace detail {
 
       output_con.get_socket().close();
 
-      return var_obj["result"].get_object()["head_block_number"].as_uint64();
+      return var_obj["result"].get_object();
     } FC_CAPTURE_AND_RETHROW()
   }
 
