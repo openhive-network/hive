@@ -258,11 +258,13 @@ namespace detail {
       );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-// #define HIVE_CONVERTER_DEBUG_TRANSMIT // Remove if you want to debug response data and throw on error message in the response
-#ifdef HIVE_CONVERTER_DEBUG_TRANSMIT
+//#define HIVE_CONVERTER_SUPPRESS_TRANSMIT_WARNINGS // Uncomment or define if you want to suppress converter broadcast warnings
+// Defining this also saves time on the response parsing
+#ifndef HIVE_CONVERTER_SUPPRESS_TRANSMIT_WARNINGS
       std::string str_reply{ &*reply.body.begin(), reply.body.size() };
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+      if( var_obj.contains( "error" ) )
+        wlog( "Got error response from the output node: \"${msg}\"", ("msg",var_obj["error"].get_object()["message"].get_string()) );
 #endif
 
       output_con.get_socket().close();
