@@ -8431,6 +8431,282 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( comment_options_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test Comment options" );
+    ACTORS( (alice)(bob)(sam)(dave) )
+    generate_block();
+
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        gpo.sps_fund_percent = 0;
+      } );
+
+      db.modify( db.get_treasury(), [=]( account_object& a )
+      {
+        a.hbd_balance.amount.value = 0;
+      } );
+    } );
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    comment_operation comment;
+    vote_operation vote;
+    comment_options_operation op;
+    signed_transaction tx;
+
+    comment.author = "alice";
+    comment.permlink = "test1";
+    comment.parent_permlink = "test";
+    comment.title = "test";
+    comment.body = "foobar";
+    push_transaction( comment, alice_private_key );
+    generate_block();
+    comment.parent_author = "alice";
+    comment.parent_permlink = "test1";
+    comment.permlink = "test2";
+    push_transaction( comment, alice_private_key );
+    generate_block();
+    comment.permlink = "test3";
+    push_transaction( comment, alice_private_key );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Test clearing allow_votes when comment has been voted on" );
+    vote.author = "alice";
+    vote.permlink = "test1";
+    vote.voter = "bob";
+    vote.weight = HIVE_100_PERCENT;
+
+    op.author = "alice";
+    op.permlink = "test1";
+    op.allow_votes = false;
+
+    tx.clear();
+    tx.operations.push_back( vote );
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
+    sign( tx, alice_private_key );
+    sign( tx, bob_private_key );
+    HIVE_REQUIRE_ASSERT( db->push_transaction( tx ), "!comment_cashout->has_votes()" );
+
+    BOOST_TEST_MESSAGE( "--- Test success of clearing allow_votes" );
+    push_transaction( op, alice_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Test voting no longer possible" );
+    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_private_key ), "comment_cashout->allows_votes()" );
+
+    BOOST_TEST_MESSAGE( "--- Test enabling voting back not possible" );
+    op.allow_votes = true;
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "comment_cashout->allows_votes() >= o.allow_votes" );
+
+    BOOST_TEST_MESSAGE( "--- Test success - voting actually possible but only downvoting" );
+    //ABW: that is probably the source of confusion, however if all votes were disallowed author
+    //of some negative content could not even be affected on reputation
+    vote.weight = -HIVE_100_PERCENT;
+    push_transaction( vote, bob_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Test clearing allow_curation_rewards when comment has been voted on" );
+    vote.voter = "sam";
+    vote.permlink = "test2";
+    vote.weight = HIVE_100_PERCENT;
+    op.permlink = "test2";
+    op.allow_curation_rewards = false;
+
+    tx.clear();
+    tx.operations.push_back( vote );
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
+    sign( tx, alice_private_key );
+    sign( tx, sam_private_key );
+    HIVE_REQUIRE_ASSERT( db->push_transaction( tx ), "!comment_cashout->has_votes()" );
+
+    BOOST_TEST_MESSAGE( "--- Test success of clearing allow_curation_rewards" );
+    push_transaction( op, alice_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Test enabling curations back not possible" );
+    op.allow_curation_rewards = true;
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards" );
+
+    BOOST_TEST_MESSAGE( "--- Test success of voting on comment with cleared allow_curation_rewards" );
+    push_transaction( vote, sam_private_key );
+
+
+    BOOST_TEST_MESSAGE( "--- Test setting lower max_accepted_payout when comment has been voted on" );
+    vote.voter = "dave";
+    vote.permlink = "test3";
+    op.permlink = "test3";
+    op.max_accepted_payout = ASSET( "0.010 TBD" );
+
+    tx.clear();
+    tx.operations.push_back( vote );
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT );
+    sign( tx, alice_private_key );
+    sign( tx, dave_private_key );
+    HIVE_REQUIRE_ASSERT( db->push_transaction( tx ), "!comment_cashout->has_votes()" );
+
+    BOOST_TEST_MESSAGE( "--- Test success of setting lower max_accepted_payout" );
+    push_transaction( op, alice_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Test increasing max_accepted_payout not possible" );
+    op.max_accepted_payout.amount *= 2;
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "comment_cashout->get_max_accepted_payout() >= o.max_accepted_payout" );
+
+    BOOST_TEST_MESSAGE( "--- Test success of voting on comment with lowered max_accepted_payout" );
+    push_transaction( vote, dave_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Payout and verify rewards on comment with disabled curation rewards" );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test1" ) ) )->get_cashout_time() - HIVE_BLOCK_INTERVAL );
+
+    auto set_reward_pool = [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        gpo.current_supply -= gpo.get_total_reward_fund_hive();
+        gpo.total_reward_fund_hive = ASSET( "100.000 TESTS" );
+        gpo.current_supply += gpo.get_total_reward_fund_hive();
+      } );
+    };
+
+    db_plugin->debug_update( set_reward_pool );
+    generate_block();
+
+    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test1" ) ) ) == nullptr );
+    //no reward for test1 comment
+    BOOST_REQUIRE_EQUAL( get_rewards( "alice" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_rewards( "bob" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "bob" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "bob" ).amount.value, 0 );
+
+    db_plugin->debug_update( set_reward_pool );
+    generate_block();
+
+    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test2" ) ) ) == nullptr );
+    //alice got reward for test2 comment as author...
+    BOOST_REQUIRE_EQUAL( get_rewards( "alice" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 18635 );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ).amount.value, 18635 );
+    //...but no curation for sam
+    BOOST_REQUIRE_EQUAL( get_rewards( "sam" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "sam" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "sam" ).amount.value, 0 );
+
+    db_plugin->debug_update( set_reward_pool );
+    generate_block();
+
+    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test3" ) ) ) == nullptr );
+    //alice and dave got reward for test3 comment but they sum to 0.010 HBD
+    BOOST_REQUIRE_EQUAL( get_rewards( "alice" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 18635 + 2 );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ).amount.value, 18635 + 3 );
+    BOOST_REQUIRE_EQUAL( get_rewards( "dave" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "dave" ).amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "dave" ).amount.value, 5 );
+
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test if comment options persist through deleted comment reuse" );
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      {
+        gpo.sps_fund_percent = 0;
+      } );
+
+      db.modify( db.get_treasury(), [=]( account_object& a )
+      {
+        a.hbd_balance.amount.value = 0;
+      } );
+    } );
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    comment_operation comment;
+    vote_operation vote;
+    comment_options_operation op;
+
+    comment.author = "alice";
+    comment.permlink = "test";
+    comment.parent_permlink = "test";
+    comment.title = "test";
+    comment.body = "foobar";
+    push_transaction( comment, alice_private_key );
+    op.author = "alice";
+    op.permlink = "test";
+    op.allow_curation_rewards = false;
+    op.allow_votes = false;
+    op.max_accepted_payout = ASSET( "0.010 TBD" );
+    push_transaction( op, alice_private_key );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Downvoting comment (possible even with voting disabled)" );
+    vote.author = "alice";
+    vote.permlink = "test";
+    vote.voter = "bob";
+    vote.weight = -HIVE_100_PERCENT;
+    push_transaction( vote, bob_private_key );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Comment has curations and voting blocked, small max payout; vote exists" );
+    const auto& old_comment = db->get_comment( "alice", string( "test" ) );
+    const auto* comment_cashout = db->find_comment_cashout( old_comment );
+    auto old_comment_id = old_comment.get_id();
+    BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), false );
+    BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), false );
+    BOOST_REQUIRE_EQUAL( comment_cashout->get_max_accepted_payout().amount.value, 10 );
+    const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
+    auto voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
+    BOOST_REQUIRE( voteI != vote_idx.end() );
+
+    BOOST_TEST_MESSAGE( "--- Deleting comment (right before cashout)" );
+    generate_blocks( comment_cashout->get_cashout_time() - HIVE_BLOCK_INTERVAL );
+
+    delete_comment_operation del_com;
+    del_com.author = "alice";
+    del_com.permlink = "test";
+    push_transaction( del_com, alice_private_key );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Comment no longer exists, vote was also deleted" );
+    BOOST_REQUIRE( db->find_comment( "alice", string( "test" ) ) == nullptr );
+    voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
+    BOOST_REQUIRE( voteI == vote_idx.end() );
+
+    BOOST_TEST_MESSAGE( "--- Reusing old permlink for new comment" );
+    comment.body = "bob, why the hate? :o(";
+    push_transaction( comment, alice_private_key );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- New comment has default options, no vote on it exists" );
+    const auto& new_comment = db->get_comment( "alice", string( "test" ) );
+    comment_cashout = db->find_comment_cashout( new_comment );
+    auto new_comment_id = new_comment.get_id();
+    BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), true );
+    BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), true );
+    BOOST_REQUIRE_EQUAL( comment_cashout->get_max_accepted_payout().amount.value, 1000000000 );
+    voteI = vote_idx.find( boost::make_tuple( new_comment_id, bob_id ) );
+    BOOST_REQUIRE( voteI == vote_idx.end() );
+    voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
+    BOOST_REQUIRE( voteI == vote_idx.end() );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
 {
   try
