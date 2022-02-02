@@ -48,7 +48,9 @@ class rc_plugin_impl
 
     void on_pre_reindex( const reindex_notification& node );
     void on_post_reindex( const reindex_notification& note );
+    void on_pre_apply_block( const block_notification& note );
     void on_post_apply_block( const block_notification& note );
+    void on_fail_apply_block( const block_notification& note );
     //void on_pre_apply_transaction( const transaction_notification& note );
     void on_post_apply_transaction( const transaction_notification& note );
     void on_pre_apply_operation( const operation_notification& note );
@@ -77,6 +79,7 @@ class rc_plugin_impl
     rc_plugin&                    _self;
 
     rc_plugin_skip_flags          _skip;
+    bool                          _is_processing_block = false;
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
 
@@ -88,7 +91,9 @@ class rc_plugin_impl
 
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
+    boost::signals2::connection   _pre_apply_block_conn;
     boost::signals2::connection   _post_apply_block_conn;
+    boost::signals2::connection   _fail_apply_block_conn;
     boost::signals2::connection   _pre_apply_transaction_conn;
     boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
@@ -239,7 +244,8 @@ void use_account_rcs(
   const dynamic_global_property_object& gpo,
   const account_name_type& account_name,
   int64_t rc,
-  rc_plugin_skip_flags skip
+  rc_plugin_skip_flags skip,
+  bool is_processing_block
 #ifdef IS_TEST_NET
   ,
   const set< account_name_type >& whitelist
@@ -291,8 +297,10 @@ void use_account_rcs(
       }
       else
       {
-        if( !has_mana )
+        if( !has_mana && is_processing_block )
         {
+          //when we didn't have is_processing_block as part of condition the messages below would also
+          //be produced when pending transactions were reapplied after new block arrived
           const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
             ("account", account_name)
@@ -362,7 +370,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.resource_user = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip
+  use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -407,8 +415,18 @@ struct block_extensions_count_resources_visitor
   void operator()( const T& ) {}
 };
 
+void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
+{
+  if( _is_processing_block )
+    elog( "Nested block processing!" );
+  _is_processing_block = true; //should be cleared in either on_post_apply_block or on_fail_apply_block
+}
+
 void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 { try{
+  if( !_is_processing_block )
+    elog( "Block processing not started correctly!" );
+  _is_processing_block = false; //should always be paired with on_pre_apply_block call
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( before_first_block() )
   {
@@ -553,6 +571,13 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   else if( debug_print )
     dlog( "${b} : ${i}", ( "b", gpo.head_block_number )( "i", block_info ) );
 } FC_CAPTURE_AND_RETHROW( (note.block) ) }
+
+void rc_plugin_impl::on_fail_apply_block( const block_notification& note )
+{
+  if( !_is_processing_block )
+    elog( "Failed block processing not started correctly!" );
+  _is_processing_block = false; //should always be paired with on_pre_apply_block call
+}
 
 void rc_plugin_impl::on_first_block()
 {
@@ -1214,7 +1239,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.resource_user = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info.resource_user, total_cost, _skip
+  use_account_rcs( _db, gpo, opt_action_info.resource_user, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -1282,8 +1307,12 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
   {
     chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
+    my->_pre_apply_block_conn = db.add_pre_apply_block_handler( [&]( const block_notification& note )
+      { try { my->on_pre_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_block_conn = db.add_post_apply_block_handler( [&]( const block_notification& note )
       { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    my->_fail_apply_block_conn = db.add_fail_apply_block_handler( [&]( const block_notification& note )
+      { try { my->on_fail_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     //my->_pre_apply_transaction_conn = db.add_pre_apply_transaction_handler( [&]( const transaction_notification& note )
     //   { try { my->on_pre_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_transaction_conn = db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
