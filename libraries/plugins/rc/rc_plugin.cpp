@@ -253,13 +253,7 @@ void use_account_rcs(
         if( !has_mana && is_processing_block )
         {
           //when we didn't have is_processing_block as part of condition the messages below would also
-          //be produced when pending transactions were reapplied after new block arrived even though
-          //they are not part of any block yet;
-          //if we put that part of condition as alternative for db.is_producing() above it would mean
-          //the transactions that were validated before but started to lack RC after new block arrived,
-          //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
-          //he can notice and react to it; however when his transaction is rejected after validation due
-          //to changes in RC, it seems better to retry tx execution like we currently do)
+          //be produced when pending transactions were reapplied after new block arrived
           const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
             ("account", account_name)
@@ -1351,9 +1345,7 @@ void rc_plugin::plugin_shutdown()
 {
   chain::util::disconnect_signal( my->_pre_reindex_conn );
   chain::util::disconnect_signal( my->_post_reindex_conn );
-  chain::util::disconnect_signal( my->_pre_apply_block_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
-  chain::util::disconnect_signal( my->_fail_apply_block_conn );
   // chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
