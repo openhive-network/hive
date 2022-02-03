@@ -27,8 +27,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter )
-    : converter( converter ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& trx_now_time )
+    : converter( converter ), trx_now_time( trx_now_time ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -95,12 +95,37 @@ namespace hive { namespace converter {
     return op;
   }
 
+  const hp::escrow_transfer_operation& convert_operations_visitor::operator()( hp::escrow_transfer_operation& op )const
+  {
+    if( trx_now_time != blockchain_converter::auto_trx_time )
+    { // For the live conversion
+      op.escrow_expiration = trx_now_time + (op.escrow_expiration-converter.get_current_block().timestamp);
+      op.ratification_deadline = trx_now_time + (op.ratification_deadline-converter.get_current_block().timestamp);
+    }
+
+    return op;
+  }
+
   const hp::limit_order_create_operation& convert_operations_visitor::operator()( hp::limit_order_create_operation& op )const
   {
     if( !converter.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
     {
       uint32_t rand_offset = converter.get_mainnet_head_block_id()._hash[ 4 ] % 86400;
       op.expiration = std::min( op.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
+    }
+    else if( trx_now_time != blockchain_converter::auto_trx_time )
+    { // For the live conversion
+      op.expiration = trx_now_time + (op.expiration-converter.get_current_block().timestamp);
+    }
+
+    return op;
+  }
+
+  const hp::limit_order_create2_operation& convert_operations_visitor::operator()( hp::limit_order_create2_operation& op )const
+  {
+    if( trx_now_time != blockchain_converter::auto_trx_time )
+    { // For the live conversion
+      op.expiration = trx_now_time + (op.expiration-converter.get_current_block().timestamp);
     }
 
     return op;
@@ -319,7 +344,7 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
