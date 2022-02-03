@@ -41,6 +41,8 @@ namespace hive { namespace converter { namespace plugins { namespace node_based_
 
 namespace detail {
 
+  FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from the output node" ); 
+
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
@@ -50,6 +52,20 @@ namespace detail {
 
     void open( fc::http::connection& con, const fc::url& url );
     void close();
+
+    /**
+     * @brief Sends a post request to the given hive endpoint with the prepared data
+     *
+     * @param con connection object to be used in order to estabilish connection with the server
+     * @param url hive endpoint URL to connect to
+     * @param method hive method to invoke
+     * @param data data as a stringified JSON to be passed as a `param` property in the request, for example: `[0]`
+     *
+     * @return variant_object JSON object represented as a variant_object parsed from the `result` property from the reponse
+     *
+     * @throws fc::exception on connect error or `error` property present in the response
+     */
+    variant_object post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data );
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
 
@@ -139,6 +155,36 @@ namespace detail {
 
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
+  }
+
+  variant_object node_based_conversion_plugin_impl::post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data )
+  {
+    try
+    {
+      open( con, url );
+
+      auto reply = con.request( "POST", url,
+          "{\"jsonrpc\":\"2.0\",\"method\":\"" + method + "\",\"params\":" + data +  ",\"id\":1}"
+          /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when sending request to the endpoint", ("code", reply.status) );
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      if( var_obj.contains( "error" ) )
+        FC_THROW_EXCEPTION( error_response_from_node, "${msg}",
+                           ("msg", var_obj["error"].get_object()["message"].get_string())
+                           ("detailed",var_obj["error"].get_object())
+                          );
+
+      // By this point `result` should be present in the response
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+
+      con.get_socket().close();
+
+      return var_obj["result"].get_object();
+    } FC_CAPTURE_AND_RETHROW( (url)(data) )
   }
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -254,61 +300,39 @@ namespace detail {
       fc::variant v;
       fc::to_variant( trx, v );
 
-      auto reply = output_con.request( "POST", output_url,
-        "{\"jsonrpc\":\"2.0\",\"method\":\"network_broadcast_api.broadcast_transaction\",\"params\":{\"trx\":" + fc::json::to_string( v ) + "},\"id\":1}"
-        /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
-
-//#define HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
-//#define HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter broadcast warnings
-// Defining those also saves time on the response parsing
-#ifndef HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS
-      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      if( var_obj.contains( "error" ) )
-        wlog( "Got error response from the output node: \"${msg}\" ${detailed}",
-          ("msg",var_obj["error"].get_object()["message"].get_string())
-# ifdef HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING
-          ("detailed",var_obj["error"].get_object())
-# else
-          ("detailed","")
-# endif
-        );
-#endif
+      post( output_con, output_url, "network_broadcast_api.broadcast_transaction", "{\"trx\":" + fc::json::to_string( v ) + "}" );
 
       output_con.get_socket().close();
+    }
+    catch( const error_response_from_node& error )
+    {
+//#define HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
+//#define HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter broadcast warnings
+#ifndef HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS
+# ifdef HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING
+      wlog( "${msg}", ("msg",error.to_detail_string()) );
+# else
+      wlog( "${msg}", ("msg",error.to_string()) );
+# endif
+#endif
     } FC_CAPTURE_AND_RETHROW( (trx.id().str()) )
   }
 
   const fc::variants& node_based_conversion_plugin_impl::get_block_buffer()const
   {
-    return block_buffer_obj["result"].get_object()["blocks"].get_array();
+    return block_buffer_obj["blocks"].get_array();
   }
 
   fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive_uncached( uint32_t num )
   {
     try
     {
-      open( input_con, input_url );
+      auto var_obj = post( input_con, input_url, "block_api.get_block", "{\"block_num\":" + std::to_string( num ) + "}" );
 
-      auto reply = input_con.request( "POST", input_url,
-          "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
-          /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
-      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
-
-      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-
-      if( !var_obj["result"].get_object().contains("block") )
+      if( !var_obj.contains("block") )
         return fc::optional< hp::signed_block >();
 
-      input_con.get_socket().close();
-
-      return var_obj["result"].get_object()["block"].template as< hp::signed_block >();
+      return var_obj["block"].template as< hp::signed_block >();
     } FC_CAPTURE_AND_RETHROW( (num) )
   }
 
@@ -325,22 +349,11 @@ namespace detail {
         open( input_con, input_url );
 
         last_block_range_start = block_buffer_size == 1 ? num : num - ( num % block_buffer_size == 0 ? block_buffer_size : num % block_buffer_size ) + 1;
-        auto reply = input_con.request( "POST", input_url,
-            "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_range\",\"params\":{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "},\"id\":1}"
-            /*,{ { "Content-Type", "application/json" } } */
-        );
-        FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when receiving block with number: ${num}", ("code", reply.status) );
-        // TODO: Move to boost to support SSL/TLS and chunked transfer encoding in responses
-        FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
-
-        std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-        fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-        FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-        FC_ASSERT( var_obj["result"].get_object().contains("blocks"), "No blocks in JSON response", ("body", str_reply) );
+        auto var_obj = post( input_con, input_url, "block_api.get_block_range",
+          "{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "}" );
+        FC_ASSERT( var_obj.contains("blocks"), "No blocks in JSON response", ("reply", var_obj) );
 
         block_buffer_obj = var_obj;
-
-        input_con.get_socket().close();
       }
       else if( last_block_range_start != uint64_t(-1) ) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
       {
@@ -366,21 +379,11 @@ namespace detail {
   {
     try
     {
-      open( output_con, output_url );
+      auto var_obj = post( output_con, output_url, "database_api.get_config", "{}" );
 
-      auto reply = output_con.request( "POST", output_url,
-        "{\"jsonrpc\":\"2.0\",\"method\":\"database_api.get_config\",\"id\":1}"
-        /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
-      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+      FC_ASSERT( var_obj.contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("reply", var_obj) );
 
-      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-      FC_ASSERT( var_obj["result"].get_object().contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("body", str_reply) );
-
-      const auto& chain_id_str = var_obj["result"].get_object()["HIVE_CHAIN_ID"].as_string();
+      const auto chain_id_str = var_obj["HIVE_CHAIN_ID"].as_string();
       hp::chain_id_type remote_chain_id;
 
       try
@@ -393,8 +396,6 @@ namespace detail {
       }
 
       FC_ASSERT( remote_chain_id == chain_id, "Remote chain id does not match the specified one", ("chain_id",chain_id)("remote_chain_id",remote_chain_id) );
-
-      output_con.get_socket().close();
     } FC_CAPTURE_AND_RETHROW( (chain_id) )
   }
 
@@ -402,23 +403,11 @@ namespace detail {
   {
     try
     {
-      open( output_con, output_url );
+      auto var_obj = post( output_con, output_url, "database_api.get_dynamic_global_properties", "{}" );
+      // Check for example required property
+      FC_ASSERT( var_obj.contains("head_block_number"), "No head_block_number in JSON response", ("reply", var_obj) );
 
-      auto reply = output_con.request( "POST", output_url,
-        "{\"jsonrpc\":\"2.0\",\"method\":\"database_api.get_dynamic_global_properties\",\"id\":1}"
-        /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
-      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
-
-      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-      FC_ASSERT( var_obj["result"].get_object().contains("head_block_number"), "No head_block_number in JSON response", ("body", str_reply) );
-
-      output_con.get_socket().close();
-
-      return var_obj["result"].get_object();
+      return var_obj;
     } FC_CAPTURE_AND_RETHROW()
   }
 
@@ -426,23 +415,10 @@ namespace detail {
   {
     try
     {
-      open( output_con, output_url );
+      auto var_obj = post( output_con, output_url, "block_api.get_block_header", "{\"block_num\":" + std::to_string( num ) + "}" );
+      FC_ASSERT( var_obj.contains("header"), "No header in JSON response", ("reply", var_obj) );
 
-      auto reply = output_con.request( "POST", output_url,
-        "{\"jsonrpc\":\"2.0\",\"method\":\"block_api.get_block_header\",\"params\":{\"block_num\":" + std::to_string( num ) + "},\"id\":1}"
-        /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
-      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
-
-      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-      FC_ASSERT( var_obj["result"].get_object().contains("header"), "No header in JSON response", ("body", str_reply) );
-
-      output_con.get_socket().close();
-
-      return var_obj["result"].get_object()["header"].get_object()["previous"].as< hp::block_id_type >();
+      return var_obj["header"].get_object()["previous"].as< hp::block_id_type >();
     } FC_CAPTURE_AND_RETHROW()
   }
 
