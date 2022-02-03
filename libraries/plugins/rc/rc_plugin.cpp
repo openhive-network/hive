@@ -1351,7 +1351,9 @@ void rc_plugin::plugin_shutdown()
 {
   chain::util::disconnect_signal( my->_pre_reindex_conn );
   chain::util::disconnect_signal( my->_post_reindex_conn );
+  chain::util::disconnect_signal( my->_pre_apply_block_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
+  chain::util::disconnect_signal( my->_fail_apply_block_conn );
   // chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
