@@ -96,11 +96,12 @@ namespace hive { namespace converter {
   {
   private:
     blockchain_converter& converter;
+    const fc::time_point_sec& trx_now_time;
 
   public:
     typedef hp::operation result_type;
 
-    convert_operations_visitor( blockchain_converter& converter );
+    convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& trx_now_time = blockchain_converter::auto_trx_time );
 
     const hp::account_create_operation& operator()( hp::account_create_operation& op )const;
 
@@ -114,7 +115,11 @@ namespace hive { namespace converter {
 
     const hp::custom_binary_operation& operator()( hp::custom_binary_operation& op )const;
 
+    const hp::escrow_transfer_operation& operator()( hp::escrow_transfer_operation& op )const;
+
     const hp::limit_order_create_operation& operator()( hp::limit_order_create_operation& op )const;
+
+    const hp::limit_order_create2_operation& operator()( hp::limit_order_create2_operation& op )const;
 
     const hp::pow_operation& operator()( hp::pow_operation& op )const;
 
