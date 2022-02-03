@@ -37,7 +37,7 @@ class LoggerWrapper:
 
     def log_to_file(self):
         # Break import-cycle
-        from test_tools.private.scope import context  # pylint: disable=import-outside-toplevel
+        from test_tools.private.scope import context  # pylint: disable=import-outside-toplevel, cyclic-import
         self.set_file_handler(context.get_current_directory().joinpath('last_run.log'))
 
     def log_to_stdout(self):

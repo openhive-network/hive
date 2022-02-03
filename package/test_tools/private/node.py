@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 import warnings
 import weakref
 
-from test_tools import communication, constants, exceptions, network, paths_to_executables
+from test_tools import communication, constants, exceptions, paths_to_executables
 from test_tools.node_api.node_apis import Apis
 from test_tools.node_configs.default import create_default_config
 from test_tools.private.block_log import BlockLog
@@ -260,7 +260,9 @@ class Node:
         self.config = create_default_config()
 
     def __str__(self):
-        return f'{self.__creator}.{self.__name}' if isinstance(self.__creator, network.Network) else self.__name
+        # Break import-cycle; At the moment of this method execution, Network will be defined
+        from test_tools.network import Network  # pylint: disable=import-outside-toplevel, cyclic-import
+        return f'{self.__creator}.{self.__name}' if isinstance(self.__creator, Network) else self.__name
 
     def __get_config_file_path(self):
         return self.directory / 'config.ini'

@@ -7,7 +7,8 @@ current_scope = ScopesStack()
 context = ContextInternalHandle(current_scope)
 
 if is_manual_test():
-    # Break import-cycle
+    # Break import-cycle; ScopedObject depends on current_scope, which is already defined
+    # pylint: disable=cyclic-import
     from test_tools.private.scope.scoped_current_directory import ScopedCurrentDirectory
     ScopedCurrentDirectory(current_scope.context.get_current_directory())
 

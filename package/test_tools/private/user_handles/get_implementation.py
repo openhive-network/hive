@@ -1,4 +1,4 @@
-from test_tools.private.user_handles import RemoteNodeHandle
+from test_tools.private.user_handles.remote_node_handle import RemoteNodeHandle
 
 
 def get_implementation(handle):

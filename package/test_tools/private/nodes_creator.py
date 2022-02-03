@@ -2,7 +2,8 @@ from enum import auto, Enum
 from pathlib import Path
 import warnings
 
-from test_tools import Account, constants
+from test_tools import constants
+from test_tools.account import Account
 from test_tools.private.children_names import ChildrenNames
 from test_tools.private.node import Node
 
