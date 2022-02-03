@@ -260,13 +260,21 @@ namespace detail {
       );
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received after transmitting tx: ${id}", ("code", reply.status)("body", std::string(reply.body.begin(), reply.body.end()) ) );
 
-//#define HIVE_CONVERTER_SUPPRESS_TRANSMIT_WARNINGS // Uncomment or define if you want to suppress converter broadcast warnings
-// Defining this also saves time on the response parsing
-#ifndef HIVE_CONVERTER_SUPPRESS_TRANSMIT_WARNINGS
+//#define HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
+//#define HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter broadcast warnings
+// Defining those also saves time on the response parsing
+#ifndef HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS
       std::string str_reply{ &*reply.body.begin(), reply.body.size() };
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
       if( var_obj.contains( "error" ) )
-        wlog( "Got error response from the output node: \"${msg}\"", ("msg",var_obj["error"].get_object()["message"].get_string()) );
+        wlog( "Got error response from the output node: \"${msg}\" ${detailed}",
+          ("msg",var_obj["error"].get_object()["message"].get_string())
+# ifdef HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING
+          ("detailed",var_obj["error"].get_object())
+# else
+          ("detailed","")
+# endif
+        );
 #endif
 
       output_con.get_socket().close();
