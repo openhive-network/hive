@@ -20,12 +20,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036855581956",
           "timestamp": "2016-04-15T14:49:45",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-04-15T14:49:45"
@@ -47,12 +47,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036855581959",
           "timestamp": "2016-04-15T14:49:48",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-04-15T14:49:48"
@@ -74,12 +74,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036855581960",
           "timestamp": "2016-04-15T14:49:51",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-04-15T14:49:51"
@@ -101,12 +101,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036855581961",
           "timestamp": "2016-04-15T14:49:54",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-04-15T14:49:54"
@@ -128,12 +128,12 @@
               }
             }
           },
-          "op_in_trx": 0,
+          "op_in_trx": 1,
           "operation_id": "9223372036855581962",
           "timestamp": "2016-04-15T14:49:57",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
-          "virtual_op": 1
+          "virtual_op": true
         }
       ],
       "timestamp": "2016-04-15T14:49:57"

@@ -21,7 +21,7 @@
         "timestamp": "2016-08-07T18:07:54",
         "trx_id": "64a0564850120ac9ef48924260fce440227bb1ec",
         "trx_in_block": 5,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -45,7 +45,7 @@
         "timestamp": "2016-08-07T18:10:18",
         "trx_id": "7d5c1002d87fcf3aee395ecbb50f4ab63be30827",
         "trx_in_block": 2,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -59,12 +59,12 @@
             "permlink": "thev-new-germanic-medicine"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-09-07T06:10:30",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ]
   ]

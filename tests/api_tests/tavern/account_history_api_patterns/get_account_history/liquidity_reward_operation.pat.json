@@ -15,12 +15,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T15:53:27",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ],
     [
@@ -38,12 +38,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T16:53:36",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ],
     [
@@ -61,12 +61,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T17:53:57",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ],
     [
@@ -84,12 +84,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T18:54:12",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ],
     [
@@ -107,12 +107,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T19:54:27",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ],
     [
@@ -130,12 +130,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T20:54:45",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ],
     [
@@ -153,12 +153,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 2,
         "operation_id": 0,
         "timestamp": "2016-07-04T21:55:00",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 2
+        "virtual_op": true
       }
     ]
   ]
