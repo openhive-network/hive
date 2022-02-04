@@ -49,12 +49,14 @@ def test_multidelegation(world: World):
 
     block_number_before_vests_transfer = int(api_node.get_last_block_number())
     tasks_list = []
-    executor = ThreadPoolExecutor(max_workers=number_of_threads)
+    executor = ThreadPoolExecutor(max_workers=number_of_threads+1)
     for thread_number in range(number_of_threads):
         tasks_list.append(executor.submit(mass_vote, 'bob', wallet_apinode,
                                           accounts_to_delegate_packs[thread_number],
                                           accounts_to_delegate_packs[thread_number + 1],
                                           accounts_to_delegate, thread_number, executor))
+
+    tasks_list.append(executor.submit(enum_testing, api_node, wallet_apinode))
 
     for thread_number in tasks_list:
         try:
@@ -67,7 +69,6 @@ def test_multidelegation(world: World):
     logger.info('Zaraz startuje testowanie eunuma')
     block_number_after_vests_transfer = int(api_node.get_last_block_number())
 
-    api_node.wait_number_of_blocks(22)
     api1 = api_node.api.account_history.enum_virtual_ops(
         block_range_begin =block_number_before_vests_transfer-1,
         block_range_end=block_number_after_vests_transfer+1,
@@ -75,8 +76,10 @@ def test_multidelegation(world: World):
         group_by_block=False,
         operation_begin=0
     )
+
     print()
     time.sleep(213255)
+
 # def vests_transfer(creator, wallet: Wallet, first_accounts_pack, last_accounts_pack, accounts_to_delegate, thread_number):
 #     logger.info(f'Vest transfer thread {thread_number} work START')
 #     for number_of_account_pack in range(first_accounts_pack, last_accounts_pack):
@@ -95,6 +98,24 @@ def mass_vote(post_author, wallet: Wallet, first_accounts_pack, last_accounts_pa
             except:
                 pass
     logger.info(f'Vote thread {thread_number} work END')
+
+def enum_testing(api_node, wallet_apinode):
+    logger.info('ENUM TESTING RUSZA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    f = open(wallet_apinode.directory / 'enum_virtual_op_file.txt', "x")
+    while True:
+        block_number = api_node.get_last_block_number()
+        api1 = api_node.api.account_history.enum_virtual_ops(
+            block_range_begin=block_number - 1,
+            block_range_end=block_number + 1,
+            include_reversible=True,
+            group_by_block=False,
+            operation_begin=0
+        )
+        api1['ops'][]
+        time.sleep(1)
+        f.write(api1)
+    f.close()
+
 def get_accounts_name(accounts):
     accounts_names = []
     for account_number in range(len(accounts)):
