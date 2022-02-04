@@ -7,26 +7,27 @@ from test_tools import Asset, constants, exceptions, logger, Wallet, World
 
 
 def test_multidelegation(world: World):
+    network = world.create_network()
+    init_node = network.create_init_node()
+    api_node = network.create_api_node()
+    init_node.config.shared_file_size = '32G'
+    network.run()
+    wallet_initnode = Wallet(attach_to=init_node)
+    wallet_apinode = Wallet(attach_to=api_node)
 
-    node = world.create_init_node()
-    node.config.shared_file_size = '32G'
-    node.run(with_arguments=('--advanced-benchmark', '--dump-memory-details', '--set-benchmark-interval', '10'),
-                                environment_variables={"HIVE_HF26_TIME": "1598558400"})
-    wallet = Wallet(attach_to=node)
-    number_of_accounts = 4000
+    number_of_accounts = 10000
     logger.info('Start of account creation')
-    accounts = wallet.create_accounts(number_of_accounts, 'receiver')
+    accounts = wallet_initnode.create_accounts(number_of_accounts, 'receiver')
     accounts = get_accounts_name(accounts)
     accounts_to_delegate = split_list(accounts, int(number_of_accounts / 5))
     logger.info('End of account creation')
-    logger.info(node.get_last_block_number())
 
     #przygotowanie postu
-    wallet.api.create_account('initminer', 'bob', '{}')
-    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(200))
-    wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
-    wallet.api.vote('initminer','bob', 'hello-world', 97)
-    number_of_threads = 400
+    wallet_initnode.api.create_account('initminer', 'bob', '{}')
+    wallet_initnode.api.transfer_to_vesting('initminer', 'bob', Asset.Test(200))
+    wallet_initnode.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
+    wallet_initnode.api.vote('initminer','bob', 'hello-world', 97)
+    number_of_threads = 1000
     delegators = []
 
     # with wallet.in_single_transaction():
@@ -43,11 +44,14 @@ def test_multidelegation(world: World):
         accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
 
 
-    block_number_before_vests_transfer = int(node.get_last_block_number())
+    logger.info(f'Api node block {api_node.get_last_block_number()}')
+    logger.info(f'Init node block {init_node.get_last_block_number()}')
+
+    block_number_before_vests_transfer = int(api_node.get_last_block_number())
     tasks_list = []
     executor = ThreadPoolExecutor(max_workers=number_of_threads)
     for thread_number in range(number_of_threads):
-        tasks_list.append(executor.submit(mass_vote, 'bob', wallet,
+        tasks_list.append(executor.submit(mass_vote, 'bob', wallet_apinode,
                                           accounts_to_delegate_packs[thread_number],
                                           accounts_to_delegate_packs[thread_number + 1],
                                           accounts_to_delegate, thread_number, executor))
@@ -61,10 +65,10 @@ def test_multidelegation(world: World):
     #     thread_number.result()
 
     logger.info('Zaraz startuje testowanie eunuma')
-    block_number_after_vests_transfer = int(node.get_last_block_number())
+    block_number_after_vests_transfer = int(api_node.get_last_block_number())
 
-    node.wait_number_of_blocks(22)
-    api1 = node.api.account_history.enum_virtual_ops(
+    api_node.wait_number_of_blocks(22)
+    api1 = api_node.api.account_history.enum_virtual_ops(
         block_range_begin =block_number_before_vests_transfer-1,
         block_range_end=block_number_after_vests_transfer+1,
         include_reversible=True,
