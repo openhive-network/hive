@@ -43,7 +43,6 @@ def test_multidelegation(world: World):
     for thread_number in range(number_of_threads + 1):
         accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
 
-    enum_testing(api_node, wallet_apinode)
     logger.info(f'Api node block {api_node.get_last_block_number()}')
     logger.info(f'Init node block {init_node.get_last_block_number()}')
 
@@ -89,13 +88,13 @@ def mass_vote(post_author, wallet: Wallet, first_accounts_pack, last_accounts_pa
 def enum_testing(api_node, wallet_apinode):
     if os.path.exists(wallet_apinode.directory / 'enum_virtual_op_file.txt'):
         os.remove(wallet_apinode.directory / 'enum_virtual_op_file.txt')
-    vote_virtual_ops = []
     logger.info('ENUM TESTING RUSZA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     while True:
+        vote_virtual_ops = []
         file = open(wallet_apinode.directory / 'enum_virtual_op_file.txt', "a")
         block_number = api_node.get_last_block_number()
         api1 = api_node.api.account_history.enum_virtual_ops(
-            block_range_begin=block_number - 6,
+            block_range_begin=block_number - 3,
             block_range_end=block_number + 1,
             include_reversible=True,
             group_by_block=False,
@@ -105,7 +104,7 @@ def enum_testing(api_node, wallet_apinode):
         for operation in api1['ops']:
             if 'vote_operation' in operation['op']['type']:
                 vote_virtual_ops.append(operation)
-        file.write(str(vote_virtual_ops))
+        file.write(str(vote_virtual_ops)+'\n\n')
         file.close()
         time.sleep(1)
 
