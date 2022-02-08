@@ -14,6 +14,8 @@
 
 #include <fc/macros.hpp>
 
+#include <hive/protocol/chain_properties.hpp>
+
 #include <fc/uint128.hpp>
 #include <fc/utf8.hpp>
 
@@ -21,6 +23,7 @@
 
 namespace hive { namespace chain {
   using fc::uint128_t;
+  using hive::protocol::chain_properties;
 
 inline void validate_permlink_0_1( const string& permlink )
 {
