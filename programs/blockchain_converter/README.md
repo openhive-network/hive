@@ -68,48 +68,22 @@ Convert blocks from `api.deathwing.me` and send converted transactions to `127.0
 blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
 
-## Configuring altered P2P network
-If you have successfully converted your blockchain using one of the previously mentioned [conversion examples](#Example%20run), you can now create your altered peer-to-peer network.
+## Configuring **live** conversion
+If you have successfully replayed your converted blockchain as described in [Configuring altered P2P network](#Configuring%20altered%20P2P%20network), you can now run a live peer-to-peer network using previously mentioned [node_based_conversion plugin](#node_based_conversion%20plugin)
 
-Our goal is to run two separate nodes that will see each other in the peer-to-peer network, producing and signing new blocks using the main 21 witnesses while simultaneously exchanging the information between each other.
+Our goal is to run one node with the altered chain in live sync, signing and producing blocks along with the blockchain converter with the [node_based_conversion plugin](#node_based_conversion%20plugin) enabled.
 
-For that purpose, we will build and configure two nodes (remember to enable the `HIVE_CONVERTER_BUILD` option while running CMake. Otherwise you will be not able to change the chain id):
-* `alice-hived` with the configuration directory at `alice-data`
-* `bob-hived` with the configuration directory at `bob-data`
+Assuming that you are using one of the previously configured nodes, for example `alice-hived`, do the following:
 
-First, you will have to replay nodes using the same altered `block_log` file (copy the converted block log to the `data/blockchain` directory).
-Also, we do not want them to synchronize with the network yet, so we will have to use the `exit-before-sync` flag:
+Alter the configuration file by adding the http server and required APIs (`alice-data/config.ini`):
 ```
-alice-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+# http server
+webserver-http-endpoint = localhost:8800
+
+# required APIs for the blockchain converter
+plugin = block_api database_api network_broadcast_api
 ```
-```
-bob-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
-```
-Remember the last irreversible block number.
-
-Now retrieve the main 21 witnesses. You can do that by - for example - iterating through the last 21 blocks starting from the last irreversible block (you can find this data on e.g. [hiveblocks.com](hiveblocks.com)).
-
-Then apply the proper config in your configuration file for the first node (add just one witness) (for example, it will be `gtg`):
-```
-# Enable the `witness` plugin
-plugin = witness
-
-# Run peer-to-peer endpoint on the node
-p2p-endpoint = 0.0.0.0:40401
-
-# Do not require any participation
-required-participation = 0
-
-# We should first enable the stale production
-enable-stale-production = true
-
-# main witness
-witness="gtg"
-
-# witness signing key
-private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
-```
-Then you should run the first node (Alice):
+Then run the node:
 ```
 alice-hived -d alice-data --chain-id 1
 ```
@@ -156,3 +130,67 @@ alice-hived -d alice-data --chain-id 1
 Now your nodes should be able to communicate with each other and produce blocks.
 
 You can also now disable the stale production and increase the required participation in the configuration files.
+
+## Configuring altered P2P network
+If you have successfully converted your blockchain using one of the previously mentioned [conversion examples](#Example%20run), you can now create your altered peer-to-peer network.
+
+Our goal is to run two separate nodes that will see each other in the peer-to-peer network, producing and signing new blocks using the main 21 witnesses while simultaneously exchanging the information between each other.
+
+For that purpose, we will build and configure two nodes (remember to enable the `HIVE_CONVERTER_BUILD` option while running CMake. Otherwise you will be not able to change the chain id):
+* `alice-hived` with the configuration directory at `alice-data`
+* `bob-hived` with the configuration directory at `bob-data`
+
+First, you will have to replay nodes using the same altered `block_log` file (copy the converted block log to the `data/blockchain` directory).
+Also, we do not want them to synchronize with the network yet, so we will have to use the `exit-before-sync` flag:
+```
+alice-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+```
+```
+bob-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+```
+Remember the last irreversible block number.
+
+Now retrieve the main 21 witnesses. You can do that by - for example - iterating through the last 21 blocks starting from the last irreversible block (you can find this data on e.g. [hiveblocks.com](hiveblocks.com)).
+
+Then apply the proper config in your configuration file for the first node (add just one witness) (for example, it will be `gtg`):
+```
+# Enable the `witness` plugin
+plugin = witness
+
+# Run peer-to-peer endpoint on the node
+p2p-endpoint = 0.0.0.0:40401
+
+# Do not require any participation
+required-participation = 0
+
+# We should first enable the stale production
+enable-stale-production = true
+
+# main witness
+witness="gtg"
+
+# witness signing key
+private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+```
+Then you should run the first node (Alice):
+```
+alice-hived -d alice-data --chain-id 1
+```
+
+After that run the blockchain converter:
+```
+blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key --use-now-time
+```
+As the input node we are using `https://api.deathwing.me:80`. You can use any fully-replayed mainnet node that has an HTTP webserver.
+
+Note that there is the `--use-now-time` option present. Setting this option is recommended and you should use it whenever you are sending transactions that have an expiration time older than now - `HIVE_MAX_TIME_UNTIL_EXPIRATION` (which refers to 1 hour in the standard build).
+
+It is also recommended to set the `-R` option, which explicitly tells the converter from which mainnet block it should resume the conversion process.
+
+Now your converter will infinitely send the transactions to the output node. After reaching the head mainnet block, it will check for the new block every 1 second.
+
+### node_based_conversion debug definitions
+If the node_based_conversion plugin encounters any error after sending the convert transaction to the output node, it will print the short message.
+You can disable this by defining the `HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS` identifier
+
+You can also enable additional debug info by defining the `HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING` identifier
