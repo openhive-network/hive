@@ -13,6 +13,7 @@ from test_tools.node_api.rc_api import RcApi
 from test_tools.node_api.reputation_api import ReputationApi
 from test_tools.node_api.rewards_api import RewardsApi
 from test_tools.node_api.transaction_status_api import TransactionStatusApi
+from test_tools.node_api.wallet_bridge_api import WalletBridgeApi
 from test_tools.node_api.witness_api import WitnessApi
 
 
@@ -38,4 +39,5 @@ class Apis:
         self.reputation = ReputationApi(self.__node)
         self.rewards = RewardsApi(self.__node)
         self.transaction_status = TransactionStatusApi(self.__node)
+        self.wallet_bridge = WalletBridgeApi(self.__node)
         self.witness = WitnessApi(self.__node)
