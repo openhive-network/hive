@@ -3,9 +3,9 @@ import time
 
 import requests
 
-from test_tools import logger
 from test_tools.exceptions import CommunicationError
 from test_tools.private.asset import AssetBase
+from test_tools.private.logger.logger_internal_interface import logger
 
 
 class CustomJsonEncoder(json.JSONEncoder):
