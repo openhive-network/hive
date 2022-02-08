@@ -223,8 +223,6 @@ namespace detail {
 
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
-      fc::time_point loop_start_timestamp = fc::time_point::now();
-
       block = receive( start_block_num );
 
       if( !block.valid() )
@@ -284,9 +282,6 @@ namespace detail {
         lib_num = new_lib_num;
         lib_id  = get_previous_from_block( lib_num );
       }
-
-      // Sleep to required HIVE_BLOCK_INTERVAL 
-      fc::sleep_until( loop_start_timestamp + fc::seconds(HIVE_BLOCK_INTERVAL) ); // TODO: Replace with "wait for block confirmation"
     }
 
     std::cout << "In order to resume your live conversion pass the \'-R " << start_block_num - 1 << "\' option to the converter next time" << std::endl;
