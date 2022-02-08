@@ -1,4 +1,4 @@
-#include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
+#include <hive/protocol/legacy_operations.hpp>
 
 #define LEGACY_PREFIX "legacy_"
 #define LEGACY_PREFIX_OFFSET (7)
@@ -50,19 +50,19 @@ struct get_operation_name
   }
 };
 
-void to_variant( const hive::plugins::condenser_api::legacy_operation& var,  fc::variant& vo )
+void to_variant( const hive::protocol::legacy_operation& var,  fc::variant& vo )
 {
   var.visit( from_operation( vo ) );
 }
 
-void from_variant( const fc::variant& var, hive::plugins::condenser_api::legacy_operation& vo )
+void from_variant( const fc::variant& var, hive::protocol::legacy_operation& vo )
 {
   static std::map<string,int64_t> to_tag = []()
   {
     std::map<string,int64_t> name_map;
-    for( int i = 0; i < hive::plugins::condenser_api::legacy_operation::count(); ++i )
+    for( int i = 0; i < hive::protocol::legacy_operation::count(); ++i )
     {
-      hive::plugins::condenser_api::legacy_operation tmp;
+      hive::protocol::legacy_operation tmp;
       tmp.set_which(i);
       string n;
       tmp.visit( get_operation_name(n) );
@@ -73,9 +73,9 @@ void from_variant( const fc::variant& var, hive::plugins::condenser_api::legacy_
   static std::map<string,int64_t> to_full_tag = []()
   {
     std::map<string,int64_t> name_map;
-    for( int i = 0; i < hive::plugins::condenser_api::legacy_operation::count(); ++i )
+    for( int i = 0; i < hive::protocol::legacy_operation::count(); ++i )
     {
-      hive::plugins::condenser_api::legacy_operation tmp;
+      hive::protocol::legacy_operation tmp;
       tmp.set_which(i);
       string n;
       tmp.visit( get_static_variant_name(n) );
