@@ -9,6 +9,7 @@
 #include <boost/program_options.hpp>
 #include <boost/signals2.hpp>
 
+#include <atomic>
 #include <iostream>
 #include <map>
 #include <utility>
