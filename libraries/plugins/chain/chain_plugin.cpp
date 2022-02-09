@@ -519,7 +519,7 @@ void chain_plugin_impl::open()
   }
   catch( const fc::exception& e )
   {
-    wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--replay-blockchain`." );
+    wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( "If you know what you are doing you can skip this check and force open the database using `--force-open`." );
     wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
     wlog( " Error: ${e}", ("e", e) );

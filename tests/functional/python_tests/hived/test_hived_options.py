@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 from test_tools import exceptions, World
-
 from .conftest import BLOCK_COUNT
 
 
@@ -51,3 +50,26 @@ def test_unsupported_plugin(world: World):
 
     with pytest.raises(exceptions.InternalNodeError):
         init_node.run()
+
+
+def test_corrupted_shared_memory_file(world: World):
+    corrupted_content = b'000'
+
+    node = world.create_init_node()
+    node.run()
+    node.close()
+
+    shared_memory_file_path = node.directory / 'blockchain/shared_memory.bin'
+    stderr_file_path = node.directory / 'stderr.txt'
+
+    with open(shared_memory_file_path, 'wb') as file:
+        file.write(corrupted_content)
+
+    with pytest.raises(TimeoutError):
+        node.run()
+
+    with open(stderr_file_path, 'r') as file:
+        shared_memory_file_content = file.read()
+
+    assert 'Error opening database. If the binary or configuration has changed, replay the blockchain explicitly ' \
+           'using `--force-replay`.' in shared_memory_file_content
