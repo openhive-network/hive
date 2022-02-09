@@ -58,7 +58,7 @@ class rocksdb_operation_object
       serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
     }
 
-    int64_t                    id = 0;
+    uint64_t                    id = 0;
 
     chain::transaction_id_type trx_id;
     uint32_t                   block = 0;
