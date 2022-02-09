@@ -1,3 +1,4 @@
+import pytest
 from test_tools import Account, logger, World, Asset
 import dateutil.parser as dp
 import datetime
@@ -59,3 +60,19 @@ def test_transaction(wallet):
 
     _val = t_in_seconds - _before_seconds
     assert _val == 678 or _val == 679
+
+
+@pytest.mark.parametrize(
+    "way_of_broadcasting",
+    [
+        "node.api.condenser.broadcast_transaction(transaction)",
+        "node.api.network_broadcast.broadcast_transaction(trx=transaction)",
+        "node.api.wallet_bridge.broadcast_transaction(transaction)",
+    ]
+)
+def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcasting):
+    transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
+    transaction = wallet.api.sign_transaction(transaction, broadcast=False)
+
+    eval(way_of_broadcasting)
+    assert 'alice' in wallet.list_accounts()
