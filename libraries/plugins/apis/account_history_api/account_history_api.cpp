@@ -302,7 +302,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
       api_operation_object _api_obj(op);
 
       _api_obj.op_in_trx = op.op_in_trx;
-      _api_obj.operation_id = operation_id;
+      _api_obj.operation_id = (operation_id << 1) >> 1;
 
       if( args.filter.valid() )
       {
