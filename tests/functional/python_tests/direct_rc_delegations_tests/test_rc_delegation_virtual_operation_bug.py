@@ -40,18 +40,12 @@ def test_multidelegation(world: World):
     #         wallet.api.transfer_to_vesting('initminer', f'delegator{thread_number}', Asset.Test(2000000))
 
     accounts_to_delegate_packs = []
-    for thread_number in range(number_of_threads + 1):
-        accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
-
-    logger.info(f'Api node block {api_node.get_last_block_number()}')
-    logger.info(f'Init node block {init_node.get_last_block_number()}')
-
     block_number_before_vests_transfer = int(api_node.get_last_block_number())
     tasks_list = []
     executor = ThreadPoolExecutor(max_workers=number_of_threads+1)
     tasks_list.append(executor.submit(enum_testing, api_node, wallet_apinode))
     for thread_number in range(number_of_threads):
-        tasks_list.append(executor.submit(mass_vote, 'bob', wallet_apinode,
+        tasks_list.append(executor.submit(mass_vote, 'bob', wallet_initnode,
                                           accounts_to_delegate_packs[thread_number],
                                           accounts_to_delegate_packs[thread_number + 1],
                                           accounts_to_delegate, thread_number, executor))
@@ -61,6 +55,13 @@ def test_multidelegation(world: World):
             thread_number.result()
         except Exception as e:
             print()
+    for thread_number in range(number_of_threads + 1):
+        accounts_to_delegate_packs.append(int(thread_number / number_of_threads * len(accounts_to_delegate)))
+
+    logger.info(f'Api node block {api_node.get_last_block_number()}')
+    logger.info(f'Init node block {init_node.get_last_block_number()}')
+
+
     # for thread_number in tasks_list:
     #     thread_number.result()
     print()
@@ -106,7 +107,6 @@ def enum_testing(api_node, wallet_apinode):
                 vote_virtual_ops.append(operation)
         file.write(str(vote_virtual_ops)+'\n\n')
         file.close()
-        time.sleep(1)
 
 def get_accounts_name(accounts):
     accounts_names = []
