@@ -70,7 +70,6 @@ struct operation_visitor
         obj.block        = _note.block;
         obj.trx_in_block = _note.trx_in_block;
         obj.op_in_trx    = _note.op_in_trx;
-        obj.virtual_op   = _note.virtual_op;
         obj.timestamp    = _db.head_block_time();
         //fc::raw::pack( obj.serialized_op , _note.op);  //call to 'pack' is ambiguous
         auto size = fc::raw::pack_size( _note.op );

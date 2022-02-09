@@ -11,8 +11,10 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
 
+#include <hive/protocol/chain_properties.hpp>
 namespace hive { namespace plugins { namespace database_api {
 
+using hive::protocol::chain_properties;
 using namespace hive::chain;
 
 struct api_reward_fund_object

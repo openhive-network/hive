@@ -23,24 +23,24 @@ struct api_operation_object
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
     trx_in_block( op_obj.trx_in_block ),
-    virtual_op( op_obj.virtual_op ),
     timestamp( op_obj.timestamp )
   {
     op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op_obj.serialized_op );
+    virtual_op = hive::protocol::is_virtual_operation(op);
   }
 
   hive::protocol::transaction_id_type trx_id;
   uint32_t                            block = 0;
   uint32_t                            trx_in_block = 0;
   uint32_t                            op_in_trx = 0;
-  uint32_t                            virtual_op = 0;
+  bool                                virtual_op;
   uint64_t                            operation_id = 0;
   fc::time_point_sec                  timestamp;
   hive::protocol::operation           op;
 
   bool operator<( const api_operation_object& obj ) const
   {
-    return std::tie( block, trx_in_block, op_in_trx, virtual_op ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx, obj.virtual_op );
+    return std::tie( block, trx_in_block, op_in_trx ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx );
   }
 };
 
@@ -75,11 +75,11 @@ struct get_account_history_args
   uint32_t                            limit = 1000;
   /// if set to true operations from reversible block will be also returned.
   fc::optional<bool> include_reversible;
-  /** if either are set, the set of returned operations will include only these 
+  /** if either are set, the set of returned operations will include only these
    * matching bitwise filter.
-   * For the first 64 operations (as defined in protocol/operations.hpp), set the 
+   * For the first 64 operations (as defined in protocol/operations.hpp), set the
    * corresponding bit in operation_filter_low; for the higher-numbered operations,
-   * set the bit in operation_filter_high (pretending operation_filter is a 
+   * set the bit in operation_filter_high (pretending operation_filter is a
    * 128-bit bitmask composed of {operation_filter_high, operation_filter_low})
    */
   fc::optional<uint64_t> operation_filter_low;

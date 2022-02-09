@@ -28,7 +28,7 @@
         "timestamp": "2016-05-31T21:39:00",
         "trx_id": "af06cce9f6f5f81752aeb09d257b4b915c286e89",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -59,7 +59,7 @@
         "timestamp": "2016-05-31T21:44:39",
         "trx_id": "c0284c619aea02bb1a734b1e697dd5445703161b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -90,7 +90,7 @@
         "timestamp": "2016-05-31T21:45:09",
         "trx_id": "512f274e1f15b672d55a15cdeca603fa0e906dac",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -121,7 +121,7 @@
         "timestamp": "2016-05-31T21:45:39",
         "trx_id": "174518a2978b7206b0a926fec68aa53c8e90ea7d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -152,7 +152,7 @@
         "timestamp": "2016-05-31T21:55:09",
         "trx_id": "6ae436bd822b6e4f62eca1e9d9695d6477aa0a24",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -183,7 +183,7 @@
         "timestamp": "2016-06-02T00:55:48",
         "trx_id": "e7778bd0e76a4e26872f58e21e506a3a01099865",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -214,7 +214,7 @@
         "timestamp": "2016-06-02T01:03:54",
         "trx_id": "0f401ada3d10ae029a45598c8444496f887cf180",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -245,7 +245,7 @@
         "timestamp": "2016-06-02T01:05:45",
         "trx_id": "d61a9d787ea2870d6b82d939220b2fd8c1b203a3",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -276,7 +276,7 @@
         "timestamp": "2016-06-02T01:18:57",
         "trx_id": "7a0073e773f7c605bc957a3014fb4720442a797d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -307,7 +307,7 @@
         "timestamp": "2016-06-02T01:19:21",
         "trx_id": "012230f0699b1ce9f35671f49db06b23a8eed74f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -338,7 +338,7 @@
         "timestamp": "2016-06-02T01:21:45",
         "trx_id": "dd6592d5df53615456a390035720a9da596773bc",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -369,7 +369,7 @@
         "timestamp": "2016-06-11T15:47:57",
         "trx_id": "172eeb9886f99398fbe41200a3e2e85ab76ee6c3",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -400,7 +400,7 @@
         "timestamp": "2016-06-11T15:48:18",
         "trx_id": "a805930c70403f2578cb6c0c95db866918941fed",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -431,7 +431,7 @@
         "timestamp": "2016-06-11T15:48:36",
         "trx_id": "77afc992aa043af8eb883dd193f73ef6279d6dbb",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -462,7 +462,7 @@
         "timestamp": "2016-06-23T07:15:03",
         "trx_id": "4ed985511d4424e6dc34a889c953902f64bb06b7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -493,7 +493,7 @@
         "timestamp": "2016-06-23T07:15:18",
         "trx_id": "689e7a087691166fa60af6eba66789d7a0709c37",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -524,7 +524,7 @@
         "timestamp": "2016-06-23T07:15:51",
         "trx_id": "f65882c7f7cd06c25a071d526fde1e47f9f9d2e7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -555,7 +555,7 @@
         "timestamp": "2016-06-23T07:16:00",
         "trx_id": "dc1ce90180bcca5c40b77e9d4f822b350d6a1104",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -586,7 +586,7 @@
         "timestamp": "2016-07-01T12:42:09",
         "trx_id": "9a23e44565b346d99b998b9c83aea9cc0d14abc7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -617,7 +617,7 @@
         "timestamp": "2016-07-01T13:22:51",
         "trx_id": "19293de0288f3a58aa1e2fdb12112045c4b62403",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -648,7 +648,7 @@
         "timestamp": "2016-07-01T13:23:33",
         "trx_id": "74f0b0942c5b4ff9d46b255cd070182103cd18fb",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -679,7 +679,7 @@
         "timestamp": "2016-07-01T13:27:54",
         "trx_id": "ca024faa89d49af140acb8ac44eec2b9ba04ef2f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -710,7 +710,7 @@
         "timestamp": "2016-07-01T13:28:36",
         "trx_id": "f07c4d9aecb7e95e0c58977a9e52e4f8d2b6a910",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -741,7 +741,7 @@
         "timestamp": "2016-07-01T13:29:27",
         "trx_id": "14fd0642ae68c639c2a59d20683f6cb7764004fa",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -772,7 +772,7 @@
         "timestamp": "2016-07-01T13:30:09",
         "trx_id": "6a97ffeed6624f261e269e7f41aa15fe98b488e5",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -803,7 +803,7 @@
         "timestamp": "2016-07-01T13:31:00",
         "trx_id": "f23aeeae46a51a841a33ce7d783f589b01d54fb9",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -834,7 +834,7 @@
         "timestamp": "2016-07-01T13:31:42",
         "trx_id": "8dc8ff131909dc7bc08eb2eb34280c22e41a19d0",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -865,7 +865,7 @@
         "timestamp": "2016-07-01T13:32:33",
         "trx_id": "3c0fe1cdd0f0aaf0699f9a1b29378488a59f4668",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -896,7 +896,7 @@
         "timestamp": "2016-07-01T13:33:15",
         "trx_id": "a0369b8917faa38c87725478b279923ff7efc3c8",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -927,7 +927,7 @@
         "timestamp": "2016-07-01T13:34:06",
         "trx_id": "e317759b5ba2e0b4ef5505a7ada2e0dc503827ed",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -958,7 +958,7 @@
         "timestamp": "2016-07-01T13:34:48",
         "trx_id": "57e2838d30f5db935a92045600e23227511c0b1a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -989,7 +989,7 @@
         "timestamp": "2016-07-01T13:35:39",
         "trx_id": "77093143ef7b25444699a4b520a9068028faeeb7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1020,7 +1020,7 @@
         "timestamp": "2016-07-01T13:36:21",
         "trx_id": "d211132f6e5b2fc358e2e6996627f5d565c6e6b5",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1051,7 +1051,7 @@
         "timestamp": "2016-07-01T13:37:15",
         "trx_id": "ba6c9ae47c9c3e5415ad44248ab201c598db94fc",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1082,7 +1082,7 @@
         "timestamp": "2016-07-01T13:37:54",
         "trx_id": "9c693bba2f4575eff71ab5d65c015538f0098711",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1113,7 +1113,7 @@
         "timestamp": "2016-07-01T13:38:45",
         "trx_id": "2805d2a2bdacc1561ee097610c1bfcb38b5d0644",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1144,7 +1144,7 @@
         "timestamp": "2016-07-01T13:39:27",
         "trx_id": "bb5c6c9cd1aa092c0abd0cc50c5e6003de6cbdc9",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1175,7 +1175,7 @@
         "timestamp": "2016-07-01T13:40:18",
         "trx_id": "bd144f25fcf283fc264852d06e4c86f6e257bd38",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1206,7 +1206,7 @@
         "timestamp": "2016-07-01T13:41:00",
         "trx_id": "6dad3de6ac55021a62faddb3b2212d77767da67e",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1237,7 +1237,7 @@
         "timestamp": "2016-07-01T13:41:51",
         "trx_id": "fc780041336ed9a1773cc1756bc19d1b90d98427",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1268,7 +1268,7 @@
         "timestamp": "2016-07-01T13:42:33",
         "trx_id": "10938d4104b41ff82ee00482817f3e27a9e9470b",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1299,7 +1299,7 @@
         "timestamp": "2016-07-01T13:43:24",
         "trx_id": "cfb97bbb76d78b6ea928024f73852d4690ac01ce",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1330,7 +1330,7 @@
         "timestamp": "2016-07-01T13:44:06",
         "trx_id": "f9a12e5db9ab900711ad7558d3d541c3f425ef87",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1361,7 +1361,7 @@
         "timestamp": "2016-07-01T13:44:57",
         "trx_id": "107eb3491b0b955becd8e2aef175204cb9f84fc2",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1392,7 +1392,7 @@
         "timestamp": "2016-07-01T13:45:39",
         "trx_id": "f78d6721c26a7deeba61b3925de8e2bc2c1da978",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1423,7 +1423,7 @@
         "timestamp": "2016-07-01T13:46:30",
         "trx_id": "31bdd786e542cbff4cb1c8d2e918496cac109205",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1454,7 +1454,7 @@
         "timestamp": "2016-07-01T13:47:12",
         "trx_id": "0422f4eadeecb52b6fc82f34b1a78223c6fa08e9",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1485,7 +1485,7 @@
         "timestamp": "2016-07-01T13:48:03",
         "trx_id": "e7ae9699c6c0a2d72aeeacb787e2f50c7e392835",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1516,7 +1516,7 @@
         "timestamp": "2016-07-01T13:48:45",
         "trx_id": "627a78cf52db3eaad18bb2282658bf1cdd391518",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1547,7 +1547,7 @@
         "timestamp": "2016-07-01T13:49:36",
         "trx_id": "f3201b7444cca1664917283390129ea10860ba67",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1578,7 +1578,7 @@
         "timestamp": "2016-07-01T13:50:18",
         "trx_id": "d562d680b841b009586c20e2b3a28f5621240a96",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1609,7 +1609,7 @@
         "timestamp": "2016-07-01T13:51:09",
         "trx_id": "5024078184da3ccfff78495c721c66c6ce47ac47",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1640,7 +1640,7 @@
         "timestamp": "2016-07-01T13:51:51",
         "trx_id": "75f1a3887034f026402d7ac829bae5e29db7844b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1671,7 +1671,7 @@
         "timestamp": "2016-07-01T13:52:42",
         "trx_id": "a9a211eea2e0618648bb6a324a2f4c9ef468d83b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1702,7 +1702,7 @@
         "timestamp": "2016-07-01T13:53:24",
         "trx_id": "6965f4e98551bb031029343e8eff57b5f1dbec2f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1733,7 +1733,7 @@
         "timestamp": "2016-07-01T13:54:15",
         "trx_id": "e0a45b9e128a02e3fa7beb6a6dea40b65258478e",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1764,7 +1764,7 @@
         "timestamp": "2016-07-01T13:54:57",
         "trx_id": "8c6e2be874ff787eee93de1afb66122728b45978",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1795,7 +1795,7 @@
         "timestamp": "2016-07-01T13:55:48",
         "trx_id": "db7b23a0eb422f1fadd27d45a60a4b68665b6061",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1826,7 +1826,7 @@
         "timestamp": "2016-07-01T13:56:30",
         "trx_id": "2f1cdf4af51b79d2eba47b2d46bf600ef58950d3",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1857,7 +1857,7 @@
         "timestamp": "2016-07-01T13:57:21",
         "trx_id": "275998c8805e36a5659d95f0743acdfb6355d36b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1888,7 +1888,7 @@
         "timestamp": "2016-07-01T13:58:03",
         "trx_id": "d15459b6e9205086c5c3970af88b7fbf84bd89a8",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1919,7 +1919,7 @@
         "timestamp": "2016-07-01T13:58:54",
         "trx_id": "1ca49fef613d6ea6b00b33d2fc04945bc8e0a5d0",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1950,7 +1950,7 @@
         "timestamp": "2016-07-01T13:59:36",
         "trx_id": "f7f7e37068c207c9a2e2d1122930aedc16fcc9da",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -1981,7 +1981,7 @@
         "timestamp": "2016-07-01T14:00:27",
         "trx_id": "0c25ec245b2452a2bca7ef915ef6d951347b2c34",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2012,7 +2012,7 @@
         "timestamp": "2016-07-01T14:01:09",
         "trx_id": "595f5b9475f60ddc5c2e514a9acb7f53ce94e5c5",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2043,7 +2043,7 @@
         "timestamp": "2016-07-01T14:02:00",
         "trx_id": "762e53dd75af4c75ffd04a738f499989032e234b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2074,7 +2074,7 @@
         "timestamp": "2016-07-01T14:02:42",
         "trx_id": "f831f63a8bd6b76c5568211ff58348cf9724304f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2105,7 +2105,7 @@
         "timestamp": "2016-07-01T14:03:33",
         "trx_id": "94f79611edcf2a55609a5c9779652325e23339b4",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2136,7 +2136,7 @@
         "timestamp": "2016-07-01T14:04:15",
         "trx_id": "67a680e1422733c2ab849b1a6d24d1ca059b0563",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2167,7 +2167,7 @@
         "timestamp": "2016-07-01T14:05:06",
         "trx_id": "b5f9e81e4ddf8d1a043f35c93c4bd3f50564d705",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2198,7 +2198,7 @@
         "timestamp": "2016-07-01T14:05:48",
         "trx_id": "a7e8e095836bb5b7f6f48414ab4ac9e3447cc93a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2229,7 +2229,7 @@
         "timestamp": "2016-07-01T14:06:39",
         "trx_id": "98518f80f9f6af4934fc63c6ae2ded29180fb0ae",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2260,7 +2260,7 @@
         "timestamp": "2016-07-01T14:07:21",
         "trx_id": "e2de7b0593ce977ce710c7f42e8e58bdc9a676e1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2291,7 +2291,7 @@
         "timestamp": "2016-07-01T14:08:12",
         "trx_id": "9b697d1c9f28f3dd11b50d4091670ed42a48b4db",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2322,7 +2322,7 @@
         "timestamp": "2016-07-01T14:08:54",
         "trx_id": "4e38847f9b0d3517589c30fa172bad85bff5fcdb",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2353,7 +2353,7 @@
         "timestamp": "2016-07-01T14:10:27",
         "trx_id": "b539e3df0f97b00da06134b773f989af669cd2ab",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2384,7 +2384,7 @@
         "timestamp": "2016-07-01T14:12:00",
         "trx_id": "ba339f5912089a2c061fc1d127526c5ce0dc6e62",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2415,7 +2415,7 @@
         "timestamp": "2016-07-01T14:13:33",
         "trx_id": "71b8da339f958a8ac99aa57609c2c16f61031b31",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2446,7 +2446,7 @@
         "timestamp": "2016-07-01T14:15:06",
         "trx_id": "f9265381e5c8e574d6c22764dcd1b05d2c4ef1e0",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2477,7 +2477,7 @@
         "timestamp": "2016-07-01T14:16:39",
         "trx_id": "ddf06e78905b104136b92625d03b9e2b8d91fb87",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2508,7 +2508,7 @@
         "timestamp": "2016-07-01T14:18:12",
         "trx_id": "a068bdcbe6d4ec4349354be9c9259f3135efaa72",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2539,7 +2539,7 @@
         "timestamp": "2016-07-01T14:19:45",
         "trx_id": "ad86b4d27ccdefabcef38ea94adb29b495dce02a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2570,7 +2570,7 @@
         "timestamp": "2016-07-01T14:21:18",
         "trx_id": "b01880086b67f2020e0518c199356f508edac622",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2601,7 +2601,7 @@
         "timestamp": "2016-07-01T14:22:51",
         "trx_id": "81d7bf10ac15718c57799f044fd6ebaee670d9f8",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2632,7 +2632,7 @@
         "timestamp": "2016-07-01T14:24:24",
         "trx_id": "029e00724ead74dddd3f94c2b6fc62a2d3c47521",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2663,7 +2663,7 @@
         "timestamp": "2016-07-01T14:25:57",
         "trx_id": "f3711c8d4550b31f19baa4238e3289963623b7ee",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2694,7 +2694,7 @@
         "timestamp": "2016-07-01T14:27:30",
         "trx_id": "03301e42d06af98885e7eb043f7903c6a9c6b8b9",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2725,7 +2725,7 @@
         "timestamp": "2016-07-01T14:29:03",
         "trx_id": "1dd65cc2bdf541cc5b1d3544b33713d57f85fe5c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2756,7 +2756,7 @@
         "timestamp": "2016-07-01T14:30:36",
         "trx_id": "218a21aed16becf3bed1b5458e1b9cee67116060",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2787,7 +2787,7 @@
         "timestamp": "2016-07-01T14:32:09",
         "trx_id": "6e5357ce3b7a6684832e7a37f031b354f02efb73",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2818,7 +2818,7 @@
         "timestamp": "2016-07-01T14:33:42",
         "trx_id": "0f4cb958992596e7ab4bbfda4f42022899940602",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2849,7 +2849,7 @@
         "timestamp": "2016-07-01T14:35:15",
         "trx_id": "1cc385fb72f530c4b4272634728d73c38343683a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2880,7 +2880,7 @@
         "timestamp": "2016-07-01T14:36:48",
         "trx_id": "b4eb94f92372d77a6e264e7811521a03dd1a8a8c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2911,7 +2911,7 @@
         "timestamp": "2016-07-01T14:38:24",
         "trx_id": "de6989e9585098f59263d5ff63afc93cec6d015f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2942,7 +2942,7 @@
         "timestamp": "2016-07-01T14:39:54",
         "trx_id": "2df44944c031711bbfae92f96b299a1310977862",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -2973,7 +2973,7 @@
         "timestamp": "2016-07-01T14:41:27",
         "trx_id": "a32d225f5f0bbf1b88430de43a8d64ec12fdc2a4",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3004,7 +3004,7 @@
         "timestamp": "2016-07-01T14:43:00",
         "trx_id": "9d96b8d63637a32271ebd195c305fe80db472e88",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3035,7 +3035,7 @@
         "timestamp": "2016-07-01T14:44:33",
         "trx_id": "82df306522315d528948a93f26fa7a89f09ec5df",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3066,7 +3066,7 @@
         "timestamp": "2016-07-01T14:46:06",
         "trx_id": "be2a0737162c7dc112720938cdb5dac6f7f19e69",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3097,7 +3097,7 @@
         "timestamp": "2016-07-01T14:47:39",
         "trx_id": "eaee30cd7e9af245c99ce9fe3da32d424131dbb1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3128,7 +3128,7 @@
         "timestamp": "2016-07-01T14:49:12",
         "trx_id": "ee14c81b2c7510442fbc270eb237f698b2810a6c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3159,7 +3159,7 @@
         "timestamp": "2016-07-01T14:50:45",
         "trx_id": "2b7e1facb5b185306ffb6f7199f3dfaf14b7b8a1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3190,7 +3190,7 @@
         "timestamp": "2016-07-01T14:52:18",
         "trx_id": "8a0dfb38aac8e172b331a6b43d6c8952ec322720",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3221,7 +3221,7 @@
         "timestamp": "2016-07-01T14:53:51",
         "trx_id": "9e10d82e88e960c0b0d41f56417544a41e431548",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3252,7 +3252,7 @@
         "timestamp": "2016-07-01T14:55:24",
         "trx_id": "1abbf70964db0756ef0324a5a38affb8002edf50",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3283,7 +3283,7 @@
         "timestamp": "2016-07-01T14:56:57",
         "trx_id": "3a8da49514271e387c4b9b7c790d9e7a77465e2a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3314,7 +3314,7 @@
         "timestamp": "2016-07-01T14:58:30",
         "trx_id": "04c3670882fa134a09fceaa34b2a66811c6f40e3",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3345,7 +3345,7 @@
         "timestamp": "2016-07-01T15:00:03",
         "trx_id": "80ca676d85b1ade473a7aa9d217cdb8623581a4d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3376,7 +3376,7 @@
         "timestamp": "2016-07-01T15:01:36",
         "trx_id": "4db8c8e3f22fc5b03c8b09514bd0709e2e2f7ca0",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3407,7 +3407,7 @@
         "timestamp": "2016-07-01T15:03:12",
         "trx_id": "646352a6536585c07ffdcc24e9ae0b81e9dea0f9",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3438,7 +3438,7 @@
         "timestamp": "2016-07-01T15:04:42",
         "trx_id": "7acbc6471a4396e01560070921d6d48b84a2260e",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3469,7 +3469,7 @@
         "timestamp": "2016-07-01T15:06:15",
         "trx_id": "2684672f8a4be58ea387d217e1bbbdec29c6e9a2",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3500,7 +3500,7 @@
         "timestamp": "2016-07-01T15:07:48",
         "trx_id": "943bdd0cd5a640525c6eb740049230641629a15b",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3531,7 +3531,7 @@
         "timestamp": "2016-07-01T15:09:21",
         "trx_id": "3eef6333ba688f2df77a91b0f5b5dbddfdafd4e7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3562,7 +3562,7 @@
         "timestamp": "2016-07-01T15:10:54",
         "trx_id": "8bd553fa8571f41c30dd1ef79f28ecaf1ff758ea",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3593,7 +3593,7 @@
         "timestamp": "2016-07-01T15:12:27",
         "trx_id": "f2ae9a62f1f309360daa119df4c98f614c164ce1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3624,7 +3624,7 @@
         "timestamp": "2016-07-01T15:14:00",
         "trx_id": "222f5c324bd9e5f08a943f287874b4a743909328",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3655,7 +3655,7 @@
         "timestamp": "2016-07-01T15:15:33",
         "trx_id": "be3c733bf07d3f276a9dfbd869885e7dc0d3a61a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3686,7 +3686,7 @@
         "timestamp": "2016-07-01T15:17:06",
         "trx_id": "5ccadd128c4e5a81f3df01ccf301e8156c80e7dd",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3717,7 +3717,7 @@
         "timestamp": "2016-07-01T15:18:39",
         "trx_id": "6783c98b43050fea99896e5ff482a28fed6726cb",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3748,7 +3748,7 @@
         "timestamp": "2016-07-01T15:20:12",
         "trx_id": "3cce23ac2a394942760f753c6d299cc262250b78",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3779,7 +3779,7 @@
         "timestamp": "2016-07-01T15:21:45",
         "trx_id": "6f6ede82ce019a61ff1edfd21b1bfc188c56b0cd",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3810,7 +3810,7 @@
         "timestamp": "2016-07-01T15:23:18",
         "trx_id": "eeee9aa8d1987bfbf99f28a26665912103ca742d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3841,7 +3841,7 @@
         "timestamp": "2016-07-01T15:24:51",
         "trx_id": "071feb1c045394e57edc52ee4cf9e7cd65f38e2a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3872,7 +3872,7 @@
         "timestamp": "2016-07-01T15:26:24",
         "trx_id": "5057236f589e75c4e8e37a01803133958195974c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3903,7 +3903,7 @@
         "timestamp": "2016-07-01T15:27:57",
         "trx_id": "c9665a48b65725fe64972af092511f66700705e1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3934,7 +3934,7 @@
         "timestamp": "2016-07-01T15:29:30",
         "trx_id": "4b738dfc0bcea00e974b2165c8d474c2d902ea7d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3965,7 +3965,7 @@
         "timestamp": "2016-07-01T15:31:03",
         "trx_id": "3ccc3bf9ef69a2994d8aee907967beb500599e22",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -3996,7 +3996,7 @@
         "timestamp": "2016-07-01T15:32:36",
         "trx_id": "ba1cbacb562e6822bebeb23a9d9a5efe5726fd77",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4027,7 +4027,7 @@
         "timestamp": "2016-07-01T15:34:09",
         "trx_id": "2883a3e82f68b4fb3275b9f6ea13fbb7321e97d9",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4058,7 +4058,7 @@
         "timestamp": "2016-07-01T15:35:42",
         "trx_id": "4c36796ade25b7bcedc0545a0a92f1d6560a9c89",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4089,7 +4089,7 @@
         "timestamp": "2016-07-01T15:37:15",
         "trx_id": "d554c68ecd255f4cde58cc46912668fb5187a190",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4120,7 +4120,7 @@
         "timestamp": "2016-07-01T15:38:48",
         "trx_id": "811bb528893453429921623fec465b024af457ac",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4151,7 +4151,7 @@
         "timestamp": "2016-07-01T15:40:21",
         "trx_id": "86f3769c1ead79735b712bf2b999f3b90cd8881c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4182,7 +4182,7 @@
         "timestamp": "2016-07-01T15:41:54",
         "trx_id": "74df7dd93bcccae82ce33b045c5796742d51633c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4213,7 +4213,7 @@
         "timestamp": "2016-07-01T15:43:27",
         "trx_id": "5b3782ffe85a4a9131fa2d509fc1d8124b9e7be2",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4244,7 +4244,7 @@
         "timestamp": "2016-07-01T15:45:00",
         "trx_id": "4d123eccc75381094a76c2fe912705a09242cea1",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4275,7 +4275,7 @@
         "timestamp": "2016-07-01T15:46:33",
         "trx_id": "9c88d5c14ed6df4c72934633a25902a15a4e4390",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4306,7 +4306,7 @@
         "timestamp": "2016-07-01T15:48:06",
         "trx_id": "2c9997a84321f3cfa52a3c983609eed814b76e13",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4337,7 +4337,7 @@
         "timestamp": "2016-07-01T15:49:39",
         "trx_id": "5cdbf819d08d570666d2d244b83a7b7b7d84d075",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4368,7 +4368,7 @@
         "timestamp": "2016-07-01T15:51:12",
         "trx_id": "ca5639ea8b2e39324091a8d9fa1b218ad223c58c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4399,7 +4399,7 @@
         "timestamp": "2016-07-01T15:52:45",
         "trx_id": "5b58a4c9640478a462cdd319ca7a80426cd60e2d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4430,7 +4430,7 @@
         "timestamp": "2016-07-01T15:54:18",
         "trx_id": "efc5883a63a32ec959742ad3c01937eda462e1c6",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4461,7 +4461,7 @@
         "timestamp": "2016-07-01T15:55:51",
         "trx_id": "34e75c8a003e1f3fe392b8e992577d5cada91900",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4492,7 +4492,7 @@
         "timestamp": "2016-07-01T15:57:24",
         "trx_id": "4b7708186bb3099e61d83057f96105346f09829f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4523,7 +4523,7 @@
         "timestamp": "2016-07-01T15:58:57",
         "trx_id": "c10a9a89313ded6002d8df8b177fbacc7214f57a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4554,7 +4554,7 @@
         "timestamp": "2016-07-01T16:00:30",
         "trx_id": "3aaef15a7419340935b52957ac3c720d56db2757",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4585,7 +4585,7 @@
         "timestamp": "2016-07-01T16:02:03",
         "trx_id": "86432d51ca67c44daaf0b081649f627a1eaa5337",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4616,7 +4616,7 @@
         "timestamp": "2016-07-01T16:03:36",
         "trx_id": "df8d9c236897e54c38fe36ce2b1fe16b81b7051e",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4647,7 +4647,7 @@
         "timestamp": "2016-07-01T16:05:09",
         "trx_id": "21cdaa6b29d23bdebf49a36d696cc8ef7fcc6392",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4678,7 +4678,7 @@
         "timestamp": "2016-07-01T16:06:42",
         "trx_id": "4cad181983c63208b092bb72fa7648c992942e57",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4709,7 +4709,7 @@
         "timestamp": "2016-07-01T16:08:15",
         "trx_id": "a6c5dc6955810a0ae95ded9293011ebedd3db01f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4740,7 +4740,7 @@
         "timestamp": "2016-07-01T16:09:48",
         "trx_id": "e7173d83e981c1c1a7af1c43b3eea6b49dade7ba",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4771,7 +4771,7 @@
         "timestamp": "2016-07-01T16:11:21",
         "trx_id": "3dfd3d40f22c8953090965526298576ee247d3f5",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4802,7 +4802,7 @@
         "timestamp": "2016-07-01T16:12:54",
         "trx_id": "2dc0eeb6073975589fbef3b275d8c7b9bdbbab45",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4833,7 +4833,7 @@
         "timestamp": "2016-07-01T16:14:27",
         "trx_id": "c69bb9321efe919fea1b1059b4768322c03fe8d8",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4864,7 +4864,7 @@
         "timestamp": "2016-07-01T16:16:03",
         "trx_id": "4cb1b0a1de8042381710411992e3f771744d4934",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4895,7 +4895,7 @@
         "timestamp": "2016-07-01T16:17:33",
         "trx_id": "caaa89cf53507acd99a6b22d3dd92bc96ce305e5",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4926,7 +4926,7 @@
         "timestamp": "2016-07-01T16:19:09",
         "trx_id": "6742c15d9f4411319f36adc48f59a9fcf7551d66",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4957,7 +4957,7 @@
         "timestamp": "2016-07-01T16:20:39",
         "trx_id": "9674097df20e76742a8662ed8dcdf99cf3100849",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -4988,7 +4988,7 @@
         "timestamp": "2016-07-01T16:22:12",
         "trx_id": "5932588cabdaf74e5d3fb5b78657a6433a00e2d1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5019,7 +5019,7 @@
         "timestamp": "2016-07-01T16:23:45",
         "trx_id": "45571c17440f8a622455f67aed70d699df05c2ee",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5050,7 +5050,7 @@
         "timestamp": "2016-07-01T16:25:18",
         "trx_id": "11c873a23b80acb4c5532bf3553717036027e49a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5081,7 +5081,7 @@
         "timestamp": "2016-07-01T16:26:51",
         "trx_id": "732995ad94c84c048f8741bb81931fa0ac4217cf",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5112,7 +5112,7 @@
         "timestamp": "2016-07-01T16:28:24",
         "trx_id": "96092a0f5a928a274a816ab0cfc89084a91c6dc2",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5143,7 +5143,7 @@
         "timestamp": "2016-07-01T16:29:57",
         "trx_id": "18c70d7e3869ea3348b70eb6ffa0295d89bd396c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5174,7 +5174,7 @@
         "timestamp": "2016-07-01T16:31:30",
         "trx_id": "7c3cf76b050b6d54b4063a1c470a75c2ffa46549",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5205,7 +5205,7 @@
         "timestamp": "2016-07-01T16:33:03",
         "trx_id": "061f0dd1d6a31870647d571b67648835143b7ee4",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5236,7 +5236,7 @@
         "timestamp": "2016-07-01T16:34:36",
         "trx_id": "e71680095bf9e938b8bfc96a30342eb05a64ff06",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5267,7 +5267,7 @@
         "timestamp": "2016-07-01T16:36:09",
         "trx_id": "6d64a1b672b51095c021a67813496895a2759f10",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5298,7 +5298,7 @@
         "timestamp": "2016-07-01T16:37:42",
         "trx_id": "051779d2ec5b7724260b08a495aa402b58349abd",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5329,7 +5329,7 @@
         "timestamp": "2016-07-01T16:39:15",
         "trx_id": "b44244541e4d5594e55d6f1f32d6ebb9023eaa6d",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5360,7 +5360,7 @@
         "timestamp": "2016-07-01T16:40:48",
         "trx_id": "4e581b239452c1afb674383e871dc815bbfb0e11",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5391,7 +5391,7 @@
         "timestamp": "2016-07-01T16:42:21",
         "trx_id": "70d41e2a9637a0a316eea1d5b93e4a60334ff05c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5422,7 +5422,7 @@
         "timestamp": "2016-07-01T16:43:54",
         "trx_id": "0c0e446821d4d423aba09a75ebe7ce81ffe43394",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5453,7 +5453,7 @@
         "timestamp": "2016-07-01T16:45:27",
         "trx_id": "b0608d582b954a610cea791cd58528be9b0c8038",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5484,7 +5484,7 @@
         "timestamp": "2016-07-01T16:47:00",
         "trx_id": "82f86effff80875bcfc219a6761e496c617dbaf1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5515,7 +5515,7 @@
         "timestamp": "2016-07-01T16:48:33",
         "trx_id": "bc4f1c2c7eafeadd2824e05a7e8d2e7ecaf94d51",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5546,7 +5546,7 @@
         "timestamp": "2016-07-01T16:50:06",
         "trx_id": "2a70c1ea6c0e9dfb8d4edb66dae1180ef5be9252",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5577,7 +5577,7 @@
         "timestamp": "2016-07-01T16:51:39",
         "trx_id": "c1ac4df7ff067efa394421930b6e029061a5fd5c",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5608,7 +5608,7 @@
         "timestamp": "2016-07-01T16:53:12",
         "trx_id": "e0d45e7c09531fdf9291581f3ded0c2259302002",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5639,7 +5639,7 @@
         "timestamp": "2016-07-01T16:54:48",
         "trx_id": "a95aad985bcbd825f10d0664a8b5c9ef70cdfbb8",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5670,7 +5670,7 @@
         "timestamp": "2016-07-01T16:56:18",
         "trx_id": "32b3b861d83b26a3911d46eb9f57fd28ebb82c00",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5701,7 +5701,7 @@
         "timestamp": "2016-07-01T16:57:51",
         "trx_id": "f0a2e8c29b9eb6e1540ea31b09a75004eb28253f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5732,7 +5732,7 @@
         "timestamp": "2016-07-01T16:59:24",
         "trx_id": "6bdc34d664192cac098970b2f94c977a0da0874f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5763,7 +5763,7 @@
         "timestamp": "2016-07-01T17:00:57",
         "trx_id": "4c99e7fee57b66fdef10f25b4ef637731a064572",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5794,7 +5794,7 @@
         "timestamp": "2016-07-01T17:02:30",
         "trx_id": "f54ce7423c51199c03227c921cb3c9eadf9bca87",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5825,7 +5825,7 @@
         "timestamp": "2016-07-01T17:04:03",
         "trx_id": "63dadca0f8df8d43f5212584ef034da05a9de057",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5856,7 +5856,7 @@
         "timestamp": "2016-07-01T17:05:36",
         "trx_id": "dc024a6e2e9eb34a228ee1a2c9f43b8b0b288b39",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5887,7 +5887,7 @@
         "timestamp": "2016-07-01T17:07:09",
         "trx_id": "7e7511c544fa93f9513726dfdfcde417eaefdd5c",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5918,7 +5918,7 @@
         "timestamp": "2016-07-01T17:08:42",
         "trx_id": "1e0fe317c2c3e3fb99577ee217894dd8d541c6aa",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5949,7 +5949,7 @@
         "timestamp": "2016-07-01T17:10:15",
         "trx_id": "312d0c1787a29d6dd40bb3cab5c768c66d78331f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -5980,7 +5980,7 @@
         "timestamp": "2016-07-01T17:11:48",
         "trx_id": "16c181e44f8ff1b273a9bc2d093f8f63b66d905f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6011,7 +6011,7 @@
         "timestamp": "2016-07-01T17:13:21",
         "trx_id": "8eb67f23be76ccf224be7829b3f8596ed127fece",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6042,7 +6042,7 @@
         "timestamp": "2016-07-01T17:14:54",
         "trx_id": "d786c6ffbc71007ccb49ac7f10d29d1d2864c91f",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6073,7 +6073,7 @@
         "timestamp": "2016-07-01T17:16:27",
         "trx_id": "2c1614d9bc7a5997e0b1adfba27d91d53776f18a",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6104,7 +6104,7 @@
         "timestamp": "2016-07-01T17:18:00",
         "trx_id": "c7a042948521c674653addea4e72a3017571f453",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6135,7 +6135,7 @@
         "timestamp": "2016-07-01T17:19:33",
         "trx_id": "b6b7b60256f6bc86305d49659d7a3c8e2546e5ed",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6166,7 +6166,7 @@
         "timestamp": "2016-07-01T17:21:06",
         "trx_id": "73d8eb4ad2cbd6d7449045345fafd14f5ca202c7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6197,7 +6197,7 @@
         "timestamp": "2016-07-01T17:22:39",
         "trx_id": "d59c6c054cc50c76c4205660996b8861cc9a85f3",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6228,7 +6228,7 @@
         "timestamp": "2016-07-01T17:24:12",
         "trx_id": "80777bc6ed1d46279f8b3a828b0544a04b5ef534",
         "trx_in_block": 2,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6259,7 +6259,7 @@
         "timestamp": "2016-07-01T17:25:45",
         "trx_id": "05103d39c8327acbc30fdbf1b60050904104fd85",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6290,7 +6290,7 @@
         "timestamp": "2016-07-01T17:27:18",
         "trx_id": "3a0bfb28518d557d79ef2349ff82d59e0c70babb",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6321,7 +6321,7 @@
         "timestamp": "2016-07-01T17:28:51",
         "trx_id": "14226666f8efa6f9393e361aa6b606218c594b16",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6352,7 +6352,7 @@
         "timestamp": "2016-07-01T17:30:27",
         "trx_id": "4328b16baf4b855a3a8caff75094473fd1399cb8",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6383,7 +6383,7 @@
         "timestamp": "2016-07-01T17:32:00",
         "trx_id": "499c457d32139778fd4411e9ccd8e4cc79432397",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6414,7 +6414,7 @@
         "timestamp": "2016-07-01T17:33:33",
         "trx_id": "5dcdde407bcc26aa425950d0f7324365124e8daa",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6445,7 +6445,7 @@
         "timestamp": "2016-07-01T17:35:06",
         "trx_id": "8dfbc87595d0217825d70ca4d1c362c68dd8febb",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6476,7 +6476,7 @@
         "timestamp": "2016-07-01T17:36:39",
         "trx_id": "c66e6f5b87f6cf86e330431ee2bcb162e4d568b2",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6507,7 +6507,7 @@
         "timestamp": "2016-07-01T17:38:12",
         "trx_id": "c74afb387c0490009fe14703d3dec03f603b216e",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6538,7 +6538,7 @@
         "timestamp": "2016-07-01T17:39:45",
         "trx_id": "ca2f6f924f0025bb9a22bfaff8067542f1f244a7",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6569,7 +6569,7 @@
         "timestamp": "2016-07-01T17:41:18",
         "trx_id": "a3718e8eb3bc887a742a6ff10fcab10804b076a1",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6600,7 +6600,7 @@
         "timestamp": "2016-07-01T17:42:51",
         "trx_id": "1778094b94943d434f5cf9294415e68e0d5463f4",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6631,7 +6631,7 @@
         "timestamp": "2016-07-01T17:44:24",
         "trx_id": "8be1c4be9e928277a1f36dcac8001a5f9abf8986",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -6662,7 +6662,7 @@
         "timestamp": "2016-07-01T17:45:57",
         "trx_id": "faa802cbb09ac322d1331e0b82939781fa36ab78",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ]
   ]

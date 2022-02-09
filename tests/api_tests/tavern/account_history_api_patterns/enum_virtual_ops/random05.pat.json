@@ -1,5 +1,5 @@
 {
-  "next_block_range_begin": 1393164,
+  "next_block_range_begin": 1393165,
   "next_operation_begin": "9223372036856526952",
   "ops": [
     {
@@ -15,12 +15,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036856526948",
       "timestamp": "2016-05-12T20:51:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 1393162,
@@ -35,12 +35,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036856526949",
       "timestamp": "2016-05-12T20:51:03",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 1393163,
@@ -55,12 +55,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036856526950",
       "timestamp": "2016-05-12T20:51:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 1393164,
@@ -75,12 +75,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": "9223372036856526951",
       "timestamp": "2016-05-12T20:51:09",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ],
   "ops_by_block": []

@@ -3,6 +3,8 @@
   description: Common values for tests
 
   variables:
+    timeout: 1
+    timeout_5s: 5
     service:
       proto: http
       server: "{tavern.env_vars.HIVEMIND_ADDRESS}"

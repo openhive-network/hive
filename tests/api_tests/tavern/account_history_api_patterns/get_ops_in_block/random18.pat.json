@@ -13,12 +13,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-08-31T17:02:33",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ]
 }
