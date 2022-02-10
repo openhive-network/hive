@@ -4,7 +4,6 @@
 [submodule "tests/tests_api"]
 	path = tests/tests_api
 	url = ../tests_api.git
-	branch = mi_tests_import
 [submodule "tests/test_tools"]
 	path = tests/test_tools
 	url = ../test-tools.git
