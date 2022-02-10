@@ -62,6 +62,8 @@ Convert `block_log` file and dump the output to `new_fancy_block_log` file, alte
 ```
 blockchain_converter --plugin block_log_conversion --input block_log --output new_fancy_block_log --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
+Note: block_log_conversion plugin increases the block size by default to the `HIVE_SOFT_MAX_BLOCK_SIZE` (2 MiB) using the `witness_update` and `witness_set_properties` operations. After replay you can change this using your witness and run node_based_conversion normally without the increase in blocks size
+
 #### node_based_conversion plugin
 Convert blocks from `api.deathwing.me` and send converted transactions to `127.0.0.1` node with same private keys and chain id as in the [block_log_conversion plugin example run](#block_log_conversion%20plugin)
 ```

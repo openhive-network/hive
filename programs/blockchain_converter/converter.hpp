@@ -48,6 +48,8 @@ namespace hive { namespace converter {
     boost::lockfree::stack< sig_stack_in_type >  shared_signatures_stack_in;  // pair< trx index in block, signed transaction ptr to convert >
     boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
 
+    bool increase_block_size;
+
     std::atomic_bool        signers_exit;
     std::atomic< uint32_t > current_hardfork;
 
@@ -62,7 +64,7 @@ namespace hive { namespace converter {
     static const fc::time_point_sec auto_trx_time;
 
     /// All converted blocks will be signed using given private key
-    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1 );
+    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1, bool increase_block_size = true );
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
@@ -90,6 +92,8 @@ namespace hive { namespace converter {
     bool has_hardfork( uint32_t hf )const;
 
     const hp::signed_block& get_current_block()const;
+
+    bool block_size_increase_enabled()const;
   };
 
   class convert_operations_visitor
