@@ -69,7 +69,7 @@ def test_corrupted_shared_memory_file(world: World):
         node.run()
 
     with open(stderr_file_path, 'r') as file:
-        shared_memory_file_content = file.read()
+        stderr_file_content = file.read()
 
     assert 'Error opening database. If the binary or configuration has changed, replay the blockchain explicitly ' \
-           'using `--force-replay`.' in shared_memory_file_content
+           'using `--force-replay`.' in stderr_file_content
