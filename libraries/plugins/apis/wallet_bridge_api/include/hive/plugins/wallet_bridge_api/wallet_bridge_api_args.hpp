@@ -11,6 +11,12 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
+template<typename T>
+struct serializer_wrapper
+{
+  T value;
+};
+
 /* get_version */
 typedef variant                            get_version_args;
 typedef database_api::get_version_return   get_version_return;
@@ -163,5 +169,32 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
 
+namespace fc {
+
+  using hive::protocol::legacy_switcher;
+
+  template<typename T>
+  inline void to_variant( const hive::plugins::wallet_bridge_api::serializer_wrapper<T>& a, fc::variant& var )
+  {
+    try
+    {
+      legacy_switcher switcher( true );
+      to_variant( a.value, var );
+    } FC_CAPTURE_AND_RETHROW()
+  }
+
+  template<typename T>
+  inline void from_variant( const fc::variant& var, hive::plugins::wallet_bridge_api::serializer_wrapper<T>& a )
+  {
+    try
+    {
+      legacy_switcher switcher( true );
+      from_variant( var, a.value );
+    } FC_CAPTURE_AND_RETHROW()
+  }
+
+} // fc
+
+FC_REFLECT_TEMPLATE( (typename T), hive::plugins::wallet_bridge_api::serializer_wrapper<T>, (value) )
 
 

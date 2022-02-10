@@ -549,7 +549,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 {
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
-  const protocol::signed_transaction tx = args.get_array()[0].as<protocol::signed_transaction>();
+  auto _tx = args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>();
+  auto tx = std::move( _tx.value );
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   FC_ASSERT( _p2p, "p2p_plugin not enabled." );
 
@@ -606,9 +607,9 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 {
   FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
-  const protocol::signed_transaction tx = args.get_array()[0].as<protocol::signed_transaction>();
+  auto tx = args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>();
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-  return _network_broadcast_api->broadcast_transaction( { tx } );
+  return _network_broadcast_api->broadcast_transaction( { tx.value } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )

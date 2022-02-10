@@ -18,6 +18,8 @@ using namespace hive::utilities;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
+using hive::plugins::wallet_bridge_api::serializer_wrapper;
+
 typedef uint16_t transaction_handle_type;
 
 struct memo_data {
