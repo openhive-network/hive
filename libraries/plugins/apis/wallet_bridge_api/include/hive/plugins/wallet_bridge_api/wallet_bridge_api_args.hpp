@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/chain/hive_objects.hpp>
-#include <hive/protocol/chain_properties.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api.hpp>
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
@@ -11,8 +10,6 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
-
-using hive::protocol::chain_properties;
 
 /* get_version */
 typedef variant                            get_version_args;
@@ -40,7 +37,7 @@ typedef account_history::get_ops_in_block_return  get_ops_in_block_return;
 
 /* get_chain_properties */
 typedef variant                   get_chain_properties_args;
-typedef chain_properties          get_chain_properties_return;
+typedef chain::chain_properties   get_chain_properties_return;
 
 /* get_feed_history */
 typedef variant                                 get_feed_history_args;
