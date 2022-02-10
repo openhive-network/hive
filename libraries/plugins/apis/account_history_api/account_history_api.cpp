@@ -292,17 +292,17 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
   enum_virtual_ops_return result;
 
   bool groupOps = args.group_by_block.valid() && *args.group_by_block;
-
+  const auto remove_flag_from_id = [](const uint64_t i_id) { return (i_id << 1) >> 1; };
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
 
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
     args.block_range_end, include_reversible, args.operation_begin, args.limit,
-    [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool irreversible)
+    [groupOps, remove_flag_from_id, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool irreversible)
     {
       api_operation_object _api_obj(op);
 
       _api_obj.op_in_trx = op.op_in_trx;
-      _api_obj.operation_id = (operation_id << 1) >> 1;
+      _api_obj.operation_id = remove_flag_from_id(operation_id);
 
       if( args.filter.valid() )
       {
@@ -357,7 +357,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
   );
 
   result.next_block_range_begin = next_values.first;
-  result.next_operation_begin = next_values.second;
+  result.next_operation_begin = remove_flag_from_id(next_values.second);
 
   return result;
 }
