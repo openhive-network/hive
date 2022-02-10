@@ -22,8 +22,8 @@ namespace hive { namespace converter { namespace plugins {
   public:
     uint32_t log_per_block = 0, log_specific = 0;
 
-    conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id, size_t signers_size )
-      : converter( _private_key, chain_id, signers_size ) {}
+    conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id, size_t signers_size, bool increase_block_size = true )
+      : converter( _private_key, chain_id, signers_size, increase_block_size ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) = 0;
 

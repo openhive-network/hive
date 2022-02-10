@@ -187,7 +187,8 @@ namespace hive { namespace converter {
 
   const hp::witness_update_operation& convert_operations_visitor::operator()( hp::witness_update_operation& op )const
   {
-    op.props.maximum_block_size = HIVE_SOFT_MAX_BLOCK_SIZE;
+    if( converter.block_size_increase_enabled() )
+      op.props.maximum_block_size = HIVE_SOFT_MAX_BLOCK_SIZE;
 
     if( op.block_signing_key != hp::public_key_type{} )
       op.block_signing_key = converter.get_witness_key().get_public_key();
@@ -197,9 +198,10 @@ namespace hive { namespace converter {
 
   const hp::witness_set_properties_operation& convert_operations_visitor::operator()( hp::witness_set_properties_operation& op )const
   {
-    op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
+    if( converter.block_size_increase_enabled() )
+      op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
 
-    const auto apply_witness_key_on_prop = [&]( const std::string& key )
+    static const auto apply_witness_key_on_prop = [&]( const std::string& key )
       {
         hp::public_key_type signing_key;
         auto key_itr = op.props.find( key );
@@ -218,8 +220,8 @@ namespace hive { namespace converter {
   }
 
 
-  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size )
-    : _private_key( _private_key ), chain_id( chain_id ), signers_exit( false ), current_hardfork( 0 )
+  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, bool increase_block_size )
+    : _private_key( _private_key ), chain_id( chain_id ), signers_exit( false ), increase_block_size( increase_block_size ), current_hardfork( 0 )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
@@ -480,6 +482,11 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
   {
     FC_ASSERT( current_block_ptr != nullptr, "Cannot return reference to the signed block. You can access block that is currently being converted only during its conversion." );
     return *current_block_ptr;
+  }
+
+  bool blockchain_converter::block_size_increase_enabled()const
+  {
+    return increase_block_size;
   }
 
 } } // hive::converter

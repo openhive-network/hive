@@ -107,7 +107,7 @@ namespace detail {
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
     const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size, bool use_now_time )
-    : conversion_plugin_impl( _private_key, chain_id, signers_size ), input_url( input_url ), output_url( output_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
+    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), output_url( output_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
 
