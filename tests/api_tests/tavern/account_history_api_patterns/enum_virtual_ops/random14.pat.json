@@ -26,7 +26,7 @@
             }
           },
           "op_in_trx": 1,
-          "operation_id": "9223372036866777658",
+          "operation_id": 12001850,
           "timestamp": "2016-08-11T02:48:48",
           "trx_id": "43225c62b17d5bc1635dc7de3ed360f2e3e32548",
           "trx_in_block": 0,
