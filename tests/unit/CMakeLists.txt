@@ -251,7 +251,6 @@ add_boost_test( chain_test
    serialization_tests/version_test
    serialization_tests/comment_options_extension_test
    serialization_tests/pow2_work_test
-   serialization_tests/legacy_operation_test
    serialization_tests/block_header_test
    serialization_tests/hardfork_version_test
    serialization_tests/min_block_size

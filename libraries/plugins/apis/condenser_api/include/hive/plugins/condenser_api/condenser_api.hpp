@@ -66,13 +66,13 @@ struct api_limit_order_object
 struct api_operation_object
 {
   api_operation_object() {}
-  api_operation_object( const account_history::api_operation_object& obj, const legacy_operation& l_op ) :
+  explicit api_operation_object( const account_history::api_operation_object& obj) :
     trx_id( obj.trx_id ),
     block( obj.block ),
     trx_in_block( obj.trx_in_block ),
     virtual_op( obj.virtual_op ),
     timestamp( obj.timestamp ),
-    op( l_op )
+    op( obj.op )
   {}
 
   transaction_id_type  trx_id;
@@ -81,7 +81,7 @@ struct api_operation_object
   uint32_t             op_in_trx = 0;
   bool                 virtual_op = false;
   fc::time_point_sec   timestamp;
-  legacy_operation     op;
+  operation     op;
 };
 
 struct api_account_object

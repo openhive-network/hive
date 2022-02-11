@@ -569,34 +569,6 @@ BOOST_AUTO_TEST_CASE( pow2_work_test )
   FC_LOG_AND_RETHROW();
 }
 
-BOOST_AUTO_TEST_CASE( legacy_operation_test )
-{
-  try
-  {
-    using hive::plugins::condenser_api::legacy_operation;
-    using hive::plugins::condenser_api::legacy_transfer_operation;
-
-    transfer_operation op_new, op_legacy;
-
-    BOOST_CHECK_NO_THROW(
-      op_legacy = serialize_with_legacy< legacy_operation >(
-        "[\"transfer\",{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]", // condenser_api output
-        true
-      ).get< legacy_transfer_operation >();
-    );
-
-    BOOST_CHECK_NO_THROW(
-      op_new = serialize_with_legacy< operation >(
-        "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}", // block_api output
-        false
-      ).get< transfer_operation >();
-    );
-
-    BOOST_REQUIRE( fc::sha256::hash( op_new ) == fc::sha256::hash( op_legacy ) );
-  }
-  FC_LOG_AND_RETHROW();
-}
-
 BOOST_AUTO_TEST_CASE( block_header_test )
 {
   try
