@@ -30,7 +30,7 @@ class volatile_operation_object : public object< volatile_operation_object_type,
     uint32_t                   block = 0;
     uint32_t                   trx_in_block = 0;
     uint32_t                   op_in_trx = 0;
-    bool                       is_virtual;
+    bool                       is_virtual = false;
     time_point_sec             timestamp;
     chain::buffer_type         serialized_op;
     chainbase::t_vector< account_name_type > impacted;
@@ -64,7 +64,7 @@ class rocksdb_operation_object
     uint32_t                   block = 0;
     uint32_t                   trx_in_block = 0;
     uint32_t                   op_in_trx = 0;
-    bool                       is_virtual;
+    bool                       is_virtual = false;
     time_point_sec             timestamp;
     serialize_buffer_t         serialized_op;
 };

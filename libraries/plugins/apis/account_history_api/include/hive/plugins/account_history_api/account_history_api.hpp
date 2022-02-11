@@ -33,14 +33,14 @@ struct api_operation_object
   uint32_t                            block = 0;
   uint32_t                            trx_in_block = 0;
   uint32_t                            op_in_trx = 0;
-  bool                                virtual_op;
+  bool                                virtual_op = false;
   uint64_t                            operation_id = 0;
   fc::time_point_sec                  timestamp;
   hive::protocol::operation           op;
 
   bool operator<( const api_operation_object& obj ) const
   {
-    return std::tie( block, trx_in_block, op_in_trx ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx );
+    return std::tie( block, trx_in_block, op_in_trx, virtual_op ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx, virtual_op );
   }
 };
 
