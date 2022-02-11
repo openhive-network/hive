@@ -658,7 +658,7 @@ private:
     // uint64_t location = ( (uint64_t) obj.trx_in_block << 32 ) | ( (uint64_t) obj.op_in_trx << 16 ) | ( obj.virtual_op );
 
     //if obj is a virtual operation, encode this fact into top bit of id to speed up queries that need to distinguish ops vs virtual ops
-    uint64_t encoded_id = obj.virtual_op ? VIRTUAL_OP_FLAG | obj.id : obj.id;
+    uint64_t encoded_id = obj.is_virtual ? VIRTUAL_OP_FLAG | obj.id : obj.id;
 
     op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, encoded_id));
 
@@ -1321,7 +1321,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         }
 
         /// Accept only virtual operations
-        if (op.virtual_op)
+        if (op.is_virtual)
           if(processor(op, op.id, false))
             ++cntLimit;
 
@@ -1404,7 +1404,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         }
 
         /// Accept only virtual operations
-        if (op.virtual_op)
+        if (op.is_virtual)
           if(processor(op, op.id, false))
             ++cntLimit;
 
