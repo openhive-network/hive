@@ -32,12 +32,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 3,
         "operation_id": 0,
         "timestamp": "2016-07-22T20:47:30",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 3
+        "virtual_op": true
       }
     ],
     [
@@ -72,12 +72,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 3,
         "operation_id": 0,
         "timestamp": "2016-07-22T20:53:33",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 3
+        "virtual_op": true
       }
     ],
     [
@@ -112,12 +112,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 3,
         "operation_id": 0,
         "timestamp": "2016-07-22T21:26:42",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 3
+        "virtual_op": true
       }
     ],
     [
@@ -152,12 +152,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 3,
         "operation_id": 0,
         "timestamp": "2016-07-23T00:50:54",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 3
+        "virtual_op": true
       }
     ],
     [
@@ -192,12 +192,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 279,
         "operation_id": 0,
         "timestamp": "2016-07-23T05:19:36",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 279
+        "virtual_op": true
       }
     ]
   ]

@@ -79,7 +79,7 @@ struct api_operation_object
   uint32_t             block = 0;
   uint32_t             trx_in_block = 0;
   uint32_t             op_in_trx = 0;
-  uint32_t             virtual_op = 0;
+  bool                 virtual_op = false;
   fc::time_point_sec   timestamp;
   legacy_operation     op;
 };

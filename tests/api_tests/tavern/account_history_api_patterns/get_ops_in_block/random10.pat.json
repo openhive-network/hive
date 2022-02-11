@@ -18,12 +18,12 @@
           "weight": "3019796162763868"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:45",
       "trx_id": "403595f6e7975c1a790a5b6bd8834601c560fc86",
       "trx_in_block": 0,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -43,12 +43,12 @@
           "weight": "82381998229234"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:45",
       "trx_id": "55c33d2e157be039979fe48fc97e291c3647f34a",
       "trx_in_block": 1,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -68,12 +68,12 @@
           "weight": "552761251159971"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:45",
       "trx_id": "f0e69dfda73048c47b95d356c0ea97f71c8201d5",
       "trx_in_block": 2,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -88,12 +88,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:48",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -111,12 +111,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 2,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:48",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 2
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -134,12 +134,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 3,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:48",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 3
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -171,12 +171,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 4,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:48",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 4
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -208,12 +208,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 5,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:48",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 5
+      "virtual_op": true
     },
     {
       "block": 4078236,
@@ -224,12 +224,12 @@
           "permlink": "anthony-joshua-believe-the-hype-a-written-response-to-dwyer"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 6,
       "operation_id": 0,
       "timestamp": "2016-08-14T15:28:48",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 6
+      "virtual_op": true
     }
   ]
 }

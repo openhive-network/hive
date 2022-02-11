@@ -236,6 +236,7 @@ namespace detail
       if( op_obj.op.visit( visitor) )
       {
         result.push_back( api_operation_object( op_obj, visitor.l_op ) );
+        result.back().op_in_trx = op_obj.op_in_trx;
       }
     }
 
@@ -335,7 +336,7 @@ namespace detail
       if ( itr != idx.end() )
       {
         results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, delayed_votes_active ) ) );
-        
+
         if(_reputation_api)
         {
           results.back().reputation = _reputation_api->get_account_reputations({ itr->name, 1 }).reputations[0].reputation;
@@ -365,7 +366,7 @@ namespace detail
     bool delayed_votes_active = true;
     if( args.size() == 2 )
       delayed_votes_active = args[1].as< bool >();
-    
+
     vector< optional< api_account_object > > result;
     result.reserve( account_names.size() );
 
@@ -896,7 +897,9 @@ namespace detail
     {
       if( entry.second.op.visit( visitor ) )
       {
-        result.emplace( entry.first, api_operation_object( entry.second, visitor.l_op ) );
+        api_operation_object obj( entry.second, visitor.l_op );
+        obj.op_in_trx = entry.second.op_in_trx;
+        result.emplace( entry.first, obj );
       }
     }
 

@@ -15,12 +15,12 @@
             }
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-08-08T17:30:33",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ],
     [
@@ -50,7 +50,7 @@
         "timestamp": "2016-08-08T18:47:15",
         "trx_id": "b584163a893f8e7cc8ad518a02d3cf5c88d97929",
         "trx_in_block": 0,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ]
   ]

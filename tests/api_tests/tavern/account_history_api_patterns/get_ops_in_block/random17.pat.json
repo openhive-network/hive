@@ -16,7 +16,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "c88ec847bc5680f381e0bd54fbcc5a9045fca3bb",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -36,12 +36,12 @@
           "weight": "933576917541687"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "c88ec847bc5680f381e0bd54fbcc5a9045fca3bb",
       "trx_in_block": 0,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 3476140,
@@ -94,7 +94,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "3a84b7c76efd860e52b7e7d349e357c4fa181911",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -115,12 +115,12 @@
           "new_account_name": "sandplay"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "3a84b7c76efd860e52b7e7d349e357c4fa181911",
       "trx_in_block": 1,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 3476140,
@@ -141,7 +141,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "aae434402a7960bee60efcc5ec8dc25bab386af3",
       "trx_in_block": 2,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -162,7 +162,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "27cc7770105ebbac7ff188e33f06f21c1c376819",
       "trx_in_block": 3,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -183,7 +183,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "0fb049e0c170cdf738d6608495a46e65a3c7d9b7",
       "trx_in_block": 4,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -201,7 +201,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "e298f48cb0ac9d3fa3a3016fff25a58b64f3b193",
       "trx_in_block": 5,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -221,12 +221,12 @@
           "weight": "411194477983728"
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "e298f48cb0ac9d3fa3a3016fff25a58b64f3b193",
       "trx_in_block": 5,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 3476140,
@@ -254,7 +254,7 @@
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "9666f4df5aadf933b94684218914ba109c5f361a",
       "trx_in_block": 6,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 3476140,
@@ -277,12 +277,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-07-24T14:41:57",
       "trx_id": "9666f4df5aadf933b94684218914ba109c5f361a",
       "trx_in_block": 6,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 3476140,
@@ -297,12 +297,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-07-24T14:42:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ]
 }
