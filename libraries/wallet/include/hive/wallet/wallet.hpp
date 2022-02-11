@@ -13,10 +13,7 @@
 namespace hive { namespace wallet {
 
 template<typename T>
-struct serializer_wrapper
-{
-  T value;
-};
+using serializer_wrapper = typename hive::protocol::serializer_wrapper<T>;
 
 using namespace std;
 
@@ -396,7 +393,7 @@ class wallet_api
       */
     serializer_wrapper<annotated_signed_transaction> claim_account_creation( const string& creator,
                                                                      const serializer_wrapper<hive::protocol::asset>& fee,
-                                                                     bool broadcast )const; 
+                                                                     bool broadcast )const;
     /** This method will claim a subsidized account creation without waiting for the transaction to confirm.
       *
       * @param creator The account to receive the account creation credit
@@ -406,7 +403,7 @@ class wallet_api
     serializer_wrapper<annotated_signed_transaction> claim_account_creation_nonblocking( const string& creator,
                                                                                  const serializer_wrapper<hive::protocol::asset>& fee,
                                                                                  bool broadcast )const;
-       
+
     /** This method will genrate new owner, active, posting, and memo keys for the new account which
       * will be controlable by this wallet. There is a fee associated with account creation
       * that is paid by the creator. The current account creation fee can be found with the
@@ -442,7 +439,7 @@ class wallet_api
       public_key_type posting,
       public_key_type memo,
       bool broadcast )const;
-    
+
     /** This method is used by faucets to create new accounts for other users which must
       * provide their desired keys. The resulting account may not be controllable by this
       * wallet. There is a fee associated with account creation that is paid by the creator.
@@ -471,7 +468,7 @@ class wallet_api
                                                                               public_key_type posting_key,
                                                                               public_key_type memo_key,
                                                                               bool broadcast )const;
-    
+
     /** This method will genrate new owner, active, posting and memo keys for the new account which
       * will be controlable by this wallet. There is a fee associated with account creation
       * that is paid by the creator. The current account creation fee can be found with the
@@ -1583,31 +1580,3 @@ FC_API( hive::wallet::wallet_api,
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
-
-namespace fc {
-
-  using hive::protocol::legacy_switcher;
-
-  template<typename T>
-  inline void to_variant( const hive::wallet::serializer_wrapper<T>& a, fc::variant& var )
-  {
-    try
-    {
-      legacy_switcher switcher( true );
-      to_variant( a.value, var );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-  template<typename T>
-  inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
-  {
-    try
-    {
-      legacy_switcher switcher( true );
-      from_variant( var, a.value );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-} // fc
-
-FC_REFLECT_TEMPLATE( (typename T), hive::wallet::serializer_wrapper<T>, (value) )
