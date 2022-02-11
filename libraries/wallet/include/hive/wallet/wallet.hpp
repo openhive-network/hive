@@ -12,7 +12,7 @@
 
 namespace hive { namespace wallet {
 
-template<T>
+template<typename T>
 using serializer_wrapper = typename hive::protocol::serializer_wrapper<T>;
 
 using namespace std;
@@ -1580,31 +1580,3 @@ FC_API( hive::wallet::wallet_api,
     )
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
-
-namespace fc {
-
-  using hive::protocol::legacy_switcher;
-
-  template<typename T>
-  inline void to_variant( const hive::wallet::serializer_wrapper<T>& a, fc::variant& var )
-  {
-    try
-    {
-      legacy_switcher switcher( true );
-      to_variant( a.value, var );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-  template<typename T>
-  inline void from_variant( const fc::variant& var, hive::wallet::serializer_wrapper<T>& a )
-  {
-    try
-    {
-      legacy_switcher switcher( true );
-      from_variant( var, a.value );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-} // fc
-
-FC_REFLECT_TEMPLATE( (typename T), hive::wallet::serializer_wrapper<T>, (value) )

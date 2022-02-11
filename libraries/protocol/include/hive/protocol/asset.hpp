@@ -2,6 +2,7 @@
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/asset_symbol.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 namespace hive { namespace protocol {
 
@@ -243,12 +244,33 @@ namespace hive { namespace protocol {
 } } // hive::protocol
 
 namespace fc {
-    void to_variant( const hive::protocol::asset& var,  fc::variant& vo );
-    void from_variant( const fc::variant& var,  hive::protocol::asset& vo );
 
-    void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var );
-    void from_variant( const fc::variant& var, hive::protocol::legacy_asset& a );
-}
+  void to_variant( const hive::protocol::asset& var,  fc::variant& vo );
+  void from_variant( const fc::variant& var,  hive::protocol::asset& vo );
+
+  void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var );
+  void from_variant( const fc::variant& var, hive::protocol::legacy_asset& a );
+
+  template<typename T>
+  inline void to_variant( const hive::protocol::serializer_wrapper<T>& a, fc::variant& var )
+  {
+    try
+    {
+      hive::protocol::legacy_switcher switcher( true );
+      to_variant( a.value, var );
+    } FC_CAPTURE_AND_RETHROW()
+  }
+
+  template<typename T>
+  inline void from_variant( const fc::variant& var, hive::protocol::serializer_wrapper<T>& a )
+  {
+    try
+    {
+      hive::protocol::legacy_switcher switcher( true );
+      from_variant( var, a.value );
+    } FC_CAPTURE_AND_RETHROW()
+  }
+} // fc
 
 FC_REFLECT( hive::protocol::asset, (amount)(symbol) )
 FC_REFLECT( hive::protocol::legacy_asset, (amount)(symbol) )
@@ -258,3 +280,4 @@ FC_REFLECT( hive::protocol::HBD_asset, (amount) )
 FC_REFLECT( hive::protocol::HIVE_asset, (amount) )
 FC_REFLECT( hive::protocol::VEST_asset, (amount) )
 
+FC_REFLECT_TEMPLATE( (typename T), hive::protocol::serializer_wrapper<T>, (value) )
