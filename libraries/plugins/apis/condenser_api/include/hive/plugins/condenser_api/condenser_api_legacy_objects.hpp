@@ -81,6 +81,7 @@ typedef vector< legacy_block_header_extensions > legacy_block_header_extensions_
 
 struct legacy_signed_transaction
 {
+  using legacy_operation = serializer_wrapper<operation>;
   legacy_signed_transaction() {}
 
   legacy_signed_transaction( const signed_transaction& t ) :
@@ -90,8 +91,10 @@ struct legacy_signed_transaction
   {
     // Signed transaction extensions field exists, but must be empty
     // Don't worry about copying them.
+    operations.reserve(t.operations.size());
+    for(const auto& v : t.operations)
+      operations.emplace_back( legacy_operation{v} );
 
-    operations.insert( operations.end(), t.operations.begin(), t.operations.end() );
     signatures.insert( signatures.end(), t.signatures.begin(), t.signatures.end() );
   }
 
@@ -105,8 +108,10 @@ struct legacy_signed_transaction
   {
     // Signed transaction extensions field exists, but must be empty
     // Don't worry about copying them.
+    operations.reserve(t.operations.size());
+    for(const auto& v : t.operations)
+      operations.emplace_back( legacy_operation{v} );
 
-    operations.insert( operations.end(), t.operations.begin(), t.operations.end() );
     signatures.insert( signatures.end(), t.signatures.begin(), t.signatures.end() );
   }
 
@@ -117,7 +122,9 @@ struct legacy_signed_transaction
     tx.ref_block_prefix = ref_block_prefix;
     tx.expiration = expiration;
 
-    tx.operations.insert( tx.operations.end(), operations.begin(), operations.end() );
+    tx.operations.reserve(operations.size());
+    for(const auto& v : operations)
+      tx.operations.emplace_back( v.value );
     tx.signatures.insert( tx.signatures.end(), signatures.begin(), signatures.end() );
 
     return tx;
@@ -126,7 +133,7 @@ struct legacy_signed_transaction
   uint16_t                   ref_block_num    = 0;
   uint32_t                   ref_block_prefix = 0;
   fc::time_point_sec         expiration;
-  vector< operation >        operations;
+  vector< legacy_operation > operations;
   extensions_type            extensions;
   vector< signature_type >   signatures;
   transaction_id_type        transaction_id;
