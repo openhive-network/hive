@@ -1963,8 +1963,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operation_notification& n)
 {
-  const bool is_virtual = is_virtual_operation(n.op);
-  if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !is_virtual)
+  if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !n.virtual_op)
   {
     ilog("RocksDb data import processed blocks: ${n}, containing: ${tx} transactions and ${op} operations.\n"
         " ${ep} operations have been filtered out due to configured options.\n"
@@ -1996,7 +1995,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
     obj.block = n.block;
     obj.trx_in_block = n.trx_in_block;
     obj.op_in_trx = n.op_in_trx;
-    obj.is_virtual = is_virtual;
+    obj.is_virtual = n.virtual_op;
     obj.timestamp = _mainDb.head_block_time();
     auto size = fc::raw::pack_size( n.op );
     obj.serialized_op.resize( size );
@@ -2013,7 +2012,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       o.block = n.block;
       o.trx_in_block = n.trx_in_block;
       o.op_in_trx = n.op_in_trx;
-      o.is_virtual = is_virtual;
+      o.is_virtual = n.virtual_op;
       o.timestamp = _mainDb.head_block_time();
       auto size = fc::raw::pack_size( n.op );
       o.serialized_op.resize( size );
@@ -2098,7 +2097,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
       {
         rocksdb_operation_object obj(operation);
-        importOperation(obj, operation.impacted );
+        importOperation(obj, operation.impacted);
       }
     );
 
