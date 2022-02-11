@@ -5,6 +5,12 @@
 
 namespace hive { namespace protocol {
 
+  template<typename T>
+  struct serializer_wrapper
+  {
+  T value;
+  };
+
   template< uint32_t _SYMBOL >
   struct tiny_asset;
 

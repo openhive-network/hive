@@ -199,7 +199,7 @@ struct type_name_printer
   typedef void result_type;
 
   explicit type_name_printer(std::string& buffer) : _buffer(buffer) {}
-  
+
   template<typename T>
   void operator()(const T& item)
   {
@@ -455,7 +455,7 @@ struct visitor {
         return;
 
       if( !v.is_object() )
-        FC_THROW_EXCEPTION( bad_cast_exception, "Input data have to treated as object." );
+        FC_THROW_EXCEPTION( bad_cast_exception, "Input data have to treated as object, but is : ${n}", ("n", v.get_type()) );
 
       auto v_object = v.get_object();
 

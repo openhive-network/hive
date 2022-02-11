@@ -664,14 +664,40 @@ BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
   tx.expiration = fc::time_point_sec( 1514764800 );
   tx.operations.push_back( op );
 
-  signed_transaction tx2 = signed_transaction( fc::json::from_string( "{\"ref_block_num\":4000,\"ref_block_prefix\":4000000000,\"expiration\":\"2018-01-01T00:00:00\",\"operations\":[[\"vote\",{\"voter\":\"alice\",\"author\":\"bob\",\"permlink\":\"foobar\",\"weight\":10000}]],\"extensions\":[],\"signatures\":[\"\"]}" ).as< legacy_signed_transaction >() );
+	const auto json_input = "{\"ref_block_num\":4000,\"ref_block_prefix\":4000000000,\"expiration\":\"2018-01-01T00:00:00\",\"operations\":[[\"vote\",{\"voter\":\"alice\",\"author\":\"bob\",\"permlink\":\"foobar\",\"weight\":10000}]],\"extensions\":[],\"signatures\":[\"\"]}";
+
+	std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+
+	const auto loaded_json = fc::json::from_string( json_input );
+	std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+	legacy_signed_transaction parsed_to_object;
+	try
+	{
+	parsed_to_object = loaded_json.as< legacy_signed_transaction >();
+  } catch ( const fc::exception& e )
+  {
+    edump((e.to_detail_string()));
+    throw;
+  } catch ( const std::exception& e )
+  {
+    edump((e.what()));
+    throw;
+  }
+
+	std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+	signed_transaction tx2 = signed_transaction(parsed_to_object);
+
+
+	std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
 
   BOOST_REQUIRE( tx.id() == tx2.id() );
+	std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
 
   BOOST_CHECK_NO_THROW(
    fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" )
      .as< legacy_signed_transaction >()
   );
+	std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE( static_variant_json_test )

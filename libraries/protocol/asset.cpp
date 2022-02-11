@@ -339,7 +339,7 @@ asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_sym
     result = ( result * p.quote.amount.value * scale_q ) / ( uint128_t( p.base.amount.value ) * scale_b );
     return asset( is_negative ? -result.to_uint64() : result.to_uint64(), p.quote.symbol );
   }
-  else 
+  else
   {
     FC_ASSERT( a.symbol == p.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", p ) );
     result = ( result * p.base.amount.value * scale_b ) / ( uint128_t ( p.quote.amount.value ) * scale_q );
