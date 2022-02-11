@@ -80,6 +80,10 @@ class wallet_bridge_api_impl
     map< time_point_sec, vector< protocol::transaction_id_type > >  _callback_expirations;
     boost::signals2::connection                                     _on_post_apply_block_conn;
     boost::mutex                                                    _mtx;
+
+  private:
+
+    protocol::signed_transaction get_trx( const variant& args );
 };
 
 /* CONSTRUCTORS AND DESTRUCTORS */
@@ -545,12 +549,29 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
   return database_api::api_reward_fund_object( *fund, _db );
 }
 
+/*
+  Methods `broadcast_transaction_synchronous`, `broadcast_transaction` can be called from:
+  a) `cli_wallet` internally  (non legacy )
+  b) by regular API call      (non legacy or legacy( a transaction was created by `cli_wallet`)).
+  It's necessary to process both situations correctly.
+*/
+protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& args )
+{
+  FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
+  try
+  {
+    return args.get_array()[0].as<protocol::signed_transaction>();
+  }
+  catch(...)
+  {
+    return ( args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>() ).value;
+  }
+}
+
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 {
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
-  FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
-  auto _tx = args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>();
-  auto tx = std::move( _tx.value );
+  auto tx = get_trx( args );
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   FC_ASSERT( _p2p, "p2p_plugin not enabled." );
 
@@ -606,10 +627,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 {
-  FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
-  auto tx = args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>();
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-  return _network_broadcast_api->broadcast_transaction( { tx.value } );
+  return _network_broadcast_api->broadcast_transaction( { get_trx( args ) } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
