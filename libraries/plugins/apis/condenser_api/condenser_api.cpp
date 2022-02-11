@@ -228,16 +228,10 @@ namespace detail
     auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), args[1].as< bool >() } ).ops;
     get_ops_in_block_return result;
 
-    legacy_operation l_op;
-    legacy_operation_conversion_visitor visitor( l_op );
-
     for( auto& op_obj : ops )
     {
-      if( op_obj.op.visit( visitor) )
-      {
-        result.push_back( api_operation_object( op_obj, visitor.l_op ) );
-        result.back().op_in_trx = op_obj.op_in_trx;
-      }
+      result.push_back( api_operation_object( op_obj ) );
+      result.back().op_in_trx = op_obj.op_in_trx;
     }
 
     return result;
@@ -890,17 +884,11 @@ namespace detail
       include_reversible, operation_filter_low, operation_filter_high } ).history;
     get_account_history_return result;
 
-    legacy_operation l_op;
-    legacy_operation_conversion_visitor visitor( l_op );
-
     for( auto& entry : history )
     {
-      if( entry.second.op.visit( visitor ) )
-      {
-        api_operation_object obj( entry.second, visitor.l_op );
-        obj.op_in_trx = entry.second.op_in_trx;
-        result.emplace( entry.first, obj );
-      }
+      api_operation_object obj( entry.second );
+      obj.op_in_trx = entry.second.op_in_trx;
+      result.emplace( entry.first, obj );
     }
 
     return result;
