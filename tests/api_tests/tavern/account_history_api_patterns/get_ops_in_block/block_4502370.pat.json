@@ -26,7 +26,7 @@
       "timestamp": "2016-08-29T11:33:54",
       "trx_id": "7d239778828f81350f1346d9c5d3e7ec82fe4ada",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 4502370,
@@ -47,7 +47,7 @@
       "timestamp": "2016-08-29T11:33:54",
       "trx_id": "ee9ed656d225e25c57ae99d296aa0c8e34b53c3a",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 4502370,
@@ -65,7 +65,7 @@
       "timestamp": "2016-08-29T11:33:54",
       "trx_id": "ee9ed656d225e25c57ae99d296aa0c8e34b53c3a",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     },
     {
       "block": 4502370,
@@ -85,12 +85,12 @@
           "weight": 0
         }
       },
-      "op_in_trx": 1,
+      "op_in_trx": 2,
       "operation_id": 0,
       "timestamp": "2016-08-29T11:33:54",
       "trx_id": "ee9ed656d225e25c57ae99d296aa0c8e34b53c3a",
       "trx_in_block": 1,
-      "virtual_op": 1
+      "virtual_op": true
     },
     {
       "block": 4502370,
@@ -105,12 +105,12 @@
           }
         }
       },
-      "op_in_trx": 0,
+      "op_in_trx": 1,
       "operation_id": 0,
       "timestamp": "2016-08-29T11:33:57",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ]
 }

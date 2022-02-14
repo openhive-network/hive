@@ -15,12 +15,12 @@
             "owner": "xeroc"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 1,
         "operation_id": 0,
         "timestamp": "2016-07-04T03:42:21",
         "trx_id": "f9e46925b19db80ab57f2e5824b02eae3392133a",
         "trx_in_block": 2,
-        "virtual_op": 1
+        "virtual_op": true
       }
     ]
   ]

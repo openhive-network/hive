@@ -3,7 +3,7 @@
 import os
 
 from os.path import join
-from yaml import load, Loader
+from yaml import safe_load
 from json import dump
 from requests import post
 from sys import argv
@@ -19,8 +19,7 @@ SUFIX = f'.{args.SUFIX}' if args.SUFIX else ''
 
 def load_yaml(filename : str) -> dict:
 	with open(filename, 'rt') as file:
-		while not '!include' in file.readline(): pass
-		return load(file, Loader)
+		return safe_load(file.read().replace('!', ''))
 
 def create_pattern(url : str, tav_file : str, directory : str):
 	PATTERN_FILE = tav_file.split('.')[0] + '.pat.json' + SUFIX
@@ -34,7 +33,7 @@ def create_pattern(url : str, tav_file : str, directory : str):
 	parsed = output.json()
 
 	if '_negative' in directory:
- 		return
+		return
 	else:
 		assert 'result' in parsed, f'while processing {TAVERN_FILE}, no "result" found in result: {parsed}' + '\n' + f'{request}'
 		parsed = parsed['result']
