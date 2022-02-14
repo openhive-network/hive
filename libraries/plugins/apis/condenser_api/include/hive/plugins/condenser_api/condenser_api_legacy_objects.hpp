@@ -1,69 +1,10 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
-#include <hive/protocol/version.hpp>
-#include <hive/protocol/version.hpp>
+#include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
+
 #include <hive/plugins/block_api/block_api_objects.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {
-using namespace hive::protocol;
-
-template< typename T >
-struct convert_to_legacy_static_variant
-{
-  convert_to_legacy_static_variant( T& l_sv ) :
-  legacy_sv( l_sv ) {}
-
-  T& legacy_sv;
-
-  typedef void result_type;
-
-  template< typename V >
-  void operator()( const V& v ) const
-  {
-    legacy_sv = v;
-  }
-};
-
-struct legacy_price
-{
-  legacy_price() {}
-  legacy_price( const protocol::price& p ) :
-    base( legacy_asset::from_asset( p.base ) ),
-    quote( legacy_asset::from_asset( p.quote ) )
-  {}
-
-  operator price()const { return price( base, quote ); }
-
-  legacy_asset base;
-  legacy_asset quote;
-};
-
-struct api_chain_properties
-{
-  api_chain_properties() {}
-  api_chain_properties( const hive::chain::chain_properties& c ) :
-    account_creation_fee( legacy_asset::from_asset( c.account_creation_fee ) ),
-    maximum_block_size( c.maximum_block_size ),
-    hbd_interest_rate( c.hbd_interest_rate ),
-    account_subsidy_budget( c.account_subsidy_budget ),
-    account_subsidy_decay( c.account_subsidy_decay )
-  {}
-
-  operator legacy_chain_properties() const
-  {
-    legacy_chain_properties props;
-    props.account_creation_fee = legacy_hive_asset::from_asset( asset( account_creation_fee ) );
-    props.maximum_block_size = maximum_block_size;
-    props.hbd_interest_rate = hbd_interest_rate;
-    return props;
-  }
-
-  legacy_asset   account_creation_fee;
-  uint32_t       maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
-  uint16_t       hbd_interest_rate = HIVE_DEFAULT_HBD_INTEREST_RATE;
-  int32_t        account_subsidy_budget = HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
-  uint32_t       account_subsidy_decay = HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
-};
 
 FC_TODO( "Remove when automated actions are created" )
 typedef static_variant<
@@ -88,10 +29,16 @@ struct legacy_signed_transaction
     ref_block_prefix( t.ref_block_prefix ),
     expiration( t.expiration )
   {
+    for( const auto& o : t.operations )
+    {
+      legacy_operation op;
+      o.visit( legacy_operation_conversion_visitor( op ) );
+      operations.push_back( op );
+    }
+
     // Signed transaction extensions field exists, but must be empty
     // Don't worry about copying them.
 
-    operations.insert( operations.end(), t.operations.begin(), t.operations.end() );
     signatures.insert( signatures.end(), t.signatures.begin(), t.signatures.end() );
   }
 
@@ -103,10 +50,16 @@ struct legacy_signed_transaction
     block_num( t.block_num ),
     transaction_num( t.transaction_num )
   {
+    for( const auto& o : t.operations )
+    {
+      legacy_operation op;
+      o.visit( legacy_operation_conversion_visitor( op ) );
+      operations.push_back( op );
+    }
+
     // Signed transaction extensions field exists, but must be empty
     // Don't worry about copying them.
 
-    operations.insert( operations.end(), t.operations.begin(), t.operations.end() );
     signatures.insert( signatures.end(), t.signatures.begin(), t.signatures.end() );
   }
 
@@ -117,7 +70,12 @@ struct legacy_signed_transaction
     tx.ref_block_prefix = ref_block_prefix;
     tx.expiration = expiration;
 
-    tx.operations.insert( tx.operations.end(), operations.begin(), operations.end() );
+    convert_from_legacy_operation_visitor v;
+    for( const auto& o : operations )
+    {
+      tx.operations.push_back( o.visit( v ) );
+    }
+
     tx.signatures.insert( tx.signatures.end(), signatures.begin(), signatures.end() );
 
     return tx;
@@ -126,7 +84,7 @@ struct legacy_signed_transaction
   uint16_t                   ref_block_num    = 0;
   uint32_t                   ref_block_prefix = 0;
   fc::time_point_sec         expiration;
-  vector< operation >        operations;
+  vector< legacy_operation > operations;
   extensions_type            extensions;
   vector< signature_type >   signatures;
   transaction_id_type        transaction_id;
@@ -192,12 +150,6 @@ struct legacy_signed_block
 };
 
 } } } // hive::plugins::condenser_api
-
-FC_REFLECT( hive::plugins::condenser_api::legacy_price, (base)(quote) )
-
-FC_REFLECT( hive::plugins::condenser_api::api_chain_properties,
-        (account_creation_fee)(maximum_block_size)(hbd_interest_rate)(account_subsidy_budget)(account_subsidy_decay)
-        )
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_signed_transaction,
         (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions)(signatures)(transaction_id)(block_num)(transaction_num) )
