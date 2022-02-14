@@ -12,6 +12,7 @@
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
 
+#include <hive/protocol/misc_utilities.hpp>
 
 #include <hive/utilities/git_revision.hpp>
 
@@ -228,16 +229,10 @@ namespace detail
     auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), args[1].as< bool >() } ).ops;
     get_ops_in_block_return result;
 
-    legacy_operation l_op;
-    legacy_operation_conversion_visitor visitor( l_op );
-
     for( auto& op_obj : ops )
     {
-      if( op_obj.op.visit( visitor) )
-      {
-        result.push_back( api_operation_object( op_obj, visitor.l_op ) );
-        result.back().op_in_trx = op_obj.op_in_trx;
-      }
+      result.push_back( hive::protocol::serializer_wrapper<api_operation_object>( { api_operation_object( op_obj, op_obj.op ) } ) );
+      result.back().value.op_in_trx = op_obj.op_in_trx;
     }
 
     return result;
@@ -722,7 +717,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    return legacy_signed_transaction( _account_history_api->get_transaction( { args[0].as< transaction_id_type >() } ) );
+    return hive::protocol::serializer_wrapper<signed_transaction>( { _account_history_api->get_transaction( { args[0].as< transaction_id_type >() } ) } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_required_signatures )
@@ -890,17 +885,11 @@ namespace detail
       include_reversible, operation_filter_low, operation_filter_high } ).history;
     get_account_history_return result;
 
-    legacy_operation l_op;
-    legacy_operation_conversion_visitor visitor( l_op );
-
     for( auto& entry : history )
     {
-      if( entry.second.op.visit( visitor ) )
-      {
-        api_operation_object obj( entry.second, visitor.l_op );
-        obj.op_in_trx = entry.second.op_in_trx;
-        result.emplace( entry.first, obj );
-      }
+      api_operation_object obj( entry.second, entry.second.op );
+      obj.op_in_trx = entry.second.op_in_trx;
+      result.emplace( entry.first, hive::protocol::serializer_wrapper<api_operation_object>{ obj } );
     }
 
     return result;
