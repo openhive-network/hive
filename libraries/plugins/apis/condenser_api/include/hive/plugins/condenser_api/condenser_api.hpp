@@ -66,13 +66,13 @@ struct api_limit_order_object
 struct api_operation_object
 {
   api_operation_object() {}
-  api_operation_object( const account_history::api_operation_object& obj, const legacy_operation& l_op ) :
+  api_operation_object( const account_history::api_operation_object& obj, const operation& _op ) :
     trx_id( obj.trx_id ),
     block( obj.block ),
     trx_in_block( obj.trx_in_block ),
     virtual_op( obj.virtual_op ),
     timestamp( obj.timestamp ),
-    op( l_op )
+    op( _op )
   {}
 
   transaction_id_type  trx_id;
@@ -81,7 +81,7 @@ struct api_operation_object
   uint32_t             op_in_trx = 0;
   bool                 virtual_op = false;
   fc::time_point_sec   timestamp;
-  legacy_operation     op;
+  operation            op;
 };
 
 struct api_account_object
@@ -697,7 +697,7 @@ typedef vector< variant > get_version_args;
 
 typedef database_api::get_version_return get_version_return;
 
-typedef map< uint32_t, api_operation_object > get_account_history_return_type;
+typedef map< uint32_t, hive::protocol::serializer_wrapper<api_operation_object> > get_account_history_return_type;
 
 typedef vector< variant > broadcast_transaction_synchronous_args;
 
@@ -802,7 +802,7 @@ DEFINE_API_ARGS( get_state,                              vector< variant >,   no
 DEFINE_API_ARGS( get_active_witnesses,                   vector< variant >,   vector< account_name_type > )
 DEFINE_API_ARGS( get_block_header,                       vector< variant >,   optional< block_header > )
 DEFINE_API_ARGS( get_block,                              vector< variant >,   optional< legacy_signed_block > )
-DEFINE_API_ARGS( get_ops_in_block,                       vector< variant >,   vector< api_operation_object > )
+DEFINE_API_ARGS( get_ops_in_block,                       vector< variant >,   vector< hive::protocol::serializer_wrapper<api_operation_object> > )
 DEFINE_API_ARGS( get_config,                             vector< variant >,   fc::variant_object )
 DEFINE_API_ARGS( get_dynamic_global_properties,          vector< variant >,   extended_dynamic_global_properties )
 DEFINE_API_ARGS( get_chain_properties,                   vector< variant >,   api_chain_properties )
@@ -835,7 +835,7 @@ DEFINE_API_ARGS( lookup_witness_accounts,                vector< variant >,   ve
 DEFINE_API_ARGS( get_open_orders,                        vector< variant >,   vector< api_limit_order_object > )
 DEFINE_API_ARGS( get_witness_count,                      vector< variant >,   uint64_t )
 DEFINE_API_ARGS( get_transaction_hex,                    vector< variant >,   string )
-DEFINE_API_ARGS( get_transaction,                        vector< variant >,   legacy_signed_transaction )
+DEFINE_API_ARGS( get_transaction,                        vector< variant >,   hive::protocol::serializer_wrapper<signed_transaction> )
 DEFINE_API_ARGS( get_required_signatures,                vector< variant >,   set< public_key_type > )
 DEFINE_API_ARGS( get_potential_signatures,               vector< variant >,   set< public_key_type > )
 DEFINE_API_ARGS( verify_authority,                       vector< variant >,   bool )
