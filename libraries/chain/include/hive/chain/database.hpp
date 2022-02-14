@@ -733,6 +733,7 @@ namespace chain {
         note.block        = _current_block_num;
         note.trx_in_block = _current_trx_in_block;
         note.op_in_trx    = _current_op_in_trx;
+        note.virtual_op   = hive::protocol::is_virtual_operation(op);
         return note;
       }
 
