@@ -1,0 +1,17 @@
+[
+  {
+    "block": 1768862,
+    "op": [
+      "producer_reward",
+      {
+        "producer": "nextgencrypto",
+        "vesting_shares": "8374.364705 VESTS"
+      }
+    ],
+    "op_in_trx": 1,
+    "timestamp": "2016-05-25T22:46:42",
+    "trx_id": "0000000000000000000000000000000000000000",
+    "trx_in_block": 4294967295,
+    "virtual_op": true
+  }
+]

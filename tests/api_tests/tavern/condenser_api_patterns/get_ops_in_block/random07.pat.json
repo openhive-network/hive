@@ -1,0 +1,17 @@
+[
+  {
+    "block": 334695,
+    "op": [
+      "producer_reward",
+      {
+        "producer": "hr202",
+        "vesting_shares": "1.000 HIVE"
+      }
+    ],
+    "op_in_trx": 1,
+    "timestamp": "2016-04-05T09:59:03",
+    "trx_id": "0000000000000000000000000000000000000000",
+    "trx_in_block": 4294967295,
+    "virtual_op": true
+  }
+]
