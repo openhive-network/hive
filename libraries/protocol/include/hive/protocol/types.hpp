@@ -4,7 +4,6 @@
 
 #include <hive/protocol/asset_symbol.hpp>
 #include <hive/protocol/fixed_string.hpp>
-#include <hive/protocol/misc_utilities.hpp>
 
 #include <fc/container/flat_fwd.hpp>
 #include <fc/io/varint.hpp>
@@ -84,12 +83,6 @@ namespace hive {
     typedef uint32_t                    contribution_id_type;
     typedef fixed_string<32>            custom_id_type;
 
-
-    template<typename T>
-    struct serializer_wrapper
-    {
-      T value;
-    };
 
     struct public_key_type
     {
@@ -171,27 +164,7 @@ namespace fc
   void from_variant( const fc::variant& var, hive::protocol::extended_public_key_type& vo );
   void to_variant( const hive::protocol::extended_private_key_type& var, fc::variant& vo );
   void from_variant( const fc::variant& var, hive::protocol::extended_private_key_type& vo );
-
-  template<typename T>
-  inline void to_variant( const hive::protocol::serializer_wrapper<T>& a, fc::variant& var )
-  {
-    try
-    {
-      hive::protocol::legacy_switcher switcher( true );
-      to_variant( a.value, var );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-  template<typename T>
-  inline void from_variant( const fc::variant& var, hive::protocol::serializer_wrapper<T>& a )
-  {
-    try
-    {
-      hive::protocol::legacy_switcher switcher( true );
-      from_variant( var, a.value );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-} // fc
+}
 
 FC_REFLECT( hive::protocol::public_key_type, (key_data) )
 FC_REFLECT( hive::protocol::public_key_type::binary_key, (data)(check) )
@@ -202,6 +175,5 @@ FC_REFLECT( hive::protocol::extended_private_key_type::binary_key, (check)(data)
 
 FC_REFLECT_TYPENAME( hive::protocol::share_type )
 FC_REFLECT_TYPENAME( hive::protocol::ushare_type )
-FC_REFLECT_TEMPLATE( (typename T), hive::protocol::serializer_wrapper<T>, (value) )
 
 FC_REFLECT( hive::void_t, )
