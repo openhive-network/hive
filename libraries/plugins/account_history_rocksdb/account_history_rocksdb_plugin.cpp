@@ -1435,7 +1435,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     }
   }
 
-  return std::make_pair( lastFoundBlock, 0 );
+  return std::make_pair( 0, 0 );
 }
 
 bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol::transaction_id_type& trxId,
