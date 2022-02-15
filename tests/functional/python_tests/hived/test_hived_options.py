@@ -40,9 +40,12 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World
     assert warning in stderr
 
 
-@pytest.mark.parametrize('way_to_stop', [
-                        {'arguments': ['--exit-after-replay']},
-                        {'exit_before_synchronization': True}])
+@pytest.mark.parametrize(
+    'way_to_stop', [
+        {'arguments': ['--exit-after-replay']},
+        {'exit_before_synchronization': True}
+    ]
+)
 def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     net = world.create_network()
     node = net.create_api_node()
@@ -59,9 +62,12 @@ def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of
     assert node.get_last_block_number() == number_of_blocks
 
 
-@pytest.mark.parametrize('way_to_stop', [
-                        {'arguments': ['--exit-after-replay']},
-                        {'exit_before_synchronization': True}])
+@pytest.mark.parametrize(
+    'way_to_stop', [{'arguments': [
+        '--exit-after-replay']},
+        {'exit_before_synchronization': True}
+    ]
+)
 def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
     node = world.create_api_node()
     node.run(replay_from=block_log,  **way_to_stop)
