@@ -1183,6 +1183,10 @@ bool database::_push_block(const signed_block& new_block)
               throw *except;
             }
         }
+        hive::notify( "switching forks",
+          "id", new_head->id.str(),
+          "num", new_head->num
+        );
         return true;
       }
       else
