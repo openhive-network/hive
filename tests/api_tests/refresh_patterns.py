@@ -10,12 +10,13 @@ from requests import post
 from sys import argv
 from argparse import ArgumentParser
 
-DEFAULT_PATTERN = '.*/account_history_api.*'
+ENDPOINTS = ["get_transaction", "get_account_history", "enum_virtual_ops", "get_ops_in_block"]
+DEFAULT_PATTERN = f'.*/({"|".join(ENDPOINTS)})'
 
 engine = ArgumentParser()
 engine.add_argument('URL', type=str, help='reference node, which will provide pattern data (Ex. http://localhost:8091)')
 engine.add_argument('-s', dest='SUFIX', type=str, default=None, help='this suffix will be attached to file extension, which is handy for fast removal of patterns (Ex. "xxx", which allows to execute command: `find . | grep \'json.xxx\' | xargs rm` )')
-engine.add_argument('-p', '--pattern', dest='pattern', type=str, default='.*/account_history_api/.*', help=f'this will be used as regex for path matching (default: `{DEFAULT_PATTERN}`)')
+engine.add_argument('-p', '--pattern', dest='pattern', type=str, default=DEFAULT_PATTERN, help=f'this will be used as regex for path matching (default: `{DEFAULT_PATTERN}`)')
 args = engine.parse_args(argv[1:])
 
 URL = args.URL
