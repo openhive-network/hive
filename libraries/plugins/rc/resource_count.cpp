@@ -13,6 +13,7 @@ struct count_operation_visitor
   typedef void result_type;
 
   mutable int32_t market_op_count = 0;
+  mutable size_t recover_count = 0;
   mutable int32_t new_account_op_count = 0;
   mutable int64_t state_bytes_count = 0;
   mutable int64_t execution_time_count = 0;
@@ -390,7 +391,9 @@ struct count_operation_visitor
   }
 
   // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
-  void operator()( const recover_account_operation& ) const {}
+  void operator()( const recover_account_operation& ) const {
+    recover_count++;
+  }
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
   void operator()( const report_over_production_operation& ) const {}
@@ -461,13 +464,17 @@ void count_resources(
   const int64_t tx_size = int64_t( fc::raw::pack_size( tx ) );
   count_operation_visitor vtor( size_info, exec_info );
 
-  result.resource_count[ resource_history_bytes ] += tx_size;
-
   for( const operation& op : tx.operations )
   {
     op.visit( vtor );
   }
 
+  if (vtor.recover_count == tx.operations.size()) {
+    // transactions which only recover accounts are entirely free
+    return;
+  }
+  
+  result.resource_count[ resource_history_bytes ] += tx_size;
   result.resource_count[ resource_new_accounts ] += vtor.new_account_op_count;
 
   if( vtor.market_op_count > 0 )
