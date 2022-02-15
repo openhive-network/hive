@@ -195,10 +195,6 @@ struct get_resource_user_visitor
 
   account_name_type operator()( const recover_account_operation& op )const
   {
-    for( const auto& account_weight : op.new_owner_authority.account_auths )
-      return account_weight.first;
-    for( const auto& account_weight : op.recent_owner_authority.account_auths )
-      return account_weight.first;
     return op.account_to_recover;
   }
 
