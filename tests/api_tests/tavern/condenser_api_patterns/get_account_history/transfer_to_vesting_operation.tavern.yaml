@@ -12,15 +12,16 @@
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
+        timeout: !int "{timeout:d}"
         headers:
           content-type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
           method: "condenser_api.get_account_history"
-          params: ["steemit",1000,100,8]
+          params: ["blocktrades", 210000, 17, 0, 8192]
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          
+

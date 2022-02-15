@@ -1,6 +1,6 @@
 [
   [
-    114,
+    115,
     {
       "block": 2881920,
       "op": [
@@ -11,8 +11,6 @@
           "owner": "gtg",
           "props": {
             "account_creation_fee": "9.999 HIVE",
-            "account_subsidy_budget": 797,
-            "account_subsidy_decay": 347321,
             "hbd_interest_rate": 1000,
             "maximum_block_size": 131072
           },
@@ -23,11 +21,11 @@
       "timestamp": "2016-07-03T18:04:21",
       "trx_id": "d1f352e5d1834cbf166166c4810b752d021f0fc0",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    325,
+    326,
     {
       "block": 3134487,
       "op": [
@@ -38,8 +36,6 @@
           "owner": "gtg",
           "props": {
             "account_creation_fee": "9.999 HIVE",
-            "account_subsidy_budget": 797,
-            "account_subsidy_decay": 347321,
             "hbd_interest_rate": 1000,
             "maximum_block_size": 131072
           },
@@ -50,11 +46,11 @@
       "timestamp": "2016-07-12T13:52:36",
       "trx_id": "4cee4cbe4e1637e6745bde8ad8eb5c2559ae818b",
       "trx_in_block": 6,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    333,
+    334,
     {
       "block": 3153076,
       "op": [
@@ -65,8 +61,6 @@
           "owner": "gtg",
           "props": {
             "account_creation_fee": "5.000 HIVE",
-            "account_subsidy_budget": 797,
-            "account_subsidy_decay": 347321,
             "hbd_interest_rate": 1000,
             "maximum_block_size": 131072
           },
@@ -77,11 +71,11 @@
       "timestamp": "2016-07-13T05:25:36",
       "trx_id": "5dda11f0e7df6c556e7d4d6efdf32c3129fce98b",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    423,
+    424,
     {
       "block": 3682342,
       "op": [
@@ -92,8 +86,6 @@
           "owner": "gtg",
           "props": {
             "account_creation_fee": "3.000 HIVE",
-            "account_subsidy_budget": 797,
-            "account_subsidy_decay": 347321,
             "hbd_interest_rate": 1000,
             "maximum_block_size": 65536
           },
@@ -104,11 +96,11 @@
       "timestamp": "2016-07-31T19:53:18",
       "trx_id": "6d409ff427aac442de4475b844cd7033ef79a9ca",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    921,
+    924,
     {
       "block": 3998630,
       "op": [
@@ -119,8 +111,6 @@
           "owner": "gtg",
           "props": {
             "account_creation_fee": "3.000 HIVE",
-            "account_subsidy_budget": 797,
-            "account_subsidy_decay": 347321,
             "hbd_interest_rate": 1000,
             "maximum_block_size": 65536
           },
@@ -131,7 +121,7 @@
       "timestamp": "2016-08-11T20:50:36",
       "trx_id": "90b1c097689f6a556b13f1223f7e4c3a979a402c",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ]
 ]

@@ -2,7 +2,7 @@
   test_name: Hived
 
   marks:
-    - patterntest # not found yet, something happened near 3334000 block
+    - patterntest
 
   includes:
     - !include ../../common.yaml
@@ -12,13 +12,14 @@
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
+        timeout: !int "{timeout:d}"
         headers:
           content-type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
           method: "condenser_api.get_account_history"
-          params: ["gtg",100,100,32768]
+          params: ["bytemaster", 8000, 1000, 32768]
       response:
         status_code: 200
         verify_response_with:
