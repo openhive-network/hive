@@ -15,11 +15,11 @@ def block_log_helper() -> Tuple[BlockLog, int]:
         node.run(wait_for_live=True)
 
         node.wait_for_block_with_number(BLOCK_COUNT)
-        number_of_blocks = node.get_last_block_number()
+        block_log_length = node.get_last_block_number()
 
         node.close()
-        logger.info(f'prepared block log with {number_of_blocks} blocks')
-        yield node.get_block_log(), number_of_blocks
+        logger.info(f'prepared block log with {block_log_length} blocks')
+        yield node.get_block_log(), block_log_length
 
 
 @fixture(scope='package')
