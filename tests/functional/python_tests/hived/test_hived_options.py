@@ -47,6 +47,14 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World
     ]
 )
 def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
+    """
+    The test consists in checking the situation in which the tested node stops immediately after performing the "replay"
+    and at the same time before starting the synchronization. For this purpose, the tested node is started with
+    the appropriate flag. At the same time, the background node was launched, which is in "live" mode and
+    produces 6 blocks. In this way, we check that the tested node will not download blocks from the "background node"
+    and will not increase the size of its block log to 36 blocks.
+    """
+
     net = world.create_network()
     node = net.create_api_node()
 
