@@ -38,8 +38,8 @@ struct operation_notification
   int64_t             block = 0;
   int64_t             trx_in_block = 0;
   int64_t             op_in_trx = 0;
-  bool                virtual_op = false;
   const hive::protocol::operation&    op;
+  bool                virtual_op = false;
 };
 
 struct required_action_notification

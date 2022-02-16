@@ -30,10 +30,10 @@ class volatile_operation_object : public object< volatile_operation_object_type,
     uint32_t                   block = 0;
     uint32_t                   trx_in_block = 0;
     uint32_t                   op_in_trx = 0;
-    bool                       is_virtual = false;
     time_point_sec             timestamp;
     chain::buffer_type         serialized_op;
     chainbase::t_vector< account_name_type > impacted;
+    bool                       is_virtual = false;
 };
 
 typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
@@ -52,8 +52,8 @@ class rocksdb_operation_object
       block( o.block ),
       trx_in_block( o.trx_in_block ),
       op_in_trx( o.op_in_trx ),
-      is_virtual( o.is_virtual ),
-      timestamp( o.timestamp )
+      timestamp( o.timestamp ),
+      is_virtual(o.is_virtual)
     {
       serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
     }
@@ -64,9 +64,9 @@ class rocksdb_operation_object
     uint32_t                   block = 0;
     uint32_t                   trx_in_block = 0;
     uint32_t                   op_in_trx = 0;
-    bool                       is_virtual = false;
     time_point_sec             timestamp;
     serialize_buffer_t         serialized_op;
+    bool                       is_virtual = false;
 };
 
 struct by_block;
