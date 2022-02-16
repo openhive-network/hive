@@ -47,27 +47,22 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World
     ]
 )
 def test_stop_after_replay(way_to_stop, world: World, block_log: Path, number_of_blocks: int):
-    """
-    The test consists in checking the situation in which the tested node stops immediately after performing the "replay"
-    and at the same time before starting the synchronization. For this purpose, the tested node is started with
-    the appropriate flag. At the same time, the background node was launched, which is in "live" mode and
-    produces 6 blocks. In this way, we check that the tested node will not download blocks from the "background node"
-    and will not increase the size of its block log to 36 blocks.
-    """
+    network = world.create_network()
+    node_which_should_not_synchronize = network.create_api_node()
+    node_with_new_blocks = network.create_init_node()
 
-    net = world.create_network()
-    node = net.create_api_node()
+    # Generate new blocks, which are not present in source block log,
+    # to check if other node will try to download them (synchronize).
+    node_with_new_blocks.run(replay_from=block_log, wait_for_live=True)
+    node_with_new_blocks.wait_number_of_blocks(6)
 
-    background_node = net.create_init_node()
-    background_node.run(replay_from=block_log, wait_for_live=True)
-    background_node.wait_number_of_blocks(6)
+    node_which_should_not_synchronize.run(replay_from=block_log, **way_to_stop)
+    assert not node_which_should_not_synchronize.is_running()
 
-    node.run(replay_from=block_log, **way_to_stop)
-    assert not node.is_running()
+    node_with_new_blocks.close()  # Now node_which_should_not_synchronize will surely not synchronize.
 
-    background_node.close()
-    node.run(wait_for_live=False)
-    assert node.get_last_block_number() == number_of_blocks
+    node_which_should_not_synchronize.run(wait_for_live=False)
+    assert node_which_should_not_synchronize.get_last_block_number() == number_of_blocks  # No new blocks.
 
 
 @pytest.mark.parametrize(
