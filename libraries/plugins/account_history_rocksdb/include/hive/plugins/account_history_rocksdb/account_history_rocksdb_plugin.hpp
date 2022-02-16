@@ -9,6 +9,8 @@
 #include <functional>
 #include <memory>
 
+#define VIRTUAL_OP_FLAG              0x8000000000000000
+
 namespace hive {
 
 namespace plugins { namespace account_history_rocksdb {

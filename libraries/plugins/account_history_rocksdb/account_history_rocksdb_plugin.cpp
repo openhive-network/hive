@@ -58,7 +58,6 @@ enum Columns
 #define WRITE_BUFFER_FLUSH_LIMIT     10
 #define ACCOUNT_HISTORY_LENGTH_LIMIT 30
 #define ACCOUNT_HISTORY_TIME_LIMIT   30
-#define VIRTUAL_OP_FLAG              0x8000000000000000
 
 /** Because localtion_id_pair stores block_number paired with (VIRTUAL_OP_FLAG|operation_id),
   *  max allowed operation-id is max_int (instead of max_uint).
