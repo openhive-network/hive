@@ -40,7 +40,10 @@ def create_pattern(url : str, tav_file : str, directory : str):
 	parsed = output.json()
 
 	if '_negative' in directory:
-		return
+		assert 'error' in parsed, f'while processing {TAVERN_FILE}, no "error" found in result: {parsed}' + '\n' + f'{request}'
+		parsed = parsed['error']
+		if 'data' in parsed:
+			parsed.pop('data')
 	else:
 		assert 'result' in parsed, f'while processing {TAVERN_FILE}, no "result" found in result: {parsed}' + '\n' + f'{request}'
 		parsed = parsed['result']

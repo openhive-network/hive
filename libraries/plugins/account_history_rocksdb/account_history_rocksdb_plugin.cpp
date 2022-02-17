@@ -274,7 +274,7 @@ struct operation_id_vop_pair
   {
     FC_ASSERT(id < static_cast<uint64_t>(MAX_OPERATION_ID));
   }
-  
+
   bool operator < (const operation_id_vop_pair& rhs) const
   {
     return _op_id < rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
@@ -1304,7 +1304,10 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit,
   std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const
 {
+  constexpr static uint32_t block_range_limit = 2'000;
+
   FC_ASSERT(blockRangeEnd > blockRangeBegin, "Block range must be upward");
+  FC_ASSERT(blockRangeEnd - blockRangeBegin <= block_range_limit, "Block range distance must be less than or equal to ${lim}", ("lim", block_range_limit));
 
   uint64_t lastProcessedOperationId = 0;
   if(resumeFromOperation.valid())
