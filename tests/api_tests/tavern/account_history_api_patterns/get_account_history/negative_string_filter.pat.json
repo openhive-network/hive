@@ -1,0 +1,739 @@
+{
+  "history": [
+    [
+      21,
+      {
+        "block": 2820033,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "dan",
+            "permlink": "draft-steem-constitution",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T14:23:21",
+        "trx_id": "6af66a49af72cde348209ca136dda5171b9b7364",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      22,
+      {
+        "block": 2820033,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "dan",
+            "pending_payout": {
+              "amount": "986251",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "draft-steem-constitution",
+            "rshares": 27007214,
+            "total_vote_weight": "17965561935576779818",
+            "voter": "gtg",
+            "weight": "84745987291"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T14:23:21",
+        "trx_id": "6af66a49af72cde348209ca136dda5171b9b7364",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      23,
+      {
+        "block": 2827089,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "cryptogee",
+            "permlink": "how-to-increase-the-value-of-steem-the-ultimate-july-4th-strategy",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T20:16:36",
+        "trx_id": "ceb86a90d5e73e4e45e7711347ecc8bf674a2cbd",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      24,
+      {
+        "block": 2827089,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "cryptogee",
+            "pending_payout": {
+              "amount": "353327",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "how-to-increase-the-value-of-steem-the-ultimate-july-4th-strategy",
+            "rshares": 27547358,
+            "total_vote_weight": "17318139715377240939",
+            "voter": "gtg",
+            "weight": "475536512402"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T20:16:36",
+        "trx_id": "ceb86a90d5e73e4e45e7711347ecc8bf674a2cbd",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      25,
+      {
+        "block": 2839669,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "blocktrades-supports-buyingselling-dao-coins-without-exchange-risk",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:47:42",
+        "trx_id": "2b79214e07cffd28c8ee026055d92767229d8b45",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      26,
+      {
+        "block": 2839669,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "2715326",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "blocktrades-supports-buyingselling-dao-coins-without-exchange-risk",
+            "rshares": 27547358,
+            "total_vote_weight": "41395120110223",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:47:42",
+        "trx_id": "2b79214e07cffd28c8ee026055d92767229d8b45",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      27,
+      {
+        "block": 2839669,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "dao-gateway-on-openledger-is-fully-operational",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:47:42",
+        "trx_id": "c02b46ca3eced3c6bd5cc43df2114143ce6c2105",
+        "trx_in_block": 1,
+        "virtual_op": false
+      }
+    ],
+    [
+      28,
+      {
+        "block": 2839669,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1102767",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "dao-gateway-on-openledger-is-fully-operational",
+            "rshares": 27007214,
+            "total_vote_weight": "37317034722668",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:47:42",
+        "trx_id": "c02b46ca3eced3c6bd5cc43df2114143ce6c2105",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ],
+    [
+      29,
+      {
+        "block": 2839884,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "complexring",
+            "permlink": "cryptography-101-an-interactive-class-an-introduction-to-group-theory--week-1",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:58:27",
+        "trx_id": "c6c79616137a833f7d352d4bd8c6e132a9b779a7",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      30,
+      {
+        "block": 2839884,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "complexring",
+            "pending_payout": {
+              "amount": "1134846",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "cryptography-101-an-interactive-class-an-introduction-to-group-theory--week-1",
+            "rshares": 27007214,
+            "total_vote_weight": "26174264808313",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:58:27",
+        "trx_id": "c6c79616137a833f7d352d4bd8c6e132a9b779a7",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      31,
+      {
+        "block": 2840585,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "blocktrades-now-offering-steem-power-for-cryptocurrency",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:33",
+        "trx_id": "8726774b3c8d53e9dcb870db6b3561a217871d27",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      32,
+      {
+        "block": 2840585,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1439043",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "blocktrades-now-offering-steem-power-for-cryptocurrency",
+            "rshares": 27007214,
+            "total_vote_weight": "40979209439222",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:33",
+        "trx_id": "8726774b3c8d53e9dcb870db6b3561a217871d27",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      33,
+      {
+        "block": 2840590,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "i-find-steemit-posts-with-summariesanalysis-of-3rd-party-content-more-compelling",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:48",
+        "trx_id": "e909cd27baf117473ec99ec9b875a6916927c55e",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      34,
+      {
+        "block": 2840590,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1386736",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "i-find-steemit-posts-with-summariesanalysis-of-3rd-party-content-more-compelling",
+            "rshares": 27007214,
+            "total_vote_weight": "39919636650316",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:48",
+        "trx_id": "e909cd27baf117473ec99ec9b875a6916927c55e",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      35,
+      {
+        "block": 2840591,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:51",
+        "trx_id": "9174e0f692023ecf91d632f9949a94c808302119",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      36,
+      {
+        "block": 2840591,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "2428829",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": 27007214,
+            "total_vote_weight": "38851983572277",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:51",
+        "trx_id": "9174e0f692023ecf91d632f9949a94c808302119",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      37,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "88d2f81c37e1288448b334042c3eee02df6395d9",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      38,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "2031797",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 26467069,
+            "total_vote_weight": "38794385435057",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "88d2f81c37e1288448b334042c3eee02df6395d9",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      39,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "is-vote-changing-an-important-feature-for-steem",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "4fdfc9bcbc84c0b7d798cf3f0c606269043f14ff",
+        "trx_in_block": 1,
+        "virtual_op": false
+      }
+    ],
+    [
+      40,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1004732",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "is-vote-changing-an-important-feature-for-steem",
+            "rshares": 26467069,
+            "total_vote_weight": "39522051255407",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "4fdfc9bcbc84c0b7d798cf3f0c606269043f14ff",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ],
+    [
+      41,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "5179c7745a8a8e729cf8faab0461e97bc1219ba3",
+        "trx_in_block": 2,
+        "virtual_op": false
+      }
+    ],
+    [
+      42,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "1805443",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 26467069,
+            "total_vote_weight": "39555131983403",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "5179c7745a8a8e729cf8faab0461e97bc1219ba3",
+        "trx_in_block": 2,
+        "virtual_op": true
+      }
+    ],
+    [
+      43,
+      {
+        "block": 2840599,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:34:15",
+        "trx_id": "2bf9b0850282ed3867d9a2470dc8d6af55aa4ea4",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      44,
+      {
+        "block": 2840599,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "3395497",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 26467069,
+            "total_vote_weight": "37079019999706",
+            "voter": "gtg",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:34:15",
+        "trx_id": "2bf9b0850282ed3867d9a2470dc8d6af55aa4ea4",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      45,
+      {
+        "block": 2840637,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "complexring",
+            "permlink": "cryptography-101-an-interactive-class-more-introduction-to-groups-week-2",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:36:09",
+        "trx_id": "85bb532b9fc5dc4b1d2661a54818958d1e99e08e",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      46,
+      {
+        "block": 2840637,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "complexring",
+            "pending_payout": {
+              "amount": "146486",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "cryptography-101-an-interactive-class-more-introduction-to-groups-week-2",
+            "rshares": 25926925,
+            "total_vote_weight": "16746305325022195403",
+            "voter": "gtg",
+            "weight": "1015999613653"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:36:09",
+        "trx_id": "85bb532b9fc5dc4b1d2661a54818958d1e99e08e",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      47,
+      {
+        "block": 2852954,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "garycovington",
+            "permlink": "journey-to-black-belt",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T17:52:30",
+        "trx_id": "3d5e58dbb4517ca64aba4db4d8cc510d9711fd4e",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      48,
+      {
+        "block": 2852954,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "garycovington",
+            "pending_payout": {
+              "amount": "1150709",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "journey-to-black-belt",
+            "rshares": 27547358,
+            "total_vote_weight": "17827610075172699391",
+            "voter": "gtg",
+            "weight": "143109889316"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T17:52:30",
+        "trx_id": "3d5e58dbb4517ca64aba4db4d8cc510d9711fd4e",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      49,
+      {
+        "block": 2856501,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "darya-zaytseva",
+            "permlink": "greetings-from-between-poland-and-russia-or-the-story-of-scaner",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T20:50:12",
+        "trx_id": "d88e3a5ab2bd89a069cb625299cc00ab4fd4a708",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      50,
+      {
+        "block": 2856501,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "darya-zaytseva",
+            "pending_payout": {
+              "amount": "1200123",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "greetings-from-between-poland-and-russia-or-the-story-of-scaner",
+            "rshares": 27547358,
+            "total_vote_weight": "17842235799422130453",
+            "voter": "gtg",
+            "weight": "136427700558"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T20:50:12",
+        "trx_id": "d88e3a5ab2bd89a069cb625299cc00ab4fd4a708",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

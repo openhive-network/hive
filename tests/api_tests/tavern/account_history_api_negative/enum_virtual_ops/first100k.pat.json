@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:blockRangeEnd - blockRangeBegin <= block_range_limit: Block range distance must be less than or equal to 2000"
+}
