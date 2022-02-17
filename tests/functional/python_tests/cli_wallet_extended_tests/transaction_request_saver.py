@@ -5,13 +5,18 @@ from typing import Dict, List
 
 
 master_url = 'http://localhost:18091'
+server_master_url = 'http://hive-2:18091'
 master_data_stored = '/home/dev/Desktop/request data/request_master_data/response_master.txt'
+server_master_data_stored = 'http://hive-2:8091'
 json_master_data_stored = '/home/dev/Desktop/request data/request_master_data/response_master.json'
+json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data.json'
+
 master_last_block_number = 4409
 
 develop_url = 'http://localhost:28091'
 develop_data_stored = '/home/dev/Desktop/request data/request_develop_data/response_develop.txt'
 json_develop_data_stored = '/home/dev/Desktop/request data/request_develop_data/response_develop.json'
+json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/server_request_develop_data'
 develop_last_block_number = 4415
 
 duplicate_trx = [
@@ -87,7 +92,9 @@ def transaction_request_saver(url, data_place, last_block_number, json_file):
         json.dump(string_data_pack, json_file)
 
 
-find_wrong_transaction(duplicate_trx)
+get_all_account_transactions('gtg', 100, develop_url)
+
+
 
 # master_dict = get_all_account_transactions('gtg', master_last_block_number, master_url)
 # develop_dict = get_all_account_transactions('gtg', develop_last_block_number, develop_url)
