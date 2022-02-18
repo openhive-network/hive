@@ -1,0 +1,26 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        timeout: !int "{timeout:d}"
+        headers:
+          content-type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.enum_virtual_ops"
+          params: {"block_range_begin": 2889020, "block_range_end": 2889022, "operation_begin": 3846274, "limit": -1}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
