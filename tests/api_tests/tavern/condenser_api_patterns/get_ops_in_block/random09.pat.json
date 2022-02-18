@@ -1,0 +1,17 @@
+[
+  {
+    "block": 2814426,
+    "op": [
+      "producer_reward",
+      {
+        "producer": "witness.svk",
+        "vesting_shares": "5368.739580 VESTS"
+      }
+    ],
+    "op_in_trx": 1,
+    "timestamp": "2016-07-01T09:43:00",
+    "trx_id": "0000000000000000000000000000000000000000",
+    "trx_in_block": 4294967295,
+    "virtual_op": true
+  }
+]

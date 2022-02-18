@@ -15,11 +15,11 @@
       "timestamp": "2016-07-04T20:18:00",
       "trx_id": "8930ea36f61aef6fa7c5c79922cc9892f2d7373b",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    189,
+    190,
     {
       "block": 2912956,
       "op": [
@@ -34,7 +34,7 @@
       "timestamp": "2016-07-04T20:22:18",
       "trx_id": "804339e4617544b47018e165d7a8ed45ac38f002",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ]
 ]

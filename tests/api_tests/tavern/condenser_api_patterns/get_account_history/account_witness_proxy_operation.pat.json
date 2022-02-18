@@ -1,6 +1,6 @@
 [
   [
-    761,
+    763,
     {
       "block": 3924580,
       "op": [
@@ -14,7 +14,7 @@
       "timestamp": "2016-08-09T06:52:00",
       "trx_id": "481a52b2a98177c699590240ad845c3b354dd77e",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ]
 ]

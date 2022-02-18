@@ -1,6 +1,6 @@
 [
   [
-    139,
+    140,
     {
       "block": 2885318,
       "op": [
@@ -25,11 +25,11 @@
       "timestamp": "2016-07-03T20:54:21",
       "trx_id": "28590cbf62ba9f0ec6dd6fe9669852068772ee59",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    140,
+    141,
     {
       "block": 2885370,
       "op": [
@@ -54,11 +54,11 @@
       "timestamp": "2016-07-03T20:56:57",
       "trx_id": "60a00c1016cede7d7924f6b32ba4190252b369b7",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    141,
+    142,
     {
       "block": 2885375,
       "op": [
@@ -73,11 +73,11 @@
       "timestamp": "2016-07-03T20:57:12",
       "trx_id": "57a8a136ff02b6b89c31b55314c7e3112939be14",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    142,
+    143,
     {
       "block": 2885409,
       "op": [
@@ -92,11 +92,11 @@
       "timestamp": "2016-07-03T20:58:54",
       "trx_id": "3fc900bf7e4ce2f81664359d399ec0c61826f0a0",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    143,
+    144,
     {
       "block": 2885463,
       "op": [
@@ -141,11 +141,11 @@
       "timestamp": "2016-07-03T21:01:36",
       "trx_id": "59ccc2dd299ada55308a5f4fd9e2735847e92a58",
       "trx_in_block": 0,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    356,
+    357,
     {
       "block": 3191323,
       "op": [
@@ -190,11 +190,11 @@
       "timestamp": "2016-07-14T13:29:03",
       "trx_id": "8edfc3159e6b8490e86262dc066336f85b730be7",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ],
   [
-    378,
+    379,
     {
       "block": 3399203,
       "op": [
@@ -229,7 +229,7 @@
       "timestamp": "2016-07-21T21:48:06",
       "trx_id": "5a3a345d3265d40fd4f7ac1906fddec59ac177c3",
       "trx_in_block": 1,
-      "virtual_op": 0
+      "virtual_op": false
     }
   ]
 ]

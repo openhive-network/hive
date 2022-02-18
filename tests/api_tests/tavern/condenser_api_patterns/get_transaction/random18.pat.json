@@ -1,0 +1,23 @@
+{
+  "block_num": 3227083,
+  "expiration": "2016-07-15T20:44:09",
+  "extensions": [],
+  "operations": [
+    [
+      "vote",
+      {
+        "author": "gavvet",
+        "permlink": "introducing-a-new-cryptocurrency-mining-protocol-fow",
+        "voter": "stephencurry",
+        "weight": 10000
+      }
+    ]
+  ],
+  "ref_block_num": 15785,
+  "ref_block_prefix": 3989412412,
+  "signatures": [
+    "1f19a25d14661b3db4f4e947fbceef2ba9a9b09dc6d0a06efa8455ede007004b9864adec78e2436f6bc02362a12ce2f3e76dc3bf02f3e6cb5ef0e59e1e0da7b966"
+  ],
+  "transaction_id": "675c114f7d776c8f456d191661ebb965e202e18a",
+  "transaction_num": 1
+}

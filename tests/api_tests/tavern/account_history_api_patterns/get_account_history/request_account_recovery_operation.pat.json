@@ -27,7 +27,7 @@
         "timestamp": "2016-07-21T21:41:00",
         "trx_id": "f0ffadc77bb4e089e0d12ae754f9690144c71edc",
         "trx_in_block": 1,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ],
     [
@@ -57,7 +57,7 @@
         "timestamp": "2016-07-21T21:48:00",
         "trx_id": "4292eb5939be2918552c08b8be0adc23ac939002",
         "trx_in_block": 2,
-        "virtual_op": 0
+        "virtual_op": false
       }
     ]
   ]

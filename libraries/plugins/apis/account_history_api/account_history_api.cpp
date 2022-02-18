@@ -292,7 +292,6 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
   enum_virtual_ops_return result;
 
   bool groupOps = args.group_by_block.valid() && *args.group_by_block;
-
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
 
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,

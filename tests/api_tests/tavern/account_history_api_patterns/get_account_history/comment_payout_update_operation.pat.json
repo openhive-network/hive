@@ -11,12 +11,12 @@
             "permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t123936611z"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 12,
         "operation_id": 0,
         "timestamp": "2016-09-03T03:24:06",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 12
+        "virtual_op": true
       }
     ],
     [
@@ -30,12 +30,12 @@
             "permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160805t184622691z"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 14,
         "operation_id": 0,
         "timestamp": "2016-09-03T03:24:06",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 14
+        "virtual_op": true
       }
     ],
     [
@@ -49,12 +49,12 @@
             "permlink": "witness-gtg"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 8,
         "operation_id": 0,
         "timestamp": "2016-09-05T05:17:57",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 8
+        "virtual_op": true
       }
     ],
     [
@@ -68,12 +68,12 @@
             "permlink": "re-wackou-btstools-development-bounties-20160811t173426180z"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 15,
         "operation_id": 0,
         "timestamp": "2016-09-09T17:18:09",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 15
+        "virtual_op": true
       }
     ],
     [
@@ -87,12 +87,12 @@
             "permlink": "re-heretickitten-re-cheetah-cheetah-bot-explained-20160811t093103978z"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 41,
         "operation_id": 0,
         "timestamp": "2016-09-10T18:15:33",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 41
+        "virtual_op": true
       }
     ],
     [
@@ -106,12 +106,12 @@
             "permlink": "re-liondani-don-t-remove-curation-rewards-just-stop-them-when-the-post-reach-the-trending-page-20160815t123329115z"
           }
         },
-        "op_in_trx": 0,
+        "op_in_trx": 22,
         "operation_id": 0,
         "timestamp": "2016-09-15T07:07:00",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
-        "virtual_op": 22
+        "virtual_op": true
       }
     ]
   ]

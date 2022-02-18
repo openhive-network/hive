@@ -58,10 +58,9 @@ enum Columns
 #define WRITE_BUFFER_FLUSH_LIMIT     10
 #define ACCOUNT_HISTORY_LENGTH_LIMIT 30
 #define ACCOUNT_HISTORY_TIME_LIMIT   30
-#define VIRTUAL_OP_FLAG              0x8000000000000000
 
-/** Because localtion_id_pair stores block_number paired with (VIRTUAL_OP_FLAG|operation_id),
-  *  max allowed operation-id is max_int (instead of max_uint).
+/** Because localtion_id_pair stores block_number paired with operation_id_vop_pair, which stores operation id on 63 bits,
+  *  max allowed operation-id is max_int64 (instead of max_uint64).
   */
 #define MAX_OPERATION_ID             std::numeric_limits<int64_t>::max()
 
@@ -269,11 +268,41 @@ typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
 #define LIB_ID lib_id_slice_t( 0 )
 #define REINDEX_POINT_ID lib_id_slice_t( 1 )
 
+struct operation_id_vop_pair
+{
+  operation_id_vop_pair(uint64_t id = 0, bool is_virtual_op = false) : _op_id(id), _is_virtual_op(is_virtual_op)
+  {
+    FC_ASSERT(id < static_cast<uint64_t>(MAX_OPERATION_ID));
+  }
+
+  bool operator < (const operation_id_vop_pair& rhs) const
+  {
+    return _op_id < rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
+  }
+
+  bool operator > (const operation_id_vop_pair& rhs) const
+  {
+    return _op_id > rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
+  }
+
+  bool operator == (const operation_id_vop_pair& rhs) const
+  {
+    return _op_id == rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
+  }
+
+  uint64_t get_id() const { return _op_id; }
+  bool is_virtual() const { return _is_virtual_op; }
+
+private:
+  uint64_t _op_id : 63;
+  uint64_t _is_virtual_op : 1;
+};
+
 /** Location index is nonunique. Since RocksDB supports only unique indexes, it must be extended
   *  by some unique part (ie ID).
   *
   */
-typedef std::pair< uint32_t, uint64_t > block_op_id_pair;
+typedef std::pair< uint32_t, operation_id_vop_pair > block_op_id_pair;
 typedef PrimitiveTypeComparatorImpl< block_op_id_pair > op_by_block_num_ComparatorImpl;
 
 /// Compares account_history_info::id and rocksdb_operation_object::id pair
@@ -655,12 +684,7 @@ private:
     auto s = _writeBuffer.Put(_columnHandles[Columns::OPERATION_BY_ID], idSlice, Slice(serializedObj.data(), serializedObj.size()));
     checkStatus(s);
 
-    // uint64_t location = ( (uint64_t) obj.trx_in_block << 32 ) | ( (uint64_t) obj.op_in_trx << 16 ) | ( obj.virtual_op );
-
-    //if obj is a virtual operation, encode this fact into top bit of id to speed up queries that need to distinguish ops vs virtual ops
-    uint64_t encoded_id = obj.virtual_op ? VIRTUAL_OP_FLAG | obj.id : obj.id;
-
-    op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, encoded_id));
+    op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, operation_id_vop_pair(obj.id, obj.is_virtual)));
 
     s = _writeBuffer.Put(_columnHandles[Columns::OPERATION_BY_BLOCK], blockLocSlice, idSlice);
     checkStatus(s);
@@ -1280,7 +1304,10 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit,
   std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const
 {
+  constexpr static uint32_t block_range_limit = 2'000;
+
   FC_ASSERT(blockRangeEnd > blockRangeBegin, "Block range must be upward");
+  FC_ASSERT(blockRangeEnd - blockRangeBegin <= block_range_limit, "Block range distance must be less than or equal to ${lim}", ("lim", block_range_limit));
 
   uint64_t lastProcessedOperationId = 0;
   if(resumeFromOperation.valid())
@@ -1321,7 +1348,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         }
 
         /// Accept only virtual operations
-        if (op.virtual_op)
+        if (op.is_virtual)
           if(processor(op, op.id, false))
             ++cntLimit;
 
@@ -1357,7 +1384,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
 
     /// Accept only virtual operations
-    if(key.second & VIRTUAL_OP_FLAG)
+    if(key.second.is_virtual())
     {
       auto valueSlice = it->value();
       auto opId = id_slice_t::unpackSlice(valueSlice);
@@ -1369,11 +1396,12 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
       ///Number of retrieved operations can't be greater then limit
       if(limit.valid() && (cntLimit >= *limit))
       {
-        nextElementAfterLimit = key.second;
+        nextElementAfterLimit = key.second.get_id();
+        lastFoundBlock = key.first;
         break;
       }
 
-      if(processor(op, key.second, true))
+      if(processor(op, key.second.get_id(), true))
         ++cntLimit;
 
       lastFoundBlock = key.first;
@@ -1403,9 +1431,8 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         }
 
         /// Accept only virtual operations
-        if (op.virtual_op)
-          if(processor(op, op.id, false))
-            ++cntLimit;
+        if(op.is_virtual && processor(op, op.id, false))
+          ++cntLimit;
 
         lastFoundBlock = op.block;
       }
@@ -1429,7 +1456,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
       auto keySlice = it->key();
       const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
 
-      if(key.second & VIRTUAL_OP_FLAG)
+      if(key.second.is_virtual())
         return std::make_pair( key.first, 0 );
     }
   }
@@ -1934,6 +1961,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
     obj.block = blockNo;
     obj.trx_in_block = txInBlock;
     obj.op_in_trx = opInTx;
+    obj.is_virtual = hive::protocol::is_virtual_operation( op );
     obj.timestamp = _mainDb.head_block_time();
     auto size = fc::raw::pack_size( op );
     obj.serialized_op.resize( size );
@@ -1960,7 +1988,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operation_notification& n)
 {
-  if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && n.virtual_op == 0 )
+  if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !n.virtual_op)
   {
     ilog("RocksDb data import processed blocks: ${n}, containing: ${tx} transactions and ${op} operations.\n"
         " ${ep} operations have been filtered out due to configured options.\n"
@@ -1992,7 +2020,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
     obj.block = n.block;
     obj.trx_in_block = n.trx_in_block;
     obj.op_in_trx = n.op_in_trx;
-    obj.virtual_op = n.virtual_op;
+    obj.is_virtual = n.virtual_op;
     obj.timestamp = _mainDb.head_block_time();
     auto size = fc::raw::pack_size( n.op );
     obj.serialized_op.resize( size );
@@ -2009,7 +2037,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       o.block = n.block;
       o.trx_in_block = n.trx_in_block;
       o.op_in_trx = n.op_in_trx;
-      o.virtual_op = n.virtual_op;
+      o.is_virtual = n.virtual_op;
       o.timestamp = _mainDb.head_block_time();
       auto size = fc::raw::pack_size( n.op );
       o.serialized_op.resize( size );
@@ -2057,7 +2085,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       {
         auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
         {
-          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id, lhs.virtual_op ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id, rhs.virtual_op );
+          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id );
         };
         std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
         find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops

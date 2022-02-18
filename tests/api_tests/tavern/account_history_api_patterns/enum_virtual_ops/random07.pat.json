@@ -1,6 +1,6 @@
 {
   "next_block_range_begin": 4645245,
-  "next_operation_begin": "9223372036872017038",
+  "next_operation_begin": 17241230,
   "ops": [
     {
       "block": 4645245,
@@ -20,12 +20,12 @@
           "weight": "700509133841805"
         }
       },
-      "op_in_trx": 0,
-      "operation_id": "9223372036872017037",
+      "op_in_trx": 1,
+      "operation_id": 17241229,
       "timestamp": "2016-09-03T10:58:39",
       "trx_id": "19378f3dadfe95043fcf0fa2ec0fc9170812e0d4",
       "trx_in_block": 1,
-      "virtual_op": 1
+      "virtual_op": true
     }
   ],
   "ops_by_block": []

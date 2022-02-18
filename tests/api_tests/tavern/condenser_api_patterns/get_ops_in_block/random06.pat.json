@@ -1,0 +1,54 @@
+[
+  {
+    "block": 4539694,
+    "op": [
+      "vote",
+      {
+        "author": "xoxo",
+        "permlink": "re-benjojo-hearts-of-darkness-plague-of-the-void-seeds-10-20160830t183239183z",
+        "voter": "boy",
+        "weight": 10000
+      }
+    ],
+    "op_in_trx": 0,
+    "timestamp": "2016-08-30T18:47:12",
+    "trx_id": "8a848b0a12a7357c7a77308d9e1c5d0d907a7937",
+    "trx_in_block": 0,
+    "virtual_op": false
+  },
+  {
+    "block": 4539694,
+    "op": [
+      "effective_comment_vote",
+      {
+        "author": "xoxo",
+        "pending_payout": "0.888 HBD",
+        "permlink": "re-benjojo-hearts-of-darkness-plague-of-the-void-seeds-10-20160830t183239183z",
+        "rshares": 3098777463,
+        "total_vote_weight": "4854321128370729789",
+        "voter": "boy",
+        "weight": "3778191919939116"
+      }
+    ],
+    "op_in_trx": 1,
+    "timestamp": "2016-08-30T18:47:12",
+    "trx_id": "8a848b0a12a7357c7a77308d9e1c5d0d907a7937",
+    "trx_in_block": 0,
+    "virtual_op": true
+  },
+  {
+    "block": 4539694,
+    "op": [
+      "producer_reward",
+      {
+        "producer": "boatymcboatface",
+        "vesting_shares": "3283.626251 VESTS"
+      }
+    ],
+    "op_in_trx": 1,
+    "timestamp": "2016-08-30T18:47:15",
+    "trx_id": "0000000000000000000000000000000000000000",
+    "trx_in_block": 4294967295,
+    "virtual_op": true
+  }
+]
