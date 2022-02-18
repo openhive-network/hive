@@ -94,8 +94,6 @@ def transaction_request_saver(url, data_place, last_block_number, json_file):
 
 get_all_account_transactions('gtg', 100, develop_url)
 
-
-
 # master_dict = get_all_account_transactions('gtg', master_last_block_number, master_url)
 # develop_dict = get_all_account_transactions('gtg', develop_last_block_number, develop_url)
 
