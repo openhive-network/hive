@@ -3,7 +3,6 @@
 
   marks:
     - patterntest
-    - negative
 
   includes:
     - !include ../../common.yaml
@@ -20,12 +19,8 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.enum_virtual_ops"
-          params: {"block_range_begin": 1, "block_range_end": 100000}
+          params: {"block_range_begin": 2889019, "block_range_end": 2889021, "filter":1024}
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          extra_kwargs:
-            error_response: True
-            ignore_tags:
-              - data
