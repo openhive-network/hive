@@ -562,7 +562,7 @@ protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& arg
   {
     return args.get_array()[0].as<protocol::signed_transaction>();
   }
-  catch(...)
+  catch( fc::bad_cast_exception& e )
   {
     return ( args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>() ).value;
   }
