@@ -1,0 +1,70 @@
+{
+  "next_block_range_begin": 2889020,
+  "next_operation_begin": 3739830,
+  "ops": [
+    {
+      "block": 2889019,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "bitcube",
+          "vesting_shares": {
+            "amount": "5234745111",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 3739826,
+      "timestamp": "2016-07-04T00:00:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 2889020,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "witness.svk",
+          "vesting_shares": {
+            "amount": "5234743387",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 3739828,
+      "timestamp": "2016-07-04T00:00:06",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 2889020,
+      "op": {
+        "type": "curation_reward_operation",
+        "value": {
+          "comment_author": "abit",
+          "comment_permlink": "spam",
+          "curator": "anonymous",
+          "payout_must_be_claimed": false,
+          "reward": {
+            "amount": "3952229956",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 2,
+      "operation_id": 3739829,
+      "timestamp": "2016-07-04T00:00:06",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}
