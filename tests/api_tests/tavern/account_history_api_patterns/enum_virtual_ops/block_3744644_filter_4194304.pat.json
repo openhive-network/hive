@@ -1,0 +1,57 @@
+{
+  "next_block_range_begin": 3744645,
+  "next_operation_begin": 9844928,
+  "ops": [
+    {
+      "block": 3744645,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "djm34",
+          "pending_payout": {
+            "amount": "9135",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "djm34-vape-it-and-steem-it",
+          "rshares": 482849945,
+          "total_vote_weight": "10483254175320587397",
+          "voter": "minion",
+          "weight": "415013258959387"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 9844924,
+      "timestamp": "2016-08-03T00:00:00",
+      "trx_id": "92602fa0236147d88d3990795ad1ab6bcbc95c8c",
+      "trx_in_block": 1,
+      "virtual_op": true
+    },
+    {
+      "block": 3744645,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "blueciruit",
+          "pending_payout": {
+            "amount": "33",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "who-saw-this",
+          "rshares": 13539108,
+          "total_vote_weight": "202733454487810326",
+          "voter": "michelnilles",
+          "weight": "61073446005733"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 9844926,
+      "timestamp": "2016-08-03T00:00:00",
+      "trx_id": "e86df9ab7b9ed12a3497190e4c80d1c63f609487",
+      "trx_in_block": 2,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}
