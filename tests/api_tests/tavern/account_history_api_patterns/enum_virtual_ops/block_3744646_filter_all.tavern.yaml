@@ -19,7 +19,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.enum_virtual_ops"
-          params: {"block_range_begin": 3744646, "block_range_end": 3744647, "limit":15773, "filter":-1, "operation_begin":9860050 }
+          params: {"block_range_begin": 3744646, "block_range_end": 3744647, "limit":1000, "filter":-1, "operation_begin":9860050 }
       response:
         status_code: 200
         verify_response_with:
