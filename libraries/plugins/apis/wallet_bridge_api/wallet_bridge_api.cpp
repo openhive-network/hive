@@ -277,9 +277,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_hardfork_version )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_ops_in_block )
 {
   FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
-  verify_args( args, 2 );
+  verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "get_ops_in_block needs at least one argument" );
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 2 );
   FC_ASSERT( arguments.get_array()[0].is_numeric(), "block number is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_bool(), "only virtual operation (bool) is required as second argument" );
 
@@ -308,9 +309,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_active_witnesses )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
-  verify_args( args, 2 );
+  verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "get_withdraw_routes needs at least one argument" );
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 2 );
   FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_string(), "Withdraw route type is required as second argument" );
 
@@ -347,9 +349,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
 {
-  verify_args( args, 2 );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "list_accounts needs at least one argument");
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 2 );
   FC_ASSERT( arguments.get_array()[0].is_string(), "Lowerbound account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Accounts limit is required as second argument" );
   const protocol::account_name_type lowerbound = arguments.get_array()[0].get_string();
@@ -416,9 +419,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_transaction )
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_witnesses )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
-  verify_args( args, 2 );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "list_witnesses needs at least one argument");
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 2 );
   FC_ASSERT( arguments.get_array()[0].is_string(), "Lowerbound witness name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Witnesses limit is required as second argument" );
   const string lowerbound = arguments.get_array()[0].get_string();
@@ -496,9 +500,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
 {
   FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
-  verify_args( args, 3 );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "get_account_history needs at least one argument");
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 3 );
   FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "from (numeric type) is required as second argument" );
   FC_ASSERT( arguments.get_array()[2].is_numeric(), "limit (numeric type) is required as third argument" );
@@ -511,9 +516,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposals )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
-  verify_args( args, 5 );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "get_account_history needs at least one argument");
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 5 );
 
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
   FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
@@ -554,9 +560,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposal_votes )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
-  verify_args( args, 5 );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "list_proposal_votes needs at least one argument");
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 5 );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
   FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
   FC_ASSERT( arguments.get_array()[3].is_numeric(), "Order direction is required as first argument" );
@@ -689,11 +696,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 {
-  verify_args( args, 2 );
+  verify_args( args, 1 );
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least three arguments");
   const auto arguments = args.get_array()[0];
-  FC_ASSERT( arguments.get_array()[0].is_string(),       "Account name is required as first argument" );
+  verify_args( arguments, 2 );
+  FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
 
   rc::list_rc_accounts_args api_lra_args;
@@ -705,10 +713,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
 {
-  verify_args( args, 2 );
+  verify_args( args, 1 );
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least three arguments");
   const auto arguments = args.get_array()[0];
+  verify_args( arguments, 2 );
 
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
 
