@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:args.limit <= 1000: limit of 4294967295 is greater than maxmimum allowed"
+}
