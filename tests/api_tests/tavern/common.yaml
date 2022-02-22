@@ -3,6 +3,7 @@
   description: Common values for tests
 
   variables:
+    heavy_timeout: 5
     timeout: 1
     service:
       proto: http
