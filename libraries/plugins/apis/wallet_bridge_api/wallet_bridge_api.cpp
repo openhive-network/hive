@@ -668,6 +668,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 {
+  verify_args( args, 1 );
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   return _network_broadcast_api->broadcast_transaction( { get_trx( args ) } );
 }
