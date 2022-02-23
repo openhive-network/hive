@@ -144,7 +144,6 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
     [&result, &args](const account_history_rocksdb::rocksdb_operation_object& op)
     {
       api_operation_object temp(op);
-      temp.op_in_trx = op.op_in_trx;
       if( !args.only_virtual || is_virtual_operation( temp.op ) )
         result.ops.emplace(std::move(temp));
     }
@@ -186,7 +185,6 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
         if(accepted)
         {
-          api_op.op_in_trx = op.op_in_trx;
           result.history.emplace(sequence, std::move(api_op));
           return true;
         }
@@ -209,9 +207,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
       [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         /// Here internal counter (inside find_account_history_data) does the limiting job.
-        api_operation_object api_op{op};
-        api_op.op_in_trx = op.op_in_trx;
-        result.history[sequence] = api_op;
+        result.history[sequence] = api_operation_object{op};
         return true;
       });
   }
@@ -300,7 +296,6 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
     {
       api_operation_object _api_obj(op);
 
-      _api_obj.op_in_trx = op.op_in_trx;
       _api_obj.operation_id = operation_id;
 
       if( args.filter.valid() )
