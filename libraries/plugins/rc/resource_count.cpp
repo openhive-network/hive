@@ -12,11 +12,12 @@ struct count_operation_visitor
 {
   typedef void result_type;
 
-  mutable int32_t market_op_count = 0;
-  mutable size_t recover_count = 0;
-  mutable int32_t new_account_op_count = 0;
-  mutable int64_t state_bytes_count = 0;
-  mutable int64_t execution_time_count = 0;
+  mutable int32_t  market_op_count = 0;
+  mutable int32_t  new_account_op_count = 0;
+  mutable int64_t  state_bytes_count = 0;
+  mutable int64_t  execution_time_count = 0;
+  mutable bool     subsidized_op = false;
+  mutable uint32_t subsidized_signatures = 0;
 
   const state_object_size_info& _w;
   const operation_exec_info& _e;
@@ -391,8 +392,12 @@ struct count_operation_visitor
   }
 
   // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
-  void operator()( const recover_account_operation& ) const {
-    recover_count++;
+  void operator()( const recover_account_operation& ) const
+  {
+    subsidized_op = true;
+    subsidized_signatures = 2; //needs recent and new signature
+    //note: multisig stolen accounts are not subsidized, circumventing cost of setting up
+    //new multisig is also not allowed
   }
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
@@ -401,42 +406,7 @@ struct count_operation_visitor
   void operator()( const set_reset_account_operation& ) const {}
 
   // Virtual Ops (their costs, be it hived or HM, should be added to operations that spawn them)
-  void operator()( const fill_convert_request_operation& ) const {}
-  void operator()( const fill_collateralized_convert_request_operation& ) const {}
-  void operator()( const author_reward_operation& ) const {}
-  void operator()( const curation_reward_operation& ) const {}
-  void operator()( const comment_reward_operation& ) const {}
-  void operator()( const liquidity_reward_operation& ) const {}
-  void operator()( const interest_operation& ) const {}
-  void operator()( const fill_vesting_withdraw_operation& ) const {}
-  void operator()( const fill_order_operation& ) const {}
-  void operator()( const limit_order_cancelled_operation&) const {} 
-  void operator()( const shutdown_witness_operation& ) const {}
-  void operator()( const fill_transfer_from_savings_operation& ) const {}
-  void operator()( const hardfork_operation& ) const {}
-  void operator()( const comment_payout_update_operation& ) const {}
-  void operator()( const effective_comment_vote_operation& ) const {}
-  void operator()( const ineffective_delete_comment_operation& ) const {}
-  void operator()( const return_vesting_delegation_operation& ) const {}
-  void operator()( const comment_benefactor_reward_operation& ) const {}
-  void operator()( const producer_reward_operation& ) const {}
-  void operator()( const clear_null_account_balance_operation& ) const {}
-  void operator()( const consolidate_treasury_balance_operation& ) const {}
-  void operator()( const delayed_voting_operation& ) const {}
-  void operator()( const transfer_to_vesting_completed_operation& ) const {}
-  void operator()( const pow_reward_operation& ) const {}
-  void operator()( const vesting_shares_split_operation& ) const {}
-  void operator()( const account_created_operation& ) const {}
-  void operator()( const proposal_pay_operation& ) const {}
-  void operator()( const sps_fund_operation& ) const {}
-  void operator()( const sps_convert_operation& ) const {}
-  void operator()( const hardfork_hive_operation& ) const {}
-  void operator()( const hardfork_hive_restore_operation& ) const {}
-  void operator()( const expired_account_notification_operation& ) const {}
-  void operator()( const changed_recovery_account_operation& ) const {}
-  void operator()( const system_warning_operation& ) const {}
-  void operator()( const fill_recurrent_transfer_operation& ) const {}
-  void operator()( const failed_recurrent_transfer_operation& ) const {}
+  void operator()( const virtual_operation& ) const {}
 
   // Optional Actions
 #ifdef IS_TEST_NET
@@ -469,8 +439,9 @@ void count_resources(
     op.visit( vtor );
   }
 
-  if (vtor.recover_count == tx.operations.size()) {
-    // transactions which only recover accounts are entirely free
+  if( vtor.subsidized_op && tx.operations.size() == 1 && tx.signatures.size() <= vtor.subsidized_signatures ) {
+    // transactions with single subsidized operation with normal amount of signatures are free
+    // (for now just account recovery operation, but we might have more in the future)
     return;
   }
   
