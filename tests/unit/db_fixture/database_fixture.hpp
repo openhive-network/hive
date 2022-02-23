@@ -13,6 +13,7 @@
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/protocol/asset.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
 
 #include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>
@@ -87,23 +88,17 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
       << req_throw_info << std::endl;                  \
 }
 
-#define HIVE_REQUIRE_ASSERT( expr, assert_test )                  \
+#define HIVE_REQUIRE_EXCEPTION( expr, assert_test, ex_type )      \
 do {                                                              \
   bool flag = fc::enable_record_assert_trip;                      \
   fc::enable_record_assert_trip = true;                           \
-  HIVE_REQUIRE_THROW( expr, fc::assert_exception );               \
+  HIVE_REQUIRE_THROW( expr, ex_type );                            \
   BOOST_REQUIRE_EQUAL( fc::last_assert_expression, assert_test ); \
   fc::enable_record_assert_trip = flag;                           \
 } while(false)
 
-#define HIVE_REQUIRE_CHAINBASE_ASSERT( expr, assert_msg )         \
-do {                                                              \
-  bool flag = fc::enable_record_assert_trip;                      \
-  fc::enable_record_assert_trip = true;                           \
-  HIVE_REQUIRE_THROW( expr, fc::exception );                      \
-  BOOST_REQUIRE_EQUAL( fc::last_assert_expression, assert_msg );  \
-  fc::enable_record_assert_trip = flag;                           \
-} while(false)
+#define HIVE_REQUIRE_ASSERT( expr, assert_test ) HIVE_REQUIRE_EXCEPTION( expr, assert_test, fc::assert_exception )
+#define HIVE_REQUIRE_CHAINBASE_ASSERT( expr, assert_msg ) HIVE_REQUIRE_EXCEPTION( expr, assert_msg, fc::exception )
 
 #define REQUIRE_OP_VALIDATION_FAILURE_2( op, field, value, exc_type ) \
 { \
@@ -235,7 +230,8 @@ struct database_fixture {
   uint32_t default_skip = 0 | database::skip_undo_history_check | database::skip_authority_check;
   fc::ecc::canonical_signature_type default_sig_canon = fc::ecc::fc_canonical;
 
-  plugins::debug_node::debug_node_plugin* db_plugin;
+  plugins::debug_node::debug_node_plugin* db_plugin = nullptr;
+  plugins::rc::rc_plugin* rc_plugin = nullptr;
 
   optional<fc::temp_directory> data_dir;
   bool skip_key_index_test = false;
