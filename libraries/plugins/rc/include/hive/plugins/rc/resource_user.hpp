@@ -10,9 +10,6 @@ struct signed_transaction;
 
 namespace hive { namespace plugins { namespace rc {
 
-using hive::protocol::account_name_type;
-using hive::protocol::signed_transaction;
-
-account_name_type get_resource_user( const signed_transaction& tx );
+hive::protocol::account_name_type get_resource_user( const hive::protocol::signed_transaction& tx );
 
 } } } // hive::plugins::rc
