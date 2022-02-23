@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/protocol/transaction.hpp>
-#include <hive/protocol/optional_automated_actions.hpp>
 
 #include <fc/int_array.hpp>
 #include <fc/reflect/reflect.hpp>
@@ -42,11 +41,6 @@ struct count_resources_result
 
 void count_resources(
   const hive::protocol::signed_transaction& tx,
-  count_resources_result& result
-  );
-
-void count_resources(
-  const hive::protocol::optional_automated_action&,
   count_resources_result& result
   );
 
