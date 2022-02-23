@@ -1222,7 +1222,11 @@ void database::push_transaction( const signed_transaction& trx, uint32_t skip )
   {
     try
     {
-      FC_ASSERT( fc::raw::pack_size(trx) <= (get_dynamic_global_properties().maximum_block_size - 256) );
+      auto trx_size = fc::raw::pack_size( trx );
+      //ABW: why is that limit related to block size and not HIVE_MAX_TRANSACTION_SIZE?
+      auto trx_size_limit = get_dynamic_global_properties().maximum_block_size - 256;
+      FC_ASSERT( trx_size <= trx_size_limit, "Transaction too large - size = ${s}, limit ${l}",
+        ( "s", trx_size )( "l", trx_size_limit ) );
       set_producing( true );
       set_pending_tx( true );
       detail::with_skip_flags( *this, skip,
