@@ -62,7 +62,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
 
   appbase::app().register_plugin< ah_plugin >();
   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
-  appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
+  rc_plugin = &appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
 
   db_plugin->logging = false;
@@ -78,7 +78,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   rc_skip.skip_deduct_rc = 0;
   rc_skip.skip_negative_rc_balance = 1;
   rc_skip.skip_reject_unknown_delta_vests = 0;
-  appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().set_rc_plugin_skip_flags( rc_skip );
+  rc_plugin->set_rc_plugin_skip_flags( rc_skip );
 
   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
   BOOST_REQUIRE( db );
@@ -128,7 +128,7 @@ clean_database_fixture::~clean_database_fixture()
 void clean_database_fixture::validate_database()
 {
   database_fixture::validate_database();
-  appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().validate_database();
+  rc_plugin->validate_database();
 }
 
 void clean_database_fixture::resize_shared_mem( uint64_t size, fc::optional<uint32_t> hardfork )
