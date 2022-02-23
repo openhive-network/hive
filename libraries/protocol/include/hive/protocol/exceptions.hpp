@@ -3,11 +3,17 @@
 #include <fc/exception/exception.hpp>
 #include <hive/protocol/protocol.hpp>
 
-#define HIVE_ASSERT( expr, exc_type, FORMAT, ... )                \
-  FC_MULTILINE_MACRO_BEGIN                                           \
-  if( !(expr) )                                                      \
-    FC_THROW_EXCEPTION( exc_type, FORMAT, __VA_ARGS__ );            \
-  FC_MULTILINE_MACRO_END
+#define HIVE_ASSERT( expr, exc_type, FORMAT, ... )              \
+  FC_EXPAND_MACRO(                                              \
+    FC_MULTILINE_MACRO_BEGIN                                    \
+      if( UNLIKELY(!(expr)) )                                   \
+      {                                                         \
+        if( fc::enable_record_assert_trip )                     \
+           fc::record_assert_trip( __FILE__, __LINE__, #expr ); \
+        FC_THROW_EXCEPTION( exc_type, FORMAT, __VA_ARGS__ );    \
+      }                                                         \
+    FC_MULTILINE_MACRO_END                                      \
+  )
 
 namespace hive { namespace protocol {
 
