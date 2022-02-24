@@ -1415,7 +1415,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     generate_block();
 
     // support function
-    const auto get_delayed_vote_count = [&]( const account_name_type& name = "bob", const std::vector<uint64_t>& data_to_compare )
+    const auto get_delayed_vote_count = [&]( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
     {
       const auto& idx = db->get_index< account_index, by_delayed_voting >();
       for(const auto& usr : idx)
