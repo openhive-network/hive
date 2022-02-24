@@ -742,8 +742,8 @@ class Wallet(ScopedObject):
         operation_pattern: Final = transaction_pattern['operations'][0]
         transaction_pattern['operations'].clear()
 
-        accounts_per_transaction: Final = 1000
-        max_threads: Final = 32
+        accounts_per_transaction: Final = 500
+        max_threads: Final = 24
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=min(math.ceil(number_of_accounts / accounts_per_transaction), max_threads)) as executor:
             futures = []
