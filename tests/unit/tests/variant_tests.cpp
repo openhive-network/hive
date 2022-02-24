@@ -2,72 +2,56 @@
 #include <boost/test/unit_test.hpp>
 
 #include <fc/variant.hpp>
+#include <fc/exception/exception.hpp>
 
-BOOST_FIXTURE_TEST_SUITE( variant_tests )
+BOOST_AUTO_TEST_SUITE( variant_tests )
+
+// Eliminates code redundancy wrapping the actual tests in error handling and logging
+#define HIVE_AUTO_TEST_CASE( name, ... )           \
+  BOOST_AUTO_TEST_CASE( name )                     \
+  {                                                \
+    try                                            \
+    {                                              \
+      BOOST_TEST_MESSAGE( "--- Testing: " #name ); \
+      __VA_ARGS__                                  \
+    }                                              \
+    FC_LOG_AND_RETHROW()                           \
+  }
 
 // Pre-defined types
 
-BOOST_AUTO_TEST_CASE( as_int64 )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "--- Testing: as_int64" );
-    int64_t initial = -1;
-    
-    fc::variant v = initial;
+HIVE_AUTO_TEST_CASE( as_int64,
+  int64_t initial = -1;
+  
+  fc::variant v = initial;
 
-    BOOST_REQUIRE_EQUAL( v.as_int64(), initial );
-  }
-  FC_LOG_AND_RETHROW()
-}
+  BOOST_REQUIRE_EQUAL( v.as_int64(), initial );
+)
 
-BOOST_AUTO_TEST_CASE( as_uint64 )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "--- Testing: as_uint64" );
-    uint64_t initial = -1;
-    
-    fc::variant v = initial;
+HIVE_AUTO_TEST_CASE( as_uint64,
+  uint64_t initial = -1;
+  
+  fc::variant v = initial;
 
-    BOOST_REQUIRE_EQUAL( v.as_uint64(), initial );
-  }
-  FC_LOG_AND_RETHROW()
-}
+  BOOST_REQUIRE_EQUAL( v.as_uint64(), initial );
+)
 
-BOOST_AUTO_TEST_CASE( as_bool )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "--- Testing: as_bool" );
-    bool initial = true;
-    
-    fc::variant v = initial;
+HIVE_AUTO_TEST_CASE( as_bool,
+  fc::variant v = true;
+  BOOST_REQUIRE_EQUAL( v.as_bool(), true );
 
-    BOOST_REQUIRE_EQUAL( v.as_bool(), initial );
+  // Make sure that true is not a false-positive result
+  v = false;
+  BOOST_REQUIRE_EQUAL( v.as_bool(), false );
+)
 
-    // Make sure that true is not a false-positive result
-    initial = false;
-    v = initial;
+HIVE_AUTO_TEST_CASE( as_double,
+  double initial = 3.141592;
+  
+  fc::variant v = initial;
 
-    BOOST_REQUIRE_EQUAL( v.as_bool(), initial );
-  }
-  FC_LOG_AND_RETHROW()
-}
-
-BOOST_AUTO_TEST_CASE( as_double )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "--- Testing: as_double" );
-    double initial = 3.141592;
-    
-    fc::variant v = initial;
-
-    BOOST_REQUIRE_EQUAL( v.as_double(), initial );
-  }
-  FC_LOG_AND_RETHROW()
-}
+  BOOST_REQUIRE_EQUAL( v.as_double(), initial );
+)
 
 // TODO: as_blob, as_string, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
 
