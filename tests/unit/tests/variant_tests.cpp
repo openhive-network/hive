@@ -53,7 +53,20 @@ HIVE_AUTO_TEST_CASE( as_double,
   BOOST_REQUIRE_EQUAL( v.as_double(), initial );
 )
 
-// TODO: as_blob, as_string, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
+HIVE_AUTO_TEST_CASE( as_blob,
+  fc::blob initial;
+  initial.data = { 'a', 'l', 'i', 'c', 'e' };
+  
+  fc::variant v = initial;
+  fc::blob out = v.as_blob();
+
+  BOOST_REQUIRE_EQUAL( out.data.size(), initial.data.size() );
+
+  for( size_t i = 0; i < out.data.size(); ++i )
+    BOOST_REQUIRE_EQUAL( out.data.at(i), initial.data.at(i) );
+)
+
+// TODO: as_string, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif
