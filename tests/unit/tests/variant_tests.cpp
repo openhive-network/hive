@@ -4,6 +4,8 @@
 #include <fc/variant.hpp>
 #include <fc/exception/exception.hpp>
 
+#include <string>
+
 BOOST_AUTO_TEST_SUITE( variant_tests )
 
 // Eliminates code redundancy wrapping the actual tests in error handling and logging
@@ -66,7 +68,15 @@ HIVE_AUTO_TEST_CASE( as_blob,
     BOOST_REQUIRE_EQUAL( out.data.at(i), initial.data.at(i) );
 )
 
-// TODO: as_string, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
+HIVE_AUTO_TEST_CASE( as_string,
+  std::string initial = "alice";
+  
+  fc::variant v = initial;
+
+  BOOST_REQUIRE_EQUAL( v.as_string(), initial );
+)
+
+// TODO: as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif
