@@ -4,9 +4,18 @@
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 
+namespace hive { namespace chain { class account_object; } }
+
 namespace hive { namespace plugins { namespace rc {
 
-namespace detail { class rc_plugin_impl; }
+namespace detail {
+
+class rc_plugin_impl;
+
+//ABW: temporarily exposed for unit tests - that functionality should become part of account_object
+int64_t get_next_vesting_withdrawal( const hive::chain::account_object& account );
+
+}
 
 using namespace appbase;
 

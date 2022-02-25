@@ -216,6 +216,9 @@ namespace hive { namespace chain {
 
 using namespace hive::protocol;
 
+//applies HF25 values related to comment cashout instead those default (short) for testnet
+void set_mainnet_cashout_values();
+
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
   //   plugins

@@ -10,7 +10,6 @@
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_config.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
-#include <hive/plugins/rc/rc_plugin.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
@@ -1144,6 +1143,113 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Negative RC regeneration bug" );
+    set_mainnet_cashout_values(); //time is needed for RC to regenerate - testnet values are too small
+
+    //the problem is very cryptic
+    //first thing - it involves negative RC which shouldn't really ever happen (but does, for this
+    //test it will be just set artificially)
+    //second - it needs to be receiver of RC delegation that loses that delegation due to delegator
+    //powering down more than he left undelegated
+    //third - the bug only shows when significant time passed between the moment when RC of delegatee
+    //went negative and the moment it lost delegation - the bug shows as delegatee having less RC
+    //than he would have if RC regeneration was triggered by other means
+
+    ACTORS( (delegator1)(delegator2)(delegator3)(delegatee)(pattern2)(pattern3) )
+    generate_block();
+    vest( "initminer", "delegator1", ASSET( "1000.000 TESTS" ) );
+    vest( "initminer", "delegator2", ASSET( "1000.000 TESTS" ) );
+    vest( "initminer", "delegator3", ASSET( "1000.000 TESTS" ) );
+    int64_t full_vest = get_vesting( "delegator1" ).amount.value;
+    BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator2" ).amount.value );
+    BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator3" ).amount.value );
+
+    const auto& delegatee_rc = db->get< rc_account_object, by_name >( "delegatee" );
+    const auto& pattern2_rc = db->get< rc_account_object, by_name >( "pattern2" );
+    const auto& pattern3_rc = db->get< rc_account_object, by_name >( "pattern3" );
+    BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
+    
+    BOOST_TEST_MESSAGE( "Pattern2 makes a comment and delegator2 votes on it - payout will trigger RC regen" );
+    comment_operation comment;
+    comment.parent_permlink = "test";
+    comment.author = "pattern2";
+    comment.permlink = "test";
+    comment.title = "test";
+    comment.body = "test";
+    push_transaction( comment, pattern2_private_key );
+    generate_block();
+    auto cashout_time = db->find_comment_cashout( db->get_comment( "pattern2", string( "test" ) ) )->get_cashout_time();
+
+    vote_operation vote;
+    vote.voter = "delegator2";
+    vote.author = "pattern2";
+    vote.permlink = "test";
+    vote.weight = HIVE_100_PERCENT;
+    push_transaction( vote, delegator2_private_key );
+    generate_block();
+
+    //wait a bit so the RC used for comment is restored
+    generate_blocks( db->head_block_time() + fc::seconds( 60 ) );
+
+    BOOST_TEST_MESSAGE( "All delegators make RC delegations to their delegatees with the same power" );
+    auto rc_delegate = [&]( const account_name_type& from, const account_name_type& to, int64_t amount, const fc::ecc::private_key& key )
+    {
+      delegate_rc_operation delegate;
+      delegate.from = from;
+      delegate.delegatees = { to };
+      delegate.max_rc = amount;
+      custom_json_operation custom_op;
+      custom_op.required_posting_auths.insert( from );
+      custom_op.id = HIVE_RC_PLUGIN_NAME;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( delegate ) );
+      push_transaction( custom_op, key );
+    };
+    rc_delegate( "delegator1", "delegatee", full_vest, delegator1_private_key );
+    rc_delegate( "delegator2", "pattern2", full_vest, delegator2_private_key );
+    rc_delegate( "delegator3", "pattern3", full_vest, delegator3_private_key );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana );
+    BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
+    
+    BOOST_TEST_MESSAGE( "Artificially going negative with RC of delegatees to expose problem" );
+    int64_t full_rc = get_maximum_rc( db->get< account_object, by_name >( "delegatee" ), delegatee_rc );
+    int64_t min_rc = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * full_rc ) / HIVE_100_PERCENT;
+    auto rc_set_negative_mana = [&]( const rc_account_object& rca )
+    {
+      db->modify( rca, [&]( rc_account_object& rc_account )
+      {
+        rc_account.rc_manabar.current_mana = min_rc;
+        rc_account.rc_manabar.last_update_time = ( db->head_block_time() - fc::seconds( HIVE_RC_REGEN_TIME ) ).sec_since_epoch();
+      } );
+    };
+    rc_set_negative_mana( delegatee_rc );
+    rc_set_negative_mana( pattern2_rc );
+    rc_set_negative_mana( pattern3_rc );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Wait for block when comment payout will trigger regen, power down and take away delegation in the same time" );
+    generate_blocks( cashout_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
+    withdraw_vesting_operation power_down;
+    power_down.account = "delegator1";
+    power_down.vesting_shares = asset( full_vest, VESTS_SYMBOL );
+    push_transaction( power_down, delegator1_private_key );
+    int64_t undelegated = hive::plugins::rc::detail::get_next_vesting_withdrawal( db->get< account_object, by_name >( "delegator1" ) );
+    rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_private_key );
+    generate_block();
+    //pattern2 RC regeneration is triggered by author_reward_operation, but it doesn't modify RC because rewards go to separate balance until claimed
+    BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana - undelegated );
+    //pattern3 undelegated exactly the same amount of RC as was dropped from delegatee by delegator1 powering down
+    BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

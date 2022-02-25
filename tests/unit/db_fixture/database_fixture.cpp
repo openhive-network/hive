@@ -46,6 +46,12 @@ typedef hive::plugins::account_history::account_history_plugin ah_plugin;
 using std::cout;
 using std::cerr;
 
+void set_mainnet_cashout_values()
+{
+  configuration_data.set_cashout_related_values(
+    0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 );
+}
+
 clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )
 {
   try {
@@ -198,8 +204,7 @@ genesis_database_fixture::~genesis_database_fixture()
 {}
 
 curation_database_fixture::curation_database_fixture( uint16_t shared_file_size_in_mb )
-  : clean_database_fixture( ( configuration_data.set_cashout_related_values( //apply HF25 mainnet values
-    0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 ), shared_file_size_in_mb ) )
+  : clean_database_fixture( ( set_mainnet_cashout_values(), shared_file_size_in_mb ) )
 {
 }
 
@@ -211,8 +216,7 @@ curation_database_fixture::~curation_database_fixture()
 cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_in_mb )
                             : shared_file_size_in_mb( _shared_file_size_in_mb )
 {
-  configuration_data.set_cashout_related_values( //apply HF25 mainnet values
-    0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 );
+  set_mainnet_cashout_values();
 }
 
 cluster_database_fixture::~cluster_database_fixture()
