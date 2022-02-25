@@ -57,7 +57,7 @@ from concurrent.futures import ProcessPoolExecutor
 futures = []
 with ProcessPoolExecutor(max_workers=6) as exec:
 	for parent_path, _, filenames in os.walk('.'):
-		if 'tavern' in parent_path and PATTERN.match(parent_path) is not None:
+		if 'tavern' in parent_path and PATTERN.match(parent_path) is not None and not '_hex' in parent_path:
 			for tavernfile in filter(lambda x: x.endswith('tavern.yaml'), filenames):
 				futures.append( exec.submit(create_pattern, URL, tavernfile, parent_path) )
 

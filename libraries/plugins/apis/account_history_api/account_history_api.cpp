@@ -285,13 +285,18 @@ private:
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 {
+  constexpr int32_t max_limit{ 150'000 };
   enum_virtual_ops_return result;
 
   bool groupOps = args.group_by_block.valid() && *args.group_by_block;
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
+  int32_t limit = args.limit.valid() ? *args.limit : max_limit;
+
+  FC_ASSERT( limit > 0, "limit of ${l} is lesser or equal 0", ("l",limit) );
+  FC_ASSERT( limit <= max_limit, "limit of ${l} is greater than maxmimum allowed", ("l",limit) );
 
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
-    args.block_range_end, include_reversible, args.operation_begin, args.limit,
+    args.block_range_end, include_reversible, args.operation_begin, limit,
     [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool irreversible)
     {
       api_operation_object _api_obj(op);

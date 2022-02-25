@@ -1,4 +1,4 @@
 {
   "code": -32000,
-  "message": "Parse Error:Couldn't parse uint64_t"
+  "message": "Parse Error:Couldn't parse int64_t"
 }
