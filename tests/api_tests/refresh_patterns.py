@@ -35,6 +35,9 @@ def create_pattern(url : str, tav_file : str, directory : str):
 
 	test_options = load_yaml(TAVERN_FILE)
 	request = test_options['stages'][0]['request']
+	x = str(request['json']['method'])
+	x.replace('account_history_api', 'direct_sql')
+	request['json']['method'] = x
 	output = post(url, json=request['json'], headers=request['headers'])
 	assert output.status_code == 200
 	parsed = output.json()

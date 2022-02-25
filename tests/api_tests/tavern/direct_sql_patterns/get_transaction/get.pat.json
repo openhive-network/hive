@@ -1,0 +1,23 @@
+{
+  "block_num": 2000000,
+  "expiration": "2016-06-02T23:58:57",
+  "extensions": [],
+  "operations": [
+    [
+      "vote",
+      {
+        "author": "abit",
+        "permlink": "re-dantheman-lessons-learned-from-curation-rewards-discussion-20160602t160856942z",
+        "voter": "proctologic",
+        "weight": 10000
+      }
+    ]
+  ],
+  "ref_block_num": 33919,
+  "ref_block_prefix": 3167793783,
+  "signatures": [
+    "1f5fd52ca5c91b118c8ac2f2f6f6df28bc10122baaabbd3f510c37b3201c86a4845419a0d6a17cf267c73d939f1fa7230c7f9f85e60b784e54cf041091d0cbb41f"
+  ],
+  "transaction_id": "ac7489dbe69ac338cae85824dc58160515095341",
+  "transaction_num": 2
+}
