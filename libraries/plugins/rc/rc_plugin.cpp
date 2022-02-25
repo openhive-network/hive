@@ -105,8 +105,12 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_custom_operation_conn;
   };
 
-inline int64_t get_next_vesting_withdrawal( const account_object& account )
+int64_t get_next_vesting_withdrawal( const account_object& account )
 {
+  //ABW: it is very bad that "the same" computations are here, in database::process_vesting_withdrawals
+  //and in delegate_vesting_shares_evaluator::do_apply; moreover there are subtle differences (although
+  //it looks like as long as there is no bug they should give the same values); the code should be
+  //wrapped in account_object method
   int64_t total_left = account.to_withdraw.value - account.withdrawn.value;
   int64_t withdraw_per_period = account.vesting_withdraw_rate.amount.value;
   int64_t next_withdrawal = (withdraw_per_period <= total_left) ? withdraw_per_period : total_left;
@@ -260,9 +264,10 @@ void use_account_rcs(
     if( skip.skip_deduct_rc )
       return;
 
-    int64_t min_mana = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * mbparams.max_mana ) / HIVE_100_PERCENT;
-
-    rca.rc_manabar.use_mana( rc, min_mana );
+    fc::uint128_t min_mana( mbparams.max_mana );
+    min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
+    min_mana /= HIVE_100_PERCENT;
+    rca.rc_manabar.use_mana( rc, -min_mana.to_int64() );
   } );
   }FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
 }
@@ -869,7 +874,7 @@ struct post_apply_operation_visitor
 
     if( _check_for_rc_delegation_overflow )
     {
-      //the following action is needed when given account lost VESTs and it now might has less
+      //the following action is needed when given account lost VESTs and it now might have less
       //than it already delegated with rc delegations
       check_for_rc_delegation_overflow( account, rc_account );
     }
@@ -1368,7 +1373,7 @@ void update_rc_account_after_delegation( database& _db, const rc_account_object&
     hive::chain::util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
     if( regenerate_mana )
     {
-      rca.rc_manabar.regenerate_mana( manabar_params, now );
+      rca.rc_manabar.regenerate_mana< true >( manabar_params, now );
     }
     else if( rc_account.rc_manabar.last_update_time != now )
     {
