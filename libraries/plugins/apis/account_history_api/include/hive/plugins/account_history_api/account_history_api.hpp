@@ -148,7 +148,7 @@ struct enum_virtual_ops_args
 
   fc::optional<bool> group_by_block;
   fc::optional< uint64_t > operation_begin;
-  fc::optional< uint32_t > limit;
+  fc::optional< int32_t > limit;
   fc::optional< uint64_t > filter;
 };
 
