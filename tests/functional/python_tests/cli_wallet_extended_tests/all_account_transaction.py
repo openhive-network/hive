@@ -8,73 +8,70 @@ from typing import Dict, List
 develop_url = 'http://localhost:28091'
 server_develop_url = 'http://hive-2:8091'
 json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/server_request_develop_data.json'
-develop_last_block_number = 2955480
+develop_last_block_number = 2970507
 
 server_master_url = 'http://hive-2:18091'
 json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data/server_request_master_data.json'
-master_last_block_number = 2955470
+master_last_block_number = 2970497
 
 
 def get_all_account_transactions(account_name: str, start_block_number, last_block_number, url) -> List[Dict]:
     all_account_transaction = []
-    for i in range(start_block_number, last_block_number+1, 1000):
-        if start_block_number == 0:
+    for i in range(last_block_number, start_block_number, -1000):
+        if start_block_number == 0 and i == 1:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
-                                    "params": {"account": account_name, "start": 1, "limit": 1}})
+                                    "params": {"account": account_name, "start": 0, "limit": 1}})
             all_account_transaction.append(request_data)
-            start_block_number += 1000
-        elif start_block_number < 1000:
+        elif last_block_number - start_block_number < 1000 and i <= 1000:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
-                                    "params": {"account": account_name, "start": start_block_number, "limit": start_block_number}})
-            start_block_number += 1000 - start_block_number
+                                    "params": {"account": account_name, "start": i, "limit": last_block_number - start_block_number}})
             all_account_transaction.append(request_data)
         else:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
-                                    "params": {"account": account_name, "start": i+1000, "limit": 1000}})
+                                    "params": {"account": account_name, "start": i, "limit": 1000}})
             all_account_transaction.append(request_data)
+            last_block_number -= 1000
+
+    request_data = request(url,
+                           {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
+                            "params": {"account": account_name, "start": start_block_number, "limit": 1}})
+    all_account_transaction.append(request_data)
 
     return all_account_transaction
 
 
-x = get_all_account_transactions('gtg', 0, 2000, server_develop_url)
-m = get_all_account_transactions('gtg', 555, 6000, server_develop_url)
-y = get_all_account_transactions('gtg', 2000, 4000, server_develop_url)
-z = get_all_account_transactions('gtg', 4000, 6000, server_develop_url)
-
-w = get_all_account_transactions('gtg', 12000, 16000, server_develop_url)
-print()
-
-
 def save_transaction_to_json(data_stored, account_name, start_block_number, last_block_number, url):
     store = get_all_account_transactions(account_name, start_block_number, last_block_number, url)
+    to_save = [list(reversed(item['result']['history'])) for item in store]
     with open(data_stored, 'w') as file:
-        json.dump(store, file)
+        json.dump(to_save, file)
+
+    multi_saver_datas = multi_saver(account_name, start_block_number, last_block_number, url)
+    print()
 
 
-save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, 12000, server_develop_url)
+def multi_saver(account_name: str, start_block_number, last_block_number, url):
+    tasks_list = []
+    datas = []
+    executor = ThreadPoolExecutor(max_workers=4)
+    for i in range(last_block_number, start_block_number, -1000):
+        start = i-1000
+        stop = i
+        if i - 1000 < 0:
+            tasks_list.append(executor.submit(get_all_account_transactions, account_name, i, i, url))
+            tasks_list.append(executor.submit(get_all_account_transactions, account_name, 0, 1, url))
+        else:
+            tasks_list.append(executor.submit(get_all_account_transactions, account_name, i - 1000, i, url))
+    for thread_number in tasks_list:
+        datas.append(thread_number.result())
+    print()
+    return datas
 
 
-
-# def multi_saver():
-#
-#     tasks_list = []
-#     executor = ThreadPoolExecutor(max_workers=4)
-#     for i in range(1000, 10000, 1000):
-#         tasks_list.append(executor.submit(get_all_account_transactions, 'gtg', i, 10000, server_develop_url))
-#
-#     for thread_number in tasks_list:
-#         thread_number.result()
-#
-#
-# multi_saver()
-# save_transaction_to_json(json_server_develop_data_stored, 'gtg', 10000, server_develop_url)
-
-
-# dev_transactions = get_all_account_transactions('gtg', 100, server_develop_url)
-# mas_transactions = get_all_account_transactions('gtg', 100, server_master_url)
+save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, 10000, server_develop_url)
 
 
 # for index_mas in master_transactions:
