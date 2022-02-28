@@ -191,6 +191,8 @@ class Node:
 
             self.snapshot_dumped_event = Event()
 
+            self.fork_event = Event()
+
         def listen(self):
             self.node.config.notifications_endpoint = f'127.0.0.1:{self.server.port}'
             self.server.run()
@@ -223,6 +225,8 @@ class Node:
                 endpoint = f'{details["address"].replace("0.0.0.0", "127.0.0.1")}:{details["port"]}'
                 self.p2p_endpoint = Url(endpoint).as_string(with_protocol=False)
                 self.p2p_plugin_started_event.set()
+            elif message['name'] == 'fork':
+                self.fork_event.set()
             elif message['name'] == 'error':
                 RaiseExceptionHelper.raise_exception_in_main_thread(
                     exceptions.InternalNodeError(f'{self.node}: {message["value"]["message"]}')
@@ -240,6 +244,7 @@ class Node:
             self.live_mode_entered_event.clear()
             self.replay_finished_event.clear()
             self.snapshot_dumped_event.clear()
+            self.fork_event.clear()
 
             self.__logger.debug('Notifications server closed')
 
@@ -646,3 +651,10 @@ class Node:
 
     def set_clean_up_policy(self, policy: constants.NodeCleanUpPolicy):
         self.__clean_up_policy = policy
+
+    def wait_for_fork(self, timeout=20):
+        assert timeout >= 0
+        deadline = time.time() + timeout
+        self.fork_event.clear()
+        wait_for_event(self.__notifications.fork_event, deadline=deadline,
+                       exception_message='Fork not not happen on time.')
