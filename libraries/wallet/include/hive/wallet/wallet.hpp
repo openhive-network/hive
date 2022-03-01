@@ -1390,8 +1390,6 @@ class wallet_api
   serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
           const account_name_type& from );
 
-    std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
-
     fc::signal<void(bool)> lock_changed;
 
     /**

@@ -43,6 +43,7 @@
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
+#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 #include <hive/wallet/wallet.hpp>
 
 #include <fc/interprocess/signals.hpp>
@@ -231,7 +232,7 @@ int main( int argc, char** argv )
 
     fc::api<wallet_api> wapi(wapiptr);
 
-    for( auto& name_formatter : wapiptr->get_result_formatters() )
+    for( auto& name_formatter : hive::plugins::wallet_bridge_api::wallet_formatter::get_result_formatters() )
       wallet_cli->format_result( name_formatter.first, name_formatter.second );
 
     if( wapiptr->is_new() )
