@@ -240,6 +240,52 @@ HIVE_AUTO_TEST_CASE( as_string_conversions,
   BOOST_REQUIRE_EQUAL( v.as_string(), "YWxpY2U==" );
 )
 
+HIVE_AUTO_TEST_CASE( as_blob_conversions,
+  fc::blob blob;
+  blob.data = { 'a', 'l', 'i', 'c', 'e' };
+  fc::variant v = "YWxpY2U==";
+
+  const auto compare_blob = []( const auto& lhs, const auto& rhs ) {
+    BOOST_REQUIRE_EQUAL( lhs.data.size(), rhs.data.size() );
+
+    for( size_t i = 0; i < lhs.data.size(); ++i )
+      BOOST_REQUIRE_EQUAL( lhs.data.at(i), rhs.data.at(i) );
+  };
+
+  compare_blob( v.as_blob(), blob );
+
+  v = std::string{ "alice", 5 };
+  compare_blob( v.as_blob(), blob );
+
+  v.clear();
+  BOOST_REQUIRE_EQUAL( v.as_blob().data.size(), 0 );
+
+  const auto create_vector = []( auto&& input ) {
+    return std::vector<char>( (char*)&input, (char*)&input + sizeof(input) );
+  };
+
+  const auto create_and_compare = [&]( auto&& input ) {
+    v = input;
+    blob.data = create_vector( input );
+    compare_blob( v.as_blob(), blob );
+  };
+
+  create_and_compare( int64_t( -1 ) );
+  create_and_compare( uint64_t( -1 ) );
+  create_and_compare( double( -1 ) );
+
+  // Objects:
+  v = fc::variant_object{};
+  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
+  v = fc::mutable_variant_object{};
+  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
+
+  // Arrays:
+  v = fc::variants{};
+  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
+)
+
+
 // TODO: conversion, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
 
 BOOST_AUTO_TEST_SUITE_END()
