@@ -32,6 +32,9 @@ HIVE_AUTO_TEST_CASE( as_int64,
   BOOST_REQUIRE_EQUAL( v.get_type(), fc::variant::int64_type );
 
   BOOST_REQUIRE_EQUAL( v.as_int64(), initial );
+
+  BOOST_REQUIRE( v.is_numeric() );
+  BOOST_REQUIRE( v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( as_uint64,
@@ -41,6 +44,9 @@ HIVE_AUTO_TEST_CASE( as_uint64,
   BOOST_REQUIRE_EQUAL( v.get_type(), fc::variant::uint64_type );
 
   BOOST_REQUIRE_EQUAL( v.as_uint64(), initial );
+
+  BOOST_REQUIRE( v.is_numeric() );
+  BOOST_REQUIRE( v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( as_bool,
@@ -51,6 +57,9 @@ HIVE_AUTO_TEST_CASE( as_bool,
   // Make sure that true is not a false-positive result
   v = false;
   BOOST_REQUIRE_EQUAL( v.as_bool(), false );
+
+  BOOST_REQUIRE( v.is_numeric() );
+  BOOST_REQUIRE( v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( as_double,
@@ -60,6 +69,9 @@ HIVE_AUTO_TEST_CASE( as_double,
   BOOST_REQUIRE_EQUAL( v.get_type(), fc::variant::double_type );
 
   BOOST_REQUIRE_EQUAL( v.as_double(), initial );
+
+  BOOST_REQUIRE( v.is_numeric() );
+  BOOST_REQUIRE( !v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( as_blob,
@@ -74,6 +86,9 @@ HIVE_AUTO_TEST_CASE( as_blob,
 
   for( size_t i = 0; i < out.data.size(); ++i )
     BOOST_REQUIRE_EQUAL( out.data.at(i), initial.data.at(i) );
+
+  BOOST_REQUIRE( !v.is_numeric() );
+  BOOST_REQUIRE( !v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( as_string,
@@ -83,6 +98,9 @@ HIVE_AUTO_TEST_CASE( as_string,
   BOOST_REQUIRE_EQUAL( v.get_type(), fc::variant::string_type );
 
   BOOST_REQUIRE_EQUAL( v.as_string(), initial );
+
+  BOOST_REQUIRE( !v.is_numeric() );
+  BOOST_REQUIRE( !v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( null_type,
@@ -92,6 +110,9 @@ HIVE_AUTO_TEST_CASE( null_type,
   v = 3.141592;
   v.clear();
   BOOST_REQUIRE_EQUAL( v.get_type(), fc::variant::null_type );
+
+  BOOST_REQUIRE( !v.is_numeric() );
+  BOOST_REQUIRE( !v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( mutable_variant_object,
@@ -160,6 +181,9 @@ HIVE_AUTO_TEST_CASE( object_type,
   BOOST_REQUIRE_EQUAL( v[ "a" ].get_type(), fc::variant::double_type );
 
   BOOST_REQUIRE_EQUAL( v[ "a" ].as_double(), 3.14 );
+
+  BOOST_REQUIRE( !v.is_numeric() );
+  BOOST_REQUIRE( !v.is_integer() );
 )
 
 HIVE_AUTO_TEST_CASE( array_type,
@@ -185,6 +209,9 @@ HIVE_AUTO_TEST_CASE( array_type,
 
   // Random value test
   BOOST_REQUIRE_EQUAL( v[ 2 ].as_double(), 3.14 );
+
+  BOOST_REQUIRE( !v.is_numeric() );
+  BOOST_REQUIRE( !v.is_integer() );
 )
 
 // Type conversions
