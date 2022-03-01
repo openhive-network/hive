@@ -29,7 +29,9 @@ FROM builder-tester-base AS test
 RUN apt-get update && \
     DEBIAN_FRONTEND=noniteractive apt-get install -y screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil && \
     apt-get clean && rm -r /var/lib/apt/lists/* && \
-    pip3 install -U secp256k1prp
+    pip3 install -U secp256k1prp && \
+    mkdir -p /usr/local/hive/blockchain && cd /usr/local/hive/blockchain && wget -c https://gtg.openhive.network/get/blockchain/block_log.5M
+
 # the above will leave the timezone in UTC, if you want run:
 #    ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 
