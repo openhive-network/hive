@@ -181,6 +181,8 @@ HIVE_AUTO_TEST_CASE( as_bool_conversions,
 
   type_conversion_helper( std::string{ "false" } );
 
+  BOOST_REQUIRE_THROW( type_conversion_helper( std::string{ "alice" } ), fc::bad_cast_exception );
+
   // Objects:
   v = fc::variant_object{};
   BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
@@ -194,6 +196,48 @@ HIVE_AUTO_TEST_CASE( as_bool_conversions,
   // Blob:
   v = fc::blob{};
   BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
+)
+
+HIVE_AUTO_TEST_CASE( as_string_conversions,
+  const uint64_t expected_integer = 123;
+  std::string expected = std::to_string( expected_integer );
+  fc::variant v;
+
+  const auto type_conversion_helper = [&]( auto&& input ) {
+    v = input;
+    BOOST_REQUIRE_EQUAL( v.as_string(), expected );
+  };
+
+  type_conversion_helper( uint64_t( expected_integer ) );
+  type_conversion_helper( int64_t( expected_integer ) );
+
+  expected = std::to_string( double( expected_integer ) );
+  v = double( expected_integer );
+  BOOST_REQUIRE_EQUAL( v.as_string().substr( 0, expected.size() ), expected );
+
+  expected = "true";
+  type_conversion_helper( true );
+  expected = "false";
+  type_conversion_helper( false );
+
+  v.clear();
+  BOOST_REQUIRE( v.as_string().empty() );
+
+  // Objects:
+  v = fc::variant_object{};
+  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
+  v = fc::mutable_variant_object{};
+  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
+
+  // Arrays:
+  v = fc::variants{};
+  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
+
+  // Blob:
+  fc::blob blob;
+  blob.data = { 'a', 'l', 'i', 'c', 'e' };
+  v = blob;
+  BOOST_REQUIRE_EQUAL( v.as_string(), "YWxpY2U==" );
 )
 
 // TODO: conversion, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
