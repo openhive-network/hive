@@ -442,6 +442,88 @@ HIVE_AUTO_TEST_CASE( extended_variant_construction,
   test_type( uint32_t{}, variant::uint64_type );
 )
 
+namespace
+{
+
+class variant_visitor : public fc::variant::visitor
+{
+private:
+  fc::variant::type_id accept_type;
+
+public:
+  variant_visitor( fc::variant::type_id accept_type = fc::variant::null_type );
+
+  variant_visitor& operator[]( fc::variant::type_id accept_type );
+
+  virtual ~variant_visitor() = default;
+
+  virtual void handle()const override;
+  virtual void handle( const int64_t& )const override;
+  virtual void handle( const uint64_t& )const override;
+  virtual void handle( const double& )const override;
+  virtual void handle( const bool& )const override;
+  virtual void handle( const std::string& )const override;
+  virtual void handle( const fc::variant_object& )const override;
+  virtual void handle( const fc::variants& )const override;
+};
+
+variant_visitor::variant_visitor( fc::variant::type_id accept_type )
+  : accept_type( accept_type )
+{}
+
+variant_visitor& variant_visitor::operator[]( fc::variant::type_id accept_type )
+{
+  this->accept_type = accept_type;
+  return *this;
+}
+
+void variant_visitor::handle()const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::null_type ); }
+
+void variant_visitor::handle( const int64_t& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::int64_type ); }
+
+void variant_visitor::handle( const uint64_t& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::uint64_type ); }
+
+void variant_visitor::handle( const double& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::double_type ); }
+
+void variant_visitor::handle( const bool& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::bool_type ); }
+
+void variant_visitor::handle( const std::string& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::string_type ); }
+
+void variant_visitor::handle( const fc::variant_object& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::object_type ); }
+
+void variant_visitor::handle( const fc::variants& )const
+{ BOOST_REQUIRE_EQUAL( accept_type, fc::variant::array_type ); }
+
+}
+
+HIVE_AUTO_TEST_CASE( visitor,
+  using fc::variant;
+  variant v;
+
+  variant_visitor hv;
+
+  const auto test_visitor = [&]( auto&& value, variant::type_id required ) {
+    v = value;
+    v.visit( hv[ required ] );
+  };
+
+  test_visitor( nullptr_t{}, variant::null_type );
+  test_visitor( std::string{}, variant::string_type );
+  test_visitor( bool{}, variant::bool_type );
+  test_visitor( int64_t{}, variant::int64_type );
+  test_visitor( uint64_t{}, variant::uint64_type );
+  test_visitor( double{}, variant::double_type );
+  test_visitor( fc::variant_object{}, variant::object_type );
+  test_visitor( fc::variants{}, variant::array_type );
+)
+
 // TODO: operators, extended nested object tests (from_variant, to_variant, as etc.)
 
 BOOST_AUTO_TEST_SUITE_END()
