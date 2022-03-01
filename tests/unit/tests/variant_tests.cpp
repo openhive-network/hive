@@ -134,6 +134,9 @@ HIVE_AUTO_TEST_CASE( mutable_variant_object,
 
   BOOST_REQUIRE_EQUAL( mvo.size(), 4 );
 
+  mvo.erase( "d" );
+  BOOST_REQUIRE_EQUAL( mvo.size(), 3 );
+
   BOOST_REQUIRE_EQUAL( mvo[ "a" ].as_int64(),  vo[ "a" ].as_int64() );
   BOOST_REQUIRE_EQUAL( mvo[ "b" ].as_bool(),   vo[ "b" ].as_bool() );
   BOOST_REQUIRE_EQUAL( mvo[ "c" ].as_double(), vo[ "c" ].as_double() );
