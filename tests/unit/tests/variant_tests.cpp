@@ -156,6 +156,46 @@ HIVE_AUTO_TEST_CASE( as_double_conversions,
   test_type_conversion< double >( &fc::variant::as_double );
 )
 
+HIVE_AUTO_TEST_CASE( as_bool_conversions,
+  bool expected = true;
+  fc::variant v;
+
+  const auto type_conversion_helper = [&]( auto&& input ) {
+    v = input;
+    BOOST_REQUIRE_EQUAL( v.as_bool(), expected );
+  };
+
+  type_conversion_helper( uint64_t( expected ) );
+  type_conversion_helper( int64_t( expected ) );
+  type_conversion_helper( double( expected ) );
+
+  type_conversion_helper( std::string{ "true" } );
+
+  v.clear();
+  BOOST_REQUIRE_EQUAL( v.as_bool(), false );
+
+  expected = false;
+  type_conversion_helper( uint64_t( expected ) );
+  type_conversion_helper( int64_t( expected ) );
+  type_conversion_helper( double( expected ) );
+
+  type_conversion_helper( std::string{ "false" } );
+
+  // Objects:
+  v = fc::variant_object{};
+  BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
+  v = fc::mutable_variant_object{};
+  BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
+
+  // Arrays:
+  v = fc::variants{};
+  BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
+
+  // Blob:
+  v = fc::blob{};
+  BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
+)
+
 // TODO: conversion, as_array, as_object and extended nested object tests along with the variant_object and mutable_variant_object tests
 
 BOOST_AUTO_TEST_SUITE_END()
