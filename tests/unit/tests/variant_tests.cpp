@@ -379,6 +379,39 @@ HIVE_AUTO_TEST_CASE( as_blob_conversions,
   BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
 )
 
+// Test variant construction from non-standard types
+HIVE_AUTO_TEST_CASE( extended_variant_construction,
+  using fc::variant;
+  variant v;
+
+  const auto test_type = [&]( auto&& value, variant::type_id type ) {
+    v = { value };
+    BOOST_REQUIRE_EQUAL( v.get_type(), type );
+  };
+
+  test_type( nullptr_t{}, variant::null_type );
+
+  char c_arr[6] = { 'a', 'l', 'i', 'c', 'e', '\0' };
+  test_type( c_arr, variant::string_type );
+  test_type( static_cast< const char* >( c_arr ), variant::string_type );
+
+  wchar_t wc_arr[6] = { 'a', 'l', 'i', 'c', 'e', '\0' };
+  test_type( wc_arr, variant::string_type );
+  test_type( static_cast< const wchar_t* >( wc_arr ), variant::string_type );
+
+  test_type( fc::string{ c_arr }, variant::string_type );
+
+  test_type( float{}, variant::double_type );
+
+  test_type( int8_t{}, variant::int64_type );
+  test_type( int16_t{}, variant::int64_type );
+  test_type( int32_t{}, variant::int64_type );
+
+  test_type( uint8_t{}, variant::uint64_type );
+  test_type( uint16_t{}, variant::uint64_type );
+  test_type( uint32_t{}, variant::uint64_type );
+)
+
 // TODO: operators, extended nested object tests (from_variant, to_variant, as etc.)
 
 BOOST_AUTO_TEST_SUITE_END()
