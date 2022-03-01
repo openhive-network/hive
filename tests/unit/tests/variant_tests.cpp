@@ -3,11 +3,51 @@
 
 #include <fc/variant.hpp>
 #include <fc/variant_object.hpp>
+#include <fc/reflect/reflect.hpp>
+#include <fc/reflect/variant.hpp>
+#include <fc/reflect/typename.hpp>
 #include <fc/exception/exception.hpp>
 
 #include <string>
 #include <functional>
 #include <limits>
+
+// Used later in `reflected` tests
+namespace variant_tests
+{
+
+struct A
+{
+  int a = 0;
+};
+
+struct B
+{
+  A a;
+  int b = 0;
+};
+
+struct C
+{
+  B b;
+};
+
+}
+
+// This should auto-generate from_variant and to_variant functions
+FC_REFLECT( variant_tests::A, (a) )
+FC_REFLECT( variant_tests::B, (a)(b) )
+
+// Custom functions for C struct
+namespace fc {
+
+void from_variant( const variant& var, variant_tests::C& c )
+{ from_variant( var, c.b ); }
+
+void to_variant( const variant_tests::C& c, variant& var )
+{ to_variant( c.b, var ); }
+
+}
 
 BOOST_AUTO_TEST_SUITE( variant_tests )
 
@@ -533,7 +573,80 @@ HIVE_AUTO_TEST_CASE( visitor,
   test_visitor( fc::variants{}, variant::array_type );
 )
 
-// TODO: operators, extended nested object tests (from_variant, to_variant, as etc.)
+// From variant, to variant
+
+namespace
+{
+
+template< typename T >
+void test_from_variant( const T& expected )
+{
+  fc::variant v;
+  T result = T{};
+  v = expected;
+  fc::from_variant( v, result );
+  BOOST_REQUIRE_EQUAL( expected, result );
+}
+
+template< typename T >
+void test_to_variant( const T& expected )
+{
+  fc::variant v;
+  fc::to_variant( expected, v );
+  T result = T{};
+  fc::from_variant( v, result );
+  BOOST_REQUIRE_EQUAL( expected, result );
+}
+
+}
+
+HIVE_AUTO_TEST_CASE( from_variant_base,
+  test_from_variant( true );
+
+  test_from_variant( uint8_t( -1 ) );
+  test_from_variant( int8_t( -1 ) );
+  test_from_variant( uint16_t( -1 ) );
+  test_from_variant( int16_t( -1 ) );
+  test_from_variant( uint32_t( -1 ) );
+  test_from_variant( int32_t( -1 ) );
+  test_from_variant( uint64_t( -1 ) );
+  test_from_variant( int64_t( -1 ) );
+
+  test_from_variant( double( 3.14 ) );
+
+  test_from_variant( std::string{ "alice" } );
+)
+
+HIVE_AUTO_TEST_CASE( to_variant_base,
+  test_to_variant( true );
+
+  test_to_variant( uint8_t( -1 ) );
+  test_to_variant( int8_t( -1 ) );
+  test_to_variant( uint16_t( -1 ) );
+  test_to_variant( int16_t( -1 ) );
+  test_to_variant( uint32_t( -1 ) );
+  test_to_variant( int32_t( -1 ) );
+  test_to_variant( uint64_t( -1 ) );
+  test_to_variant( int64_t( -1 ) );
+
+  test_to_variant( double( 3.14 ) );
+
+  test_to_variant( std::string{ "alice" } );
+)
+
+HIVE_AUTO_TEST_CASE( reflected,
+  C c = { { { 1 }, 2 } };
+
+  fc::variant v;
+  fc::to_variant( c, v );
+  BOOST_REQUIRE( v.is_object() );
+
+  C c_out;
+  fc::from_variant( v, c_out );
+
+  BOOST_REQUIRE_EQUAL( c.b.a.a, c_out.b.a.a );
+  BOOST_REQUIRE_EQUAL( c.b.b, c_out.b.b );
+)
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif
