@@ -4,74 +4,91 @@ from concurrent.futures import ThreadPoolExecutor
 from test_tools.communication import request
 from typing import Dict, List
 
+json_server_request_test = '/home/dev/Desktop/server_request_data/server_request_test/server_request_test.json'
 
 develop_url = 'http://localhost:28091'
 server_develop_url = 'http://hive-2:8091'
 json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/server_request_develop_data.json'
-develop_last_block_number = 2970507
+
 
 server_master_url = 'http://hive-2:18091'
 json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data/server_request_master_data.json'
-master_last_block_number = 2970497
 
 
-def get_all_account_transactions(account_name: str, start_block_number, last_block_number, url) -> List[Dict]:
+def get_last_transaction_number(account_name: str, url: str) -> int:
+    last_transaction = request(url,
+                {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
+                 "params": {"account": account_name, "start": -1, "limit": 1}})
+    return last_transaction['result']['history'][0][0]
+
+
+def big_json_opener(path):
+    with open(path, 'r') as f:
+        data = json.load(f)
+    return data
+
+
+def get_all_account_transactions(account_name: str, start_transaction_number, last_transaction_number, url) -> List[Dict]:
     all_account_transaction = []
-    for i in range(last_block_number, start_block_number, -1000):
-        if start_block_number == 0 and i == 1:
+    for e, i in enumerate(range(last_transaction_number, start_transaction_number-1, -1000)):
+        if start_transaction_number == 0 and i == 1:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
                                     "params": {"account": account_name, "start": 0, "limit": 1}})
             all_account_transaction.append(request_data)
-        elif last_block_number - start_block_number < 1000 and i <= 1000:
+        elif last_transaction_number - start_transaction_number < 1000:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
-                                    "params": {"account": account_name, "start": i, "limit": last_block_number - start_block_number}})
+                                    "params": {"account": account_name, "start": i, "limit": last_transaction_number - start_transaction_number +1}})
             all_account_transaction.append(request_data)
         else:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
                                     "params": {"account": account_name, "start": i, "limit": 1000}})
             all_account_transaction.append(request_data)
-            last_block_number -= 1000
+            last_transaction_number -= 1000
 
-    request_data = request(url,
-                           {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
-                            "params": {"account": account_name, "start": start_block_number, "limit": 1}})
-    all_account_transaction.append(request_data)
+        if e % 100 == 0:
+            print('Downloaded 1000 packs of transactions', flush=True)
 
     return all_account_transaction
 
 
-def save_transaction_to_json(data_stored, account_name, start_block_number, last_block_number, url):
-    store = get_all_account_transactions(account_name, start_block_number, last_block_number, url)
-    to_save = [list(reversed(item['result']['history'])) for item in store]
-    with open(data_stored, 'w') as file:
-        json.dump(to_save, file)
-
-    multi_saver_datas = multi_saver(account_name, start_block_number, last_block_number, url)
+def save_transaction_to_json(data_stored, account_name, start_transaction_number, last_transaction_number, url):
+    single_saver_data = get_all_account_transactions(account_name, start_transaction_number, last_transaction_number, url)
+    to_single_save = [list(reversed(item['result']['history'])) for item in single_saver_data]
     print()
+    with open(data_stored, 'w') as file:
+        json.dump(to_single_save, file)
+    # multi_saver_datas = multi_saver(account_name, start_transaction_number, last_transaction_number, url)
+    # to_save_multi = [list(reversed(item['result']['history'])) for item in multi_saver_datas]
+    # print()
+    # with open(data_stored, 'w') as file:
+    #     json.dump(to_save_multi, file)
 
 
-def multi_saver(account_name: str, start_block_number, last_block_number, url):
+def multi_saver(account_name: str, start_transaction_number, last_transaction_number, url):
     tasks_list = []
     datas = []
     executor = ThreadPoolExecutor(max_workers=4)
-    for i in range(last_block_number, start_block_number, -1000):
-        start = i-1000
-        stop = i
-        if i - 1000 < 0:
-            tasks_list.append(executor.submit(get_all_account_transactions, account_name, i, i, url))
-            tasks_list.append(executor.submit(get_all_account_transactions, account_name, 0, 1, url))
+    for i in range(last_transaction_number, start_transaction_number, -1000):
+        if i - start_transaction_number < 1000:
+            tasks_list.append(executor.submit(get_all_account_transactions, account_name, start_transaction_number, i, url))
         else:
             tasks_list.append(executor.submit(get_all_account_transactions, account_name, i - 1000, i, url))
     for thread_number in tasks_list:
-        datas.append(thread_number.result())
+        datas.extend(thread_number.result())
     print()
     return datas
 
+save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_develop_url), server_develop_url)
+save_transaction_to_json(json_server_master_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_master_url), server_master_url)
+# td = big_json_opener(json_server_request_test)
 
-save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, 10000, server_develop_url)
+# md = big_json_opener(json_server_master_data_stored)
+# dd = big_json_opener(json_server_develop_data_stored)
+# save_transaction_to_json(json_server_master_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_master_url), server_master_url)
+# save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_develop_url), server_develop_url)
 
 
 # for index_mas in master_transactions:
