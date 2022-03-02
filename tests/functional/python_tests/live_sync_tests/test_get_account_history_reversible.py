@@ -18,6 +18,7 @@ def test_get_account_history_reversible(world):
     wallet.api.create_account('initminer', 'alice', '{}')
     trx = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(0.001))
 
+    api_node.wait_number_of_blocks(1)
     irreversible = api_node.api.database.get_dynamic_global_properties()["last_irreversible_block_num"]
     logger.info(f'irreversible {irreversible}')
 

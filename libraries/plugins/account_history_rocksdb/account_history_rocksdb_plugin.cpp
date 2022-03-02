@@ -600,6 +600,8 @@ public:
 
   void find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
     std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
+  uint32_t find_reversible_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, uint32_t number_of_irreversible_ops,
+    std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
   bool find_operation_object(size_t opId, rocksdb_operation_object* op) const;
   /// Allows to look for all operations present in given block and call `processor` for them.
   void find_operations_by_block(size_t blockNum, bool include_reversible,
@@ -1158,6 +1160,9 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   if(limit == 0)
     return;
 
+  unsigned int count = 0;
+  unsigned int number_of_irreversible_ops = 0;
+
   ReadOptions rOptions;
 
   ah_info_by_name_slice_t nameSlice(name.data);
@@ -1165,7 +1170,11 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   auto s = _storage->Get(rOptions, _columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, &buffer);
 
   if(s.IsNotFound())
+  {
+    if(include_reversible)
+      find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
     return;
+  }
 
   checkStatus(s);
 
@@ -1186,14 +1195,20 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   it->SeekForPrev(key);
 
   if(it->Valid() == false)
+  {
+    if(include_reversible)
+      find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
     return;
+  }
 
   auto keySlice = it->key();
   auto keyValue = ah_op_by_id_slice_t::unpackSlice(keySlice);
 
-  unsigned int count = 0;
+  number_of_irreversible_ops = keyValue.second + 1;
+  if(include_reversible)
+    count += find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
 
-  for(; it->Valid(); it->Prev())
+  for(; it->Valid() && count<limit; it->Prev())
   {
     auto keySlice = it->key();
     if(keySlice.starts_with(ahIdSlice) == false)
@@ -1214,6 +1229,46 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
         break;
     }
   }
+}
+
+uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_data(const account_name_type& name, uint64_t start,
+  uint32_t limit, uint32_t number_of_irreversible_ops, std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const
+{
+  uint32_t count = 0;
+  if(number_of_irreversible_ops < start)
+  {
+    uint32_t collectedIrreversibleBlock = 0;
+    uint32_t rangeBegin = _mainDb.get_last_irreversible_block_num();
+    if( BOOST_UNLIKELY( rangeBegin == 0) )
+      rangeBegin = 1;
+    uint32_t rangeEnd = _mainDb.head_block_num() + 1;
+
+    auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
+
+    std::vector<rocksdb_operation_object> ops_for_this_account;
+    for(const auto& obj : reversibleOps)
+    {
+      hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
+      auto impacted = getImpactedAccounts( op );
+      if( std::find( impacted.begin(), impacted.end(), name) != impacted.end() )
+        ops_for_this_account.push_back(obj);
+    };
+
+    if( number_of_irreversible_ops + ops_for_this_account.size() < start )
+      start = number_of_irreversible_ops + ops_for_this_account.size();
+
+    for(int i = start-number_of_irreversible_ops-1; i>=0; i--)
+    {
+      rocksdb_operation_object oObj = ops_for_this_account[i];
+      if(processor(number_of_irreversible_ops + i, oObj))
+      {
+        ++count;
+        if(count >= limit)
+          return count;
+      }
+    }
+  }
+  return count;
 }
 
 bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, rocksdb_operation_object* op) const
@@ -1451,6 +1506,21 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
     }
 
   FC_ASSERT(s.IsNotFound());
+
+  if(include_reversible)
+  {
+    const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+
+    for(auto opIterator = volatileIdx.begin(); opIterator != volatileIdx.end(); ++opIterator)
+    {
+      if( opIterator->trx_id == trxId)
+      {
+        *blockNo = opIterator->block;
+        *txInBlock = opIterator->trx_in_block;
+        return true;
+      }
+    }
+  }
 
   return false;
 }
