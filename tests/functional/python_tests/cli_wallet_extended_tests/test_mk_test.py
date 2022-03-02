@@ -15,4 +15,3 @@ def test_x():
     witness = wallet.api.get_active_witnesses()
     # witness2 = wallet.api.list_witnesses(start='abit', limit=100, order='by_name')
     # acc_list = wallet.api.list_accounts(-1, 1000)
-    print()

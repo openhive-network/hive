@@ -22,7 +22,7 @@ def get_last_transaction_number(account_name: str, url: str) -> int:
     return last_transaction['result']['history'][0][0]
 
 
-def big_json_opener(path):
+def json_to_variable_opener(path):
     with open(path, 'r') as f:
         data = json.load(f)
     return data
@@ -39,7 +39,7 @@ def get_all_account_transactions(account_name: str, start_transaction_number, la
         elif last_transaction_number - start_transaction_number < 1000:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
-                                    "params": {"account": account_name, "start": i, "limit": last_transaction_number - start_transaction_number +1}})
+                                    "params": {"account": account_name, "start": i, "limit": last_transaction_number - start_transaction_number + 1}})
             all_account_transaction.append(request_data)
         else:
             request_data = request(url,
@@ -50,7 +50,6 @@ def get_all_account_transactions(account_name: str, start_transaction_number, la
 
         if e % 100 == 0:
             print('Downloaded 1000 packs of transactions', flush=True)
-
     return all_account_transaction
 
 
@@ -78,39 +77,50 @@ def multi_saver(account_name: str, start_transaction_number, last_transaction_nu
             tasks_list.append(executor.submit(get_all_account_transactions, account_name, i - 1000, i, url))
     for thread_number in tasks_list:
         datas.extend(thread_number.result())
-    print()
     return datas
 
-save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_develop_url), server_develop_url)
-save_transaction_to_json(json_server_master_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_master_url), server_master_url)
-# td = big_json_opener(json_server_request_test)
 
-# md = big_json_opener(json_server_master_data_stored)
-# dd = big_json_opener(json_server_develop_data_stored)
-# save_transaction_to_json(json_server_master_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_master_url), server_master_url)
+def assign_transactions_keys(data):
+    sorted_data = {}
+    ignore_keys = ('virtual_op', 'op_in_trx')
+    for all_transactions in data:
+        for one_in_thousand_transaction in all_transactions:
+            sorted_data_key = (one_in_thousand_transaction[1]['block'], one_in_thousand_transaction[1]['timestamp'])
+            if sorted_data_key not in sorted_data:
+                sorted_data[sorted_data_key] = []
+            no_vop_transaction = {k: v for k, v in one_in_thousand_transaction[1].items() if k not in ignore_keys}
+            sorted_data[sorted_data_key].append(no_vop_transaction)
+            # sorted_data[sorted_data_key].append(one_in_thousand_transaction[1])
+    return sorted_data
+
+
+def compare_transaction(transaction_from, key_value_data):
+    wrong_transactions = []
+    ignore_keys = ('virtual_op', 'op_in_trx')
+    for all_transactions in transaction_from:
+        for one_in_thousand_transaction in all_transactions:
+            data_key = (one_in_thousand_transaction[1]['block'], one_in_thousand_transaction[1]['timestamp'])
+            no_vop_transaction = {k: v for k, v in one_in_thousand_transaction[1].items() if k not in ignore_keys}
+            if one_in_thousand_transaction[1]['block'] < 62245215:
+                if no_vop_transaction not in key_value_data[data_key]:
+                    wrong_transactions.append(one_in_thousand_transaction)
+    with open('/home/dev/Desktop/server_request_data/wrong_transaction/master_to_dev_wrong_transaction.json', 'w') as f:
+        json.dump(wrong_transactions, f)
+    return wrong_transactions
+
+
+# dev last block    = 62245215
+# master last block = 62246376
+# deevelop to master
+compare_transaction(json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+
+# master do deva ~ KeyError: (62246376, '2022-03-01T16:08:09')
+compare_transaction(json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
+
+
+# json_to_variable_opener(json_server_develop_data_stored)
+# assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored))
+
 # save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_develop_url), server_develop_url)
+# save_transaction_to_json(json_server_master_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_master_url), server_master_url)
 
-
-# for index_mas in master_transactions:
-#     if index_mas['result']['history'][0][1]['op']['type'] == 'limit_order_cancel_operation':
-#         wrong_transactions.append(index_mas)
-# for index_dev in dev_transactions:
-#     if index_dev['result']['history'][0][1]['op']['type'] == 'limit_order_cancel_operation' or index_dev['result']['history'][0][1]['op']['type'] == 'limit_order_cancelled_operation':
-#         wrong_transactions.append(index_dev)
-
-
-# for index_dev, c in enumerate(dev_transactions):
-#     d = 0
-#     for index_mas, l in enumerate(master_transactions):
-#         x = c['result']['history'][0][1]['op']
-#         y = l['result']['history'][0][1]['op']
-#         x_id = c['result']['history'][0][1]['trx_id']
-#         y_id = l['result']['history'][0][1]['trx_id']
-#         if c['result']['history'][0][1]['trx_id'] == l['result']['history'][0][1]['trx_id']:
-#             if c['result']['history'][0][1]['op'] != l['result']['history'][0][1]['op']:
-#                 if c['result']['history'][0][1]['trx_id'] != '0000000000000000000000000000000000000000':
-#                     wrong_transactions.append(c)
-#                     # print(c['result']['history'][0][1]['trx_id'])
-
-# x = wrong_transactions
-# print()
