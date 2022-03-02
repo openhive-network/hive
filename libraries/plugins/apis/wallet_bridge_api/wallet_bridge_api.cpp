@@ -15,6 +15,7 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
+#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
@@ -40,6 +41,7 @@ class wallet_bridge_api_impl
         (get_active_witnesses)
         (get_withdraw_routes)
         (list_my_accounts)
+        (list_my_accounts_details)
         (list_accounts)
         (get_dynamic_global_properties)
         (get_account)
@@ -344,7 +346,28 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
   for (const auto& arg : arg_keys)
     keys.push_back(arg.as<protocol::public_key_type>());
 
-  return _account_by_key_api->get_key_references( {keys} );
+  auto _refs = _account_by_key_api->get_key_references( {keys} );
+
+  set<string> names;
+  for( const auto& item : _refs.accounts )
+    for( const auto& name : item )
+      names.insert( name );
+
+  vector<database_api::api_account_object> _result;
+  _result.reserve( names.size() );
+  for( const auto& name : names )
+  {
+    fc::variants _v = { name };
+    _result.emplace_back( *( get_account( _v ) ) );
+  }
+
+  return _result;
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts_details )
+{
+  auto _accounts = list_my_accounts( args );
+  return hive::plugins::wallet_bridge_api::wallet_formatter::list_my_accounts_impl( serializer_wrapper<vector<database_api::api_account_object>>{ _accounts } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
@@ -749,6 +772,7 @@ DEFINE_READ_APIS(
   (get_active_witnesses)
   (get_withdraw_routes)
   (list_my_accounts)
+  (list_my_accounts_details)
   (list_accounts)
   (get_dynamic_global_properties)
   (get_account)

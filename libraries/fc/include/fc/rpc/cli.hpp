@@ -28,7 +28,7 @@ namespace fc { namespace rpc {
          void start();
          void stop();
          void wait();
-         void format_result( const string& method, std::function<string(variant,const variants&)> formatter);
+         void format_result( const string& method, std::function<string(variant)> formatter);
          void set_on_termination_handler( on_termination_handler&& hdl );
 
          virtual void getline( const fc::string& prompt, fc::string& line );
@@ -39,7 +39,7 @@ namespace fc { namespace rpc {
          void run();
 
          std::string _prompt = ">>>";
-         std::map<string,std::function<string(variant,const variants&)> > _result_formatters;
+         std::map<string,std::function<string(variant)> > _result_formatters;
          fc::future<void> _run_complete;
          on_termination_handler _termination_hdl;
    };

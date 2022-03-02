@@ -920,18 +920,7 @@ serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_
   for( const auto& item : my->_keys )
     pub_keys.push_back(item.first);
 
-  auto refs = my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ).accounts;
-  set<string> names;
-  for( const auto& item : refs )
-    for( const auto& name : item )
-      names.insert( name );
-
-
-  result.reserve( names.size() );
-  for( const auto& name : names )
-    result.emplace_back( get_account( name ).value );
-
-  return { result };
+  return { my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ) };
 }
 
 vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, uint32_t limit)

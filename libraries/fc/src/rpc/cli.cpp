@@ -115,7 +115,7 @@ void cli::wait()
    _run_complete.wait();
 }
 
-void cli::format_result( const string& method, std::function<string(variant,const variants&)> formatter)
+void cli::format_result( const string& method, std::function<string(variant)> formatter)
 {
    _result_formatters[method] = formatter;
 }
@@ -153,7 +153,7 @@ void cli::run()
             std::cout << fc::json::to_pretty_string( result ) << "\n";
          }
          else
-            std::cout << itr->second( result, args ) << "\n";
+            std::cout << itr->second( result ) << "\n";
       }
       catch ( const fc::eof_exception& e )
       {

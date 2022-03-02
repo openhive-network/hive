@@ -59,7 +59,11 @@ typedef database_api::find_withdraw_vesting_routes_return   get_withdraw_routes_
 
 /* list_my_accounts */
 typedef variant                                     list_my_accounts_args;
-typedef account_by_key::get_key_references_return   list_my_accounts_return;
+typedef vector< database_api::api_account_object >  list_my_accounts_return;
+
+/* list_my_accounts_details */
+typedef variant                                     list_my_accounts_details_args;
+typedef string                                      list_my_accounts_details_return;
 
 /* list_accounts */
 typedef variant                             list_accounts_args;
