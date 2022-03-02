@@ -242,19 +242,22 @@ hf26_tests:
   tags:
     - public-runner-docker
 
-synchronization_tests:
+live_sync_tests:
   stage: test
   extends: .test_tools_based
   needs:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTHONPATH: $CI_PROJECT_DIR/tests/test_tools/package
   script:
-    - cd tests/functional/python_tests/synchronization_tests
-    - pytest --junitxml="./report.xml"
+    - apt-get update -y && apt-get install -y tox
+    - cd tests/functional/python_tests/live_sync_tests
+    - tox
   artifacts:
     reports:
-      junit: tests/functional/python_tests/synchronization_tests/report.xml
+      junit: tests/functional/python_tests/live_sync_tests/report.xml
   tags:
     - public-runner-docker
 
