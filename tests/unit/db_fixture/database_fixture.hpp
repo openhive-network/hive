@@ -221,6 +221,15 @@ namespace hive { namespace chain {
 
 using namespace hive::protocol;
 
+struct auto_cashout
+{
+  ~auto_cashout() { configuration_data.reset(); }
+};
+//applies HF25 values related to comment cashout instead those default (short) for testnet
+//call configuration_data.reset() manually at the end of test (f.e. in fixture destructor) if
+//you pass false to autoscope, otherwise the setting will persist influencing other tests
+std::unique_ptr< auto_cashout > set_mainnet_cashout_values( bool autoscope = true );
+
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
   //   plugins

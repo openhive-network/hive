@@ -1144,6 +1144,12 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Negative RC regeneration bug" );
+    auto autoscope( set_mainnet_cashout_values() ); //time is needed for RC to regenerate - testnet values are too small
 
 BOOST_AUTO_TEST_SUITE_END()
 
