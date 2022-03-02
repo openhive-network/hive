@@ -1148,7 +1148,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
   try
   {
     BOOST_TEST_MESSAGE( "Negative RC regeneration bug" );
-    auto autoscope( set_mainnet_cashout_values() ); //time is needed for RC to regenerate - testnet values are too small
+    auto auto_reset( set_mainnet_cashout_values() ); //time is needed for RC to regenerate - testnet values are too small
 
     //the problem is very cryptic
     //first thing - it involves negative RC which shouldn't really ever happen (but does, for this

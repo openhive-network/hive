@@ -46,14 +46,14 @@ typedef hive::plugins::account_history::account_history_plugin ah_plugin;
 using std::cout;
 using std::cerr;
 
-std::unique_ptr< auto_cashout > set_mainnet_cashout_values( bool autoscope )
+autoscope set_mainnet_cashout_values( bool auto_reset )
 {
   configuration_data.set_cashout_related_values(
     0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 );
-  if( autoscope )
-    return std::make_unique< auto_cashout >();
+  if( auto_reset )
+    return autoscope([](){ configuration_data.reset(); });
   else
-    return nullptr;
+    return autoscope([](){});
 }
 
 clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )

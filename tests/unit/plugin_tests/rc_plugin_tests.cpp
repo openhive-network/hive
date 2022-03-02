@@ -1106,18 +1106,20 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     BOOST_TEST_MESSAGE( "Push previously popped block - pending transaction should fail again" );
     //the only way to see if we run into problem is to observe ilog messages
     BOOST_REQUIRE( fc::logger::get( DEFAULT_LOGGER ).is_enabled( fc::log_level::info ) );
-    struct tcatcher : public fc::appender
     {
-      virtual void log( const fc::log_message& m )
+      struct tcatcher : public fc::appender
       {
-        const char* PROBLEM_MSG = "Accepting transaction by alice";
-        BOOST_REQUIRE_EQUAL( std::memcmp( m.get_message().c_str(), PROBLEM_MSG, std::strlen( PROBLEM_MSG ) ), 0 );
-      }
-    };
-    auto catcher = fc::shared_ptr<tcatcher>( new tcatcher() );
-    fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
-    db->push_block( *block );
-    fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher );
+        virtual void log( const fc::log_message& m )
+        {
+          const char* PROBLEM_MSG = "Accepting transaction by alice";
+          BOOST_REQUIRE_NE( std::memcmp( m.get_message().c_str(), PROBLEM_MSG, std::strlen( PROBLEM_MSG ) ), 0 );
+        }
+      };
+      auto catcher = fc::shared_ptr<tcatcher>( new tcatcher() );
+      autoscope auto_reset( [&]() { fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher ); } );
+      fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
+      db->push_block( *block );
+    }
 
     validate_database();
   }
