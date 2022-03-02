@@ -2,9 +2,10 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
-#include <hive/chain/database_exceptions.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
+
+#include <fc/log/appender.hpp>
 
 #include <chrono>
 
@@ -13,23 +14,29 @@ using namespace hive::protocol;
 using namespace hive::plugins;
 using namespace hive::plugins::rc;
 
-int64_t regenerate_mana( chain::database* db, const rc_account_object& acc )
+int64_t regenerate_mana( debug_node::debug_node_plugin* db_plugin, const rc_account_object& acc )
 {
-  db->modify( acc, [&]( rc_account_object& rc_account )
+  db_plugin->debug_update( [&]( database& db )
   {
-    auto max_rc = get_maximum_rc( db->get_account( rc_account.account ), rc_account );
-    hive::chain::util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
-    rc_account.rc_manabar.regenerate_mana( manabar_params, db->head_block_time() );
+    db.modify( acc, [&]( rc_account_object& rc_account )
+    {
+      auto max_rc = get_maximum_rc( db.get_account( rc_account.account ), rc_account );
+      hive::chain::util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
+      rc_account.rc_manabar.regenerate_mana( manabar_params, db.head_block_time() );
+    } );
   } );
   return acc.rc_manabar.current_mana;
 }
 
-void clear_mana( chain::database* db, const rc_account_object& acc )
+void clear_mana( debug_node::debug_node_plugin* db_plugin, const rc_account_object& acc )
 {
-  db->modify( acc, [&]( rc_account_object& rc_account )
+  db_plugin->debug_update( [&]( database& db )
   {
-    rc_account.rc_manabar.current_mana = 0;
-    rc_account.rc_manabar.last_update_time = db->head_block_time().sec_since_epoch();
+    db.modify( acc, [&]( rc_account_object& rc_account )
+    {
+      rc_account.rc_manabar.current_mana = 0;
+      rc_account.rc_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+    } );
   } );
 }
 
@@ -564,9 +571,9 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     generate_block();
 
     BOOST_TEST_MESSAGE( "thief keeps RC of victim at zero - recovery still possible" );
-    auto pre_tx_agent_mana = regenerate_mana( db, agent_rc );
-    clear_mana( db, victim_rc );
-    auto pre_tx_thief_mana = regenerate_mana( db, thief_rc );
+    auto pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
+    clear_mana( db_plugin, victim_rc );
+    auto pre_tx_thief_mana = regenerate_mana( db_plugin, thief_rc );
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover_account_operation recover;
@@ -604,8 +611,8 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     push_transaction( request, agent_private_key );
     generate_block();
     //finally recover adding expensive operation as extra - test 1: before actual recovery
-    pre_tx_agent_mana = regenerate_mana( db, agent_rc );
-    auto pre_tx_victim_mana = regenerate_mana( db, victim_rc );
+    pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
+    auto pre_tx_victim_mana = regenerate_mana( db_plugin, victim_rc );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     claim_account_operation expensive;
     expensive.creator = "victim";
@@ -733,13 +740,13 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     generate_block();
 
     BOOST_TEST_MESSAGE( "thiefs keep RC of victims at zero - recovery not possible for multiple accounts in one tx..." );
-    auto pre_tx_agent_mana = regenerate_mana( db, agent_rc );
-    clear_mana( db, victim1_rc );
-    clear_mana( db, victim2_rc );
-    clear_mana( db, victim3_rc );
-    auto pre_tx_thief1_mana = regenerate_mana( db, thief1_rc );
-    auto pre_tx_thief2_mana = regenerate_mana( db, thief2_rc );
-    auto pre_tx_thief3_mana = regenerate_mana( db, thief3_rc );
+    auto pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
+    clear_mana( db_plugin, victim1_rc );
+    clear_mana( db_plugin, victim2_rc );
+    clear_mana( db_plugin, victim3_rc );
+    auto pre_tx_thief1_mana = regenerate_mana( db_plugin, thief1_rc );
+    auto pre_tx_thief2_mana = regenerate_mana( db_plugin, thief2_rc );
+    auto pre_tx_thief3_mana = regenerate_mana( db_plugin, thief3_rc );
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover_account_operation recover;
@@ -1045,5 +1052,78 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing different transaction order in pending transactions vs actual block" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
+    skip_flags.skip_reject_not_enough_rc = 0;
+    skip_flags.skip_deduct_rc = 0;
+    skip_flags.skip_negative_rc_balance = 0;
+    skip_flags.skip_reject_unknown_delta_vests = 0;
+    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+    vest( "initminer", "bob", ASSET( "3000.000 TESTS" ) ); //<- change that amount to tune RC cost
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+
+    const auto& alice_rc = db->get< rc_account_object, by_name >( "alice" );
+
+    BOOST_TEST_MESSAGE( "Clear RC on alice and wait a bit so she has enough for one operation but not two" );
+    clear_mana( db_plugin, alice_rc );
+    generate_block();
+    generate_block();
+
+    signed_transaction tx1, tx2;
+    tx1.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx2.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    transfer_operation transfer;
+    transfer.from = "alice";
+    transfer.to = "bob";
+    transfer.amount = ASSET( "10.000 TESTS" );
+    transfer.memo = "First transfer";
+    tx1.operations.push_back( transfer );
+    sign( tx1, alice_private_key );
+    db->push_transaction( tx1, 0 );
+    transfer.memo = "Second transfer";
+    tx2.operations.push_back( transfer );
+    sign( tx2, alice_private_key );
+    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx2, 0 ), "has_mana", plugin_exception );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Save aside and remove head block" );
+    auto block = db->fetch_block_by_number( db->head_block_num() );
+    BOOST_REQUIRE( block.valid() );
+    db->pop_block();
+
+    BOOST_TEST_MESSAGE( "Reapply transaction that failed before putting it to pending" );
+    db->push_transaction( tx2, 0 );
+
+    BOOST_TEST_MESSAGE( "Push previously popped block - pending transaction should fail again" );
+    //the only way to see if we run into problem is to observe ilog messages
+    BOOST_REQUIRE( fc::logger::get( DEFAULT_LOGGER ).is_enabled( fc::log_level::info ) );
+    struct tcatcher : public fc::appender
+    {
+      virtual void log( const fc::log_message& m )
+      {
+        const char* PROBLEM_MSG = "Accepting transaction by alice";
+        BOOST_REQUIRE_EQUAL( std::memcmp( m.get_message().c_str(), PROBLEM_MSG, std::strlen( PROBLEM_MSG ) ), 0 );
+      }
+    };
+    auto catcher = fc::shared_ptr<tcatcher>( new tcatcher() );
+    fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
+    db->push_block( *block );
+    fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
+
 #endif

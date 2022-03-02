@@ -46,10 +46,14 @@ typedef hive::plugins::account_history::account_history_plugin ah_plugin;
 using std::cout;
 using std::cerr;
 
-void set_mainnet_cashout_values()
+std::unique_ptr< auto_cashout > set_mainnet_cashout_values( bool autoscope )
 {
   configuration_data.set_cashout_related_values(
     0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 );
+  if( autoscope )
+    return std::make_unique< auto_cashout >();
+  else
+    return nullptr;
 }
 
 clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )
@@ -68,7 +72,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
 
   appbase::app().register_plugin< ah_plugin >();
   db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
-  rc_plugin = &appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
+  appbase::app().register_plugin< hive::plugins::rc::rc_plugin >();
   appbase::app().register_plugin< hive::plugins::witness::witness_plugin >();
 
   db_plugin->logging = false;
@@ -84,7 +88,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   rc_skip.skip_deduct_rc = 0;
   rc_skip.skip_negative_rc_balance = 1;
   rc_skip.skip_reject_unknown_delta_vests = 0;
-  rc_plugin->set_rc_plugin_skip_flags( rc_skip );
+  appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().set_rc_plugin_skip_flags( rc_skip );
 
   db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
   BOOST_REQUIRE( db );
@@ -134,7 +138,7 @@ clean_database_fixture::~clean_database_fixture()
 void clean_database_fixture::validate_database()
 {
   database_fixture::validate_database();
-  rc_plugin->validate_database();
+  appbase::app().get_plugin< hive::plugins::rc::rc_plugin >().validate_database();
 }
 
 void clean_database_fixture::resize_shared_mem( uint64_t size, fc::optional<uint32_t> hardfork )
@@ -204,7 +208,7 @@ genesis_database_fixture::~genesis_database_fixture()
 {}
 
 curation_database_fixture::curation_database_fixture( uint16_t shared_file_size_in_mb )
-  : clean_database_fixture( ( set_mainnet_cashout_values(), shared_file_size_in_mb ) )
+  : clean_database_fixture( ( set_mainnet_cashout_values( false ), shared_file_size_in_mb ) )
 {
 }
 
@@ -216,7 +220,7 @@ curation_database_fixture::~curation_database_fixture()
 cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_in_mb )
                             : shared_file_size_in_mb( _shared_file_size_in_mb )
 {
-  set_mainnet_cashout_values();
+  set_mainnet_cashout_values( false );
 }
 
 cluster_database_fixture::~cluster_database_fixture()
