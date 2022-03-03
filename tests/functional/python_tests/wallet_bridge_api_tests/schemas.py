@@ -1,3 +1,6 @@
+import partial_schemas
+
+
 find_rc_accounts = {
     'type': 'seq',
     'sequence': [
@@ -66,8 +69,36 @@ list_rc_direct_delegations = {
             'mapping': {
                 'from': {'type': 'str'},
                 'to': {'type': 'str'},
-                'delegated_rc': {'type': 'int'}
+                'delegated_rc': {'type': 'int'},
             },
         }
     ]
+}
+
+get_version = {
+    'type': 'map',
+    'mapping': {
+        'blockchain_version': {'type': 'str', 'pattern': '^(\d+\.)?(\d+\.)?(\*|\d+)$'},
+        'hive_revision': {'type': 'str'},
+        'fc_revision': {'type': 'str'},
+        'chain_id': {'type': 'str'},
+    }
+}
+
+get_hardfork_version = {
+    'type': 'str',
+    'pattern': '^(\d+\.)?(\d+\.)?(\*|\d+)$',
+}
+
+get_active_witnesses = {
+    'type': 'map',
+    'mapping': {
+        'witnesses': {
+            'type': 'seq',
+            'matching': 'all',
+            'sequence': [
+                {'type': 'str'},
+            ]
+        }
+    }
 }
