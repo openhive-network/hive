@@ -78,6 +78,14 @@ struct list_my_accounts_json_return
 typedef variant                                     list_my_accounts_args;
 typedef variant                                     list_my_accounts_return;
 
+/* help */
+typedef variant                                     help_args;
+typedef variant                                     help_return;
+
+/* gethelp */
+typedef variant                                     gethelp_args;
+typedef variant                                     gethelp_return;
+
 /* switch_format */
 typedef variant                                     switch_format_args;
 typedef variant                                     switch_format_return;

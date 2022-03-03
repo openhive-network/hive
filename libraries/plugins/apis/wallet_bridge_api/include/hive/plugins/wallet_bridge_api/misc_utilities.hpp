@@ -38,14 +38,39 @@ struct wallet_formatter
     }
   }
 
-  static string help( variant result )
+  static variant help( format_type format )
   {
-    return result.get_string();
+    // std::vector<std::string> method_names = my->method_documentation.get_method_names();
+    // std::stringstream ss;
+    // for( const std::string& method_name : method_names )
+    // {
+    //   try
+    //   {
+    //     ss << my->method_documentation.get_brief_description(method_name);
+    //   }
+    //   catch (const fc::key_not_found_exception&)
+    //   {
+    //     ss << method_name << " (no help available)\n";
+    //   }
+    // }
+    // return ss.str();
+    return variant("help-test");
   }
 
-  static string get_help( variant result )
+  static variant gethelp( const string& method, format_type format )
   {
-    return result.get_string();
+    // fc::api<wallet_api> tmp;
+    // std::stringstream ss;
+    // ss << "\n";
+
+    // std::string doxygenHelpString = my->method_documentation.get_detailed_description(method);
+    // if( !doxygenHelpString.empty() )
+    //   ss << doxygenHelpString;
+    // else
+    //   ss << "No help defined for method " << method << "\n";
+
+    // return ss.str();
+    return variant("gethelp-test" + method );
   }
 
   static variant list_my_accounts( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )

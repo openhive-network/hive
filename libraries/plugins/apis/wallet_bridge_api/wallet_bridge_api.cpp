@@ -43,6 +43,8 @@ class wallet_bridge_api_impl
         (get_active_witnesses)
         (get_withdraw_routes)
         (list_my_accounts)
+        (help)
+        (gethelp)
         (switch_format)
         (list_accounts)
         (get_dynamic_global_properties)
@@ -366,6 +368,24 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
   }
 
   return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, help )
+{
+  return wallet_formatter::help( format );
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, gethelp )
+{
+  verify_args( args, 1 );
+  FC_ASSERT(args.get_array()[0].is_array(), "switch_format needs at least one argument");
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+  FC_ASSERT( arguments.get_array()[0].is_string(), "Name of method is required as first argument" );
+
+  auto method = arguments.get_array()[0].as_string();
+
+  return wallet_formatter::gethelp( method, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, switch_format )
@@ -782,6 +802,8 @@ DEFINE_READ_APIS(
   (get_active_witnesses)
   (get_withdraw_routes)
   (list_my_accounts)
+  (help)
+  (gethelp)
   (switch_format)
   (list_accounts)
   (get_dynamic_global_properties)
