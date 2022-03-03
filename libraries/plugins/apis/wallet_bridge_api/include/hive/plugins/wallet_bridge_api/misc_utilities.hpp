@@ -23,7 +23,20 @@ using std::endl;
 
 struct wallet_formatter
 {
-  using function_type = function<string( variant )>;
+  template<typename T>
+  static variant get_result( const std::stringstream& out_text, const T& out_json, format_type format )
+  {
+    if( format == format_type::text )
+    {
+      return variant( out_text.str() );
+    }
+    else//format_type::json
+    {
+      variant _result;
+      to_variant( out_json, _result );
+      return _result;
+    }
+  }
 
   static string help( variant result )
   {
@@ -35,9 +48,10 @@ struct wallet_formatter
     return result.get_string();
   }
 
-  static string list_my_accounts_impl( const serializer_wrapper<vector<database_api::api_account_object>>& accounts )
+  static variant list_my_accounts( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )
   {
-    std::stringstream out;
+    std::stringstream             out_text;
+    list_my_accounts_json_return  out_json;
 
     asset total_hive;
     asset total_vest(0, VESTS_SYMBOL );
@@ -47,23 +61,36 @@ struct wallet_formatter
       total_hive += a.balance;
       total_vest += a.vesting_shares;
       total_hbd  += a.hbd_balance;
-      out << std::left << setw(17) << string(a.name)
-          << std::right << setw(18) << hive::protocol::legacy_asset::from_asset(a.balance).to_string() <<" "
-          << std::right << setw(26) << hive::protocol::legacy_asset::from_asset(a.vesting_shares).to_string() <<" "
-          << std::right << setw(16) << hive::protocol::legacy_asset::from_asset(a.hbd_balance).to_string() <<"\n";
+
+      if( format == format_type::text )
+      {
+        out_text << std::left << setw(17) << string(a.name)
+            << std::right << setw(18) << hive::protocol::legacy_asset::from_asset(a.balance).to_string() <<" "
+            << std::right << setw(26) << hive::protocol::legacy_asset::from_asset(a.vesting_shares).to_string() <<" "
+            << std::right << setw(16) << hive::protocol::legacy_asset::from_asset(a.hbd_balance).to_string() <<"\n";
+      }
+      else//format_type::json
+      {
+        out_json.accounts.emplace_back( list_my_accounts_json_account{ a.name, a.balance, a.vesting_shares, a.hbd_balance } );
+      }
     }
-    out << "-------------------------------------------------------------------------------\n";
-      out << std::left << setw(17) << "TOTAL"
+
+    if( format == format_type::text )
+    {
+      out_text << "-------------------------------------------------------------------------------\n";
+      out_text << std::left << setw(17) << "TOTAL"
           << std::right << setw(18) << hive::protocol::legacy_asset::from_asset(total_hive).to_string() <<" "
           << std::right << setw(26) << hive::protocol::legacy_asset::from_asset(total_vest).to_string() <<" "
           << std::right << setw(16) << hive::protocol::legacy_asset::from_asset(total_hbd).to_string() <<"\n";
-    return out.str();
-  }
+    }
+    else//format_type::json
+    {
+      out_json.total_hive = total_hive;
+      out_json.total_vest = total_vest;
+      out_json.total_hbd  = total_hbd;
+    }
 
-  static string list_my_accounts( variant result )
-  {
-    auto _accounts = result.as< serializer_wrapper<vector<database_api::api_account_object>> >();
-    return list_my_accounts_impl( _accounts );
+    return get_result( out_text, out_json, format );
   }
 
   static string get_account_history( variant result )
@@ -206,22 +233,6 @@ struct wallet_formatter
     }
 
     return ss.str();
-  }
-
-  static std::map<string,function_type> get_result_formatters()
-  {
-    std::map<string, function_type> m
-    {
-      { "help",                 help },
-      { "gethelp",              get_help },
-      { "list_my_accounts",     list_my_accounts },
-      { "get_account_history",  get_account_history },
-      { "get_open_orders",      get_open_orders },
-      { "get_order_book",       get_order_book },
-      { "get_withdraw_routes",  get_withdraw_routes }
-    };
-
-    return m;
   }
 
 };

@@ -908,7 +908,7 @@ serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::
   return { result };
 }
 
-serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_my_accounts()
+variant wallet_api::list_my_accounts()
 {
   FC_ASSERT( !is_locked(), "Wallet must be unlocked to list accounts" );
   my->require_online();
@@ -919,6 +919,8 @@ serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_
 
   for( const auto& item : my->_keys )
     pub_keys.push_back(item.first);
+
+  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
 
   return { my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ) };
 }

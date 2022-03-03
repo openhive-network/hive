@@ -156,7 +156,7 @@ class wallet_api
       *
       * @returns table with HIVE, VESTS and HBD balances for all accounts for which this wallet has a private key
       */
-    serializer_wrapper<vector< database_api::api_account_object >> list_my_accounts();
+    variant list_my_accounts();
 
     /** Lists all accounts registered in the blockchain.
       *

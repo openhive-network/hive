@@ -21,6 +21,8 @@ namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
 
+using hive::plugins::wallet_bridge_api::wallet_formatter;
+
 class wallet_bridge_api_impl
 {
   public:
@@ -41,7 +43,7 @@ class wallet_bridge_api_impl
         (get_active_witnesses)
         (get_withdraw_routes)
         (list_my_accounts)
-        (list_my_accounts_details)
+        (switch_format)
         (list_accounts)
         (get_dynamic_global_properties)
         (get_account)
@@ -84,6 +86,8 @@ class wallet_bridge_api_impl
     boost::mutex                                                    _mtx;
 
   private:
+
+    format_type format = format_type::text;
 
     protocol::signed_transaction get_trx( const variant& args );
 
@@ -361,13 +365,19 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
     _result.emplace_back( *( get_account( _v ) ) );
   }
 
-  return _result;
+  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
 }
 
-DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts_details )
+DEFINE_API_IMPL( wallet_bridge_api_impl, switch_format )
 {
-  auto _accounts = list_my_accounts( args );
-  return hive::plugins::wallet_bridge_api::wallet_formatter::list_my_accounts_impl( serializer_wrapper<vector<database_api::api_account_object>>{ _accounts } );
+  verify_args( args, 1 );
+  FC_ASSERT(args.get_array()[0].is_array(), "switch_format needs at least one argument");
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+  FC_ASSERT( arguments.get_array()[0].is_string(), "Type of format is required as first argument" );
+
+  format = arguments.get_array()[0].as<format_type>();
+  return variant();
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
@@ -772,7 +782,7 @@ DEFINE_READ_APIS(
   (get_active_witnesses)
   (get_withdraw_routes)
   (list_my_accounts)
-  (list_my_accounts_details)
+  (switch_format)
   (list_accounts)
   (get_dynamic_global_properties)
   (get_account)

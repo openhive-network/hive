@@ -11,6 +11,8 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
+enum class format_type : uint8_t { text, json };
+
 template<typename T>
 struct serializer_wrapper
 {
@@ -58,12 +60,27 @@ typedef variant                                             get_withdraw_routes_
 typedef database_api::find_withdraw_vesting_routes_return   get_withdraw_routes_return;
 
 /* list_my_accounts */
-typedef variant                                     list_my_accounts_args;
-typedef vector< database_api::api_account_object >  list_my_accounts_return;
+struct list_my_accounts_json_account
+{
+  protocol::account_name_type name;
+  protocol::asset             balance;
+  protocol::asset             vesting_shares;
+  protocol::asset             hbd_balance;
+};
+struct list_my_accounts_json_return
+{
+  vector<list_my_accounts_json_account> accounts;
 
-/* list_my_accounts_details */
-typedef variant                                     list_my_accounts_details_args;
-typedef string                                      list_my_accounts_details_return;
+  protocol::asset total_hive;
+  protocol::asset total_vest;
+  protocol::asset total_hbd;
+};
+typedef variant                                     list_my_accounts_args;
+typedef variant                                     list_my_accounts_return;
+
+/* switch_format */
+typedef variant                                     switch_format_args;
+typedef variant                                     switch_format_return;
 
 /* list_accounts */
 typedef variant                             list_accounts_args;
@@ -172,6 +189,11 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 } } } // hive::plugins::wallet_bridge_api
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
+
+FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (text)(json) )
+
+FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_account, (name)(balance)(vesting_shares)(hbd_balance))
+FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_return, (accounts)(total_hive)(total_vest)(total_hbd))
 
 namespace fc {
 
