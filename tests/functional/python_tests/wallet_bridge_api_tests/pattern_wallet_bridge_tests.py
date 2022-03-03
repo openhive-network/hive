@@ -5,10 +5,12 @@ from test_tools import Asset, logger, Wallet, World
 import test_tools.exceptions
 
 import schemas
+import partial_schemas
+
 
 
 def validate_message(message, schema):
-    return Core(source_data=message, schema_data=schema).validate(raise_exception=True)
+    return Core(source_data=message, schema_data=schema, extensions=[partial_schemas.__file__]).validate(raise_exception=True)
 
 
 def get_accounts_name(accounts):
@@ -23,6 +25,11 @@ def test_get_version_pattern(node, wallet):
 
 
 def test_get_hardfork_version_pattern(node, wallet):
+    import logging
+    import sys
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
     validate_message(
         node.api.wallet_bridge.get_hardfork_version(),
         schemas.get_hardfork_version,
@@ -37,150 +44,34 @@ def test_get_active_witnesses_pattern(node, wallet):
 
 
 def test_get_account_pattern(node, wallet):
-    response = node.api.wallet_bridge.get_account('initminer')
-    print()
+    initminer = node.api.wallet_bridge.get_account('initminer')
+    wallet.api.create_account('initminer', 'alice', '{}')
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(0.1))
+    alice = node.api.wallet_bridge.get_account('alice')
 
-    get_accounts = {
-        'type': 'map',
-        'mapping': {
-            'id': {'type': 'int'},
-            'name': {'type': 'str'},
-            'owner': {
-                'type': 'map',
-                'mapping': {
-                    'weight_threshold': {'type': 'int'},
-                    'account_auths': {'type': 'sequence'},
-                    'key_auths': {'type': 'sequence'},
-                }
-            },
-            'active': {'type': 'any'},
-            'posting': {'type': 'any'},
-            'memo_key': {'type': 'any'},
-            'json_metadata': {'type': 'str'},
-            'posting_json_metadata': {'type': 'str'},
-            'proxy': {'type': 'str'},
-            'previous_owner_update': {'type': 'str'},
-            'last_owner_update': {'type': 'str'},
-            'last_account_update': {'type': 'str'},
-            'created': {'type': 'str'},
-            'mined': {'type': 'bool'},
-            "recovery_account": {'type': 'str'},
-            "last_account_recovery": {'type': 'str'},
+    validate_message(
+        schemas.test_response_data['result'],
+        schemas.get_account
+    )
+    # validate_message(
+    #     alice,
+    #     schemas.get_account
+    # )
 
-            "reset_account": "null",
-            "comment_count": 0,
-            "lifetime_vote_count": 0,
-            "post_count": 0,
-            "can_vote": true,
-            "voting_manabar": {
-                "current_mana": 239067,
-                "last_update_time": 1646308062
-            },
-            "downvote_manabar": {
-                "current_mana": 59766,
-                "last_update_time": 1646308062
-            },
-            "balance": {
-                "amount": "250000000000",
-                "precision": 3,
-                "nai": "@@000000021"
-            },
-            "savings_balance": {
-                "amount": "0",
-                "precision": 3,
-                "nai": "@@000000021"
-            },
-            "hbd_balance": {
-                "amount": "7000000000",
-                "precision": 3,
-                "nai": "@@000000013"
-            },
-            "hbd_seconds": "0",
-            "hbd_seconds_last_update": "1970-01-01T00:00:00",
-            "hbd_last_interest_payment": "1970-01-01T00:00:00",
-            "savings_hbd_balance": {
-                "amount": "0",
-                "precision": 3,
-                "nai": "@@000000013"
-            },
-            "savings_hbd_seconds": "0",
-            "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
-            "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
-            "savings_withdraw_requests": 0,
-            "reward_hbd_balance": {
-                "amount": "0",
-                "precision": 3,
-                "nai": "@@000000013"
-            },
-            "reward_hive_balance": {
-                "amount": "0",
-                "precision": 3,
-                "nai": "@@000000021"
-            },
-            "reward_vesting_balance": {
-                "amount": "0",
-                "precision": 6,
-                "nai": "@@000000037"
-            },
-            "reward_vesting_hive": {
-                "amount": "0",
-                "precision": 3,
-                "nai": "@@000000021"
-            },
-            "vesting_shares": {
-                "amount": "239067",
-                "precision": 6,
-                "nai": "@@000000037"
-            },
-            "delegated_vesting_shares": {
-                "amount": "0",
-                "precision": 6,
-                "nai": "@@000000037"
-            },
-            "received_vesting_shares": {
-                "amount": "0",
-                "precision": 6,
-                "nai": "@@000000037"
-            },
-            "vesting_withdraw_rate": {
-                "amount": "1",
-                "precision": 6,
-                "nai": "@@000000037"
-            },
-            "post_voting_power": {
-                "amount": "239067",
-                "precision": 6,
-                "nai": "@@000000037"
-            },
-            "next_vesting_withdrawal": "1969-12-31T23:59:59",
-            "withdrawn": 0,
-            "to_withdraw": 0,
-            "withdraw_routes": 0,
-            "pending_transfers": 0,
-            "curation_rewards": 0,
-            "posting_rewards": 0,
-            "proxied_vsf_votes": [
-                0,
-                0,
-                0,
-                0
-            ],
-            "witnesses_voted_for": 0,
-            "last_post": "1970-01-01T00:00:00",
-            "last_root_post": "1970-01-01T00:00:00",
-            "last_post_edit": "1970-01-01T00:00:00",
-            "last_vote_time": "1970-01-01T00:00:00",
-            "post_bandwidth": 0,
-            "pending_claimed_accounts": 0,
-            "open_recurrent_transfers": 0,
-            "is_smt": false,
-            "delayed_votes": [
 
-            ],
-            "governance_vote_expiration_ts": "1969-12-31T23:59:59"
+def test():
+    example_data_str = '123'
+    example_data_int = 231
 
-        }
-    }
+    # validate_message(
+    #     example_data_int,
+    #     schemas.example
+    # )
+
+    validate_message(
+        example_data_str,
+        schemas.example
+    )
 
 
 def test_asset(node, wallet):
@@ -204,7 +95,7 @@ def test_asset(node, wallet):
                         }
                     },
                     'max_rc_creation_adjustment':
-                        schemas.partial_schemas.ASSET_VESTS,
+                        schemas.AssetVests(),
                     'max_rc': {'type': 'int'},
                     'delegated_rc': {'type': 'int'},
                     'received_delegated_rc': {'type': 'int'},
@@ -216,3 +107,5 @@ def test_asset(node, wallet):
         node.api.wallet_bridge.list_rc_accounts('', 100),
         list_rc_accounts
     )
+
+
