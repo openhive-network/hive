@@ -4,9 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from test_tools.communication import request
 from typing import Dict, List
 
-json_server_request_test = '/home/dev/Desktop/server_request_data/server_request_test/server_request_test.json'
 
-develop_url = 'http://localhost:28091'
 server_develop_url = 'http://hive-2:8091'
 json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/blocktrades_server_request_develop_data.json'
 
@@ -53,12 +51,15 @@ def get_all_account_transactions(account_name: str, start_transaction_number, la
     return all_account_transaction
 
 
-def save_transaction_to_json(data_stored, account_name, start_transaction_number, last_transaction_number, url):
+def save_transaction_to_json(source: str, account_name: str, start_transaction_number, last_transaction_number, url):
     single_saver_data = get_all_account_transactions(account_name, start_transaction_number, last_transaction_number, url)
     to_single_save = [list(reversed(item['result']['history'])) for item in single_saver_data]
-    print()
-    with open(data_stored, 'w') as file:
+    # with open(data_stored, 'w') as file:
+    #     json.dump(to_single_save, file)
+
+    with open(f'/home/dev/Desktop/server_request_data/server_request_{source}_data/{account_name}_server_request_{source}_data.json', 'w') as file:
         json.dump(to_single_save, file)
+
     # multi_saver_datas = multi_saver(account_name, start_transaction_number, last_transaction_number, url)
     # to_save_multi = [list(reversed(item['result']['history'])) for item in multi_saver_datas]
     # print()
@@ -90,7 +91,6 @@ def assign_transactions_keys(data):
                 sorted_data[sorted_data_key] = []
             no_vop_transaction = {k: v for k, v in one_in_thousand_transaction[1].items() if k not in ignore_keys}
             sorted_data[sorted_data_key].append(no_vop_transaction)
-            # sorted_data[sorted_data_key].append(one_in_thousand_transaction[1])
     return sorted_data
 
 
@@ -109,6 +109,15 @@ def compare_transaction(account_name: str, transaction_from, key_value_data):
     return wrong_transactions
 
 
+save_transaction_to_json('master', 'hive.fund', 0, get_last_transaction_number('hive.fund', server_master_url), server_master_url)
+save_transaction_to_json('develop', 'hive.fund', 0, get_last_transaction_number('hive.fund', server_develop_url), server_develop_url)
+
+save_transaction_to_json('master', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_master_url), server_master_url)
+save_transaction_to_json('develop', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_develop_url), server_develop_url)
+
+save_transaction_to_json('master', 'null', 0, get_last_transaction_number('null', server_master_url), server_master_url)
+save_transaction_to_json('develop', 'null', 0, get_last_transaction_number('null', server_develop_url), server_develop_url)
+
 # dev last block    = 62245215
 # master last block = 62246376
 # deevelop to master
@@ -122,7 +131,6 @@ def compare_transaction(account_name: str, transaction_from, key_value_data):
 
 # json_to_variable_opener(json_server_develop_data_stored)
 # assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored))
-
 
 
 #############################################BLOCKTRADES############################################
@@ -140,8 +148,8 @@ def compare_transaction(account_name: str, transaction_from, key_value_data):
 #   assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
 
 # blocktrades master to develop ~ KeyError: (62246376, '2022-03-01T16:08:09')
-compare_transaction(
-    'blocktrades',
-    json_to_variable_opener(json_server_master_data_stored),
-    assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored))
-)
+# compare_transaction(
+#     'blocktrades',
+#     json_to_variable_opener(json_server_master_data_stored),
+#     assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored))
+# )
