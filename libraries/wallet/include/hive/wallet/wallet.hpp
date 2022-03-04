@@ -1100,8 +1100,8 @@ class wallet_api
       *
       * @param limit Maximum number of orders to return for bids and asks. Max is 1000.
       */
-    serializer_wrapper<wallet_bridge_api::get_order_book_return> get_order_book( uint32_t limit = 1000 );
-    serializer_wrapper<vector< database_api::api_limit_order_object >> get_open_orders( const string& accountname );
+    variant get_order_book( uint32_t limit = 1000 );
+    variant get_open_orders( const string& accountname );
 
     /**
       *  Creates a limit order at the price amount_to_sell / min_to_receive and will deduct amount_to_sell from account
