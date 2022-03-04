@@ -500,7 +500,9 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_numeric(), "Orders limit is required as first argument" );
   const uint32_t limit = args.get_array()[0].as<uint32_t>();
-  return _market_history_api->get_order_book({limit});
+  auto _result = _market_history_api->get_order_book({limit});
+
+  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
@@ -508,17 +510,17 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_string(), "account name is required as first argument" );
   const protocol::account_name_type account = args.get_array()[0].get_string();
-  get_open_orders_return result;
+  vector< database_api::api_limit_order_object > _result;
   const auto& idx = _db.get_index< chain::limit_order_index, chain::by_account >();
   auto itr = idx.lower_bound( account );
 
   while( itr != idx.end() && itr->seller == account )
   {
-    result.push_back( database_api::api_limit_order_object(*itr, _db) );
+    _result.push_back( database_api::api_limit_order_object(*itr, _db) );
     ++itr;
   }
 
-  return result;
+  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
