@@ -12,6 +12,7 @@
 
 #include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
+#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
@@ -2434,33 +2435,40 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
   my->require_online();
   vector<variant> args{account, from, limit};
 
-  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
+  if( is_locked() )
+  {
+    my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "txt" }, LOCK );
+    return my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
+  }
+  else
+  {
+    my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "json" }, LOCK );
+    auto _result_json = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
 
-  return my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
+    plugins::wallet_bridge_api::get_account_history_json_return _tmp;
+    from_variant( _result_json, _tmp );
 
-  // auto result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK ).history;
-  // if( !is_locked() )
-  // {
-  //   for( auto& item : result )
-  //   {
-  //     if( item.second.op.which() == operation::tag<transfer_operation>::value )
-  //     {
-  //       auto& top = item.second.op.get<transfer_operation>();
-  //       top.memo = decrypt_memo( top.memo );
-  //     }
-  //     else if( item.second.op.which() == operation::tag<transfer_from_savings_operation>::value )
-  //     {
-  //       auto& top = item.second.op.get<transfer_from_savings_operation>();
-  //       top.memo = decrypt_memo( top.memo );
-  //     }
-  //     else if( item.second.op.which() == operation::tag<transfer_to_savings_operation>::value )
-  //     {
-  //       auto& top = item.second.op.get<transfer_to_savings_operation>();
-  //       top.memo = decrypt_memo( top.memo );
-  //     }
-  //   }
-  // }
-  // return { result };
+    for( auto& item : _tmp.ops )
+    {
+      if( item.op.which() == operation::tag<transfer_operation>::value )
+      {
+        auto& top = item.op.get<transfer_operation>();
+        top.memo = decrypt_memo( top.memo );
+      }
+      else if( item.op.which() == operation::tag<transfer_from_savings_operation>::value )
+      {
+        auto& top = item.op.get<transfer_from_savings_operation>();
+        top.memo = decrypt_memo( top.memo );
+      }
+      else if( item.op.which() == operation::tag<transfer_to_savings_operation>::value )
+      {
+        auto& top = item.op.get<transfer_to_savings_operation>();
+        top.memo = decrypt_memo( top.memo );
+      }
+    }
+
+    return plugins::wallet_bridge_api::wallet_formatter::get_account_history( _tmp );
+  }
 }
 
 vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const

@@ -83,52 +83,69 @@ struct wallet_formatter
     return get_result( out_text, out_json, format );
   }
 
+  static std::pair<string, string> get_name_content( const serializer_wrapper<protocol::operation>& op )
+  {
+    variant _v;
+    to_variant( op, _v );
+
+    if( _v.is_array() )
+      return std::make_pair( _v.get_array()[0].as_string(), fc::json::to_string( _v.get_array()[1] ) );
+    else
+      return std::make_pair( _v.get_object()["type"].as_string(), fc::json::to_string( _v.get_object()["value"] ) );
+  };
+
+  static void create_get_account_history_header( std::stringstream& out_text )
+  {
+    out_text << std::left << setw( 8 )  << "#" << " ";
+    out_text << std::left << setw( 10 ) << "BLOCK #" << " ";
+    out_text << std::left << setw( 50 ) << "TRX ID" << " ";
+    out_text << std::left << setw( 20 ) << "OPERATION" << " ";
+    out_text << std::left << setw( 50 ) << "DETAILS" << "\n";
+    out_text << "---------------------------------------------------------------------------------------------------\n";
+  }
+
+  static void create_get_account_history_body( std::stringstream& out_text, uint32_t pos, uint32_t block, const protocol::transaction_id_type& trx_id, const protocol::operation& op )
+  {
+    out_text << std::left << setw(8) << pos << " ";
+    out_text << std::left << setw(10) << block << " ";
+    out_text << std::left << setw(50) << trx_id.str() << " ";
+
+    serializer_wrapper<protocol::operation> _op = { op };
+    auto _name_content = get_name_content( _op );
+    out_text << std::left << setw(20) << _name_content.first << " ";
+    out_text << std::left << setw(50) << _name_content.second << "\n";
+  }
+
   static variant get_account_history( const hive::plugins::account_history::get_account_history_return& ops, format_type format )
   {
     std::stringstream               out_text;
     get_account_history_json_return out_json;
 
     if( format == format_type::text )
-    {
-      out_text << std::left << setw( 8 )  << "#" << " ";
-      out_text << std::left << setw( 10 ) << "BLOCK #" << " ";
-      out_text << std::left << setw( 50 ) << "TRX ID" << " ";
-      out_text << std::left << setw( 20 ) << "OPERATION" << " ";
-      out_text << std::left << setw( 50 ) << "DETAILS" << "\n";
-      out_text << "---------------------------------------------------------------------------------------------------\n";
-    }
-
-    auto _get_name_content = []( const serializer_wrapper<protocol::operation>& op )
-    {
-      variant _v;
-      to_variant( op, _v );
-
-      if( _v.is_array() )
-        return std::make_pair( _v.get_array()[0].as_string(), fc::json::to_string( _v.get_array()[1] ) );
-      else
-        return std::make_pair( _v.get_object()["type"].as_string(), fc::json::to_string( _v.get_object()["value"] ) );
-    };
+      create_get_account_history_header( out_text );
 
     for( const auto& item : ops.history )
     {
       if( format == format_type::text )
-      {
-        out_text << std::left << setw(8) << item.first << " ";
-        out_text << std::left << setw(10) << item.second.block << " ";
-        out_text << std::left << setw(50) << item.second.trx_id.str() << " ";
-
-        serializer_wrapper<protocol::operation> _op = { item.second.op };
-        auto _name_content = _get_name_content( _op );
-        out_text << std::left << setw(20) << _name_content.first << " ";
-        out_text << std::left << setw(50) << _name_content.second << "\n";
-      }
+        create_get_account_history_body( out_text, item.first, item.second.block, item.second.trx_id, item.second.op );
       else
-      {
         out_json.ops.emplace_back( get_account_history_json_op{ item.first, item.second.block, item.second.trx_id, item.second.op } );
-      }
     }
 
     return get_result( out_text, out_json, format );
+  }
+
+  static variant get_account_history( const get_account_history_json_return& ops )
+  {
+    std::stringstream               out_text;
+    get_account_history_json_return out_json;
+
+    create_get_account_history_header( out_text );
+
+    for( const auto& item : ops.ops )
+      create_get_account_history_body( out_text, item.pos, item.block, item.id, item.op );
+
+    return get_result( out_text, out_json, format_type::text );
   }
 
   static string get_open_orders( variant result )
