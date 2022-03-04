@@ -12,6 +12,7 @@
 
 #include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
+#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
@@ -71,6 +72,8 @@
 constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_bridge_api methods. Default value is false, so we need to pass it here.
 
 namespace hive { namespace wallet {
+
+using hive::plugins::wallet_bridge_api::api_documentation_reader;
 
 namespace detail {
 
@@ -200,8 +203,6 @@ struct op_prototype_visitor
 
 class wallet_api_impl
 {
-  public:
-    api_documentation method_documentation;
   private:
     void enable_umask_protection()
     {
@@ -234,6 +235,7 @@ public:
     : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api)
   {
     init_prototype_ops();
+    api_documentation().copy( api_documentation_reader::method_descriptions );
   }
 
   virtual ~wallet_api_impl()

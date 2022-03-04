@@ -3,6 +3,7 @@ file(GLOB HEADERS "include/hive/plugins/wallet_bridge_api/*.hpp")
 add_library( wallet_bridge_api_plugin
              wallet_bridge_api.cpp
              wallet_bridge_api_plugin.cpp
+             misc_utilities.cpp
              ${HEADERS}
            )
 

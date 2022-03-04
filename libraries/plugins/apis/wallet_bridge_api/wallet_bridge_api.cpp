@@ -91,6 +91,8 @@ class wallet_bridge_api_impl
 
     format_type format = format_type::text;
 
+    wallet_formatter formatter;
+
     protocol::signed_transaction get_trx( const variant& args );
 
     /**
@@ -367,12 +369,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
     _result.emplace_back( *( get_account( _v ) ) );
   }
 
-  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
+  return formatter.list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, help )
 {
-  return wallet_formatter::help( format );
+  return formatter.help( format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, gethelp )
@@ -385,7 +387,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, gethelp )
 
   auto method = arguments.get_array()[0].as_string();
 
-  return wallet_formatter::gethelp( method, format );
+  return formatter.gethelp( method, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, switch_format )
