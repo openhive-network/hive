@@ -14,8 +14,6 @@ def world_with_witnesses():
 
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
-        world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
-
         alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
         beta_witness_names = [f'witness{i}-beta' for i in range(10)]
         all_witness_names = alpha_witness_names + beta_witness_names
