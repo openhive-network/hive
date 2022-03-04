@@ -73,8 +73,6 @@ constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_br
 
 namespace hive { namespace wallet {
 
-using hive::plugins::wallet_bridge_api::api_documentation_reader;
-
 namespace detail {
 
 template<class T>
@@ -235,7 +233,14 @@ public:
     : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api)
   {
     init_prototype_ops();
-    api_documentation().copy( api_documentation_reader::method_descriptions );
+
+    auto _desc = api_documentation().method_descriptions;
+
+    vector<variant> _v;
+    for( auto& item : _desc )
+      _v.emplace_back( item );
+
+    _remote_wallet_bridge_api->fill_help( _v, LOCK );
   }
 
   virtual ~wallet_api_impl()

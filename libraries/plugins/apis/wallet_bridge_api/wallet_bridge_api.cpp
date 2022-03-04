@@ -45,6 +45,7 @@ class wallet_bridge_api_impl
         (list_my_accounts)
         (help)
         (gethelp)
+        (fill_help)
         (switch_format)
         (list_accounts)
         (get_dynamic_global_properties)
@@ -388,6 +389,15 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, gethelp )
   auto method = arguments.get_array()[0].as_string();
 
   return formatter.gethelp( method, format );
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, fill_help )
+{
+  verify_args( args, 1 );
+  FC_ASSERT(args.get_array()[0].is_array(), "switch_format needs at least one argument");
+  auto _help = args.get_array()[0].as<vector<method_description>>();
+
+  return formatter.fill_help( _help );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, switch_format )
@@ -806,6 +816,7 @@ DEFINE_READ_APIS(
   (list_my_accounts)
   (help)
   (gethelp)
+  (fill_help)
   (switch_format)
   (list_accounts)
   (get_dynamic_global_properties)

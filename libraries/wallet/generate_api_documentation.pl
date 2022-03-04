@@ -63,7 +63,7 @@ for my $class (@{$doxydocs->{classes}})
         this_method.method_name = "$member->{name}";
         this_method.brief_description = $escapedBriefDescription;
         this_method.detailed_description = $escapedDetailedDescription;
-        method_descriptions.insert(this_method);
+        method_descriptions.emplace_back(this_method);
      }
 
 END

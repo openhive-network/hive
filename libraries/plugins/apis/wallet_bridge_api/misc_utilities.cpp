@@ -11,8 +11,6 @@ using std::ios;
 using std::setw;
 using std::endl;
 
-method_description_set api_documentation_reader::method_descriptions;
-
 template<typename T>
 variant wallet_formatter::get_result( const std::stringstream& out_text, const T& out_json, format_type format )
 {
@@ -58,6 +56,13 @@ variant wallet_formatter::gethelp( const string& method, format_type format )
     ss << "No help defined for method " << method << "\n";
 
   return ss.str();
+}
+
+variant wallet_formatter::fill_help( const vector<method_description>& help )
+{
+  method_documentation.fill_help( help );
+
+  return variant();
 }
 
 variant wallet_formatter::list_my_accounts( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )

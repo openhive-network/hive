@@ -36,23 +36,13 @@
 namespace hive { namespace wallet {
 
   using hive::plugins::wallet_bridge_api::method_description;
-  using hive::plugins::wallet_bridge_api::method_description_set;
+  using hive::plugins::wallet_bridge_api::method_description_vector;
 
-  class api_documentation
+  struct api_documentation
   {
-    method_description_set method_descriptions;
-  public:
-    api_documentation();
+    method_description_vector method_descriptions;
 
-    void copy( method_description_set& dst )
-    {
-      auto itr = method_descriptions.begin();
-      while( itr != method_descriptions.end() )
-      {
-        dst.emplace( *itr );
-        ++itr;
-      }
-    }
+    api_documentation();
   };
 
 } } // end namespace hive::wallet
