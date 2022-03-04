@@ -120,13 +120,37 @@ typedef variant                                                           get_co
 typedef vector< database_api::api_collateralized_convert_request_object > get_collateralized_conversion_requests_return;
 
 /* get_order_book */
+struct get_order_book_json_order
+{
+  protocol::asset   hive;
+  protocol::asset   hbd;
+  protocol::asset   sum_hbd;
+  double            price = 0;
+};
+struct get_order_book_json_return
+{
+  vector<get_order_book_json_order> bids;
+  vector<get_order_book_json_order> asks;
+  protocol::asset   bid_total;
+  protocol::asset   ask_total;
+};
 typedef variant                                 get_order_book_args;
-typedef market_history::get_order_book_return   get_order_book_return;
+typedef variant                                 get_order_book_return;
 
 /* get_open_orders */
-
+struct get_open_orders_json_order
+{
+  uint32_t        id = 0;
+  double          price = 0;
+  protocol::asset quantity;
+  string          type;
+};
+struct get_open_orders_json_return
+{
+  vector<get_open_orders_json_order> orders;
+};
 typedef variant                                         get_open_orders_args;
-typedef vector< database_api::api_limit_order_object >  get_open_orders_return;
+typedef variant                                         get_open_orders_return;
 
 /* get_owner_history */
 typedef variant                                     get_owner_history_args;
@@ -208,6 +232,12 @@ FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_return, (acc
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_account_history_json_op, (pos)(block)(id)(op))
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_account_history_json_return, (ops))
+
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_order, (id)(price)(quantity)(type))
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_return, (orders))
+
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_order, (hive)(hbd)(sum_hbd)(price))
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_return, (bid_total)(ask_total))
 
 namespace fc {
 

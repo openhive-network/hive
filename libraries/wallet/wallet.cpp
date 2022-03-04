@@ -2478,14 +2478,14 @@ vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdr
   return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK ).routes;
 }
 
-serializer_wrapper<wallet_bridge_api::get_order_book_return> wallet_api::get_order_book( uint32_t limit )
+variant wallet_api::get_order_book( uint32_t limit )
 {
   my->require_online();
   FC_ASSERT( limit <= 1000 );
   return { my->_remote_wallet_bridge_api->get_order_book( {limit}, LOCK ) };
 }
 
-serializer_wrapper<vector< database_api::api_limit_order_object >> wallet_api::get_open_orders( const string& accountname )
+variant wallet_api::get_open_orders( const string& accountname )
 {
   my->require_online();
   return { my->_remote_wallet_bridge_api->get_open_orders( {accountname}, LOCK ) };

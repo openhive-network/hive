@@ -10,6 +10,8 @@
 #include<functional>
 #include <iomanip>
 
+#define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
+
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 using std::function;
@@ -148,85 +150,146 @@ struct wallet_formatter
     return get_result( out_text, out_json, format_type::text );
   }
 
-  static string get_open_orders( variant result )
+  static variant get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>> orders, format_type format )
   {
-    auto orders = result.as< vector< serializer_wrapper<database_api::api_limit_order_object> > >();
-    std::stringstream ss;
+    std::stringstream           out_text;
+    get_open_orders_json_return out_json;
 
-    ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
-    ss << ' ' << setw( 10 ) << "Order #";
-    ss << ' ' << setw( 12 ) << "Price";
-    ss << ' ' << setw( 14 ) << "Quantity";
-    ss << ' ' << setw( 10 ) << "Type";
-    ss << "\n===============================================================================\n";
-    for( const auto& order_in_wrapper : orders )
+    if( format == format_type::text )
     {
-      auto o = order_in_wrapper.value;
-      ss << ' ' << setw( 10 ) << o.orderid;
-      ss << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
-      ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
-      ss << "\n";
+      out_text << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
+      out_text << ' ' << setw( 10 ) << "Order #";
+      out_text << ' ' << setw( 12 ) << "Price";
+      out_text << ' ' << setw( 14 ) << "Quantity";
+      out_text << ' ' << setw( 10 ) << "Type";
+      out_text << "\n===============================================================================\n";
     }
-    return ss.str();
+
+    for( const auto& order_in_wrapper : orders.value )
+    {
+      auto o = order_in_wrapper;
+
+      auto _asset = asset( o.for_sale, o.sell_price.base.symbol );
+      string _type = o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY";
+
+      double _real_price;
+      if( o.sell_price.base.symbol == HIVE_SYMBOL )
+        _real_price = ASSET_TO_REAL( o.sell_price.quote ) / ASSET_TO_REAL( o.sell_price.base );
+      else
+        _real_price =  ASSET_TO_REAL( o.sell_price.base ) / ASSET_TO_REAL( o.sell_price.quote );
+
+      if( format == format_type::text )
+      {
+        out_text << ' ' << setw( 10 ) << o.orderid;
+        out_text << ' ' << setw( 12 ) << _real_price;
+        out_text << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( _asset ).to_string();
+        out_text << ' ' << setw( 10 ) << _type;
+        out_text << "\n";
+      }
+      else
+      {
+        out_json.orders.emplace_back( get_open_orders_json_order{ o.orderid, _real_price, _asset, _type } );
+      }
+    }
+
+    return get_result( out_text, out_json, format );
   }
 
-  static string get_order_book( variant result )
+  static variant get_order_book( const serializer_wrapper<market_history::get_order_book_return>& orders_in_wrapper, format_type format )
   {
-    auto orders_in_wrapper = result.as< serializer_wrapper<get_order_book_return> >();
+    std::stringstream           out_text;
+    get_order_book_json_return  out_json;
+
     auto orders = orders_in_wrapper.value;
-    std::stringstream ss;
+
     asset bid_sum = asset( 0, HBD_SYMBOL );
     asset ask_sum = asset( 0, HBD_SYMBOL );
     int spacing = 16;
 
-    ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
+    if( format == format_type::text )
+    {
+      out_text << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
 
-    ss << ' ' << setw( ( spacing * 4 ) + 6 ) << "Bids" << "Asks\n"
-      << ' '
-      << setw( spacing + 3 ) << "Sum(HBD)"
-      << setw( spacing + 1 ) << "HBD"
-      << setw( spacing + 1 ) << "HIVE"
-      << setw( spacing + 1 ) << "Price"
-      << setw( spacing + 1 ) << "Price"
-      << setw( spacing + 1 ) << "HIVE "
-      << setw( spacing + 1 ) << "HBD " << "Sum(HBD)"
-      << "\n====================================================================="
-      << "|=====================================================================\n";
+      out_text << ' ' << setw( ( spacing * 4 ) + 6 ) << "Bids" << "Asks\n"
+        << ' '
+        << setw( spacing + 3 ) << "Sum(HBD)"
+        << setw( spacing + 1 ) << "HBD"
+        << setw( spacing + 1 ) << "HIVE"
+        << setw( spacing + 1 ) << "Price"
+        << setw( spacing + 1 ) << "Price"
+        << setw( spacing + 1 ) << "HIVE "
+        << setw( spacing + 1 ) << "HBD " << "Sum(HBD)"
+        << "\n====================================================================="
+        << "|=====================================================================\n";
+    }
 
     for( size_t i = 0; i < orders.bids.size() || i < orders.asks.size(); i++ )
     {
       if( i < orders.bids.size() )
       {
         bid_sum += asset( orders.bids[i].hbd, HBD_SYMBOL );
-        ss
-          << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(bid_sum).to_string()
-          << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.bids[i].hbd, HBD_SYMBOL)).to_string()
-          << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.bids[i].hive, HIVE_SYMBOL)).to_string();
+
+        auto _hbd = asset( orders.bids[i].hbd, HBD_SYMBOL);
+        auto _hive = asset( orders.bids[i].hive, HIVE_SYMBOL);
+
+        if( format == format_type::text )
+        {
+          out_text
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(bid_sum).to_string()
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hbd ).to_string()
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hive ).to_string();
+        }
+        else
+        {
+          out_json.bids.emplace_back( get_order_book_json_order{ _hive, _hbd, bid_sum } );
+        }
       }
       else
       {
-        ss << setw( (spacing * 4 ) + 5 ) << ' ';
+        if( format == format_type::text )
+          out_text << setw( (spacing * 4 ) + 5 ) << ' ';
       }
 
-      ss << " |";
+      if( format == format_type::text )
+        out_text << " |";
 
       if( i < orders.asks.size() )
       {
         ask_sum += asset(orders.asks[i].hbd, HBD_SYMBOL);
-        ss
-          << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.asks[i].hive, HIVE_SYMBOL )).to_string()
-          << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.asks[i].hbd, HBD_SYMBOL )).to_string()
-          << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(ask_sum).to_string();
+
+        auto _hbd = asset( orders.asks[i].hbd, HBD_SYMBOL);
+        auto _hive = asset( orders.asks[i].hive, HIVE_SYMBOL);
+
+        if( format == format_type::text )
+        {
+          out_text
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hive ).to_string()
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hbd ).to_string()
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(ask_sum).to_string();
+        }
+        else
+        {
+          out_json.asks.emplace_back( get_order_book_json_order{ _hive, _hbd, ask_sum } );
+        }
       }
 
-      ss << endl;
+      if( format == format_type::text )
+        out_text << endl;
     }
 
-    ss << endl
-      << "Bid Total: " << hive::protocol::legacy_asset::from_asset(bid_sum).to_string() << endl
-      << "Ask Total: " << hive::protocol::legacy_asset::from_asset(ask_sum).to_string() << endl;
+    if( format == format_type::text )
+    {
+      out_text << endl
+        << "Bid Total: " << hive::protocol::legacy_asset::from_asset(bid_sum).to_string() << endl
+        << "Ask Total: " << hive::protocol::legacy_asset::from_asset(ask_sum).to_string() << endl;
+    }
+    else
+    {
+      out_json.bid_total = bid_sum;
+      out_json.ask_total = ask_sum;
+    }
 
-    return ss.str();
+    return get_result( out_text, out_json, format );
   }
 
   static string get_withdraw_routes( variant result )
