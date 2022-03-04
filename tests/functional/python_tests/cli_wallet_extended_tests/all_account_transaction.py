@@ -8,11 +8,11 @@ json_server_request_test = '/home/dev/Desktop/server_request_data/server_request
 
 develop_url = 'http://localhost:28091'
 server_develop_url = 'http://hive-2:8091'
-json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/server_request_develop_data.json'
+json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/blocktrades_server_request_develop_data.json'
 
 
 server_master_url = 'http://hive-2:18091'
-json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data/server_request_master_data.json'
+json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data/blocktrades_server_request_master_data.json'
 
 
 def get_last_transaction_number(account_name: str, url: str) -> int:
@@ -94,17 +94,17 @@ def assign_transactions_keys(data):
     return sorted_data
 
 
-def compare_transaction(transaction_from, key_value_data):
+def compare_transaction(account_name: str, transaction_from, key_value_data):
     wrong_transactions = []
     ignore_keys = ('virtual_op', 'op_in_trx')
     for all_transactions in transaction_from:
         for one_in_thousand_transaction in all_transactions:
             data_key = (one_in_thousand_transaction[1]['block'], one_in_thousand_transaction[1]['timestamp'])
             no_vop_transaction = {k: v for k, v in one_in_thousand_transaction[1].items() if k not in ignore_keys}
-            if one_in_thousand_transaction[1]['block'] < 62245215:
+            if one_in_thousand_transaction[1]['block'] < 62303034:
                 if no_vop_transaction not in key_value_data[data_key]:
                     wrong_transactions.append(one_in_thousand_transaction)
-    with open('/home/dev/Desktop/server_request_data/wrong_transaction/master_to_dev_wrong_transaction.json', 'w') as f:
+    with open(f'/home/dev/Desktop/server_request_data/wrong_transaction/{account_name}_master_to_dev_wrong_transaction.json', 'w') as f:
         json.dump(wrong_transactions, f)
     return wrong_transactions
 
@@ -112,15 +112,36 @@ def compare_transaction(transaction_from, key_value_data):
 # dev last block    = 62245215
 # master last block = 62246376
 # deevelop to master
-compare_transaction(json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+# compare_transaction(json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
 
 # master do deva ~ KeyError: (62246376, '2022-03-01T16:08:09')
-compare_transaction(json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
-
+# compare_transaction(
+#   json_to_variable_opener(json_server_master_data_stored),
+#   assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored))
+#   )
 
 # json_to_variable_opener(json_server_develop_data_stored)
 # assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored))
 
-# save_transaction_to_json(json_server_develop_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_develop_url), server_develop_url)
-# save_transaction_to_json(json_server_master_data_stored, 'gtg', 0, get_last_transaction_number('gtg', server_master_url), server_master_url)
 
+
+#############################################BLOCKTRADES############################################
+# blocktrades develop last 'block': 62303034
+# blocktrades master last  'block': 62304998
+# save_transaction_to_json(json_server_develop_data_stored, 'blocktrades', 0, get_last_transaction_number('blocktrades', server_develop_url), server_develop_url)
+# save_transaction_to_json(json_server_master_data_stored, 'blocktrades', 0, get_last_transaction_number('blocktrades', server_master_url), server_master_url)
+
+# json_to_variable_opener(json_server_master_data_stored)
+
+# blocktrades develop to master
+# compare_transaction(
+#   'blocktrades',
+#   json_to_variable_opener(json_server_develop_data_stored),
+#   assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+
+# blocktrades master to develop ~ KeyError: (62246376, '2022-03-01T16:08:09')
+compare_transaction(
+    'blocktrades',
+    json_to_variable_opener(json_server_master_data_stored),
+    assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored))
+)
