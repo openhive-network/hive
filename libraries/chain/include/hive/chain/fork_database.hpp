@@ -7,6 +7,9 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
+
+#include <chainbase/chainbase.hpp>
+
 namespace hive { namespace chain {
 
   using hive::protocol::signed_block;
@@ -78,6 +81,7 @@ namespace hive { namespace chain {
       shared_ptr<fork_item>            walk_main_branch_to_num( uint32_t block_num )const;
       shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num )const;
       vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count )const;
+      std::vector<block_id_type> get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, /* out */ fc::optional<uint32_t>& blocks_number_needed_from_block_log);
 
       struct block_id;
       struct block_num;
@@ -92,6 +96,51 @@ namespace hive { namespace chain {
       > fork_multi_index_type;
 
       void set_max_size( uint32_t s );
+    private:
+      template< typename Lambda >
+      auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) const -> decltype( (*(Lambda*)nullptr)() )
+      {
+#ifndef ENABLE_STD_ALLOCATOR
+        chainbase::read_lock lock( _rw_lock, boost::interprocess::defer_lock_type() );
+#else
+        chainbase::read_lock lock( _rw_lock, boost::defer_lock_t() );
+#endif
+
+#ifdef CHAINBASE_CHECK_LOCKING
+        BOOST_ATTRIBUTE_UNUSED
+        chainbase::int_incrementer ii( _read_lock_count );
+#endif
+
+        if( !wait_micro )
+        {
+          lock.lock();
+        }
+        else
+        {
+          if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
+            CHAINBASE_THROW_EXCEPTION( chainbase::lock_exception() );
+        }
+
+        return callback();
+      }
+
+      template< typename Lambda >
+      auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
+      {
+        chainbase::write_lock lock( _rw_lock, boost::defer_lock_t() );
+#ifdef CHAINBASE_CHECK_LOCKING
+        BOOST_ATTRIBUTE_UNUSED
+        chainbase::int_incrementer ii( _write_lock_count );
+#endif
+
+        lock.lock();
+
+        return callback();
+      }
+
+      mutable chainbase::read_write_mutex _rw_lock;
+      mutable int32_t                     _read_lock_count = 0;
+      mutable int32_t                     _write_lock_count = 0;
 
     private:
       /** @return a pointer to the newly pushed item */
