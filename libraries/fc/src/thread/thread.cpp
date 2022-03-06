@@ -18,38 +18,46 @@ typedef struct tagTHREADNAME_INFO
 } THREADNAME_INFO;
 #pragma pack(pop)
 
-static void set_thread_name(const char* threadName)
-{
-   THREADNAME_INFO info;
-   info.dwType = 0x1000;
-   info.szName = threadName;
-   info.dwThreadID = -1;
-   info.dwFlags = 0;
-
-   __try
-   {
-      RaiseException(MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-   }
-   __except(EXCEPTION_EXECUTE_HANDLER)
-   {
-   }
+namespace fc {
+  void set_thread_name(const char* threadName)
+  {
+     THREADNAME_INFO info;
+     info.dwType = 0x1000;
+     info.szName = threadName;
+     info.dwThreadID = -1;
+     info.dwFlags = 0;
+  
+     __try
+     {
+        RaiseException(MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+     }
+     __except(EXCEPTION_EXECUTE_HANDLER)
+     {
+     }
+  }
 }
-#elif defined(__linux__) && !defined(NDEBUG)
+#elif defined(__linux__) //&& !defined(NDEBUG)
 # include <pthread.h>
-static void set_thread_name(const char* threadName)
-{
-	pthread_setname_np(pthread_self(), threadName);
+namespace fc {
+  void set_thread_name(const char* threadName)
+  {
+  	pthread_setname_np(pthread_self(), threadName);
+  }
 }
 #elif defined(__APPLE__) && !defined(NDEBUG)
 # include <pthread.h>
-static void set_thread_name(const char* threadName)
-{
-	pthread_setname_np(threadName);
+namespace fc {
+  void set_thread_name(const char* threadName)
+  {
+  	pthread_setname_np(threadName);
+  }
 }
 #else
-static void set_thread_name(const char* threadName)
-{
-	// do nothing in release mode
+namespace fc {
+  void set_thread_name(const char* threadName)
+  {
+  	// do nothing in release mode
+  }
 }
 #endif
 

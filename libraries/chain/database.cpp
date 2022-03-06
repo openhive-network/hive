@@ -504,13 +504,14 @@ bool database::is_known_transaction( const transaction_id_type& id )const
   return trx_idx.find( id ) != trx_idx.end();
 } FC_CAPTURE_AND_RETHROW() }
 
+//no chainbase lock required
 block_id_type database::find_block_id_for_num( uint32_t block_num )const
 {
   try
   {
     if( block_num == 0 )
       return block_id_type();
-
+/*
     // Reversible blocks are *usually* in the TAPOS buffer.  Since this
     // is the fastest check, we do it first.
     block_summary_object::id_type bsid( block_num & 0xFFFF );
@@ -520,22 +521,23 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
       if( protocol::block_header::num_from_id(bs->block_id) == block_num )
         return bs->block_id;
     }
+*/
 
-    // Next we query the block log.   Irreversible blocks are here.
-    optional<signed_block> b = _block_log.read_block_by_num( block_num );
-    if( b )
-      return b->id();
-
-    // Finally we query the fork DB.
+    // See if fork DB has the item
     shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
     if( fitem )
       return fitem->id;
 
-    return block_id_type();
+    // Next we check if block_log has it. Irreversible blocks are here.
+    optional<signed_block> b = _block_log.read_block_by_num( block_num );
+    if( b )
+      return b->id();
+    return block_id_type(); //no one has it
   }
   FC_CAPTURE_AND_RETHROW( (block_num) )
 }
 
+//no chainbase lock required
 block_id_type database::get_block_id_for_num( uint32_t block_num )const
 {
   block_id_type bid = find_block_id_for_num( block_num );
@@ -635,6 +637,8 @@ const signed_transaction database::get_recent_transaction( const transaction_id_
   return trx;;
 } FC_CAPTURE_AND_RETHROW() }
 
+
+//no chainbase lock required
 std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head_of_fork ) const
 { try {
   pair<fork_database::branch_type, fork_database::branch_type> branches = _fork_db.fetch_branch_from(head_block_id(), head_of_fork);
@@ -7024,6 +7028,40 @@ void database::remove_expired_governance_votes()
       break;
     }
   }
+}
+
+//safe to call without chainbase lock
+std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point)
+{
+  fc::optional<uint32_t> block_number_needed_from_block_log;
+  std::vector<block_id_type> synopsis = _fork_db.get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point, block_number_needed_from_block_log);
+
+  if (block_number_needed_from_block_log)
+  {
+    uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
+    optional<signed_block> block = _block_log.read_block_by_num(*block_number_needed_from_block_log);
+    assert(block);
+    if (reference_point_block_num == *block_number_needed_from_block_log)
+    {
+      // we're getting this block from the database because it's the reference point,
+      // not because it's the last irreversible.
+      // We can only do this if the reference point really is in the blockchain
+      if (block->id() == reference_point)
+        synopsis.insert(synopsis.begin(), reference_point);
+      else
+      {
+        wlog("Unable to generate a usable synopsis because the peer we're generating it for forked too long ago "
+            "(our chains diverge before block #${reference_point_block_num}",
+            (reference_point_block_num));
+        // TODO: get the right type of exception here
+        //FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Peer is on a fork I'm unable to switch to");
+        FC_THROW("Peer is on a fork I'm unable to switch to");
+      }
+    }
+    else
+      synopsis.insert(synopsis.begin(), block->id());
+  }
+  return synopsis;
 }
 
 } } //hive::chain

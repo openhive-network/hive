@@ -17,6 +17,7 @@
 #include <boost/optional.hpp>
 #include <boost/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <boost/lockfree/queue.hpp>
 
@@ -81,9 +82,9 @@ class chain_plugin_impl
     }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
-      {
+    {
       snapshot_provider = &provider;
-      }
+    }
 
     void start_write_processing();
     void stop_write_processing();
@@ -148,6 +149,15 @@ class chain_plugin_impl
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
     std::atomic<uint32_t>               peer_count;
+
+    fc::optional<uint32_t> transaction_delay_interval; // sleep every (this many) transactions
+    fc::optional<uint32_t> transaction_delay_ms; // sleep for this long
+
+    fc::time_point cumulative_times_last_reported_time;
+    fc::microseconds cumulative_time_waiting_for_locks;
+    fc::microseconds cumulative_time_processing_blocks;
+    fc::microseconds cumulative_time_processing_transactions;
+    fc::microseconds cumulative_time_waiting_for_work;
 };
 
 struct write_request_visitor
@@ -159,6 +169,13 @@ struct write_request_visitor
   fc::optional< fc::exception >* except;
   std::shared_ptr< abstract_block_producer > block_generator;
 
+  uint32_t pushed_transaction_counter = 0;
+  fc::optional<uint32_t> transaction_delay_interval; // sleep every (this many) transactions
+  fc::optional<uint32_t> transaction_delay_ms; // sleep for this long
+
+  fc::microseconds* cumulative_time_processing_blocks;
+  fc::microseconds* cumulative_time_processing_transactions;
+
   typedef bool result_type;
 
   bool operator()( const signed_block* block )
@@ -168,7 +185,9 @@ struct write_request_visitor
     try
     {
       STATSD_START_TIMER( "chain", "write_time", "push_block", 1.0f )
+      fc::time_point time_before_pushing_block = fc::time_point::now();
       result = db->push_block( *block, skip );
+      *cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
     }
     catch( fc::exception& e )
@@ -191,7 +210,20 @@ struct write_request_visitor
     try
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
+      if (transaction_delay_interval && transaction_delay_ms)
+      {
+        ++pushed_transaction_counter;
+        if (pushed_transaction_counter >= *transaction_delay_interval)
+        {
+          pushed_transaction_counter = 0;
+          wlog("Adding artifical transaction delay of ${ms} now", ("ms", transaction_delay_ms));
+          std::this_thread::sleep_for(std::chrono::milliseconds(*transaction_delay_ms));
+          wlog("Artifical transaction delay done, will delay again in another ${count} transactions", ("count", transaction_delay_interval));
+        }
+      }
+      fc::time_point time_before_pushing_transaction = fc::time_point::now();
       db->push_transaction( *trx );
+      *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       result = true;
@@ -262,6 +294,8 @@ void chain_plugin_impl::start_write_processing()
   {
     hive::notify_hived_status("syncing");
     ilog("Write processing thread started.");
+    fc::set_thread_name("write_queue");
+    cumulative_times_last_reported_time = fc::time_point::now();
 
     const fc::microseconds block_wait_max_time = fc::seconds(10*HIVE_BLOCK_INTERVAL);
     bool is_syncing = true;
@@ -269,6 +303,10 @@ void chain_plugin_impl::start_write_processing()
     write_request_visitor req_visitor;
     req_visitor.db = &db;
     req_visitor.block_generator = block_generator;
+    req_visitor.transaction_delay_interval = transaction_delay_interval;
+    req_visitor.transaction_delay_ms = transaction_delay_ms;
+    req_visitor.cumulative_time_processing_blocks = &cumulative_time_processing_blocks;
+    req_visitor.cumulative_time_processing_transactions = &cumulative_time_processing_transactions;
 
     request_promise_visitor prom_visitor;
 
@@ -293,19 +331,25 @@ void chain_plugin_impl::start_write_processing()
       */
     fc::time_point last_popped_block_time = fc::time_point::now();
     fc::time_point last_msg_time = last_popped_block_time;
+    fc::time_point wait_start_time = last_popped_block_time;
+
 
     hive::notify_hived_status("syncing");
     while( running )
     {
       if( write_queue.pop( cxt ) )
       {
+        cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
         last_popped_block_time = fc::time_point::now();
 
-	      fc::time_point write_lock_request_time = fc::time_point::now();
+        fc::time_point write_lock_request_time = fc::time_point::now();
         db.with_write_lock( [&]()
         {
+          uint32_t write_queue_items_processed = 0;
           fc::time_point write_lock_acquired_time = fc::time_point::now();
           fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
+          cumulative_time_waiting_for_locks += write_lock_acquisition_time;
+          wdump((write_lock_request_time));
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
           {
             wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
@@ -319,6 +363,8 @@ void chain_plugin_impl::start_write_processing()
             req_visitor.except = &(cxt->except);
             cxt->success = cxt->req_ptr.visit( req_visitor );
             cxt->prom_ptr.visit( prom_visitor );
+
+            ++write_queue_items_processed;
 
             if( is_syncing && fc::time_point::now() - db.head_block_time() < fc::minutes(1) )
             {
@@ -342,16 +388,22 @@ void chain_plugin_impl::start_write_processing()
 
             if( !write_queue.pop( cxt ) )
             {
+              fc::microseconds write_queue_processed_duration = fc::time_point::now() - write_lock_acquired_time;
+              //if (write_queue_processed_duration.count() > 500000)
+                fc_wlog(fc::logger::get("chainlock"),"Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}",(write_queue_items_processed)("write_queue_processed_duration",write_queue_processed_duration.count()));
               break;
             }
 
             last_popped_block_time = fc::time_point::now();
-          }
-        });
-      }
-
+          } //while items in write_queue and time limit not exceeded for live sync
+        }); //with_write_lock
+        wait_start_time = fc::time_point::now();
+      } //if queue not empty
       if( !is_syncing )
         std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+      else //DLN remove this temp code to stop busy looping during sync
+        std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+        //std::this_thread::sleep_for( std::chrono::milliseconds( 20000000 ) );
 
       auto now = fc::time_point::now();
       if((now - last_popped_block_time) > block_wait_max_time)
@@ -366,7 +418,32 @@ void chain_plugin_impl::start_write_processing()
 
         std::this_thread::sleep_for(std::chrono::seconds(HIVE_BLOCK_INTERVAL));
       }
-    }
+      fc::microseconds time_since_last_report = fc::time_point::now() - cumulative_times_last_reported_time;
+      if (time_since_last_report > fc::seconds(30))
+      {
+        fc::microseconds total_recorded_times = cumulative_time_waiting_for_locks + cumulative_time_processing_blocks + cumulative_time_processing_transactions + cumulative_time_waiting_for_work;
+        float percent_waiting_for_locks = cumulative_time_waiting_for_locks.count() / (float)time_since_last_report.count() * 100.f;
+        float percent_processing_blocks = cumulative_time_processing_blocks.count() / (float)time_since_last_report.count() * 100.f;
+        float percent_processing_transactions = cumulative_time_processing_transactions.count() / (float)time_since_last_report.count() * 100.f;
+        float percent_waiting_for_work = cumulative_time_waiting_for_work.count() / (float)time_since_last_report.count() * 100.f;
+        float percent_unknown = (time_since_last_report - total_recorded_times).count() / (float)time_since_last_report.count() * 100.f;
+
+        std::ostringstream report;
+        report << std::setprecision(2) << std::fixed 
+               << "waiting for work: " << percent_waiting_for_work
+               << "%, waiting for locks: " << percent_waiting_for_locks 
+               << "%, processing transactions: " << percent_processing_transactions 
+               << "%, processing blocks: " << percent_processing_blocks 
+               << "%, unknown: " << percent_unknown << "%";
+        wlog("${report}", ("report", report.str()));
+
+        cumulative_time_waiting_for_locks = fc::microseconds();
+        cumulative_time_processing_blocks = fc::microseconds();
+        cumulative_time_processing_transactions = fc::microseconds();
+        cumulative_time_waiting_for_work = fc::microseconds();
+        cumulative_times_last_reported_time = fc::time_point::now();
+      }
+    } //while running
 
     ilog("Write processing thread finished.");
   });
@@ -653,6 +730,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
 #endif
+      ("transaction-delay-interval", bpo::value<uint32_t>()->value_name("count"), "Add an artificale every [this many] transactions")
+      ("transaction-delay-ms", bpo::value<uint32_t>()->value_name("delay"), "Make the artificial delays this long")
       ;
 }
 
@@ -736,6 +815,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     }
   }
 #endif
+
+  if (options.count("transaction-delay-interval"))
+    my->transaction_delay_interval = options.at("transaction-delay-interval").as<uint32_t>();
+  if (options.count("transaction-delay-ms"))
+    my->transaction_delay_ms = options.at("transaction-delay-ms").as<uint32_t>();
 
   if(my->benchmark_interval > 0)
   {
@@ -830,9 +914,10 @@ void chain_plugin::report_state_options( const string& plugin_name, const fc::va
 void chain_plugin::connection_count_changed(uint32_t peer_count)
 {
   my->peer_count = peer_count;
+  fc_wlog(fc::logger::get("sync"),"peer_count changed: ${peer_count}",(peer_count));
 }
 
-bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip )
+bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */ )
 {
   if (currently_syncing && block.block_num() % 10000 == 0) {
     ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
@@ -843,31 +928,65 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
 
   check_time_in_block( block );
 
-  boost::promise< void > prom;
   write_context cxt;
   cxt.req_ptr = &block;
   cxt.skip = skip;
-  cxt.prom_ptr = &prom;
-
-  my->write_queue.push( &cxt );
-
-  prom.get_future().get();
+  static int call_count = 0;
+  call_count++;
+  BOOST_SCOPE_EXIT(&call_count) {
+    --call_count;
+    fc_wlog(fc::logger::get("chainlock"), "<-- accept_block_calls_in_progress: ${call_count}", (call_count));
+  } BOOST_SCOPE_EXIT_END
+  if (lock == lock_type::boost)
+  {
+    //fc_wlog(fc::logger::get("chainlock"), "--> boost accept_block_calls_in_progress: ${call_count}", (call_count));
+    boost::promise< void > prom;
+    cxt.prom_ptr = &prom;
+    my->write_queue.push( &cxt );
+    prom.get_future().get();
+  }
+  else
+  {
+    fc_wlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
+    fc::promise<void>::ptr promise(new fc::promise<void>("accept_block"));
+    fc::future<void> prom(promise);
+    cxt.prom_ptr = &prom;
+    my->write_queue.push( &cxt );
+    prom.wait();
+  }
 
   if( cxt.except ) throw *(cxt.except);
 
   return cxt.success;
 }
 
-void chain_plugin::accept_transaction( const hive::chain::signed_transaction& trx )
+void chain_plugin::accept_transaction( const hive::chain::signed_transaction& trx, const lock_type lock /* = lock_type::boost */ )
 {
-  boost::promise< void > prom;
   write_context cxt;
   cxt.req_ptr = &trx;
-  cxt.prom_ptr = &prom;
-
-  my->write_queue.push( &cxt );
-
-  prom.get_future().get();
+  static int call_count = 0;
+  call_count++;
+  BOOST_SCOPE_EXIT(&call_count) {
+    --call_count;
+    fc_wlog(fc::logger::get("chainlock"), "<-- accept_transaction_calls_in_progress: ${call_count}", (call_count));
+  } BOOST_SCOPE_EXIT_END
+  if (lock == lock_type::boost)
+  {
+    fc_wlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
+    boost::promise< void > prom;
+    cxt.prom_ptr = &prom;
+    my->write_queue.push( &cxt );
+    prom.get_future().get();
+  }
+  else
+  {
+    fc_wlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count));
+    fc::promise<void>::ptr promise(new fc::promise<void>("accept_block"));
+    fc::future<void> prom(promise);
+    cxt.prom_ptr = &prom;
+    my->write_queue.push( &cxt );
+    prom.wait();
+  }
 
   if( cxt.except ) throw *(cxt.except);
 
