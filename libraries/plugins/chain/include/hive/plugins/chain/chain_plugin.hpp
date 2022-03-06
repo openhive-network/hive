@@ -44,8 +44,9 @@ public:
   void report_state_options( const string& plugin_name, const fc::variant_object& opts );
 
   void connection_count_changed(uint32_t peer_count);
-  bool accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip );
-  void accept_transaction( const hive::chain::signed_transaction& trx );
+  enum class lock_type { boost, fc };
+  bool accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock = lock_type::boost );
+  void accept_transaction( const hive::chain::signed_transaction& trx, const lock_type lock = lock_type::boost );
   hive::chain::signed_block generate_block(
     const fc::time_point_sec when,
     const account_name_type& witness_owner,
