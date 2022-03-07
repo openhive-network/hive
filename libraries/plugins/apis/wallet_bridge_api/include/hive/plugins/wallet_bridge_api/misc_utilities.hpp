@@ -30,7 +30,7 @@ struct wallet_formatter
   template<typename T>
   static variant get_result( const std::stringstream& out_text, const T& out_json, format_type format )
   {
-    if( format == format_type::text )
+    if( format == format_type::textformat )
     {
       return variant( out_text.str() );
     }
@@ -54,11 +54,18 @@ struct wallet_formatter
 
   static variant list_my_accounts( const variant& result )
   {
-    return list_my_accounts_impl( result.as<serializer_wrapper<vector<database_api::api_account_object>>>(), format_type::text );
+    return list_my_accounts_impl( result.as<serializer_wrapper<vector<database_api::api_account_object>>>(), format_type::textformat );
   }
 
   static variant list_my_accounts_impl( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )
   {
+    if( format == format_type::noformat )
+    {
+      variant _result;
+      to_variant( accounts, _result );
+      return _result;
+    }
+
     std::stringstream             out_text;
     list_my_accounts_json_return  out_json;
 
@@ -71,7 +78,7 @@ struct wallet_formatter
       total_vest += a.vesting_shares;
       total_hbd  += a.hbd_balance;
 
-      if( format == format_type::text )
+      if( format == format_type::textformat )
       {
         out_text << std::left << setw(17) << string(a.name)
             << std::right << setw(18) << hive::protocol::legacy_asset::from_asset(a.balance).to_string() <<" "
@@ -84,7 +91,7 @@ struct wallet_formatter
       }
     }
 
-    if( format == format_type::text )
+    if( format == format_type::textformat )
     {
       out_text << "-------------------------------------------------------------------------------\n";
       out_text << std::left << setw(17) << "TOTAL"
@@ -137,20 +144,27 @@ struct wallet_formatter
 
   static variant get_account_history( const variant& result )
   {
-    return get_account_history_impl( result.as<hive::plugins::account_history::get_account_history_return>(), format_type::text );
+    return get_account_history_impl( result.as<serializer_wrapper<hive::plugins::account_history::get_account_history_return>>(), format_type::textformat );
   }
 
-  static variant get_account_history_impl( const hive::plugins::account_history::get_account_history_return& ops, format_type format )
+  static variant get_account_history_impl( const serializer_wrapper<hive::plugins::account_history::get_account_history_return>& ops, format_type format )
   {
+    if( format == format_type::noformat )
+    {
+      variant _result;
+      to_variant( ops, _result );
+      return _result;
+    }
+
     std::stringstream               out_text;
     get_account_history_json_return out_json;
 
-    if( format == format_type::text )
+    if( format == format_type::textformat )
       create_get_account_history_header( out_text );
 
-    for( const auto& item : ops.history )
+    for( const auto& item : ops.value.history )
     {
-      if( format == format_type::text )
+      if( format == format_type::textformat )
         create_get_account_history_body( out_text, item.first, item.second.block, item.second.trx_id, item.second.op );
       else
         out_json.ops.emplace_back( get_account_history_json_op{ item.first, item.second.block, item.second.trx_id, item.second.op } );
@@ -169,15 +183,22 @@ struct wallet_formatter
 
   static variant get_open_orders( const variant& result )
   {
-    return get_open_orders_impl( result.as<serializer_wrapper<vector<database_api::api_limit_order_object>>>(), format_type::text );
+    return get_open_orders_impl( result.as<serializer_wrapper<vector<database_api::api_limit_order_object>>>(), format_type::textformat );
   }
 
   static variant get_open_orders_impl( const serializer_wrapper<vector<database_api::api_limit_order_object>>& orders, format_type format )
   {
+    if( format == format_type::noformat )
+    {
+      variant _result;
+      to_variant( orders, _result );
+      return _result;
+    }
+
     std::stringstream           out_text;
     get_open_orders_json_return out_json;
 
-    if( format == format_type::text )
+    if( format == format_type::textformat )
     {
       out_text << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
       out_text << ' ' << setw( 10 ) << "Order #";
@@ -196,7 +217,7 @@ struct wallet_formatter
 
       double _price = calculate_price( o.sell_price );
 
-      if( format == format_type::text )
+      if( format == format_type::textformat )
       {
         out_text << ' ' << setw( 10 ) << o.orderid;
         out_text << ' ' << setw( 12 ) << _price;
@@ -215,11 +236,18 @@ struct wallet_formatter
 
   static variant get_order_book( const variant& result )
   {
-    return get_order_book_impl( result.as<serializer_wrapper<market_history::get_order_book_return>>(), format_type::text );
+    return get_order_book_impl( result.as<serializer_wrapper<market_history::get_order_book_return>>(), format_type::textformat );
   }
 
   static variant get_order_book_impl( const serializer_wrapper<market_history::get_order_book_return>& orders_in_wrapper, format_type format )
   {
+    if( format == format_type::noformat )
+    {
+      variant _result;
+      to_variant( orders_in_wrapper, _result );
+      return _result;
+    }
+
     std::stringstream           out_text;
     get_order_book_json_return  out_json;
 
@@ -229,7 +257,7 @@ struct wallet_formatter
     asset _ask_sum = asset( 0, HBD_SYMBOL );
     int spacing = 16;
 
-    if( format == format_type::text )
+    if( format == format_type::textformat )
     {
       out_text << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
 
@@ -256,7 +284,7 @@ struct wallet_formatter
         auto _hive = asset( orders.bids[i].hive, HIVE_SYMBOL);
         double _price = orders.bids[i].real_price;
 
-        if( format == format_type::text )
+        if( format == format_type::textformat )
         {
           out_text
             << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _bid_sum ).to_string()
@@ -271,11 +299,11 @@ struct wallet_formatter
       }
       else
       {
-        if( format == format_type::text )
+        if( format == format_type::textformat )
           out_text << setw( (spacing * 4 ) + 5 ) << ' ';
       }
 
-      if( format == format_type::text )
+      if( format == format_type::textformat )
         out_text << " |";
 
       if( i < orders.asks.size() )
@@ -284,9 +312,9 @@ struct wallet_formatter
 
         auto _hbd = asset( orders.asks[i].hbd, HBD_SYMBOL);
         auto _hive = asset( orders.asks[i].hive, HIVE_SYMBOL);
-        double _price = orders.bids[i].real_price;
+        double _price = orders.asks[i].real_price;
 
-        if( format == format_type::text )
+        if( format == format_type::textformat )
         {
           out_text
             << ' ' << setw( spacing ) << std::to_string( _price )
@@ -300,11 +328,11 @@ struct wallet_formatter
         }
       }
 
-      if( format == format_type::text )
+      if( format == format_type::textformat )
         out_text << endl;
     }
 
-    if( format == format_type::text )
+    if( format == format_type::textformat )
     {
       out_text << endl
         << "Bid Total: " << hive::protocol::legacy_asset::from_asset(_bid_sum).to_string() << endl
@@ -321,15 +349,18 @@ struct wallet_formatter
 
   static variant get_withdraw_routes( const variant& result )
   {
-    return get_withdraw_routes_impl( result.as<serializer_wrapper<database_api::find_withdraw_vesting_routes_return>>(), format_type::text );
+    return get_withdraw_routes_impl( result.as<serializer_wrapper<database_api::find_withdraw_vesting_routes_return>>(), format_type::textformat );
   }
 
   static variant get_withdraw_routes_impl( const serializer_wrapper<database_api::find_withdraw_vesting_routes_return>& routes, format_type format )
   {
+    if( format == format_type::noformat )
+      return variant{ routes };
+
     std::stringstream                         out_text;
     find_withdraw_vesting_routes_json_return  out_json;
 
-    if( format == format_type::text )
+    if( format == format_type::textformat )
     {
       out_text << ' ' << std::left << setw( 18 ) << "From";
       out_text << ' ' << std::left << setw( 18 ) << "To";
@@ -340,7 +371,7 @@ struct wallet_formatter
 
     for( auto& r : routes.value.routes )
     {
-      if( format == format_type::text )
+      if( format == format_type::textformat )
       {
         out_text << ' ' << std::left << setw( 18 ) << string( r.from_account );
         out_text << ' ' << std::left << setw( 18 ) << string( r.to_account );

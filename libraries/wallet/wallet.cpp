@@ -73,6 +73,7 @@ constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_br
 
 namespace hive { namespace wallet {
 
+using plugins::wallet_bridge_api::format_type;
 namespace detail {
 
 template<class T>
@@ -921,7 +922,8 @@ variant wallet_api::list_my_accounts()
   for( const auto& item : my->_keys )
     pub_keys.push_back(item.first);
 
-  return { my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ) };
+  vector<variant> args{ variant{ pub_keys }, variant{ format_type::noformat } };
+  return { my->_remote_wallet_bridge_api->list_my_accounts( {args}, LOCK ) };
 }
 
 vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, uint32_t limit)
@@ -2431,7 +2433,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balanc
 variant wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
 {
   my->require_online();
-  vector<variant> args{account, from, limit};
+  vector<variant> args{account, from, limit, variant{ format_type::noformat } };
 
   auto _result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
 
@@ -2468,7 +2470,7 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
 variant wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
 {
   my->require_online();
-  vector<variant> args{ account, variant{ type } };
+  vector<variant> args{ account, variant{ type }, variant{ format_type::noformat } };
   return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK );
 }
 
@@ -2477,14 +2479,16 @@ variant wallet_api::get_order_book( uint32_t limit )
   my->require_online();
   FC_ASSERT( limit <= 1000 );
 
-  return { my->_remote_wallet_bridge_api->get_order_book( {limit}, LOCK ) };
+  vector<variant> args{ limit, variant{ format_type::noformat } };
+  return { my->_remote_wallet_bridge_api->get_order_book( {args}, LOCK ) };
 }
 
 variant wallet_api::get_open_orders( const string& accountname )
 {
   my->require_online();
 
-  return { my->_remote_wallet_bridge_api->get_open_orders( {accountname}, LOCK ) };
+  vector<variant> args{ accountname, variant{ format_type::noformat } };
+  return { my->_remote_wallet_bridge_api->get_open_orders( {args}, LOCK ) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
