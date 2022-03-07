@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from test_tools.communication import request
 from typing import Dict, List
 
-account_name = 'null'
+account_name = 'steem.dao'
 
 server_develop_url = 'http://hive-2:8091'
 json_server_develop_data_stored = f'/home/dev/Desktop/server_request_data/server_request_develop_data/{account_name}_server_request_develop_data.json'
@@ -98,7 +98,7 @@ def compare_transaction(source: str, account_name: str, transaction_from, key_va
         for one_in_thousand_transaction in all_transactions:
             data_key = (one_in_thousand_transaction[1]['block'], one_in_thousand_transaction[1]['timestamp'])
             no_vop_transaction = {k: v for k, v in one_in_thousand_transaction[1].items() if k not in ignore_keys}
-            if one_in_thousand_transaction[1]['block'] <= 62331853:
+            if one_in_thousand_transaction[1]['block'] <= transaction_from[0][0][1]['block']:
                 if data_key in key_value_data and no_vop_transaction not in key_value_data[data_key]:
                     wrong_transactions.append(one_in_thousand_transaction)
     if source == 'master':
@@ -122,15 +122,15 @@ def compare_transaction(source: str, account_name: str, transaction_from, key_va
 # save_transaction_to_json('master', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_master_url), server_master_url)
 # save_transaction_to_json('develop', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_develop_url), server_develop_url)
 # last steem.dao develop block 62355796
-# compare_transaction('develop', 'steem.dao', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored))                    )
+compare_transaction('develop', 'steem.dao', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored))                    )
 # last steem.dao master block 62331853
-# compare_transaction('master', 'steem.dao', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
+compare_transaction('master', 'steem.dao', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
 
 
 # save_transaction_to_json('master', 'null', 0, get_last_transaction_number('null', server_master_url), server_master_url)
 # save_transaction_to_json('develop', 'null', 0, get_last_transaction_number('null', server_develop_url), server_develop_url)
 # last develop 'block' 62325189
-compare_transaction('develop', 'null', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+# compare_transaction('develop', 'null', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
 # last master 'block' 62325189
 # compare_transaction('master', 'null', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
 
@@ -138,7 +138,7 @@ compare_transaction('develop', 'null', json_to_variable_opener(json_server_devel
 # last develop 'gtg', 'block' = 62245215
 # compare_transaction('develop', 'gtg', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
 # last master 'gtg', 'block' = 62246376
-# compare_transaction('master', 'gtg', json_to_variable_opener(json_server_master_data_stored),assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
+# compare_transaction('master', 'gtg', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
 
 
 # blocktrades develop last 'block': 62303034
