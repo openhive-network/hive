@@ -237,7 +237,7 @@ FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_order, (id)(p
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_return, (orders))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_order, (hive)(hbd)(sum_hbd)(price))
-FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_return, (bid_total)(ask_total))
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_return, (bids)(asks)(bid_total)(ask_total))
 
 namespace fc {
 
