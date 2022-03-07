@@ -3722,12 +3722,12 @@ uint32_t database::get_last_irreversible_block_num() const
 
 void database::set_last_irreversible_block_num(uint32_t block_num)
 {
-  //ilog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  //dlog("setting last_irreversible_block_num previous ${l}", ("l", irreversible_object->last_irreversible_block_num));
   FC_ASSERT(block_num >= irreversible_object->last_irreversible_block_num, "Irreversible block can only move forward. Old: ${o}, new: ${n}",
     ("o", irreversible_object->last_irreversible_block_num)("n", block_num));
 
   irreversible_object->last_irreversible_block_num = block_num;
-  //ilog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
+  //dlog("setting last_irreversible_block_num new ${l}", ("l", irreversible_object->last_irreversible_block_num));
 }
 
 void database::initialize_evaluators()
@@ -5353,6 +5353,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     }
 
     // This deletes blocks from the fork db
+    //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
     _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
 
     // This deletes undo state

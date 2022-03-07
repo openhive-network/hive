@@ -115,13 +115,14 @@ void fork_database::set_max_size( uint32_t s )
   with_write_lock( [&]() {
     _max_size = s;
     if( !_head ) return;
+    //wlog("set_max_size(${s}), head is ${head}, erasing <= ${thresh}", (s)("head", _head->num)("thresh", _head->num - s));
   
     { /// index
       auto& by_num_idx = _index.get<block_num>();
       auto itr = by_num_idx.begin();
       while( itr != by_num_idx.end() )
       {
-        if( (*itr)->num < std::max(int64_t(0),int64_t(_head->num) - _max_size) )
+        if( (*itr)->num <= std::max(int64_t(0),int64_t(_head->num) - _max_size) )
           by_num_idx.erase(itr);
         else
           break;
@@ -133,7 +134,7 @@ void fork_database::set_max_size( uint32_t s )
       auto itr = by_num_idx.begin();
       while( itr != by_num_idx.end() )
       {
-        if( (*itr)->num < std::max(int64_t(0),int64_t(_head->num) - _max_size) )
+        if( (*itr)->num <= std::max(int64_t(0),int64_t(_head->num) - _max_size) )
           by_num_idx.erase(itr);
         else
           break;
@@ -334,10 +335,8 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     synopsis.reserve(30);
 
     const auto& block_num_idx = _index.get<block_num>();
-    uint32_t first_reversible_block_num = (*block_num_idx.begin())->num;
-    // at startup, the last irreversible is loaded into the fork database, even though it's not really reversible.
-    uint32_t last_irreversible_block_num = _head->prev.lock() ? first_reversible_block_num - 1 : first_reversible_block_num;
-    edump((last_irreversible_block_num)(first_reversible_block_num));
+    // The oldest block in the fork database is always the last irreversible block
+    uint32_t last_irreversible_block_num = (*block_num_idx.begin())->num;
 
 
     // there are several cases: 
@@ -363,6 +362,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     }
 
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
+    //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num));
     //edump((reference_point_block_num)(last_irreversible_block_num));
     if (reference_point_block_num <= last_irreversible_block_num)
     {
@@ -403,7 +403,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     }
 
     // block_ids_on_this_fork now contains
-    // [reference_point, ..., first_reversible_block]
+    // [reference_point, ..., first_reversible_block, last_irreversible_block]
 
     // at this point:
     // low_block_num is the block before the first block we can undo,
@@ -412,6 +412,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     // true_high_block_num is the ending block number after the network code appends any item ids it
     // knows about that we don't
     uint32_t true_high_block_num = reference_point_block_num + number_of_blocks_after_reference_point;
+    //idump((low_block_num)(reference_point_block_num)(true_high_block_num));
     do
     {
       // for each block in the synopsis, figure out where to pull the block id from.
@@ -420,7 +421,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
       if (low_block_num == last_irreversible_block_num)
         block_number_needed_from_block_log = last_irreversible_block_num; // caller supplies it
       else
-        synopsis.push_back(block_ids_on_this_fork[block_ids_on_this_fork.size() - (low_block_num - first_reversible_block_num) - 1]);
+        synopsis.push_back(block_ids_on_this_fork[block_ids_on_this_fork.size() - (low_block_num - last_irreversible_block_num) - 1]);
       low_block_num += (true_high_block_num - low_block_num + 2) / 2;
     }
     while( low_block_num <= reference_point_block_num );
