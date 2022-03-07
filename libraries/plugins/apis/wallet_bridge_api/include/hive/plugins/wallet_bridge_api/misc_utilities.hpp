@@ -150,6 +150,14 @@ struct wallet_formatter
     return get_result( out_text, out_json, format_type::text );
   }
 
+  static double calculate_price( const protocol::price& price )
+  {
+    if( price.base.symbol == HIVE_SYMBOL )
+      return ASSET_TO_REAL( price.quote ) / ASSET_TO_REAL( price.base );
+    else
+      return ASSET_TO_REAL( price.base ) / ASSET_TO_REAL( price.quote );
+  }
+
   static variant get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>> orders, format_type format )
   {
     std::stringstream           out_text;
@@ -172,23 +180,19 @@ struct wallet_formatter
       auto _asset = asset( o.for_sale, o.sell_price.base.symbol );
       string _type = o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY";
 
-      double _real_price;
-      if( o.sell_price.base.symbol == HIVE_SYMBOL )
-        _real_price = ASSET_TO_REAL( o.sell_price.quote ) / ASSET_TO_REAL( o.sell_price.base );
-      else
-        _real_price =  ASSET_TO_REAL( o.sell_price.base ) / ASSET_TO_REAL( o.sell_price.quote );
+      double _price = calculate_price( o.sell_price );
 
       if( format == format_type::text )
       {
         out_text << ' ' << setw( 10 ) << o.orderid;
-        out_text << ' ' << setw( 12 ) << _real_price;
+        out_text << ' ' << setw( 12 ) << _price;
         out_text << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( _asset ).to_string();
         out_text << ' ' << setw( 10 ) << _type;
         out_text << "\n";
       }
       else
       {
-        out_json.orders.emplace_back( get_open_orders_json_order{ o.orderid, _real_price, _asset, _type } );
+        out_json.orders.emplace_back( get_open_orders_json_order{ o.orderid, _price, _asset, _type } );
       }
     }
 
@@ -202,8 +206,8 @@ struct wallet_formatter
 
     auto orders = orders_in_wrapper.value;
 
-    asset bid_sum = asset( 0, HBD_SYMBOL );
-    asset ask_sum = asset( 0, HBD_SYMBOL );
+    asset _bid_sum = asset( 0, HBD_SYMBOL );
+    asset _ask_sum = asset( 0, HBD_SYMBOL );
     int spacing = 16;
 
     if( format == format_type::text )
@@ -227,21 +231,23 @@ struct wallet_formatter
     {
       if( i < orders.bids.size() )
       {
-        bid_sum += asset( orders.bids[i].hbd, HBD_SYMBOL );
+        _bid_sum += asset( orders.bids[i].hbd, HBD_SYMBOL );
 
         auto _hbd = asset( orders.bids[i].hbd, HBD_SYMBOL);
         auto _hive = asset( orders.bids[i].hive, HIVE_SYMBOL);
+        double _price = orders.bids[i].real_price;
 
         if( format == format_type::text )
         {
           out_text
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(bid_sum).to_string()
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _bid_sum ).to_string()
             << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hbd ).to_string()
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hive ).to_string();
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hive ).to_string()
+            << ' ' << setw( spacing ) << std::to_string( _price );
         }
         else
         {
-          out_json.bids.emplace_back( get_order_book_json_order{ _hive, _hbd, bid_sum } );
+          out_json.bids.emplace_back( get_order_book_json_order{ _hive, _hbd, _bid_sum, _price } );
         }
       }
       else
@@ -255,21 +261,23 @@ struct wallet_formatter
 
       if( i < orders.asks.size() )
       {
-        ask_sum += asset(orders.asks[i].hbd, HBD_SYMBOL);
+        _ask_sum += asset(orders.asks[i].hbd, HBD_SYMBOL);
 
         auto _hbd = asset( orders.asks[i].hbd, HBD_SYMBOL);
         auto _hive = asset( orders.asks[i].hive, HIVE_SYMBOL);
+        double _price = orders.bids[i].real_price;
 
         if( format == format_type::text )
         {
           out_text
+            << ' ' << setw( spacing ) << std::to_string( _price )
             << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hive ).to_string()
             << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _hbd ).to_string()
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(ask_sum).to_string();
+            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset( _ask_sum ).to_string();
         }
         else
         {
-          out_json.asks.emplace_back( get_order_book_json_order{ _hive, _hbd, ask_sum } );
+          out_json.asks.emplace_back( get_order_book_json_order{ _hive, _hbd, _ask_sum, _price } );
         }
       }
 
@@ -280,13 +288,13 @@ struct wallet_formatter
     if( format == format_type::text )
     {
       out_text << endl
-        << "Bid Total: " << hive::protocol::legacy_asset::from_asset(bid_sum).to_string() << endl
-        << "Ask Total: " << hive::protocol::legacy_asset::from_asset(ask_sum).to_string() << endl;
+        << "Bid Total: " << hive::protocol::legacy_asset::from_asset(_bid_sum).to_string() << endl
+        << "Ask Total: " << hive::protocol::legacy_asset::from_asset(_ask_sum).to_string() << endl;
     }
     else
     {
-      out_json.bid_total = bid_sum;
-      out_json.ask_total = ask_sum;
+      out_json.bid_total = _bid_sum;
+      out_json.ask_total = _ask_sum;
     }
 
     return get_result( out_text, out_json, format );

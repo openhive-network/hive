@@ -2437,7 +2437,7 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
 
   if( is_locked() )
   {
-    my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "txt" }, LOCK );
+    my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
     return my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
   }
   else
@@ -2482,12 +2482,16 @@ variant wallet_api::get_order_book( uint32_t limit )
 {
   my->require_online();
   FC_ASSERT( limit <= 1000 );
+
+  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
   return { my->_remote_wallet_bridge_api->get_order_book( {limit}, LOCK ) };
 }
 
 variant wallet_api::get_open_orders( const string& accountname )
 {
   my->require_online();
+
+  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
   return { my->_remote_wallet_bridge_api->get_open_orders( {accountname}, LOCK ) };
 }
 
