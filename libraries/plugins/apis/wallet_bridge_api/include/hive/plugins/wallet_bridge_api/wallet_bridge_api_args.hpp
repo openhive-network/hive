@@ -11,7 +11,7 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
-enum class format_type : uint8_t { text, json };
+enum class format_type : uint8_t { noformat, textformat, jsonformat };
 
 template<typename T>
 struct serializer_wrapper
@@ -88,10 +88,6 @@ struct list_my_accounts_json_return
 };
 typedef variant                                     list_my_accounts_args;
 typedef variant                                     list_my_accounts_return;
-
-/* switch_format */
-typedef variant                                     switch_format_args;
-typedef variant                                     switch_format_return;
 
 /* list_accounts */
 typedef variant                             list_accounts_args;
@@ -236,7 +232,7 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
 
-FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (text)(json) )
+FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (noformat)(textformat)(jsonformat) )
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_json_route, (from)(to)(percent)(auto_vest))
 FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_routes_json_return, (routes))
