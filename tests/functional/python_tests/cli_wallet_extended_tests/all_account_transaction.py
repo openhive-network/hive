@@ -6,11 +6,11 @@ from typing import Dict, List
 
 
 server_develop_url = 'http://hive-2:8091'
-json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/blocktrades_server_request_develop_data.json'
+json_server_develop_data_stored = '/home/dev/Desktop/server_request_data/server_request_develop_data/steem.dao_server_request_develop_data.json'
 
 
 server_master_url = 'http://hive-2:18091'
-json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data/blocktrades_server_request_master_data.json'
+json_server_master_data_stored = '/home/dev/Desktop/server_request_data/server_request_master_data/steem.dao_server_request_master_data.json'
 
 
 def get_last_transaction_number(account_name: str, url: str) -> int:
@@ -39,6 +39,8 @@ def get_all_account_transactions(account_name: str, start_transaction_number, la
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
                                     "params": {"account": account_name, "start": i, "limit": last_transaction_number - start_transaction_number + 1}})
             all_account_transaction.append(request_data)
+        elif e == 200:
+            print("tu")
         else:
             request_data = request(url,
                                    {"id": 9, "jsonrpc": "2.0", "method": "account_history_api.get_account_history",
@@ -54,9 +56,6 @@ def get_all_account_transactions(account_name: str, start_transaction_number, la
 def save_transaction_to_json(source: str, account_name: str, start_transaction_number, last_transaction_number, url):
     single_saver_data = get_all_account_transactions(account_name, start_transaction_number, last_transaction_number, url)
     to_single_save = [list(reversed(item['result']['history'])) for item in single_saver_data]
-    # with open(data_stored, 'w') as file:
-    #     json.dump(to_single_save, file)
-
     with open(f'/home/dev/Desktop/server_request_data/server_request_{source}_data/{account_name}_server_request_{source}_data.json', 'w') as file:
         json.dump(to_single_save, file)
 
@@ -83,7 +82,8 @@ def multi_saver(account_name: str, start_transaction_number, last_transaction_nu
 
 def assign_transactions_keys(data):
     sorted_data = {}
-    ignore_keys = ('virtual_op', 'op_in_trx')
+    # ignore_keys = ('virtual_op', 'op_in_trx')
+    ignore_keys = ('virtual_op')
     for all_transactions in data:
         for one_in_thousand_transaction in all_transactions:
             sorted_data_key = (one_in_thousand_transaction[1]['block'], one_in_thousand_transaction[1]['timestamp'])
@@ -94,62 +94,63 @@ def assign_transactions_keys(data):
     return sorted_data
 
 
-def compare_transaction(account_name: str, transaction_from, key_value_data):
+def compare_transaction(source: str, account_name: str, transaction_from, key_value_data):
     wrong_transactions = []
-    ignore_keys = ('virtual_op', 'op_in_trx')
+    # ignore_keys = ('virtual_op', 'op_in_trx')
+    ignore_keys = ('virtual_op')
     for all_transactions in transaction_from:
         for one_in_thousand_transaction in all_transactions:
             data_key = (one_in_thousand_transaction[1]['block'], one_in_thousand_transaction[1]['timestamp'])
             no_vop_transaction = {k: v for k, v in one_in_thousand_transaction[1].items() if k not in ignore_keys}
-            if one_in_thousand_transaction[1]['block'] < 62303034:
-                if no_vop_transaction not in key_value_data[data_key]:
+            if one_in_thousand_transaction[1]['block'] <= 62330658:
+                if data_key in key_value_data and no_vop_transaction not in key_value_data[data_key]:
                     wrong_transactions.append(one_in_thousand_transaction)
-    with open(f'/home/dev/Desktop/server_request_data/wrong_transaction/{account_name}_master_to_dev_wrong_transaction.json', 'w') as f:
-        json.dump(wrong_transactions, f)
-    return wrong_transactions
+    if source == 'master':
+        with open(f'/home/dev/Desktop/server_request_data/wrong_transaction/{account_name}_{source}_to_develop_wrong_transaction.json', 'w') as f:
+            json.dump(wrong_transactions, f)
+    elif source == 'develop':
+        with open(f'/home/dev/Desktop/server_request_data/wrong_transaction/{account_name}_{source}_to_master_wrong_transaction.json', 'w') as f:
+            json.dump(wrong_transactions, f)
+    else:
+        print('Source error, ')
 
 
-save_transaction_to_json('master', 'hive.fund', 0, get_last_transaction_number('hive.fund', server_master_url), server_master_url)
-save_transaction_to_json('develop', 'hive.fund', 0, get_last_transaction_number('hive.fund', server_develop_url), server_develop_url)
+# save_transaction_to_json('master', 'hive.fund', 0, get_last_transaction_number('hive.fund', server_master_url), server_master_url)
+# save_transaction_to_json('develop', 'hive.fund', 0, get_last_transaction_number('hive.fund', server_develop_url), server_develop_url)
+# last hive.fund develop block 62330658
+# compare_transaction('develop', 'hive.fund', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+# last 'hive.fund' master block 62330658
+# compare_transaction('master', 'hive.fund', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys((json_to_variable_opener(json_server_develop_data_stored))))
 
-save_transaction_to_json('master', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_master_url), server_master_url)
+
+# save_transaction_to_json('master', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_master_url), server_master_url)
 save_transaction_to_json('develop', 'steem.dao', 0, get_last_transaction_number('steem.dao', server_develop_url), server_develop_url)
+# last steem.dao develop block 62331853
+# compare_transaction('develop', 'steem.dao', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+# last steem.dao master block 62331853
+# compare_transaction('master', 'steem.dao', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
 
-save_transaction_to_json('master', 'null', 0, get_last_transaction_number('null', server_master_url), server_master_url)
-save_transaction_to_json('develop', 'null', 0, get_last_transaction_number('null', server_develop_url), server_develop_url)
+
+# save_transaction_to_json('master', 'null', 0, get_last_transaction_number('null', server_master_url), server_master_url)
+# save_transaction_to_json('develop', 'null', 0, get_last_transaction_number('null', server_develop_url), server_develop_url)
+# last develop 'block' 62325189
+# compare_transaction('develop', 'null', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+# last master 'block' 62325189
+# compare_transaction('master', 'null', json_to_variable_opener(json_server_master_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
+
+
 
 # dev last block    = 62245215
-# master last block = 62246376
-# deevelop to master
-# compare_transaction(json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
+# compare_transaction('develop', 'gtg', json_to_variable_opener(json_server_develop_data_stored), assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
 
-# master do deva ~ KeyError: (62246376, '2022-03-01T16:08:09')
-# compare_transaction(
-#   json_to_variable_opener(json_server_master_data_stored),
-#   assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored))
-#   )
+# master last block = 62246376
+# compare_transaction('master', 'gtg', json_to_variable_opener(json_server_master_data_stored),assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored)))
 
 # json_to_variable_opener(json_server_develop_data_stored)
 # assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored))
 
-
 #############################################BLOCKTRADES############################################
 # blocktrades develop last 'block': 62303034
+# save_transaction_to_json('develop', 'blocktrades', json_server_develop_data_stored, 'blocktrades', 0, get_last_transaction_number('blocktrades', server_develop_url), server_develop_url)
 # blocktrades master last  'block': 62304998
-# save_transaction_to_json(json_server_develop_data_stored, 'blocktrades', 0, get_last_transaction_number('blocktrades', server_develop_url), server_develop_url)
-# save_transaction_to_json(json_server_master_data_stored, 'blocktrades', 0, get_last_transaction_number('blocktrades', server_master_url), server_master_url)
-
-# json_to_variable_opener(json_server_master_data_stored)
-
-# blocktrades develop to master
-# compare_transaction(
-#   'blocktrades',
-#   json_to_variable_opener(json_server_develop_data_stored),
-#   assign_transactions_keys(json_to_variable_opener(json_server_master_data_stored)))
-
-# blocktrades master to develop ~ KeyError: (62246376, '2022-03-01T16:08:09')
-# compare_transaction(
-#     'blocktrades',
-#     json_to_variable_opener(json_server_master_data_stored),
-#     assign_transactions_keys(json_to_variable_opener(json_server_develop_data_stored))
-# )
+# save_transaction_to_json('master', 'blocktrades', json_server_master_data_stored, 'blocktrades', 0, get_last_transaction_number('blocktrades', server_master_url), server_master_url)
