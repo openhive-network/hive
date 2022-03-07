@@ -2471,11 +2471,12 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
   }
 }
 
-vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
+variant wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
 {
   my->require_online();
   vector<variant> args{ account, variant{ type } };
-  return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK ).routes;
+  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
+  return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK );
 }
 
 variant wallet_api::get_order_book( uint32_t limit )

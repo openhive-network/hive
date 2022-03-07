@@ -300,26 +300,36 @@ struct wallet_formatter
     return get_result( out_text, out_json, format );
   }
 
-  static string get_withdraw_routes( variant result )
+  static variant get_withdraw_routes( const serializer_wrapper<database_api::find_withdraw_vesting_routes_return>& routes, format_type format )
   {
-    auto routes = result.as< vector< database_api::api_withdraw_vesting_route_object > >();
-    std::stringstream ss;
+    std::stringstream                         out_text;
+    find_withdraw_vesting_routes_json_return  out_json;
 
-    ss << ' ' << std::left << setw( 18 ) << "From";
-    ss << ' ' << std::left << setw( 18 ) << "To";
-    ss << ' ' << std::right << setw( 8 ) << "Percent";
-    ss << ' ' << std::right << setw( 9 ) << "Auto-Vest";
-    ss << "\n=========================================================\n";
-
-    for( auto& r : routes )
+    if( format == format_type::text )
     {
-      ss << ' ' << std::left << setw( 18 ) << string( r.from_account );
-      ss << ' ' << std::left << setw( 18 ) << string( r.to_account );
-      ss << ' ' << std::right << setw( 8 ) << std::setprecision( 2 ) << std::fixed << double( r.percent ) / 100;
-      ss << ' ' << std::right << setw( 9 ) << ( r.auto_vest ? "true" : "false" ) << std::endl;
+      out_text << ' ' << std::left << setw( 18 ) << "From";
+      out_text << ' ' << std::left << setw( 18 ) << "To";
+      out_text << ' ' << std::right << setw( 8 ) << "Percent";
+      out_text << ' ' << std::right << setw( 9 ) << "Auto-Vest";
+      out_text << "\n=========================================================\n";
     }
 
-    return ss.str();
+    for( auto& r : routes.value.routes )
+    {
+      if( format == format_type::text )
+      {
+        out_text << ' ' << std::left << setw( 18 ) << string( r.from_account );
+        out_text << ' ' << std::left << setw( 18 ) << string( r.to_account );
+        out_text << ' ' << std::right << setw( 8 ) << std::setprecision( 2 ) << std::fixed << double( r.percent ) / 100;
+        out_text << ' ' << std::right << setw( 9 ) << ( r.auto_vest ? "true" : "false" ) << std::endl;
+      }
+      else
+      {
+        out_json.routes.emplace_back( find_withdraw_vesting_json_route{ r.from_account, r.to_account, r.percent, r.auto_vest } );
+      }
+    }
+
+    return get_result( out_text, out_json, format );
   }
 
 };

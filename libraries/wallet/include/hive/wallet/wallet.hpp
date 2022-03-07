@@ -150,7 +150,7 @@ class wallet_api
       *
       * @returns table with vesting withdraw routes for an account
       */
-    vector< database_api::api_withdraw_vesting_route_object > get_withdraw_routes( const string& account, database_api::withdraw_route_type type = database_api::withdraw_route_type::all )const;
+    variant get_withdraw_routes( const string& account, database_api::withdraw_route_type type = database_api::withdraw_route_type::all )const;
 
     /** Gets the account balance information for all accounts for which this wallet has a private key
       *

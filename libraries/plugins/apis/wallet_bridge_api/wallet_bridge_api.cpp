@@ -87,7 +87,7 @@ class wallet_bridge_api_impl
 
   private:
 
-    format_type format = format_type::text;
+    format_type format = format_type::json;
 
     protocol::signed_transaction get_trx( const variant& args );
 
@@ -325,18 +325,18 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
   const auto route = arguments.get_array()[1].as<database_api::withdraw_route_type>();
 
-  get_withdraw_routes_return result;
+  database_api::find_withdraw_vesting_routes_return _result;
 
   if( route == database_api::withdraw_route_type::outgoing || route == database_api::withdraw_route_type::all )
-    result = _database_api->find_withdraw_vesting_routes({ account, database_api::by_withdraw_route });
+    _result = _database_api->find_withdraw_vesting_routes({ account, database_api::by_withdraw_route });
 
   if( route == database_api::withdraw_route_type::incoming || route == database_api::withdraw_route_type::all )
   {
-    get_withdraw_routes_return _result = _database_api->find_withdraw_vesting_routes({ account, database_api::by_destination });
-    std::move( _result.routes.begin(), _result.routes.end(), std::back_inserter( result.routes ) );
+    auto _result2 = _database_api->find_withdraw_vesting_routes({ account, database_api::by_destination });
+    std::move( _result2.routes.begin(), _result2.routes.end(), std::back_inserter( _result.routes ) );
   }
 
-  return result;
+  return wallet_formatter::get_withdraw_routes( serializer_wrapper<database_api::find_withdraw_vesting_routes_return>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )

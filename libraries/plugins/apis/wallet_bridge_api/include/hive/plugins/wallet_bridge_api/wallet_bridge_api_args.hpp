@@ -56,8 +56,19 @@ typedef variant                                     get_active_witnesses_args;
 typedef database_api::get_active_witnesses_return   get_active_witnesses_return;
 
 /* get_withdraw_routes */
+struct find_withdraw_vesting_json_route
+{
+  protocol::account_name_type from;
+  protocol::account_name_type to;
+  uint16_t                    percent = 0;
+  bool                        auto_vest = false;
+};
+struct find_withdraw_vesting_routes_json_return
+{
+  vector<find_withdraw_vesting_json_route> routes;
+};
 typedef variant                                             get_withdraw_routes_args;
-typedef database_api::find_withdraw_vesting_routes_return   get_withdraw_routes_return;
+typedef variant                                             get_withdraw_routes_return;
 
 /* list_my_accounts */
 struct list_my_accounts_json_account
@@ -226,6 +237,9 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
 
 FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (text)(json) )
+
+FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_json_route, (from)(to)(percent)(auto_vest))
+FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_routes_json_return, (routes))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_account, (name)(balance)(vesting_shares)(hbd_balance))
 FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_return, (accounts)(total_hive)(total_vest)(total_hbd))
