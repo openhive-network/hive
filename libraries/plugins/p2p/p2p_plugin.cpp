@@ -341,15 +341,20 @@ hive::protocol::chain_id_type p2p_plugin_impl::get_chain_id() const
 
 std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synopsis( const graphene::net::item_hash_t& reference_point, uint32_t number_of_blocks_after_reference_point )
 { try {
-  return get_blockchain_synopsis_orig(reference_point, number_of_blocks_after_reference_point);
+  return chain.db().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
+  //return get_blockchain_synopsis_orig(reference_point, number_of_blocks_after_reference_point);
 
   return chain.db().with_read_lock( [&]() {
     std::vector<graphene::net::item_hash_t> synopsis = chain.db().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
     std::vector<graphene::net::item_hash_t> synopsis_using_old_method = get_blockchain_synopsis_orig(reference_point, number_of_blocks_after_reference_point);
     if (synopsis_using_old_method != synopsis)
-      elog("Whoa! you got a problem: old: ${synopsis_using_old_method}, new: ${synopsis}, ${reference_point}, ${number_of_blocks_after_reference_point}", (synopsis_using_old_method)(synopsis)(reference_point)(number_of_blocks_after_reference_point));
+    {
+      uint32_t chaindb_last_irreversible_block_num = chain.db().get_last_irreversible_block_num();
+      elog("Whoa! you got a problem: old: ${synopsis_using_old_method}, new: ${synopsis}, ${reference_point}, ${number_of_blocks_after_reference_point}, chaindb_last_irreversible_block_num ${chaindb_last_irreversible_block_num}, chain_head ${chain_head}",
+           (synopsis_using_old_method)(synopsis)(reference_point)(number_of_blocks_after_reference_point)(chaindb_last_irreversible_block_num)("chain_head", chain.db().head_block_num()));
+    }
     FC_ASSERT(synopsis_using_old_method == synopsis);
-    elog("Phew, got it right, ${synopsis}", (synopsis));
+    //elog("Phew, got it right, ${synopsis}", (synopsis));
 
     return synopsis;
   });     
@@ -459,6 +464,7 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
     // true_high_block_num is the ending block number after the network code appends any item ids it
     // knows about that we don't
     uint32_t true_high_block_num = high_block_num + number_of_blocks_after_reference_point;
+    //idump((low_block_num)(high_block_num)(true_high_block_num));
     do
     {
       // for each block in the synopsis, figure out where to pull the block id from.

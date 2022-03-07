@@ -377,6 +377,10 @@ namespace graphene { namespace net {
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct compare_block_message_by_block_id
+    {
+      bool operator()(const graphene::net::block_message& lhs,const graphene::net::block_message& rhs){ return lhs.block_id < rhs.block_id;  }
+    };
 
     class node_impl : public peer_connection_delegate
     {
@@ -421,8 +425,13 @@ namespace graphene { namespace net {
       typedef std::unordered_map<graphene::net::block_id_type, fc::time_point> active_sync_requests_map;
 
       active_sync_requests_map              _active_sync_requests; /// list of sync blocks we've asked for from peers but have not yet received
+
+       typedef boost::multi_index_container<graphene::net::block_message,
+                                             boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::member<graphene::net::block_message, item_hash_t, &graphene::net::block_message::block_id> > > > received_sync_items_by_id;
+
+      std::set<item_hash_t>  _already_received_sync_item_ids; //set for fast lookup of already received sync items
       std::list<graphene::net::block_message> _new_received_sync_items; /// list of sync blocks we've just received but haven't yet tried to process
-      std::list<graphene::net::block_message> _received_sync_items; /// list of sync blocks we've received, but can't yet process because we are still missing blocks that come earlier in the chain
+      received_sync_items_by_id _received_sync_items; /// set of sync blocks we've received, but can't yet process because we are still missing blocks that come earlier in the chain
       // @}
 
       fc::future<void> _process_backlog_of_sync_blocks_done;
@@ -1012,10 +1021,7 @@ namespace graphene { namespace net {
     bool node_impl::have_already_received_sync_item( const item_hash_t& item_hash )
     {
       VERIFY_CORRECT_THREAD();
-      return std::find_if(_received_sync_items.begin(), _received_sync_items.end(),
-                          [&item_hash]( const graphene::net::block_message& message ) { return message.block_id == item_hash; } ) != _received_sync_items.end() ||
-             std::find_if(_new_received_sync_items.begin(), _new_received_sync_items.end(),
-                          [&item_hash]( const graphene::net::block_message& message ) { return message.block_id == item_hash; } ) != _new_received_sync_items.end();                          ;
+      return (_already_received_sync_item_ids.find(item_hash) != _already_received_sync_item_ids.end());
     }
 
     void node_impl::request_sync_item_from_peer( const peer_connection_ptr& peer, const item_hash_t& item_to_request )
@@ -1066,6 +1072,7 @@ namespace graphene { namespace net {
                 //dlog("peer ${peer} is idle,",("peer",peer->get_remote_endpoint()));
               if (peer->idle())
               {
+                fc::time_point items_search_start_time = fc::time_point::now();
                 ++idle_peer_count;
                 if( peer->we_need_sync_items_from_peer &&
                     sync_item_requests_to_send.find(peer) == sync_item_requests_to_send.end() ) // if we've already scheduled a request for this peer, don't consider scheduling another
@@ -1077,16 +1084,19 @@ namespace graphene { namespace net {
                     {
                       item_hash_t item_to_potentially_request = peer->ids_of_items_to_get[i];
                       // if we don't already have this item in our temporary storage and we haven't requested from another syncing peer
-                      if( !have_already_received_sync_item(item_to_potentially_request) && // already got it, but for some reason it's still in our list of items to fetch
-                          sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end() &&  // we have already decided to request it from another peer during this iteration
-                          _active_sync_requests.find(item_to_potentially_request) == _active_sync_requests.end() ) // we've requested it in a previous iteration and we're still waiting for it to arrive
+                      if( 
+                          _active_sync_requests.find(item_to_potentially_request) == _active_sync_requests.end() && // we've requested it in a previous iteration and we're still waiting for it to arrive
+                         !have_already_received_sync_item(item_to_potentially_request) && // already received it, but not yet removed from our list of peer items to get
+                          sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end()   // we have already decided to request it from another peer during this iteration
+                        )
                       {
                         // then schedule a request from this peer
                         sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
                         sync_items_to_request.insert( item_to_potentially_request );
                         if (sync_item_requests_to_send[peer].size() >= _node_configuration.maximum_blocks_per_peer_during_syncing)
                         {
-                          dlog("searched thru ${i} ids to find ${max} items to request",(i)("max",_node_configuration.maximum_blocks_per_peer_during_syncing));
+                          fc::microseconds items_search_duration = fc::time_point::now() - items_search_start_time;
+                          dlog("already-fast searched thru ${i} ids to find ${max} items to request in ${items_search_duration}us",(i)("max",_node_configuration.maximum_blocks_per_peer_during_syncing)("items_search_duration",items_search_duration.count()));
                           break;
                         }
                       }
@@ -3342,88 +3352,85 @@ namespace graphene { namespace net {
       {
         std::copy(std::make_move_iterator(_new_received_sync_items.begin()),
                   std::make_move_iterator(_new_received_sync_items.end()),
-                  std::front_inserter(_received_sync_items));
+                  std::inserter(_received_sync_items,_received_sync_items.end()));
         _new_received_sync_items.clear();
         dlog("currently ${count} sync items to consider", ("count", _received_sync_items.size()));
 
         block_processed_this_iteration = false;
-        for (auto received_block_iter = _received_sync_items.begin();
-             received_block_iter != _received_sync_items.end();
-             ++received_block_iter)
+        for (const peer_connection_ptr& peer : _active_connections)
         {
-
-          // find out if this block is the next block on the active chain or one of the forks
-          bool potential_first_block = false;
-          for (const peer_connection_ptr& peer : _active_connections)
+          if (!peer->ids_of_items_to_get.empty())
           {
-            ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
-            if (!peer->ids_of_items_to_get.empty() &&
-                peer->ids_of_items_to_get.front() == received_block_iter->block_id)
+            //check if we hae a backlog block to push
+            auto received_block_iter = _received_sync_items.find(peer->ids_of_items_to_get.front());
+            if (received_block_iter != _received_sync_items.end())
             {
-              potential_first_block = true;
-              peer->ids_of_items_to_get.pop_front();
-              peer->ids_of_items_being_processed.insert(received_block_iter->block_id);
-            }
-          }
-
-          // if it is, process it, remove it from all sync peers lists
-          if (potential_first_block)
-          {
-            // we can get into an interesting situation near the end of synchronization.  We can be in
-            // sync with one peer who is sending us the last block on the chain via a regular inventory
-            // message, while at the same time still be synchronizing with a peer who is sending us the
-            // block through the sync mechanism.  Further, we must request both blocks because
-            // we don't know they're the same (for the peer in normal operation, it has only told us the
-            // message id, for the peer in the sync case we only known the block_id).
-            if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(),
-                          received_block_iter->block_id) == _most_recent_blocks_accepted.end())
-            { //normal case, schedule this block to be sent to blockchain
-              //DLN eliminate double copy of block with c++14 capture initializer
-              //graphene::net::block_message block_message_to_process = *received_block_iter;
-              //_received_sync_items.erase(received_block_iter);
-              //_handle_message_calls_in_progress.emplace_back(async_task([this, block_message_to_process](){
-              //  send_sync_block_to_node_delegate(block_message_to_process);
-              //}, "send_sync_block_to_node_delegate"));
-              _handle_message_calls_in_progress.emplace_back(async_task([this, block_message_to_process = *received_block_iter](){
-                send_sync_block_to_node_delegate(block_message_to_process);
-              }, "send_sync_block_to_node_delegate"));
-              _received_sync_items.erase(received_block_iter);
-
-              ++blocks_processed;
-              block_processed_this_iteration = true;
-            }
-            else
-            {
-              dlog("Already received and accepted this block (presumably through normal inventory mechanism), treating it as accepted");
-              std::vector< peer_connection_ptr > peers_needing_next_batch;
+              // remove from front of any other peer's item to get list
               for (const peer_connection_ptr& peer : _active_connections)
               {
-                auto items_being_processed_iter = peer->ids_of_items_being_processed.find(received_block_iter->block_id);
-                if (items_being_processed_iter != peer->ids_of_items_being_processed.end())
+                ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
+                if (!peer->ids_of_items_to_get.empty() &&
+                    peer->ids_of_items_to_get.front() == received_block_iter->block_id)
                 {
-                  peer->ids_of_items_being_processed.erase(items_being_processed_iter);
-                  dlog("Removed item from ${endpoint}'s list of items being processed, still processing ${len} blocks",
-                       ("endpoint", peer->get_remote_endpoint())("len", peer->ids_of_items_being_processed.size()));
+                  peer->ids_of_items_to_get.pop_front();
+                  peer->ids_of_items_being_processed.insert(received_block_iter->block_id);
+                }
+              }  
 
-                  // if we just processed the last item in our list from this peer, we will want to
-                  // send another request to find out if we are now in sync (this is normally handled in
-                  // send_sync_block_to_node_delegate)
-                  if (peer->ids_of_items_to_get.empty() &&
-                      peer->number_of_unfetched_item_ids == 0 &&
-                      peer->ids_of_items_being_processed.empty())
+              // we can get into an interesting situation near the end of synchronization.  We can be in
+              // sync with one peer who is sending us the last block on the chain via a regular inventory
+              // message, while at the same time still be synchronizing with a peer who is sending us the
+              // block through the sync mechanism.  Further, we must request both blocks because
+              // we don't know they're the same (for the peer in normal operation, it has only told us the
+              // message id, for the peer in the sync case we only known the block_id).
+              if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(),
+                            received_block_iter->block_id) == _most_recent_blocks_accepted.end())
+              { //normal case, schedule this block to be sent to blockchain
+
+                _handle_message_calls_in_progress.emplace_back(async_task([this, block_message_to_process = *received_block_iter](){
+                  send_sync_block_to_node_delegate(block_message_to_process);
+                }, "send_sync_block_to_node_delegate"));
+                _already_received_sync_item_ids.erase(received_block_iter->block_id);
+                _received_sync_items.erase(received_block_iter);
+
+                ++blocks_processed;
+                block_processed_this_iteration = true;
+              }
+              else
+              {
+                dlog("Already received and accepted this block through normal inventory mechanism, treating it as accepted");
+                _already_received_sync_item_ids.erase(received_block_iter->block_id);
+                _received_sync_items.erase(received_block_iter);
+                std::vector< peer_connection_ptr > peers_needing_next_batch;
+                for (const peer_connection_ptr& peer : _active_connections)
+                {
+                  auto items_being_processed_iter = peer->ids_of_items_being_processed.find(received_block_iter->block_id);
+                  if (items_being_processed_iter != peer->ids_of_items_being_processed.end())
                   {
-                    dlog("We received last item in our list for peer ${endpoint}, setup to do a sync check", ("endpoint", peer->get_remote_endpoint()));
-                    peers_needing_next_batch.push_back( peer );
+                    peer->ids_of_items_being_processed.erase(items_being_processed_iter);
+                    dlog("Removed item from ${endpoint}'s list of items being processed, still processing ${len} blocks",
+                         ("endpoint", peer->get_remote_endpoint())("len", peer->ids_of_items_being_processed.size()));
+
+                    // if we just processed the last item in our list from this peer, we will want to
+                    // send another request to find out if we are now in sync (this is normally handled in
+                    // send_sync_block_to_node_delegate)
+                    if (peer->ids_of_items_to_get.empty() &&
+                        peer->number_of_unfetched_item_ids == 0 &&
+                        peer->ids_of_items_being_processed.empty())
+                    {
+                      dlog("We received last item in our list for peer ${endpoint}, setup to do a sync check", ("endpoint", peer->get_remote_endpoint()));
+                      peers_needing_next_batch.push_back( peer );
+                    }
                   }
                 }
-              }
-              for( const peer_connection_ptr& peer : peers_needing_next_batch )
-                fetch_next_batch_of_item_ids_from_peer(peer.get());
-            }
-
-            break; // start iterating _received_sync_items from the beginning
-          } // end if potential_first_block
-        } // end for each block in _received_sync_items
+                
+                for( const peer_connection_ptr& peer : peers_needing_next_batch )
+                  fetch_next_batch_of_item_ids_from_peer(peer.get());
+              } 
+              break; //restart checking front of peers' item lists because we've popped the first item from some of them
+            } //if we have a backlog block to push
+          } //if peer item list not empty 
+        } //for active peers
 
         if (_handle_message_calls_in_progress.size() >= _node_configuration.maximum_number_of_blocks_to_handle_at_one_time)
         {
@@ -3432,7 +3439,10 @@ namespace graphene { namespace net {
           //ulog("stopping processing sync block backlog because we have ${count} blocks in progress, total on hand: ${received}",
           //     ("count", _handle_message_calls_in_progress.size())("received", _received_sync_items.size()));
           if (_received_sync_items.size() >= _node_configuration.maximum_number_of_sync_blocks_to_prefetch)
+          {
             _suspend_fetching_sync_blocks = true;
+            dlog("stopped prefetching sync blocks because we have backlog of ${received} blocks to consider",("received",_received_sync_items.size()));
+          }
           break;
         }
       } while (block_processed_this_iteration);
@@ -3449,7 +3459,6 @@ namespace graphene { namespace net {
             if (peer->sync_items_requested_from_peer.find(id) != peer->sync_items_requested_from_peer.end())
               wlog("We're waiting on a block from ${peer} (in total, we requested ${count} items from them)", ("peer", peer->get_remote_endpoint())("count", peer->sync_items_requested_from_peer.size()));
       }
-
 
       wlog("leaving process_backlog_of_sync_blocks, ${count} processed", ("count", blocks_processed));
 
@@ -3471,6 +3480,7 @@ namespace graphene { namespace net {
       // add it to the front of _received_sync_items, then process _received_sync_items to try to
       // pass as many messages as possible to the client.
       _new_received_sync_items.push_front( block_message_to_process );
+      _already_received_sync_item_ids.insert( block_message_to_process.block_id );
       trigger_process_backlog_of_sync_blocks();
     }
 
