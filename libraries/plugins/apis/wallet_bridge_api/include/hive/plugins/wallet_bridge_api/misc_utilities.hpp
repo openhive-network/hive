@@ -25,6 +25,8 @@ using std::endl;
 
 struct wallet_formatter
 {
+  using function_type = std::function<variant(const variant&)>;
+
   template<typename T>
   static variant get_result( const std::stringstream& out_text, const T& out_json, format_type format )
   {
@@ -40,7 +42,22 @@ struct wallet_formatter
     }
   }
 
-  static variant list_my_accounts( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )
+  static variant help( const variant& result )
+  {
+    return result;
+  }
+
+  static variant gethelp( const variant& result )
+  {
+    return result;
+  }
+
+  static variant list_my_accounts( const variant& result )
+  {
+    return list_my_accounts_impl( result.as<serializer_wrapper<vector<database_api::api_account_object>>>(), format_type::text );
+  }
+
+  static variant list_my_accounts_impl( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )
   {
     std::stringstream             out_text;
     list_my_accounts_json_return  out_json;
@@ -118,7 +135,12 @@ struct wallet_formatter
     out_text << std::left << setw(50) << _name_content.second << "\n";
   }
 
-  static variant get_account_history( const hive::plugins::account_history::get_account_history_return& ops, format_type format )
+  static variant get_account_history( const variant& result )
+  {
+    return get_account_history_impl( result.as<hive::plugins::account_history::get_account_history_return>(), format_type::text );
+  }
+
+  static variant get_account_history_impl( const hive::plugins::account_history::get_account_history_return& ops, format_type format )
   {
     std::stringstream               out_text;
     get_account_history_json_return out_json;
@@ -137,19 +159,6 @@ struct wallet_formatter
     return get_result( out_text, out_json, format );
   }
 
-  static variant get_account_history( const get_account_history_json_return& ops )
-  {
-    std::stringstream               out_text;
-    get_account_history_json_return out_json;
-
-    create_get_account_history_header( out_text );
-
-    for( const auto& item : ops.ops )
-      create_get_account_history_body( out_text, item.pos, item.block, item.id, item.op );
-
-    return get_result( out_text, out_json, format_type::text );
-  }
-
   static double calculate_price( const protocol::price& price )
   {
     if( price.base.symbol == HIVE_SYMBOL )
@@ -158,7 +167,12 @@ struct wallet_formatter
       return ASSET_TO_REAL( price.base ) / ASSET_TO_REAL( price.quote );
   }
 
-  static variant get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>> orders, format_type format )
+  static variant get_open_orders( const variant& result )
+  {
+    return get_open_orders_impl( result.as<serializer_wrapper<vector<database_api::api_limit_order_object>>>(), format_type::text );
+  }
+
+  static variant get_open_orders_impl( const serializer_wrapper<vector<database_api::api_limit_order_object>>& orders, format_type format )
   {
     std::stringstream           out_text;
     get_open_orders_json_return out_json;
@@ -199,7 +213,12 @@ struct wallet_formatter
     return get_result( out_text, out_json, format );
   }
 
-  static variant get_order_book( const serializer_wrapper<market_history::get_order_book_return>& orders_in_wrapper, format_type format )
+  static variant get_order_book( const variant& result )
+  {
+    return get_order_book_impl( result.as<serializer_wrapper<market_history::get_order_book_return>>(), format_type::text );
+  }
+
+  static variant get_order_book_impl( const serializer_wrapper<market_history::get_order_book_return>& orders_in_wrapper, format_type format )
   {
     std::stringstream           out_text;
     get_order_book_json_return  out_json;
@@ -300,7 +319,12 @@ struct wallet_formatter
     return get_result( out_text, out_json, format );
   }
 
-  static variant get_withdraw_routes( const serializer_wrapper<database_api::find_withdraw_vesting_routes_return>& routes, format_type format )
+  static variant get_withdraw_routes( const variant& result )
+  {
+    return get_withdraw_routes_impl( result.as<serializer_wrapper<database_api::find_withdraw_vesting_routes_return>>(), format_type::text );
+  }
+
+  static variant get_withdraw_routes_impl( const serializer_wrapper<database_api::find_withdraw_vesting_routes_return>& routes, format_type format )
   {
     std::stringstream                         out_text;
     find_withdraw_vesting_routes_json_return  out_json;
@@ -330,6 +354,22 @@ struct wallet_formatter
     }
 
     return get_result( out_text, out_json, format );
+  }
+
+  static std::map<string, function_type> get_result_formatters()
+  {
+    static std::map<string, function_type> _formatters =
+    {
+      {"help",                help},
+      {"gethelp",             gethelp},
+      {"list_my_accounts",    list_my_accounts},
+      {"get_account_history", get_account_history},
+      {"get_open_orders",     get_open_orders},
+      {"get_order_book",      get_order_book},
+      {"get_withdraw_routes", get_withdraw_routes}
+    };
+
+    return _formatters;
   }
 
 };

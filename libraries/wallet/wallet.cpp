@@ -921,8 +921,6 @@ variant wallet_api::list_my_accounts()
   for( const auto& item : my->_keys )
     pub_keys.push_back(item.first);
 
-  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
-
   return { my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ) };
 }
 
@@ -2435,14 +2433,10 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
   my->require_online();
   vector<variant> args{account, from, limit};
 
-  if( is_locked() )
+  auto _result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
+
+  if( !is_locked() )
   {
-    my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
-    return my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
-  }
-  else
-  {
-    my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "json" }, LOCK );
     auto _result_json = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
 
     plugins::wallet_bridge_api::get_account_history_json_return _tmp;
@@ -2466,16 +2460,15 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
         top.memo = decrypt_memo( top.memo );
       }
     }
-
-    return plugins::wallet_bridge_api::wallet_formatter::get_account_history( _tmp );
   }
+
+  return _result;
 }
 
 variant wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
 {
   my->require_online();
   vector<variant> args{ account, variant{ type } };
-  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
   return my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK );
 }
 
@@ -2484,7 +2477,6 @@ variant wallet_api::get_order_book( uint32_t limit )
   my->require_online();
   FC_ASSERT( limit <= 1000 );
 
-  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
   return { my->_remote_wallet_bridge_api->get_order_book( {limit}, LOCK ) };
 }
 
@@ -2492,7 +2484,6 @@ variant wallet_api::get_open_orders( const string& accountname )
 {
   my->require_online();
 
-  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
   return { my->_remote_wallet_bridge_api->get_open_orders( {accountname}, LOCK ) };
 }
 

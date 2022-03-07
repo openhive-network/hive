@@ -336,7 +336,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
     std::move( _result2.routes.begin(), _result2.routes.end(), std::back_inserter( _result.routes ) );
   }
 
-  return wallet_formatter::get_withdraw_routes( serializer_wrapper<database_api::find_withdraw_vesting_routes_return>{ _result }, format );
+  return wallet_formatter::get_withdraw_routes_impl( serializer_wrapper<database_api::find_withdraw_vesting_routes_return>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
@@ -365,7 +365,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
     _result.emplace_back( *( get_account( _v ) ) );
   }
 
-  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
+  return wallet_formatter::list_my_accounts_impl( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, switch_format )
@@ -502,7 +502,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
   const uint32_t limit = args.get_array()[0].as<uint32_t>();
   auto _result = _market_history_api->get_order_book({limit});
 
-  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result }, format );
+  return wallet_formatter::get_order_book_impl( serializer_wrapper<market_history::get_order_book_return>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
@@ -520,7 +520,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
     ++itr;
   }
 
-  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result }, format );
+  return wallet_formatter::get_open_orders_impl( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
@@ -548,7 +548,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
 
   auto _result = _account_history_api->get_account_history({account, from, limit});
 
-  return wallet_formatter::get_account_history( _result, format );
+  return wallet_formatter::get_account_history_impl( _result, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposals )
