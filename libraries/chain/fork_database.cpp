@@ -195,6 +195,28 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
   
 }
 
+time_point_sec fork_database::head_block_time()const
+{ try {
+  return with_read_lock( [&]() {
+    return _head ? _head->data.timestamp : time_point_sec();
+  });
+} FC_RETHROW_EXCEPTIONS(warn, "") }
+
+uint32_t fork_database::head_block_num()const
+{ try {
+  return with_read_lock( [&]() {
+    return _head ? _head->num : 0;
+  });
+} FC_RETHROW_EXCEPTIONS(warn, "") }
+
+block_id_type fork_database::head_block_id()const
+{ try {
+  return with_read_lock( [&]() {
+    return _head ? _head->id : block_id_type();
+  });
+} FC_RETHROW_EXCEPTIONS(warn, "") }
+
+
 pair<fork_database::branch_type,fork_database::branch_type>
   fork_database::fetch_branch_from(block_id_type first, block_id_type second)const
 { try {
@@ -364,7 +386,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
     //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num));
     //edump((reference_point_block_num)(last_irreversible_block_num));
-    if (reference_point_block_num <= last_irreversible_block_num)
+    if (reference_point_block_num < last_irreversible_block_num)
     {
       // this is a weird case, the reference point is before anything in the
       // fork database, so we can't put anything in the synopsis.  The caller
@@ -415,13 +437,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     //idump((low_block_num)(reference_point_block_num)(true_high_block_num));
     do
     {
-      // for each block in the synopsis, figure out where to pull the block id from.
-      // if it's the last irreversible, the caller will supply it
-      // if it's not, we take it from block_ids_on_this_fork
-      if (low_block_num == last_irreversible_block_num)
-        block_number_needed_from_block_log = last_irreversible_block_num; // caller supplies it
-      else
-        synopsis.push_back(block_ids_on_this_fork[block_ids_on_this_fork.size() - (low_block_num - last_irreversible_block_num) - 1]);
+      synopsis.push_back(block_ids_on_this_fork[block_ids_on_this_fork.size() - (low_block_num - last_irreversible_block_num) - 1]);
       low_block_num += (true_high_block_num - low_block_num + 2) / 2;
     }
     while( low_block_num <= reference_point_block_num );

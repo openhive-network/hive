@@ -65,6 +65,18 @@ namespace hive { namespace chain {
       shared_ptr<fork_item>            fetch_block(const block_id_type& id)const;
       vector<item_ptr>                 fetch_block_by_number(uint32_t n)const;
 
+      // These functions are similar to the corresponding versions in `database`,
+      // except the database versions work off the `dynamic_global_properties_object`
+      // (thus requiring a chainbase read lock), whereas these work off the fork
+      // database's head block, only needing a fork_database read lock.
+      // As such, there may be times while the chain is applying a block that these
+      // functions disagree about what the head block is, so it's not appropriate
+      // to rely on these values when, e.g, evaluating blocks or transactions.
+      // They're good enough for the p2p layer, though.
+      time_point_sec   head_block_time()const;
+      uint32_t         head_block_num()const;
+      block_id_type    head_block_id()const;
+
       /**
         *  @return the new head block ( the longest fork )
         */

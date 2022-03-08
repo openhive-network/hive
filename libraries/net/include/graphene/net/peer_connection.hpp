@@ -221,6 +221,8 @@ namespace graphene { namespace net
 
       /// blockchain synchronization state data
       /// @{
+      uint32_t first_id_block_number;
+      uint32_t last_requested_block_number_for_peers_on_this_fork;
       boost::container::deque<item_hash_t> ids_of_items_to_get; /// id of items in the blockchain that this peer has told us about
       std::set<item_hash_t> ids_of_items_being_processed; /// list of all items this peer has offered use that we've already handed to the client but the client hasn't finished processing
       uint32_t number_of_unfetched_item_ids = 0; /// number of items in the blockchain that follow ids_of_items_to_get but the peer hasn't yet told us their ids
