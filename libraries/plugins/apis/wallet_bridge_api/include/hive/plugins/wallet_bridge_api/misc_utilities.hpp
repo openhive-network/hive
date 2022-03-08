@@ -144,15 +144,15 @@ struct wallet_formatter
 
   static variant get_account_history( const variant& result )
   {
-    return get_account_history_impl( result.as<serializer_wrapper<hive::plugins::account_history::get_account_history_return>>(), format_type::textformat );
+    return get_account_history_impl( result.as<serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>>(), format_type::textformat );
   }
 
-  static variant get_account_history_impl( const serializer_wrapper<hive::plugins::account_history::get_account_history_return>& ops, format_type format )
+  static variant get_account_history_impl( const serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>& history, format_type format )
   {
     if( format == format_type::noformat )
     {
       variant _result;
-      to_variant( ops, _result );
+      to_variant( history, _result );
       return _result;
     }
 
@@ -162,7 +162,7 @@ struct wallet_formatter
     if( format == format_type::textformat )
       create_get_account_history_header( out_text );
 
-    for( const auto& item : ops.value.history )
+    for( const auto& item : history.value )
     {
       if( format == format_type::textformat )
         create_get_account_history_body( out_text, item.first, item.second.block, item.second.trx_id, item.second.op );
