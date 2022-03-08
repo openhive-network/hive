@@ -488,6 +488,7 @@ void database::close(bool rewind)
   FC_CAPTURE_AND_RETHROW()
 }
 
+//no chainbase lock required
 bool database::is_known_block( const block_id_type& id )const
 { try {
   return fetch_block_by_id( id ).valid();
@@ -524,7 +525,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
 */
 
     // See if fork DB has the item
-    shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
+    shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
     if( fitem )
       return fitem->id;
 
@@ -532,7 +533,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
     optional<signed_block> b = _block_log.read_block_by_num( block_num );
     if( b )
       return b->id();
-    return block_id_type(); //no one has it
+    return block_id_type(); //this block_num couldn't be found
   }
   FC_CAPTURE_AND_RETHROW( (block_num) )
 }
@@ -541,25 +542,22 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
 block_id_type database::get_block_id_for_num( uint32_t block_num )const
 {
   block_id_type bid = find_block_id_for_num( block_num );
-  FC_ASSERT( bid != block_id_type() );
+  if (bid == block_id_type())
+    FC_THROW_EXCEPTION(fc::key_not_found_exception,"block number not found");
   return bid;
 }
 
-
+//no chainbase lock required
 optional<signed_block> database::fetch_block_by_id( const block_id_type& id )const
 { try {
-  auto b = _fork_db.fetch_block( id );
-  if( !b )
-  {
-    optional<signed_block> tmp = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
+  shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
+  if (fork_item)
+    return fork_item->data;
 
-    if( tmp && tmp->id() == id )
-      return *tmp;
-
-    return optional<signed_block>();
-  }
-
-  return b->data;
+  optional<signed_block> block_from_block_log = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
+  if( block_from_block_log && block_from_block_log->id() == id )
+    return *block_from_block_log;
+  return optional<signed_block>();
 } FC_CAPTURE_AND_RETHROW() }
 
 // this version of fetch_block_by_number() assumes the caller is holding a read lock on the database
@@ -3706,6 +3704,24 @@ uint32_t database::head_block_num()const
 block_id_type database::head_block_id()const
 {
   return get_dynamic_global_properties().head_block_id;
+}
+
+//safe to call without chainbase lock
+time_point_sec database::head_block_time_from_fork_db()const
+{
+  return _fork_db.head_block_time();
+}
+
+//safe to call without chainbase lock
+uint32_t database::head_block_num_from_fork_db()const
+{
+  return _fork_db.head_block_num();
+}
+
+//safe to call without chainbase lock
+block_id_type database::head_block_id_from_fork_db()const
+{
+  return _fork_db.head_block_id();
 }
 
 node_property_object& database::node_properties()

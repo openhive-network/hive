@@ -349,13 +349,14 @@ void chain_plugin_impl::start_write_processing()
           fc::time_point write_lock_acquired_time = fc::time_point::now();
           fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
           cumulative_time_waiting_for_locks += write_lock_acquisition_time;
-          wdump((write_lock_request_time));
+
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
           {
             wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           }
-
+          fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
+                 ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
           while( true )
           {
@@ -404,8 +405,8 @@ void chain_plugin_impl::start_write_processing()
       if( !is_syncing )
         std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
       else //DLN remove this temp code to stop busy looping during sync
-        std::this_thread::sleep_for( std::chrono::milliseconds(1) );
-        //std::this_thread::sleep_for( std::chrono::milliseconds( 20000000 ) );
+        //std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 20000 ) );
 
       auto now = fc::time_point::now();
       if((now - last_popped_block_time) > block_wait_max_time)
