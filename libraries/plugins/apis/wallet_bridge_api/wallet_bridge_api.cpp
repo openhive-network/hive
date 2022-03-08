@@ -335,7 +335,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
     std::move( _result2.routes.begin(), _result2.routes.end(), std::back_inserter( _result.routes ) );
   }
 
-  return wallet_formatter::get_withdraw_routes_impl( serializer_wrapper<database_api::find_withdraw_vesting_routes_return>{ _result }, format );
+  return wallet_formatter::get_withdraw_routes_impl( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result.routes }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
