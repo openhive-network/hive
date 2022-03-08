@@ -349,10 +349,10 @@ struct wallet_formatter
 
   static variant get_withdraw_routes( const variant& result )
   {
-    return get_withdraw_routes_impl( result.as<serializer_wrapper<database_api::find_withdraw_vesting_routes_return>>(), format_type::textformat );
+    return get_withdraw_routes_impl( result.as<serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>>(), format_type::textformat );
   }
 
-  static variant get_withdraw_routes_impl( const serializer_wrapper<database_api::find_withdraw_vesting_routes_return>& routes, format_type format )
+  static variant get_withdraw_routes_impl( const serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>& routes, format_type format )
   {
     if( format == format_type::noformat )
       return variant{ routes };
@@ -369,7 +369,7 @@ struct wallet_formatter
       out_text << "\n=========================================================\n";
     }
 
-    for( auto& r : routes.value.routes )
+    for( auto& r : routes.value )
     {
       if( format == format_type::textformat )
       {
