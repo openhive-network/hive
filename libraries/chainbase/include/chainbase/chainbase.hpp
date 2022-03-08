@@ -1138,7 +1138,7 @@ namespace chainbase {
           if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
             CHAINBASE_THROW_EXCEPTION( lock_exception() );
         }
-        wdump((_read_lock_count));
+        fc_dlog(fc::logger::get("chainlock"),"_read_lock_count=${_read_lock_count}",(_read_lock_count));
         return callback();
       }
 
