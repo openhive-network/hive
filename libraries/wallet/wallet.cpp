@@ -2439,29 +2439,31 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
 
   if( !is_locked() )
   {
-    auto _result_json = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
+    serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>> _tmp;
+    from_variant( _result, _tmp );
 
-    plugins::wallet_bridge_api::get_account_history_json_return _tmp;
-    from_variant( _result_json, _tmp );
-
-    for( auto& item : _tmp.ops )
+    for( auto& item : _tmp.value )
     {
-      if( item.op.which() == operation::tag<transfer_operation>::value )
+      if( item.second.op.which() == operation::tag<transfer_operation>::value )
       {
-        auto& top = item.op.get<transfer_operation>();
+        auto& top = item.second.op.get<transfer_operation>();
         top.memo = decrypt_memo( top.memo );
       }
-      else if( item.op.which() == operation::tag<transfer_from_savings_operation>::value )
+      else if( item.second.op.which() == operation::tag<transfer_from_savings_operation>::value )
       {
-        auto& top = item.op.get<transfer_from_savings_operation>();
+        auto& top = item.second.op.get<transfer_from_savings_operation>();
         top.memo = decrypt_memo( top.memo );
       }
-      else if( item.op.which() == operation::tag<transfer_to_savings_operation>::value )
+      else if( item.second.op.which() == operation::tag<transfer_to_savings_operation>::value )
       {
-        auto& top = item.op.get<transfer_to_savings_operation>();
+        auto& top = item.second.op.get<transfer_to_savings_operation>();
         top.memo = decrypt_memo( top.memo );
       }
     }
+
+    variant _changed_result;
+    to_variant( _tmp, _changed_result );
+    return _changed_result;
   }
 
   return _result;
