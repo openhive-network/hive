@@ -577,7 +577,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
 
   auto _result = _account_history_api->get_account_history({account, from, limit});
 
-  return wallet_formatter::get_account_history_impl( serializer_wrapper<hive::plugins::account_history::get_account_history_return>{ _result }, format );
+  return wallet_formatter::get_account_history_impl( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result.history }, format );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposals )
