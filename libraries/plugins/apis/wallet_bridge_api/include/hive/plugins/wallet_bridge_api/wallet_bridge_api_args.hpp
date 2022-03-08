@@ -63,10 +63,6 @@ struct find_withdraw_vesting_json_route
   uint16_t                    percent = 0;
   bool                        auto_vest = false;
 };
-struct find_withdraw_vesting_routes_json_return
-{
-  vector<find_withdraw_vesting_json_route> routes;
-};
 typedef variant                                             get_withdraw_routes_args;
 typedef variant                                             get_withdraw_routes_return;
 
@@ -171,10 +167,6 @@ struct get_account_history_json_op
   protocol::transaction_id_type id;
   protocol::operation           op;
 };
-struct get_account_history_json_return
-{
-  vector<get_account_history_json_op> ops;
-};
 typedef variant                                       get_account_history_args;
 typedef variant                                       get_account_history_return;
 
@@ -235,13 +227,11 @@ FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_
 FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (noformat)(textformat)(jsonformat) )
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_json_route, (from)(to)(percent)(auto_vest))
-FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_routes_json_return, (routes))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_account, (name)(balance)(vesting_shares)(hbd_balance))
 FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_return, (accounts)(total_hive)(total_vest)(total_hbd))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_account_history_json_op, (pos)(block)(id)(op))
-FC_REFLECT( hive::plugins::wallet_bridge_api::get_account_history_json_return, (ops))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_order, (id)(price)(quantity)(type))
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_return, (orders))
