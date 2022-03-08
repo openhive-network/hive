@@ -318,8 +318,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
   verify_args( arguments, 2 );
   FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_string(), "Withdraw route type is required as second argument" );
-  FC_ASSERT( arguments.get_array()[2].is_string(), "Format type is required as third argument" );
-  const format_type format = arguments.get_array()[2].as<format_type>();
+
+  format_type format = format_type::jsonformat;
+  if( arguments.get_array().size() >= 3 )
+  {
+    FC_ASSERT( arguments.get_array()[2].is_string(), "Format type is required as third argument" );
+    format = arguments.get_array()[2].as<format_type>();
+  }
 
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
   const auto route = arguments.get_array()[1].as<database_api::withdraw_route_type>();

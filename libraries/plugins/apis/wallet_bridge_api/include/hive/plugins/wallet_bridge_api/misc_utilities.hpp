@@ -156,8 +156,8 @@ struct wallet_formatter
       return _result;
     }
 
-    std::stringstream               out_text;
-    get_account_history_json_return out_json;
+    std::stringstream                   out_text;
+    vector<get_account_history_json_op> out_json;
 
     if( format == format_type::textformat )
       create_get_account_history_header( out_text );
@@ -167,7 +167,7 @@ struct wallet_formatter
       if( format == format_type::textformat )
         create_get_account_history_body( out_text, item.first, item.second.block, item.second.trx_id, item.second.op );
       else
-        out_json.ops.emplace_back( get_account_history_json_op{ item.first, item.second.block, item.second.trx_id, item.second.op } );
+        out_json.emplace_back( get_account_history_json_op{ item.first, item.second.block, item.second.trx_id, item.second.op } );
     }
 
     return get_result( out_text, out_json, format );
@@ -358,7 +358,7 @@ struct wallet_formatter
       return variant{ routes };
 
     std::stringstream                         out_text;
-    find_withdraw_vesting_routes_json_return  out_json;
+    vector<find_withdraw_vesting_json_route>  out_json;
 
     if( format == format_type::textformat )
     {
@@ -380,7 +380,7 @@ struct wallet_formatter
       }
       else
       {
-        out_json.routes.emplace_back( find_withdraw_vesting_json_route{ r.from_account, r.to_account, r.percent, r.auto_vest } );
+        out_json.emplace_back( find_withdraw_vesting_json_route{ r.from_account, r.to_account, r.percent, r.auto_vest } );
       }
     }
 
