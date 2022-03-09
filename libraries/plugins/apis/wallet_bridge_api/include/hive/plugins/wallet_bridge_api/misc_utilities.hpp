@@ -16,8 +16,11 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
+enum class format_type : uint8_t { noformat, textformat, jsonformat };
+
 using std::function;
 using fc::variant;
+using fc::variants;
 using std::string;
 using hive::protocol::asset;
 using std::setiosflags;
@@ -27,7 +30,6 @@ using std::endl;
 
 struct wallet_formatter
 {
-  using function_type = std::function<variant(const variant&)>;
 
   template<typename T>
   static variant get_result( const std::stringstream& out_text, const T& out_json, format_type format )
@@ -42,6 +44,14 @@ struct wallet_formatter
       to_variant( out_json, _result );
       return _result;
     }
+  }
+
+  static string general_formatter( variant v, const variants& )
+  {
+    if( v.is_string() )
+      return v.as_string();
+    else
+      return fc::json::to_pretty_string( v );
   }
 
   static variant help( const std::vector<string>& info, format_type format )
@@ -404,6 +414,23 @@ struct wallet_formatter
     return get_result( _out_text, _out_json, format );
   }
 
+  static std::map<string, std::function<string(variant,const variants&)>> get_result_formatters()
+  {
+    static std::map<string, std::function<string(variant,const variants&)>> m = 
+    {
+      { "help",                 general_formatter },
+      { "gethelp",              general_formatter },
+      { "list_my_accounts",     general_formatter },
+      { "get_account_history",  general_formatter },
+      { "get_open_orders",      general_formatter },
+      { "get_order_book",       general_formatter },
+      { "get_withdraw_routes",  general_formatter }
+    };
+
+    return m;
+  }
 };
 
 } } } //hive::plugins::wallet_bridge_api
+
+FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (noformat)(textformat)(jsonformat) )

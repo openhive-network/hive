@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
+#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
