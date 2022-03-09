@@ -68,6 +68,8 @@ using namespace hive::wallet;
 using namespace std;
 namespace bpo = boost::program_options;
 
+using hive::plugins::wallet_bridge_api::wallet_formatter;
+
 namespace
 {
   fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
@@ -253,6 +255,9 @@ int main( int argc, char** argv )
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
 
     fc::api<wallet_api> wapi(wapiptr);
+
+    for( auto& name_formatter : wallet_formatter::get_result_formatters() )
+      wallet_cli->format_result( name_formatter.first, name_formatter.second );
 
     if( wapiptr->is_new() )
     {

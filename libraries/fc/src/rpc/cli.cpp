@@ -147,9 +147,9 @@ void cli::run()
          const string& method = args[0].get_string();
 
          auto result = receive_call( 0, method, variants( args.begin()+1,args.end() ) );
-         if( result.is_string() )
-            std::cout << result.as_string() << "\n";
-          else
+         auto itr = _result_formatters.find( method );
+         if( itr == _result_formatters.end() )
+         {
             std::cout << fc::json::to_pretty_string( result ) << "\n";
          }
          else
