@@ -24,16 +24,16 @@ class abstract_account_history_api_impl
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
 {
   public:
-  account_history_api_rocksdb_impl() :
-    abstract_account_history_api_impl(), _dataSource( appbase::app().get_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >() ) {}
-  ~account_history_api_rocksdb_impl() {}
+    account_history_api_rocksdb_impl() :
+      abstract_account_history_api_impl(), _dataSource( appbase::app().get_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >() ) {}
+    ~account_history_api_rocksdb_impl() {}
 
-  get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
-  get_transaction_return get_transaction( const get_transaction_args& ) override;
-  get_account_history_return get_account_history( const get_account_history_args& ) override;
-  enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
+    get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
+    get_transaction_return get_transaction( const get_transaction_args& ) override;
+    get_account_history_return get_account_history( const get_account_history_args& ) override;
+    enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
 
-  const account_history_rocksdb::account_history_rocksdb_plugin& _dataSource;
+    const account_history_rocksdb::account_history_rocksdb_plugin& _dataSource;
 };
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
