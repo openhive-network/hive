@@ -101,7 +101,7 @@ int main( int argc, char** argv )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
-      ("format-type", bpo::value< std::string >(), "Default format for some functions" )
+      ("format-type", bpo::value< std::string >(), "Allows to change formatting for functions that require special formatting" )
       ;
     vector<string> allowed_ips;
 
