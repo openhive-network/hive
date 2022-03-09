@@ -13,7 +13,7 @@
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <hive/utilities/plugin_utilities.hpp>
+#include <hive/utilities/data_filter.hpp>
 
 #include <appbase/application.hpp>
 
@@ -840,8 +840,6 @@ private:
 
 /// Class attributes:
 private:
-  typedef flat_map< account_name_type, account_name_type > account_name_range_index;
-
   account_history_rocksdb_plugin&  _self;
   chain::database&                 _mainDb;
   bfs::path                        _blockchainStoragePath;
@@ -913,7 +911,7 @@ private:
   std::atomic_uint                 _currently_persisted_irreversible_block{0};
   mutable std::condition_variable  _currently_persisted_irreversible_cv;
 
-  account_name_range_index         _tracked_accounts;
+  data_filter                  _filter;
   flat_set<std::string>            _op_list;
   flat_set<std::string>            _blacklisted_op_list;
 
@@ -948,10 +946,8 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 {
   fc::mutable_variant_object state_opts;
 
-  typedef std::pair< account_name_type, account_name_type > pairstring;
-  HIVE_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
-
-  state_opts[ "account-history-rocksdb-track-account-range" ] = _tracked_accounts;
+  _filter.fill( options, "account-history-rocksdb-track-account-range" );
+  state_opts[ "account-history-rocksdb-track-account-range" ] = _filter.get_tracked_accounts();
 
   if(options.count("account-history-rocksdb-whitelist-ops"))
   {
@@ -1007,38 +1003,7 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 
 inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account_name_type& name) const
 {
-  if(_tracked_accounts.empty())
-    return true;
-
-  /// Code below is based on original contents of account_history_plugin_impl::on_pre_apply_operation
-  auto itr = _tracked_accounts.lower_bound(name);
-
-  /*
-    * The map containing the ranges uses the key as the lower bound and the value as the upper bound.
-    * Because of this, if a value exists with the range (key, value], then calling lower_bound on
-    * the map will return the key of the next pair. Under normal circumstances of those ranges not
-    * intersecting, the value we are looking for will not be present in range that is returned via
-    * lower_bound.
-    *
-    * Consider the following example using ranges ["a","c"], ["g","i"]
-    * If we are looking for "bob", it should be tracked because it is in the lower bound.
-    * However, lower_bound( "bob" ) returns an iterator to ["g","i"]. So we need to decrement the iterator
-    * to get the correct range.
-    *
-    * If we are looking for "g", lower_bound( "g" ) will return ["g","i"], so we need to make sure we don't
-    * decrement.
-    *
-    * If the iterator points to the end, we should check the previous (equivalent to rbegin)
-    *
-    * And finally if the iterator is at the beginning, we should not decrement it for obvious reasons
-    */
-  if(itr != _tracked_accounts.begin() &&
-    ((itr != _tracked_accounts.end() && itr->first != name ) || itr == _tracked_accounts.end()))
-  {
-    --itr;
-  }
-
-  bool inRange = itr != _tracked_accounts.end() && itr->first <= name && name <= itr->second;
+  bool inRange = _filter.is_tracked_account( name );
 
   _excludedAccountCount += inRange;
 
@@ -1061,7 +1026,7 @@ std::vector<account_name_type> account_history_rocksdb_plugin::impl::getImpacted
   if(impacted.empty())
     return retVal;
 
-  if(_tracked_accounts.empty())
+  if(_filter.empty())
   {
     retVal.insert(retVal.end(), impacted.begin(), impacted.end());
     return retVal;
@@ -2152,7 +2117,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
     // check the balances of all tracked accounts, emit a line in the CSV file if any have changed
     // since the last block
     const auto& account_idx = _mainDb.get_index<hive::chain::account_index>().indices().get<hive::chain::by_name>();
-    for (auto range : _tracked_accounts)
+    for (auto range : _filter.get_tracked_accounts())
     {
       const std::string& lower = range.first;
       const std::string& upper = range.second;

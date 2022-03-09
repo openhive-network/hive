@@ -1,3 +1,5 @@
+#pragma once
+
 #include <fc/io/json.hpp>
 
 namespace hive { namespace plugins {
