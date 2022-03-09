@@ -3,7 +3,6 @@
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/global_property_object.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/sps_objects.hpp>

@@ -13,7 +13,6 @@
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/global_property_object.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/optional_action_evaluator.hpp>
 #include <hive/chain/pending_required_action_object.hpp>
 #include <hive/chain/pending_optional_action_object.hpp>

@@ -9,9 +9,11 @@
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
+#include <hive/utilities/tempdir.hpp>
 
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/protocol/asset.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 
@@ -227,6 +229,11 @@ struct autoscope
 //you pass false to auto_reset, otherwise the setting will persist influencing other tests
 autoscope set_mainnet_cashout_values( bool auto_reset = true );
 
+//common code for preparing arguments and data path
+//caller needs to register plugins and call initialize() on given application object
+//returned path should be passed as open_database() call parameter
+fc::path common_init( const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
+
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
   //   plugins
@@ -241,6 +248,8 @@ struct database_fixture {
   uint32_t default_skip = 0 | database::skip_undo_history_check | database::skip_authority_check;
   fc::ecc::canonical_signature_type default_sig_canon = fc::ecc::fc_canonical;
 
+  typedef plugins::account_history_rocksdb::account_history_rocksdb_plugin ah_plugin_type;
+  ah_plugin_type* ah_plugin = nullptr;
   plugins::debug_node::debug_node_plugin* db_plugin = nullptr;
   plugins::rc::rc_plugin* rc_plugin = nullptr;
 
@@ -258,7 +267,8 @@ struct database_fixture {
   static const uint16_t shared_file_size_in_mb_64 = 64;
   static const uint16_t shared_file_size_in_mb_512 = 512;
 
-  void open_database( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
+  void open_database( const fc::path& _data_dir,
+                      uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
                       int miss_blocks = 0);

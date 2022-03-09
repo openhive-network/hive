@@ -4,7 +4,6 @@
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
@@ -534,11 +533,13 @@ public:
     shutdownDb();
   }
 
-  void openDb()
+  void openDb( bool cleanDatabase )
   {
     //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
     bfs::create_directories( _blockchainStoragePath );
 
+    if( cleanDatabase )
+      ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
     createDbSchema(_storagePath);
 
     auto columnDefs = prepareColumnDefinitions(true);
@@ -611,7 +612,7 @@ public:
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
 
-  void shutdownDb()
+  void shutdownDb( bool removeDB = false )
   {
     if(_storage)
     {
@@ -619,6 +620,13 @@ public:
       cleanupColumnHandles();
       _storage->Close();
       _storage.reset();
+
+      if( removeDB )
+      {
+        ilog( "Attempting to destroy current AHR storage..." );
+        ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+        ilog( "AccountHistoryRocksDB has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
+      }
     }
   }
 
@@ -1466,7 +1474,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
 
 bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol::transaction_id_type& trxId,
   bool include_reversible, uint32_t* blockNo, uint32_t* txInBlock) const
-  {
+{
   ReadOptions rOptions;
   TransactionIdSlice idSlice(trxId);
   std::string dataBuffer;
@@ -1484,7 +1492,7 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
   FC_ASSERT(s.IsNotFound());
 
   return false;
-  }
+}
 
 void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note)
 {
@@ -1549,13 +1557,7 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
 
   ilog("Attempting to restore an AccountHistoryRocksDB backup from the backup location: `${p}'", ("p", pathString));
 
-  shutdownDb();
-
-  ilog("Attempting to destroy current AHR storage...");
-  ::rocksdb::Options destroyOpts;
-  ::rocksdb::DestroyDB(_storagePath.string(), destroyOpts);
-
-  ilog("AccountHistoryRocksDB has been destroyed at location: ${p}.", ("p", _storagePath.string()));
+  shutdownDb( true );
 
   ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
 
@@ -1566,7 +1568,7 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
 
   ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
 
-  openDb();
+  openDb( false );
 }
 
 void account_history_rocksdb_plugin::impl::load_lib()
@@ -1856,7 +1858,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
     checkStatus(s);
   }
 
-  openDb();
+  openDb( false );
 
   ilog("Setting write limit to massive level");
 
@@ -2314,7 +2316,7 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 
   _my = std::make_unique<impl>( *this, options, dbPath );
 
-  _my->openDb();
+  _my->openDb(_destroyOnStartup);
 }
 
 void account_history_rocksdb_plugin::plugin_startup()
@@ -2328,7 +2330,7 @@ void account_history_rocksdb_plugin::plugin_startup()
 void account_history_rocksdb_plugin::plugin_shutdown()
 {
   ilog("Shutting down account_history_rocksdb_plugin...");
-  _my->shutdownDb();
+  _my->shutdownDb(_destroyOnShutdown);
 }
 
 void account_history_rocksdb_plugin::find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,
@@ -2357,9 +2359,9 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_
 
 bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
   uint32_t* txInBlock) const
-  {
+{
   return _my->find_transaction_info(trxId, include_reversible, blockNo, txInBlock);
-  }
+}
 
 } } }
 

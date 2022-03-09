@@ -4,7 +4,6 @@
 #include <hive/chain/index.hpp>
 
 #include <hive/chain/block_summary_object.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/pending_required_action_object.hpp>
 #include <hive/chain/pending_optional_action_object.hpp>
 #include <hive/chain/smt_objects.hpp>
@@ -33,8 +32,6 @@ void initialize_core_indexes( database& db )
   HIVE_ADD_CORE_INDEX(db, convert_request_index);
   HIVE_ADD_CORE_INDEX(db, collateralized_convert_request_index);
   HIVE_ADD_CORE_INDEX(db, liquidity_reward_balance_index);
-  HIVE_ADD_CORE_INDEX(db, operation_index);
-  HIVE_ADD_CORE_INDEX(db, account_history_index);
   HIVE_ADD_CORE_INDEX(db, hardfork_property_index);
   HIVE_ADD_CORE_INDEX(db, withdraw_vesting_route_index);
   HIVE_ADD_CORE_INDEX(db, owner_authority_history_index);

@@ -4327,7 +4327,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
       HIVE_REQUIRE_THROW(broken_price=price(ASSET("1.000 TESTS"), ASSET("0.000 TBD")),
         fc::exception);
       /// Invalid symbol (same in base & quote)
-      HIVE_REQUIRE_THROW(broken_price=price(ASSET("1.000 TESTS"), ASSET("0.000 TESTS")),
+      HIVE_REQUIRE_THROW(broken_price=price(ASSET("1.000 TESTS"), ASSET("1.000 TESTS")),
         fc::exception);
     }
 
@@ -4643,8 +4643,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     sign( tx, dave_private_key );
     db->push_transaction( tx, 0 );
 
-    recent_ops = get_last_operations( 3 );
-    fill_order_op = recent_ops[2].get< fill_order_operation >();
+    recent_ops = get_last_operations( 2 );
+    fill_order_op = recent_ops[1].get< fill_order_operation >();
     BOOST_REQUIRE( fill_order_op.open_owner == "sam" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 1 );
     BOOST_REQUIRE( fill_order_op.open_pays == ASSET( "20.000 TESTS") );
