@@ -151,7 +151,7 @@ namespace hive { namespace protocol {
       Both base and quote shall have different symbol defined, since it also results in
       creation of invalid price object. \see validate() method.
     */
-    explicit price(const asset& base, const asset& quote) : base(base),quote(quote)
+    price(const asset& _base, const asset& _quote) : base(_base),quote(_quote)
     {
       /// Call validate to verify passed arguments. \warning It throws on error.
       validate();

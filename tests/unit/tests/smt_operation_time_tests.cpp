@@ -10,7 +10,6 @@
 
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
@@ -203,9 +202,9 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     sam_reward_last_update = db->head_block_time();
     bob_smt_volume += ( alice_smt.amount.value / 10 ) * 3 - ( alice_smt.amount.value / 20 );
     bob_reward_last_update = db->head_block_time();
-    ops = get_last_operations( 4 );
+    ops = get_last_operations( 2 );
 
-    fill_order_op = ops[1].get< fill_order_operation >();
+    fill_order_op = ops[0].get< fill_order_operation >();
     BOOST_REQUIRE( fill_order_op.open_owner == "bob" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 4 );
     BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( ( alice_smt.amount.value / 10 ) * 3 - alice_smt.amount.value / 20, HIVE_SYMBOL ).amount.value );
@@ -213,7 +212,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     BOOST_REQUIRE( fill_order_op.current_orderid == 5 );
     BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( ( alice_smt.amount.value / 10 ) * 3 - alice_smt.amount.value / 20, any_smt_symbol ).amount.value );
 
-    fill_order_op = ops[3].get< fill_order_operation >();
+    fill_order_op = ops[1].get< fill_order_operation >();
     BOOST_REQUIRE( fill_order_op.open_owner == "sam" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 3 );
     BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( alice_smt.amount.value / 20, HIVE_SYMBOL ).amount.value );
@@ -319,8 +318,8 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     sam_hive_volume -= alice_smt.amount.value / 20;
     sam_reward_last_update = db->head_block_time();
 
-    ops = get_last_operations( 2 );
-    fill_order_op = ops[1].get< fill_order_operation >();
+    ops = get_last_operations( 1 );
+    fill_order_op = ops[0].get< fill_order_operation >();
 
     BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 6 );

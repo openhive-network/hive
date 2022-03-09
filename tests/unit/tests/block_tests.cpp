@@ -30,9 +30,8 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_objects.hpp>
-#include <hive/chain/history_object.hpp>
 
-#include <hive/plugins/account_history/account_history_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
 
 #include <hive/utilities/tempdir.hpp>
@@ -734,31 +733,37 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
 {
   try
   {
-    try {
-    int argc = boost::unit_test::framework::master_test_suite().argc;
-    char** argv = boost::unit_test::framework::master_test_suite().argv;
-    for( int i=1; i<argc; i++ )
+    autoscope auto_wipe( [&]()
     {
-      const std::string arg = argv[i];
-      if( arg == "--record-assert-trip" )
-        fc::enable_record_assert_trip = true;
-      if( arg == "--show-test-names" )
-        std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
-    }
-    appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
-    db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+      if( ah_plugin )
+        ah_plugin->plugin_shutdown();
+      if( data_dir )
+        db->wipe( data_dir->path(), data_dir->path(), true );
+    } );
+
+    try {
+
+    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
+    {
+      ah_plugin = &app.register_plugin< ah_plugin_type >();
+      ah_plugin->set_destroy_database_on_startup();
+      ah_plugin->set_destroy_database_on_shutdown();
+      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+
+      app.initialize<
+        ah_plugin_type,
+        hive::plugins::debug_node::debug_node_plugin
+      >( argc, argv );
+
+      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
+      BOOST_REQUIRE( db );
+    } );
+    
     init_account_pub_key = init_account_priv_key.get_public_key();
 
-    appbase::app().initialize<
-      hive::plugins::account_history::account_history_plugin,
-      hive::plugins::debug_node::debug_node_plugin
-    >( argc, argv );
+    ah_plugin->plugin_startup();
 
-    db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
-    BOOST_REQUIRE( db );
-
-
-    open_database();
+    open_database( _data_dir );
 
     generate_blocks( 2 );
 
@@ -789,7 +794,8 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
-    auto itr = db->get_index< account_history_index >().indices().get< by_id >().end();
+    const auto& ah_idx = db->get_index< hive::plugins::account_history_rocksdb::volatile_operation_index, by_id >();
+    auto itr = ah_idx.end();
     itr--;
 
     const auto last_ah_id = itr->get_id();
@@ -799,22 +805,21 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
 
     string op_msg = "Testnet: Hardfork applied";
 
-    itr = db->get_index< account_history_index >().indices().get< by_id >().upper_bound(last_ah_id);
+    itr = ah_idx.upper_bound(last_ah_id);
     /// Skip another producer_reward_op generated at last produced block
     ++itr;
 
     ilog("Looked up AH-id: ${a}, found: ${i}", ("a", last_ah_id)("i", itr->get_id()));
 
     /// Original AH record points (by_id) actual operation data. We need to query for it again
-    const buffer_type& _serialized_op = db->get(itr->op).serialized_op;
-    auto last_op = fc::raw::unpack_from_vector< hive::chain::operation >(_serialized_op);
+    auto last_op = fc::raw::unpack_from_vector< hive::chain::operation >(itr->serialized_op);
 
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
     operation hardfork_vop = hardfork_operation( HIVE_HARDFORK_0_1 );
 
     BOOST_REQUIRE(last_op == hardfork_vop);
-    BOOST_REQUIRE(db->get(itr->op).timestamp == db->head_block_time());
+    BOOST_REQUIRE(itr->timestamp == db->head_block_time());
 
     BOOST_TEST_MESSAGE( "Testing hardfork is only applied once" );
     generate_block();
@@ -822,11 +827,9 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     auto processed_op = last_op;
 
     /// Continue (starting from last HF op position), but skip last HF op
-    for(++itr; itr != db->get_index< account_history_index >().indices().get< by_id >().end(); ++itr)
+    for(++itr; itr != ah_idx.end(); ++itr)
     {
-      const auto& ahRecord = *itr;
-      const buffer_type& _serialized_op = db->get(ahRecord.op).serialized_op;
-      processed_op = fc::raw::unpack_from_vector< hive::chain::operation >(_serialized_op);
+      processed_op = fc::raw::unpack_from_vector< hive::chain::operation >(itr->serialized_op);
     }
 
       /// There shall be no more hardfork ops after last one.
@@ -836,26 +839,22 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
     /// Search again for pre-HF operation
-    itr = db->get_index< account_history_index >().indices().get< by_id >().upper_bound(last_ah_id);
+    itr = ah_idx.upper_bound(last_ah_id);
     /// Skip another producer_reward_op generated at last produced block
     ++itr;
 
     /// Here last HF vop shall be pointed, with its original time.
-    BOOST_REQUIRE( db->get(itr->op).timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
+    BOOST_REQUIRE( itr->timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
 
   }
   catch( fc::exception& e )
   {
-    db->wipe( data_dir->path(), data_dir->path(), true );
     throw e;
   }
   catch( std::exception& e )
   {
-    db->wipe( data_dir->path(), data_dir->path(), true );
     throw e;
   }
-
-  db->wipe( data_dir->path(), data_dir->path(), true );
 }
 
 BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )

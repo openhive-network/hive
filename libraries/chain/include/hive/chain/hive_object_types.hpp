@@ -61,8 +61,6 @@ enum object_type
   convert_request_object_type,
   collateralized_convert_request_object_type,
   liquidity_reward_balance_object_type,
-  operation_object_type,
-  account_history_object_type,
   hardfork_property_object_type,
   withdraw_vesting_route_object_type,
   owner_authority_history_object_type,
@@ -110,8 +108,6 @@ class feed_history_object;
 class convert_request_object;
 class collateralized_convert_request_object;
 class liquidity_reward_balance_object;
-class operation_object;
-class account_history_object;
 class hardfork_property_object;
 class withdraw_vesting_route_object;
 class owner_authority_history_object;
@@ -159,8 +155,6 @@ typedef oid_ref< feed_history_object                    > feed_history_id_type;
 typedef oid_ref< convert_request_object                 > convert_request_id_type;
 typedef oid_ref< collateralized_convert_request_object  > collateralized_convert_request_id_type;
 typedef oid_ref< liquidity_reward_balance_object        > liquidity_reward_balance_id_type;
-typedef oid_ref< operation_object                       > operation_id_type;
-typedef oid_ref< account_history_object                 > account_history_id_type;
 typedef oid_ref< hardfork_property_object               > hardfork_property_id_type;
 typedef oid_ref< withdraw_vesting_route_object          > withdraw_vesting_route_id_type;
 typedef oid_ref< owner_authority_history_object         > owner_authority_history_id_type;
@@ -325,8 +319,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (convert_request_object_type)
             (collateralized_convert_request_object_type)
             (liquidity_reward_balance_object_type)
-            (operation_object_type)
-            (account_history_object_type)
             (hardfork_property_object_type)
             (withdraw_vesting_route_object_type)
             (owner_authority_history_object_type)

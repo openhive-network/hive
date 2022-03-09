@@ -1,8 +1,6 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
 
-#include <hive/chain/history_object.hpp>
-
 #include <hive/protocol/types.hpp>
 
 #include <fc/optional.hpp>

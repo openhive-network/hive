@@ -519,10 +519,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //only used in tests, but open for use in theory:
   //pending_optional_action_object
   //pending_required_action_object
-
-  //not used in regular chain
-  //operation_object //obsolete? AH plugin
-  //account_history_object //obsolete? AH plugin
 }
 #endif
 
