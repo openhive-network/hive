@@ -16,6 +16,8 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
+enum class format_type : uint8_t { noformat, textformat, jsonformat };
+
 using std::function;
 using fc::variant;
 using std::string;
@@ -407,3 +409,5 @@ struct wallet_formatter
 };
 
 } } } //hive::plugins::wallet_bridge_api
+
+FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (noformat)(textformat)(jsonformat) )
