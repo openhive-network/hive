@@ -405,8 +405,8 @@ void chain_plugin_impl::start_write_processing()
       if( !is_syncing )
         std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
       else //DLN remove this temp code to stop busy looping during sync
-        //std::this_thread::sleep_for( std::chrono::milliseconds(1) );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 20000 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+        //std::this_thread::sleep_for( std::chrono::milliseconds( 20000 ) );
 
       auto now = fc::time_point::now();
       if((now - last_popped_block_time) > block_wait_max_time)
