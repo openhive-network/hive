@@ -103,7 +103,7 @@ class wallet_api
       *
       * @returns a multi-line string suitable for displaying on a terminal
       */
-    string                              help()const;
+    variant                              help()const;
 
     /** Returns info about the current state of the blockchain
       *
@@ -293,7 +293,7 @@ class wallet_api
       *
       * @returns a multi-line string suitable for displaying on a terminal
       */
-    string  gethelp(const string& method)const;
+    variant  gethelp(const string& method)const;
 
     /** Loads a specified Graphene wallet.
       *
