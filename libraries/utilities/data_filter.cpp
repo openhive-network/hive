@@ -8,6 +8,7 @@ namespace hive { namespace plugins {
 
 data_filter::data_filter( const std::string& _filter_name ): filter_name( _filter_name )
 {
+  //TODO: a switch in order to disable filtering
 }
 
 bool data_filter::empty() const
