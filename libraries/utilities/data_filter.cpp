@@ -1,7 +1,14 @@
 #include <hive/utilities/data_filter.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
+//#define DIAGNOSTIC(s)
+#define DIAGNOSTIC(s) s
+
 namespace hive { namespace plugins {
+
+data_filter::data_filter( const std::string& _filter_name ): filter_name( _filter_name )
+{
+}
 
 bool data_filter::empty() const
 {
@@ -22,7 +29,10 @@ void data_filter::fill( const boost::program_options::variables_map& options, co
 bool data_filter::is_tracked_account( const account_name_type& name ) const
 {
   if( tracked_accounts.empty() )
+  {
+    DIAGNOSTIC( ilog("[${fn}] Set of tracked accounts is empty.", ("fn", filter_name) ); )
     return true;
+  }
 
   /// Code below is based on original contents of account_history_plugin_impl::on_pre_apply_operation
   auto itr = tracked_accounts.lower_bound(name);
@@ -52,7 +62,17 @@ bool data_filter::is_tracked_account( const account_name_type& name ) const
     --itr;
   }
 
-  return itr != tracked_accounts.end() && itr->first <= name && name <= itr->second;
+  bool _result = itr != tracked_accounts.end() && itr->first <= name && name <= itr->second;
+
+  DIAGNOSTIC
+  (
+    if( _result )
+      ilog("[${fn}] Account: ${a} matched to defined account range: [${b},${e}]", ("fn", filter_name)("a", name)("b", itr->first)("e", itr->second) );
+    else
+      ilog("[${fn}] Account: ${a} ignored due to defined tracking filters.", ("fn", filter_name)("a", name));
+  )
+
+  return _result;
 }
 
 } } // hive::utilities

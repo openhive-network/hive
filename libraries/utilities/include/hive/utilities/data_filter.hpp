@@ -18,10 +18,12 @@ class data_filter
 
   private:
 
+    std::string filter_name;
     account_name_range_index tracked_accounts;
 
   public:
 
+    data_filter( const std::string& _filter_name );
     bool empty() const;
     const account_name_range_index& get_tracked_accounts() const;
 
