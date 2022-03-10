@@ -40,9 +40,6 @@ namespace bpo = boost::program_options;
 #define HIVE_NAMESPACE_PREFIX "hive::protocol::"
 #define OPEN_FILE_LIMIT 750
 
-#define DIAGNOSTIC(s)
-//#define DIAGNOSTIC(s) s
-
 enum Columns
 {
   CURRENT_LIB = 1,
@@ -450,7 +447,8 @@ public:
     _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
-    _writeBuffer(_storage, _columnHandles)
+    _writeBuffer(_storage, _columnHandles),
+    _filter("ah-rb")
     {
     collectOptions(options);
 
@@ -911,7 +909,7 @@ private:
   std::atomic_uint                 _currently_persisted_irreversible_block{0};
   mutable std::condition_variable  _currently_persisted_irreversible_cv;
 
-  data_filter                  _filter;
+  data_filter                      _filter;
   flat_set<std::string>            _op_list;
   flat_set<std::string>            _blacklisted_op_list;
 
@@ -1006,13 +1004,6 @@ inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account
   bool inRange = _filter.is_tracked_account( name );
 
   _excludedAccountCount += inRange;
-
-  DIAGNOSTIC(
-    if(inRange)
-      ilog("Account: ${a} matched to defined account range: [${b},${e}]", ("a", name)("b", itr->first)("e", itr->second) );
-    else
-      ilog("Account: ${a} ignored due to defined tracking filters.", ("a", name));
-  );
 
   return inRange;
 }
