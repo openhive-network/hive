@@ -51,6 +51,7 @@ namespace hive { namespace chain {
       void flush();
       //TODOoptional<std::pair<std::vector<char>, block_flags_t>> read_raw_block_data_by_num(uint32_t block_num) const;
       optional< signed_block > read_block_by_num( uint32_t block_num )const;
+      optional< signed_block_header > read_block_header_by_num( uint32_t block_num )const;
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
       signed_block read_head()const;

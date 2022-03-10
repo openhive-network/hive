@@ -487,8 +487,8 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    auto opt_block = chain.db().fetch_block_by_id(block_id);
-    return opt_block.valid() ? opt_block->timestamp : fc::time_point_sec::min();
+    optional<chain::signed_block_header> opt_block_header = chain.db().fetch_block_header_by_id(block_id);
+    return opt_block_header ? opt_block_header->timestamp : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
 }
 
