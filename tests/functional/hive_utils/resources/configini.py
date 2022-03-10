@@ -8,7 +8,6 @@ class config:
 		self.log_logger = '{"name":"default","level":"all","appender":"stderr"} {"name":"p2p","level":"all","appender":"p2p"}'
 		self.backtrace = 'yes'
 		self.plugin = 'witness database_api account_by_key_api network_broadcast_api condenser_api block_api transaction_status_api debug_node_api'
-		self.history_disable_pruning = '0'
 		self.account_history_rocksdb_path = '"blockchain/account-history-rocksdb-storage"'
 		self.block_data_export_file = 'NONE'
 		self.block_data_skip_empty = '0'
