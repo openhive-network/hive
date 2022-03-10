@@ -19,5 +19,5 @@
 
     Then we allow subnetworks to connect again. Nodes in one of subnetwork (random one, based on witness schedule) will perform undo on blocks
     after disconnection point. This should be possible because last_irreversible_block will increase slightly, but not beyond the
-    point of disconnection. After undo operation nodes should enter live sync. We check that account_history_plugin behaves correctly
+    point of disconnection. After undo operation nodes should enter live sync. We check that account_history_rocksdb_plugin behaves correctly
     in such scenario, i.e. there are no duplicate operations around point of disconnection.
