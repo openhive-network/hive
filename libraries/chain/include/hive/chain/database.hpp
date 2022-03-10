@@ -207,6 +207,7 @@ namespace chain {
       block_id_type              find_block_id_for_num( uint32_t block_num )const;
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
       optional<signed_block>     fetch_block_by_id( const block_id_type& id )const;
+      optional<signed_block_header> fetch_block_header_by_id( const block_id_type& id )const;
       optional<signed_block>     fetch_block_by_number( uint32_t num )const;
       optional<signed_block>     fetch_block_by_number_unlocked( uint32_t block_num );
       std::vector<signed_block>  fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count );
