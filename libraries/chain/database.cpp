@@ -489,9 +489,13 @@ void database::close(bool rewind)
 }
 
 //no chainbase lock required
-bool database::is_known_block( const block_id_type& id )const
+bool database::is_known_block(const block_id_type& id)const
 { try {
-  return fetch_block_by_id( id ).valid();
+  if (_fork_db.fetch_block(id))
+    return true;
+
+  optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num(protocol::block_header::num_from_id(id));
+  return block_header_from_block_log ? block_header_from_block_log->id() == id : false;
 } FC_CAPTURE_AND_RETHROW() }
 
 /**
@@ -530,7 +534,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
       return fitem->id;
 
     // Next we check if block_log has it. Irreversible blocks are here.
-    optional<signed_block> b = _block_log.read_block_by_num( block_num );
+    optional<signed_block_header> b = _block_log.read_block_header_by_num( block_num );
     if( b )
       return b->id();
     return block_id_type(); //this block_num couldn't be found
@@ -557,6 +561,19 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
   optional<signed_block> block_from_block_log = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
   if( block_from_block_log && block_from_block_log->id() == id )
     return *block_from_block_log;
+  return optional<signed_block>();
+} FC_CAPTURE_AND_RETHROW() }
+
+//no chainbase lock required
+optional<signed_block_header> database::fetch_block_header_by_id( const block_id_type& id )const
+{ try {
+  shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
+  if (fork_item)
+    return fork_item->data;
+
+  optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num( protocol::block_header::num_from_id( id ) );
+  if (block_header_from_block_log && block_header_from_block_log->id() == id)
+    return *block_header_from_block_log;
   return optional<signed_block>();
 } FC_CAPTURE_AND_RETHROW() }
 

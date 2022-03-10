@@ -50,6 +50,7 @@ namespace hive { namespace chain {
         ssize_t block_log_size;
 
         signed_block read_block_from_offset_and_size(uint64_t offset, uint64_t size);
+        signed_block_header read_block_header_from_offset_and_size(uint64_t offset, uint64_t size);
     };
 
     void block_log_impl::write_with_retry(int fd, const void* buf, size_t nbyte)
@@ -115,7 +116,21 @@ namespace hive { namespace chain {
 
       signed_block block;
       fc::raw::unpack_from_char_array(serialized_data.get(), size, block);
+
       return block;
+    }
+
+    signed_block_header block_log_impl::read_block_header_from_offset_and_size(uint64_t offset, uint64_t size)
+    {
+      std::unique_ptr<char[]> serialized_data(new char[size]);
+      auto total_read = pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
+
+      FC_ASSERT(total_read == size);
+
+      signed_block_header block_header;
+      fc::raw::unpack_from_char_array(serialized_data.get(), size, block_header);
+
+      return block_header;
     }
 
   } // end namespace detail
@@ -349,6 +364,32 @@ namespace hive { namespace chain {
       FC_ASSERT(bytes_read == sizeof(offsets));
       uint64_t serialized_data_size = offsets[1] - offsets[0] - sizeof(uint64_t);
       return my->read_block_from_offset_and_size(offsets[0], serialized_data_size);
+    }
+    FC_CAPTURE_LOG_AND_RETHROW((block_num))
+  }
+
+  optional< signed_block_header > block_log::read_block_header_by_num( uint32_t block_num )const
+  {
+    try
+    {
+      // first, check if it's the current head block; if so, we can just return it.  If the
+      // block number is less than than the current head, it's guaranteed to have been fully
+      // written to the log+index
+      boost::shared_ptr<signed_block> head_block = my->head.load();
+      /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
+      if (block_num == 0 || !head_block || block_num > head_block->block_num())
+        return optional<signed_block>();
+      if (block_num == head_block->block_num())
+        return *head_block;
+      // if we're still here, we know that it's in the block log, and the block after it is also
+      // in the block log (which means we can determine its size)
+
+      uint64_t offsets[2] = {0, 0};
+      uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
+      auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets, sizeof(offsets),  offset_in_index);
+      FC_ASSERT(bytes_read == sizeof(offsets));
+      uint64_t serialized_data_size = offsets[1] - offsets[0] - sizeof(uint64_t);
+      return my->read_block_header_from_offset_and_size(offsets[0], serialized_data_size);
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
