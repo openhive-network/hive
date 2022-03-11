@@ -346,7 +346,7 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_time ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_now_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
