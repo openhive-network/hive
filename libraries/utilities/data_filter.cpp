@@ -8,7 +8,6 @@ namespace hive { namespace plugins {
 
 data_filter::data_filter( const std::string& _filter_name ): filter_name( _filter_name )
 {
-  //TODO: a switch in order to disable filtering
 }
 
 bool data_filter::empty() const
@@ -19,12 +18,6 @@ bool data_filter::empty() const
 const data_filter::account_name_range_index& data_filter::get_tracked_accounts() const
 {
   return tracked_accounts;
-}
-
-void data_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
-{
-  typedef std::pair< account_name_type, account_name_type > pairstring;
-  HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
 }
 
 bool data_filter::is_tracked_account( const account_name_type& name ) const
@@ -74,6 +67,12 @@ bool data_filter::is_tracked_account( const account_name_type& name ) const
   )
 
   return _result;
+}
+
+void data_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
+{
+  typedef std::pair< account_name_type, account_name_type > pairstring;
+  HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
 }
 
 } } // hive::utilities

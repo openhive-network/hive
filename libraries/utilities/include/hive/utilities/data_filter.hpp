@@ -24,11 +24,12 @@ class data_filter
   public:
 
     data_filter( const std::string& _filter_name );
+
     bool empty() const;
     const account_name_range_index& get_tracked_accounts() const;
+    bool is_tracked_account( const account_name_type& name ) const;
 
     void fill( const boost::program_options::variables_map& options, const std::string& option_name );
-    bool is_tracked_account( const account_name_type& name ) const;
 };
 
 } } // hive::plugins
