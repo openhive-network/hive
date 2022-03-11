@@ -1,8 +1,6 @@
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 
-#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
-
 namespace hive { namespace plugins { namespace account_history {
 
 namespace detail {
@@ -266,17 +264,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
 account_history_api::account_history_api()
 {
-  auto ah_rocks = appbase::app().find_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >();
-
-  if( ah_rocks != nullptr )
-  {
-    my = std::make_unique< detail::account_history_api_rocksdb_impl >();
-  }
-  else
-  {
-    FC_ASSERT( false, "Account History API only works if account_history_rocksdb plugin is enabled" );
-  }
-
+  my = std::make_unique< detail::account_history_api_rocksdb_impl >();
   JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME );
 }
 
