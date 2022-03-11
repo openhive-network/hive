@@ -272,6 +272,7 @@ namespace graphene { namespace net {
                                    (get_head_block_id) \
                                    (estimate_last_known_fork_from_git_revision_timestamp) \
                                    (error_encountered) \
+                                   (find_first_item_not_in_blockchain) \
                                    (get_chain_id)
 
 
@@ -374,6 +375,7 @@ namespace graphene { namespace net {
       item_hash_t get_head_block_id() const override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
+      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2672,11 +2674,11 @@ namespace graphene { namespace net {
           if (!item_hashes_received.empty() && originating_peer->ids_of_items_to_get.empty())
           {
             dlog("item_hashes_received.size() = ${size}", ("size", item_hashes_received.size()));
-            //_delegate->find_first_item_not_in_blockchain(item_hashes_received);
-            auto first_item_not_in_blockchain_iter = std::partition_point(item_hashes_received.begin(), item_hashes_received.end(),
-                                                                          [this](const item_hash_t& item) { return _delegate->has_item(item_id(graphene::net::block_message_type, item)); });
+            auto first_item_not_in_blockchain_iter = _delegate->find_first_item_not_in_blockchain(item_hashes_received);
+            // auto first_item_not_in_blockchain_iter = std::partition_point(item_hashes_received.begin(), item_hashes_received.end(),
+            //                                                               [this](const item_hash_t& item) { return _delegate->has_item(item_id(graphene::net::block_message_type, item)); });
             dlog("done find_first_item_not_in_blockchain, ${count} items were in the blockchain", 
-                 ("count", std::distance(item_hashes_received.begin(), first_item_not_in_blockchain_iter)));
+                 ("count", std::distance(item_hashes_received.cbegin(), first_item_not_in_blockchain_iter)));
             if (first_item_not_in_blockchain_iter == item_hashes_received.end()) //all items in blockchain
             {
               originating_peer->last_block_delegate_has_seen = item_hashes_received.back();
@@ -2690,7 +2692,7 @@ namespace graphene { namespace net {
                 originating_peer->last_block_delegate_has_seen = *std::prev(first_item_not_in_blockchain_iter);
                 originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(originating_peer->last_block_delegate_has_seen);
               }
-              auto find_first_item_not_seen_iter = std::partition_point(first_item_not_in_blockchain_iter, item_hashes_received.end(), [this](const item_hash_t& item) { return is_item_id_being_processed(item); });
+              auto find_first_item_not_seen_iter = std::partition_point(first_item_not_in_blockchain_iter, item_hashes_received.cend(), [this](const item_hash_t& item) { return is_item_id_being_processed(item); });
               dlog("done find_first_item_not_seen, ${count} items were currently being processed", ("count", std::distance(first_item_not_in_blockchain_iter, find_first_item_not_seen_iter)));
               //track for peer all items it has that are already being processed
               std::copy(first_item_not_in_blockchain_iter, find_first_item_not_seen_iter, std::inserter(originating_peer->ids_of_items_being_processed, originating_peer->ids_of_items_being_processed.end()));
@@ -5777,6 +5779,11 @@ namespace graphene { namespace net {
     void statistics_gathering_node_delegate_wrapper::error_encountered(const std::string& message, const fc::oexception& error)
     {
       INVOKE_AND_COLLECT_STATISTICS(error_encountered, message, error);
+    }
+
+    std::deque<block_id_type>::const_iterator statistics_gathering_node_delegate_wrapper::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
+    {
+      INVOKE_AND_COLLECT_STATISTICS(find_first_item_not_in_blockchain, item_hashes_received);
     }
 
 #undef INVOKE_AND_COLLECT_STATISTICS
