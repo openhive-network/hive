@@ -37,6 +37,13 @@ namespace hive { namespace chain {
   };
   typedef shared_ptr<fork_item> item_ptr;
 
+  struct forkdb_lock_exception : public std::exception
+  {
+    explicit forkdb_lock_exception() {}
+    virtual ~forkdb_lock_exception() {}
+
+    virtual const char* what() const noexcept { return "Unable to acquire forkdb lock"; }
+  };
 
   /**
     *  As long as blocks are pushed in order the fork
@@ -131,7 +138,7 @@ namespace hive { namespace chain {
         else
         {
           if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
-            CHAINBASE_THROW_EXCEPTION( chainbase::lock_exception() );
+            CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
         }
 
         return callback();

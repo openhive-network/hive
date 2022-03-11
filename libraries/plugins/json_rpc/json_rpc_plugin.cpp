@@ -13,6 +13,7 @@
 #include <fc/io/fstream.hpp>
 
 #include <chainbase/chainbase.hpp>
+#include <hive/chain/fork_database.hpp>
 
 #define ENABLE_JSON_RPC_LOG
 
@@ -377,6 +378,10 @@ namespace detail
               }
             }
             catch( chainbase::lock_exception& e )
+            {
+              response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
+            }
+            catch( chain::forkdb_lock_exception& e )
             {
               response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
             }
