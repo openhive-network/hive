@@ -498,6 +498,16 @@ bool database::is_known_block(const block_id_type& id)const
   return block_header_from_block_log ? block_header_from_block_log->id() == id : false;
 } FC_CAPTURE_AND_RETHROW() }
 
+//no chainbase lock required, but fork database read lock is required
+bool database::is_known_block_unlocked(const block_id_type& id)const
+{ try {
+  if (_fork_db.fetch_block_unlocked(id))
+    return true;
+
+  optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num(protocol::block_header::num_from_id(id));
+  return block_header_from_block_log ? block_header_from_block_log->id() == id : false;
+} FC_CAPTURE_AND_RETHROW() }
+
 /**
   * Only return true *if* the transaction has not expired or been invalidated. If this
   * method is called with a VERY old transaction we will return false, they should
@@ -7096,6 +7106,15 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
       synopsis.insert(synopsis.begin(), block->id());
   }
   return synopsis;
+}
+
+std::deque<block_id_type>::iterator database::find_first_item_not_in_blockchain(std::deque<block_id_type>& item_hashes_received)
+{
+  return _fork_db.with_read_lock([&](){
+    return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) { 
+      return is_known_block_unlocked(block_id);
+    });
+  });
 }
 
 } } //hive::chain

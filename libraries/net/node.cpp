@@ -1055,27 +1055,29 @@ namespace graphene { namespace net {
     {
       for (const peer_connection_ptr& peer : _active_connections)
       {
-        //if peer is on fork with requested_block_id
+        //if peer is on fork with requested_block_id (check if the two peers share the same hash at that block number)
         uint32_t id_index = last_requested_block_number - peer->first_id_block_number;
         if (id_index < peer->ids_of_items_to_get.size() && peer->ids_of_items_to_get[id_index] == last_requested_block_id)
         {
-          peer->last_requested_block_number_for_peers_on_this_fork = last_requested_block_number;
+          if (last_requested_block_number > peer->last_requested_block_number_for_peers_on_this_fork)
+            peer->last_requested_block_number_for_peers_on_this_fork = last_requested_block_number;
+          else
+            ddump((last_requested_block_number)(peer->last_requested_block_number_for_peers_on_this_fork));
         }
       }
     }
 
     void node_impl::fetch_sync_items_loop()
     {
-      while( !_fetch_sync_items_loop_done.canceled() )
+      while (!_fetch_sync_items_loop_done.canceled())
       {
         _sync_items_to_fetch_updated = false;
-        dlog( "beginning another iteration of the sync items loop" );
+        dlog("beginning another iteration of the sync items loop");
 
         uint32_t idle_peer_count = 0;
         if (!_suspend_fetching_sync_blocks)
         {
-          std::map<peer_connection_ptr, std::vector<item_hash_t> > sync_item_requests_to_send;
-
+          std::map<peer_connection_ptr, std::vector<item_hash_t>> sync_item_requests_to_send;
           {
             ASSERT_TASK_NOT_PREEMPTED();
             std::set<item_hash_t> sync_items_to_request;
@@ -1083,48 +1085,48 @@ namespace graphene { namespace net {
             // for each idle peer that we're syncing with
             for( const peer_connection_ptr& peer : _active_connections )
             {
-              //ddump((peer->get_remote_endpoint())(peer->idle())(peer->inhibit_fetching_sync_blocks)(peer->we_need_sync_items_from_peer));
-                //dlog("peer ${peer} is idle,",("peer",peer->get_remote_endpoint()));
-              if (peer->idle())
+              if (peer->inhibit_fetching_sync_blocks)
+                dlog("Skipping peer ${peer} because we've inhibited fetching sync blocks from them.  idle: ${idle}, we_need_sync_items_from_peer: ${we_need_sync_items_from_peer}",
+                     ("peer", peer->get_remote_endpoint())("idle", peer->idle())("we_need_sync_items_from_peer", peer->we_need_sync_items_from_peer));
+              else if (peer->idle())
               {
-                fc::time_point items_search_start_time = fc::time_point::now();
+                dlog("peer ${peer} is idle", ("peer", peer->get_remote_endpoint()));
                 ++idle_peer_count;
-                if( peer->we_need_sync_items_from_peer &&
-                    sync_item_requests_to_send.find(peer) == sync_item_requests_to_send.end() ) // if we've already scheduled a request for this peer, don't consider scheduling another
+                assert(peer->last_requested_block_number_for_peers_on_this_fork >= peer->first_id_block_number - 1);
+                uint32_t first_to_get = peer->last_requested_block_number_for_peers_on_this_fork - peer->first_id_block_number + 1;
+                if (peer->we_need_sync_items_from_peer && 
+                    !peer->ids_of_items_to_get.empty() &&
+                    first_to_get < peer->ids_of_items_to_get.size())
                 {
-                  if (!peer->inhibit_fetching_sync_blocks)
+                  // loop through the items peer has that we don't yet have on our blockchain
+                  fc::time_point items_search_start_time = fc::time_point::now();
+                  unsigned i = first_to_get;
+                  for (; i < peer->ids_of_items_to_get.size(); ++i)
                   {
-                    // loop through the items it has that we don't yet have on our blockchain
-                    uint32_t first_to_get = peer->last_requested_block_number_for_peers_on_this_fork - peer->first_id_block_number + 1;
-                    uint32_t last_requested_block_number = 0;
-                    for( unsigned i = first_to_get; i < peer->ids_of_items_to_get.size(); ++i )
+                    const item_hash_t& item_to_potentially_request = peer->ids_of_items_to_get[i];
+                    // if we don't already have this item in our temporary storage and we haven't requested from another syncing peer
+                    if(_active_sync_requests.find(item_to_potentially_request) == _active_sync_requests.end() && // we've requested it in a previous iteration and we're still waiting for it to arrive
+                       !have_already_received_sync_item(item_to_potentially_request) && // already received it, but not yet removed from our list of peer items to get
+                       sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end()   // we have already decided to request it from another peer during this iteration
+                      )
                     {
-                      item_hash_t item_to_potentially_request = peer->ids_of_items_to_get[i];
-                      // if we don't already have this item in our temporary storage and we haven't requested from another syncing peer
-                      if( 
-                          _active_sync_requests.find(item_to_potentially_request) == _active_sync_requests.end() && // we've requested it in a previous iteration and we're still waiting for it to arrive
-                         !have_already_received_sync_item(item_to_potentially_request) && // already received it, but not yet removed from our list of peer items to get
-                          sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end()   // we have already decided to request it from another peer during this iteration
-                        )
-                      {
-                        // then schedule a request from this peer
-                        sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
-                        sync_items_to_request.insert( item_to_potentially_request );
-                        last_requested_block_number = peer->first_id_block_number + i;
-                        if (sync_item_requests_to_send[peer].size() >= _node_configuration.maximum_blocks_per_peer_during_syncing)
-                        {
-                          fc::microseconds items_search_duration = fc::time_point::now() - items_search_start_time;
-                          dlog("already-fast searched thru ${count} ids to find ${max} items to request in ${items_search_duration}us",("count",i - first_to_get)("max",_node_configuration.maximum_blocks_per_peer_during_syncing)("items_search_duration",items_search_duration.count()));
-                          break;
-                        }
-                      }
-                    } //for each item to get
-                    if (last_requested_block_number)
-                      update_last_requested_block_number_for_peers_on_this_fork(last_requested_block_number, sync_item_requests_to_send[peer].back());
-                  }
-                }
+                      // then schedule a request from this peer
+                      sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
+                      sync_items_to_request.insert(item_to_potentially_request);
+                      if (sync_item_requests_to_send[peer].size() >= _node_configuration.maximum_blocks_per_peer_during_syncing)
+                        break;
+                    }
+                  } //for each item to get
+                  if (i ==  peer->ids_of_items_to_get.size()) //if we didn't find any items, we only searched one less than i
+                   --i;
+                  uint32_t last_searched_block_number = peer->first_id_block_number + i;
+                  const item_hash_t& last_searched_item_id = peer->ids_of_items_to_get[i];
+                  update_last_requested_block_number_for_peers_on_this_fork(last_searched_block_number, last_searched_item_id);
+                  fc::microseconds items_search_duration = fc::time_point::now() - items_search_start_time;
+                  dlog("searched through ${count} ids from ${total_ids} available ids to find ${n} items to request in ${items_search_duration}μs", ("count", i - first_to_get + 1)("total_ids", peer->ids_of_items_to_get.size())("n", sync_item_requests_to_send[peer].size())("items_search_duration", items_search_duration.count()));
+                } //if we need sync items from peer
               } //if peer idle
-            }
+            } //for each active peer
           }// end non-preemptable section
 
           // make all the requests we scheduled in the loop above
@@ -1149,6 +1151,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       dlog( "Triggering fetch sync items loop now" );
+      //we set this so that we will do another iteration of fetch_sync_items even if we are suspended in the middle of a previous run
       _sync_items_to_fetch_updated = true;
       if( _retrigger_fetch_sync_items_loop_promise )
         _retrigger_fetch_sync_items_loop_promise->set_value();
@@ -1872,7 +1875,7 @@ namespace graphene { namespace net {
         on_closing_connection_message(originating_peer, received_message.as<closing_connection_message>());
         break;
       case core_message_type_enum::block_message_type:
-	fc::async( [=]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
+        fc::async( [=]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
         break;
       case core_message_type_enum::current_time_request_message_type:
         on_current_time_request_message(originating_peer, received_message.as<current_time_request_message>());
@@ -2646,7 +2649,7 @@ namespace graphene { namespace net {
               ( blockchain_item_ids_inventory_message_received.item_hashes_available.empty() || // there are no items in the peer's blockchain.  this should only happen if our blockchain was empty when we requested, might want to verify that.
                ( blockchain_item_ids_inventory_message_received.item_hashes_available.size() == 1 &&
                 _delegate->has_item( item_id(blockchain_item_ids_inventory_message_received.item_type,
-                                            blockchain_item_ids_inventory_message_received.item_hashes_available.front() ) ) ) ) && // we've already seen the last item in the peer's blockchain
+                                             blockchain_item_ids_inventory_message_received.item_hashes_available.front() ) ) ) ) && // we've already seen the last item in the peer's blockchain
               originating_peer->ids_of_items_to_get.empty() &&
               originating_peer->number_of_unfetched_item_ids == 0 ) // <-- is the last check necessary?
           {
@@ -2661,67 +2664,44 @@ namespace graphene { namespace net {
             return;
           }
 
-          std::deque<item_hash_t> item_hashes_received( blockchain_item_ids_inventory_message_received.item_hashes_available.begin(),
-                                                       blockchain_item_ids_inventory_message_received.item_hashes_available.end() );
+          std::deque<item_hash_t> item_hashes_received(blockchain_item_ids_inventory_message_received.item_hashes_available.begin(),
+                                                       blockchain_item_ids_inventory_message_received.item_hashes_available.end());
           originating_peer->number_of_unfetched_item_ids = blockchain_item_ids_inventory_message_received.total_remaining_item_count;
+
           // flush any items this peer sent us that we've already received and processed from another peer
-          if (!item_hashes_received.empty() &&
-              originating_peer->ids_of_items_to_get.empty())
+          if (!item_hashes_received.empty() && originating_peer->ids_of_items_to_get.empty())
           {
-            bool is_first_item_for_other_peer = false;
-            for (const peer_connection_ptr& peer : _active_connections)
-              if (peer != originating_peer->shared_from_this() &&
-                  !peer->ids_of_items_to_get.empty() &&
-                  peer->ids_of_items_to_get.front() == blockchain_item_ids_inventory_message_received.item_hashes_available.front())
-              {
-                dlog("The item ${newitem} is the first item for peer ${peer}",
-                     ("newitem", blockchain_item_ids_inventory_message_received.item_hashes_available.front())
-                     ("peer", peer->get_remote_endpoint()));
-                is_first_item_for_other_peer = true;
-                break;
-              }
-            dlog("is_first_item_for_other_peer: ${is_first}.  item_hashes_received.size() = ${size}",
-                 ("is_first", is_first_item_for_other_peer)("size", item_hashes_received.size()));
-            if (!is_first_item_for_other_peer)
+            dlog("item_hashes_received.size() = ${size}", ("size", item_hashes_received.size()));
+            //_delegate->find_first_item_not_in_blockchain(item_hashes_received);
+            auto first_item_not_in_blockchain_iter = std::partition_point(item_hashes_received.begin(), item_hashes_received.end(),
+                                                                          [this](const item_hash_t& item) { return _delegate->has_item(item_id(graphene::net::block_message_type, item)); });
+            dlog("done find_first_item_not_in_blockchain, ${count} items were in the blockchain", 
+                 ("count", std::distance(item_hashes_received.begin(), first_item_not_in_blockchain_iter)));
+            if (first_item_not_in_blockchain_iter == item_hashes_received.end()) //all items in blockchain
             {
-              while (!item_hashes_received.empty())
-              {
-                //new algo:
-                //if _delegate->has_item()item_hashes_received.back()
-                //  item_hashes_received.clear();
-                //else
-                //  first_item_not_in_blockchain = binary_search(item_hashes_received)
-                //  originating_peer->last_block_delegate_has_seen = item before first_item_not_in_blockchain
-                //  originating_peer->last_block_time_delegate_has_seen = time of that item
-                //  while (item_hashes_received.front() != first_item_not_in_blockchain)
-                //    item_hashes_received.pop_front()
-                
-                const item_hash_t& first_id = item_hashes_received.front();
-                if (_delegate->has_item(item_id(blockchain_item_ids_inventory_message_received.item_type, first_id)))
-                {
-                  assert(first_id != item_hash_t());
-                  originating_peer->last_block_delegate_has_seen = first_id;
-                  originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(first_id);
-                  dlog("popping item because delegate has already seen it.  peer ${peer}'s last block the delegate has seen is now ${block_id} (actual block #${actual_block_num})",
-                       ("peer", originating_peer->get_remote_endpoint())
-                       ("block_id", originating_peer->last_block_delegate_has_seen)
-                       ("actual_block_num", _delegate->get_block_number(first_id)));
-                  item_hashes_received.pop_front();
-                }
-                else if (is_item_id_being_processed(first_id))
-                {
-                  originating_peer->ids_of_items_being_processed.insert( first_id );
-                  item_hashes_received.pop_front();
-                }
-                else
-                  break;
-              }
-              dlog("after removing all items we have already seen, item_hashes_received.size() = ${size}", ("size", item_hashes_received.size()));
+              originating_peer->last_block_delegate_has_seen = item_hashes_received.back();
+              originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(originating_peer->last_block_delegate_has_seen);
+              item_hashes_received.clear();
             }
+            else //some items are not in blockchain
+            {
+              if (first_item_not_in_blockchain_iter != item_hashes_received.begin()) //if some items are in the blockchain
+              {
+                originating_peer->last_block_delegate_has_seen = *std::prev(first_item_not_in_blockchain_iter);
+                originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(originating_peer->last_block_delegate_has_seen);
+              }
+              auto find_first_item_not_seen_iter = std::partition_point(first_item_not_in_blockchain_iter, item_hashes_received.end(), [this](const item_hash_t& item) { return is_item_id_being_processed(item); });
+              dlog("done find_first_item_not_seen, ${count} items were currently being processed", ("count", std::distance(first_item_not_in_blockchain_iter, find_first_item_not_seen_iter)));
+              //track for peer all items it has that are already being processed
+              std::copy(first_item_not_in_blockchain_iter, find_first_item_not_seen_iter, std::inserter(originating_peer->ids_of_items_being_processed, originating_peer->ids_of_items_being_processed.end()));
+              item_hashes_received.erase(item_hashes_received.begin(), find_first_item_not_seen_iter);
+            }
+            dlog("after removing all items we have already seen or are processing, item_hashes_received.size() = ${size}", ("size", item_hashes_received.size()));
+
             if (!item_hashes_received.empty())
             {
               originating_peer->first_id_block_number = _delegate->get_block_number(item_hashes_received.front());
-              originating_peer->last_requested_block_number_for_peers_on_this_fork = originating_peer->first_id_block_number - 1;
+              originating_peer->reset_id_search_for_peer();
             }
           }
           else if (!item_hashes_received.empty())
@@ -2747,6 +2727,10 @@ namespace graphene { namespace net {
               else
                 break;
             }
+            //ensure we don't go back more than we have item ids to search
+            if (originating_peer->last_requested_block_number_for_peers_on_this_fork < originating_peer->first_id_block_number - 1)
+              originating_peer->reset_id_search_for_peer();
+
             if (originating_peer->ids_of_items_to_get.empty())
             {
               // this happens when the peer has switched forks between the last inventory message and
@@ -2755,11 +2739,12 @@ namespace graphene { namespace net {
               // expect is that it is a block that we knew about because it should be one of the
               // blocks we sent in the initial synopsis.
               assert(_delegate->has_item(item_id(_sync_item_type, item_hashes_received.front())));
+              wdump((_delegate->has_item(item_id(_sync_item_type, item_hashes_received.front()))));
               originating_peer->last_block_delegate_has_seen = item_hashes_received.front();
               originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(item_hashes_received.front());
               item_hashes_received.pop_front();
               originating_peer->first_id_block_number = _delegate->get_block_number(item_hashes_received.front());
-              originating_peer->last_requested_block_number_for_peers_on_this_fork = originating_peer->first_id_block_number - 1;
+              originating_peer->reset_id_search_for_peer();
             }
             else
             {
@@ -2962,15 +2947,16 @@ namespace graphene { namespace net {
       auto sync_item_iter = originating_peer->sync_items_requested_from_peer.find(requested_item.item_hash);
       if (sync_item_iter != originating_peer->sync_items_requested_from_peer.end())
       {
-        _active_sync_requests.erase(*sync_item_iter);
-        originating_peer->sync_items_requested_from_peer.erase(sync_item_iter);
 
         if (originating_peer->peer_needs_sync_items_from_us)
         {
           originating_peer->inhibit_fetching_sync_blocks = true;
+          wlog("inhibit_fetching_sync_blocks from ${peer} because it didn't have an item it claimed to have",("peer",originating_peer->get_remote_endpoint()));
           //we're keeping this peer, but we need to get the item from someone else
+          _active_sync_requests.erase(*sync_item_iter);
+          originating_peer->sync_items_requested_from_peer.erase(sync_item_iter);
           for (const peer_connection_ptr& peer : _active_connections)
-            peer->last_requested_block_number_for_peers_on_this_fork = peer->first_id_block_number - 1;          
+            peer->reset_id_search_for_peer();          
         }
         else
           disconnect_from_peer(originating_peer, "You are missing a sync item you claim to have, your database is probably corrupted. Try --rebuild-index.",true,
@@ -3167,7 +3153,7 @@ namespace graphene { namespace net {
         for (const auto& sync_item : originating_peer->sync_items_requested_from_peer)
           _active_sync_requests.erase(sync_item);
         for (const peer_connection_ptr& peer : _active_connections)
-          peer->last_requested_block_number_for_peers_on_this_fork = peer->first_id_block_number - 1;
+          peer->reset_id_search_for_peer();
         trigger_fetch_sync_items_loop();
       }
 
@@ -3182,7 +3168,7 @@ namespace graphene { namespace net {
       }
 
       schedule_peer_for_deletion(originating_peer_ptr);
-    }
+    } //on_connection_closed
 
     void node_impl::send_sync_block_to_node_delegate(const graphene::net::block_message& block_message_to_send)
     {
@@ -3298,10 +3284,12 @@ namespace graphene { namespace net {
                 peer->ids_of_items_being_processed.erase(items_being_processed_iter);
                 dlog("Removed item from ${endpoint}'s list of items being processed, still processing ${len} blocks",
                      ("endpoint", peer->get_remote_endpoint())("len", peer->ids_of_items_being_processed.size()));
-				if (peer->ids_of_items_to_get.empty() 
-//  &&				peer->number_of_unfetched_item_ids == 0
-	&&				peer->ids_of_items_being_processed.empty())
-				  peers_with_newly_empty_item_lists.insert(peer);
+                if (peer->idle() &&
+                    peer->number_of_unfetched_item_ids != 0 && //don't fetch more ids if node says it has no more, we will try resuming sync instead
+                    peer->ids_of_items_to_get.size() < GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH  
+                   // && peer->ids_of_items_being_processed.empty()
+                   )
+                  peers_with_newly_empty_item_lists.insert(peer);
                 
               }
             }
@@ -3510,10 +3498,9 @@ namespace graphene { namespace net {
                    ("time_since_last_block_received", (fc::time_point::now() - peer->last_sync_item_received_time).count() / 1000));
       }
 
-      wlog("leaving process_backlog_of_sync_blocks, ${count} processed", ("count", blocks_processed));
-
       if (!_suspend_fetching_sync_blocks)
         trigger_fetch_sync_items_loop();
+      wlog("leaving process_backlog_of_sync_blocks, ${count} processed", ("count", blocks_processed));
     }
 
     void node_impl::trigger_process_backlog_of_sync_blocks()
