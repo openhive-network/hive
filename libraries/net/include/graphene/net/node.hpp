@@ -180,6 +180,7 @@ namespace graphene { namespace net {
 
          virtual void error_encountered(const std::string& message, const fc::oexception& error) = 0;
 
+         virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) = 0;
    };
 
    /**

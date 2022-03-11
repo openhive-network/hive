@@ -114,6 +114,7 @@ public:
   virtual graphene::net::item_hash_t get_head_block_id() const override;
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
+  virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
 
   fc::optional<fc::ip::endpoint> endpoint;
   vector<fc::ip::endpoint> seeds;
@@ -505,6 +506,11 @@ uint32_t p2p_plugin_impl::estimate_last_known_fork_from_git_revision_timestamp(u
 void p2p_plugin_impl::error_encountered( const string& message, const fc::oexception& error )
 {
   // notify GUI or something cool
+}
+
+std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
+{
+  return chain.db().find_first_item_not_in_blockchain(item_hashes_received);
 }
 
 fc::time_point_sec p2p_plugin_impl::get_blockchain_now()

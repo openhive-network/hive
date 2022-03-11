@@ -7108,7 +7108,7 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
   return synopsis;
 }
 
-std::deque<block_id_type>::iterator database::find_first_item_not_in_blockchain(std::deque<block_id_type>& item_hashes_received)
+std::deque<block_id_type>::const_iterator database::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
 {
   return _fork_db.with_read_lock([&](){
     return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) { 
