@@ -63,6 +63,7 @@ namespace hive { namespace chain {
       void                             set_head(shared_ptr<fork_item> h);
       bool                             is_known_block(const block_id_type& id)const;
       shared_ptr<fork_item>            fetch_block(const block_id_type& id)const;
+      shared_ptr<fork_item>            fetch_block_unlocked(const block_id_type& id)const;
       vector<item_ptr>                 fetch_block_by_number(uint32_t n)const;
 
       // These functions are similar to the corresponding versions in `database`,
@@ -108,7 +109,7 @@ namespace hive { namespace chain {
       > fork_multi_index_type;
 
       void set_max_size( uint32_t s );
-    private:
+
       template< typename Lambda >
       auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) const -> decltype( (*(Lambda*)nullptr)() )
       {
@@ -150,6 +151,7 @@ namespace hive { namespace chain {
         return callback();
       }
 
+    private:
       mutable chainbase::read_write_mutex _rw_lock;
       mutable int32_t                     _read_lock_count = 0;
       mutable int32_t                     _write_lock_count = 0;

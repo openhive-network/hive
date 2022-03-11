@@ -325,20 +325,20 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
   return chain.db().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
   //return get_blockchain_synopsis_orig(reference_point, number_of_blocks_after_reference_point);
 
-  return chain.db().with_read_lock( [&]() {
-    std::vector<graphene::net::item_hash_t> synopsis = chain.db().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
-    std::vector<graphene::net::item_hash_t> synopsis_using_old_method = get_blockchain_synopsis_orig(reference_point, number_of_blocks_after_reference_point);
-    if (synopsis_using_old_method != synopsis)
-    {
-      uint32_t chaindb_last_irreversible_block_num = chain.db().get_last_irreversible_block_num();
-      elog("Whoa! you got a problem: old: ${synopsis_using_old_method}, new: ${synopsis}, ${reference_point}, ${number_of_blocks_after_reference_point}, chaindb_last_irreversible_block_num ${chaindb_last_irreversible_block_num}, chain_head ${chain_head}",
-           (synopsis_using_old_method)(synopsis)(reference_point)(number_of_blocks_after_reference_point)(chaindb_last_irreversible_block_num)("chain_head", chain.db().head_block_num_from_fork_db()));
-    }
-    FC_ASSERT(synopsis_using_old_method == synopsis);
-    //elog("Phew, got it right, ${synopsis}", (synopsis));
-
-    return synopsis;
-  });     
+//  return chain.db().with_read_lock( [&]() {
+//    std::vector<graphene::net::item_hash_t> synopsis = chain.db().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
+//    std::vector<graphene::net::item_hash_t> synopsis_using_old_method = get_blockchain_synopsis_orig(reference_point, number_of_blocks_after_reference_point);
+//    if (synopsis_using_old_method != synopsis)
+//    {
+//      uint32_t chaindb_last_irreversible_block_num = chain.db().get_last_irreversible_block_num();
+//      elog("Whoa! you got a problem: old: ${synopsis_using_old_method}, new: ${synopsis}, ${reference_point}, ${number_of_blocks_after_reference_point}, chaindb_last_irreversible_block_num ${chaindb_last_irreversible_block_num}, chain_head ${chain_head}",
+//           (synopsis_using_old_method)(synopsis)(reference_point)(number_of_blocks_after_reference_point)(chaindb_last_irreversible_block_num)("chain_head", chain.db().head_block_num_from_fork_db()));
+//    }
+//    FC_ASSERT(synopsis_using_old_method == synopsis);
+//    //elog("Phew, got it right, ${synopsis}", (synopsis));
+//
+//    return synopsis;
+//  });     
 } FC_LOG_AND_RETHROW() }
 
 std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synopsis_orig( const graphene::net::item_hash_t& reference_point, uint32_t number_of_blocks_after_reference_point )
