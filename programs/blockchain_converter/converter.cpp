@@ -201,7 +201,7 @@ namespace hive { namespace converter {
     if( converter.block_size_increase_enabled() )
       op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
 
-    static const auto apply_witness_key_on_prop = [&]( const std::string& key )
+    const auto apply_witness_key_on_prop = [&]( const std::string& key )
       {
         hp::public_key_type signing_key;
         auto key_itr = op.props.find( key );
