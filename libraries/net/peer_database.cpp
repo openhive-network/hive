@@ -44,14 +44,41 @@ namespace graphene { namespace net {
     class peer_database_impl
     {
     public:
+
+      struct compare_peer_records {
+        bool operator () (const potential_peer_record& lhs, const potential_peer_record& rhs) const
+        {
+          //if neither peer failed to respond, try one that was seen most recently
+          if (!lhs.last_failed_time && !rhs.last_failed_time)
+          {
+            if (lhs.last_seen_time > rhs.last_seen_time)
+              return true;
+            if (lhs.last_seen_time == rhs.last_seen_time) //use endpoints to ensure ordering stays same for equal times
+              return (lhs.endpoint < rhs.endpoint);
+            else
+              return false;
+          }
+          //if both failed to respond, try one that failed the longest ago
+          else if (lhs.last_failed_time && rhs.last_failed_time)
+          {
+            if (*lhs.last_failed_time < *rhs.last_failed_time)
+              return true;
+            if (*lhs.last_failed_time == *rhs.last_failed_time) //use endpoints to ensure ordering stays same for equal times
+              return (lhs.endpoint < rhs.endpoint);
+            else
+              return false;
+          }
+          else //if rhs failed and lhs didn't fail, try lhs first since it didn't fail
+            return ((bool)rhs.last_failed_time);
+        }
+      };
+
       struct last_seen_time_index {};
       struct endpoint_index {};
       typedef boost::multi_index_container<potential_peer_record, 
                                            indexed_by<ordered_non_unique<tag<last_seen_time_index>, 
-                                                                         member<potential_peer_record, 
-                                                                                fc::time_point_sec, 
-                                                                                &potential_peer_record::last_seen_time>,
-                                                                         std::greater<fc::time_point_sec> >,
+                                                                         identity<potential_peer_record>, 
+                                                                         compare_peer_records >,
                                                       hashed_unique<tag<endpoint_index>, 
                                                                     member<potential_peer_record, 
                                                                            fc::ip::endpoint, 
@@ -64,6 +91,7 @@ namespace graphene { namespace net {
 
     public:
       void open(const fc::path& databaseFilename);
+      void write();
       void close();
       void clear();
       void erase(const fc::ip::endpoint& endpointToErase);
@@ -95,6 +123,7 @@ namespace graphene { namespace net {
       {
         try
         {
+          _potential_peer_set.clear();
           std::vector<potential_peer_record> peer_records = fc::json::from_file(_peer_database_filename).as<std::vector<potential_peer_record> >();
           std::copy(peer_records.begin(), peer_records.end(), std::inserter(_potential_peer_set, _potential_peer_set.end()));
 
@@ -105,21 +134,20 @@ namespace graphene { namespace net {
             std::advance(iter, GRAPHENE_NET_MAX_PEERDB_SIZE);
             _potential_peer_set.erase(iter, _potential_peer_set.end());
           }
+          idump((peer_records));
         }
         catch (const fc::exception& e)
         {
-          elog("error opening peer database file ${peer_database_filename}, starting with a clean database", 
-               ("peer_database_filename", _peer_database_filename));
+          elog("error opening peer database file ${peer_database_filename}, starting with a clean database", ("peer_database_filename", _peer_database_filename));
         }
       }
     }
 
-    void peer_database_impl::close()
+    void peer_database_impl::write()
     {
       std::vector<potential_peer_record> peer_records;
       peer_records.reserve(_potential_peer_set.size());
       std::copy(_potential_peer_set.begin(), _potential_peer_set.end(), std::back_inserter(peer_records));
-
       try
       {
         fc::path peer_database_filename_dir = _peer_database_filename.parent_path();
@@ -129,10 +157,17 @@ namespace graphene { namespace net {
       }
       catch (const fc::exception& e)
       {
-        elog("error saving peer database to file ${peer_database_filename}", 
-             ("peer_database_filename", _peer_database_filename));
+        elog("error saving peer database to file ${peer_database_filename}", ("peer_database_filename", _peer_database_filename));
       }
-      _potential_peer_set.clear();
+    }
+
+    void peer_database_impl::close()
+    {
+      if (_potential_peer_set.size())
+      {
+        write();
+        // clear();
+      }
     }
 
     void peer_database_impl::clear()
@@ -142,22 +177,27 @@ namespace graphene { namespace net {
 
     void peer_database_impl::erase(const fc::ip::endpoint& endpointToErase)
     {
+      ddump((endpointToErase));
       auto iter = _potential_peer_set.get<endpoint_index>().find(endpointToErase);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         _potential_peer_set.get<endpoint_index>().erase(iter);
+      write();
     }
 
     void peer_database_impl::update_entry(const potential_peer_record& updatedRecord)
     {
+      ddump((updatedRecord));
       auto iter = _potential_peer_set.get<endpoint_index>().find(updatedRecord.endpoint);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         _potential_peer_set.get<endpoint_index>().modify(iter, [&updatedRecord](potential_peer_record& record) { record = updatedRecord; });
       else
         _potential_peer_set.get<endpoint_index>().insert(updatedRecord);
+      //write();
     }
 
     potential_peer_record peer_database_impl::lookup_or_create_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup)
     {
+      ddump((_potential_peer_set.size()));
       auto iter = _potential_peer_set.get<endpoint_index>().find(endpointToLookup);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         return *iter;
@@ -166,6 +206,7 @@ namespace graphene { namespace net {
 
     fc::optional<potential_peer_record> peer_database_impl::lookup_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup)
     {
+      ddump((_potential_peer_set.size()));
       auto iter = _potential_peer_set.get<endpoint_index>().find(endpointToLookup);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         return *iter;

@@ -175,27 +175,36 @@ item_ptr fork_database::fetch_block(const block_id_type& id)const
   return with_read_lock([&]() { return fetch_block_unlocked(id); });
 }
 
+vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)const
+{
+  try
+  {
+    vector<item_ptr> result;
+    auto const& block_num_idx = _index.get<block_num>();
+    auto itr = block_num_idx.lower_bound(num);
+    while( itr != block_num_idx.end() && itr->get()->num == num )
+    {
+      if( (*itr)->num == num )
+        result.push_back( *itr );
+      else
+        break;
+      ++itr;
+    }
+    return result;
+  }
+  FC_LOG_AND_RETHROW()
+  
+}
+
 vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 {
   try
   {
     return with_read_lock( [&]() {
-      vector<item_ptr> result;
-      auto const& block_num_idx = _index.get<block_num>();
-      auto itr = block_num_idx.lower_bound(num);
-      while( itr != block_num_idx.end() && itr->get()->num == num )
-      {
-        if( (*itr)->num == num )
-          result.push_back( *itr );
-        else
-          break;
-        ++itr;
-      }
-      return result;
+      return fetch_block_by_number_unlocked(num);
     });
   }
   FC_LOG_AND_RETHROW()
-  
 }
 
 time_point_sec fork_database::head_block_time()const
@@ -220,8 +229,7 @@ block_id_type fork_database::head_block_id()const
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
 
-pair<fork_database::branch_type,fork_database::branch_type>
-  fork_database::fetch_branch_from(block_id_type first, block_id_type second)const
+pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch_branch_from(block_id_type first, block_id_type second)const
 { try {
   return with_read_lock( [&]() {
     // This function gets a branch (i.e. vector<fork_item>) leading
@@ -266,28 +274,33 @@ pair<fork_database::branch_type,fork_database::branch_type>
   });
 } FC_CAPTURE_AND_RETHROW( (first)(second) ) }
 
+shared_ptr<fork_item> fork_database::walk_main_branch_to_num_unlocked( uint32_t block_num )const
+{
+  shared_ptr<fork_item> next = head();
+  if( block_num > next->num )
+    return shared_ptr<fork_item>();
+
+  while( next.get() != nullptr && next->num > block_num )
+    next = next->prev.lock();
+  return next;
+}
+
 shared_ptr<fork_item> fork_database::walk_main_branch_to_num( uint32_t block_num )const
 {
   return with_read_lock( [&]() {
-    shared_ptr<fork_item> next = head();
-    if( block_num > next->num )
-      return shared_ptr<fork_item>();
-  
-    while( next.get() != nullptr && next->num > block_num )
-      next = next->prev.lock();
-    return next;
+    return walk_main_branch_to_num_unlocked( block_num );
   });
 }
 
 shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint32_t block_num )const
 {
   return with_read_lock( [&]() {
-    vector<item_ptr> blocks = fetch_block_by_number(block_num);
+    vector<item_ptr> blocks = fetch_block_by_number_unlocked(block_num);
     if( blocks.size() == 1 )
       return blocks[0];
     if( blocks.size() == 0 )
       return shared_ptr<fork_item>();
-    return walk_main_branch_to_num(block_num);
+    return walk_main_branch_to_num_unlocked(block_num);
   });
 }
 
@@ -295,6 +308,7 @@ vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( con
 {
   return with_read_lock( [&]() {
     vector<fork_item> results;
+
     if (!_head ||
         _head->num < first_block_num)
       return results;
@@ -318,7 +332,7 @@ vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( con
     if (std::next(fork_items_for_last_block_num.begin()) == fork_items_for_last_block_num.end()) // if exactly one block numbered last_block_num
       item = fork_items_for_last_block_num.front();
     else
-      item = walk_main_branch_to_num(last_block_num);
+      item = walk_main_branch_to_num_unlocked(last_block_num);
   
     for (; item && item->num >= first_block_num; item = item->prev.lock())
       results.push_back(*item);
@@ -348,7 +362,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
                                                                   /* out */ fc::optional<uint32_t>& block_number_needed_from_block_log)
 {
   try {
-  return with_read_lock( [&]() {
+  return with_read_lock([&]() {
     std::vector<block_id_type> synopsis;
 
     if (!_head)
@@ -381,10 +395,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     // if no reference point specified, summarize the main chain from the last_irreversible_block up to the head_block
     // (same behavior as if the reference point was our head block)
     if (reference_point == block_id_type())
-    {
       reference_point = _head->id;
-      ilog("reference point null, setting to ${reference_point}", (reference_point));
-    }
 
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
     //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num));
@@ -415,7 +426,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
       // be in the fork database, but it's not.  A well-behaved peer
       // shouldn't cause this situation
       // maybe throw here???
-      edump((last_irreversible_block_num)(reference_point_block_num)(_head->num)(reference_point));
+      //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num)(reference_point));
       FC_THROW("Unable to construct a useful synopsis because we can't find the reference block in the fork database");
     }
 
@@ -444,7 +455,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
       synopsis.push_back(block_ids_on_this_fork[block_ids_on_this_fork.size() - (low_block_num - last_irreversible_block_num) - 1]);
       low_block_num += (true_high_block_num - low_block_num + 2) / 2;
     }
-    while( low_block_num <= reference_point_block_num );
+    while (low_block_num <= reference_point_block_num);
     return synopsis;
   });    
 } FC_LOG_AND_RETHROW() }
