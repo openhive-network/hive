@@ -737,30 +737,24 @@ namespace graphene { namespace net {
       class activity_tracer final
       {
       public:
-         activity_tracer(const char* function, node_impl& node) : _node(node), _notify(false)
-         {
-            if(_node._node_is_shutting_down)
-            {
-               FC_THROW_EXCEPTION(fc::canceled_exception, "${f} canceled because it is shutting down",
-                  ("f", function));
-            }
+        activity_tracer(const char* function, node_impl& node) : _node(node), _notify(false)
+        {
+          if (_node._node_is_shutting_down)
+            FC_THROW_EXCEPTION(fc::canceled_exception, "${function} canceled because it is shutting down", (function));
 
-            ++_node._activeCalls;
-            /// At this point potential shutdownNotification shall be sent in destructor.
-            _notify = true;
-         }
+          ++_node._activeCalls;
+          /// At this point potential shutdownNotification shall be sent in destructor.
+          _notify = true;
+        }
 
-         ~activity_tracer()
-         {
-            if(_notify && --_node._activeCalls == 0 && _node._node_is_shutting_down)
-            {
-               _node._shutdownNotifier->set_value();
-            }
-         }
-
+        ~activity_tracer()
+        {
+          if (_notify && --_node._activeCalls == 0 && _node._node_is_shutting_down)
+            _node._shutdownNotifier->set_value();
+        }
       private:
-         node_impl& _node;
-         bool       _notify;
+        node_impl& _node;
+        bool       _notify;
       }; /// activity_tracer
 
 #ifdef P2P_IN_DEDICATED_THREAD
@@ -770,30 +764,31 @@ namespace graphene { namespace net {
 #endif
 
       template<typename Functor>
-      auto async_task( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::priority prio = fc::priority()) -> fc::future<decltype(f())> {
-         auto wrapper = [this, desc, f]() -> decltype(f())
-         {
-            VERIFY_CORRECT_THREAD();
-            activity_tracer aTracer(desc, *this);
-            return f();
-         };
-         return fc::async( wrapper, desc, prio );
+      auto async_task(Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::priority prio = fc::priority()) -> fc::future<decltype(f())>
+      {
+        auto wrapper = [this, desc, f]() -> decltype(f())
+        {
+          VERIFY_CORRECT_THREAD();
+          activity_tracer aTracer(desc, *this);
+          return f();
+        };
+        return fc::async(wrapper, desc, prio);
       }
       template<typename Functor>
-      auto schedule_task( Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::priority prio = fc::priority()) -> fc::future<decltype(f())>
+      auto schedule_task(Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, fc::priority prio = fc::priority()) -> fc::future<decltype(f())>
       {
-         auto wrapper = [this, desc, f]() -> decltype(f())
-         {
-            VERIFY_CORRECT_THREAD();
-            activity_tracer aTracer(desc, *this);
-            return f();
-         };
+        auto wrapper = [this, desc, f]() -> decltype(f())
+        {
+          VERIFY_CORRECT_THREAD();
+          activity_tracer aTracer(desc, *this);
+          return f();
+        };
 
-         return fc::schedule( wrapper, t, desc, prio );
+        return fc::schedule(wrapper, t, desc, prio);
       }
 
       void send_message_timing_to_statsd(peer_connection* originating_peer, const message& received_message, const message_hash_type& message_hash);
-   }; // end class node_impl
+    }; // end class node_impl
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1404,24 +1399,24 @@ namespace graphene { namespace net {
 
         uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
         fc::time_point handshaking_disconnect_threshold = fc::time_point::now() - fc::seconds(handshaking_timeout);
-        for( const peer_connection_ptr& handshaking_peer : _handshaking_connections )
-          if( handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
+        for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
+          if (handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
               handshaking_peer->get_last_message_received_time() < handshaking_disconnect_threshold &&
-              handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold )
+              handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold)
           {
-            wlog( "Forcibly disconnecting from handshaking peer ${peer} due to inactivity of at least ${timeout} seconds",
-                  ( "peer", handshaking_peer->get_remote_endpoint() )("timeout", handshaking_timeout ) );
+            wlog("Forcibly disconnecting from handshaking peer ${peer} due to inactivity of at least ${handshaking_timeout} seconds",
+                 ("peer", handshaking_peer->get_remote_endpoint())(handshaking_timeout));
             wlog("Peer's negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
-                  ("status", handshaking_peer->negotiation_status)
-                  ("sent", handshaking_peer->get_total_bytes_sent())
-                  ("received", handshaking_peer->get_total_bytes_received()));
+                 ("status", handshaking_peer->negotiation_status)
+                 ("sent", handshaking_peer->get_total_bytes_sent())
+                 ("received", handshaking_peer->get_total_bytes_received()));
             handshaking_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Terminating handshaking connection due to inactivity of ${timeout} seconds.  Negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
-                                                                                      ("peer", handshaking_peer->get_remote_endpoint())
-                                                                                      ("timeout", handshaking_timeout)
-                                                                                      ("status", handshaking_peer->negotiation_status)
-                                                                                      ("sent", handshaking_peer->get_total_bytes_sent())
-                                                                                      ("received", handshaking_peer->get_total_bytes_received())));
-            peers_to_disconnect_forcibly.push_back( handshaking_peer );
+                                                                                     ("peer", handshaking_peer->get_remote_endpoint())
+                                                                                     ("timeout", handshaking_timeout)
+                                                                                     ("status", handshaking_peer->negotiation_status)
+                                                                                     ("sent", handshaking_peer->get_total_bytes_sent())
+                                                                                     ("received", handshaking_peer->get_total_bytes_received())));
+            peers_to_disconnect_forcibly.push_back(handshaking_peer);
           }
 
         // timeout for any active peers is two block intervals
@@ -1446,9 +1441,9 @@ namespace graphene { namespace net {
           if( active_peer->connection_initiation_time < active_disconnect_threshold &&
               active_peer->get_last_message_received_time() < active_disconnect_threshold )
           {
-            wlog( "Closing connection with peer ${peer} due to inactivity of at least ${timeout} seconds",
-                  ( "peer", active_peer->get_remote_endpoint() )("timeout", active_disconnect_timeout ) );
-            peers_to_disconnect_gently.push_back( active_peer );
+            wlog("Closing connection with peer ${peer} due to inactivity of at least ${timeout} seconds",
+                 ("peer", active_peer->get_remote_endpoint())("timeout", active_disconnect_timeout));
+            peers_to_disconnect_gently.push_back(active_peer);
           }
           else
           {
@@ -1523,14 +1518,14 @@ namespace graphene { namespace net {
         }
 
         fc::time_point closing_disconnect_threshold = fc::time_point::now() - fc::seconds(GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT);
-        for( const peer_connection_ptr& closing_peer : _closing_connections )
-          if( closing_peer->connection_closed_time < closing_disconnect_threshold )
+        for (const peer_connection_ptr& closing_peer : _closing_connections)
+          if (closing_peer->connection_closed_time < closing_disconnect_threshold)
           {
             // we asked this peer to close their connectoin to us at least GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT
             // seconds ago, but they haven't done it yet.  Terminate the connection now
-            wlog( "Forcibly disconnecting peer ${peer} who failed to close their connection in a timely manner",
-                  ( "peer", closing_peer->get_remote_endpoint() ) );
-            peers_to_disconnect_forcibly.push_back( closing_peer );
+            wlog("Forcibly disconnecting peer ${peer} who failed to close their connection in a timely manner",
+                 ("peer", closing_peer->get_remote_endpoint()));
+            peers_to_disconnect_forcibly.push_back(closing_peer);
           }
 
         fc::time_point failed_terminate_threshold = fc::time_point::now() - fc::seconds(GRAPHENE_NET_FAILED_TERMINATE_TIMEOUT_SECONDS);
@@ -1571,11 +1566,11 @@ namespace graphene { namespace net {
       // disconnect reason, so it may yield)
       for( const peer_connection_ptr& peer : peers_to_disconnect_gently )
       {
-        fc::exception detailed_error( FC_LOG_MESSAGE(warn, "Disconnecting due to inactivity",
-                                                      ( "last_message_received_seconds_ago", (peer->get_last_message_received_time() - fc::time_point::now() ).count() / fc::seconds(1 ).count() )
-                                                      ( "last_message_sent_seconds_ago", (peer->get_last_message_sent_time() - fc::time_point::now() ).count() / fc::seconds(1 ).count() )
-                                                      ( "inactivity_timeout", _active_connections.find(peer ) != _active_connections.end() ? _node_configuration.peer_inactivity_timeout * 10 : _node_configuration.peer_inactivity_timeout ) ) );
-        disconnect_from_peer( peer.get(), "Disconnecting due to inactivity", false, detailed_error );
+        fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Disconnecting due to inactivity",
+                                                    ("last_message_received_seconds_ago", (peer->get_last_message_received_time() - fc::time_point::now()).count() / fc::seconds(1).count())
+                                                    ("last_message_sent_seconds_ago", (peer->get_last_message_sent_time() - fc::time_point::now()).count() / fc::seconds(1).count())
+                                                    ("inactivity_timeout", _active_connections.find(peer) != _active_connections.end() ? _node_configuration.peer_inactivity_timeout * 10 : _node_configuration.peer_inactivity_timeout)));
+        disconnect_from_peer(peer.get(), "Disconnecting due to inactivity", false, detailed_error);
       }
       peers_to_disconnect_gently.clear();
 
@@ -2639,9 +2634,7 @@ namespace graphene { namespace net {
                                                           ("position", i)
                                                           ("actual_num", actual_num)
                                                           ("expected_num", expected_num)));
-              disconnect_from_peer(originating_peer,
-                                   "You gave an invalid response to my request for sync blocks",
-                                   true, error_for_peer);
+              disconnect_from_peer(originating_peer, "You gave an invalid response to my request for sync blocks", true, error_for_peer);
               return;
             }
           }
@@ -2675,12 +2668,9 @@ namespace graphene { namespace net {
                    ("synopsis", synopsis_sent_in_request)
                    ("first_block", first_item_hash));
               fc::exception error_for_peer(FC_LOG_MESSAGE(error, "You gave an invalid response for my request for sync blocks.  I asked for blocks following something in "
-                                                          "${synopsis}, but you returned a list of blocks starting with ${first_block} which wasn't one of your choices",
-                                                          ("synopsis", synopsis_sent_in_request)
-                                                          ("first_block", first_item_hash)));
-              disconnect_from_peer(originating_peer,
-                                   "You gave an invalid response to my request for sync blocks",
-                                   true, error_for_peer);
+                                                          "${synopsis_sent_in_request}, but you returned a list of blocks starting with ${first_item_hash} which wasn't one of your choices",
+                                                          (synopsis_sent_in_request)(first_item_hash)));
+              disconnect_from_peer(originating_peer, "You gave an invalid response to my request for sync blocks", true, error_for_peer);
               return;
             }
           }
@@ -2830,11 +2820,9 @@ namespace graphene { namespace net {
                  ("timestamp", minimum_time_of_last_offered_block));
             fc::exception error_for_peer(FC_LOG_MESSAGE(error, "You offered me a list of more sync blocks than could possibly exist.  Total blocks offered: ${blocks}, Minimum time of the last block you offered: ${minimum_time_of_last_offered_block}, Now: ${now}",
                                                         ("blocks", originating_peer->number_of_unfetched_item_ids)
-                                                        ("minimum_time_of_last_offered_block", minimum_time_of_last_offered_block)
+                                                        (minimum_time_of_last_offered_block)
                                                         ("now", _delegate->get_blockchain_now())));
-            disconnect_from_peer(originating_peer,
-                                 "You offered me a list of more sync blocks than could possibly exist",
-                                 true, error_for_peer);
+            disconnect_from_peer(originating_peer, "You offered me a list of more sync blocks than could possibly exist", true, error_for_peer);
             return;
           }
 
@@ -3015,9 +3003,9 @@ namespace graphene { namespace net {
             peer->reset_id_search_for_peer();          
         }
         else
-          disconnect_from_peer(originating_peer, "You are missing a sync item you claim to have, your database is probably corrupted. Try --rebuild-index.",true,
-                               fc::exception(FC_LOG_MESSAGE(error,"You are missing a sync item you claim to have, your database is probably corrupted. Try --rebuild-index.",
-                               ("item_id", requested_item))));
+          disconnect_from_peer(originating_peer, "You are missing a sync item you claim to have, your database is probably corrupted. Try --rebuild-index.", true,
+                               fc::exception(FC_LOG_MESSAGE(error, "You are missing a sync item you claim to have, your database is probably corrupted. Try --rebuild-index.",
+                                                            (requested_item))));
         wlog("Peer doesn't have the requested sync item because he must have forked and lost it");
         trigger_fetch_sync_items_loop();
         return;
@@ -3723,8 +3711,8 @@ namespace graphene { namespace net {
       {
         // client rejected the block.  Disconnect the client and any other clients that offered us this block
         wlog("Failed to push block ${num} (id:${id}), client rejected block sent by peer",
-              ("num", block_message_to_process.block.block_num())
-              ("id", block_message_to_process.block_id));
+             ("num", block_message_to_process.block.block_num())
+             ("id", block_message_to_process.block_id));
 
         disconnect_exception = e;
         disconnect_reason = "You offered me a block that I have deemed to be invalid";
@@ -4109,14 +4097,12 @@ namespace graphene { namespace net {
       fc::time_point message_receive_time = fc::time_point::now();
 
       // only process it if we asked for it
-      auto iter = originating_peer->items_requested_from_peer.find( item_id(message_to_process.msg_type, message_hash) );
-      if( iter == originating_peer->items_requested_from_peer.end() )
+      auto iter = originating_peer->items_requested_from_peer.find(item_id(message_to_process.msg_type, message_hash));
+      if (iter == originating_peer->items_requested_from_peer.end())
       {
-        wlog( "received a message I didn't ask for from peer ${endpoint}, disconnecting from peer",
-             ( "endpoint", originating_peer->get_remote_endpoint() ) );
-        fc::exception detailed_error( FC_LOG_MESSAGE(error, "You sent me a message that I didn't ask for, message_hash: ${message_hash}",
-                                                    ( "message_hash", message_hash ) ) );
-        disconnect_from_peer( originating_peer, "You sent me a message that I didn't request", true, detailed_error );
+        wlog("received a message I didn't ask for from peer ${endpoint}, disconnecting from peer", ("endpoint", originating_peer->get_remote_endpoint()));
+        fc::exception detailed_error(FC_LOG_MESSAGE(error, "You sent me a message that I didn't ask for, message_hash: ${message_hash}", (message_hash)));
+        disconnect_from_peer(originating_peer, "You sent me a message that I didn't request", true, detailed_error);
         return;
       }
       else
@@ -5047,10 +5033,10 @@ namespace graphene { namespace net {
       ilog( "--------- END MEMORY USAGE ------------" );
     }
 
-    void node_impl::disconnect_from_peer( peer_connection* peer_to_disconnect,
-                                          const std::string& reason_for_disconnect,
-                                          bool caused_by_error /* = false */,
-                                          const fc::oexception& error /* = fc::oexception() */ )
+    void node_impl::disconnect_from_peer(peer_connection* peer_to_disconnect,
+                                         const std::string& reason_for_disconnect,
+                                         bool caused_by_error /* = false */,
+                                         const fc::oexception& error /* = fc::oexception() */)
     {
       VERIFY_CORRECT_THREAD();
       move_peer_to_closing_list(peer_to_disconnect->shared_from_this());
@@ -5289,8 +5275,7 @@ namespace graphene { namespace net {
       }
 
       while (_active_connections.size() > _node_configuration.maximum_number_of_connections)
-        disconnect_from_peer(_active_connections.begin()->get(),
-                             "I have too many connections open");
+        disconnect_from_peer(_active_connections.begin()->get(), "I have too many connections open");
       trigger_p2p_network_connect_loop();
     }
 
