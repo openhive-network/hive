@@ -27,3 +27,8 @@ Please do a keyword search to see if there is already an existing issue before o
 Anybody in the community is welcome and encouraged to submit pull requests with any desired changes to the platform!
 
 Requests to make changes that include working, tested pull requests jump to the top of the queue. There is not a guarantee that all functionality submitted as a PR will be accepted and merged, however. Please read through our [Git Guidelines](doc/git-guidelines.md) prior to submitting a PR.
+
+## How to create a merge request when you also need to update test-tools for your feature
+* Prepare changes for hive's develop and TestTools' master.
+* All changes must be rebased to target branches. the merge request in hive should have the TestTools submodule updated to point to your test tools merge request. Both CIs has to be green. (Note: nothing is merged to master/develop yet).
+* Create merge requests in hive and TestTools and wait for review. Write a note in the hive merge request mentioning that it needs the merge request from TestTools.
