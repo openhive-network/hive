@@ -3211,6 +3211,14 @@ namespace graphene { namespace net {
       {
         throw;
       }
+      catch (const p2p_node_shutting_down_exception&)
+      {
+        // the block wasn't processed because we're shutting down.  The is probably perfectly valid, so we
+        // don't want to mark the peer as bad because of the error.
+        // Since we're shutting down, I think it's ok to just return out of the function since we won't need
+        // to trigger fetching new items ids or other similar tasks
+        return;
+      }
       catch (const fc::exception& e)
       {
         fc_wlog(fc::logger::get("sync"), "p2p failed to push sync block #${block_number} ${block_id}: client rejected sync block sent by peer: {e}",
