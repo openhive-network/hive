@@ -688,10 +688,10 @@ namespace graphene { namespace net {
       void delayed_peer_deletion_task();
       void schedule_peer_for_deletion(const peer_connection_ptr& peer_to_delete);
 
-      void disconnect_from_peer( peer_connection* originating_peer,
-                               const std::string& reason_for_disconnect,
+      void disconnect_from_peer(peer_connection* originating_peer,
+                                const std::string& reason_for_disconnect,
                                 bool caused_by_error = false,
-                               const fc::oexception& additional_data = fc::oexception() );
+                                const fc::oexception& additional_data = fc::oexception());
 
       // methods implementing node's public interface
       void set_node_delegate(node_delegate* del, fc::thread* thread_for_delegate_calls);
@@ -952,6 +952,7 @@ namespace graphene { namespace net {
                  iter != _potential_peer_db.end() && is_wanting_new_connections();
                  ++iter)
             {
+              wdump((*iter));
               fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
 
               if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
@@ -1460,6 +1461,9 @@ namespace graphene { namespace net {
                       ("peer", active_peer->get_remote_endpoint())("count", active_peer->sync_items_requested_from_peer.size()));
               wlog("Disconnecting peer ${peer} because they haven't made any progress on my remaining ${count} sync item requests",
                    ("peer", active_peer->get_remote_endpoint())("count", active_peer->sync_items_requested_from_peer.size()));
+
+              active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they haven't made any progress on my remaining ${count} sync item requests", 
+                                                                                  ("count", active_peer->sync_items_requested_from_peer.size())));
               disconnect_due_to_request_timeout = true;
             }
             if (!disconnect_due_to_request_timeout &&
@@ -1472,6 +1476,7 @@ namespace graphene { namespace net {
                 wlog("Disconnecting peer ${peer} because they didn't respond to my request for sync item ids after ${synopsis}",
                       ("peer", active_peer->get_remote_endpoint())
                       ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
+                active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for sync item ids after my synopsis"));
                 disconnect_due_to_request_timeout = true;
               }
             if (!disconnect_due_to_request_timeout)
@@ -1482,6 +1487,7 @@ namespace graphene { namespace net {
                         ("peer", active_peer->get_remote_endpoint())("id", item_and_time.first.item_hash));
                   wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
                         ("peer", active_peer->get_remote_endpoint())("id", item_and_time.first.item_hash));
+                  active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}", ("id", item_and_time.first.item_hash)));
                   disconnect_due_to_request_timeout = true;
                   break;
                 }
@@ -2063,7 +2069,8 @@ namespace graphene { namespace net {
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
           originating_peer->send_message( message(connection_rejected ) );
           // for this type of message, we're immediately disconnecting this peer
-          disconnect_from_peer( originating_peer, "Invalid signature in hello message" );
+          fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Invalid signature in hello message"));
+          disconnect_from_peer(originating_peer, "Invalid signature in hello message", true, detailed_error);
           return;
         }
         if (originating_peer->last_known_fork_block_number != 0)
@@ -2093,7 +2100,8 @@ namespace graphene { namespace net {
               // for this type of message, we're immediately disconnecting this peer, instead of trying to
               // allowing her to ask us for peers (any of our peers will be on the same chain as us, so there's no
               // benefit of sharing them)
-              disconnect_from_peer(originating_peer, "Your client is too old, please upgrade");
+              fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Your client is too old, please upgrade"));
+              disconnect_from_peer(originating_peer, "Your client is too old, please upgrade", true, detailed_error);
               return;
             }
           }
@@ -2116,7 +2124,8 @@ namespace graphene { namespace net {
             // for this type of message, we're immediately disconnecting this peer, instead of trying to
             // allowing her to ask us for peers (any of our peers will be on the same chain as us, so there's no
             // benefit of sharing them)
-            disconnect_from_peer(originating_peer, "Your client is on a different chain, please specify different seed nodes");
+            fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Your client is on a different chain, please specify different seed nodes"));
+            disconnect_from_peer(originating_peer, "Your client is on a different chain, please specify different seed nodes", true, detailed_error);
             return;
         }
         if (already_connected_to_this_peer)
@@ -2220,7 +2229,8 @@ namespace graphene { namespace net {
         // probably need to think through that case.  We're not attempting that
         // yet, though, so it's ok to just disconnect here.
         wlog("unexpected hello_message from peer, disconnecting");
-        disconnect_from_peer(originating_peer, "Received a unexpected hello_message");
+        fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Received a unexpected hello_message"));
+        disconnect_from_peer(originating_peer, "Received a unexpected hello_message", true, detailed_error);
       }
     }
 
@@ -2269,6 +2279,7 @@ namespace graphene { namespace net {
           {
             updated_peer_record->last_connection_disposition = last_connection_rejected;
             updated_peer_record->last_connection_attempt_time = fc::time_point::now();
+            updated_peer_record->last_failed_time = updated_peer_record->last_connection_attempt_time;
             _potential_peer_db.update_entry(*updated_peer_record);
           }
         }
@@ -2446,11 +2457,12 @@ namespace graphene { namespace net {
       originating_peer->send_message(reply_message);
 
       if (disconnect_from_inhibited_peer)
-        {
+      {
         // the peer has all of our blocks, and we don't want any of theirs, so disconnect them
-        disconnect_from_peer(originating_peer, "you are on a fork that I'm unable to switch to");
+        fc::exception detailed_error(FC_LOG_MESSAGE(warn, "you are on a fork that I'm unable to switch to"));
+        disconnect_from_peer(originating_peer, "you are on a fork that I'm unable to switch to", true, detailed_error);
         return;
-        }
+      }
 
       if (originating_peer->direction == peer_connection_direction::inbound &&
           _handshaking_connections.find(originating_peer->shared_from_this()) != _handshaking_connections.end())
@@ -2576,7 +2588,10 @@ namespace graphene { namespace net {
         synopsis_exception = e;
       }
       if (synopsis_exception)
-        disconnect_from_peer(peer, "You are on a fork I'm unable to switch to");
+      {
+        fc::exception error_for_peer(FC_LOG_MESSAGE(error, "You are on a fork I'm unable to switch to"));
+        disconnect_from_peer(peer, "You are on a fork I'm unable to switch to", true, error_for_peer);
+      }
     }
 
     bool node_impl::is_item_id_being_processed(const item_hash_t& block_id)
@@ -3136,6 +3151,7 @@ namespace graphene { namespace net {
         if (updated_peer_record)
         {
           updated_peer_record->last_error = *originating_peer->connection_closed_error;
+          updated_peer_record->last_failed_time = fc::time_point::now();
           _potential_peer_db.update_entry(*updated_peer_record);
         }
       }
@@ -3347,6 +3363,8 @@ namespace graphene { namespace net {
       }
       else //client did not accept block
       {
+        fc::exception disconnect_exception(FC_LOG_MESSAGE(error, "You offered us a block that we reject as invalid.  The invalid block was number: ${block_number} with hash ${block_id}",
+                                                          (block_number)(block_id)));
         // invalid message received
         for (const peer_connection_ptr& peer : _active_connections)
         {
@@ -3361,7 +3379,7 @@ namespace graphene { namespace net {
               peer->inhibit_fetching_sync_blocks = true;
             }
             else
-              peers_to_disconnect[peer] = std::make_pair(std::string("You offered us a block that we reject as invalid"), fc::oexception(handle_message_exception));
+              peers_to_disconnect[peer] = std::make_pair(std::string("You offered us a block that we reject as invalid"), disconnect_exception);
           }
         }
       }
@@ -3729,7 +3747,7 @@ namespace graphene { namespace net {
       for (const peer_connection_ptr& peer : peers_to_disconnect)
       {
         wlog("disconnecting client ${endpoint} because it offered us the rejected block", ("endpoint", peer->get_remote_endpoint()));
-        disconnect_from_peer(peer.get(), disconnect_reason, true, *disconnect_exception);
+        disconnect_from_peer(peer.get(), disconnect_reason, true, disconnect_exception);
       }
     }
     void node_impl::process_block_message(peer_connection* originating_peer,
@@ -5056,6 +5074,8 @@ namespace graphene { namespace net {
               updated_peer_record->last_error = error;
             else
               updated_peer_record->last_error = fc::exception(FC_LOG_MESSAGE(info, reason_for_disconnect.c_str()));
+            if (caused_by_error)
+              updated_peer_record->last_failed_time = fc::time_point::now();
             _potential_peer_db.update_entry(*updated_peer_record);
           }
         }
