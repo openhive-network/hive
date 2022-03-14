@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string, create_account_and_create_order
 
@@ -31,7 +31,7 @@ def test_get_order_book_with_correct_value(node, wallet, orders_limit):
     ]
 )
 def test_get_order_book_with_incorrect_value(node, orders_limit):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_order_book(orders_limit)
 
 
@@ -43,5 +43,5 @@ def test_get_order_book_with_incorrect_value(node, orders_limit):
     ]
 )
 def test_get_order_book_with_incorrect_type_of_argument(node, orders_limit):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_order_book(orders_limit)

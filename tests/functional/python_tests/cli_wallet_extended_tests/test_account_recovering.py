@@ -1,19 +1,21 @@
-from test_tools import Account, logger, World, Asset
+import test_tools as tt
+
 from .utilities import get_key
+
 
 def test_recovery(wallet):
 
     wallet.api.create_account('initminer', 'alice', '{}')
 
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(100))
 
-    wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'banana')
+    wallet.api.transfer('initminer', 'alice', tt.Asset.Test(500), 'banana')
 
     wallet.api.create_account('alice', 'bob', '{}')
 
-    wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(40))
+    wallet.api.transfer_to_vesting('alice', 'bob', tt.Asset.Test(40))
 
-    wallet.api.transfer('initminer', 'bob', Asset.Test(333), 'kiwi-banana')
+    wallet.api.transfer('initminer', 'bob', tt.Asset.Test(333), 'kiwi-banana')
 
     response = wallet.api.change_recovery_account('alice', 'bob')
 

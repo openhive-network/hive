@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Asset, exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -32,7 +32,7 @@ INCORRECT_VALUES = [
     ]
 )
 def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
@@ -44,7 +44,7 @@ def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
 def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, wallet, reward_fund_name):
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
@@ -59,6 +59,6 @@ def create_accounts_and_make_recurrent_transfer(wallet, from_account, to_account
         wallet.api.create_account('initminer', from_account, '{}')
         wallet.api.create_account('initminer', to_account, '{}')
 
-    wallet.api.transfer_to_vesting('initminer', from_account, Asset.Test(100))
-    wallet.api.transfer('initminer', from_account, Asset.Test(500), 'memo')
-    wallet.api.recurrent_transfer(from_account, to_account, Asset.Test(20), 'memo', 100, 10)
+    wallet.api.transfer_to_vesting('initminer', from_account, tt.Asset.Test(100))
+    wallet.api.transfer('initminer', from_account, tt.Asset.Test(500), 'memo')
+    wallet.api.recurrent_transfer(from_account, to_account, tt.Asset.Test(20), 'memo', 100, 10)

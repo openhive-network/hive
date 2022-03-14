@@ -4,11 +4,11 @@ from typing import Final
 
 import pytest
 
-from test_tools import World
+import test_tools as tt
 
 
-def test_dump_config(world: World):
-    node = world.create_init_node()
+def test_dump_config():
+    node = tt.InitNode()
     old_config = dict()
     for key, value in node.config.__dict__.items():
         old_config[key] = value
@@ -19,8 +19,8 @@ def test_dump_config(world: World):
     assert node.config.__dict__ == old_config
 
 
-def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(world: World):
-    node = world.create_init_node()
+def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used():
+    node = tt.InitNode()
     node.run()
 
     with open(node.directory / 'stderr.txt') as file:
@@ -30,8 +30,8 @@ def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(
     assert warning not in stderr
 
 
-def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World):
-    node = world.create_api_node()
+def test_warning_about_deprecated_flag_exit_after_replay(block_log):
+    node = tt.ApiNode()
 
     node.run(replay_from=block_log, arguments=['--exit-after-replay'])
 
@@ -48,10 +48,10 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log, world: World
         {'exit_before_synchronization': True},
     ]
 )
-def test_stop_after_replay(way_to_stop, world: World, block_log: Path, block_log_length: int):
-    network = world.create_network()
-    node_which_should_not_synchronize = network.create_api_node()
-    node_with_new_blocks = network.create_init_node()
+def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
+    network = tt.Network()
+    node_which_should_not_synchronize = tt.ApiNode(network=network)
+    node_with_new_blocks = tt.InitNode(network=network)
 
     # Generate new blocks, which are not present in source block log,
     # to check if other node will try to download them (synchronize).
@@ -73,8 +73,8 @@ def test_stop_after_replay(way_to_stop, world: World, block_log: Path, block_log
         {'exit_before_synchronization': True},
     ]
 )
-def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, block_log: Path):
-    node = world.create_api_node()
+def test_stop_after_replay_in_load_from_snapshot(way_to_stop, block_log: Path):
+    node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
     snap = node.dump_snapshot(close=True)
     Path(node.directory / 'blockchain' / 'shared_memory.bin').unlink()
@@ -82,16 +82,16 @@ def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, bloc
     assert not node.is_running()
 
 
-def test_stop_replay_at_given_block(world: World, block_log: Path, block_log_length: int):
+def test_stop_replay_at_given_block(block_log: Path, block_log_length: int):
     final_block: Final[int] = block_log_length // 2
 
-    node = world.create_api_node()
+    node = tt.ApiNode()
     node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
 
     assert node.get_last_block_number() == final_block
 
 
-def test_stop_replay_at_given_block_with_enabled_witness_plugin(world: World, block_log: Path, block_log_length: int):
+def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path, block_log_length: int):
     # In the past there was a problem with witness node stopped at given block. This issue was caused by communication
     # of witness plugin with p2p plugin. When node is stopped at given block, p2p plugin is not enabled, so witness
     # plugin was unable to get information from it and program used to crash.
@@ -100,7 +100,7 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(world: World, bl
 
     final_block: Final[int] = block_log_length // 2
 
-    node = world.create_witness_node(witnesses=['alice'])
+    node = tt.WitnessNode(witnesses=['alice'])
     node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
 
     assert node.get_last_block_number() == final_block

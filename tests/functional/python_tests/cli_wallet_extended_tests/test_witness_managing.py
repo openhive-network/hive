@@ -1,9 +1,10 @@
-from test_tools import Account, logger, World, Asset
+import test_tools as tt
+
 
 def test_witness(wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
 
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(500))
 
     _result = wallet.api.get_active_witnesses()
     assert len(_result) > 1
@@ -30,7 +31,7 @@ def test_witness(wallet):
     assert _result['owner'] == 'alice'
 
     _props = _result['props']
-    assert _props['account_creation_fee'] == Asset.Test(2789.03)
+    assert _props['account_creation_fee'] == tt.Asset.Test(2789.03)
 
     response = wallet.api.publish_feed('alice', {"base":"1.167 TBD", "quote":"1.111 TESTS"})
 
@@ -39,8 +40,8 @@ def test_witness(wallet):
     assert _ops[0][0] == 'feed_publish'
 
     _exchange_rate = _ops[0][1]['exchange_rate']
-    assert _exchange_rate['base'] == Asset.Tbd(1.167)
-    assert _exchange_rate['quote'] == Asset.Test(1.111)
+    assert _exchange_rate['base'] == tt.Asset.Tbd(1.167)
+    assert _exchange_rate['quote'] == tt.Asset.Test(1.111)
 
     response = wallet.api.vote_for_witness('initminer', 'alice', True)
 

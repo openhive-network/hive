@@ -1,5 +1,7 @@
-from test_tools import Account, logger, World, Asset
+import test_tools as tt
+
 from .utilities import check_keys, create_accounts
+
 
 key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
 key2 = 'TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg'
@@ -31,7 +33,7 @@ def test_different_false_cases(wallet):
     create_accounts( wallet, 'initminer', ['alice', 'bob'] )
 
     try:
-        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
+        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', tt.Asset.Tbd(111), 'this is proposal', 'hello-world')
     except Exception as e:
         message = str(e)
         assert message.find('Proposal permlink must point to the article posted by creator or receiver') != -1
@@ -42,12 +44,12 @@ def test_different_false_cases(wallet):
         message = str(e)
         assert message.find('Account: bob has 0 RC') != -1
 
-    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
+    wallet.api.transfer_to_vesting('initminer', 'bob', tt.Asset.Test(100))
 
     wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
 
     try:
-        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
+        response = wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', tt.Asset.Tbd(111), 'this is proposal', 'hello-world')
     except Exception as e:
         message = str(e)
         assert message.find('Account bob does not have sufficient funds for balance adjustment') != -1
@@ -66,7 +68,7 @@ def test_different_false_cases(wallet):
 
     try:
         with wallet.in_single_transaction(broadcast=False) as transaction:
-            wallet.api.transfer('bob', 'alice', Asset.Tbd(199.148), 'banana')
+            wallet.api.transfer('bob', 'alice', tt.Asset.Tbd(199.148), 'banana')
             wallet.api.post_comment('alice', 'hello-world2', '', 'xyz2', 'something about world2', 'just nothing2', '{}')
     except Exception as e:
         message = str(e)
@@ -75,23 +77,23 @@ def test_different_false_cases(wallet):
 def test_complex(wallet):
     create_accounts( wallet, 'initminer', ['alice', 'bob', 'carol', 'dan'] )
 
-    wallet.api.transfer_to_vesting('initminer', 'bob', Asset.Test(100))
+    wallet.api.transfer_to_vesting('initminer', 'bob', tt.Asset.Test(100))
 
     wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something about world', 'just nothing', '{}')
 
-    wallet.api.transfer('initminer', 'bob', Asset.Tbd(788.543), 'avocado')
+    wallet.api.transfer('initminer', 'bob', tt.Asset.Tbd(788.543), 'avocado')
 
-    wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', Asset.Tbd(111), 'this is proposal', 'hello-world')
+    wallet.api.create_proposal('bob', 'bob', '2031-01-01T00:00:00', '2031-06-01T00:00:00', tt.Asset.Tbd(111), 'this is proposal', 'hello-world')
 
     with wallet.in_single_transaction(broadcast=False) as transaction:
-        wallet.api.transfer('bob', 'alice', Asset.Tbd(199.148), 'banana')
-        wallet.api.transfer('bob', 'alice', Asset.Tbd(100.001), 'cherry')
-        wallet.api.transfer('initminer', 'alice', Asset.Tbd(1), 'aloes')
-        wallet.api.transfer('initminer', 'carol', Asset.Tbd(199.001), 'pumpkin')
-        wallet.api.transfer('initminer', 'dan', Asset.Tbd(198.002), 'beetroot')
-        wallet.api.transfer_to_vesting('initminer', 'carol', Asset.Test(100))
-        wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(100))
-        wallet.api.transfer_to_vesting('initminer', 'dan', Asset.Test(100))
+        wallet.api.transfer('bob', 'alice', tt.Asset.Tbd(199.148), 'banana')
+        wallet.api.transfer('bob', 'alice', tt.Asset.Tbd(100.001), 'cherry')
+        wallet.api.transfer('initminer', 'alice', tt.Asset.Tbd(1), 'aloes')
+        wallet.api.transfer('initminer', 'carol', tt.Asset.Tbd(199.001), 'pumpkin')
+        wallet.api.transfer('initminer', 'dan', tt.Asset.Tbd(198.002), 'beetroot')
+        wallet.api.transfer_to_vesting('initminer', 'carol', tt.Asset.Test(100))
+        wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(100))
+        wallet.api.transfer_to_vesting('initminer', 'dan', tt.Asset.Test(100))
 
     _result_trx_response = transaction.get_response()
 

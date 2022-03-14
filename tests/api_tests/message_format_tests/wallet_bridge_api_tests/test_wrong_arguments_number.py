@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 
 def get_commands(commands_with_arguments):
@@ -47,7 +47,7 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ]
 )
 def test_run_command_without_arguments_where_arguments_are_required(node, wallet_bridge_api_command):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
 
@@ -79,5 +79,5 @@ def test_run_command_with_additional_argument(node, wallet_bridge_api_command, a
     ]
 )
 def test_run_command_with_missing_argument(node, wallet_bridge_api_command, arguments):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])

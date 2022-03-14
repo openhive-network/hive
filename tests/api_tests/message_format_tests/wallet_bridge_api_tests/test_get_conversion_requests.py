@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Asset, exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -26,7 +26,7 @@ def test_get_conversion_requests_with_correct_value(node, wallet):
     ]
 )
 def test_get_conversion_requests_with_incorrect_value(node, account_name):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
@@ -38,7 +38,7 @@ def test_get_conversion_requests_with_incorrect_value(node, account_name):
 def test_get_conversion_requests_with_incorrect_type_of_argument(node, wallet, account_name):
     create_account_with_converted_hbd(wallet, account_name='alice')
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
@@ -50,8 +50,8 @@ def test_get_conversion_requests_with_additional_argument(node, wallet):
 
 def create_account_with_converted_hbd(wallet, account_name):
     wallet.api.create_account('initminer', account_name, '{}')
-    wallet.api.transfer('initminer', account_name, Asset.Test(100), 'memo')
-    wallet.api.transfer_to_vesting('initminer', account_name, Asset.Test(100))
-    wallet.api.convert_hive_with_collateral(account_name, Asset.Test(10))
-    wallet.api.convert_hbd('alice', Asset.Tbd(0.1))
+    wallet.api.transfer('initminer', account_name, tt.Asset.Test(100), 'memo')
+    wallet.api.transfer_to_vesting('initminer', account_name, tt.Asset.Test(100))
+    wallet.api.convert_hive_with_collateral(account_name, tt.Asset.Test(10))
+    wallet.api.convert_hbd('alice', tt.Asset.Tbd(0.1))
     return account_name

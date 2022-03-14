@@ -1,11 +1,14 @@
-from test_tools import Account, logger, World, Asset
-from .utilities import check_keys
 import json
+
+import test_tools as tt
+
+from .utilities import check_keys
+
 
 def test_update(wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
 
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(500))
 
     wallet.api.update_account_auth_account('alice', 'posting', 'initminer', 2)
 

@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string, prepare_node_with_witnesses
 
@@ -32,8 +32,8 @@ CORRECT_VALUES = [
         (WITNESSES_NAMES[0], True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_list_witnesses_with_correct_value(world, witness_account, limit):
-    node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
+def test_list_witnesses_with_correct_value(witness_account, limit):
+    node = prepare_node_with_witnesses(WITNESSES_NAMES)
     node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
@@ -44,9 +44,9 @@ def test_list_witnesses_with_correct_value(world, witness_account, limit):
         (WITNESSES_NAMES[0], 1001),
     ]
 )
-def test_list_witnesses_with_incorrect_value(world, witness_account, limit):
-    node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
-    with pytest.raises(exceptions.CommunicationError):
+def test_list_witnesses_with_incorrect_value(witness_account, limit):
+    node = prepare_node_with_witnesses(WITNESSES_NAMES)
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
@@ -60,7 +60,7 @@ def test_list_witnesses_with_incorrect_value(world, witness_account, limit):
         (WITNESSES_NAMES[0], 'true'),
     ]
 )
-def test_list_witnesses_with_incorrect_type_of_arguments(world, witness_account, limit):
-    node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
-    with pytest.raises(exceptions.CommunicationError):
+def test_list_witnesses_with_incorrect_type_of_arguments(witness_account, limit):
+    node = prepare_node_with_witnesses(WITNESSES_NAMES)
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_witnesses(witness_account, limit)

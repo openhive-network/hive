@@ -1,5 +1,7 @@
-from test_tools import Account, logger, World, Asset
+import test_tools as tt
+
 from .utilities import create_accounts
+
 
 def test_withdraw_vesting(wallet):
 
@@ -22,19 +24,19 @@ def test_withdraw_vesting(wallet):
 
     create_accounts( wallet, 'initminer', ['alice', 'bob', 'carol'] )
 
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(500))
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(500))
 
     response = wallet.api.get_account('alice')
 
-    check_withdraw_data( response, Asset.Vest(0), 0 )
+    check_withdraw_data( response, tt.Asset.Vest(0), 0 )
 
     assert len(wallet.api.get_withdraw_routes('alice', 'incoming')) == 0
 
-    wallet.api.withdraw_vesting('alice', Asset.Vest(4))
+    wallet.api.withdraw_vesting('alice', tt.Asset.Vest(4))
 
     response = wallet.api.get_account('alice')
 
-    check_withdraw_data( response, Asset.Vest(0.307693), 4000000 )
+    check_withdraw_data( response, tt.Asset.Vest(0.307693), 4000000 )
 
     assert len(wallet.api.get_withdraw_routes('alice', 'incoming')) == 0
 

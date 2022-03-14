@@ -1,3 +1,6 @@
+import test_tools as tt
+
+
 def test_direct_rc_delegations(wallet):
     creator = 'initminer'
     delegator = 'delegator'
@@ -10,7 +13,7 @@ def test_direct_rc_delegations(wallet):
     wallet.api.transfer_to_vesting(creator, delegator, '0.010 TESTS', 'true')
     try:
         wallet.api.transfer(receiver, receiver, '0.001 TESTS', '', 'true')
-    except Exception as e:
+    except tt.exceptions.CommunicationError as e:
         message = str(e.response)
         found = message.find('receiver has 0 RC, needs 4 RC. Please wait to transact')
         assert found != -1

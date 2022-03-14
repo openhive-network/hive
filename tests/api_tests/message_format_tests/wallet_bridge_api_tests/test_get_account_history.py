@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -57,7 +57,7 @@ def test_get_account_history_with_correct_value(node, wallet, account, from_, li
     ]
 )
 def test_get_account_history_with_incorrect_value(node, account, from_, limit):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
 
 
@@ -79,5 +79,5 @@ def test_get_account_history_with_incorrect_value(node, account, from_, limit):
 def test_get_account_history_with_incorrect_type_of_argument(node, wallet, account, from_, limit):
     wallet.create_accounts(len(ACCOUNTS))
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)

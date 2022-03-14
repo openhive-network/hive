@@ -1,6 +1,6 @@
 import pytest
 
-import test_tools.exceptions
+import test_tools as tt
 
 from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
 
@@ -127,7 +127,7 @@ def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, o
         for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
 
-    with pytest.raises(test_tools.exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
@@ -166,5 +166,5 @@ def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, o
     ]
 )
 def test_list_proposal_votes_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
-    with pytest.raises(test_tools.exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)

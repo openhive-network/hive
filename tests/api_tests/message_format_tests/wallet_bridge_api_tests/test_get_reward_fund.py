@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -28,7 +28,7 @@ INCORRECT_VALUES = [
     ]
 )
 def test_get_reward_fund_with_incorrect_value(node, reward_fund_name):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_reward_fund(reward_fund_name)
 
 
@@ -38,5 +38,5 @@ def test_get_reward_fund_with_incorrect_value(node, reward_fund_name):
     ]
 )
 def test_get_reward_fund_with_incorrect_type_of_argument(node, reward_fund_name):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_reward_fund(reward_fund_name)

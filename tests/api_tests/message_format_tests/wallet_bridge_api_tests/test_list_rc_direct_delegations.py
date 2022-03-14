@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Asset, exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -50,7 +50,7 @@ def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, 
 def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to, limit):
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
@@ -79,12 +79,12 @@ def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to
 def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, wallet, from_, to, limit):
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
 def create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts):
     wallet.create_accounts(len(accounts))
-    wallet.api.transfer_to_vesting('initminer', accounts[0], Asset.Test(0.1))
+    wallet.api.transfer_to_vesting('initminer', accounts[0], tt.Asset.Test(0.1))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 5)
     
