@@ -3352,9 +3352,12 @@ namespace graphene { namespace net {
 
       dlog("Leaving send_sync_block_to_node_delegate");
 
-      if (// _suspend_fetching_sync_blocks && <-- you can use this if "maximum_number_of_blocks_to_handle_at_one_time" == "maximum_number_of_sync_blocks_to_prefetch"
+      if (
+          // _suspend_fetching_sync_blocks && <-- you can use this if "maximum_number_of_blocks_to_handle_at_one_time" == "maximum_number_of_sync_blocks_to_prefetch"
           !_node_is_shutting_down &&
-          (!_process_backlog_of_sync_blocks_done.valid() || _process_backlog_of_sync_blocks_done.ready()))
+          (!_process_backlog_of_sync_blocks_done.valid() || _process_backlog_of_sync_blocks_done.ready()) &&
+          get_number_of_handle_message_calls_in_progress() < _node_configuration.maximum_number_of_blocks_to_handle_at_one_time / 2 //DLN add hystersis to reduce number of times we process_backlog_of_sync_blocks
+         )
         _process_backlog_of_sync_blocks_done = async_task([=](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
     }
 
