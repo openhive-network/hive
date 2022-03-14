@@ -3710,7 +3710,11 @@ namespace graphene { namespace net {
       // (it's possible that we request an item during normal operation and then get kicked into sync
       // mode before we receive and process the item.  In that case, we should process the item as a normal
       // item to avoid confusing the sync code)
+      fc::time_point start_decode_block = fc::time_point::now();
       graphene::net::block_message block_message_to_process(message_to_process.as<graphene::net::block_message>());
+      fc::time_point end_decode_block = fc::time_point::now();
+      fc::microseconds block_decode_time = end_decode_block - start_decode_block;
+      ddump((block_decode_time));
       auto item_iter = originating_peer->items_requested_from_peer.find(item_id(graphene::net::block_message_type, message_hash));
       if (item_iter != originating_peer->items_requested_from_peer.end())
       {
