@@ -551,12 +551,9 @@ namespace fc {
       unsigned_int size; fc::raw::unpack( s, size );
       FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
       value.clear();
+      value.resize(size.value);
       for ( size_t i = 0; i < size.value; i++ )
-      {
-         T tmp;
-         fc::raw::unpack( s, tmp, depth );
-         value.emplace_back( std::move( tmp ) );
-      }
+         fc::raw::unpack( s, value[i], depth );
     }
 
     template<typename Stream, typename... T>
