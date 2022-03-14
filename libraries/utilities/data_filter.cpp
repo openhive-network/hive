@@ -1,8 +1,8 @@
 #include <hive/utilities/data_filter.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
-//#define DIAGNOSTIC(s)
-#define DIAGNOSTIC(s) s
+#define DIAGNOSTIC(s)
+//#define DIAGNOSTIC(s) s
 
 namespace hive { namespace plugins {
 
