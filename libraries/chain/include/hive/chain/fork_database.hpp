@@ -7,7 +7,6 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
-
 #include <chainbase/chainbase.hpp>
 
 namespace hive { namespace chain {
@@ -69,8 +68,9 @@ namespace hive { namespace chain {
       void                             remove(block_id_type b);
       void                             set_head(shared_ptr<fork_item> h);
       bool                             is_known_block(const block_id_type& id)const;
-      shared_ptr<fork_item>            fetch_block(const block_id_type& id)const;
       shared_ptr<fork_item>            fetch_block_unlocked(const block_id_type& id)const;
+      shared_ptr<fork_item>            fetch_block(const block_id_type& id)const;
+      vector<item_ptr>                 fetch_block_by_number_unlocked(uint32_t num) const;
       vector<item_ptr>                 fetch_block_by_number(uint32_t n)const;
 
       // These functions are similar to the corresponding versions in `database`,
@@ -96,8 +96,8 @@ namespace hive { namespace chain {
         *  Given two head blocks, return two branches of the fork graph that
         *  end with a common ancestor (same prior block)
         */
-      pair< branch_type, branch_type >  fetch_branch_from(block_id_type first,
-                                          block_id_type second)const;
+      pair< branch_type, branch_type >  fetch_branch_from(block_id_type first, block_id_type second)const;
+      shared_ptr<fork_item>            walk_main_branch_to_num_unlocked( uint32_t block_num )const;
       shared_ptr<fork_item>            walk_main_branch_to_num( uint32_t block_num )const;
       shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num )const;
       vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count )const;
@@ -125,7 +125,7 @@ namespace hive { namespace chain {
 #else
         chainbase::read_lock lock( _rw_lock, boost::defer_lock_t() );
 #endif
-
+        //fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, fork_read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", (_read_lock_count)(_write_lock_count)); 
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
         chainbase::int_incrementer ii( _read_lock_count );
@@ -138,9 +138,13 @@ namespace hive { namespace chain {
         else
         {
           if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
+          {
+            //fc_wlog(fc::logger::get("chainlock"),"timedout getting fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",(_read_lock_count)(_write_lock_count));
             CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
+          }
         }
-
+        //fc_wlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",(_read_lock_count)(_write_lock_count));
+      
         return callback();
       }
 
@@ -148,13 +152,27 @@ namespace hive { namespace chain {
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
         chainbase::write_lock lock( _rw_lock, boost::defer_lock_t() );
+        //fc_wlog(fc::logger::get("chainlock"),"trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",(_read_lock_count)(_write_lock_count));
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
         chainbase::int_incrementer ii( _write_lock_count );
 #endif
 
+//        fc::time_point start_acquire = fc::time_point::now();
         lock.lock();
+//        fc::time_point start_locked = fc::time_point::now();
+//        fc::microseconds fork_write_acquire = start_locked - start_acquire;
+//        fc_wlog(fc::logger::get("chainlock"),"Took ${acquire}us to get fork_write_lock,  write_lock_count=${_write_lock_count}",("acquire",fork_write_acquire.count())(_write_lock_count));
 
+//        struct foo {
+//            fc::time_point start_locked;
+//            foo(fc::time_point start) : start_locked(start) {}
+//            ~foo() {
+//              fc::microseconds fork_writelock_duration = fc::time_point::now() - start_locked;
+//              fc_wlog(fc::logger::get("chainlock"),"Took ${held}us to release fork_write_lock",("held",fork_writelock_duration.count()));
+//            }
+//          }
+//          bar(start_locked); 
         return callback();
       }
 
