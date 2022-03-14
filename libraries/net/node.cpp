@@ -656,6 +656,7 @@ namespace graphene { namespace net {
       void on_connection_closed(peer_connection* originating_peer) override;
 
       void send_sync_block_to_node_delegate(const graphene::net::block_message& block_message_to_send);
+      uint32_t get_number_of_handle_message_calls_in_progress();
       void process_backlog_of_sync_blocks();
       void trigger_process_backlog_of_sync_blocks();
       void process_block_during_sync(peer_connection* originating_peer, const graphene::net::block_message& block_message, const message_hash_type& message_hash);
@@ -3399,9 +3400,9 @@ namespace graphene { namespace net {
         _process_backlog_of_sync_blocks_done = async_task([=](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
     }
 
-    void node_impl::process_backlog_of_sync_blocks()
+    uint32_t node_impl::get_number_of_handle_message_calls_in_progress()
     {
-      // garbage-collect the list of async tasks here for lack of a better place
+      // garbage-collect the list of async tasks before we count them
       for (auto calls_iter = _handle_message_calls_in_progress.begin();
             calls_iter != _handle_message_calls_in_progress.end();)
       {
@@ -3410,9 +3411,13 @@ namespace graphene { namespace net {
         else
           ++calls_iter;
       }
+      return _handle_message_calls_in_progress.size();
+    }
 
+    void node_impl::process_backlog_of_sync_blocks()
+    {
       dlog("in process_backlog_of_sync_blocks");
-      if (_handle_message_calls_in_progress.size() >= _node_configuration.maximum_number_of_blocks_to_handle_at_one_time)
+      if (get_number_of_handle_message_calls_in_progress() >= _node_configuration.maximum_number_of_blocks_to_handle_at_one_time)
       {
         wlog("leaving process_backlog_of_sync_blocks because we've already sent blockchain enough blocks");
         return; // we will be rescheduled when the next block finishes its processing
