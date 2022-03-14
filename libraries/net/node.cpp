@@ -3303,7 +3303,6 @@ namespace graphene { namespace net {
                 if (peer->idle() &&
                     peer->number_of_unfetched_item_ids != 0 && //don't fetch more ids if node says it has no more, we will try resuming sync instead
                     peer->ids_of_items_to_get.size() < GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH  
-                   // && peer->ids_of_items_being_processed.empty()
                    )
                   peers_with_newly_empty_item_lists.insert(peer);
                 
