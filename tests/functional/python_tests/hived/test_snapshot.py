@@ -1,19 +1,21 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from test_tools import World
 
-def test_snapshots_content_binary(world : World, block_log : Path):
+import test_tools as tt
+
+
+def test_snapshots_content_binary(block_log: Path):
   node = [None]
   snap = [None]
 
-  node.append(world.create_api_node(name="node_1"))
+  node.append(tt.ApiNode())
   node[1].config.plugin.append('state_snapshot')
   node[1].run(exit_before_synchronization=True, replay_from=block_log)
 
   snap.append(node[1].dump_snapshot(close=True))
 
-  node.append(world.create_api_node(name="node_2"))
+  node.append(tt.ApiNode())
   node[2].run(load_snapshot_from=snap[1], exit_before_synchronization=True)
 
   snap.append(node[2].dump_snapshot(close=True))
@@ -22,7 +24,7 @@ def test_snapshots_content_binary(world : World, block_log : Path):
   assert snap[1] == snap[2]
 
 
-def test_snapshots_existing_dir(world : World, block_log : Path, block_log_length: int):
+def test_snapshots_existing_dir(block_log: Path, block_log_length: int):
   def clear_state(node):
     from shutil import rmtree
     from os.path import join as join_paths
@@ -30,7 +32,7 @@ def test_snapshots_existing_dir(world : World, block_log : Path, block_log_lengt
 
   ERROR_MESSAGE = 'is not empty. Creating snapshot rejected.'
 
-  node = world.create_init_node(name='node_1') #, witnesses=['witnessaaa'])
+  node = tt.InitNode()
   node.config.plugin.append('state_snapshot')
   node.run(exit_before_synchronization=True, replay_from=block_log)
   node.close()

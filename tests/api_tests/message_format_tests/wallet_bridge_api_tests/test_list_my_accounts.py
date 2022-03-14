@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 
 ACCOUNTS = [f'account-{i}' for i in range(10)]
@@ -33,7 +33,7 @@ def test_list_my_accounts_with_correct_value(node, wallet, accounts):
 def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
     wallet.create_accounts(len(ACCOUNTS))
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
@@ -46,7 +46,7 @@ def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
     ]
 )
 def test_list_my_accounts_with_incorrect_type_of_argument(node, account_key):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
@@ -60,5 +60,5 @@ def test_list_my_accounts_with_additional_argument(node, wallet):
 
 
 def test_list_my_accounts_with_missing_argument(node):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts()

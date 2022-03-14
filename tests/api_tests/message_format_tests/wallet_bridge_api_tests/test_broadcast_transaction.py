@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 
 def test_broadcast_transaction_with_correct_value(node, wallet):
@@ -17,7 +17,7 @@ def test_broadcast_transaction_with_correct_value(node, wallet):
     ]
 )
 def test_broadcast_transaction_with_incorrect_type_of_argument(node, transaction_name):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.broadcast_transaction(transaction_name)
 
 

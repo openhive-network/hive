@@ -1,13 +1,15 @@
 import pytest
 
-from test_tools import Wallet
+import test_tools as tt
+
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'node_shared_file_size: Shared file size of node from `node` fixture')
 
+
 @pytest.fixture
-def node(world, request):
-    init_node = world.create_init_node()
+def node(request):
+    init_node = tt.InitNode()
     # The actual HF time does not matter as long as it's in the past
 
     shared_file_size = request.node.get_closest_marker('node_shared_file_size')
@@ -20,4 +22,4 @@ def node(world, request):
 
 @pytest.fixture
 def wallet(node):
-    return Wallet(attach_to=node)
+    return tt.Wallet(attach_to=node)

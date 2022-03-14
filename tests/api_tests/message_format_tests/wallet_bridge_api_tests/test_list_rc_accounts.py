@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -45,7 +45,7 @@ def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
 def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
 
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
 
 
@@ -62,5 +62,5 @@ def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit)
 )
 def test_list_rc_accounts_with_incorrect_type_of_arguments(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_rc_accounts(rc_account, limit)

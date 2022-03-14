@@ -1,13 +1,15 @@
 import pytest
 
-from test_tools import Wallet
+import test_tools as tt
+
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'enabled_plugins: Enabled plugins in node from `node` fixture')
 
+
 @pytest.fixture
-def node(world, request):
-    init_node = world.create_init_node()
+def node(request):
+    init_node = tt.InitNode()
 
     enabled_plugins = request.node.get_closest_marker('enabled_plugins')
     if enabled_plugins:
@@ -19,4 +21,4 @@ def node(world, request):
 
 @pytest.fixture
 def wallet(node):
-    return Wallet(attach_to=node)
+    return tt.Wallet(attach_to=node)

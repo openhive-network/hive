@@ -1,15 +1,16 @@
-from test_tools import Account, Asset
 from random import randint
 from datetime import datetime, timedelta
+
+import test_tools as tt
 
 
 class funded_account_info:
     def __init__(self):
-        self.creator: Account = None
-        self.account: Account = None
-        self.funded_TESTS: Asset.Test = None
-        self.funded_TBD: Asset.Tbd = None
-        self.funded_VESTS: Asset.Test = None
+        self.creator: tt.Account = None
+        self.account: tt.Account = None
+        self.funded_TESTS: tt.Asset.Test = None
+        self.funded_TBD: tt.Asset.Tbd = None
+        self.funded_VESTS: tt.Asset.Test = None
 
 
 def format_datetime(input) -> str:
@@ -79,7 +80,7 @@ def get_list_proposal_votes_args(start: list, **kwargs):
 def prepare_proposal(input: funded_account_info, prefix: str = "test-", author_is_creator : bool = True) -> prepared_proposal_data:
     from hashlib import md5
 
-    creator : Account = input.creator if author_is_creator else input.account
+    creator : tt.Account = input.creator if author_is_creator else input.account
     hash_input = f'{randint(0, 9999)}{prefix}{creator.private_key}{creator.public_key}{creator.name}'
     PERMLINK = md5(hash_input.encode('utf-8')).hexdigest()
     result = prepared_proposal_data()
@@ -102,7 +103,7 @@ def prepare_proposal(input: funded_account_info, prefix: str = "test-", author_i
         "receiver": input.account.name,
         "start_date": format_datetime(result.start_date),
         "end_date": format_datetime(result.end_date),
-        "daily_pay": Asset.Tbd(1),
+        "daily_pay": tt.Asset.Tbd(1),
         "subject": f"{prefix}-create-proposal-subject",
         "permlink": PERMLINK
     }

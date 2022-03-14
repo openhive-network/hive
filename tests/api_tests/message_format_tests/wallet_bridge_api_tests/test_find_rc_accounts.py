@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -38,5 +38,5 @@ def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
     ]
 )
 def test_find_rc_accounts_with_incorrect_type_of_argument(node, rc_accounts):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_rc_accounts(rc_accounts)

@@ -1,7 +1,7 @@
 import re
 from subprocess import PIPE, run as run_executable
 
-from test_tools import logger, paths_to_executables
+import test_tools as tt
 
 
 def test_help_option():
@@ -12,18 +12,18 @@ def test_help_option():
         '--rpc-http-allowip', '--wallet-file', '--chain-id', '--output-formatter', '--transaction-serialization', '--store-transaction'
     ]
 
-    cli_wallet_path = paths_to_executables.get_path_of('cli_wallet')
+    cli_wallet_path = tt.paths_to_executables.get_path_of('cli_wallet')
     process = run_executable([cli_wallet_path, "--help"], stdout=PIPE, stderr=PIPE)
     stdout = process.stdout.decode('utf-8')
     args_founded = [arg for arg in stdout.split() if "--" in arg]
     diff = list(set(args_founded) ^ set(only_args_to_be_founded))
-    logger.info(f'found: {diff}')
+    tt.logger.info(f'found: {diff}')
 
     assert len(diff) == 0
 
 
 def test_wallet_help_default_values():
-    cli_wallet_path = paths_to_executables.get_path_of('cli_wallet')
+    cli_wallet_path = tt.paths_to_executables.get_path_of('cli_wallet')
     process = run_executable([cli_wallet_path, "--help"], stdout=PIPE, stderr=PIPE)
     stdout = process.stdout.decode('utf-8')
     lines = stdout.split('\n')

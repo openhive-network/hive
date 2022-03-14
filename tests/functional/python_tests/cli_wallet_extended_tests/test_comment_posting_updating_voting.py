@@ -1,19 +1,20 @@
-from test_tools import Account, logger, World, Asset
+import test_tools as tt
+
 
 def test_comment(wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
 
-    wallet.api.transfer('initminer', 'alice', Asset.Test(200), 'avocado')
+    wallet.api.transfer('initminer', 'alice', tt.Asset.Test(200), 'avocado')
 
-    wallet.api.transfer('initminer', 'alice', Asset.Tbd(100), 'banana')
+    wallet.api.transfer('initminer', 'alice', tt.Asset.Tbd(100), 'banana')
 
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(50))
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(50))
 
     wallet.api.create_account('alice', 'bob', '{}')
 
-    wallet.api.transfer('alice', 'bob', Asset.Test(50), 'lemon')
+    wallet.api.transfer('alice', 'bob', tt.Asset.Test(50), 'lemon')
 
-    wallet.api.transfer_to_vesting('alice', 'bob', Asset.Test(25))
+    wallet.api.transfer_to_vesting('alice', 'bob', tt.Asset.Test(25))
 
     response = wallet.api.post_comment('alice', 'test-permlink', '', 'xyz', 'śćą', 'DEBUG    test_tools.wallet.World.InitNodeWallet0:wallet.py:462 Closed with 0 return code', '{}')
 

@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import Asset
+import test_tools as tt
 
 
 @pytest.mark.parametrize(
@@ -64,7 +64,7 @@ def test_list_rc_direct_delegations(node, wallet, from_, to, expected_delegation
         wallet.api.create_account('initminer', 'carol', '{}')
         wallet.api.create_account('initminer', 'dan', '{}')
 
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(0.1))
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(0.1))
 
     with wallet.in_single_transaction():
         wallet.api.delegate_rc('alice', ['bob'], 5)

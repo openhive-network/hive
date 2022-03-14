@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 
 def test_get_transaction_with_correct_value(node, wallet):
@@ -17,7 +17,7 @@ def test_get_transaction_with_correct_value(node, wallet):
     ]
 )
 def test_get_transaction_with_incorrect_value(node, transaction_id):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_transaction(transaction_id)
 
 
@@ -29,7 +29,7 @@ def test_get_transaction_with_incorrect_value(node, transaction_id):
     ]
 )
 def test_get_transaction_with_incorrect_type_of_argument(node, transaction_id):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_transaction(transaction_id)
 
 

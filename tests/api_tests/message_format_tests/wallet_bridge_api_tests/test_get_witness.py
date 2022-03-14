@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string, prepare_node_with_witnesses
 
@@ -23,8 +23,8 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-def test_get_witness_with_correct_value(world, witness_account):
-    node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
+def test_get_witness_with_correct_value(witness_account):
+    node = prepare_node_with_witnesses(WITNESSES_NAMES)
     node.api.wallet_bridge.get_witness(witness_account)
 
 
@@ -35,5 +35,5 @@ def test_get_witness_with_correct_value(world, witness_account):
     ]
 )
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_witness(witness_account)

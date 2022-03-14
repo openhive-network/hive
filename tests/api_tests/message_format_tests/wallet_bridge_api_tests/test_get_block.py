@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -36,7 +36,7 @@ def test_get_block_with_correct_value(node, block_number):
     ]
 )
 def test_get_block_with_incorrect_value(node, block_number):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_block(block_number)
 
 
@@ -48,5 +48,5 @@ def test_get_block_with_incorrect_value(node, block_number):
     ]
 )
 def test_get_block_with_incorrect_type_of_argument(node, block_number):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_block(block_number)

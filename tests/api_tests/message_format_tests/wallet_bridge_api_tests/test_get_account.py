@@ -1,6 +1,6 @@
 import pytest
 
-from test_tools import exceptions
+import test_tools as tt
 
 from .local_tools import as_string
 
@@ -33,5 +33,5 @@ def test_get_account_correct_value(node, wallet, account):
     ]
 )
 def test_get_account_incorrect_type_of_argument(node, account):
-    with pytest.raises(exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account(account)
