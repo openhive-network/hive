@@ -1866,37 +1866,27 @@ namespace graphene { namespace net {
         break;
       case core_message_type_enum::blockchain_item_ids_inventory_message_type:
         {
-        fc::time_point starttime = fc::time_point::now();
         fc::microseconds unpack_duration;
+        fc::time_point starttime = fc::time_point::now();
 #if 0
-        auto mytestitem = received_message.as<blockchain_item_ids_inventory_message>();
+        //older and slightly slower code for unpacking ids
+        auto unpacked_ids = received_message.as<blockchain_item_ids_inventory_message>();
         unpack_duration = fc::time_point::now() - starttime;
 #else
-        fc::microseconds creation_duration;
-        blockchain_item_ids_inventory_message mytestitem;
-        creation_duration = fc::time_point::now() - starttime;
-
+        blockchain_item_ids_inventory_message unpacked_ids;
         fc::datastream<const char*> ds(received_message.data.data(), received_message.data.size());
-        fc::raw::unpack(ds, mytestitem.total_remaining_item_count);
-        fc::raw::unpack(ds, mytestitem.item_type);
+        fc::raw::unpack(ds, unpacked_ids.total_remaining_item_count);
+        fc::raw::unpack(ds, unpacked_ids.item_type);
         fc::unsigned_int size;
         fc::raw::unpack(ds, size);
-        mytestitem.item_hashes_available.resize(size.value);
-        ds.read((char*)(mytestitem.item_hashes_available.data()), 20 * size.value);
+        unpacked_ids.item_hashes_available.resize(size.value);
+        ds.read((char*)(unpacked_ids.item_hashes_available.data()), 20 * size.value);
         unpack_duration = fc::time_point::now() - starttime;
-
-        if (creation_duration.count() > 400)
-          wdump((creation_duration.count())(mytestitem));
-        else
-          wdump((creation_duration.count()));
 #endif
-
-        if (unpack_duration.count() > 400)
-          wdump((unpack_duration.count())(mytestitem));
-        else
+        //log when allocation of buffer for ids takes over 1ms (later maybe statically allocate a buffer or a vector of buffers per peer)
+        if (unpack_duration.count() > 1000) 
           wdump((unpack_duration.count()));
-
-        on_blockchain_item_ids_inventory_message(originating_peer, mytestitem/*received_message.as<blockchain_item_ids_inventory_message>()*/);
+        on_blockchain_item_ids_inventory_message(originating_peer, unpacked_ids);
         break;
         }
         on_blockchain_item_ids_inventory_message(originating_peer, received_message.as<blockchain_item_ids_inventory_message>());
