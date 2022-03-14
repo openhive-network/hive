@@ -1863,6 +1863,40 @@ namespace graphene { namespace net {
         on_fetch_blockchain_item_ids_message(originating_peer, received_message.as<fetch_blockchain_item_ids_message>());
         break;
       case core_message_type_enum::blockchain_item_ids_inventory_message_type:
+        {
+        fc::time_point starttime = fc::time_point::now();
+        fc::microseconds unpack_duration;
+#if 0
+        auto mytestitem = received_message.as<blockchain_item_ids_inventory_message>();
+        unpack_duration = fc::time_point::now() - starttime;
+#else
+        fc::microseconds creation_duration;
+        blockchain_item_ids_inventory_message mytestitem;
+        creation_duration = fc::time_point::now() - starttime;
+
+        fc::datastream<const char*> ds(received_message.data.data(), received_message.data.size());
+        fc::raw::unpack(ds, mytestitem.total_remaining_item_count);
+        fc::raw::unpack(ds, mytestitem.item_type);
+        fc::unsigned_int size;
+        fc::raw::unpack(ds, size);
+        mytestitem.item_hashes_available.resize(size.value);
+        ds.read((char*)(mytestitem.item_hashes_available.data()), 20 * size.value);
+        unpack_duration = fc::time_point::now() - starttime;
+
+        if (creation_duration.count() > 400)
+          wdump((creation_duration.count())(mytestitem));
+        else
+          wdump((creation_duration.count()));
+#endif
+
+        if (unpack_duration.count() > 400)
+          wdump((unpack_duration.count())(mytestitem));
+        else
+          wdump((unpack_duration.count()));
+
+        on_blockchain_item_ids_inventory_message(originating_peer, mytestitem/*received_message.as<blockchain_item_ids_inventory_message>()*/);
+        break;
+        }
         on_blockchain_item_ids_inventory_message(originating_peer, received_message.as<blockchain_item_ids_inventory_message>());
         break;
       case core_message_type_enum::fetch_items_message_type:
@@ -2559,6 +2593,7 @@ namespace graphene { namespace net {
                                                              const blockchain_item_ids_inventory_message& blockchain_item_ids_inventory_message_received )
     {
       VERIFY_CORRECT_THREAD();
+      wlog("on_blockchain_item_ids_inventory_message");
       // ignore unless we asked for the data
       if( originating_peer->item_ids_requested_from_peer )
       {
@@ -2595,7 +2630,7 @@ namespace graphene { namespace net {
               return;
             }
           }
-
+          dlog("check ids build off synopsys request");
           const std::vector<item_hash_t>& synopsis_sent_in_request = originating_peer->item_ids_requested_from_peer->get<0>();
           const item_hash_t& first_item_hash = blockchain_item_ids_inventory_message_received.item_hashes_available.front();
 
@@ -2609,17 +2644,15 @@ namespace graphene { namespace net {
                    ("peer_endpoint", originating_peer->get_remote_endpoint())
                    ("first_block", first_item_hash));
               fc::exception error_for_peer(FC_LOG_MESSAGE(error, "You gave an invalid response for my request for sync blocks.  I asked for blocks starting from the beginning of the chain, "
-                                                          "but you returned a list of blocks starting with ${first_block}",
-                                                          ("first_block", first_item_hash)));
-              disconnect_from_peer(originating_peer,
-                                   "You gave an invalid response to my request for sync blocks",
-                                   true, error_for_peer);
+                                                          "but you returned a list of blocks starting with ${first_item_hash}",
+                                                          (first_item_hash)));
+              disconnect_from_peer(originating_peer, "You gave an invalid response to my request for sync blocks", true, error_for_peer);
               return;
             }
           }
           else // synopsis was not empty, we expect a response building off one of the blocks we sent
           {
-            if (boost::range::find(synopsis_sent_in_request, first_item_hash) == synopsis_sent_in_request.end())
+            if (std::find(synopsis_sent_in_request.rbegin(), synopsis_sent_in_request.rend(), first_item_hash) == synopsis_sent_in_request.rend())
             {
               wlog("Invalid response from peer ${peer_endpoint}.  We requested a list of sync blocks based on the synopsis ${synopsis}, but they "
                    "provided a list of blocks starting with ${first_block}",
