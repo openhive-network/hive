@@ -71,6 +71,7 @@
 #include <fc/network/rate_limiting.hpp>
 #include <fc/network/ip.hpp>
 #include <fc/smart_ref_impl.hpp>
+#include <fc/bitutil.hpp>
 
 #include <graphene/net/node_configuration.hpp>
 #include <graphene/net/node.hpp>
@@ -1908,6 +1909,11 @@ namespace graphene { namespace net {
       }
     }
 
+    uint32_t get_block_number(const item_hash_t& id)
+    {
+      return fc::endian_reverse_u32(id._hash[0]);
+    }
+
 
     fc::variant_object node_impl::generate_hello_user_data()
     {
@@ -2562,10 +2568,10 @@ namespace graphene { namespace net {
         if (!blockchain_item_ids_inventory_message_received.item_hashes_available.empty())
         {
           // what's more, it should be a sequential list of blocks, verify that first
-          uint32_t first_block_number_in_reponse = _delegate->get_block_number(blockchain_item_ids_inventory_message_received.item_hashes_available.front());
+          uint32_t first_block_number_in_reponse = /*_delegate->*/get_block_number(blockchain_item_ids_inventory_message_received.item_hashes_available.front());
           for (unsigned i = 1; i < blockchain_item_ids_inventory_message_received.item_hashes_available.size(); ++i)
           {
-            uint32_t actual_num = _delegate->get_block_number(blockchain_item_ids_inventory_message_received.item_hashes_available[i]);
+            uint32_t actual_num = /*_delegate->*/get_block_number(blockchain_item_ids_inventory_message_received.item_hashes_available[i]);
             uint32_t expected_num = first_block_number_in_reponse + i;
             if (actual_num != expected_num)
             {
@@ -2596,7 +2602,7 @@ namespace graphene { namespace net {
           if (synopsis_sent_in_request.empty())
           {
             // if we sent an empty synopsis, we were asking for all blocks, so the first block should be block 1
-            if (_delegate->get_block_number(first_item_hash) != 1)
+            if (/*_delegate->*/get_block_number(first_item_hash) != 1)
             {
               wlog("Invalid response from peer ${peer_endpoint}.  We requested a list of sync blocks starting from the beginning of the chain, "
                    "but they provided a list of blocks starting with ${first_block}",
