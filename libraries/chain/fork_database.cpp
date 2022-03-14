@@ -193,7 +193,6 @@ vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)cons
     return result;
   }
   FC_LOG_AND_RETHROW()
-  
 }
 
 vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const

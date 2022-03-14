@@ -577,9 +577,9 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
 //no chainbase lock required
 optional<signed_block_header> database::fetch_block_header_by_id( const block_id_type& id )const
 { try {
-  shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
-  if (fork_item)
-    return fork_item->data;
+  shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block( id );
+  if (forkdb_item)
+    return forkdb_item->data;
 
   optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num( protocol::block_header::num_from_id( id ) );
   if (block_header_from_block_log && block_header_from_block_log->id() == id)
@@ -587,34 +587,28 @@ optional<signed_block_header> database::fetch_block_header_by_id( const block_id
   return optional<signed_block>();
 } FC_CAPTURE_AND_RETHROW() }
 
-// this version of fetch_block_by_number() assumes the caller is holding a read lock on the database
+//no chainbase lock required
+optional<signed_block_header> database::fetch_block_header_by_number( uint32_t num )const
+{ try {
+  shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block_on_main_branch_by_number( num );
+  if (forkdb_item)
+    return forkdb_item->data;
+
+  return _block_log.read_block_header_by_num(num);
+} FC_CAPTURE_AND_RETHROW() }
+
+//no chainbase lock required
 optional<signed_block> database::fetch_block_by_number( uint32_t block_num )const
 { try {
-  shared_ptr< fork_item > fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
+  shared_ptr<fork_item> forkdb_item  = _fork_db.fetch_block_on_main_branch_by_number( block_num );
+  if (forkdb_item )
+    return forkdb_item ->data;
 
-  if( fitem )
-    return fitem->data;
-  else
-    return _block_log.read_block_by_num( block_num );
+  return _block_log.read_block_by_num( block_num );
 } FC_LOG_AND_RETHROW() }
 
-// this version doesn't assume the caller has a read lock.  It will get its own lock for the
-// portion of the function that requires it.
-optional<signed_block> database::fetch_block_by_number_unlocked( uint32_t block_num )
-{ try {
-  shared_ptr< fork_item > fitem;
-  with_read_lock( [&]()
-  {
-    fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
-  });
-
-  if( fitem )
-    return fitem->data;
-  else
-    return _block_log.read_block_by_num( block_num );
-} FC_LOG_AND_RETHROW() }
-
-std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t starting_block_num, const uint32_t count )
+//no chainbase lock required
+std::vector<signed_block> database::fetch_block_range( const uint32_t starting_block_num, const uint32_t count )
 { try {
   // for debugging, put the head block back so it should straddle the last irreversible
   // const uint32_t starting_block_num = head_block_num() - 30;
@@ -623,11 +617,7 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
   FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
   idump((starting_block_num)(count));
 
-  vector<fork_item> fork_items;
-  with_read_lock( [&]()
-  {
-    fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count );
-  });
+  vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count );
   idump((fork_items.size()));
   if (!fork_items.empty())
     idump((fork_items.front().num));
@@ -647,7 +637,7 @@ std::vector<signed_block> database::fetch_block_range_unlocked( const uint32_t s
     idump((result.front().block_num())(result.back().block_num()));
   result.reserve(result.size() + fork_items.size());
   for (fork_item& item : fork_items)
-    result.emplace_back(std::move(item.data));
+    result.push_back(std::move(item.data));
 
   return result;
 } FC_LOG_AND_RETHROW() }
