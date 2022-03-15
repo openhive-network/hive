@@ -139,7 +139,6 @@ namespace graphene { namespace net {
             std::advance(iter, GRAPHENE_NET_MAX_PEERDB_SIZE);
             _potential_peer_set.erase(iter, _potential_peer_set.end());
           }
-          idump((peer_records));
         }
         catch (const fc::exception& e)
         {
@@ -206,7 +205,6 @@ namespace graphene { namespace net {
 
     void peer_database_impl::erase(const fc::ip::endpoint& endpointToErase)
     {
-      ddump((endpointToErase));
       auto iter = _potential_peer_set.get<endpoint_index>().find(endpointToErase);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         _potential_peer_set.get<endpoint_index>().erase(iter);
@@ -215,7 +213,6 @@ namespace graphene { namespace net {
 
     void peer_database_impl::update_entry(const potential_peer_record& updatedRecord)
     {
-      ddump((updatedRecord));
       auto iter = _potential_peer_set.get<endpoint_index>().find(updatedRecord.endpoint);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         _potential_peer_set.get<endpoint_index>().modify(iter, [&updatedRecord](potential_peer_record& record) { record = updatedRecord; });
@@ -226,7 +223,6 @@ namespace graphene { namespace net {
 
     potential_peer_record peer_database_impl::lookup_or_create_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup)
     {
-      ddump((_potential_peer_set.size()));
       auto iter = _potential_peer_set.get<endpoint_index>().find(endpointToLookup);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         return *iter;
@@ -235,7 +231,6 @@ namespace graphene { namespace net {
 
     fc::optional<potential_peer_record> peer_database_impl::lookup_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup)
     {
-      ddump((_potential_peer_set.size()));
       auto iter = _potential_peer_set.get<endpoint_index>().find(endpointToLookup);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         return *iter;
