@@ -122,7 +122,6 @@ public:
   uint32_t max_connections = 0;
   bool force_validate = false;
   bool block_producer = false;
-  plugins::chain::chain_plugin::lock_type lock_type_for_p2p = plugins::chain::chain_plugin::lock_type::fc;
 
   shutdown_mgr shutdown_helper;
 
@@ -173,7 +172,7 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
-      bool result = chain.accept_block( blk_msg.block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, lock_type_for_p2p );
+      bool result = chain.accept_block(blk_msg.block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
 
       if( !sync_mode )
       {
@@ -221,7 +220,7 @@ void p2p_plugin_impl::handle_transaction( const graphene::net::trx_message& trx_
     {
       action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_TRANSACTION_HANDLER ) );
 
-      chain.accept_transaction( trx_msg.trx,  lock_type_for_p2p );
+      chain.accept_transaction(trx_msg.trx, chain::chain_plugin::lock_type::fc);
 
     } FC_CAPTURE_AND_RETHROW( (trx_msg) )
   }
@@ -542,7 +541,6 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
   cli.add_options()
     ("force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions. Deprecated in favor of p2p-force-validate" )
     ("p2p-force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions." )
-    ("lock-type-for-p2p", bpo::value<std::string>()->default_value("fc")->value_name("lock_type"), "Use this lock type for synchronizing with the p2p thread on block/transaction pushes")
     ;
 }
 
@@ -612,13 +610,6 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
     fc::variant var = fc::json::from_string( options.at("p2p-parameters").as<string>(), fc::json::strict_parser );
     my->config = var.get_object();
   }
-
-  if (options.at("lock-type-for-p2p").as<std::string>() == "boost")
-    my->lock_type_for_p2p = plugins::chain::chain_plugin::lock_type::boost;
-  else if (options.at("lock-type-for-p2p").as<std::string>() == "fc")
-    my->lock_type_for_p2p = plugins::chain::chain_plugin::lock_type::fc;
-  else 
-    FC_THROW("lock-type-for-p2p must be either \"boost\" or \"fc\"");
 }
 
 void p2p_plugin::plugin_startup()
