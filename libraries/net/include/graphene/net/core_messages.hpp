@@ -35,8 +35,6 @@
 #include <fc/variant_object.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/io/enum_type.hpp>
-#include <fc/io/raw.hpp>
-
 
 #include <vector>
 
@@ -520,27 +518,3 @@ namespace std
        }
     };
 }
-
-namespace fc { namespace raw {
-  template<typename Stream>
-  inline void pack(Stream& s, const graphene::net::blockchain_item_ids_inventory_message& obj, uint32_t _max_depth)
-  {
-    std::cerr << "in custom pack()\n";
-    pack(s, obj.total_remaining_item_count);
-    pack(s, obj.item_type);
-    pack(s, unsigned_int((uint32_t)obj.item_hashes_available.size()));
-    s.write((const char*)obj.item_hashes_available.data(), sizeof(graphene::net::item_hash_t) * obj.item_hashes_available.size());
-  }
-
-  template<typename Stream>
-  inline void unpack(Stream& s, graphene::net::blockchain_item_ids_inventory_message& obj, uint32_t _max_depth)
-  {
-    std::cerr << "in custom unpack()\n";
-    unpack(s, obj.total_remaining_item_count);
-    unpack(s, obj.item_type);
-    unsigned_int size;
-    fc::raw::unpack(s, size);
-    obj.item_hashes_available.resize(size.value);
-    s.read((char*)(obj.item_hashes_available.data()), sizeof(graphene::net::item_hash_t) * size.value);
-  }
-} } // end namespace fc::raw 
