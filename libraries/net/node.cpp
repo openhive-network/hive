@@ -619,8 +619,7 @@ namespace graphene { namespace net {
       bool is_item_id_being_processed(const item_hash_t& block_id);
 
       void on_blockchain_item_ids_inventory_message( peer_connection* originating_peer,
-                                                     const blockchain_item_ids_inventory_message& blockchain_item_ids_inventory_message_received,
-                                                     fc::time_point start_time );
+                                                     const blockchain_item_ids_inventory_message& blockchain_item_ids_inventory_message_received );
 
       void on_fetch_items_message( peer_connection* originating_peer,
                                    const fetch_items_message& fetch_items_message_received );
@@ -1867,36 +1866,7 @@ namespace graphene { namespace net {
         on_fetch_blockchain_item_ids_message(originating_peer, received_message.as<fetch_blockchain_item_ids_message>());
         break;
       case core_message_type_enum::blockchain_item_ids_inventory_message_type:
-#if 0
-        {
-        fc::microseconds unpack_duration;
-        fc::time_point starttime = fc::time_point::now();
-#if 0
-        //older and slightly slower code for unpacking ids
-        auto unpacked_ids = received_message.as<blockchain_item_ids_inventory_message>();
-        unpack_duration = fc::time_point::now() - starttime;
-#else
-        blockchain_item_ids_inventory_message unpacked_ids;
-        fc::datastream<const char*> ds(received_message.data.data(), received_message.data.size());
-        fc::raw::unpack(ds, unpacked_ids.total_remaining_item_count);
-        fc::raw::unpack(ds, unpacked_ids.item_type);
-        fc::unsigned_int size;
-        fc::raw::unpack(ds, size);
-        unpacked_ids.item_hashes_available.resize(size.value);
-        ds.read((char*)(unpacked_ids.item_hashes_available.data()), 20 * size.value);
-        unpack_duration = fc::time_point::now() - starttime;
-#endif
-        //log when allocation of buffer for ids takes over 1ms (later maybe statically allocate a buffer or a vector of buffers per peer)
-        if (unpack_duration.count() > 1000) 
-          wdump((unpack_duration.count()));
-        on_blockchain_item_ids_inventory_message(originating_peer, unpacked_ids, starttime);
-        break;
-        }
-#endif
-        {
-        fc::time_point start_time = fc::time_point::now();
-        on_blockchain_item_ids_inventory_message(originating_peer, received_message.as<blockchain_item_ids_inventory_message>(), start_time);
-        }
+        on_blockchain_item_ids_inventory_message(originating_peer, received_message.as<blockchain_item_ids_inventory_message>());
         break;
       case core_message_type_enum::fetch_items_message_type:
         on_fetch_items_message(originating_peer, received_message.as<fetch_items_message>());
@@ -2574,13 +2544,9 @@ namespace graphene { namespace net {
     }
 
     void node_impl::on_blockchain_item_ids_inventory_message(peer_connection* originating_peer,
-                                                             const blockchain_item_ids_inventory_message& blockchain_item_ids_inventory_message_received,
-                                                             fc::time_point start_time)
+                                                             const blockchain_item_ids_inventory_message& blockchain_item_ids_inventory_message_received)
     {
-      fc::time_point end_time = fc::time_point::now();
-      dlog("on_blockchain_item_ids_inventory_message decoding took ${this_long}µs", ("this_long", (end_time - start_time).count()));
       VERIFY_CORRECT_THREAD();
-      dlog("on_blockchain_item_ids_inventory_message");
       // ignore unless we asked for the data
       if( originating_peer->item_ids_requested_from_peer )
       {
