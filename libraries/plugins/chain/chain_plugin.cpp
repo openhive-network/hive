@@ -349,14 +349,7 @@ void chain_plugin_impl::start_write_processing()
 
             ++write_queue_items_processed;
 
-            if( is_syncing && fc::time_point::now() - db.head_block_time() < fc::minutes(1) )
-            {
-              is_syncing = false;
-              db.notify_end_of_syncing();
-              hive::notify_hived_status("entering live mode");
-            }
-
-            if( !is_syncing )
+            if( !is_syncing ) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
             {
               fc::microseconds write_lock_held_duration = fc::time_point::now() - write_lock_acquired_time;
               if (write_lock_held_duration > fc::milliseconds( write_lock_hold_time ) )
@@ -368,6 +361,14 @@ void chain_plugin_impl::start_write_processing()
                 break;
               }
             }
+            else if( fc::time_point::now() - db.head_block_time() < fc::minutes(1) ) //we're syncing, see if we are close enough to move to live sync
+            {
+              is_syncing = false;
+              db.notify_end_of_syncing();
+              hive::notify_hived_status("entering live mode");
+              wlog("entering live mode");
+            }
+
 
             if( !write_queue.pop( cxt ) )
             {
