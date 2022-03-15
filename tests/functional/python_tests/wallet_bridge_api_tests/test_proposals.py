@@ -5,6 +5,9 @@ import pytest
 import test_tools.exceptions
 from test_tools import Asset
 
+import schemas
+from validate_message import validate_message
+
 # TODO BUG LIST!
 """
 1. Problem with running wallet_bridge_api.list_proposal_votes with empty string in start in sorting by id. 
@@ -98,7 +101,10 @@ def start(accounts, request):
 def test_list_proposals_with_correct_values(node, accounts, wallet, start, limit, order_by_list_proposals,
                                             order_direction, status):
     prepare_proposals(wallet, accounts)
-    node.api.wallet_bridge.list_proposals(start, limit, order_by_list_proposals, order_direction, status)
+    validate_message(
+        node.api.wallet_bridge.list_proposals(start, limit, order_by_list_proposals, order_direction, status),
+        schemas.list_proposals,
+    )
 
 
 @pytest.mark.parametrize(
@@ -162,7 +168,10 @@ def test_list_proposal_votes_with_correct_values(node, accounts, wallet, start, 
         for account in accounts:
             wallet.api.update_proposal_votes(account, [3], 1)
 
-    node.api.wallet_bridge.list_proposal_votes(start, limit, order_by_list_proposal_votes, order_direction, status)
+    validate_message(
+        node.api.wallet_bridge.list_proposal_votes(start, limit, order_by_list_proposal_votes, order_direction, status),
+        schemas.list_proposal_votes,
+    )
 
 
 @pytest.mark.parametrize(
@@ -204,7 +213,10 @@ def test_find_proposals_with_correct_values(node, wallet):
     accounts = create_accounts_with_vests_and_tbd(wallet, 5)
     prepare_proposals(wallet, accounts)
 
-    node.api.wallet_bridge.find_proposals([0, 1, 2, 3, 4])
+    validate_message(
+        node.api.wallet_bridge.find_proposals([0, 1, 2, 3, 4]),
+        schemas.find_proposals,
+    )
 
 
 @pytest.mark.parametrize(

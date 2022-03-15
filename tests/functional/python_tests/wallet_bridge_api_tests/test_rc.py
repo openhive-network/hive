@@ -4,6 +4,7 @@ import pytest
 from test_tools import Asset, logger, Wallet, World
 import test_tools.exceptions
 
+from validate_message import validate_message
 import schemas
 
 
@@ -47,11 +48,6 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
 
 def get_accounts_name(accounts):
     return [account.name for account in accounts]
-
-
-def validate_message(message, schema):
-    return Core(source_data=message, schema_data=schema).validate(raise_exception=True)
-
 
 @pytest.mark.parametrize(
     'find_rc_accounts_wrong_parameters', [
