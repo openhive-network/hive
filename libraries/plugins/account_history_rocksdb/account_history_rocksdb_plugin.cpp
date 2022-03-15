@@ -909,7 +909,7 @@ private:
   std::atomic_uint                 _currently_persisted_irreversible_block{0};
   mutable std::condition_variable  _currently_persisted_irreversible_cv;
 
-  data_filter                      _filter;
+  account_filter                   _filter;
   flat_set<std::string>            _op_list;
   flat_set<std::string>            _blacklisted_op_list;
 

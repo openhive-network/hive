@@ -10,7 +10,7 @@ namespace hive { namespace plugins {
 
 using protocol::account_name_type;
 
-class data_filter
+class account_filter
 {
   public:
 
@@ -23,7 +23,7 @@ class data_filter
 
   public:
 
-    data_filter( const std::string& _filter_name );
+    account_filter( const std::string& _filter_name );
 
     bool empty() const;
     const account_name_range_index& get_tracked_accounts() const;
