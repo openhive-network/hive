@@ -287,16 +287,16 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
 { try {
   if (id.item_type == graphene::net::block_message_type)
   {
-    fc_dlog(fc::logger::get("p2p"),"get_item getting a block will get forkdb read lock");
+    fc_dlog(fc::logger::get("chainlock"),"get_item getting a block will get forkdb read lock");
     auto opt_block = chain.db().fetch_block_by_id(id.item_hash);
     if (!opt_block)
       elog("Couldn't find block ${id} -- corresponding ID in our chain is ${id2}",
            ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
     FC_ASSERT(opt_block.valid());
-    fc_dlog(fc::logger::get("p2p"),"Serving up block #${num}", ("num", opt_block->block_num()));
+    fc_dlog(fc::logger::get("chainlock"),"Serving up block #${num}", ("num", opt_block->block_num()));
     return block_message(*opt_block);
   }
-  wlog("get_item getting a transaction will get a db read lock");
+  fc_dlog(fc::logger::get("chainlock"),"get_item getting a transaction will get a db read lock");
   return chain.db().with_read_lock( [&]()
   {
     return trx_message( chain.db().get_recent_transaction( id.item_hash ) );
