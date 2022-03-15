@@ -41,7 +41,7 @@ namespace hive { namespace converter { namespace plugins { namespace node_based_
 
 namespace detail {
 
-  FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from the output node" ); 
+  FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from the output node" );
 
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
@@ -99,6 +99,9 @@ namespace detail {
     uint64_t             last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
     size_t               block_buffer_size;
     fc::variant_object   block_buffer_obj; // blocks buffer object containing lookup table
+
+    uint64_t             error_response_count = 0;
+    uint64_t             total_transmit_count = 0;
 
     bool use_now_time;
 
@@ -283,6 +286,12 @@ namespace detail {
 
     std::cout << "In order to resume your live conversion pass the \'-R " << start_block_num - 1 << "\' option to the converter next time" << std::endl;
 
+    if( error_response_count )
+    {
+      std::cerr << error_response_count << " (" << int(float(error_response_count) / total_transmit_count * 100)
+                << "% of total " << total_transmit_count << ") transmit errors detected!" << std::endl;
+    }
+
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
   }
@@ -291,6 +300,8 @@ namespace detail {
   {
     try
     {
+      ++total_transmit_count;
+
       open( output_con, output_url );
 
       fc::variant v;
@@ -302,6 +313,8 @@ namespace detail {
     }
     catch( const error_response_from_node& error )
     {
+      ++error_response_count;
+
 //#define HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
 //#define HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter broadcast warnings
 #ifndef HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS
