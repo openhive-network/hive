@@ -115,6 +115,11 @@ void cli::wait()
    _run_complete.wait();
 }
 
+void cli::format_result( const string& method, std::function<string(variant,const variants&)> formatter)
+{
+   _result_formatters[method] = formatter;
+}
+
 void cli::set_prompt( const string& prompt )
 {
    _prompt = prompt;
@@ -142,10 +147,13 @@ void cli::run()
          const string& method = args[0].get_string();
 
          auto result = receive_call( 0, method, variants( args.begin()+1,args.end() ) );
-         if( result.is_string() )
-            std::cout << result.as_string() << "\n";
-          else
+         auto itr = _result_formatters.find( method );
+         if( itr == _result_formatters.end() )
+         {
             std::cout << fc::json::to_pretty_string( result ) << "\n";
+         }
+         else
+            std::cout << itr->second( result, args ) << "\n";
       }
       catch ( const fc::eof_exception& e )
       {
