@@ -164,14 +164,17 @@ namespace fc {
       std::stringstream line;
       line << appender::format_time_as_string(m.get_context().get_timestamp(), my->cfg.time_format);
 
-      if (my->last_log_message_timestamp)
+      if (my->cfg.delta_times)
       {
-        microseconds time_since_last_message = m.get_context().get_timestamp() - *my->last_log_message_timestamp;
-        line << " Δ" << std::setw(7) << time_since_last_message.count() << "µs ";
+        if (my->last_log_message_timestamp)
+        {
+          microseconds time_since_last_message = m.get_context().get_timestamp() - *my->last_log_message_timestamp;
+          line << " Δ" << std::setw(7) << time_since_last_message.count() << "µs ";
+        }
+        else
+          line << "            ";
+        my->last_log_message_timestamp = m.get_context().get_timestamp();
       }
-      else
-        line << "            ";
-      my->last_log_message_timestamp = m.get_context().get_timestamp();
 
       line << " " << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
 
