@@ -3229,15 +3229,15 @@ namespace graphene { namespace net {
       }
       catch (const fc::exception& e)
       {
-        fc_wlog(fc::logger::get("sync"), "p2p failed to push sync block #${block_number} ${block_id}: client rejected sync block sent by peer: {e}",
-                (block_number) (block_id));//DLN("e", e));
-        wlog("Failed to push sync block #${block_number} ${block_id}): client rejected sync block sent by peer: {e}",
-             (block_number) (block_id));//DLN("e", e));
+        fc_wlog(fc::logger::get("sync"), "p2p failed to push sync block #${block_number} ${block_id}: client rejected sync block sent by peer.",
+                (block_number) (block_id));
+        wlog("Failed to push sync block #${block_number} ${block_id}): client rejected sync block sent by peer.",
+             (block_number) (block_id));
         handle_message_exception = e;
       }
 
       // build up lists for any potentially-blocking operations we need to do, then do them at the end of this function
-      std::set<peer_connection_ptr> peers_with_newly_empty_item_lists;
+      std::set<peer_connection_ptr> peers_to_fetch_ids_from;
       std::set<peer_connection_ptr> peers_we_need_to_sync_to;
       std::map<peer_connection_ptr, std::pair<std::string, fc::oexception> > peers_to_disconnect; // map peer -> pair<reason_string, exception>
       if( client_accepted_block )
@@ -3307,7 +3307,7 @@ namespace graphene { namespace net {
                     peer->number_of_unfetched_item_ids != 0 && //don't fetch more ids if node says it has no more, we will try resuming sync instead
                     peer->ids_of_items_to_get.size() < GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH  
                    )
-                  peers_with_newly_empty_item_lists.insert(peer);
+                  peers_to_fetch_ids_from.insert(peer);
                 
               }
             }
@@ -3348,7 +3348,7 @@ namespace graphene { namespace net {
         disconnect_from_peer(peer.get(), reason_string, true, reason_exception);
       }
 
-      for (const peer_connection_ptr& peer : peers_with_newly_empty_item_lists)
+      for (const peer_connection_ptr& peer : peers_to_fetch_ids_from)
         fetch_next_batch_of_item_ids_from_peer(peer.get());
 
       for (const peer_connection_ptr& peer : peers_we_need_to_sync_to)
@@ -3405,6 +3405,7 @@ namespace graphene { namespace net {
       bool block_processed_this_iteration;
       unsigned blocks_processed = 0;
 
+      std::set<peer_connection_ptr> peers_to_fetch_ids_from;
       std::set<peer_connection_ptr> peers_we_need_to_sync_to;
       std::map<peer_connection_ptr, fc::oexception> peers_with_rejected_block;
 
@@ -3435,6 +3436,10 @@ namespace graphene { namespace net {
                   peer->ids_of_items_to_get.pop_front();
                   ++peer->first_id_block_number; //since we popped front, we are at a higher block number
                   peer->ids_of_items_being_processed.insert(received_block_iter->block_id);
+                  //if we've fetched blocks for all ids we have from this peer, lets fetch more if possible (we need this to avoid stall condition)
+                  if (peer->ids_of_items_to_get.empty() && 
+                      peer->we_need_sync_items_from_peer)
+                    peers_to_fetch_ids_from.insert(peer);
                 }
               }  
               //dlog("removed from front of any other peer");
