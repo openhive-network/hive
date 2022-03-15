@@ -6,21 +6,21 @@
 
 namespace hive { namespace plugins {
 
-data_filter::data_filter( const std::string& _filter_name ): filter_name( _filter_name )
+account_filter::account_filter( const std::string& _filter_name ): filter_name( _filter_name )
 {
 }
 
-bool data_filter::empty() const
+bool account_filter::empty() const
 {
   return tracked_accounts.empty();
 }
 
-const data_filter::account_name_range_index& data_filter::get_tracked_accounts() const
+const account_filter::account_name_range_index& account_filter::get_tracked_accounts() const
 {
   return tracked_accounts;
 }
 
-bool data_filter::is_tracked_account( const account_name_type& name ) const
+bool account_filter::is_tracked_account( const account_name_type& name ) const
 {
   if( tracked_accounts.empty() )
   {
@@ -69,7 +69,7 @@ bool data_filter::is_tracked_account( const account_name_type& name ) const
   return _result;
 }
 
-void data_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
+void account_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
 {
   typedef std::pair< account_name_type, account_name_type > pairstring;
   HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
