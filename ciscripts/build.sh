@@ -21,11 +21,12 @@ cmake \
     -DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET} \
     -DHIVE_STATIC_BUILD=ON \
     -DHIVE_LINT=${HIVE_LINT} \
-    .. 
-make -j$(nproc)
+    -GNinja \
+    ..
+ninja
 ldd "${BUILD_DIR}/programs/cli_wallet/cli_wallet" # Check HIVE_STATIC_BUILD
-make install
-cd .. 
+ninja install
+cd ..
 
 ( "${BUILD_DIR}/install-root"/bin/hived --version \
   | grep -o '[0-9]*\.[0-9]*\.[0-9]*' \
