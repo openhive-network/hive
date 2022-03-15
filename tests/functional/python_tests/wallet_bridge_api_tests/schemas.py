@@ -147,8 +147,6 @@ find_proposals = Map({
     )
 })
 
-get_witness = []
-
 get_witnesses_schedule = Map({
     'id': Int(),
     'current_virtual_time': Str(),
@@ -198,25 +196,27 @@ get_witnesses_schedule = Map({
     'min_witness_account_subsidy_decay': Int(),
 })
 
-list_witnesses = []
+list_witnesses = Map({
+    'response': Seq(
+        Str(),
+    )
+})
 
-example = {
-    "type": "map",
-    'range': {'min': 0, 'max': 2},
-    "mapping": {
-        "password": {
-            "type": "str",
-            "range": {
-                "min": 8,
-                "max": 16
-            }
-        },
-        "age": {
-            "type": "int",
-            "range": {
-                "min": 18,
-                "max-ex": 30
-            }
-        }
+
+def Seq2(*content, required: bool = True, matching: str = 'any', option: Dict):
+
+    x = len(*content)
+    print()
+    return {
+        'required': required,
+        'matching': matching,
+        'range': len(content),
+        'seq': [*content],
+        **option,
     }
-}
+
+
+example = Seq2(
+    Int(),
+    option={'range': {'min': 0, 'max': 4}}
+)

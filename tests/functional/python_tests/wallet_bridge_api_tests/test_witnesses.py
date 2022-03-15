@@ -25,6 +25,7 @@ def test_get_witness_with_correct_value(world, witness_account):
     # TODO Add pattern test.
     node = prepare_node_with_witnesses(world)
     response = node.api.wallet_bridge.get_witness(witness_account)
+    print()
 
 
 @pytest.mark.parametrize(
@@ -42,6 +43,11 @@ def test_get_active_witnesses_with_correct_value(world):
     # TODO Add pattern test
     node = prepare_node_with_witnesses(world)
     response = node.api.wallet_bridge.get_active_witnesses()
+    print()
+    validate_message(
+        node.api.wallet_bridge.get_active_witnesses(),
+        schemas.get_active_witnesses,
+    )
 
 
 def test_get_witness_schedule_with_correct_value(world):
