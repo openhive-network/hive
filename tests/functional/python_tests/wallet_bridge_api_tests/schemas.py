@@ -129,5 +129,29 @@ get_account = Map({
     "governance_vote_expiration_ts": Date(),
 })
 
-example = Ext_str_and_int()
+list_proposals = (
+    Map({
+        'proposals': Seq(
+            Proposal()
+        )
+    })
+)
 
+list_proposal_votes = Map({
+    'proposal_votes': Seq(
+        Map({
+            'id': Int(),
+            'voter': Str(),
+            'proposal': Proposal(),
+        })
+    )
+})
+
+find_proposals = Map({
+    'proposals': Seq(
+        Proposal(),
+    )
+})
+
+
+example = []

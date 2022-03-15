@@ -171,6 +171,22 @@ def Key():
 	})
 
 
+def Proposal():
+	return Map({
+		'id': Int(),
+		'proposal_id': Int(),
+		'creator': Str(),
+		'receiver': Str(),
+		'start_date': Date(),
+		'end_date': Date(),
+		'daily_pay': AssetHbd(),
+		'subject': Str(),
+		'permlink': Str(),
+		'total_votes': Int(),
+		'status': Str(),
+	})
+
+
 test_response_data = {
 	"jsonrpc": "2.0",
 	"result": {
