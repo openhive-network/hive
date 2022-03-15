@@ -47,13 +47,9 @@ def test_get_account_pattern(node, wallet):
     alice = node.api.wallet_bridge.get_account('alice')
 
     validate_message(
-        schemas.test_response_data['result'],
+        alice,
         schemas.get_account
     )
-    # validate_message(
-    #     alice,
-    #     schemas.get_account
-    # )
 
 
 def test_schema(node, wallet):
@@ -62,7 +58,10 @@ def test_schema(node, wallet):
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
     x = node.api.wallet_bridge.list_rc_accounts('', 100)
 
-    example_data = []
+    example_data = {
+        'password': '12342222',
+        'age': 22,
+    }
 
     validate_message(
         example_data,

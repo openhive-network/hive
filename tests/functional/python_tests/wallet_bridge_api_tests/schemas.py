@@ -55,9 +55,9 @@ get_active_witnesses = Map({
 get_account = Map({
     'id': Int(),
     'name': Str(),
-    'owner': Key(),
-    'active': Key(),
-    'posting': Key(),
+    'owner': Authority(),
+    'active': Authority(),
+    'posting': Authority(),
     'memo_key': Str(),
     'json_metadata': Str(),
     'posting_json_metadata': Str(),
@@ -74,14 +74,8 @@ get_account = Map({
     "lifetime_vote_count": Int(),
     "post_count": Int(),
     "can_vote": Bool(),
-    "voting_manabar": Map({
-        "current_mana": Ext_str_and_int(),
-        "last_update_time": Int(),
-    }),
-    "downvote_manabar": Map({
-        "current_mana": Ext_str_and_int(),
-        "last_update_time": Int(),
-    }),
+    "voting_manabar": Manabar(),
+    "downvote_manabar": Manabar(),
     "balance": AssetHive(),
     "savings_balance": AssetHive(),
     "hbd_balance": AssetHbd(),
@@ -153,5 +147,76 @@ find_proposals = Map({
     )
 })
 
+get_witness = []
 
-example = []
+get_witnesses_schedule = Map({
+    'id': Int(),
+    'current_virtual_time': Str(),
+    'next_shuffle_block_num': Int(),
+    'current_shuffled_witnesses': Seq(
+        Str()
+    ),
+    'num_scheduled_witnesses': Int(range={'min': 0, 'max': 21}),
+    'elected_weight': Int(),
+    'timeshare_weight': Int(),
+    'miner_weight': Int(),
+    'witness_pay_normalization_factor': Int(),
+    'median_props': Map({
+        'account_creation_fee': AssetHive(),
+        'maximum_block_size': Int(),
+        'hbd_interest_rate': Int(),
+        'account_subsidy_budget': Int(),
+        'account_subsidy_decay': Int(),
+    }),
+    'majority_version': Str(),
+    'max_voted_witnesses': Int(),
+    'max_miner_witnesses': Int(),
+    'max_runner_witnesses': Int(),
+    'hardfork_required_witnesses': Int(),
+    'account_subsidy_rd': Map({
+        'resource_unit': Int(),
+        'budget_per_time_unit': Int(),
+        'pool_eq': Int(),
+        'max_pool_size': Int(),
+        'decay_params': Map({
+            'decay_per_time_unit': Int(),
+            'decay_per_time_unit_denom_shift': Int(),
+        }),
+        'min_decay': Int(),
+    }),
+    'account_subsidy_witness_rd': Map({
+        'resource_unit': Int(),
+        'budget_per_time_unit': Int(),
+        'pool_eq': Int(),
+        'max_pool_size': Int(),
+        'decay_params': Map({
+            'decay_per_time_unit': Int(),
+            'decay_per_time_unit_denom_shift': Int(),
+        }),
+        'min_decay': Int(),
+    }),
+    'min_witness_account_subsidy_decay': Int(),
+})
+
+list_witnesses = []
+
+example = {
+    "type": "map",
+    'range': {'min': 0, 'max': 2},
+    "mapping": {
+        "password": {
+            "type": "str",
+            "range": {
+                "min": 8,
+                "max": 16
+            }
+        },
+        "age": {
+            "type": "int",
+            "range": {
+                "min": 18,
+                "max-ex": 30
+            }
+        }
+    }
+}

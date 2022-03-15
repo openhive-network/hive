@@ -2,6 +2,9 @@ import pytest
 
 from test_tools import Account, Asset, exceptions, logger, Wallet
 
+from validate_message import validate_message
+import schemas
+
 # TODO BUG LIST!
 '''
 1. Problem with run command wallet_bridge_api.list_witnesses() with incorrect type of limit argument. 
@@ -46,6 +49,11 @@ def test_get_witness_schedule_with_correct_value(world):
     node = prepare_node_with_witnesses(world)
     response = node.api.wallet_bridge.get_witness_schedule()
 
+    validate_message(
+        node.api.wallet_bridge.get_witness_schedule(),
+        schemas.get_witnesses_schedule,
+    )
+
 
 @pytest.mark.parametrize(
     'witness_account, limit', [
@@ -64,6 +72,11 @@ def test_list_witnesses_with_correct_value(world, witness_account, limit):
     node = prepare_node_with_witnesses(world)
     response = node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
+    validate_message(
+        node.api.wallet_bridge.list_witnesses(witness_account, limit),
+        schemas.list_witnesses,
+    )
+
 
 @pytest.mark.parametrize(
     'witness_account, limit', [
@@ -74,8 +87,8 @@ def test_list_witnesses_with_correct_value(world, witness_account, limit):
 )
 def test_list_witnesses_with_incorrect_value(world, witness_account, limit):
     node = prepare_node_with_witnesses(world)
-        with pytest.raises(exceptions.CommunicationError):
-            node.api.wallet_bridge.list_witnesses(witness_account, limit)
+    with pytest.raises(exceptions.CommunicationError):
+        node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
 @pytest.mark.parametrize(
