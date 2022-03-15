@@ -152,27 +152,31 @@ namespace hive { namespace chain {
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
         chainbase::write_lock lock( _rw_lock, boost::defer_lock_t() );
-        //fc_wlog(fc::logger::get("chainlock"),"trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",(_read_lock_count)(_write_lock_count));
+        //fc_wlog(fc::logger::get("chainlock"), "trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", (_read_lock_count)(_write_lock_count));
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
         chainbase::int_incrementer ii( _write_lock_count );
 #endif
 
-//        fc::time_point start_acquire = fc::time_point::now();
+#ifdef DEBUG_FORKDB_LOCK_TIMES
+        fc::time_point start_acquire = fc::time_point::now();
+#endif
         lock.lock();
-//        fc::time_point start_locked = fc::time_point::now();
-//        fc::microseconds fork_write_acquire = start_locked - start_acquire;
-//        fc_wlog(fc::logger::get("chainlock"),"Took ${acquire}us to get fork_write_lock,  write_lock_count=${_write_lock_count}",("acquire",fork_write_acquire.count())(_write_lock_count));
+#ifdef DEBUG_FORKDB_LOCK_TIMES
+        fc::time_point start_locked = fc::time_point::now();
+        fc::microseconds fork_write_acquire = start_locked - start_acquire;
+        fc_wlog(fc::logger::get("chainlock"), "Took ${acquire}µs to get fork_write_lock,  write_lock_count=${_write_lock_count}", ("acquire", fork_write_acquire.count())(_write_lock_count));
 
-//        struct foo {
-//            fc::time_point start_locked;
-//            foo(fc::time_point start) : start_locked(start) {}
-//            ~foo() {
-//              fc::microseconds fork_writelock_duration = fc::time_point::now() - start_locked;
-//              fc_wlog(fc::logger::get("chainlock"),"Took ${held}us to release fork_write_lock",("held",fork_writelock_duration.count()));
-//            }
-//          }
-//          bar(start_locked); 
+        struct lock_release_timer {
+          fc::time_point start_locked;
+          lock_release_timer(fc::time_point start) : start_locked(start) {}
+          ~lock_release_timer() {
+            fc::microseconds fork_writelock_duration = fc::time_point::now() - start_locked;
+            fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to release fork_write_lock", ("held", fork_writelock_duration.count()));
+          }
+        }
+        lock_release_timer(start_locked); 
+#endif
         return callback();
       }
 

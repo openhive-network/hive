@@ -30,7 +30,7 @@ void set_logging_program_options( boost::program_options::options_description& o
 {
   std::vector< std::string > default_appender(
     { "{\"appender\":\"stderr\",\"stream\":\"std_error\",\"time_format\":\"iso_8601_microseconds\"}",
-      "{\"appender\":\"p2p\",\"file\":\"logs/p2p/p2p.log\",\"time_format\":\"iso_8601_milliseconds\"}" } );
+      "{\"appender\":\"p2p\",\"file\":\"logs/p2p/p2p.log\",\"time_format\":\"iso_8601_milliseconds\", \"delta_times\": false}" } );
   std::string str_default_appender = boost::algorithm::join( default_appender, " " );
 
   std::vector< std::string > default_logger(
@@ -119,6 +119,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           file_appender_config.rotation_limit = fc::days(1);
           if (appender.time_format.length())
             file_appender_config.time_format = fc::variant( appender.time_format ).as<fc::appender::time_format>();
+          file_appender_config.delta_times = appender.delta_times.value_or(false);
           logging_config.appenders.push_back(
                                   fc::appender_config( appender.appender, "file", fc::variant( file_appender_config ) ) );
           found_logging_config = true;

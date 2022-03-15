@@ -938,19 +938,20 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
     --call_count;
-    fc_wlog(fc::logger::get("chainlock"), "<-- accept_block_calls_in_progress: ${call_count}", (call_count));
+    fc_dlog(fc::logger::get("chainlock"), "<-- accept_block_calls_in_progress: ${call_count}", (call_count));
   } BOOST_SCOPE_EXIT_END
+
   if (lock == lock_type::boost)
   {
-    //fc_wlog(fc::logger::get("chainlock"), "--> boost accept_block_calls_in_progress: ${call_count}", (call_count));
-    boost::promise< void > prom;
+    fc_dlog(fc::logger::get("chainlock"), "--> boost accept_block_calls_in_progress: ${call_count}", (call_count));
+    boost::promise<void> prom;
     cxt.prom_ptr = &prom;
-    my->write_queue.push( &cxt );
+    my->write_queue.push(&cxt);
     prom.get_future().get();
   }
   else
   {
-    fc_wlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
+    fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
     fc::promise<void>::ptr promise(new fc::promise<void>("accept_block"));
     fc::future<void> prom(promise);
     cxt.prom_ptr = &prom;
