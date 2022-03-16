@@ -29,7 +29,7 @@ const account_filter::account_name_range_index& account_filter::get_tracked_acco
 
 bool account_filter::is_tracked_account( const account_name_type& name ) const
 {
-  if( tracked_accounts.empty() )
+  if( empty() )
   {
     DIAGNOSTIC( ilog("[${fn}] Set of tracked accounts is empty.", ("fn", filter_name) ); )
     return true;
@@ -86,6 +86,14 @@ operation_filter::operation_filter( const std::string& _filter_name ): data_filt
 {
 }
 
+std::string operation_filter::get_op_name( const operation& op )
+{
+  string _op_name;
+  op.visit( fc::get_static_variant_name( _op_name ) );
+
+  return _op_name;
+}
+
 bool operation_filter::add_operation( const std::string& name, operation& op )
 {
   static std::map< string, int64_t > _ops = fc::prepare_variant_info<operation>();
@@ -110,7 +118,23 @@ bool operation_filter::empty() const
 
 bool operation_filter::is_tracked_operation( const operation& op ) const
 {
-  return tracked_operations.find( op ) != tracked_operations.end();
+  if( empty() )
+  {
+    DIAGNOSTIC( ilog("[${fn}] Set of tracked operations is empty.", ("fn", filter_name) ); )
+    return true;
+  }
+
+  bool _result = tracked_operations.find( op ) != tracked_operations.end();
+
+  DIAGNOSTIC
+  (
+    if( _result )
+      ilog("[${fn}] Operation: ${op} matched to defined operations", ("fn", filter_name)("op", get_op_name( op )) );
+    else
+      ilog("[${fn}] Operation: ${op} ignored due to defined tracking filters.", ("fn", filter_name)("op", get_op_name( op )) );
+  )
+
+  return _result;
 }
 
 void operation_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
@@ -119,11 +143,11 @@ void operation_filter::fill( const boost::program_options::variables_map& option
   {
     flat_set<std::string> _ops;
 
-    auto plugins = options.at( option_name ).as<std::vector<std::string>>();
-    for(auto& arg : plugins)
+    auto _set_of_ops = options.at( option_name ).as<std::vector<std::string>>();
+    for( auto& item : _set_of_ops )
     {
       vector<string> _names;
-      boost::split( _names, arg, boost::is_any_of(" \t,") );
+      boost::split( _names, item, boost::is_any_of(" \t,") );
 
       std::copy( _names.begin(), _names.end(), std::inserter( _ops, _ops.begin() ) );
     }

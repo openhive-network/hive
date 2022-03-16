@@ -55,6 +55,7 @@ class operation_filter: public data_filter
 
     operations tracked_operations;
 
+    std::string get_op_name( const operation& op );
     bool add_operation( const std::string& name, operation& op );
 
   public:
