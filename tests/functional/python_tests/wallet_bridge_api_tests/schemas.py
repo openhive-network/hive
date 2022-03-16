@@ -201,22 +201,3 @@ list_witnesses = Map({
         Str(),
     )
 })
-
-
-def Seq2(*content, required: bool = True, matching: str = 'any', option: Dict):
-
-    x = len(*content)
-    print()
-    return {
-        'required': required,
-        'matching': matching,
-        'range': len(content),
-        'seq': [*content],
-        **option,
-    }
-
-
-example = Seq2(
-    Int(),
-    option={'range': {'min': 0, 'max': 4}}
-)

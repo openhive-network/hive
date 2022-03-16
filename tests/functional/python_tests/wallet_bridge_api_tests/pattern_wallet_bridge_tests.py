@@ -58,7 +58,7 @@ def test_schema(node, wallet):
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
     x = node.api.wallet_bridge.list_rc_accounts('', 100)
 
-    example_data = [1, 2, 3, 4, 5, 6]
+    example_data = [1, 2, 3, 4,  5, 6]
 
     validate_message(
         example_data,
