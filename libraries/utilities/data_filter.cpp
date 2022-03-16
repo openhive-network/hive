@@ -1,12 +1,19 @@
 #include <hive/utilities/data_filter.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 #define DIAGNOSTIC(s)
 //#define DIAGNOSTIC(s) s
 
 namespace hive { namespace plugins {
 
-account_filter::account_filter( const std::string& _filter_name ): filter_name( _filter_name )
+data_filter::data_filter( const std::string& _filter_name ): filter_name( _filter_name )
+{
+
+}
+
+account_filter::account_filter( const std::string& _filter_name ): data_filter( _filter_name )
 {
 }
 
@@ -73,6 +80,63 @@ void account_filter::fill( const boost::program_options::variables_map& options,
 {
   typedef std::pair< account_name_type, account_name_type > pairstring;
   HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
+}
+
+operation_filter::operation_filter( const std::string& _filter_name ): data_filter( _filter_name )
+{
+}
+
+bool operation_filter::add_operation( const std::string& name, operation& op )
+{
+  static std::map< string, int64_t > _ops = fc::prepare_variant_info<operation>();
+
+  auto itr = _ops.find( name );
+
+  if( itr != _ops.end() )
+  {
+    int64_t which = itr->second;
+    op.set_which( which );
+
+    return true;
+  }
+  else
+    return false;
+}
+
+bool operation_filter::empty() const
+{
+  return tracked_operations.empty();
+}
+
+bool operation_filter::is_tracked_operation( const operation& op ) const
+{
+  return tracked_operations.find( op ) != tracked_operations.end();
+}
+
+void operation_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
+{
+  if( options.count( option_name ) > 0 )
+  {
+    flat_set<std::string> _ops;
+
+    auto plugins = options.at( option_name ).as<std::vector<std::string>>();
+    for(auto& arg : plugins)
+    {
+      vector<string> _names;
+      boost::split( _names, arg, boost::is_any_of(" \t,") );
+
+      std::copy( _names.begin(), _names.end(), std::inserter( _ops, _ops.begin() ) );
+    }
+
+    for( auto& item : _ops )
+    {
+      operation op;
+      if( add_operation( item, op ) )
+      {
+        tracked_operations.emplace( op );
+      }
+    }
+  }
 }
 
 } } // hive::utilities

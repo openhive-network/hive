@@ -435,9 +435,9 @@ struct visitor {
       }
    };
 
-   template<typename... T> void from_variant( const fc::variant& v, fc::static_variant<T...>& s )
+   template<typename... T> std::map< string, int64_t > prepare_variant_info()
    {
-      static std::map< string, int64_t > to_tag = []()
+      static std::map< string, int64_t > _result = []()
       {
          std::map< string, int64_t > name_map;
          for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
@@ -450,6 +450,13 @@ struct visitor {
          }
          return name_map;
       }();
+
+      return _result;
+   }
+
+   template<typename... T> void from_variant( const fc::variant& v, fc::static_variant<T...>& s )
+   {
+      static std::map< string, int64_t > to_tag = prepare_variant_info<T...>();
 
       if( serialization_functor< fc::static_variant<T...> >()( v, s ) )
         return;
