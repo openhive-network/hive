@@ -15,6 +15,9 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('get_feed_history', ()),
     ('get_hardfork_version', ()),
     ('get_witness_schedule', ()),
+    ('find_rc_accounts', ([''])),
+    ('list_rc_accounts', ('initminer', 100)),
+    ('list_rc_direct_delegations', (['initminer', ''], 100)),
 ]
 
 
@@ -70,5 +73,3 @@ def test_run_command_with_missing_argument(node, wallet_bridge_api_command, argu
     if len(arguments) >= 1:
         with pytest.raises(exceptions.CommunicationError) as exception:
             getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])
-
-        assert 'Array is of invalid size:' in str(exception.value)
