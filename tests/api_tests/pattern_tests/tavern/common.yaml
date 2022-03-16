@@ -4,7 +4,7 @@
 
   variables:
     heavy_timeout: 50
-    timeout: 10
+    timeout: 100
     service:
       proto: http
       server: "{tavern.env_vars.HIVEMIND_ADDRESS}"
