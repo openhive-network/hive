@@ -86,7 +86,7 @@ operation_filter::operation_filter( const std::string& _filter_name ): data_filt
 {
 }
 
-std::string operation_filter::get_op_name( const operation& op )
+std::string operation_filter::get_op_name( const operation& op ) const
 {
   string _op_name;
   op.visit( fc::get_static_variant_name( _op_name ) );
