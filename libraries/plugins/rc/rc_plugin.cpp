@@ -358,28 +358,6 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   }
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
-struct block_extensions_count_resources_visitor
-{
-  typedef void result_type;
-
-  count_resources_result& _r;
-  block_extensions_count_resources_visitor( count_resources_result& r ) : _r( r ) {}
-
-  // Only optional actions need to be counted. We decided in design that
-  // the operation should pay the cost for any required actions created
-  // as a result.
-  void operator()( const optional_automated_actions& opt_actions )
-  {
-    for( const auto& a : opt_actions )
-    {
-      count_resources( a, _r );
-    }
-  }
-
-  template< typename T >
-  void operator()( const T& ) {}
-};
-
 void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
 {
   if( _is_processing_block )
@@ -415,34 +393,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 
   auto now = _db.head_block_time();
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-
-  // How many resources did transactions use?
-  count_resources_result count;
-  for( const signed_transaction& tx : note.block.transactions )
-  {
-    count_resources( tx, count );
-  }
-
-  block_extensions_count_resources_visitor ext_visitor( count );
-  for( const auto& e : note.block.extensions )
-  {
-    e.visit( ext_visitor );
-  }
-
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-
-  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-  {
-    const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
-    count.resource_count[i] *= int64_t( params.resource_unit );
-  }
-
-  //TODO: remove above RC calculation and just use _pool_obj.get_pending_usage()
-  HIVE_ASSERT( std::equal( count.resource_count.begin(), count.resource_count.end(),
-    pending_data.get_pending_usage().begin(), pending_data.get_pending_usage().end() ),
-    plugin_exception,
-    "Unexpected RC cost change: is ${a}, should be ${b}", ( "a", count.resource_count )( "b", pending_data.get_pending_usage() ) );
 
   rc_block_info block_info;
   block_info.regen = ( gpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
