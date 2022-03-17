@@ -75,7 +75,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_pool )
   for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
   {
     resource_pool_api_object api_pool;
-    api_pool.pool = pool_obj.pool_array[i];
+    api_pool.pool = pool_obj.get_pool(i);
     mvo( fc::reflector< rc_resource_types >::to_string( i ), api_pool );
   }
 

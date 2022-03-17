@@ -302,7 +302,7 @@ int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_inf
     for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
     {
       const rc_resource_params& params = params_obj.resource_param_array[i];
-      int64_t pool = pool_obj.pool_array[i];
+      int64_t pool = pool_obj.get_pool(i);
 
       usage_info.usage.resource_count[i] *= int64_t( params.resource_dynamics_params.resource_unit );
       usage_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, usage_info.usage.resource_count[i], rc_regen );
@@ -327,6 +327,11 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // How many RC does this transaction cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, tx_info );
+
+  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.add_pending_usage( tx_info.usage.resource_count, tx_info.cost );
+  } );
 
   // Who pays the cost?
   tx_info.resource_user = get_resource_user( note.transaction );
@@ -380,6 +385,18 @@ void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
   if( _is_processing_block )
     elog( "Nested block processing!" );
   _is_processing_block = true; //should be cleared in either on_post_apply_block or on_fail_apply_block
+  if( before_first_block() )
+  {
+    if( _db.head_block_num() == _enable_at_block )
+      on_first_block();
+    else
+      return;
+  }
+
+  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.reset_pending_usage();
+  } );
 }
 
 void rc_plugin_impl::on_post_apply_block( const block_notification& note )
@@ -387,48 +404,17 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   if( !_is_processing_block )
     elog( "Block processing not started correctly!" );
   _is_processing_block = false; //should always be paired with on_pre_apply_block call
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( before_first_block() )
-  {
-    if( gpo.head_block_number == _enable_at_block )
-      on_first_block();
-    else
-      return;
-  }
+    return;
 
-  /*
-  const auto& idx = _db.get_index< account_index >().indices().get< by_name >();
-
-  ilog( "\n\n************************************************************************" );
-  ilog( "Block ${b}", ("b", note.block_num) );
-  for( const account_object& acct : idx )
-  {
-    auto it = _account_to_max_rc.find( acct.name );
-    const rc_account_object& rc_account = _db.get< rc_account_object, by_name >( acct.name );
-    int64_t max_rc = get_maximum_rc( acct, rc_account );
-    if( it == _account_to_max_rc.end() )
-    {
-      ilog( "NEW ${n} : ${v}", ("n", acct.name)("v", max_rc) );
-      _account_to_max_rc.emplace( acct.name, max_rc );
-    }
-    else if( max_rc != it->second )
-    {
-      ilog( "${n} : ${v}", ("n", acct.name)("v", max_rc) );
-      _account_to_max_rc[ acct.name ] = max_rc;
-    }
-  }
-  for( const signed_transaction& tx : note.block.transactions )
-  {
-    ilog( "${tx}", ("tx", tx) );
-  }
-  */
-
+  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( gpo.total_vesting_shares.amount <= 0 )
   {
     return;
   }
 
   auto now = _db.head_block_time();
+  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
   // How many resources did transactions use?
   count_resources_result count;
@@ -445,6 +431,18 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+  {
+    const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
+    count.resource_count[i] *= int64_t( params.resource_unit );
+  }
+
+  //TODO: remove above RC calculation and just use _pool_obj.get_pending_usage()
+  HIVE_ASSERT( std::equal( count.resource_count.begin(), count.resource_count.end(),
+    pending_data.get_pending_usage().begin(), pending_data.get_pending_usage().end() ),
+    plugin_exception,
+    "Unexpected RC cost change: is ${a}, should be ${b}", ( "a", count.resource_count )( "b", pending_data.get_pending_usage() ) );
 
   rc_block_info block_info;
   block_info.regen = ( gpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
@@ -476,13 +474,15 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
     {
       const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
-      int64_t& pool = pool_obj.pool_array[i];
+      int64_t pool = pool_obj.get_pool(i);
 
       block_info.pool[i] = pool;
       block_info.pool_share[i] = pool_obj.count_share(i);
       block_info.budget[i] = params.budget_per_time_unit;
-      block_info.usage[i] = count.resource_count[i]*int64_t( params.resource_unit );
+      block_info.usage[i] = pending_data.get_pending_usage()[i];
+      block_info.cost[i] = pending_data.get_pending_cost()[i];
       block_info.decay[i] = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
+
       //update global usage statistics
       if( reset_bucket )
         pool_obj.add_usage( i, -active_bucket->get_usage(i) );
@@ -502,6 +502,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
           pool += block_info.new_accounts_adjustment;
         }
       }
+
+      pool_obj.set_pool( i, pool );
 
       /*
       if( debug_print )
@@ -583,6 +585,7 @@ void rc_plugin_impl::on_first_block()
 
   const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
   ilog( "Genesis pool_obj is ${o}", ("o", pool_obj) );
+  _db.create< rc_pending_data >();
 
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
   for( auto it=idx.begin(); it!=idx.end(); ++it )
@@ -1030,10 +1033,10 @@ struct post_apply_operation_visitor
       {
         for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; i++ )
         {
-          p.pool_array[ i ] = int64_t( params.resource_param_array[ i ].resource_dynamics_params.max_pool_size );
+          p.set_pool( i, int64_t( params.resource_param_array[ i ].resource_dynamics_params.max_pool_size ) );
         }
 
-        p.pool_array[ resource_new_accounts ] = 0;
+        p.set_pool( resource_new_accounts, 0 );
       });
     }
   }
@@ -1197,6 +1200,11 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   // How many RC do these actions cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, opt_action_info );
 
+  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.add_pending_usage( opt_action_info.usage.resource_count, opt_action_info.cost );
+  } );
+
   // Who pays the cost?
   opt_action_info.resource_user = get_resource_user( note.action );
   use_account_rcs( _db, gpo, opt_action_info.resource_user, total_cost, _skip, _is_processing_block
@@ -1293,6 +1301,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_pending_data_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_object_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_usage_bucket_index);

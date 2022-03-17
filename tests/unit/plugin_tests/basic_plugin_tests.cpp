@@ -44,6 +44,8 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
     //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 48u );
     //singleton
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data ), 88u );
+    //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 80u );
     //permanent, as many as account_object, 1.3M atm
 
