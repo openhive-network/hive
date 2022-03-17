@@ -9099,7 +9099,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     {
       // get consensus and non-consensus subsidies
       con_subs = db->get_dynamic_global_properties().available_account_subsidies;
-      ncon_subs = db->get< plugins::rc::rc_pool_object >().pool_array[ plugins::rc::resource_new_accounts ];
+      ncon_subs = db->get< plugins::rc::rc_pool_object >().get_pool( plugins::rc::resource_new_accounts );
     };
 
     // set_subsidy_budget creates a lot of blocks, so there should be enough for a few accounts
