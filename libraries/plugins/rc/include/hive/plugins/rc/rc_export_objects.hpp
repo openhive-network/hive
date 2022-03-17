@@ -30,6 +30,7 @@ struct rc_block_info
   resource_count_type       budget; //aside from pool of new accounts this is constant
   resource_count_type       usage;
   resource_count_type       pool;
+  resource_cost_type        cost;
   fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES >
                             pool_share;
   int64_t                   regen = 0;
@@ -62,6 +63,7 @@ FC_REFLECT( hive::plugins::rc::rc_block_info,
   (budget)
   (usage)
   (pool)
+  (cost)
   (pool_share)
   (regen)
   (new_accounts_adjustment)

@@ -26,7 +26,8 @@ enum rc_object_types
   rc_pool_object_type              = ( HIVE_RC_SPACE_ID << 8 ) + 1,
   rc_account_object_type           = ( HIVE_RC_SPACE_ID << 8 ) + 2,
   rc_direct_delegation_object_type = ( HIVE_RC_SPACE_ID << 8 ) + 3,
-  rc_usage_bucket_object_type      = ( HIVE_RC_SPACE_ID << 8 ) + 4
+  rc_usage_bucket_object_type      = ( HIVE_RC_SPACE_ID << 8 ) + 4,
+  rc_pending_data_type             = ( HIVE_RC_SPACE_ID << 8 ) + 5
 };
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
@@ -67,6 +68,12 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
       recalculate_resource_weights( params );
     }
 
+    //sets resource amount in selected pool
+    void set_pool( int poolIdx, int64_t value )
+    {
+      pool_array[ poolIdx ] = value;
+    }
+
     //accumulates usage statistics for given resource
     void add_usage( int poolIdx, int64_t resource_consumed )
     {
@@ -89,6 +96,8 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
       resource_weights[ resource_new_accounts ] = sum_of_resource_weights; //always 100%
     }
 
+    //current content of resource pool
+    int64_t get_pool( int poolIdx ) const { return pool_array[ poolIdx ]; }
     //global usage statistics within last HIVE_RC_BUCKET_TIME_LENGTH*HIVE_RC_WINDOW_BUCKET_COUNT window
     const resource_count_type& get_usage() const { return usage_in_window; }
     //same as above but for selected resource
@@ -101,9 +110,8 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
     //for logging purposes only!!! calculates share (in basis points) of resource in global rc inflation
     uint16_t count_share( int poolIdx ) const { return get_weight( poolIdx ) * HIVE_100_PERCENT / get_weight_divisor(); }
 
-    //current content of resource pools
-    resource_count_type pool_array;
   private:
+    resource_count_type pool_array;
     resource_count_type usage_in_window;
     fc::int_array< uint64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_weights; //in basis points of respective block-budgets
     uint64_t sum_of_resource_weights = 1; //should never be zero
@@ -111,6 +119,52 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_pool_object );
 };
 typedef oid_ref< rc_pool_object > rc_pool_id_type;
+
+/**
+  * Represents temporary data on pending transactions (singleton).
+  * Stored as chain object to utilize undo mechanism.
+  */
+class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
+{
+  CHAINBASE_OBJECT( rc_pending_data );
+  public:
+    template< typename Allocator >
+    rc_pending_data( allocator< Allocator > a, uint64_t _id )
+      : id( _id ), tx_count( 0 ) {}
+
+    //resets pending usage and cost counters - should be called in pre-apply block
+    void reset_pending_usage()
+    {
+      tx_count = 0;
+      pending_usage = {};
+      pending_cost = {};
+    }
+    //accumulates RC usage and cost of pending transaction
+    void add_pending_usage( const resource_count_type& usage, const resource_cost_type& cost )
+    {
+      ++tx_count;
+      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+      {
+        pending_usage[i] += usage[i];
+        pending_cost[i] += cost[i];
+      }
+    }
+
+    //number of transactions/automated actions included in pending usage/cost
+    uint32_t get_tx_count() const { return tx_count; }
+    //usage counters since last reset
+    const resource_count_type& get_pending_usage() const { return pending_usage; }
+    //cost counters since last reset
+    const resource_cost_type& get_pending_cost() const { return pending_cost; }
+
+  private:
+    uint32_t tx_count;
+    resource_count_type pending_usage; //resources consumed by last transactions (since reset in pre-apply block)
+    resource_cost_type pending_cost; //cost of resources accumulated in pending_usage (for logging purposes)
+
+  CHAINBASE_UNPACK_CONSTRUCTOR( rc_pending_data );
+};
+typedef oid_ref< rc_pending_data > rc_pending_data_id_type;
 
 class rc_account_object : public object< rc_account_object_type, rc_account_object >
 {
@@ -213,6 +267,15 @@ typedef multi_index_container<
 > rc_pool_index;
 
 typedef multi_index_container<
+  rc_pending_data,
+  indexed_by<
+    ordered_unique< tag< by_id >,
+      const_mem_fun< rc_pending_data, rc_pending_data::id_type, &rc_pending_data::get_id > >
+  >,
+  allocator< rc_pending_data >
+> rc_pending_data_index;
+
+typedef multi_index_container<
   rc_account_object,
   indexed_by<
     ordered_unique< tag< by_id >,
@@ -266,6 +329,14 @@ FC_REFLECT( hive::plugins::rc::rc_pool_object,
   (sum_of_resource_weights)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pool_object, hive::plugins::rc::rc_pool_index )
+
+FC_REFLECT( hive::plugins::rc::rc_pending_data,
+  (id)
+  (tx_count)
+  (pending_usage)
+  (pending_cost)
+)
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pending_data, hive::plugins::rc::rc_pending_data_index )
 
 FC_REFLECT( hive::plugins::rc::rc_account_object,
   (id)
