@@ -135,6 +135,35 @@ def test_list_proposals_with_incorrect_values(node, accounts, wallet, start, lim
 
 
 @pytest.mark.parametrize(
+    'start, limit, order_by, order_direction, status', [
+        # START
+        (10, 100, 29, 0, 0),
+        ('invalid-argument', 100, 29, 0, 0),
+        (True, 100, 29, 0, 0),
+
+        # LIMIT
+        ([""], 'invalid-argument', 29, 0, 0),
+        # ([""], True, 29, 0, 0),  # BUG4
+
+        # ORDER TYPE
+        ([""], 100, 'invalid-argument', 0, 0),
+        ([""], 100, True, 0, 0),
+
+        #ORDER DIRECTION
+        ([""], 100, 29, 'invalid-argument', 0),
+        # ([""], 100, 29, True, 0),  # BUG4
+
+        #STATUS
+        ([""], 100, 29, 0, 'invalid-argument'),
+        # ([""], 100, 29, 0, True),  # BUG4
+    ]
+)
+def test_list_proposals_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
+    with pytest.raises(test_tools.exceptions.CommunicationError):
+        node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
+
+
+@pytest.mark.parametrize(
     'start, limit, order_by_list_proposal_votes, order_direction, status', [
         # START
         ("[accounts[1]]", 100, 'by_voter_proposal', 'ascending', 'all'),
@@ -209,59 +238,6 @@ def test_list_proposal_votes_with_incorrect_values(node, accounts, wallet, start
         node.api.wallet_bridge.list_proposal_votes(start, limit, order_by_list_proposal_votes, order_direction, status)
 
 
-def test_find_proposals_with_correct_values(node, wallet):
-    accounts = create_accounts_with_vests_and_tbd(wallet, 5)
-    prepare_proposals(wallet, accounts)
-
-    validate_message(
-        node.api.wallet_bridge.find_proposals([0, 1, 2, 3, 4]),
-        schemas.find_proposals,
-    )
-
-
-@pytest.mark.parametrize(
-    'proposal_id', [
-        # -1,  # OUT OFF LIMITS: too low id (# BUG3)
-        # 6,  # OUT OFF LIMITS: too big id (proposal with this id does not exist) (# BUG3)
-    ]
-)
-def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
-    accounts = create_accounts_with_vests_and_tbd(wallet, 5)
-    prepare_proposals(wallet, accounts)
-
-    with pytest.raises(test_tools.exceptions.CommunicationError):
-        node.api.wallet_bridge.find_proposals([proposal_id])
-
-
-@pytest.mark.parametrize(
-    'start, limit, order_by, order_direction, status', [
-        # START
-        (10, 100, 29, 0, 0),
-        ('invalid-argument', 100, 29, 0, 0),
-        (True, 100, 29, 0, 0),
-
-        # LIMIT
-        ([""], 'invalid-argument', 29, 0, 0),
-        # ([""], True, 29, 0, 0),  # BUG4
-
-        # ORDER TYPE
-        ([""], 100, 'invalid-argument', 0, 0),
-        ([""], 100, True, 0, 0),
-
-        #ORDER DIRECTION
-        ([""], 100, 29, 'invalid-argument', 0),
-        # ([""], 100, 29, True, 0),  # BUG4
-
-        #STATUS
-        ([""], 100, 29, 0, 'invalid-argument'),
-        # ([""], 100, 29, 0, True),  # BUG4
-    ]
-)
-def test_list_proposals_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
-    with pytest.raises(test_tools.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
-
-
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', [
         # START
@@ -291,12 +267,38 @@ def test_list_proposal_votes_with_incorrect_type_of_argument(node, start, limit,
         node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
+def test_find_proposals_with_correct_values(node, wallet):
+    accounts = create_accounts_with_vests_and_tbd(wallet, 5)
+    prepare_proposals(wallet, accounts)
+
+    validate_message(
+        node.api.wallet_bridge.find_proposals([0, 1, 2, 3, 4]),
+        schemas.find_proposals,
+    )
+
+
+@pytest.mark.parametrize(
+    'proposal_id', [
+        # -1,  # OUT OFF LIMITS: too low id (# BUG3)
+        # 6,  # OUT OFF LIMITS: too big id (proposal with this id does not exist) (# BUG3)
+    ]
+)
+def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
+    accounts = create_accounts_with_vests_and_tbd(wallet, 5)
+    prepare_proposals(wallet, accounts)
+
+    with pytest.raises(test_tools.exceptions.CommunicationError):
+        node.api.wallet_bridge.find_proposals([proposal_id])
+
+
 @pytest.mark.parametrize(
     'proposal_id', [
         'invalid-argument',
         # True,  # BUG6
     ]
 )
+
+
 def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):
     with pytest.raises(test_tools.exceptions.CommunicationError):
         node.api.wallet_bridge.find_proposals([proposal_id])
