@@ -20,13 +20,12 @@
 #include <boost/scope_exit.hpp>
 #include <boost/thread/future.hpp>
 
-#include <boost/lockfree/queue.hpp>
-
 #include <thread>
 #include <chrono>
 #include <memory>
 #include <iostream>
 #include <mutex>
+#include <queue>
 
 namespace hive { namespace plugins { namespace chain {
 
@@ -75,7 +74,7 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl() : write_queue( 64 ) {}
+    chain_plugin_impl() {}
     ~chain_plugin_impl() 
     {
       stop_write_processing();
@@ -129,9 +128,14 @@ class chain_plugin_impl
 
     uint32_t allow_future_time = 5;
 
-    bool                             running = true;
     std::shared_ptr< std::thread >   write_processor_thread;
-    boost::lockfree::queue< write_context* > write_queue;
+
+    // `writequeue` and `running` are guarded by the queue_mutex
+    std::mutex                       queue_mutex;
+    std::condition_variable          queue_condition_variable;
+    std::queue<write_context*>       write_queue;
+    bool                             running = true;
+
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
 
     vector< string >                 loaded_plugins;
@@ -284,16 +288,15 @@ struct request_promise_visitor
 
 void chain_plugin_impl::start_write_processing()
 {
-  write_processor_thread = std::make_shared< std::thread >( [&]()
+  write_processor_thread = std::make_shared<std::thread>([&]()
   {
     hive::notify_hived_status("syncing");
     ilog("Write processing thread started.");
     fc::set_thread_name("write_queue");
     cumulative_times_last_reported_time = fc::time_point::now();
 
-    const fc::microseconds block_wait_max_time = fc::seconds(10*HIVE_BLOCK_INTERVAL);
+    const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);
     bool is_syncing = true;
-    write_context* cxt;
     write_request_visitor req_visitor;
     req_visitor.db = &db;
     req_visitor.block_generator = block_generator;
@@ -321,99 +324,105 @@ void chain_plugin_impl::start_write_processing()
       * in. When the node is live the rate at which writes come in is slower and busy waiting is
       * not an optimal use of system resources when we could give CPU time to read threads.
       */
-    fc::time_point last_popped_block_time = fc::time_point::now();
-    fc::time_point last_msg_time = last_popped_block_time;
-    fc::time_point wait_start_time = last_popped_block_time;
-
+    fc::time_point last_popped_item_time = fc::time_point::now();
+    fc::time_point last_msg_time = last_popped_item_time;
+    fc::time_point wait_start_time = last_popped_item_time;
 
     hive::notify_hived_status("syncing");
-    while( running )
+    while (true)
     {
-      if( write_queue.pop( cxt ) )
+      // print a message if we haven't gotten any new data in a while
+      fc::time_point loop_start_time = fc::time_point::now();
+      fc::microseconds time_since_last_popped_item = loop_start_time - last_popped_item_time;
+      fc::microseconds time_since_last_message_printed = loop_start_time - last_msg_time;
+      if (time_since_last_popped_item > block_wait_max_time && time_since_last_message_printed > block_wait_max_time)
       {
-        cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
-        last_popped_block_time = fc::time_point::now();
+        wlog("No P2P data (block/transaction) received in last ${t} seconds... peer_count=${peer_count}", ("t", block_wait_max_time.to_seconds())("peer_count", peer_count.load()));
+        last_msg_time = loop_start_time; /// To avoid log pollution
+      }
 
-        fc::time_point write_lock_request_time = fc::time_point::now();
-        db.with_write_lock( [&]()
+      // try to dequeue a block/transaction
+      write_context* cxt;
+      {
+        fc::microseconds max_time_to_wait = time_since_last_popped_item > block_wait_max_time ? block_wait_max_time - time_since_last_message_printed
+                                                                                              : block_wait_max_time - time_since_last_popped_item;
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        while (running && write_queue.empty())
+          if (queue_condition_variable.wait_for(lock, std::chrono::microseconds(max_time_to_wait.count())) == std::cv_status::timeout)
+            continue; // we timed out, restart the while loop to print a "No P2P data" message
+        if (!running) // we woke because the node is shutting down
+          break;
+        // otherwise, we woke because the write_queue is non-empty
+        cxt = write_queue.front();
+        write_queue.pop();
+      }
+
+      cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
+      last_popped_item_time = fc::time_point::now();
+
+      fc::time_point write_lock_request_time = fc::time_point::now();
+      db.with_write_lock([&]()
+      {
+        uint32_t write_queue_items_processed = 0;
+        fc::time_point write_lock_acquired_time = fc::time_point::now();
+        fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
+        cumulative_time_waiting_for_locks += write_lock_acquisition_time;
+
+        if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
+          wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
+               ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
+        fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
+               ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
+        STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
+        while (true)
         {
-          uint32_t write_queue_items_processed = 0;
-          fc::time_point write_lock_acquired_time = fc::time_point::now();
-          fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
-          cumulative_time_waiting_for_locks += write_lock_acquisition_time;
+          req_visitor.skip = cxt->skip;
+          req_visitor.except = &(cxt->except);
+          cxt->success = cxt->req_ptr.visit( req_visitor );
+          cxt->prom_ptr.visit( prom_visitor );
 
-          if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
+          ++write_queue_items_processed;
+
+          if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
           {
-            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
-                 ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
+            fc::microseconds write_lock_held_duration = fc::time_point::now() - write_lock_acquired_time;
+            if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
+            {
+              wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
+                   "held lock for ${write_lock_held_duration}μs",
+                   (write_lock_hold_time)
+                   ("write_lock_held_duration", write_lock_held_duration.count()));
+              break;
+            }
           }
-          fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
-                 ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
-          STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
-          while( true )
+          else if (fc::time_point::now() - db.head_block_time() < fc::minutes(1)) //we're syncing, see if we are close enough to move to live sync
           {
-            req_visitor.skip = cxt->skip;
-            req_visitor.except = &(cxt->except);
-            cxt->success = cxt->req_ptr.visit( req_visitor );
-            cxt->prom_ptr.visit( prom_visitor );
+            is_syncing = false;
+            db.notify_end_of_syncing();
+            hive::notify_hived_status("entering live mode");
+            wlog("entering live mode");
+          }
 
-            ++write_queue_items_processed;
-
-            if( !is_syncing ) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
-            {
-              fc::microseconds write_lock_held_duration = fc::time_point::now() - write_lock_acquired_time;
-              if (write_lock_held_duration > fc::milliseconds( write_lock_hold_time ) )
-              {
-                wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                     "held lock for ${write_lock_held_duration}μs",
-                     ("write_lock_hold_time", write_lock_hold_time)
-                     ("write_lock_held_duration", write_lock_held_duration.count()));
-                break;
-              }
-            }
-            else if( fc::time_point::now() - db.head_block_time() < fc::minutes(1) ) //we're syncing, see if we are close enough to move to live sync
-            {
-              is_syncing = false;
-              db.notify_end_of_syncing();
-              hive::notify_hived_status("entering live mode");
-              wlog("entering live mode");
-            }
-
-
-            if( !write_queue.pop( cxt ) )
+          {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            if (!running || write_queue.empty())
             {
               fc::microseconds write_queue_processed_duration = fc::time_point::now() - write_lock_acquired_time;
-              //if (write_queue_processed_duration.count() > 500000)
+              //if (write_queue_processed_duration > fc::milliseconds(500))
                 fc_wlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}µs (${per_block}µs/block)",
                         (write_queue_items_processed)("write_queue_processed_duration", write_queue_processed_duration.count())
                         ("per_block", write_queue_processed_duration.count() / write_queue_items_processed));
               break;
             }
+            cxt = write_queue.front();
+            write_queue.pop();
+          }
 
-            last_popped_block_time = fc::time_point::now();
-          } //while items in write_queue and time limit not exceeded for live sync
-        }); //with_write_lock
-        wait_start_time = fc::time_point::now();
-      } //if queue not empty
-      if( !is_syncing )
-        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-      // else //DLN remove this temp code to stop busy looping during sync
-      //   std::this_thread::sleep_for( std::chrono::milliseconds(1) );
-      //   //std::this_thread::sleep_for( std::chrono::milliseconds( 20000 ) );
+          last_popped_item_time = fc::time_point::now();
+        } // while items in write_queue and time limit not exceeded for live sync
+      }); // with_write_lock
+      wait_start_time = fc::time_point::now();
 
-      auto now = fc::time_point::now();
-      if((now - last_popped_block_time) > block_wait_max_time)
-      {
-        if (now - last_msg_time > block_wait_max_time)
-        {
-          last_msg_time = now;
-          wlog("No P2P data (block/transaction) received in last ${t} seconds... peer_count=${peer_count}", ("t", block_wait_max_time.to_seconds())("peer_count",peer_count.load()));
-          /// To avoid log pollution
-          wlog("Checking for new P2P data once per ${t} seconds...", ("t", HIVE_BLOCK_INTERVAL));
-        }
-
-        std::this_thread::sleep_for(std::chrono::seconds(HIVE_BLOCK_INTERVAL));
-      }
       fc::microseconds time_since_last_report = fc::time_point::now() - cumulative_times_last_reported_time;
       if (time_since_last_report > fc::seconds(30))
       {
@@ -439,8 +448,7 @@ void chain_plugin_impl::start_write_processing()
         cumulative_time_waiting_for_work = fc::microseconds();
         cumulative_times_last_reported_time = fc::time_point::now();
       }
-    } //while running
-
+    } // while running
     ilog("Write processing thread finished.");
   });
 }
@@ -448,7 +456,11 @@ void chain_plugin_impl::start_write_processing()
 void chain_plugin_impl::stop_write_processing()
 {
   hive::notify_hived_status("finished syncing");
-  running = false;
+  {
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    running = false;
+  }
+  queue_condition_variable.notify_one();
 
   if( write_processor_thread )
   {
@@ -935,7 +947,11 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     //       https://www.boost.org/doc/libs/1_78_0/doc/html/thread/build.html#thread.build.configuration.future
     boost::unique_future<void> accept_block_future(accept_block_promise->get_future());
     cxt.prom_ptr = std::move(accept_block_promise);
-    my->write_queue.push(&cxt);
+    {
+      std::unique_lock<std::mutex> lock(my->queue_mutex);
+      my->write_queue.push(&cxt);
+    }
+    my->queue_condition_variable.notify_one();
     accept_block_future.get();
   }
   else
@@ -944,11 +960,16 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
     fc::future<void> accept_block_future(accept_block_promise);
     cxt.prom_ptr = std::move(accept_block_promise);
-    my->write_queue.push(&cxt);
+    {
+      std::unique_lock<std::mutex> lock(my->queue_mutex);
+      my->write_queue.push(&cxt);
+    }
+    my->queue_condition_variable.notify_one();
     accept_block_future.wait();
   }
 
-  if( cxt.except ) throw *(cxt.except);
+  if (cxt.except)
+    throw *(cxt.except);
 
   return cxt.success;
 }
@@ -970,7 +991,11 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
     cxt.prom_ptr = std::move(accept_transaction_promise);
-    my->write_queue.push(&cxt);
+    {
+      std::unique_lock<std::mutex> lock(my->queue_mutex);
+      my->write_queue.push(&cxt);
+    }
+    my->queue_condition_variable.notify_one();
     accept_transaction_future.get();
   }
   else
@@ -979,11 +1004,16 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
     cxt.prom_ptr = std::move(accept_transaction_promise);
-    my->write_queue.push( &cxt );
+    {
+      std::unique_lock<std::mutex> lock(my->queue_mutex);
+      my->write_queue.push(&cxt);
+    }
+    my->queue_condition_variable.notify_one();
     accept_transaction_future.wait();
   }
 
-  if( cxt.except ) throw *(cxt.except);
+  if (cxt.except) 
+    throw *(cxt.except);
 }
 
 hive::chain::signed_block chain_plugin::generate_block(
@@ -1000,11 +1030,16 @@ hive::chain::signed_block chain_plugin::generate_block(
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
   cxt.prom_ptr = std::move(generate_block_promise);
 
-  my->write_queue.push( &cxt );
+  {
+    std::unique_lock<std::mutex> lock(my->queue_mutex);
+    my->write_queue.push(&cxt);
+  }
+  my->queue_condition_variable.notify_one();
 
   generate_block_future.get();
 
-  if( cxt.except ) throw *(cxt.except);
+  if (cxt.except)
+    throw *(cxt.except);
 
   FC_ASSERT( cxt.success, "Block could not be generated" );
 
