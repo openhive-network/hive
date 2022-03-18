@@ -12,16 +12,17 @@ namespace hive { namespace plugins {
 
 using protocol::account_name_type;
 using protocol::operation;
+using std::string;
 
 class data_filter
 {
   protected:
 
-    std::string filter_name;
+    string filter_name;
 
   public:
   
-    data_filter( const std::string& _filter_name );
+    data_filter( const string& _filter_name );
 };
 
 class account_filter: public data_filter
@@ -36,13 +37,19 @@ class account_filter: public data_filter
 
   public:
 
-    account_filter( const std::string& _filter_name );
+    account_filter( const string& _filter_name );
 
     bool empty() const;
     const account_name_range_index& get_tracked_accounts() const;
     bool is_tracked_account( const account_name_type& name ) const;
 
-    void fill( const boost::program_options::variables_map& options, const std::string& option_name );
+    void fill( const boost::program_options::variables_map& options, const string& option_name );
+};
+
+struct operation_helper
+{
+  static bool create( const string& name, operation& op );
+  static string get_op_name( const operation& op );
 };
 
 class operation_filter: public data_filter
@@ -55,17 +62,34 @@ class operation_filter: public data_filter
 
     operations tracked_operations;
 
-    std::string get_op_name( const operation& op ) const;
-    bool add_operation( const std::string& name, operation& op );
-
   public:
 
-    operation_filter( const std::string& _filter_name );
+    operation_filter( const string& _filter_name );
 
     bool empty() const;
     bool is_tracked_operation( const operation& op ) const;
 
-    void fill( const boost::program_options::variables_map& options, const std::string& option_name );
+    void fill( const boost::program_options::variables_map& options, const string& option_name );
+};
+
+class operation_body_filter: public data_filter
+{
+  public:
+
+    using body_filters_items = flat_map< operation, string >;
+
+  private:
+
+    body_filters_items body_filters;
+
+  public:
+
+    operation_body_filter( const string& _filter_name );
+
+    bool empty() const;
+    bool is_body_operation_accepted( const operation& op ) const;
+
+    void fill( const boost::program_options::variables_map& options, const string& option_name );
 };
 
 } } // hive::plugins
