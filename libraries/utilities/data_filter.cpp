@@ -1,19 +1,23 @@
 #include <hive/utilities/data_filter.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
+#include <fc/exception/exception.hpp>
+
 #include <boost/algorithm/string.hpp>
+
+#include <regex>
 
 #define DIAGNOSTIC(s)
 //#define DIAGNOSTIC(s) s
 
 namespace hive { namespace plugins {
 
-data_filter::data_filter( const std::string& _filter_name ): filter_name( _filter_name )
+data_filter::data_filter( const string& _filter_name ): filter_name( _filter_name )
 {
 
 }
 
-account_filter::account_filter( const std::string& _filter_name ): data_filter( _filter_name )
+account_filter::account_filter( const string& _filter_name ): data_filter( _filter_name )
 {
 }
 
@@ -76,25 +80,13 @@ bool account_filter::is_tracked_account( const account_name_type& name ) const
   return _result;
 }
 
-void account_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
+void account_filter::fill( const boost::program_options::variables_map& options, const string& option_name )
 {
   typedef std::pair< account_name_type, account_name_type > pairstring;
   HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
 }
 
-operation_filter::operation_filter( const std::string& _filter_name ): data_filter( _filter_name )
-{
-}
-
-std::string operation_filter::get_op_name( const operation& op ) const
-{
-  string _op_name;
-  op.visit( fc::get_static_variant_name( _op_name ) );
-
-  return _op_name;
-}
-
-bool operation_filter::add_operation( const std::string& name, operation& op )
+bool operation_helper::create( const std::string& name, operation& op )
 {
   static std::map< string, int64_t > _ops = fc::prepare_variant_info<operation>();
 
@@ -109,6 +101,18 @@ bool operation_filter::add_operation( const std::string& name, operation& op )
   }
   else
     return false;
+}
+
+string operation_helper::get_op_name( const operation& op )
+{
+  string _op_name;
+  op.visit( fc::get_static_variant_name( _op_name ) );
+
+  return _op_name;
+}
+
+operation_filter::operation_filter( const string& _filter_name ): data_filter( _filter_name )
+{
 }
 
 bool operation_filter::empty() const
@@ -129,21 +133,21 @@ bool operation_filter::is_tracked_operation( const operation& op ) const
   DIAGNOSTIC
   (
     if( _result )
-      ilog("[${fn}] Operation: ${op} matched to defined operations", ("fn", filter_name)("op", get_op_name( op )) );
+      ilog("[${fn}] Operation: ${op} matched to defined operations", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
     else
-      ilog("[${fn}] Operation: ${op} ignored due to defined tracking filters.", ("fn", filter_name)("op", get_op_name( op )) );
+      ilog("[${fn}] Operation: ${op} ignored due to defined tracking filters.", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
   )
 
   return _result;
 }
 
-void operation_filter::fill( const boost::program_options::variables_map& options, const std::string& option_name )
+void operation_filter::fill( const boost::program_options::variables_map& options, const string& option_name )
 {
   if( options.count( option_name ) > 0 )
   {
-    flat_set<std::string> _ops;
+    flat_set<string> _ops;
 
-    auto _set_of_ops = options.at( option_name ).as<std::vector<std::string>>();
+    auto _set_of_ops = options.at( option_name ).as<std::vector<string>>();
     for( auto& item : _set_of_ops )
     {
       vector<string> _names;
@@ -155,11 +159,92 @@ void operation_filter::fill( const boost::program_options::variables_map& option
     for( auto& item : _ops )
     {
       operation op;
-      if( add_operation( item, op ) )
+      if( operation_helper::create( item, op ) )
       {
         tracked_operations.emplace( op );
       }
     }
+  }
+}
+
+operation_body_filter::operation_body_filter( const string& _filter_name ): data_filter( _filter_name )
+{
+
+}
+
+bool operation_body_filter::empty() const
+{
+  return body_filters.empty();
+}
+
+bool operation_body_filter::is_body_operation_accepted( const operation& op ) const
+{
+  if( empty() )
+  {
+    DIAGNOSTIC( ilog("[${fn}] Set of body operation filters is empty.", ("fn", filter_name) ); )
+    return true;
+  }
+
+  bool _result = false;
+  auto _found = body_filters.find( op );
+
+  if( _found != body_filters.end() )
+  {
+    variant _v;
+    to_variant( op, _v );
+
+    if( _v.is_object() || _v.is_array() )
+    {
+      string _op_body = "";
+
+      if( _v.is_object() )
+      {
+        auto _v_object = _v.get_object();
+        FC_ASSERT( _v_object.contains("value"), "Filter-Error: Object is incorrect." );
+        _op_body = _v_object["value"].as_string();
+      }
+      else
+      {
+        auto _v_array = _v.get_array();
+        FC_ASSERT( _v_array.size() >= 2, "Filter-Error: Array is incorrect." );
+        _op_body = _v_array[1].as_string();
+      }
+
+      std::regex _regex( _found->second );
+      _result = std::regex_search( _op_body, _regex );
+    }
+    else
+      FC_ASSERT( false, "Filter-Error: incorrect operation" );
+  }
+
+  DIAGNOSTIC
+  (
+    if( _result )
+      ilog("[${fn}] Operation: ${op} matched to defined body operation filters", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
+    else
+      ilog("[${fn}] Operation: ${op} ignored due to defined body operation filters.", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
+  )
+
+  return _result;
+
+}
+
+void operation_body_filter::fill( const boost::program_options::variables_map& options, const string& option_name )
+{
+  typedef std::pair< string, string > pairstring;
+  flat_map< string, string > _items;
+
+  //psql-track-body-operations = ["transfer_operation","test"]
+  HIVE_LOAD_VALUE_SET(options, option_name, _items, pairstring);
+
+  for( auto& item : _items )
+  {
+    operation op;
+    if( operation_helper::create( item.first, op ) )
+    {
+      body_filters.emplace( std::make_pair( op, item.second ) );
+    }
+
   }
 }
 
