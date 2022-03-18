@@ -29,15 +29,12 @@ FC_REFLECT_ENUM( hive::plugins::rc::rc_resource_types,
 
 namespace hive { namespace plugins { namespace rc {
 
-const auto HIVE_RC_NUM_RESOURCE_TYPES = fc::reflector< rc_resource_types >::total_member_count;
+constexpr auto HIVE_RC_NUM_RESOURCE_TYPES = fc::reflector< rc_resource_types >::total_member_count;
 
 typedef fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_count_type;
 typedef fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_cost_type;
 
-struct count_resources_result
-{
-  resource_count_type resource_count;
-};
+typedef resource_count_type count_resources_result;
 
 void count_resources(
   const hive::protocol::signed_transaction& tx,
@@ -45,9 +42,5 @@ void count_resources(
   );
 
 } } } // hive::plugins::rc
-
-FC_REFLECT( hive::plugins::rc::count_resources_result,
-  (resource_count)
-)
 
 FC_REFLECT_TYPENAME( hive::plugins::rc::resource_count_type )

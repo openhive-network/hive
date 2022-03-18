@@ -304,8 +304,8 @@ int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_inf
       const rc_resource_params& params = params_obj.resource_param_array[i];
       int64_t pool = pool_obj.get_pool(i);
 
-      usage_info.usage.resource_count[i] *= int64_t( params.resource_dynamics_params.resource_unit );
-      usage_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, usage_info.usage.resource_count[i], rc_regen );
+      usage_info.usage[i] *= int64_t( params.resource_dynamics_params.resource_unit );
+      usage_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, usage_info.usage[i], rc_regen );
       total_cost += usage_info.cost[i];
     }
   }
@@ -330,7 +330,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
   {
-    data.add_pending_usage( tx_info.usage.resource_count, tx_info.cost );
+    data.add_pending_usage( tx_info.usage, tx_info.cost );
   } );
 
   // Who pays the cost?
@@ -1154,7 +1154,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
   {
-    data.add_pending_usage( opt_action_info.usage.resource_count, opt_action_info.cost );
+    data.add_pending_usage( opt_action_info.usage, opt_action_info.cost );
   } );
 
   // Who pays the cost?
