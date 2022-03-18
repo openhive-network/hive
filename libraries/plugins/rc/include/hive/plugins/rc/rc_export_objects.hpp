@@ -17,7 +17,7 @@ using hive::protocol::account_name_type;
 struct rc_info
 {
   account_name_type         resource_user;
-  count_resources_result    usage;
+  resource_count_type       usage;
   resource_cost_type        cost;
 };
 

@@ -445,18 +445,18 @@ void count_resources(
     return;
   }
   
-  result.resource_count[ resource_history_bytes ] += tx_size;
-  result.resource_count[ resource_new_accounts ] += vtor.new_account_op_count;
+  result[ resource_history_bytes ] += tx_size;
+  result[ resource_new_accounts ] += vtor.new_account_op_count;
 
   if( vtor.market_op_count > 0 )
-    result.resource_count[ resource_market_bytes ] += tx_size;
+    result[ resource_market_bytes ] += tx_size;
 
-  result.resource_count[ resource_state_bytes ] +=
+  result[ resource_state_bytes ] +=
       size_info.transaction_object_base_size
     + size_info.transaction_object_byte_size * tx_size
     + vtor.state_bytes_count;
 
-  result.resource_count[ resource_execution_time ] += vtor.execution_time_count;
+  result[ resource_execution_time ] += vtor.execution_time_count;
 }
 
 void count_resources(
@@ -468,16 +468,16 @@ void count_resources(
   const int64_t action_size = int64_t( fc::raw::pack_size( action ) );
   count_optional_action_visitor vtor( size_info, exec_info );
 
-  result.resource_count[ resource_history_bytes ] += action_size;
+  result[ resource_history_bytes ] += action_size;
 
   action.visit( vtor );
 
   // Not expecting actions to create accounts, but better to add it for completeness
-  result.resource_count[ resource_new_accounts ] += vtor.new_account_op_count;
+  result[ resource_new_accounts ] += vtor.new_account_op_count;
 
-  result.resource_count[ resource_state_bytes ] += vtor.state_bytes_count;
+  result[ resource_state_bytes ] += vtor.state_bytes_count;
 
-  result.resource_count[ resource_execution_time ] += vtor.execution_time_count;
+  result[ resource_execution_time ] += vtor.execution_time_count;
 }
 
 } } } // hive::plugins::rc
