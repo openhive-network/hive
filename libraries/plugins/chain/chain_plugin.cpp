@@ -18,6 +18,7 @@
 #include <boost/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/scope_exit.hpp>
+#include <boost/thread/future.hpp>
 
 #include <boost/lockfree/queue.hpp>
 
@@ -58,7 +59,7 @@ struct generate_block_request
 };
 
 typedef fc::static_variant< const signed_block*, const signed_transaction*, generate_block_request* > write_request_ptr;
-typedef fc::static_variant< boost::promise< void >*, fc::future< void >* > promise_ptr;
+typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
 struct write_context
 {
@@ -265,8 +266,17 @@ struct request_promise_visitor
 
   typedef void result_type;
 
-  template< typename T >
-  void operator()( T* t )
+  // n.b. our visitor functions take a shared pointer to the promise by value
+  // so the promise can't be garbage collected until the set_value() function
+  // has finished exiting.  There's a race where the calling thread wakes up
+  // during the set_value() call and can delete the promise out from under us
+  // unless we hold a reference here.
+  void operator()( fc::promise<void>::ptr t )
+  {
+    t->set_value();
+  }
+  
+  void operator()( std::shared_ptr<boost::promise<void>> t )
   {
     t->set_value();
   }
@@ -898,12 +908,11 @@ void chain_plugin::connection_count_changed(uint32_t peer_count)
 
 bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */  )
 {
-  if (currently_syncing && block.block_num() % 10000 == 0) {
+  if (currently_syncing && block.block_num() % 10000 == 0)
     ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
-        ("t", block.timestamp)
-        ("n", block.block_num())
-        ("p", block.witness) );
-  }
+         ("t", block.timestamp)
+         ("n", block.block_num())
+         ("p", block.witness) );
 
   check_time_in_block( block );
 
@@ -920,19 +929,23 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
   if (lock == lock_type::boost)
   {
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_block_calls_in_progress: ${call_count}", (call_count));
-    boost::promise<void> prom;
-    cxt.prom_ptr = &prom;
+    std::shared_ptr<boost::promise<void>> accept_block_promise = std::make_shared<boost::promise<void>>();
+    // note: whether boost's futures are named `future` or `unique_future` depends on the BOOST_THREAD_VERSION,
+    //       if this doesn't compile, see:
+    //       https://www.boost.org/doc/libs/1_78_0/doc/html/thread/build.html#thread.build.configuration.future
+    boost::unique_future<void> accept_block_future(accept_block_promise->get_future());
+    cxt.prom_ptr = std::move(accept_block_promise);
     my->write_queue.push(&cxt);
-    prom.get_future().get();
+    accept_block_future.get();
   }
   else
   {
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
-    fc::promise<void>::ptr promise(new fc::promise<void>("accept_block"));
-    fc::future<void> prom(promise);
-    cxt.prom_ptr = &prom;
-    my->write_queue.push( &cxt );
-    prom.wait();
+    fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
+    fc::future<void> accept_block_future(accept_block_promise);
+    cxt.prom_ptr = std::move(accept_block_promise);
+    my->write_queue.push(&cxt);
+    accept_block_future.wait();
   }
 
   if( cxt.except ) throw *(cxt.except);
@@ -954,19 +967,20 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
   if (lock == lock_type::boost)
   {
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
-    boost::promise<void> prom;
-    cxt.prom_ptr = &prom;
+    std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
+    boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
+    cxt.prom_ptr = std::move(accept_transaction_promise);
     my->write_queue.push(&cxt);
-    prom.get_future().get();
+    accept_transaction_future.get();
   }
   else
   {
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count));
-    fc::promise<void>::ptr promise(new fc::promise<void>("accept_block"));
-    fc::future<void> prom(promise);
-    cxt.prom_ptr = &prom;
+    fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
+    fc::future<void> accept_transaction_future(accept_transaction_promise);
+    cxt.prom_ptr = std::move(accept_transaction_promise);
     my->write_queue.push( &cxt );
-    prom.wait();
+    accept_transaction_future.wait();
   }
 
   if( cxt.except ) throw *(cxt.except);
@@ -979,14 +993,16 @@ hive::chain::signed_block chain_plugin::generate_block(
   uint32_t skip )
 {
   generate_block_request req( when, witness_owner, block_signing_private_key, skip );
-  boost::promise< void > prom;
   write_context cxt;
   cxt.req_ptr = &req;
-  cxt.prom_ptr = &prom;
+
+  std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
+  boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
+  cxt.prom_ptr = std::move(generate_block_promise);
 
   my->write_queue.push( &cxt );
 
-  prom.get_future().get();
+  generate_block_future.get();
 
   if( cxt.except ) throw *(cxt.except);
 
