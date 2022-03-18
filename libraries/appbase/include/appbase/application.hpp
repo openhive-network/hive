@@ -192,6 +192,7 @@ namespace appbase {
 
       void set_program_options();
       void write_default_config( const bfs::path& cfg_file );
+      void generate_completions();
       std::unique_ptr< class application_impl > my;
 
       io_handler                 main_io_handler;
