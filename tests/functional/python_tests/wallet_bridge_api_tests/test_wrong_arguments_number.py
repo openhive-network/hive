@@ -4,6 +4,8 @@ from test_tools import exceptions
 
 # TODO BUG LIST!
 # 1. Problem with run command wallet_bridge_api.find_proposals() with additional argument. (#BUG1)
+# 2. Problem with run command wallet_bridge_api.get_account() with additional argument. (#BUG2)
+
 
 COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('list_proposals', ([""], 100, 29, 0, 0)),
@@ -18,6 +20,9 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('find_rc_accounts', ([''])),
     ('list_rc_accounts', ('initminer', 100)),
     ('list_rc_direct_delegations', (['initminer', ''], 100)),
+    ('get_account', ('get_account')),
+    ('get_account_history', ('non-exist-acc', -1, 1000)),
+    ('get_accounts', (['non-exist-acc'])),
 ]
 
 
@@ -62,7 +67,8 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
     'wallet_bridge_api_command, arguments', COMMANDS_WITH_CORRECT_ARGUMENTS
 )
 def test_run_command_with_additional_argument(node, wallet_bridge_api_command, arguments):
-    if wallet_bridge_api_command != 'find_proposals':  # BUG1
+    #'list_my_accounts' is testing in file test_accounts.py
+    if wallet_bridge_api_command != 'find_proposals' and wallet_bridge_api_command != 'get_account':  # BUG1, BUG2
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
 
 
@@ -70,6 +76,7 @@ def test_run_command_with_additional_argument(node, wallet_bridge_api_command, a
     'wallet_bridge_api_command, arguments', COMMANDS_WITH_CORRECT_ARGUMENTS
 )
 def test_run_command_with_missing_argument(node, wallet_bridge_api_command, arguments):
+    #'list_my_accounts' is testing in file test_accounts.py
     if len(arguments) >= 1:
         with pytest.raises(exceptions.CommunicationError) as exception:
             getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])
