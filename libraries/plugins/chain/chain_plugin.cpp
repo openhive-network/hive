@@ -367,6 +367,7 @@ void chain_plugin_impl::start_write_processing()
         last_popped_item_time = fc::time_point::now();
 
         fc::time_point write_lock_request_time = fc::time_point::now();
+        fc::time_point_sec head_block_time;
         db.with_write_lock([&]()
         {
           uint32_t write_queue_items_processed = 0;
@@ -401,13 +402,6 @@ void chain_plugin_impl::start_write_processing()
                 break;
               }
             }
-            else if (fc::time_point::now() - db.head_block_time() < fc::minutes(1)) //we're syncing, see if we are close enough to move to live sync
-            {
-              is_syncing = false;
-              db.notify_end_of_syncing();
-              hive::notify_hived_status("entering live mode");
-              wlog("entering live mode");
-            }
 
             {
               std::unique_lock<std::mutex> lock(queue_mutex);
@@ -426,9 +420,18 @@ void chain_plugin_impl::start_write_processing()
 
             last_popped_item_time = fc::time_point::now();
           } // while items in write_queue and time limit not exceeded for live sync
+          head_block_time = db.head_block_time();
         }); // with_write_lock
-        wait_start_time = fc::time_point::now();
 
+        if (is_syncing && fc::time_point::now() - head_block_time < fc::minutes(1)) //we're syncing, see if we are close enough to move to live sync
+        {
+          is_syncing = false;
+          db.notify_end_of_syncing();
+          hive::notify_hived_status("entering live mode");
+          wlog("entering live mode");
+        }
+
+        wait_start_time = fc::time_point::now();
         fc::microseconds time_since_last_report = fc::time_point::now() - cumulative_times_last_reported_time;
         if (time_since_last_report > fc::seconds(30))
         {
