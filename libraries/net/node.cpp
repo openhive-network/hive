@@ -1506,10 +1506,10 @@ namespace graphene { namespace net {
               }
               else //it sent us a message recently, but we need sync data from it, yet we aren't processing or asking for new sync data, treat as stalled
                 if (active_peer->we_need_sync_items_from_peer &&
-                       active_peer->ids_of_items_being_processed.empty() && //we're not processing any blocks from this peer right now
-                       !active_peer->is_currently_handling_message() && //we're not processing a message it sent us
-                       !active_peer->item_ids_requested_from_peer && //not requesting any new ids
-                       active_peer->ids_of_items_to_get.empty()) //all received ids have been sent to the blockchain
+                    active_peer->ids_of_items_being_processed.empty() && //we're not processing any blocks from this peer right now
+                    !active_peer->is_currently_handling_message() && //we're not processing a message it sent us
+                    !active_peer->item_ids_requested_from_peer && //not requesting any new ids
+                    active_peer->ids_of_items_to_get.empty()) //all received ids have been sent to the blockchain
               {
                 // This is a state we should never get into this condition except in a race, but if we do, we should disconnect the peer
                 // to re-establish the connection.
@@ -3676,6 +3676,9 @@ namespace graphene { namespace net {
                                           const message_hash_type& message_hash)
     {
       VERIFY_CORRECT_THREAD();
+      // keep the peer from being deleted until we're done processing this message
+      peer_connection_ptr peer = originating_peer->shared_from_this();
+
 
       // find out whether we requested this item while we were synchronizing or during normal operation
       // (it's possible that we request an item during normal operation and then get kicked into sync
@@ -4016,10 +4019,12 @@ namespace graphene { namespace net {
     // messages.  (transaction messages would be handled here, for example)
     // this just passes the message to the client, and does the bookkeeping
     // related to requesting and rebroadcasting the message.
-    void node_impl::process_ordinary_message( peer_connection* originating_peer,
-                                              const message& message_to_process, const message_hash_type& message_hash )
+    void node_impl::process_ordinary_message(peer_connection* originating_peer,
+                                             const message& message_to_process, const message_hash_type& message_hash)
     {
       VERIFY_CORRECT_THREAD();
+      // keep the peer from being deleted until we're done processing this message
+      peer_connection_ptr peer = originating_peer->shared_from_this();
       fc::time_point message_receive_time = fc::time_point::now();
 
       // only process it if we asked for it
@@ -4033,7 +4038,7 @@ namespace graphene { namespace net {
       }
       else
       {
-        originating_peer->items_requested_from_peer.erase( iter );
+        originating_peer->items_requested_from_peer.erase(iter);
         if (originating_peer->idle())
           trigger_fetch_items_loop();
 
@@ -4048,24 +4053,30 @@ namespace graphene { namespace net {
             _delegate->handle_transaction(transaction_message_to_process);
           }
           else
-            _delegate->handle_message( message_to_process );
+            _delegate->handle_message(message_to_process);
           message_validated_time = fc::time_point::now();
         }
-        catch ( const fc::canceled_exception& )
+        catch (const fc::canceled_exception&)
         {
           throw;
         }
-        catch ( const fc::exception& e )
+        catch (const fc::exception& e)
         {
-          wlog( "client rejected message sent by peer ${peer}, ${e}", ("peer", originating_peer->get_remote_endpoint() )("e", e) );
+          wlog("client rejected message sent by peer ${peer}, ${e}", ("peer", originating_peer->get_remote_endpoint())(e));
           // record it so we don't try to fetch this item again
-          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(message_to_process.msg_type, message_hash ), fc::time_point::now()));
+          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(message_to_process.msg_type, message_hash), fc::time_point::now()));
+          return;
+        }
+        catch (...)
+        {
+          elog("Caught unexpected unknown exception in process_ordinary_message"); //we don't expect this to happen
+          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(message_to_process.msg_type, message_hash), fc::time_point::now()));
           return;
         }
 
         // finally, if the delegate validated the message, broadcast it to our other peers
         message_propagation_data propagation_data{message_receive_time, message_validated_time, originating_peer->node_id};
-        broadcast( message_to_process, propagation_data );
+        broadcast(message_to_process, propagation_data);
       }
     }
 
