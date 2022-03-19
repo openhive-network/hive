@@ -4162,10 +4162,7 @@ namespace graphene { namespace net {
       // terminate all of our long-running loops (these run continuously instead of rescheduling themselves)
       try
       {
-        _p2p_network_connect_loop_done.cancel("node_impl::close()");
-        // cancel() is currently broken, so we need to wake up the task to allow it to finish
-        trigger_p2p_network_connect_loop();
-        _p2p_network_connect_loop_done.wait();
+        _p2p_network_connect_loop_done.cancel_and_wait("node_impl::close()");
         dlog("P2P connect loop terminated");
       }
       catch ( const fc::canceled_exception& )
