@@ -1092,35 +1092,39 @@ namespace graphene { namespace net {
               {
                 dlog("peer ${peer} is idle", ("peer", peer->get_remote_endpoint()));
                 ++idle_peer_count;
-                assert(peer->last_requested_block_number_for_peers_on_this_fork >= peer->first_id_block_number - 1);
-                uint32_t first_to_get = peer->last_requested_block_number_for_peers_on_this_fork - peer->first_id_block_number + 1;
-                if (peer->we_need_sync_items_from_peer && 
-                    !peer->ids_of_items_to_get.empty() &&
-                    first_to_get < peer->ids_of_items_to_get.size())
+                if (peer->we_need_sync_items_from_peer && !peer->ids_of_items_to_get.empty())
                 {
-                  // loop through the items peer has that we don't yet have on our blockchain
-                  unsigned i = first_to_get;
-                  for (; i < peer->ids_of_items_to_get.size(); ++i)
+                  assert(peer->first_id_block_number);
+                  if (peer->last_requested_block_number_for_peers_on_this_fork < peer->first_id_block_number - 1)
+                    peer->last_requested_block_number_for_peers_on_this_fork = peer->first_id_block_number - 1;
+                  uint32_t first_to_get = peer->last_requested_block_number_for_peers_on_this_fork - peer->first_id_block_number + 1;
+                  if (first_to_get < peer->ids_of_items_to_get.size())
                   {
-                    const item_hash_t& item_to_potentially_request = peer->ids_of_items_to_get[i];
-                    // if we don't already have this item in our temporary storage and we haven't requested from another syncing peer
-                    if(_active_sync_requests.find(item_to_potentially_request) == _active_sync_requests.end() && // we've requested it in a previous iteration and we're still waiting for it to arrive
-                       !have_already_received_sync_item(item_to_potentially_request) && // already received it, but not yet removed from our list of peer items to get
-                       sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end()) // we have already decided to request it from another peer during this iteration
+                    // loop through the items peer has that we don't yet have on our blockchain
+                    unsigned i = first_to_get;
+                    for (; i < peer->ids_of_items_to_get.size(); ++i)
                     {
-                      // then schedule a request from this peer
-                      sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
-                      sync_items_to_request.insert(item_to_potentially_request);
-                      if (sync_item_requests_to_send[peer].size() >= _node_configuration.maximum_blocks_per_peer_during_syncing)
-                        break;
-                    }
-                  } //for each item to get
-                  if (i == peer->ids_of_items_to_get.size()) //if we didn't find any items, we only searched one less than i
-                    --i;
-                  uint32_t last_searched_block_number = peer->first_id_block_number + i;
-                  const item_hash_t& last_searched_item_id = peer->ids_of_items_to_get[i];
-                  update_last_requested_block_number_for_peers_on_this_fork(last_searched_block_number, last_searched_item_id);
-                  dlog("searched through ${count} ids from ${total_ids} available ids to find ${n} items to request", ("count", i - first_to_get + 1)("total_ids", peer->ids_of_items_to_get.size())("n", sync_item_requests_to_send[peer].size()));
+                      const item_hash_t& item_to_potentially_request = peer->ids_of_items_to_get[i];
+                      // if we don't already have this item in our temporary storage and we haven't requested from another syncing peer
+                      if(_active_sync_requests.find(item_to_potentially_request) == _active_sync_requests.end() && // we've requested it in a previous iteration and we're still waiting for it to arrive
+                         !have_already_received_sync_item(item_to_potentially_request) && // already received it, but not yet removed from our list of peer items to get
+                         sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end()) // we have already decided to request it from another peer during this iteration
+                      {
+                        // then schedule a request from this peer
+                        sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
+                        sync_items_to_request.insert(item_to_potentially_request);
+                        if (sync_item_requests_to_send[peer].size() >= _node_configuration.maximum_blocks_per_peer_during_syncing)
+                          break;
+                      }
+                    } //for each item to get
+                    if (i == peer->ids_of_items_to_get.size()) //if we didn't find any items, we only searched one less than i
+                      --i;
+                    uint32_t last_searched_block_number = peer->first_id_block_number + i;
+                    const item_hash_t& last_searched_item_id = peer->ids_of_items_to_get[i];
+                    update_last_requested_block_number_for_peers_on_this_fork(last_searched_block_number, last_searched_item_id);
+                    dlog("searched through ${count} ids from ${total_ids} available ids to find ${n} items to request", ("count", i - first_to_get + 1)("total_ids", peer->ids_of_items_to_get.size())("n", sync_item_requests_to_send[peer].size()));
+
+                  } //if this peer has items we aren't currently asking for or already received
                 } //if we need sync items from peer
               } //if peer idle
             } //for each active peer
