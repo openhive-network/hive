@@ -125,7 +125,9 @@ namespace hive { namespace chain {
 #else
         chainbase::read_lock lock( _rw_lock, boost::defer_lock_t() );
 #endif
-        //fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, fork_read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", (_read_lock_count)(_write_lock_count)); 
+#ifdef DEBUG_FORKDB_LOCK_TIMES
+        fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, fork_read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", (_read_lock_count)(_write_lock_count)); 
+#endif        
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
         chainbase::int_incrementer ii( _read_lock_count );
@@ -157,7 +159,6 @@ namespace hive { namespace chain {
         BOOST_ATTRIBUTE_UNUSED
         chainbase::int_incrementer ii( _write_lock_count );
 #endif
-
 #ifdef DEBUG_FORKDB_LOCK_TIMES
         fc::time_point start_acquire = fc::time_point::now();
 #endif
