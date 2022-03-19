@@ -73,7 +73,6 @@ namespace graphene { namespace net
     peer_connection::peer_connection(peer_connection_delegate* delegate) :
       _node(delegate),
       _message_connection(this),
-      _total_queued_messages_size(0),
       direction(peer_connection_direction::unknown),
       is_firewalled(firewalled_state::unknown),
       our_state(our_connection_state::disconnected),
@@ -81,16 +80,13 @@ namespace graphene { namespace net
       their_state(their_connection_state::disconnected),
       we_have_requested_close(false),
       negotiation_status(connection_negotiation_status::disconnected),
-      number_of_unfetched_item_ids(0),
       peer_needs_sync_items_from_us(true),
       we_need_sync_items_from_peer(true),
       inhibit_fetching_sync_blocks(false),
       transaction_fetching_inhibited_until(fc::time_point::min()),
-      last_known_fork_block_number(0),
       firewall_check_state(nullptr),
 #ifndef NDEBUG
       _thread(&fc::thread::current()),
-      _send_message_queue_tasks_running(0),
 #endif
       _currently_handling_message(false)
     {
