@@ -160,6 +160,8 @@ namespace graphene { namespace net {
           _bytes_received += BUFFER_SIZE;
           memcpy((char*)&m, buffer, sizeof(message_header));
 
+          dlog("read complete message from ${peer}, decoding and passing to node", ("peer", get_socket().remote_endpoint()));
+
           FC_ASSERT( m.size <= MAX_MESSAGE_SIZE, "", ("m.size",m.size)("MAX_MESSAGE_SIZE",MAX_MESSAGE_SIZE) );
 
           size_t remaining_bytes_with_padding = 16 * ((m.size - LEFTOVER + 15) / 16);
@@ -178,6 +180,7 @@ namespace graphene { namespace net {
           {
             // message handling errors are warnings...
             _delegate->on_message(_self, m);
+            dlog("node is done handling message from ${peer}", ("peer", get_socket().remote_endpoint()));
           }
           /// Dedicated catches needed to distinguish from general fc::exception
           catch ( const fc::canceled_exception& e ) { throw e; }

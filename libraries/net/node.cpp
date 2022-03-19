@@ -1006,7 +1006,7 @@ namespace graphene { namespace net {
         }
         catch (const fc::exception& e)
         {
-          elog("${e}", ("e", e));
+          edump((e));
         }
       }// while(!canceled)
     }
@@ -1014,10 +1014,11 @@ namespace graphene { namespace net {
     void node_impl::trigger_p2p_network_connect_loop()
     {
       VERIFY_CORRECT_THREAD();
-      dlog( "Triggering connect loop now" );
-      _potential_peer_database_updated = true;
-      //if( _retrigger_connect_loop_promise )
-      //  _retrigger_connect_loop_promise->set_value();
+      _potential_peer_database_updated = true; // if we are looking for peers, this says to retry the loop
+#if 0 // disabled because it doesn't trigger the loop any more      
+      if( _retrigger_connect_loop_promise )
+        _retrigger_connect_loop_promise->set_value();
+#endif
     }
 
     bool node_impl::have_already_received_sync_item( const item_hash_t& item_hash )
@@ -1593,6 +1594,7 @@ namespace graphene { namespace net {
 
     void node_impl::fetch_updated_peer_lists_loop()
     {
+      dlog("start fetch_updated_peer_lists_loop");
       std::list<peer_connection_ptr> original_active_peers(_active_connections.begin(), _active_connections.end());
       for( const peer_connection_ptr& active_peer : original_active_peers )
       {
@@ -1622,7 +1624,9 @@ namespace graphene { namespace net {
          _fetch_updated_peer_lists_loop_done = schedule_task( [this](){ fetch_updated_peer_lists_loop(); },
                                                              fc::time_point::now() + fc::minutes(GRAPHENE_NET_FETCH_UPDATED_PEER_LISTS_INTERVAL_MINUTES),
                                                              "fetch_updated_peer_lists_loop" );
+      dlog("done fetch_updated_peer_lists_loop (we're not really a loop)");
     }
+
     void node_impl::update_bandwidth_data(uint32_t bytes_read_this_second, uint32_t bytes_written_this_second)
     {
       VERIFY_CORRECT_THREAD();
@@ -1649,6 +1653,7 @@ namespace graphene { namespace net {
     }
     void node_impl::bandwidth_monitor_loop()
     {
+      dlog("start bandwidth_monitor_loop");
       fc::time_point_sec current_time = fc::time_point::now();
 
       if (_bandwidth_monitor_last_update_time == fc::time_point_sec::min())
@@ -1667,6 +1672,7 @@ namespace graphene { namespace net {
         _bandwidth_monitor_loop_done = schedule_task( [=](){ bandwidth_monitor_loop(); },
                                                      fc::time_point::now() + fc::seconds(GRAPHENE_NET_BANDWIDTH_MONITOR_INTERVAL_SECONDS),
                                                      "bandwidth_monitor_loop" );
+      dlog("end bandwidth_monitor_loop (not a loop)");
     }
 
     void node_impl::dump_node_status_task()
@@ -1680,9 +1686,9 @@ namespace graphene { namespace net {
 
     void node_impl::delayed_peer_deletion_task()
     {
+      dlog("in delayed_peer_deletion_task with ${count} in queue", ("count", _peers_to_delete.size()));
 #ifdef USE_PEERS_TO_DELETE_MUTEX
       fc::scoped_lock<fc::mutex> lock(_peers_to_delete_mutex);
-      dlog("in delayed_peer_deletion_task with ${count} in queue", ("count", _peers_to_delete.size()));
       _peers_to_delete.clear();
       dlog("_peers_to_delete cleared");
 #else
@@ -3154,7 +3160,7 @@ namespace graphene { namespace net {
 
     void node_impl::send_sync_block_to_node_delegate(const graphene::net::block_message& block_message_to_send)
     {
-      //dlog("in send_sync_block_to_node_delegate()");
+      dlog("in send_sync_block_to_node_delegate()");
 
       bool client_accepted_block = false;
       bool discontinue_fetching_blocks_from_peer = false;
@@ -3503,7 +3509,7 @@ namespace graphene { namespace net {
     void node_impl::process_block_during_sync( peer_connection* originating_peer,
                                                const graphene::net::block_message& block_message_to_process, const message_hash_type& message_hash )
     {
-
+      dlog("start process_block_during_sync");
       // add it to the front of _received_sync_items, then process _received_sync_items to try to
       // pass as many messages as possible to the client.
       _new_received_sync_items.push_front( block_message_to_process );
@@ -3516,8 +3522,7 @@ namespace graphene { namespace net {
                                                            const message_hash_type& message_hash )
     {
       fc::time_point message_receive_time = fc::time_point::now();
-
-      dlog( "received a block from peer ${endpoint}, passing it to client", ("endpoint", originating_peer->get_remote_endpoint() ) );
+      dlog( "received a block from peer ${endpoint}, passing it to client", ("endpoint", originating_peer->get_remote_endpoint()));
       std::set<peer_connection_ptr> peers_to_disconnect;
       std::string disconnect_reason;
       fc::oexception disconnect_exception;
@@ -3541,12 +3546,13 @@ namespace graphene { namespace net {
                   ("block_num", block_message_to_process.block.block_num())
                   ("block_hash", block_message_to_process.block_id)
                   ("peer", originating_peer->get_remote_endpoint())("id", message_hash));
+
           _delegate->handle_block(block_message_to_process, false, contained_transaction_message_ids);
           _message_ids_currently_being_processed.erase(message_hash);
           message_validated_time = fc::time_point::now();
           ilog("Successfully pushed block ${num} (id:${id})",
-                ("num", block_message_to_process.block.block_num())
-                ("id", block_message_to_process.block_id));
+               ("num", block_message_to_process.block.block_num())
+               ("id", block_message_to_process.block_id));
           _most_recent_blocks_accepted.push_back(block_message_to_process.block_id);
 
           bool new_transaction_discovered = false;
