@@ -968,7 +968,7 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     //       if this doesn't compile, see:
     //       https://www.boost.org/doc/libs/1_78_0/doc/html/thread/build.html#thread.build.configuration.future
     boost::unique_future<void> accept_block_future(accept_block_promise->get_future());
-    cxt.prom_ptr = std::move(accept_block_promise);
+    cxt.prom_ptr = accept_block_promise;
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -981,7 +981,7 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
     fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
     fc::future<void> accept_block_future(accept_block_promise);
-    cxt.prom_ptr = std::move(accept_block_promise);
+    cxt.prom_ptr = accept_block_promise;
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1012,7 +1012,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
-    cxt.prom_ptr = std::move(accept_transaction_promise);
+    cxt.prom_ptr = accept_transaction_promise;
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1025,7 +1025,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count));
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
-    cxt.prom_ptr = std::move(accept_transaction_promise);
+    cxt.prom_ptr = accept_transaction_promise;
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1050,7 +1050,7 @@ hive::chain::signed_block chain_plugin::generate_block(
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
-  cxt.prom_ptr = std::move(generate_block_promise);
+  cxt.prom_ptr = generate_block_promise;
 
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
