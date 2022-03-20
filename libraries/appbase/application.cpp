@@ -453,9 +453,14 @@ void application::write_default_config(const bfs::path& cfg_file)
       else
       {
         // The string is formatted "arg (=<interesting part>)"
-        example.erase(0, 6);
-        example.erase(example.length()-1);
-        out_cfg << od->long_name() << " = " << example << "\n";
+        size_t space_pos = example.find(' ');
+        if (space_pos != std::string::npos && 
+            example.length() >= space_pos + 4)
+        {
+          example.erase(0, space_pos + 3);
+          example.erase(example.length()-1);
+          out_cfg << od->long_name() << " = " << example << "\n";
+        }
       }
     }
     out_cfg << "\n";
