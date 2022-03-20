@@ -3358,7 +3358,7 @@ namespace graphene { namespace net {
       dlog("in process_backlog_of_sync_blocks");
       if (get_number_of_handle_message_calls_in_progress() >= _node_configuration.maximum_number_of_blocks_to_handle_at_one_time)
       {
-        wlog("leaving process_backlog_of_sync_blocks because we've already sent blockchain enough blocks");
+        dlog("leaving process_backlog_of_sync_blocks because we've already sent blockchain enough blocks");
         return; // we will be rescheduled when the next block finishes its processing
       }
       dlog("currently ${count} blocks in the process of being handled", ("count", _handle_message_calls_in_progress.size()));
