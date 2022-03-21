@@ -20,12 +20,15 @@ print_help () {
     echo "  --p2p-endpoint=<endpoint>             Allows to map hived internal P2P endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
     echo "  --data-dir=DIRECTORY_PATH             Allows to specify given directory as hived data directory. This directory should contain a config.ini file to be used by hived"
     echo "  --shared-file-dir=DIRECTORY_PATH      Allows to specify dedicated location for shared_memory_file.bin"
+    echo "  --name=CONTAINER_NAME                 Allows to specify a dedicated name to the spawned container instance"
     echo "  --help                                Display this help screen and exit"
     echo
 }
 
 DOCKER_ARGS=()
 HIVED_ARGS=()
+
+CONTAINER_NAME="instance"
 
 add_docker_arg() {
   local arg="$1"
@@ -64,6 +67,9 @@ while [ $# -gt 0 ]; do
         add_hived_arg "--shared-file-dir=/home/hived/shm_dir"
         add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
         ;;
+     --name=*)
+        CONTAINER_NAME="${1#*=}"
+        ;;
     --help)
         print_help
         exit 0
@@ -94,6 +100,6 @@ CMD_ARGS+=("${HIVED_ARGS[@]}")
 echo "Using docker image: $IMAGE_NAME"
 echo "Additional hived args: ${CMD_ARGS[@]}"
 
-docker run "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+docker run --rm -itd --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 
