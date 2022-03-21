@@ -4,7 +4,7 @@ import pytest
 from test_tools import Asset, logger, Wallet, World
 import test_tools.exceptions
 
-import schemas
+import local_schemas
 
 
 @pytest.mark.parametrize(

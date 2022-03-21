@@ -5,8 +5,8 @@ import pytest
 import test_tools.exceptions
 from test_tools import Asset
 
-import schemas
-from validate_message import validate_message
+import local_schemas
+from local_schemas.package.validate_message import validate_message
 
 # TODO BUG LIST!
 """

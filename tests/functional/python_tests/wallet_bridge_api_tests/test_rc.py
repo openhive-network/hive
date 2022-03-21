@@ -1,11 +1,10 @@
-from pykwalify.core import Core
 import pytest
 
-from test_tools import Asset, logger, Wallet, World
+from test_tools import Asset
 import test_tools.exceptions
 
-from validate_message import validate_message
-import schemas
+from local_schemas.package.validate_message import validate_message
+import local_schemas
 
 
 @pytest.mark.parametrize(
