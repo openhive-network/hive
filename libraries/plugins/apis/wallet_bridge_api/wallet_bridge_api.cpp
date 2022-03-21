@@ -21,8 +21,6 @@ namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
 
-using hive::plugins::wallet_bridge_api::wallet_formatter;
-
 class wallet_bridge_api_impl
 {
   public:
@@ -319,13 +317,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
   FC_ASSERT( arguments.get_array()[0].is_string(), "Account name is required as first argument" );
   FC_ASSERT( arguments.get_array()[1].is_string(), "Withdraw route type is required as second argument" );
 
-  format_type format = format_type::jsonformat;
-  if( arguments.get_array().size() >= 3 )
-  {
-    FC_ASSERT( arguments.get_array()[2].is_string(), "Format type is required as third argument" );
-    format = arguments.get_array()[2].as<format_type>();
-  }
-
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
   const auto route = arguments.get_array()[1].as<database_api::withdraw_route_type>();
 
@@ -340,7 +331,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
     std::move( _result2.routes.begin(), _result2.routes.end(), std::back_inserter( _result.routes ) );
   }
 
-  return wallet_formatter::get_withdraw_routes_impl( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result.routes }, format );
+  return _result.routes;
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
@@ -353,13 +344,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
   FC_ASSERT( arguments.is_array(), "array of data is required" );
   FC_ASSERT( arguments.get_array()[0].is_array(), "Array of keys is required as first argument" );
   const auto arg_keys = arguments.get_array()[0].get_array();
-
-  format_type format = format_type::jsonformat;
-  if( arguments.get_array().size() >= 2 )
-  {
-    FC_ASSERT( arguments.get_array()[1].is_string(), "Format type is required as second argument" );
-    format = arguments.get_array()[1].as<format_type>();
-  }
 
   vector<protocol::public_key_type> keys;
   keys.reserve(arg_keys.size());
@@ -381,7 +365,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
     _result.emplace_back( *( get_account( _v ) ) );
   }
 
-  return wallet_formatter::list_my_accounts_impl( serializer_wrapper<vector<database_api::api_account_object>>{ _result }, format );
+  return _result;
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
@@ -508,16 +492,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
   FC_ASSERT( arguments.get_array()[0].is_numeric(), "Orders limit is required as first argument" );
   const uint32_t limit = arguments.get_array()[0].as<uint32_t>();
 
-  format_type format = format_type::jsonformat;
-  if( arguments.get_array().size() >= 2 )
-  {
-    FC_ASSERT( arguments.get_array()[1].is_string(), "Format type is required as second argument" );
-    format = arguments.get_array()[1].as<format_type>();
-  }
-
-  auto _result = _market_history_api->get_order_book({limit});
-
-  return wallet_formatter::get_order_book_impl( serializer_wrapper<market_history::get_order_book_return>{ _result }, format );
+  return _market_history_api->get_order_book({limit});
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
@@ -530,13 +505,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
   FC_ASSERT( arguments.get_array()[0].is_string(), "account name is required as first argument" );
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
 
-  format_type format = format_type::jsonformat;
-  if( arguments.get_array().size() >= 2 )
-  {
-    FC_ASSERT( arguments.get_array()[1].is_string(), "Format type is required as second argument" );
-    format = arguments.get_array()[1].as<format_type>();
-  }
-
   vector< database_api::api_limit_order_object > _result;
   const auto& idx = _db.get_index< chain::limit_order_index, chain::by_account >();
   auto itr = idx.lower_bound( account );
@@ -547,7 +515,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
     ++itr;
   }
 
-  return wallet_formatter::get_open_orders_impl( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result }, format );
+  return _result;
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
@@ -573,16 +541,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
   const uint32_t from = arguments.get_array()[1].as<uint32_t>();
   const uint32_t limit = arguments.get_array()[2].as<uint32_t>();
 
-  format_type format = format_type::jsonformat;
-  if( arguments.get_array().size() >= 4 )
-  {
-    FC_ASSERT( arguments.get_array()[3].is_string(), "Format type is required as second argument" );
-    format = arguments.get_array()[3].as<format_type>();
-  }
-
-  auto _result = _account_history_api->get_account_history({account, from, limit});
-
-  return wallet_formatter::get_account_history_impl( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result.history }, format );
+  return _account_history_api->get_account_history({account, from, limit}).history;
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposals )

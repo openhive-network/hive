@@ -101,6 +101,7 @@ int main( int argc, char** argv )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
+      ("format-type", bpo::value< std::string >(), "Default format for some functions" )
       ;
     vector<string> allowed_ips;
 
@@ -191,10 +192,25 @@ int main( int argc, char** argv )
 
     auto wallet_cli = std::make_shared<fc::rpc::cli>();
 
+    auto get_format = []( const bpo::variables_map& options, format_type default_format )
+    {
+      if( options.count("format-type") )
+      {
+        fc::variant _v = options["format-type"].as<std::string>();
+        format_type _result;
+        from_variant( _v, _result );
+        return _result;
+      }
+      else
+      {
+        return default_format;
+      }
+    };
+
     if( wdata.offline )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon") );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_format( options, format_type::textformat ) );
     }
     else
     {
@@ -219,7 +235,13 @@ int main( int argc, char** argv )
       }
       auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
       auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon") );
+
+      format_type format;
+      if( options.count("daemon") )
+        format = get_format( options, format_type::noformat );
+      else
+        format = get_format( options, format_type::textformat );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), format );
       closed_connection = con->closed.connect([=]{
         cerr << "Server has disconnected us.\n";
         wallet_cli->stop();
@@ -231,9 +253,6 @@ int main( int argc, char** argv )
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
 
     fc::api<wallet_api> wapi(wapiptr);
-
-    for( auto& name_formatter : hive::plugins::wallet_bridge_api::wallet_formatter::get_result_formatters() )
-      wallet_cli->format_result( name_formatter.first, name_formatter.second );
 
     if( wapiptr->is_new() )
     {

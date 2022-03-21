@@ -63,8 +63,8 @@ struct find_withdraw_vesting_json_route
   uint16_t                    percent = 0;
   bool                        auto_vest = false;
 };
-typedef variant                                             get_withdraw_routes_args;
-typedef variant                                             get_withdraw_routes_return;
+typedef variant                                                 get_withdraw_routes_args;
+typedef vector<database_api::api_withdraw_vesting_route_object> get_withdraw_routes_return;
 
 /* list_my_accounts */
 struct list_my_accounts_json_account
@@ -82,8 +82,8 @@ struct list_my_accounts_json_return
   protocol::asset total_vest;
   protocol::asset total_hbd;
 };
-typedef variant                                     list_my_accounts_args;
-typedef variant                                     list_my_accounts_return;
+typedef variant                                   list_my_accounts_args;
+typedef vector<database_api::api_account_object>  list_my_accounts_return;
 
 /* list_accounts */
 typedef variant                             list_accounts_args;
@@ -137,8 +137,8 @@ struct get_order_book_json_return
   protocol::asset   bid_total;
   protocol::asset   ask_total;
 };
-typedef variant                                 get_order_book_args;
-typedef variant                                 get_order_book_return;
+typedef variant                               get_order_book_args;
+typedef market_history::get_order_book_return get_order_book_return;
 
 /* get_open_orders */
 struct get_open_orders_json_order
@@ -152,8 +152,8 @@ struct get_open_orders_json_return
 {
   vector<get_open_orders_json_order> orders;
 };
-typedef variant                                         get_open_orders_args;
-typedef variant                                         get_open_orders_return;
+typedef variant                                       get_open_orders_args;
+typedef vector<database_api::api_limit_order_object>  get_open_orders_return;
 
 /* get_owner_history */
 typedef variant                                     get_owner_history_args;
@@ -167,8 +167,8 @@ struct get_account_history_json_op
   protocol::transaction_id_type id;
   protocol::operation           op;
 };
-typedef variant                                       get_account_history_args;
-typedef variant                                       get_account_history_return;
+typedef variant                                                   get_account_history_args;
+typedef std::map<uint32_t, account_history::api_operation_object> get_account_history_return;
 
 /* list_proposals */
 typedef variant                               list_proposals_args;
