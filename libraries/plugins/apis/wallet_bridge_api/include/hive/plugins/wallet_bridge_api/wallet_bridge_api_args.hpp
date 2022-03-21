@@ -11,6 +11,8 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
+enum class format_type : uint8_t { text, json };
+
 template<typename T>
 struct serializer_wrapper
 {
@@ -58,8 +60,27 @@ typedef variant                                             get_withdraw_routes_
 typedef database_api::find_withdraw_vesting_routes_return   get_withdraw_routes_return;
 
 /* list_my_accounts */
+struct list_my_accounts_json_account
+{
+  protocol::account_name_type name;
+  protocol::asset             balance;
+  protocol::asset             vesting_shares;
+  protocol::asset             hbd_balance;
+};
+struct list_my_accounts_json_return
+{
+  vector<list_my_accounts_json_account> accounts;
+
+  protocol::asset total_hive;
+  protocol::asset total_vest;
+  protocol::asset total_hbd;
+};
 typedef variant                                     list_my_accounts_args;
-typedef account_by_key::get_key_references_return   list_my_accounts_return;
+typedef variant                                     list_my_accounts_return;
+
+/* switch_format */
+typedef variant                                     switch_format_args;
+typedef variant                                     switch_format_return;
 
 /* list_accounts */
 typedef variant                             list_accounts_args;
@@ -112,8 +133,19 @@ typedef variant                                     get_owner_history_args;
 typedef database_api::find_owner_histories_return   get_owner_history_return;
 
 /* get_account_history */
+struct get_account_history_json_op
+{
+  uint32_t                      pos   = 0;
+  uint32_t                      block = 0;
+  protocol::transaction_id_type id;
+  protocol::operation           op;
+};
+struct get_account_history_json_return
+{
+  vector<get_account_history_json_op> ops;
+};
 typedef variant                                       get_account_history_args;
-typedef account_history::get_account_history_return   get_account_history_return;
+typedef variant                                       get_account_history_return;
 
 /* list_proposals */
 typedef variant                               list_proposals_args;
@@ -168,6 +200,14 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 } } } // hive::plugins::wallet_bridge_api
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
+
+FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (text)(json) )
+
+FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_account, (name)(balance)(vesting_shares)(hbd_balance))
+FC_REFLECT( hive::plugins::wallet_bridge_api::list_my_accounts_json_return, (accounts)(total_hive)(total_vest)(total_hbd))
+
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_account_history_json_op, (pos)(block)(id)(op))
+FC_REFLECT( hive::plugins::wallet_bridge_api::get_account_history_json_return, (ops))
 
 namespace fc {
 

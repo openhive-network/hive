@@ -8,9 +8,8 @@ from test_tools import Asset
 
 def test_format_in_list_my_accounts(wallet):
     response = wallet.api.create_account('initminer', 'alice', '{}')
-    owner_key = response['operations'][0][1]['owner']['key_auths'][0][0]
 
-    response = wallet.api.list_my_accounts([owner_key])
+    response = wallet.api.list_my_accounts()
     assert response[0]['balance'] == Asset.Test(0)
     assert response[0]['savings_balance'] == Asset.Test(0)
 

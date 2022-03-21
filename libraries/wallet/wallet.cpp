@@ -819,165 +819,6 @@ public:
     return tx;
   }
 
-  std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const
-  {
-    std::map<string,std::function<string(fc::variant,const fc::variants&)> > m;
-    m["help"] = [](variant result, const fc::variants& a)
-    {
-      return result.get_string();
-    };
-
-    m["gethelp"] = [](variant result, const fc::variants& a)
-    {
-      return result.get_string();
-    };
-
-    m["list_my_accounts"] = [](variant result, const fc::variants& a )
-    {
-      std::stringstream out;
-
-      auto accounts = result.as<vector<database_api::api_account_object>>();
-      asset total_hive;
-      asset total_vest(0, VESTS_SYMBOL );
-      asset total_hbd(0, HBD_SYMBOL );
-      for( const auto& a : accounts ) {
-        total_hive += a.balance;
-        total_vest += a.vesting_shares;
-        total_hbd  += a.hbd_balance;
-        out << std::left << std::setw(17) << std::string(a.name)
-            << std::right << std::setw(18) << hive::protocol::legacy_asset::from_asset(a.balance).to_string() <<" "
-            << std::right << std::setw(26) << hive::protocol::legacy_asset::from_asset(a.vesting_shares).to_string() <<" "
-            << std::right << std::setw(16) << hive::protocol::legacy_asset::from_asset(a.hbd_balance).to_string() <<"\n";
-      }
-      out << "-------------------------------------------------------------------------------\n";
-        out << std::left << std::setw(17) << "TOTAL"
-            << std::right << std::setw(18) << hive::protocol::legacy_asset::from_asset(total_hive).to_string() <<" "
-            << std::right << std::setw(26) << hive::protocol::legacy_asset::from_asset(total_vest).to_string() <<" "
-            << std::right << std::setw(16) << hive::protocol::legacy_asset::from_asset(total_hbd).to_string() <<"\n";
-      return out.str();
-    };
-    m["get_account_history"] = []( variant result, const fc::variants& a )
-    {
-      std::stringstream ss;
-      ss << std::left << std::setw( 8 )  << "#" << " ";
-      ss << std::left << std::setw( 10 ) << "BLOCK #" << " ";
-      ss << std::left << std::setw( 50 ) << "TRX ID" << " ";
-      ss << std::left << std::setw( 20 ) << "OPERATION" << " ";
-      ss << std::left << std::setw( 50 ) << "DETAILS" << "\n";
-      ss << "---------------------------------------------------------------------------------------------------\n";
-      const auto& results = result.get_array();
-      for( const auto& item : results )
-      {
-        ss << std::left << std::setw(8) << item.get_array()[0].as_string() << " ";
-        const auto& op = item.get_array()[1].get_object();
-        ss << std::left << std::setw(10) << op["block"].as_string() << " ";
-        ss << std::left << std::setw(50) << op["trx_id"].as_string() << " ";
-        const auto& opop = op["op"].get_object();
-        ss << std::left << std::setw(20) << opop["type"].as_string() << " ";
-        ss << std::left << std::setw(50) << fc::json::to_string(opop["value"]) << "\n";
-      }
-      return ss.str();
-    };
-    m["get_open_orders"] = []( variant result, const fc::variants& a ) {
-        auto orders = result.as<vector<database_api::api_limit_order_object>>();
-        std::stringstream ss;
-
-        ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
-        ss << ' ' << setw( 10 ) << "Order #";
-        ss << ' ' << setw( 12 ) << "Price";
-        ss << ' ' << setw( 14 ) << "Quantity";
-        ss << ' ' << setw( 10 ) << "Type";
-        ss << "\n===============================================================================\n";
-        for( const auto& o : orders )
-        {
-          ss << ' ' << setw( 10 ) << o.orderid;
-          ss << ' ' << setw( 14 ) << hive::protocol::legacy_asset::from_asset( asset( o.for_sale, o.sell_price.base.symbol ) ).to_string();
-          ss << ' ' << setw( 10 ) << (o.sell_price.base.symbol == HIVE_SYMBOL ? "SELL" : "BUY");
-          ss << "\n";
-        }
-        return ss.str();
-    };
-    m["get_order_book"] = []( variant result, const fc::variants& a ) {
-      auto orders = result.as< wallet_bridge_api::get_order_book_return >();
-      std::stringstream ss;
-      asset bid_sum = asset( 0, HBD_SYMBOL );
-      asset ask_sum = asset( 0, HBD_SYMBOL );
-      int spacing = 16;
-
-      ss << setiosflags( ios::fixed ) << setiosflags( ios::left ) ;
-
-      ss << ' ' << setw( ( spacing * 4 ) + 6 ) << "Bids" << "Asks\n"
-        << ' '
-        << setw( spacing + 3 ) << "Sum(HBD)"
-        << setw( spacing + 1 ) << "HBD"
-        << setw( spacing + 1 ) << "HIVE"
-        << setw( spacing + 1 ) << "Price"
-        << setw( spacing + 1 ) << "Price"
-        << setw( spacing + 1 ) << "HIVE "
-        << setw( spacing + 1 ) << "HBD " << "Sum(HBD)"
-        << "\n====================================================================="
-        << "|=====================================================================\n";
-
-      for( size_t i = 0; i < orders.bids.size() || i < orders.asks.size(); i++ )
-      {
-        if( i < orders.bids.size() )
-        {
-          bid_sum += asset( orders.bids[i].hbd, HBD_SYMBOL );
-          ss
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(bid_sum).to_string()
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.bids[i].hbd, HBD_SYMBOL)).to_string()
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.bids[i].hive, HIVE_SYMBOL)).to_string();
-        }
-        else
-        {
-          ss << setw( (spacing * 4 ) + 5 ) << ' ';
-        }
-
-        ss << " |";
-
-        if( i < orders.asks.size() )
-        {
-          ask_sum += asset(orders.asks[i].hbd, HBD_SYMBOL);
-          ss
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.asks[i].hive, HIVE_SYMBOL )).to_string()
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(asset( orders.asks[i].hbd, HBD_SYMBOL )).to_string()
-            << ' ' << setw( spacing ) << hive::protocol::legacy_asset::from_asset(ask_sum).to_string();
-        }
-
-        ss << endl;
-      }
-
-      ss << endl
-        << "Bid Total: " << hive::protocol::legacy_asset::from_asset(bid_sum).to_string() << endl
-        << "Ask Total: " << hive::protocol::legacy_asset::from_asset(ask_sum).to_string() << endl;
-
-      return ss.str();
-    };
-    m["get_withdraw_routes"] = []( variant result, const fc::variants& a )
-    {
-      auto routes = result.as< vector< database_api::api_withdraw_vesting_route_object > >();
-      std::stringstream ss;
-
-      ss << ' ' << std::left << std::setw( 18 ) << "From";
-      ss << ' ' << std::left << std::setw( 18 ) << "To";
-      ss << ' ' << std::right << std::setw( 8 ) << "Percent";
-      ss << ' ' << std::right << std::setw( 9 ) << "Auto-Vest";
-      ss << "\n=========================================================\n";
-
-      for( auto& r : routes )
-      {
-        ss << ' ' << std::left << std::setw( 18 ) << std::string( r.from_account );
-        ss << ' ' << std::left << std::setw( 18 ) << std::string( r.to_account );
-        ss << ' ' << std::right << std::setw( 8 ) << std::setprecision( 2 ) << std::fixed << double( r.percent ) / 100;
-        ss << ' ' << std::right << std::setw( 9 ) << ( r.auto_vest ? "true" : "false" ) << std::endl;
-      }
-
-      return ss.str();
-    };
-
-    return m;
-  }
-
   operation get_prototype_operation( const string& operation_name )
   {
     auto it = _prototype_ops.find( operation_name );
@@ -1067,7 +908,7 @@ serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::
   return { result };
 }
 
-serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_my_accounts()
+variant wallet_api::list_my_accounts()
 {
   FC_ASSERT( !is_locked(), "Wallet must be unlocked to list accounts" );
   my->require_online();
@@ -1079,18 +920,9 @@ serializer_wrapper<vector< database_api::api_account_object >> wallet_api::list_
   for( const auto& item : my->_keys )
     pub_keys.push_back(item.first);
 
-  auto refs = my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ).accounts;
-  set<string> names;
-  for( const auto& item : refs )
-    for( const auto& name : item )
-      names.insert( name );
+  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
 
-
-  result.reserve( names.size() );
-  for( const auto& name : names )
-    result.emplace_back( get_account( name ).value );
-
-  return { result };
+  return { my->_remote_wallet_bridge_api->list_my_accounts( {variant(pub_keys)}, LOCK ) };
 }
 
 vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, uint32_t limit)
@@ -1292,12 +1124,6 @@ bool wallet_api::load_wallet_file( string wallet_filename )
 void wallet_api::save_wallet_file( string wallet_filename )
 {
   my->save_wallet_file( std::move(wallet_filename) );
-}
-
-std::map<string,std::function<string(fc::variant,const fc::variants&)> >
-wallet_api::get_result_formatters() const
-{
-  return my->get_result_formatters();
 }
 
 bool wallet_api::is_locked()const
@@ -2603,33 +2429,38 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balanc
   return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<map< uint32_t, account_history::api_operation_object >> wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
+variant wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
 {
   my->require_online();
   vector<variant> args{account, from, limit};
-  auto result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK ).history;
-  if( !is_locked() )
-  {
-    for( auto& item : result )
-    {
-      if( item.second.op.which() == operation::tag<transfer_operation>::value )
-      {
-        auto& top = item.second.op.get<transfer_operation>();
-        top.memo = decrypt_memo( top.memo );
-      }
-      else if( item.second.op.which() == operation::tag<transfer_from_savings_operation>::value )
-      {
-        auto& top = item.second.op.get<transfer_from_savings_operation>();
-        top.memo = decrypt_memo( top.memo );
-      }
-      else if( item.second.op.which() == operation::tag<transfer_to_savings_operation>::value )
-      {
-        auto& top = item.second.op.get<transfer_to_savings_operation>();
-        top.memo = decrypt_memo( top.memo );
-      }
-    }
-  }
-  return { result };
+
+  my->_remote_wallet_bridge_api->switch_format( vector<variant>{ "text" }, LOCK );
+
+  return my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
+
+  // auto result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK ).history;
+  // if( !is_locked() )
+  // {
+  //   for( auto& item : result )
+  //   {
+  //     if( item.second.op.which() == operation::tag<transfer_operation>::value )
+  //     {
+  //       auto& top = item.second.op.get<transfer_operation>();
+  //       top.memo = decrypt_memo( top.memo );
+  //     }
+  //     else if( item.second.op.which() == operation::tag<transfer_from_savings_operation>::value )
+  //     {
+  //       auto& top = item.second.op.get<transfer_from_savings_operation>();
+  //       top.memo = decrypt_memo( top.memo );
+  //     }
+  //     else if( item.second.op.which() == operation::tag<transfer_to_savings_operation>::value )
+  //     {
+  //       auto& top = item.second.op.get<transfer_to_savings_operation>();
+  //       top.memo = decrypt_memo( top.memo );
+  //     }
+  //   }
+  // }
+  // return { result };
 }
 
 vector< database_api::api_withdraw_vesting_route_object > wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
