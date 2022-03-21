@@ -156,7 +156,7 @@ class wallet_api
       *
       * @returns table with HIVE, VESTS and HBD balances for all accounts for which this wallet has a private key
       */
-    serializer_wrapper<vector< database_api::api_account_object >> list_my_accounts();
+    variant list_my_accounts();
 
     /** Lists all accounts registered in the blockchain.
       *
@@ -1234,7 +1234,7 @@ class wallet_api
       *  @param from - the absolute sequence number, -1 means most recent, limit is the number of operations before from.
       *  @param limit - the maximum number of items that can be queried (0 to 1000], must be less than from
       */
-    serializer_wrapper<map< uint32_t, account_history::api_operation_object >> get_account_history( const string& account, uint32_t from, uint32_t limit );
+    variant get_account_history( const string& account, uint32_t from, uint32_t limit );
 
 
     FC_TODO(Supplement API argument description)
@@ -1389,8 +1389,6 @@ class wallet_api
       */
   serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
           const account_name_type& from );
-
-    std::map<string,std::function<string(fc::variant,const fc::variants&)>> get_result_formatters() const;
 
     fc::signal<void(bool)> lock_changed;
 
