@@ -9,13 +9,13 @@ ACCOUNTS = [f'account-{i}' for i in range(3)]
 # TODO BUG LIST!
 """
 1. Problem with running wallet_bridge_api.find_rc_accounts with incorrect argument type (putting array as 
-argument)  (# BUG1) 
+argument). I think, in this situation program should throw an exception.  (# BUG1) 
 
-2. Problem with running wallet_bridge_api.list_witnesses with incorrect argument type (putting 
-bool as limit)  (# BUG2) 
+2. Problem with running wallet_bridge_api.list_rc_accounts with incorrect argument type (putting 
+bool as limit). I think, in this situation program should throw an exception.  (# BUG2) 
 
 3. Problem with running wallet_bridge_api.list_rc_direct_delegations with incorrect argument 
-type (putting bool as limit)  (# BUG3) 
+type (putting bool as limit). I think, in this situation program should throw an exception.  (# BUG3) 
 """
 
 
@@ -37,17 +37,16 @@ def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
 
 
 @pytest.mark.parametrize(
-    'incorrect_type_argument', [
-        [100],  # BUG1
-        [True],  # BUG1
+    'rc_accounts', [
+        ['example-array'],  # BUG1
         100,
         True,
         'incorrect_string_argument'
     ]
 )
-def test_find_rc_accounts_with_incorrect_type_of_argument(node, wallet, incorrect_type_argument):
+def test_find_rc_accounts_with_incorrect_type_of_argument(node, rc_accounts):
     with pytest.raises(exceptions.CommunicationError):
-        node.api.wallet_bridge.find_rc_accounts(incorrect_type_argument)
+        node.api.wallet_bridge.find_rc_accounts(rc_accounts)
 
 
 @pytest.mark.parametrize(
@@ -83,24 +82,26 @@ def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit)
     wallet.create_accounts(len(ACCOUNTS))
 
     with pytest.raises(exceptions.CommunicationError):
-        node.api.wallet_bridge.list_rc_accounts(rc_account, limit),
+        node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
 
 
 @pytest.mark.parametrize(
     'rc_account, limit', [
-        # WITNESS ACCOUNT
+        # WITNESS
+        (['example-array'], 100),
         (100, 100),
         (True, 100),
 
         # LIMIT
         (ACCOUNTS[0], 'incorrect_string_argument'),
+        (ACCOUNTS[0], [100]),
         (ACCOUNTS[0], True),  # BUG2
     ]
 )
 def test_list_rc_accounts_with_incorrect_type_of_arguments(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
     with pytest.raises(exceptions.CommunicationError):
-        node.api.wallet_bridge.list_rc_accounts(rc_account, limit),
+        node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -138,7 +139,7 @@ def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to
     wallet.api.delegate_rc(ACCOUNTS[0], [ACCOUNTS[1]], 5)
 
     with pytest.raises(exceptions.CommunicationError):
-        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit),
+        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
 @pytest.mark.parametrize(
@@ -162,4 +163,4 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, walle
     wallet.api.delegate_rc(ACCOUNTS[0], [ACCOUNTS[1]], 5)
 
     with pytest.raises(exceptions.CommunicationError):
-        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit),
+        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
