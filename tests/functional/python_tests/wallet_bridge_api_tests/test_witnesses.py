@@ -4,8 +4,8 @@ from test_tools import Account, Asset, exceptions, logger, Wallet
 
 # TODO BUG LIST!
 '''
-1. Problem with run command wallet_bridge_api.list_witnesses() with incorrect type of limit argument. 
-   Exception is not throw (#BUG1)
+1. Problem with run command wallet_bridge_api.list_witnesses() with incorrect type of argument
+   (putting bool as limit argument). I think, in this situation program should throw an exception. (# BUG1)
 '''
 
 WITNESSES_NAMES = [f'witness-{i}' for i in range(21)]
@@ -16,6 +16,7 @@ WITNESSES_NAMES = [f'witness-{i}' for i in range(21)]
         WITNESSES_NAMES[0],
         WITNESSES_NAMES[-1],
         'non-exist-acc',
+        '',
     ],
 )
 def test_get_witness_with_correct_value(world, witness_account):
@@ -27,7 +28,8 @@ def test_get_witness_with_correct_value(world, witness_account):
 @pytest.mark.parametrize(
     'witness_account', [
         100,
-        True
+        True,
+        ['example-array']
     ]
 )
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
@@ -86,7 +88,7 @@ def test_list_witnesses_with_incorrect_value(world, witness_account, limit):
 
         # LIMIT
         (WITNESSES_NAMES[0], 'incorrect_string_argument'),
-        (WITNESSES_NAMES[0], True),  # Exception is not throw
+        (WITNESSES_NAMES[0], True),  # BUG1
     ]
 )
 def test_list_witnesses_with_incorrect_type_of_arguments(world, witness_account, limit):
