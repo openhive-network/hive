@@ -28,7 +28,8 @@ print_help () {
 DOCKER_ARGS=()
 HIVED_ARGS=()
 
-CONTAINER_NAME="instance"
+CONTAINER_NAME=instance
+IMAGE_NAME=
 
 add_docker_arg() {
   local arg="$1"
@@ -48,15 +49,15 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --webserver-http-endpoint=*)
         HTTP_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish ${HTTP_ENDPOINT}:8090"
+        add_docker_arg "--publish=${HTTP_ENDPOINT}:8090"
         ;;
     --webserver-ws-endpoint=*)
         WS_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish ${WS_ENDPOINT}:8090"
+        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
         ;;
     --p2p-endpoint=*)
         P2_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish ${P2_ENDPOINT}:2001"
+        add_docker_arg "--publish=${P2_ENDPOINT}:2001"
         ;;
     --data-dir=*)
         HIVED_DATADIR="${1#*=}"
@@ -69,13 +70,18 @@ while [ $# -gt 0 ]; do
         ;;
      --name=*)
         CONTAINER_NAME="${1#*=}"
+        echo "Container name is: $CONTAINER_NAME"
         ;;
     --help)
         print_help
         exit 0
         ;;
+     -*)
+        add_hived_arg "$1"
+        ;;
      *)
-        break
+        IMAGE_NAME="${1}"
+        echo "Using image name: $IMAGE_NAME"
         ;;
     esac
     shift
@@ -83,23 +89,21 @@ done
 
 # Collect remaining command line args to pass to the container to run
 CMD_ARGS=("$@")
-ARGS_NO=${#CMD_ARGS[@]}
 
-if [ $ARGS_NO -eq 0 ]; then
+if [ -z "$IMAGE_NAME" ]; then
   echo "Error: Missing docker image name."
   echo "Usage: $0 <docker_img> [OPTION[=VALUE]]... [<hived_option>]..."
   echo
   exit 1
 fi
 
-IMAGE_NAME=${CMD_ARGS[0]}
-unset CMD_ARGS[0] # Remove first item
-
 CMD_ARGS+=("${HIVED_ARGS[@]}")
 
-echo "Using docker image: $IMAGE_NAME"
-echo "Additional hived args: ${CMD_ARGS[@]}"
+#echo "Using docker image: $IMAGE_NAME"
+#echo "Additional hived args: ${CMD_ARGS[@]}"
 
-docker run --rm -itd --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+docker container rm "$CONTAINER_NAME" || true
+
+docker run -itd --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 

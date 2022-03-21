@@ -3,7 +3,7 @@
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive
 ARG CI_IMAGE_TAG=:ubuntu20.04-4 
-ARG BLOCK_LOG_SUFFIX=-5m
+ARG BLOCK_LOG_SUFFIX
 
 ARG BUILD_IMAGE_TAG
 
@@ -43,3 +43,78 @@ FROM $CI_REGISTRY_IMAGE/ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
 RUN sudo -n mkdir -p /home/hived/datadir/blockchain && cd /home/hived/datadir/blockchain && \
   sudo -n wget -c https://gtg.openhive.network/get/blockchain/block_log.5M && \
     sudo -n mv block_log.5M block_log && sudo -n chown -Rc hived:hived /home/hived/datadir/
+
+FROM $CI_REGISTRY_IMAGE/ci-base-image$CI_IMAGE_TAG AS build
+ARG BRANCH=master
+ENV BRANCH=${BRANCH:-master}
+
+ARG COMMIT
+ENV COMMIT=${COMMIT:-""}
+
+USER hived
+WORKDIR /home/hived
+SHELL ["/bin/bash", "-c"] 
+
+ADD ./scripts/common.sh /home/hived/scripts/common.sh
+
+RUN LOG_FILE=build.log source ./scripts/common.sh && do_clone "$BRANCH" ./hive https://gitlab.syncad.com/hive/hive.git "$COMMIT" && \
+  ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" hived cli_wallet truncate_block_log && \
+  cd ./build && \
+  find . -name *.o  -type f -delete && \
+  find . -name *.a  -type f -delete
+
+# Here we could use a smaller image without packages specific to build requirements
+FROM $CI_REGISTRY_IMAGE/ci-base-image$BLOCK_LOG_SUFFIX$CI_IMAGE_TAG as base_instance
+
+ENV BUILD_IMAGE_TAG=${BUILD_IMAGE_TAG:-:ubuntu20.04-4}
+
+ARG P2P_PORT=2001
+ENV P2P_PORT=${P2P_PORT}
+
+ARG WS_PORT=8090
+ENV WS_PORT=${WS_PORT}
+
+ARG HTTP_PORT=8090
+ENV HTTP_PORT=${HTTP_PORT}
+
+SHELL ["/bin/bash", "-c"] 
+
+USER hived
+WORKDIR /home/hived
+
+COPY --from=build /home/hived/build/programs/hived/hived /home/hived/build/programs/cli_wallet/cli_wallet /home/hived/build/programs/util/truncate_block_log /home/hived/bin/
+COPY --from=build /home/hived/scripts/common.sh ./scripts/common.sh
+
+ADD ./docker/docker_entrypoint.sh .
+
+RUN sudo -n mkdir -p /home/hived/bin && sudo -n mkdir -p /home/hived/shm_dir && \
+  sudo -n mkdir -p /home/hived/datadir && sudo -n chown -Rc hived:hived /home/hived/
+
+VOLUME [/home/hived/datadir, /home/hived/shm_dir]
+
+STOPSIGNAL SIGINT 
+
+ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
+
+FROM $CI_REGISTRY_IMAGE/base_instance$BLOCK_LOG_SUFFIX$BUILD_IMAGE_TAG as instance
+
+#p2p service
+EXPOSE ${P2P_PORT}
+# websocket service
+EXPOSE ${WS_PORT}
+# JSON rpc service
+EXPOSE ${HTTP_PORT}
+
+FROM $CI_REGISTRY_IMAGE/instance-5m$BUILD_IMAGE_TAG as data
+
+ADD --chown=hived:hived ./docker/config_5M.ini /home/hived/datadir/config.ini
+
+RUN "/home/hived/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
+
+ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
+
+# default command line to be passed for this version (which should be stopped at 5M)
+CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+
+EXPOSE ${HTTP_PORT}
+
