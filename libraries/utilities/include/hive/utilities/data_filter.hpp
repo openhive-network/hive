@@ -87,7 +87,7 @@ class operation_body_filter: public data_filter
     operation_body_filter( const string& _filter_name );
 
     bool empty() const;
-    bool is_body_operation_accepted( const operation& op ) const;
+    bool is_tracked_operation( const operation& op ) const;
 
     void fill( const boost::program_options::variables_map& options, const string& option_name );
 };

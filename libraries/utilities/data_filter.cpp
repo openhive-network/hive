@@ -169,7 +169,6 @@ void operation_filter::fill( const boost::program_options::variables_map& option
 
 operation_body_filter::operation_body_filter( const string& _filter_name ): data_filter( _filter_name )
 {
-
 }
 
 bool operation_body_filter::empty() const
@@ -177,7 +176,7 @@ bool operation_body_filter::empty() const
   return body_filters.empty();
 }
 
-bool operation_body_filter::is_body_operation_accepted( const operation& op ) const
+bool operation_body_filter::is_tracked_operation( const operation& op ) const
 {
   if( empty() )
   {
@@ -190,31 +189,39 @@ bool operation_body_filter::is_body_operation_accepted( const operation& op ) co
 
   if( _found != body_filters.end() )
   {
-    variant _v;
-    to_variant( op, _v );
-
-    if( _v.is_object() || _v.is_array() )
+    try
     {
-      string _op_body = "";
+      variant _v;
+      to_variant( op, _v );
 
-      if( _v.is_object() )
+      if( _v.is_object() || _v.is_array() )
       {
-        auto _v_object = _v.get_object();
-        FC_ASSERT( _v_object.contains("value"), "Filter-Error: Object is incorrect." );
-        _op_body = _v_object["value"].as_string();
+        string _op_body = "";
+
+        if( _v.is_object() )
+        {
+          auto _v_object = _v.get_object();
+          FC_ASSERT( _v_object.contains("value"), "Filter-Error: Object is incorrect." );
+          _op_body = fc::json::to_string( _v_object["value"] );
+        }
+        else
+        {
+          auto _v_array = _v.get_array();
+          FC_ASSERT( _v_array.size() >= 2, "Filter-Error: Array is incorrect." );
+          _op_body = fc::json::to_string( _v_array[1] );
+        }
+
+        DIAGNOSTIC
+        (
+          ilog("[${fn}] Body of operation: ${body}", ("fn", filter_name)("body", _op_body) );
+        )
+
+        std::regex _regex( _found->second );
+        _result = std::regex_search( _op_body, _regex );
       }
       else
-      {
-        auto _v_array = _v.get_array();
-        FC_ASSERT( _v_array.size() >= 2, "Filter-Error: Array is incorrect." );
-        _op_body = _v_array[1].as_string();
-      }
-
-      std::regex _regex( _found->second );
-      _result = std::regex_search( _op_body, _regex );
-    }
-    else
-      FC_ASSERT( false, "Filter-Error: incorrect operation" );
+        FC_ASSERT( false, "Filter-Error: incorrect operation" );
+    }FC_CAPTURE_AND_RETHROW()
   }
 
   DIAGNOSTIC
