@@ -1,0 +1,1 @@
+from schemas.validate_message import validate_message
