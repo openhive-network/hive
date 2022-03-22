@@ -3,11 +3,14 @@ from typing import Any, Dict
 from pykwalify.core import Core
 import pykwalify.errors
 
+from schemas.__private import pykwalify_extensions
+
 
 def validate_message(message: Any, schema: Dict) -> None:
     core = Core(
         source_data=message,
         schema_data=schema,
+        extensions=[pykwalify_extensions.__file__]
     )
 
     try:

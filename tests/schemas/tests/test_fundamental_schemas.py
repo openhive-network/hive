@@ -31,6 +31,10 @@ from schemas.predefined import *
         # None
         ({'empty': None}, Map({'empty': None_()})),
 
+        # Seq
+        (['first', 'second', 'third'], Seq(Str())),
+        ([], Seq(Str())),
+
         # Str
         ('example-string', Str()),
     ]
@@ -61,6 +65,9 @@ def test_validation_of_correct_type(correct_value: Any, schema: Dict[str, Any]):
         # None
         (0, None_()),
         ('', None_()),
+
+        # Seq
+        ([1], Seq(Str())),
 
         # Str
         (1, Str()),
