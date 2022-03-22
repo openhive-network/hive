@@ -160,6 +160,9 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_blocks;
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
+
+    unsigned blocks_processed_since_write_lock_acquired;
+    unsigned transactions_processed_since_write_lock_acquired;
 };
 
 struct write_request_visitor
@@ -176,6 +179,9 @@ struct write_request_visitor
   fc::microseconds* cumulative_time_processing_blocks;
   fc::microseconds* cumulative_time_processing_transactions;
 
+  unsigned *blocks_processed_since_write_lock_acquired;
+  unsigned *transactions_processed_since_write_lock_acquired;
+
   typedef bool result_type;
 
   bool operator()( const signed_block* block )
@@ -188,6 +194,7 @@ struct write_request_visitor
       fc::time_point time_before_pushing_block = fc::time_point::now();
       result = db->push_block( *block, skip );
       *cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
+      ++*blocks_processed_since_write_lock_acquired;
       STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
     }
     catch( const fc::exception& e )
@@ -213,6 +220,7 @@ struct write_request_visitor
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       db->push_transaction( *trx );
       *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
+      ++*transactions_processed_since_write_lock_acquired;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       result = true;
@@ -305,6 +313,8 @@ void chain_plugin_impl::start_write_processing()
       req_visitor.block_generator = block_generator;
       req_visitor.cumulative_time_processing_blocks = &cumulative_time_processing_blocks;
       req_visitor.cumulative_time_processing_transactions = &cumulative_time_processing_transactions;
+      req_visitor.blocks_processed_since_write_lock_acquired = &blocks_processed_since_write_lock_acquired;
+      req_visitor.transactions_processed_since_write_lock_acquired = &transactions_processed_since_write_lock_acquired;
 
       request_promise_visitor prom_visitor;
 
@@ -370,6 +380,8 @@ void chain_plugin_impl::start_write_processing()
         fc::time_point_sec head_block_time;
         db.with_write_lock([&]()
         {
+          blocks_processed_since_write_lock_acquired = 0;
+          transactions_processed_since_write_lock_acquired = 0;
           uint32_t write_queue_items_processed = 0;
           fc::time_point write_lock_acquired_time = fc::time_point::now();
           fc::microseconds write_lock_acquisition_time = write_lock_acquired_time - write_lock_request_time;
@@ -396,9 +408,12 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                     "held lock for ${write_lock_held_duration}μs",
+                     "held lock for ${write_lock_held_duration}μs (processed ${blocks_processed_since_write_lock_acquired} blocks, "
+                     "${transactions_processed_since_write_lock_acquired} transactions)",
                      (write_lock_hold_time)
-                     ("write_lock_held_duration", write_lock_held_duration.count()));
+                     ("write_lock_held_duration", write_lock_held_duration.count())
+                     (blocks_processed_since_write_lock_acquired)
+                     (transactions_processed_since_write_lock_acquired));
                 break;
               }
             }

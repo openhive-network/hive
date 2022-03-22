@@ -172,17 +172,21 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
+      fc::time_point before_accept_block = fc::time_point::now();
       bool result = chain.accept_block(blk_msg.block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
 
       if( !sync_mode )
       {
-        fc::microseconds offset = fc::time_point::now() - blk_msg.block.timestamp;
+        fc::time_point after_accept_block = fc::time_point::now();
+        fc::microseconds block_processing_time = after_accept_block - before_accept_block; 
+        fc::microseconds offset = after_accept_block - blk_msg.block.timestamp;
         STATSD_TIMER( "p2p", "offset", "block_arrival", offset, 1.0f )
-        ilog( "Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms",
+        ilog( "Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms, processing time ${block_processing_time}μs",
           ("t", blk_msg.block.transactions.size())
           ("b", blk_msg.block.block_num())
           ("w", blk_msg.block.witness)
-          ("l", offset.count() / 1000) );
+          ("l", offset.count() / 1000)
+          (block_processing_time));
       }
 
       return result;

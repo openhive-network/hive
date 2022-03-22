@@ -4,6 +4,7 @@
 
 #include <appbase/application.hpp>
 
+#include <boost/scope_exit.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/lock_options.hpp>
@@ -24,6 +25,8 @@
 
 #define LOG_READ  (std::ios::in | std::ios::binary)
 #define LOG_WRITE (std::ios::out | std::ios::binary | std::ios::app)
+
+#define PROFILE_BLOCK_LOG
 
 namespace hive { namespace chain {
 
@@ -309,6 +312,14 @@ namespace hive { namespace chain {
   // adding a lock to allow it.
   uint64_t block_log::append( const signed_block& b )
   {
+#ifdef PROFILE_BLOCK_LOG
+    fc::time_point start_time = fc::time_point::now();
+    BOOST_SCOPE_EXIT(start_time, &b) {
+      fc::time_point end_time = fc::time_point::now();
+      fc_dlog(fc::logger::get("block_log"), "append(${block_num}) took ${duration}µs", 
+              ("block_num", b.block_num())("duration", ((end_time - start_time).count())));
+    } BOOST_SCOPE_EXIT_END
+#endif
     try
     {
       uint64_t block_start_pos = my->block_log_size;
@@ -344,6 +355,13 @@ namespace hive { namespace chain {
 
   optional< signed_block > block_log::read_block_by_num( uint32_t block_num )const
   {
+#ifdef PROFILE_BLOCK_LOG
+    fc::time_point start_time = fc::time_point::now();
+    BOOST_SCOPE_EXIT(start_time, block_num) {
+      fc::time_point end_time = fc::time_point::now();
+      fc_dlog(fc::logger::get("block_log"), "read_block_by_num(${block_num}) took ${duration}µs", (block_num)("duration", ((end_time - start_time).count())));
+    } BOOST_SCOPE_EXIT_END
+#endif
     try
     {
       // first, check if it's the current head block; if so, we can just return it.  If the
@@ -370,6 +388,13 @@ namespace hive { namespace chain {
 
   optional< signed_block_header > block_log::read_block_header_by_num( uint32_t block_num )const
   {
+#ifdef PROFILE_BLOCK_LOG
+    fc::time_point start_time = fc::time_point::now();
+    BOOST_SCOPE_EXIT(start_time, block_num) {
+      fc::time_point end_time = fc::time_point::now();
+      fc_dlog(fc::logger::get("block_log"), "read_block_header_by_num(${block_num}) took ${duration}µs", (block_num)("duration", ((end_time - start_time).count())));
+    } BOOST_SCOPE_EXIT_END
+#endif
     try
     {
       // first, check if it's the current head block; if so, we can just return it.  If the
@@ -396,6 +421,14 @@ namespace hive { namespace chain {
 
   vector<signed_block> block_log::read_block_range_by_num( uint32_t first_block_num, uint32_t count )const
   {
+#ifdef PROFILE_BLOCK_LOG
+    fc::time_point start_time = fc::time_point::now();
+    BOOST_SCOPE_EXIT(start_time, first_block_num, count) {
+      fc::time_point end_time = fc::time_point::now();
+      fc_dlog(fc::logger::get("block_log"), "read_block_range_by_num(${first_block_num}, ${count}) took ${duration}µs", 
+              (first_block_num)(count)("duration", ((end_time - start_time).count())));
+    } BOOST_SCOPE_EXIT_END
+#endif
     try
     {
       vector<signed_block> result;
