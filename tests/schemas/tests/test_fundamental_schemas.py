@@ -24,6 +24,12 @@ from schemas.predefined import *
         (128, Float()),  # Ints are also floats
         ('3.141593', Float()),  # Strings are converted to floats
 
+        # Int
+        (1, Int()),
+        (-1, Int()),
+        ('1', Int()),
+        ('-1', Int()),
+
         # Map
         ({'key': 'value'}, Map({'key': Str()})),
         # FIXME: ({}, Map({}, allowempty=True)),
@@ -57,6 +63,11 @@ def test_validation_of_correct_type(correct_value: Any, schema: Dict[str, Any]):
 
         # Float
         (True, Float()),
+
+        # Int
+        (True, Int()),
+        ('example-string', Int()),
+        (3.141593, Int()),
 
         # Map
         (1, Map({'key': Str()})),  # TODO: Use allowempty=True when will be fixed

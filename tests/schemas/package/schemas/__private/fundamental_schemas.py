@@ -27,6 +27,10 @@ def Float(required: bool = True, **options) -> Dict[str, Any]:
     return __create_basic_schema('float', required, options)
 
 
+def Int(required: bool = True, **options):
+    return __create_basic_schema('hive_int', required, options)
+
+
 def Map(content: Dict, required: bool = True, matching: str = 'all') -> Dict[str, Any]:
     return {
         'required': required,
