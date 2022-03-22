@@ -3,8 +3,9 @@
   description: Common values for tests
 
   variables:
-    heavy_timeout: 50
+    heavy_timeout: 500
     timeout: 100
+    max_retries: 5
     service:
       proto: http
       server: "{tavern.env_vars.HIVEMIND_ADDRESS}"

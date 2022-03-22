@@ -2,7 +2,7 @@
   test_name: Hived
 
   marks:
-    - patterntest # no noempty result in 5mln blocks 
+    - patterntest # no noempty result in 5mln blocks
     # only if HIVE_ENABLE_SMT
 
   includes:
@@ -10,6 +10,7 @@
 
   stages:
     - name: test
+      max_retries: !int "{max_retries:d}"
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
@@ -25,4 +26,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          
+

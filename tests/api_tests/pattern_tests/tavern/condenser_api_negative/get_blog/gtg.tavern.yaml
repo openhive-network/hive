@@ -9,6 +9,7 @@
 
   stages:
     - name: test
+      max_retries: !int "{max_retries:d}"
       request:
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
@@ -26,4 +27,4 @@
           extra_kwargs:
             error_response: true
             ignore_tags: ["timestamp"]
-          
+
