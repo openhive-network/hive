@@ -51,6 +51,15 @@ ENV BRANCH=${BRANCH:-master}
 ARG COMMIT
 ENV COMMIT=${COMMIT:-""}
 
+ARG BUILD_HIVE_TESTNET=OFF
+ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
+
+ARG HIVE_CONVERTER_BUILD=OFF
+ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
+
+ARG HIVE_LINT=ON
+ENV HIVE_LINT=${HIVE_LINT}
+
 USER hived
 WORKDIR /home/hived
 SHELL ["/bin/bash", "-c"] 
@@ -58,7 +67,11 @@ SHELL ["/bin/bash", "-c"]
 ADD ./scripts/common.sh /home/hived/scripts/common.sh
 
 RUN LOG_FILE=build.log source ./scripts/common.sh && do_clone "$BRANCH" ./hive https://gitlab.syncad.com/hive/hive.git "$COMMIT" && \
-  ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" hived cli_wallet truncate_block_log && \
+  ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
+  --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
+  --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
+  --cmake-arg="-DHIVE_LINT=ON" \
+  hived cli_wallet truncate_block_log && \
   cd ./build && \
   find . -name *.o  -type f -delete && \
   find . -name *.a  -type f -delete
