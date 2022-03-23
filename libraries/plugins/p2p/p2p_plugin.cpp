@@ -156,15 +156,17 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
     uint32_t head_block_num = chain.db().head_block_num_from_fork_db();
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
-          "chain pushing sync block #${block_num} ${block_hash}, head is ${head}",
+          "chain pushing sync block #${block_num} ${block_hash} with timestamp=${block_time}, head is ${head}",
           ("block_num", blk_msg.block.block_num())
           ("block_hash", blk_msg.block_id)
+          ("block_time", blk_msg.block.timestamp)
           ("head", head_block_num));
     else
       fc_ilog(fc::logger::get("sync"),
-          "chain pushing block #${block_num} ${block_hash}, head is ${head}",
+          "chain pushing block #${block_num} ${block_hash} with timestamp=${block_time}, head is ${head}",
           ("block_num", blk_msg.block.block_num())
           ("block_hash", blk_msg.block_id)
+          ("block_time", blk_msg.block.timestamp)
           ("head", head_block_num));
 
     try {
@@ -174,7 +176,7 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
       // leave that peer connected so that they can get sync blocks from us
       bool result = chain.accept_block(blk_msg.block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
 
-      if( !sync_mode )
+      //DLN temporary if( !sync_mode )
       {
         fc::microseconds offset = fc::time_point::now() - blk_msg.block.timestamp;
         STATSD_TIMER( "p2p", "offset", "block_arrival", offset, 1.0f )
@@ -194,7 +196,7 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
       elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
     } catch( const fc::exception& e ) {
-      //fc_elog(fc::logger::get("sync"), "Error when pushing block, current head block is ${head}:\n${e}", ("e", e.to_detail_string()) ("head", head_block_num));
+      fc_elog(fc::logger::get("sync"), "Error when pushing block, current head block is ${head}:\n${e}", ("e", e.to_detail_string()) ("head", head_block_num));
       //elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       if (e.code() == 4080000) {
         elog("Rethrowing as graphene::net exception");

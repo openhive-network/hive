@@ -342,17 +342,15 @@ namespace detail {
     switch(result)
     {
       case block_production_condition::produced:
-        ilog("Generated block #${n} with timestamp ${t} at time ${c}", ("n", capture["n"])("t", capture["t"])("c", capture["c"]));
-        
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+           ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+           ilog("Not producing block because it isn't my turn");
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+           ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
@@ -380,6 +378,8 @@ namespace detail {
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
     fc::time_point now_fine = fc::time_point::now();
+    //This sets now to the nearest second to the current time (e.g. 4.2 gets rounded to 4s).
+    //This rounding is done by the type change from time_point (now_fine) to time_point_sec (now).
     fc::time_point_sec now = now_fine + fc::microseconds( 500000 );
 
     // If the next block production opportunity is in the present or future, we're synced.
@@ -447,7 +447,8 @@ namespace detail {
       private_key_itr->second,
       _production_skip_flags
       );
-    capture("n", block.block_num())("t", block.timestamp)("c", now);
+    capture("n", block.block_num())("t", block.timestamp)("c", now)("id", block.id());
+    ilog("Generated block #${n},${id} with timestamp ${t} at time ${c}", ("n", capture["n"])("id", capture["id"])("t", capture["t"])("c", capture["c"]));
 
     appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
     return block_production_condition::produced;
