@@ -25,6 +25,7 @@
 #include <memory>
 #include <iostream>
 #include <mutex>
+#include <condition_variable>
 #include <queue>
 
 namespace hive { namespace plugins { namespace chain {

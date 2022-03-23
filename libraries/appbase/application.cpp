@@ -201,7 +201,9 @@ void application::set_program_options()
       ("version,v", "Print version information.")
       ("dump-config", "Dump configuration and exit")
       ("list-plugins", "Print names of all available plugins and exit")
+#if BOOST_VERSION >= 106800
       ("generate-completions", "Generate bash auto-complete script (try: eval \"$(hived --generate-completions)\")")
+#endif
       ("data-dir,d", bpo::value<bfs::path>()->value_name("dir"), data_dir_ss.str().c_str() )
       ("config,c", bpo::value<bfs::path>()->default_value("config.ini")->value_name("filename"), "Configuration file name relative to data-dir");
 
@@ -301,11 +303,13 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       write_default_config(config_file_name);
     }
 
+#if BOOST_VERSION >= 106800
     if(my->_args.count("generate-completions") > 0)
     {
       generate_completions();
       return false;
     }
+#endif
 
     bpo::store(bpo::parse_config_file< char >( config_file_name.make_preferred().string().c_str(),
                               my->_cfg_options, true ), my->_args );
@@ -470,6 +474,9 @@ void application::write_default_config(const bfs::path& cfg_file)
 
 void application::generate_completions()
 {
+  // option_description is missing long_names() before 1.68.0, and it's easier to just omit this
+  // feature for old versions of boost, instead of trying to support it
+#if BOOST_VERSION >= 106800
   std::vector<string> all_plugin_names;
   for (const auto& plugin: plugins)
     all_plugin_names.push_back(plugin.first);
@@ -541,6 +548,7 @@ void application::generate_completions()
             << "  COMPREPLY=( $(compgen -W \"" << boost::algorithm::join(all_options, " ") << "\" -- \"$cur\") )\n"
             << "}\n"
             << "complete -F _hived -o filenames hived\n";
+#endif
 }
 
 abstract_plugin* application::find_plugin( const string& name )const
