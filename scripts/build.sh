@@ -1,12 +1,12 @@
 #! /bin/bash
 
-set -euo pipefail 
+set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 LOG_FILE=build.log
 
-source "$SCRIPTPATH/common.sh" 
+source "$SCRIPTPATH/common.sh"
 
 log_exec_params "$@"
 
@@ -67,16 +67,16 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-abs_src_dir=`realpath -e --relative-base="$SCRIPTPATH" "$HIVED_SOURCE_DIR"` 
-abs_build_dir=`realpath -m --relative-base="$SCRIPTPATH" "$HIVED_BINARY_DIR"` 
+abs_src_dir=`realpath -e --relative-base="$SCRIPTPATH" "$HIVED_SOURCE_DIR"`
+abs_build_dir=`realpath -m --relative-base="$SCRIPTPATH" "$HIVED_BINARY_DIR"`
 
-pwd 
+pwd
 mkdir -vp "$abs_build_dir"
 pushd "$abs_build_dir"
 pwd
-cmake -DCMAKE_BUILD_TYPE=Release "${CMAKE_ARGS[@]}" "$abs_src_dir"
+cmake -DCMAKE_BUILD_TYPE=Release -GNinja "${CMAKE_ARGS[@]}" "$abs_src_dir"
 
-make -j $JOBS "$@"
+ninja "$@"
 
 popd
 
