@@ -11,7 +11,7 @@ If you build this project without specifying the converter flag it will dev-warn
 Note: This tool is also intended to be used only in the mainnet build.
 
 ## Configuration
-For the program to work properly you will have to specify the input and output sources using `input` and `output` options. It can be either file or URL (it is plugin-defined. See [Plugins](#Plugins)).
+For the program to work properly you will have to specify the input and output sources using `input` and `output` options. It can be either file or URL(s) (it is plugin-defined. See [Plugins](#Plugins)).
 
 You will also have to specify the `chain-id` and `private-key` options, where the private key is your block signing key (witness private key) and the chain id is your altered chain id.
 
@@ -31,13 +31,14 @@ As the `input` option value you will have to specify a path to a non-empty input
 
 #### `node_based_conversion`
 `node_based_conversion` plugin relies on the remote nodes.
-As the `input` option value you will have to specify an URL to the original input mainnet node (make sure that given node uses block API and database API) and as the `output` option value you should specify an URL to the node with altered chain (make sure that given node uses condenser API). If you want to convert old transactions, use the `use-now-time` option to alter the expiration time of the transactions to the current timestamp for nodes to accept them.
+As the `input` option value you will have to specify an URL to the original input mainnet node (make sure that given node uses block API and database API) and as the `output` option value you should specify URLs to the nodes with altered chain (make sure that given nodes use condenser API). If you want to convert old transactions, use the `use-now-time` option to alter the expiration time of the transactions to the current timestamp for nodes to accept them.
 
 This plugin retrieves blocks from the remote and holds them in the block buffer. You can specify the block buffer size with the `block-buffer-size` option, which defaults to 1000.
 
-Note: URL should have the format: `http://ip-or-host:port`. If you want to use the default HTTP port use `80`.
-
-Another note: This conversion tool currently does not support `https` protocol and chunked transfer encoding in API node responses
+Notes:
+* URL should have the format: `http://ip-or-host:port`. If you want to use the default HTTP port use `80`.
+* This conversion tool currently does not support `https` protocol and chunked transfer encoding in API node responses
+* Last irreversible block for the [TaPoS](https://github.com/EOSIO/Documentation/blob/master/TechnicalWhitePaper.md#transaction-as-proof-of-stake-tapos) generation is always taken from the first of the specified output nodes
 
 ### Multithreading support
 Signing transactions takes a relatively large amount of time, so this tool enables multithreading support.
