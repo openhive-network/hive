@@ -437,7 +437,6 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       pool_obj.add_usage( i, block_info.usage[i] );
 
       int64_t new_pool = pool - block_info.decay[i] + params.budget_per_time_unit - block_info.usage[i];
-      pool = new_pool;
 
       if( i == resource_new_accounts )
       {
@@ -447,21 +446,11 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
           block_info.new_accounts_adjustment = new_consensus_pool - new_pool;
           ilog( "resource_new_accounts adjustment on block ${b}: ${a}",
             ("a", block_info.new_accounts_adjustment)("b", gpo.head_block_number) );
-          pool = new_consensus_pool;
+          new_pool = new_consensus_pool;
         }
       }
 
-      pool_obj.set_pool( i, pool );
-
-      /*
-      if( debug_print )
-      {
-        double k = 27.027027027027028;
-        double a = double(params.pool_eq - pool);
-        a /= k*double(pool);
-        dlog( "a=${a}   aR=${aR}", ("a", a)("aR", a*gpo.total_vesting_shares.amount.value/HIVE_RC_REGEN_TIME) );
-      }
-      */
+      pool_obj.set_pool( i, new_pool );
     }
     pool_obj.recalculate_resource_weights( params_obj );
     if( budget_adjustment )
