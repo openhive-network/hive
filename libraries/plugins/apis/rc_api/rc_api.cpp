@@ -47,17 +47,11 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_params )
   }
 
   state_object_size_info state_size_info;
-  fc::variant v_state_size_info;
-  fc::to_variant( state_size_info, v_state_size_info );
-  fc::mutable_variant_object state_bytes_mvo = v_state_size_info.get_object();
-  state_bytes_mvo("STATE_BYTES_SCALE", STATE_BYTES_SCALE);
-  // No need to expose other STATE_ constants, since they only affect state_size_info fields which are already returned
-
   operation_exec_info exec_info;
 
   fc::mutable_variant_object size_info_mvo;
   size_info_mvo
-    ( "resource_state_bytes", state_bytes_mvo )
+    ( "resource_state_bytes", state_size_info )
     ( "resource_execution_time", exec_info );
 
   result.size_info = size_info_mvo;
