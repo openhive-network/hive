@@ -60,7 +60,7 @@ namespace detail {
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
-    node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
+    node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
       const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id,
       size_t signers_size, size_t block_buffer_size, bool use_now_time );
 
@@ -83,27 +83,28 @@ namespace detail {
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
 
-    void transmit( const hp::signed_transaction& trx );
+    void transmit( const hp::signed_transaction& trx, const fc::url& using_url );
 
+    // Those two functions work with input_url which is always one
     fc::optional< hp::signed_block > receive_uncached( uint32_t num );
     fc::optional< hp::signed_block > receive( uint32_t block_num );
 
     const fc::variants& get_block_buffer()const;
 
-    void validate_chain_id( const hp::chain_id_type& chain_id );
+    void validate_chain_id( const hp::chain_id_type& chain_id, const fc::url& using_url );
 
     /**
      * @brief Get the dynamic global properties object as variant_object from the output node
      */
-    fc::variant_object get_dynamic_global_properties();
+    fc::variant_object get_dynamic_global_properties( const fc::url& using_url );
 
     /**
      * @brief Get the id of the block preceding the one with the given number from the output node
      */
-    hp::block_id_type get_previous_from_block( uint32_t num );
+    hp::block_id_type get_previous_from_block( uint32_t num, const fc::url& using_url );
 
-    fc::url              input_url;
-    fc::url              output_url;
+    fc::url                input_url;
+    std::vector< fc::url > output_urls;
 
     // Note: Since block numbers are stored as 32-bit integers in the current implementation of Hive, using a 64-bit integer
     // as the type for the last_block_range_start variable is a safe way to indicate whether a converter is in an "uninitialized" state.
@@ -119,17 +120,26 @@ namespace detail {
     hp::legacy_switcher _use_legacy_serialization = false;
   };
 
-  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::string& output_url,
+  node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
     const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size, bool use_now_time )
-    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), output_url( output_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
+    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
 
-    // Validate urls - must be in http://host:port format, where host can be either ipv4 address or domain name
-    FC_ASSERT( this->input_url.proto() == "http" && this->output_url.proto() == "http",
-      "Currently only http protocol is supported", ("in_proto",this->input_url.proto())("out_proto",this->output_url.proto()) );
-    FC_ASSERT( this->input_url.host().valid() && this->output_url.host().valid(), "You have to specify the host in url", ("input_url",input_url)("output_url",output_url) );
-    FC_ASSERT( this->input_url.port().valid() && this->output_url.port().valid(), "You have to specify the port in url", ("input_url",input_url)("output_url",output_url) );
+    static const auto check_url = []( const auto& url ) {
+      FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
+      FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
+      FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
+    };
+
+    check_url(this->input_url);
+
+    for( size_t i = 0; i < output_urls.size(); ++i )
+    {
+      // XXX: Replace with one-liner in C++17
+      this->output_urls.emplace_back(output_urls.at(i));
+      check_url( this->output_urls.at(i) );
+    }
   }
 
   void node_based_conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
@@ -193,8 +203,6 @@ namespace detail {
       // By this point `result` should be present in the response
       FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
 
-      con.get_socket().close();
-
       return var_obj["result"].get_object();
     }
     catch( const error_response_from_node& error )
@@ -207,7 +215,7 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    auto gpo = get_dynamic_global_properties();
+    auto gpo = get_dynamic_global_properties( output_urls.at(0) );
 
     if( !start_block_num )
       start_block_num = gpo["head_block_number"].as< uint32_t >() + 1;
@@ -215,29 +223,23 @@ namespace detail {
     ilog("Continuing conversion from the block with number ${block_num}", ("block_num", start_block_num));
     ilog("Validating the chain id...");
 
-    validate_chain_id( converter.get_chain_id() );
-    dlog("Chain id match");
-
     fc::optional< hp::signed_block > block;
 
-    while( start_block_num > 1 && !block.valid() )
+    // Iterate downwards to assign last block to the first of the specified node (according to the documentation)
+    for( int64_t i = output_urls.size() - 1; i >= 0; --i )
     {
-      if( appbase::app().is_interrupt_request() ) break;
-      block = receive_uncached( start_block_num - 1 );
-      if( block.valid() )
-      {
-        converter.convert_signed_block( *block, gpo["head_block_id"].as< hp::block_id_type >() );
-      }
-      else
-      {
-        wlog("Could not parse the block with number ${block_num} from the host. Propably the block has not been produced yet. Retrying in 1 second...", ("block_num", start_block_num));
-        fc::usleep(fc::seconds(1));
-      }
+      // Null for every node
+      block = fc::optional< hp::signed_block >{};
+
+      const auto& url = output_urls.at(i);
+
+      validate_chain_id( converter.get_chain_id(), url );
+      dlog("Node \'${url}\': Chain id match", ("url", url));
     }
 
     // Last irreversible block number and id for tapos generation
     uint32_t lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
-    hp::block_id_type lib_id = get_previous_from_block( lib_num );
+    hp::block_id_type lib_id = get_previous_from_block( lib_num, output_urls.at(0) );
 
     const auto update_lib_id = [&]() {
       try
@@ -290,11 +292,11 @@ namespace detail {
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", *block));
 
-      for( const auto& trx : block->transactions )
+      for( size_t i = 0; i < block->transactions.size(); ++i )
         if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
           break;
         else
-          transmit( trx );
+          transmit( block->transactions.at(i), output_urls.at( i % output_urls.size() ) );
 
       if( start_block_num % 10 == 0 )
         update_lib_id();
@@ -312,7 +314,7 @@ namespace detail {
     gpo_update_task.wait();
   }
 
-  void node_based_conversion_plugin_impl::transmit( const hp::signed_transaction& trx )
+  void node_based_conversion_plugin_impl::transmit( const hp::signed_transaction& trx, const fc::url& using_url )
   {
     try
     {
@@ -320,7 +322,7 @@ namespace detail {
       fc::to_variant( trx, v );
 
       fc::http::connection local_output_con;
-      post( local_output_con, output_url, "network_broadcast_api.broadcast_transaction", "{\"trx\":" + fc::json::to_string( v ) + "}" );
+      post( local_output_con, using_url, "network_broadcast_api.broadcast_transaction", "{\"trx\":" + fc::json::to_string( v ) + "}" );
     }
     catch( const error_response_from_node& error )
     {
@@ -405,12 +407,12 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (num) )
   }
 
-  void node_based_conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id )
+  void node_based_conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id, const fc::url& using_url )
   {
     try
     {
       fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, output_url, "database_api.get_config", "{}" );
+      auto var_obj = post( local_output_con, using_url, "database_api.get_config", "{}" );
 
       FC_ASSERT( var_obj.contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("reply", var_obj) );
 
@@ -431,12 +433,12 @@ namespace detail {
     FC_CAPTURE_AND_RETHROW( (chain_id) )
   }
 
-  fc::variant_object node_based_conversion_plugin_impl::get_dynamic_global_properties()
+  fc::variant_object node_based_conversion_plugin_impl::get_dynamic_global_properties( const fc::url& using_url )
   {
     try
     {
       fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, output_url, "database_api.get_dynamic_global_properties", "{}" );
+      auto var_obj = post( local_output_con, using_url, "database_api.get_dynamic_global_properties", "{}" );
       // Check for example required property
       FC_ASSERT( var_obj.contains("head_block_number"), "No head_block_number in JSON response", ("reply", var_obj) );
 
@@ -445,12 +447,12 @@ namespace detail {
     FC_CAPTURE_AND_RETHROW()
   }
 
-  hp::block_id_type node_based_conversion_plugin_impl::get_previous_from_block( uint32_t num )
+  hp::block_id_type node_based_conversion_plugin_impl::get_previous_from_block( uint32_t num, const fc::url& using_url )
   {
     try
     {
       fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, output_url, "block_api.get_block_header", "{\"block_num\":" + std::to_string( num ) + "}" );
+      auto var_obj = post( local_output_con, using_url, "block_api.get_block_header", "{\"block_num\":" + std::to_string( num ) + "}" );
       FC_ASSERT( var_obj.contains("header"), "No header in JSON response", ("reply", var_obj) );
 
       return var_obj["header"].get_object()["previous"].as< hp::block_id_type >();
@@ -475,6 +477,12 @@ namespace detail {
     FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
     FC_ASSERT( options.count("output"), "You have to specify the output source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
 
+    auto input_v = options["input"].as< std::vector< std::string > >();
+    auto output_v = options["output"].as< std::vector< std::string > >();
+
+    FC_ASSERT( input_v.size() == 1, HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " accepts only one input node" );
+    FC_ASSERT( output_v.size(), HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " requires at least one output node" );
+
     hp::chain_id_type _hive_chain_id;
 
     const auto& chain_id_str = options["chain-id"].as< std::string >();
@@ -492,7 +500,7 @@ namespace detail {
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
     my = std::make_unique< detail::node_based_conversion_plugin_impl >(
-          options.at( "input" ).as< std::string >(), options.at( "output" ).as< std::string >(),
+          input_v.at(0), output_v,
           *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >(),
           options["block-buffer-size"].as< size_t >(), options["use-now-time"].as< bool >()
         );
