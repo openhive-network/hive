@@ -21,7 +21,7 @@ struct state_object_size_info
   const int64_t authority_account_member_size;
   const int64_t authority_key_member_size;
 
-  // account update (both versions)
+  // account update (both versions) and nonsubsidized account recovery
   const int64_t owner_authority_history_object_size;
 
   // transfer to vesting
