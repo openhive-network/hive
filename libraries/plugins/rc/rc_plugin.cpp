@@ -87,7 +87,7 @@ class rc_plugin_impl
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
 
-  std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
+    std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
 
 #ifdef IS_TEST_NET
     std::set< account_name_type > _whitelist;
@@ -105,7 +105,7 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_optional_action_conn;
     boost::signals2::connection   _pre_apply_custom_operation_conn;
     boost::signals2::connection   _post_apply_custom_operation_conn;
-  };
+};
 
 int64_t get_next_vesting_withdrawal( const account_object& account )
 {
@@ -349,7 +349,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   {
     export_data->add_tx_info( tx_info );
   }
-  else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY) == 0 )
+  else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY ) == 0 )
   {
     //correction for head block number is to counter the fact that transactions are handled before block switches to
     //new one and therefore it is different for transactions and for block they are processed in (the effect was that
@@ -740,6 +740,8 @@ struct pre_apply_operation_visitor
   }
 
   //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
+
+  //void operator()( const delayed_voting_operation& op )const //not needed, only voting power changes, not amount of VESTs
 
   void operator()( const pow_operation& op )const
   {
