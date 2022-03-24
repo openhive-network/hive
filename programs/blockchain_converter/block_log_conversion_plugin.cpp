@@ -189,13 +189,17 @@ namespace detail {
   {
     FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_BLOCK_LOG_CONVERSION_PLUGIN_NAME " plugin" );
 
-    std::string out_file;
-    if( !options.count("output") )
-      out_file = options["input"].as< std::string >() + "_out";
-    else
-      out_file = options["output"].as< std::string >();
+    auto input_v = options["input"].as< std::vector< std::string > >();
 
-    fc::path block_log_in( options["input"].as< std::string >() );
+    FC_ASSERT( input_v.size() == 1, HIVE_BLOCK_LOG_CONVERSION_PLUGIN_NAME " accepts only one input block log" );
+
+    std::string out_file;
+    if( options.count("output") && options["output"].as< std::vector< std::string > >().size() )
+      out_file = options["output"].as< std::vector< std::string > >().at(0);
+    else
+      out_file = input_v.at(0) + "_out";
+
+    fc::path block_log_in( input_v.at(0) );
     fc::path block_log_out( out_file );
 
     hp::chain_id_type _hive_chain_id;

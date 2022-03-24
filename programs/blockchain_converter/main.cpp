@@ -58,8 +58,8 @@ int main( int argc, char** argv )
       ("jobs,j", bpo::value< size_t >()->default_value( 1 ), "Allow N jobs at once to sign transactions");
       bpo::options_description source_opts{"Source options"};
         source_opts.add_options()
-      ("input,i", bpo::value< std::string >(), "Input source (depending on plugin enabled - block log path or hive API endpoint)")
-      ("output,o", bpo::value< std::string >(), "Output source (depending on plugin enabled - block log path or hive API endpoint)" );
+      ("input,i", bpo::value< std::vector< std::string > >(), "Input source (depending on plugin enabled - block log path or hive API endpoint)")
+      ("output,o", bpo::value< std::vector< std::string > >(), "Output source (depending on plugin enabled - block log path or hive API endpoints)");
       bpo::options_description cli_options{};
         cli_options.add( source_opts ).add( logging_opts );
 
