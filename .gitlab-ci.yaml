@@ -33,6 +33,7 @@ testnet_node_build:
   tags:
      - public-runner-docker
      - hived-for-tests
+     - hived
 
 consensus_build:
   stage: build
@@ -51,6 +52,7 @@ consensus_build:
     expire_in: 6 hours
   tags:
     - public-runner-docker
+    - hived
 
 chain_test:
   stage: test
