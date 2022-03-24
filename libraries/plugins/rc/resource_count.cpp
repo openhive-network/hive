@@ -416,7 +416,7 @@ struct count_operation_visitor
     market_op_count++;
   }
 
-  void operator()( const recover_account_operation& ) const
+  void operator()( const recover_account_operation& op ) const
   {
     subsidized_op = true;
     subsidized_signatures = 2; //needs recent and new signature
@@ -424,6 +424,8 @@ struct count_operation_visitor
     //new multisig is also not allowed
 
     //cost still calculated for case when it is not subsidized
+    //TODO: compute differential cost
+    state_bytes_count += get_authority_dynamic_size( op.new_owner_authority ) + _w.owner_authority_history_object_size;
     execution_time_count += _e.recover_account_time;
   }
 
