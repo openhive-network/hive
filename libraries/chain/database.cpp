@@ -1148,6 +1148,7 @@ bool database::_push_block(const signed_block& new_block)
     _maybe_warn_multiple_production( new_head->num );
 
     //If the head block from the longest chain does not build off of the current head, we need to switch forks.
+    //(if the new block builds off our head block, this check will skip the fork-switching code)
     if( new_head->data.previous != head_block_id() )
     {
       //If the newly pushed block is the same height as head, we get head back in new_head
@@ -1157,7 +1158,7 @@ bool database::_push_block(const signed_block& new_block)
         wlog( "Switching to fork: ${id}", ("id",new_head->data.id()) );
         auto branches = _fork_db.fetch_branch_from(new_head->data.id(), head_block_id());
 
-        // pop blocks until we hit the forked block
+        // pop blocks until we hit the common ancestor block
         while( head_block_id() != branches.second.back()->data.previous )
           pop_block();
 
@@ -1208,11 +1209,12 @@ bool database::_push_block(const signed_block& new_block)
         );
         return true;
       }
-      else
+      else //the new block is on a fork but lower than our head block, so don't validate it
         return false;
-    }
-  }
+    } //if not building off current head block
+  } //if fork checking enabled
 
+  //we are either not doing fork checking, or more likely, we are building off our head block
   try
   {
     auto session = start_undo_session();

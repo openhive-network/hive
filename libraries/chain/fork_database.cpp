@@ -65,7 +65,8 @@ void  fork_database::_push_block(const item_ptr& item)
             "attempting to push a block that is too old",
             ("item->num",item->num)("head",_head->num)("max_size",_max_size));
   }
-
+  //if we can't link the new item all the way back to genesis block,
+  // throw an unlinkable block exception
   if( _head && item->previous_id() != block_id_type() )
   {
     auto& index = _index.get<block_id>();
@@ -74,8 +75,10 @@ void  fork_database::_push_block(const item_ptr& item)
     FC_ASSERT(!(*itr)->invalid);
     item->prev = *itr;
   }
-
+  
   _index.insert(item);
+  // if we don't have a head block or this is the next block or on a longer fork than our head block
+  //   make this the new head block
   if( !_head || item->num > _head->num ) _head = item;
 
   _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
@@ -353,6 +356,8 @@ void fork_database::set_head(shared_ptr<fork_item> h)
 void fork_database::remove(block_id_type id)
 {
   with_write_lock( [&]() {
+    if (_head && _head->id == id)
+      _head = _head->prev.lock();
     _index.get<block_id>().erase(id);
   });
 }
