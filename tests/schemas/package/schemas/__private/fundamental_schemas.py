@@ -27,6 +27,26 @@ class Schema(ABC):
         return {**self._create_core_of_schema(), **self._options}
 
 
+class Any_(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {}
+
+
+class Bool(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'boolean'}
+
+
+class Float(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'number'}
+
+
+class Null(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'null'}
+
+
 class String(Schema):
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'string'}
