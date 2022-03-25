@@ -657,9 +657,21 @@ void p2p_plugin::plugin_startup()
       my->config.set( "maximum_number_of_connections", fc::variant( my->max_connections ) );
     }
 
+    ilog("Setting parameters");
     my->node->set_advanced_node_parameters( my->config );
-    my->node->listen_to_p2p_network();
+
+    ilog("Listening to P2P network");
+    my->node->listen_to_p2p_network( [](){ return appbase::app().is_interrupt_request(); } );
+    if( appbase::app().is_interrupt_request() )
+    {
+      ilog("P2P plugin was manually closed. More details in p2p log.");
+      return;
+    }
+
+    ilog("Connection to P2P network");
     my->node->connect_to_p2p_network();
+    ilog("Connected to P2P network");
+
     block_id_type block_id;
     my->chain.db().with_read_lock( [&]()
     {

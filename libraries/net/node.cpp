@@ -697,7 +697,7 @@ namespace graphene { namespace net {
       // methods implementing node's public interface
       void set_node_delegate(node_delegate* del, fc::thread* thread_for_delegate_calls);
       void load_configuration( const fc::path& configuration_directory );
-      void listen_to_p2p_network();
+      void listen_to_p2p_network( std::function<bool()> break_callback );
       void connect_to_p2p_network();
       void add_node( const fc::ip::endpoint& ep );
       void initiate_connect_to(const peer_connection_ptr& peer);
@@ -4692,7 +4692,7 @@ namespace graphene { namespace net {
       }
     }
 
-    void node_impl::listen_to_p2p_network()
+    void node_impl::listen_to_p2p_network( std::function<bool()> break_callback )
     {
       VERIFY_CORRECT_THREAD();
       if (!_node_configuration.accept_incoming_connections)
@@ -4716,6 +4716,13 @@ namespace graphene { namespace net {
         bool first = true;
         for( ;; )
         {
+          if( break_callback() )
+          {
+            std::string break_message = "Node manually closed - probably SIGINT/SIGTERM signal appeared";
+            ulog(break_message);
+            wlog(break_message);
+            return;
+          }
           bool listen_failed = false;
 
           try
@@ -5381,9 +5388,9 @@ namespace graphene { namespace net {
     INVOKE_IN_IMPL(load_configuration, configuration_directory);
   }
 
-  void node::listen_to_p2p_network()
+  void node::listen_to_p2p_network( std::function<bool()> break_callback )
   {
-    INVOKE_IN_IMPL(listen_to_p2p_network);
+    INVOKE_IN_IMPL(listen_to_p2p_network, break_callback);
   }
 
   void node::connect_to_p2p_network()
