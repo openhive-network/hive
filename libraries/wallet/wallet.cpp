@@ -12,7 +12,7 @@
 
 #include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
-#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
+#include <hive/wallet/misc_utilities.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
@@ -72,8 +72,6 @@
 constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_bridge_api methods. Default value is false, so we need to pass it here.
 
 namespace hive { namespace wallet {
-
-using hive::plugins::wallet_bridge_api::wallet_formatter;
 
 namespace detail {
 

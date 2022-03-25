@@ -11,12 +11,6 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
-template<typename T>
-struct serializer_wrapper
-{
-  T value;
-};
-
 /* get_version */
 typedef variant                            get_version_args;
 typedef database_api::get_version_return   get_version_return;
@@ -234,33 +228,3 @@ FC_REFLECT( hive::plugins::wallet_bridge_api::get_open_orders_json_return, (orde
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_order, (hive)(hbd)(sum_hbd)(price))
 FC_REFLECT( hive::plugins::wallet_bridge_api::get_order_book_json_return, (bids)(asks)(bid_total)(ask_total))
-
-namespace fc {
-
-  using hive::protocol::legacy_switcher;
-
-  template<typename T>
-  inline void to_variant( const hive::plugins::wallet_bridge_api::serializer_wrapper<T>& a, fc::variant& var )
-  {
-    try
-    {
-      legacy_switcher switcher( true );
-      to_variant( a.value, var );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-  template<typename T>
-  inline void from_variant( const fc::variant& var, hive::plugins::wallet_bridge_api::serializer_wrapper<T>& a )
-  {
-    try
-    {
-      legacy_switcher switcher( true );
-      from_variant( var, a.value );
-    } FC_CAPTURE_AND_RETHROW()
-  }
-
-} // fc
-
-FC_REFLECT_TEMPLATE( (typename T), hive::plugins::wallet_bridge_api::serializer_wrapper<T>, (value) )
-
-

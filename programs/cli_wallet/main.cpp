@@ -43,7 +43,7 @@
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
-#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
+#include <hive/wallet/misc_utilities.hpp>
 #include <hive/wallet/wallet.hpp>
 
 #include <fc/interprocess/signals.hpp>
@@ -67,8 +67,6 @@ using namespace hive::chain;
 using namespace hive::wallet;
 using namespace std;
 namespace bpo = boost::program_options;
-
-using hive::plugins::wallet_bridge_api::wallet_formatter;
 
 namespace
 {

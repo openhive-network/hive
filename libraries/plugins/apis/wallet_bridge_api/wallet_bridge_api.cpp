@@ -15,7 +15,6 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
-#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
@@ -635,7 +634,7 @@ protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& arg
   }
   catch( fc::bad_cast_exception& e )
   {
-    return ( args.get_array()[0].as<serializer_wrapper<protocol::signed_transaction>>() ).value;
+    return ( args.get_array()[0].as<hive::protocol::serializer_wrapper<protocol::signed_transaction>>() ).value;
   }
 }
 
