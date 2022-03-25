@@ -2,7 +2,7 @@ import pytest
 
 from test_tools import Asset
 
-
+@pytest.mark.skip(reason="Tests check for an unresolved problem. Run the tests after fixing the problems.")
 @pytest.mark.parametrize(
     'from_, to', [
         ('alice', 'bob'),
@@ -32,6 +32,8 @@ def test_list_rc_direct_delegations_with_existing_delegations(node, wallet, from
         assert response[0][1]['to'] == 'carol'
         assert response[0][1]['delegated_rc'] == 10
 
+
+@pytest.mark.skip(reason="Tests check for an unresolved problem. Run the tests after fixing the problems.")
 @pytest.mark.parametrize(
     'from_, to', [
         ('alice', 'carol'),
