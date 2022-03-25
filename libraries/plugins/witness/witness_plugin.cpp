@@ -70,6 +70,7 @@ namespace detail {
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
 
     bool     _production_enabled              = false;
+    bool     _is_p2p_enabled                  = false;
     uint32_t _required_witness_participation  = DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT;
     uint32_t _production_skip_flags           = chain::database::skip_nothing;
 
@@ -531,7 +532,15 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 void witness_plugin::plugin_startup()
 { try {
   ilog("witness plugin:  plugin_startup() begin" );
-  chain::database& d = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
+  auto& _chain_plugin = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >();
+  my->_is_p2p_enabled = _chain_plugin.is_p2p_enabled();
+  chain::database& d  = _chain_plugin.db();
+
+  if( !my->_is_p2p_enabled )
+  {
+    ilog("Witness plugin is not enabled, beause P2P plugin is disabled...");
+    return;
+  }
 
   if( !my->_witnesses.empty() )
   {
@@ -553,6 +562,12 @@ void witness_plugin::plugin_shutdown()
 {
   try
   {
+    if( !my->_is_p2p_enabled )
+    {
+      ilog("Witness plugin is not enabled, beause P2P plugin is disabled...");
+      return;
+    }
+
     chain::util::disconnect_signal( my->_post_apply_block_conn );
     chain::util::disconnect_signal( my->_pre_apply_operation_conn );
 
