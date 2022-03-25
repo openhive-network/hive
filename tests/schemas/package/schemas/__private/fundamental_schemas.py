@@ -47,6 +47,26 @@ class Schema(ABC):
                                   f'  schemas/package/schemas/predefined.py')
 
 
+class Any_(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {}
+
+
+class Bool(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'boolean'}
+
+
+class Float(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'number'}
+
+
+class Null(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'null'}
+
+
 class Str(Schema):
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'string'}
