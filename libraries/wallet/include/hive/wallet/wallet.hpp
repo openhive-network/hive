@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
-#include <hive/plugins/wallet_bridge_api/misc_utilities.hpp>
+#include <hive/wallet/misc_utilities.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -19,9 +19,9 @@ using namespace hive::utilities;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-using plugins::wallet_bridge_api::format_type;
+using hive::wallet::format_type;
 
-using hive::plugins::wallet_bridge_api::serializer_wrapper;
+using hive::protocol::serializer_wrapper;
 
 typedef uint16_t transaction_handle_type;
 

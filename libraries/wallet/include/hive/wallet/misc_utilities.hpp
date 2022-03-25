@@ -14,7 +14,10 @@
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 
-namespace hive { namespace plugins { namespace wallet_bridge_api {
+namespace hive { namespace wallet {
+
+using namespace hive::plugins::wallet_bridge_api;
+using hive::protocol::serializer_wrapper;
 
 enum class format_type : uint8_t { noformat, textformat, jsonformat };
 
@@ -104,7 +107,7 @@ struct wallet_formatter
     return get_result( std::stringstream(), _out_json, format );
   }
 
-  static variant list_my_accounts( const serializer_wrapper<vector<database_api::api_account_object>>& accounts, format_type format )
+  static variant list_my_accounts( const serializer_wrapper<list_my_accounts_return>& accounts, format_type format )
   {
     if( format == format_type::noformat )
     {
@@ -189,7 +192,7 @@ struct wallet_formatter
     out_text << std::left << setw(50) << _name_content.second << "\n";
   }
 
-  static variant get_account_history( const serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>& history, format_type format )
+  static variant get_account_history( const serializer_wrapper<get_account_history_return>& history, format_type format )
   {
     if( format == format_type::noformat )
     {
@@ -202,7 +205,7 @@ struct wallet_formatter
     vector<get_account_history_json_op> _out_json;
 
     if( format == format_type::textformat )
-      create_get_account_history_header( _out_text );
+      create_get_account_history_header( _out_text ); 
 
     for( const auto& item : history.value )
     {
@@ -223,7 +226,7 @@ struct wallet_formatter
       return ASSET_TO_REAL( price.base ) / ASSET_TO_REAL( price.quote );
   }
 
-  static variant get_open_orders( const serializer_wrapper<vector<database_api::api_limit_order_object>>& orders, format_type format )
+  static variant get_open_orders( const serializer_wrapper<get_open_orders_return>& orders, format_type format )
   {
     if( format == format_type::noformat )
     {
@@ -271,7 +274,7 @@ struct wallet_formatter
     return get_result( _out_text, _out_json, format );
   }
 
-  static variant get_order_book( const serializer_wrapper<market_history::get_order_book_return>& orders_in_wrapper, format_type format )
+  static variant get_order_book( const serializer_wrapper<get_order_book_return>& orders_in_wrapper, format_type format )
   {
     if( format == format_type::noformat )
     {
@@ -379,7 +382,7 @@ struct wallet_formatter
     return get_result( _out_text, _out_json, format );
   }
 
-  static variant get_withdraw_routes( const serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>& routes, format_type format )
+  static variant get_withdraw_routes( const serializer_wrapper<get_withdraw_routes_return>& routes, format_type format )
   {
     if( format == format_type::noformat )
       return variant{ routes };
@@ -431,6 +434,6 @@ struct wallet_formatter
   }
 };
 
-} } } //hive::plugins::wallet_bridge_api
+} } //hive::wallet
 
-FC_REFLECT_ENUM( hive::plugins::wallet_bridge_api::format_type, (noformat)(textformat)(jsonformat) )
+FC_REFLECT_ENUM( hive::wallet::format_type, (noformat)(textformat)(jsonformat) )
