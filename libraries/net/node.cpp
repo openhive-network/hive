@@ -4930,6 +4930,95 @@ namespace graphene { namespace net {
               ("count", _active_connections.size()));
     }
 
+    // format a speed like 409869 into "409.8 KiB/s"
+    std::string format_network_speed(float speed_bps)
+    {
+      std::ostringstream speed_stream;
+      speed_stream << std::right << std::setw(5) << std::fixed << std::setprecision(1);
+      if (speed_bps > 1073741824) // yeah, right
+        speed_stream << (speed_bps / 1073741824.0) << " GiB/s";
+      else if (speed_bps > 1048576)
+        speed_stream << (speed_bps / 1048576.0) << " MiB/s";
+      else if (speed_bps > 1024)
+        speed_stream << (speed_bps / 1024.0) << " KiB/s";
+      else
+        speed_stream << speed_bps << "   B/s";
+      return speed_stream.str();
+    }
+    const unsigned formatted_network_speed_length = 11; // "123.4 KiB/s" is 11 chars
+
+    // draw a crude ascii bar chart
+    std::vector<std::string> graph_values(const boost::circular_buffer<uint32_t>& read_speeds, 
+                                          const boost::circular_buffer<uint32_t>& write_speeds, 
+                                          unsigned width, const std::string& title,
+                                          const std::string& x_axis_min_label, const std::string& x_axis_max_label)
+    {
+      const uint32_t height = 20;
+
+      // combine read + write
+      std::vector<uint32_t> combined_speeds;
+      combined_speeds.reserve(read_speeds.size());
+      std::transform(read_speeds.begin(), read_speeds.end(),
+                     write_speeds.begin(),
+                     std::back_inserter(combined_speeds),
+                     std::plus<uint32_t>());
+
+      uint32_t min_value = 0;
+      uint32_t max_value = 0;
+      if (!combined_speeds.empty())
+      {
+        auto minmax = std::minmax_element(combined_speeds.begin(), combined_speeds.end());
+        min_value = *minmax.first;
+        max_value = *minmax.second;
+      }
+
+      uint32_t y_min = min_value;
+      uint32_t y_max = max_value;
+      if (min_value == max_value)
+        y_max = min_value ? 2 * min_value : height;
+
+      float y_step = ((float)y_max - (float)y_min) / ((float)height - 1);
+      std::vector<std::string> graph;
+
+      // spit out the title
+      std::ostringstream title_stream;
+      title_stream << std::string(formatted_network_speed_length, ' ') << "  ";
+      unsigned left_padding = 0;
+      if (title.length() < width)
+        left_padding = (width - title.length()) / 2;
+      title_stream << std::string(left_padding, ' ');
+      title_stream << title;
+      if (title.length() + left_padding < width)
+        title_stream << std::string(width - title.length() - left_padding, ' ');
+      graph.push_back(title_stream.str());
+
+      // then the body of the graph
+      for (unsigned row_number = 0; row_number < height; ++row_number)
+      {
+        std::ostringstream row_stream;
+        float threshold = (float)y_min + (y_step * (height - row_number - 1));
+        row_stream << format_network_speed(threshold) << " |";
+        row_stream << std::string(width - combined_speeds.size(), ' '); // pad to full width
+        for (unsigned i = 0; i < combined_speeds.size(); ++i)
+          row_stream << (read_speeds[i] >= threshold ? '#' : (combined_speeds[i] >= threshold ? '*' : ' '));
+        graph.push_back(row_stream.str());
+      }
+
+      // and now the x axis
+      std::ostringstream x_axis;
+      x_axis << std::string(formatted_network_speed_length, ' ') << " +" << std::string(width, '-');
+      graph.push_back(x_axis.str());
+      // and its labels
+      std::ostringstream x_axis_labels;
+      x_axis_labels << std::string(formatted_network_speed_length, ' ') << "  " << x_axis_min_label;
+      if (x_axis_min_label.length() + x_axis_max_label.length() < width)
+        x_axis_labels << std::string(width - x_axis_min_label.length() - x_axis_max_label.length(), ' ');
+      x_axis_labels << x_axis_max_label;
+      graph.push_back(x_axis_labels.str());
+
+      return graph;
+    }
+
     void node_impl::dump_node_status()
     {
       VERIFY_CORRECT_THREAD();
@@ -4978,6 +5067,41 @@ namespace graphene { namespace net {
         ilog( "    peer.time_since_last_sync_item_received: ${time_since_last_sync_item_received}ms", ("time_since_last_sync_item_received", (fc::time_point::now() - peer->last_sync_item_received_time).count() / 1000));
       }
       ilog( "--------- END MEMORY USAGE ------------" );
+
+      ilog( "--------- NETWORK USAGE ---------------" );
+      if (!_average_network_read_speed_seconds.empty())
+      {
+        std::vector<std::string> graph = graph_values(_average_network_read_speed_seconds, _average_network_write_speed_seconds, 
+                                                      60, "Network Speed by Second",
+                                                      "a minute ago", "now");
+        for (const std::string& line : graph)
+          ilog("${line}", (line));
+      }
+
+      if (!_average_network_read_speed_minutes.empty())
+      {
+        ilog("${space}", ("space", std::string(formatted_network_speed_length + 2 + 60, ' ')));
+        std::vector<std::string> graph = graph_values(_average_network_read_speed_minutes, _average_network_write_speed_minutes, 
+                                                      60, "Average Network Speed by Minute",
+                                                      "an hour ago", "now");
+        for (const std::string& line : graph)
+          ilog("${line}", (line));
+      }
+
+      if (!_average_network_read_speed_hours.empty())
+      {
+        ilog("${space}", ("space", std::string(formatted_network_speed_length + 2 + 60, ' ')));
+        std::vector<std::string> graph = graph_values(_average_network_read_speed_hours, _average_network_write_speed_hours,
+                                                      72, "Average Network Speed by Hour",
+                                                      "three days ago", "now");
+        for (const std::string& line : graph)
+          ilog("${line}", (line));
+      }
+
+      ilog("${space}", ("space", std::string(formatted_network_speed_length + 2 + 60, ' ')));
+      ilog("# = download, * = upload");
+
+      ilog( "--------- END NETWORK USAGE -----------" );
     }
 
     void node_impl::disconnect_from_peer(peer_connection* peer_to_disconnect,
