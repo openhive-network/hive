@@ -513,7 +513,7 @@ struct list_proposals_return
 
 struct find_proposals_args
 {
-  vector< api_id_type > proposal_ids;
+  vector< int64_t > proposal_ids;
 };
 
 typedef list_proposals_return find_proposals_return;

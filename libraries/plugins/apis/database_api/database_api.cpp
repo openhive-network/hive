@@ -1560,6 +1560,10 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 DEFINE_API_IMPL( database_api_impl, find_proposals )
 {
   FC_ASSERT( args.proposal_ids.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
+  {
+    FC_ASSERT( id >= 0, "The proposal id can't be negative" );
+  });
 
   find_proposals_return result;
   result.proposals.reserve( args.proposal_ids.size() );
@@ -1568,7 +1572,7 @@ DEFINE_API_IMPL( database_api_impl, find_proposals )
 
   std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
   {
-    auto po = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( id );
+    auto po = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( static_cast<api_id_type>( id ) );
     if( po != nullptr && !po->removed )
     {
       result.proposals.emplace_back( api_proposal_object( *po, currentTime ) );

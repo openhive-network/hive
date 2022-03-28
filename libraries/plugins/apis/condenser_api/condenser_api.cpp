@@ -1127,7 +1127,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    const auto& proposals = _database_api->find_proposals( { args[0].as< vector< hive::plugins::database_api::api_id_type > >() } ).proposals;
+    const auto& proposals = _database_api->find_proposals( { args[0].as< vector< int64_t > >() } ).proposals;
     find_proposals_return result;
 
     for( const auto& p : proposals ) result.emplace_back( api_proposal_object( p ) );

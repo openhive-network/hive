@@ -568,12 +568,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "Array of proposal ids is required as first argument" );
   const auto array_args = args.get_array()[0].get_array();
-  vector<database_api::api_id_type> ids;
+  vector<int64_t> ids;
   ids.reserve(array_args.size());
   for (const auto& arg : array_args)
   {
     FC_ASSERT( arg.is_numeric(), "ID proposal is required to be number" );
-    ids.push_back(arg.as<database_api::api_id_type>());
+    ids.push_back(arg.as<int64_t>());
   }
 
   return _database_api->find_proposals({ids});
