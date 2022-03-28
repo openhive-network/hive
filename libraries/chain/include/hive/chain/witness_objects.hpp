@@ -177,6 +177,7 @@ namespace hive { namespace chain {
       fc::uint128                                        current_virtual_time;
       uint32_t                                           next_shuffle_block_num = 1;
       fc::array< account_name_type, HIVE_MAX_WITNESSES > current_shuffled_witnesses;
+      fc::array< account_name_type, HIVE_MAX_WITNESSES > future_shuffled_witnesses;
       uint8_t                                            num_scheduled_witnesses = 1;
       uint8_t                                            elected_weight = 1;
       uint8_t                                            timeshare_weight = 5;
@@ -305,16 +306,15 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::witness_object, hive::chain::witness_inde
 FC_REFLECT( hive::chain::witness_vote_object, (id)(witness)(account) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::witness_vote_object, hive::chain::witness_vote_index )
 
-FC_REFLECT( hive::chain::witness_schedule_object,
-          (id)(current_virtual_time)(next_shuffle_block_num)(current_shuffled_witnesses)(num_scheduled_witnesses)
-          (elected_weight)(timeshare_weight)(miner_weight)(witness_pay_normalization_factor)
-          (median_props)(majority_version)
-          (max_voted_witnesses)
-          (max_miner_witnesses)
-          (max_runner_witnesses)
-          (hardfork_required_witnesses)
-          (account_subsidy_rd)
-          (account_subsidy_witness_rd)
-          (min_witness_account_subsidy_decay)
-        )
+FC_REFLECT(hive::chain::witness_schedule_object,
+           (id)(current_virtual_time)(next_shuffle_block_num)(current_shuffled_witnesses)(future_shuffled_witnesses)(num_scheduled_witnesses)
+           (elected_weight)(timeshare_weight)(miner_weight)(witness_pay_normalization_factor)
+           (median_props)(majority_version)
+           (max_voted_witnesses)
+           (max_miner_witnesses)
+           (max_runner_witnesses)
+           (hardfork_required_witnesses)
+           (account_subsidy_rd)
+           (account_subsidy_witness_rd)
+           (min_witness_account_subsidy_decay))
 CHAINBASE_SET_INDEX_TYPE( hive::chain::witness_schedule_object, hive::chain::witness_schedule_index )
