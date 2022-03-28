@@ -1585,10 +1585,15 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 {
   FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
-  auto get_proposal_id = [&](const fc::optional<api_id_type>& obj) -> api_id_type
+  auto get_proposal_id = [&](const fc::optional<int64_t>& obj) -> api_id_type
   {
-    if(obj.valid()) return *obj;
-    else return ( args.order_direction == ascending ? 0 : std::numeric_limits<api_id_type>::max());
+    if(obj.valid())
+    {
+      FC_ASSERT( *obj >= 0, "The proposal id can't be negative" );
+      return *obj;
+    }
+    else
+      return ( args.order_direction == ascending ? 0 : std::numeric_limits<api_id_type>::max());
   };
 
   auto get_account_name = [&](const fc::optional<account_name_type>& obj) -> account_name_type
@@ -1606,7 +1611,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   {
     case by_voter_proposal:
     {
-      auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<api_id_type> > >();
+      auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<int64_t> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
         boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ),
         result.proposal_votes,
@@ -1623,7 +1628,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     }
     case by_proposal_voter:
     {
-      auto key = args.start.as< std::pair< fc::optional<api_id_type>, fc::optional<account_name_type> > >();
+      auto key = args.start.as< std::pair< fc::optional<int64_t>, fc::optional<account_name_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
         boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ),
         result.proposal_votes,

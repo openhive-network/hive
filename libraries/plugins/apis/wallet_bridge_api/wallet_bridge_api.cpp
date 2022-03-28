@@ -598,9 +598,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposal_votes )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 5 );
   FC_ASSERT( arguments.get_array()[1].is_numeric(), "Limit is required as second argument" );
-  FC_ASSERT( arguments.get_array()[2].is_numeric(), "Order type is required as third argument" );
-  FC_ASSERT( arguments.get_array()[3].is_numeric(), "Order direction is required as first argument" );
-  FC_ASSERT( arguments.get_array()[4].is_numeric(), "Status is required as second argument" );
 
   database_api::list_proposal_votes_args api_lpv_args;
   api_lpv_args.start = arguments.get_array()[0];
