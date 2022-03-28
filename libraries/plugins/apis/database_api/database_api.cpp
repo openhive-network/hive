@@ -1585,6 +1585,19 @@ DEFINE_API_IMPL( database_api_impl, find_proposals )
 
 /* Proposal Votes */
 
+template<typename first_type, typename second_type>
+std::pair<fc::optional<first_type>, fc::optional<second_type>> create_pair( const fc::variant& v )
+{
+  try
+  {
+    return v.as< std::pair< fc::optional<first_type>, fc::optional<second_type> > >();
+  }
+  catch(...)
+  {
+    return std::pair< fc::optional<first_type>, fc::optional<second_type> >();
+  }
+}
+
 DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 {
   FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
@@ -1615,7 +1628,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   {
     case by_voter_proposal:
     {
-      auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<int64_t> > >();
+      auto key = create_pair<account_name_type, int64_t>( args.start );
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
         boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ),
         result.proposal_votes,
@@ -1632,7 +1645,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     }
     case by_proposal_voter:
     {
-      auto key = args.start.as< std::pair< fc::optional<int64_t>, fc::optional<account_name_type> > >();
+      auto key = create_pair<int64_t, account_name_type>( args.start );
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
         boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ),
         result.proposal_votes,
