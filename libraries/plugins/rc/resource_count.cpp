@@ -4,9 +4,144 @@
 
 #include <hive/protocol/operations.hpp>
 
+#include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
+#include <hive/chain/witness_objects.hpp>
+
 namespace hive { namespace plugins { namespace rc {
 
 using namespace hive::protocol;
+using namespace hive::chain;
+
+struct count_differential_operation_visitor
+{
+  typedef bool result_type; //returns if differential usage applies for given operation
+
+  mutable int64_t state_bytes_count = 0;
+
+  const state_object_size_info& _w;
+  const database& _db;
+
+  count_differential_operation_visitor( const state_object_size_info& w, const database& db )
+    : _w( w ), _db( db )
+  {}
+
+  int64_t get_authority_dynamic_size( const shared_authority& auth )const
+  {
+    int64_t size = _w.authority_account_member_size * auth.account_auths.size()
+      + _w.authority_key_member_size * auth.key_auths.size();
+    return size;
+  }
+
+  bool operator()( const witness_update_operation& op )const
+  {
+    const auto* witness_ptr = _db.find< witness_object, by_name >( op.owner );
+    if( witness_ptr == nullptr )
+      return false;
+
+    state_bytes_count +=
+        _w.witness_update_base_size
+      + _w.witness_update_url_char_size * witness_ptr->url.size();
+    return true;
+  }
+
+  bool operator()( const account_update_operation& op )const
+  {
+    const auto* auth_ptr = _db.find< account_authority_object, by_account >( op.account );
+    if( auth_ptr == nullptr )
+      return false;
+
+    int64_t usage = 0;
+    if( op.owner )
+      usage += get_authority_dynamic_size( auth_ptr->owner );
+    if( op.active )
+      usage += get_authority_dynamic_size( auth_ptr->active );
+    if( op.posting )
+      usage += get_authority_dynamic_size( auth_ptr->posting );
+
+    //metadata not handled by differential usage because it could be a source of RC differences
+    //on different nodes, since its existence depends on COLLECT_ACCOUNT_METADATA
+    state_bytes_count += usage;
+    return usage != 0;
+  }
+
+  bool operator()( const account_update2_operation& op )const
+  {
+    const auto* auth_ptr = _db.find< account_authority_object, by_account >( op.account );
+    if( auth_ptr == nullptr )
+      return false;
+
+    int64_t usage = 0;
+    if( op.owner )
+      usage += get_authority_dynamic_size( auth_ptr->owner );
+    if( op.active )
+      usage += get_authority_dynamic_size( auth_ptr->active );
+    if( op.posting )
+      usage += get_authority_dynamic_size( auth_ptr->posting );
+
+    //metadata not handled by differential usage because it could be a source of RC differences
+    //on different nodes, since its existence depends on COLLECT_ACCOUNT_METADATA
+    state_bytes_count += usage;
+    return usage != 0;
+  }
+
+  bool operator()( const recover_account_operation& op ) const
+  {
+    const auto* auth_ptr = _db.find< account_authority_object, by_account >( op.account_to_recover );
+    if( auth_ptr == nullptr )
+      return false;
+
+    //if transaction qualifies for subsidy old state usage will be ignored
+    state_bytes_count += get_authority_dynamic_size( auth_ptr->owner );
+    return true;
+  }
+
+  // All other operations that don't need differential usage calculation
+  bool operator()( const base_operation& ) const { return false; }
+};
+
+typedef count_differential_operation_visitor count_differential_optional_action_visitor;
+
+bool prepare_differential_usage( const operation& op, const database& db, count_resources_result& result )
+{
+  //call before each operation is applied to state to compute resource usage prior to change;
+  //the idea is that RC usage for some operations can't be properly evaluated from the operation alone,
+  //f.e. when account_update_operation changes some authority we can only calculate full state usage of
+  //new authority from operation, but that makes it exceptionally expensive since that state is
+  //persistent; that cost is unreasonable since in most cases users just swap one key for another
+  //which does not actually allocate more state; therefore in such cases we first calculate how much
+  //state that is going to change is used before operation and pass such value as negative initial
+  //usage (value becomes negative when accumulated with call to rc_pending_data::add_differential_usage),
+  //so when new usage is calculated, it actually calculates differential usage;
+  //there needs to be a safety check to prevent final usage from becoming negative, however it is
+  //ok when usage for one operation goes negative and it "subsidizes" another operation (f.e. when
+  //account_update_operation reduces state usage into negative and as a result vest delegation
+  //in the same transaction has its state usage for free);
+  //important notice: differential usage is per transaction (compared to pending usage that is per block)
+  //therefore it needs to be reset in pre-apply transaction, however it needs to be called in pre-apply
+  //operation, not pre-apply transaction, because there can be some interactions between operations inside
+  //single valid transaction that make calculation of differential usage possible, f.e.: transaction
+  //first creates account, then sets up complex authorization for it with account update - if we tried
+  //differential usage before whole transaction, the affected account would not even exist yet, but
+  //when we do it just before each operation then account update will already see correct state
+
+  static const state_object_size_info size_info;
+  count_differential_operation_visitor vtor( size_info, db );
+
+  bool nonempty = op.visit( vtor );
+  result[ resource_state_bytes ] += vtor.state_bytes_count;
+  return nonempty;
+}
+
+bool prepare_differential_usage( const optional_automated_action& action, const database& db, count_resources_result& result )
+{
+  static const state_object_size_info size_info;
+  count_differential_optional_action_visitor vtor( size_info, db );
+
+  bool nonempty = action.visit( vtor );
+  result[ resource_state_bytes ] += vtor.state_bytes_count;
+  return nonempty;
+}
 
 struct count_operation_visitor
 {
@@ -28,6 +163,7 @@ struct count_operation_visitor
 
   int64_t get_authority_dynamic_size( const authority& auth )const
   {
+    //NOTE: similar code with shared_authority in count_differential_operation_visitor
     int64_t size = _w.authority_account_member_size * auth.account_auths.size()
       + _w.authority_key_member_size * auth.key_auths.size();
     return size;
@@ -173,7 +309,7 @@ struct count_operation_visitor
 
   void operator()( const witness_update_operation& op )const
   {
-    //TODO: compute differential cost
+    //NOTE: differential usage (see count_differential_operation_visitor)
     state_bytes_count +=
         _w.witness_update_base_size
       + _w.witness_update_url_char_size * op.url.size();
@@ -222,7 +358,7 @@ struct count_operation_visitor
 
   void operator()( const account_update_operation& op )const
   {
-    //TODO: compute differential cost
+    //NOTE: differential usage (see count_differential_operation_visitor)
     if( op.owner )
       state_bytes_count += get_authority_dynamic_size( *op.owner ) + _w.owner_authority_history_object_size;
     if( op.active )
@@ -235,7 +371,7 @@ struct count_operation_visitor
 
   void operator()( const account_update2_operation& op )const
   {
-    //TODO: compute differential cost
+    //NOTE: differential usage (see count_differential_operation_visitor)
     if( op.owner )
       state_bytes_count += get_authority_dynamic_size( *op.owner ) + _w.owner_authority_history_object_size;
     if( op.active )
@@ -393,7 +529,8 @@ struct count_operation_visitor
 
   void operator()( const update_proposal_votes_operation& op ) const
   {
-    //TODO: compute differential cost (?)
+    //NOTE: we could compute differential usage (by collecting usage for votes that already exist)
+    //but not doing so promotes better practice of not reapproving existing votes (since it is no-op)
     if( op.approve )
       state_bytes_count += _w.update_proposal_votes_member_size * op.proposal_ids.size();
     execution_time_count += _e.update_proposal_votes_time;
@@ -424,7 +561,7 @@ struct count_operation_visitor
     //new multisig is also not allowed
 
     //cost still calculated for case when it is not subsidized
-    //TODO: compute differential cost
+    //NOTE: differential usage (see count_differential_operation_visitor)
     state_bytes_count += get_authority_dynamic_size( op.new_owner_authority ) + _w.owner_authority_history_object_size;
     execution_time_count += _e.recover_account_time;
   }
