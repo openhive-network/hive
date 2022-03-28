@@ -514,14 +514,17 @@ void count_resources(
   const int64_t action_size = int64_t( size );
   count_optional_action_visitor vtor( size_info, exec_info, now );
 
+  action.visit( vtor );
+
   //subsidized operations not expected (but even if they were, we won't subsidize them here, at least for now)
 
   result[ resource_history_bytes ] += action_size;
 
-  action.visit( vtor );
-
   // Not expecting actions to create accounts, but better to add it for completeness
   result[ resource_new_accounts ] += vtor.new_account_op_count;
+
+  if( vtor.market_op_count > 0 )
+    result[ resource_market_bytes ] += action_size;
 
   result[ resource_state_bytes ] += vtor.state_bytes_count;
 
