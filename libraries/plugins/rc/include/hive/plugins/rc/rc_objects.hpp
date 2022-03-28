@@ -142,7 +142,19 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
   public:
     template< typename Allocator >
     rc_pending_data( allocator< Allocator > a, uint64_t _id )
-      : id( _id ), tx_count( 0 ) {}
+      : id( _id ) {}
+
+    //resets usage counters for selected existing state - should be called in pre-apply transaction
+    void reset_differential_usage()
+    {
+      differential_usage = {};
+    }
+    //accumulates differential RC usage ("negative" usage of selected state that will soon be modified)
+    void add_differential_usage( const resource_count_type& usage )
+    {
+      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+        differential_usage[i] -= usage[i];
+    }
 
     //resets pending usage and cost counters - should be called in pre-apply block
     void reset_pending_usage()
@@ -162,6 +174,9 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
       }
     }
 
+    //(negative) usage counters for selected existing state since last reset
+    const resource_count_type& get_differential_usage() const { return differential_usage; }
+
     //number of transactions/automated actions included in pending usage/cost
     uint32_t get_tx_count() const { return tx_count; }
     //usage counters since last reset
@@ -170,9 +185,15 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
     const resource_cost_type& get_pending_cost() const { return pending_cost; }
 
   private:
-    uint32_t tx_count;
-    resource_count_type pending_usage; //resources consumed by last transactions (since reset in pre-apply block)
-    resource_cost_type pending_cost; //cost of resources accumulated in pending_usage (for logging purposes)
+    //number of transactions since last reset in pre-apply block (paired with pending_usage/pending_cost)
+    uint32_t tx_count = 0;
+    //resources consumed by last transactions
+    resource_count_type pending_usage;
+    //cost of resources accumulated in pending_usage (for logging purposes)
+    resource_cost_type pending_cost;
+
+    //negative value of resources used by selected existing state before transaction is applied (since reset in pre-apply transaction)
+    resource_count_type differential_usage; //see prepare_differential_usage routine for detailed description
 
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_pending_data );
 };
@@ -348,6 +369,7 @@ FC_REFLECT( hive::plugins::rc::rc_pending_data,
   (tx_count)
   (pending_usage)
   (pending_cost)
+  (differential_usage)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pending_data, hive::plugins::rc::rc_pending_data_index )
 
