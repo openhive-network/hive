@@ -574,7 +574,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
   vector<database_api::api_id_type> ids;
   ids.reserve(array_args.size());
   for (const auto& arg : array_args)
+  {
+    FC_ASSERT( arg.is_numeric(), "ID proposal is required to be number" );
     ids.push_back(arg.as<database_api::api_id_type>());
+  }
 
   return _database_api->find_proposals({ids});
 }
