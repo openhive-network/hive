@@ -42,6 +42,16 @@ class Float(Schema):
         return {'type': 'number'}
 
 
+class Int(Schema):
+    def _create_core_of_schema(self) -> [str, Any]:
+        return {
+            'anyOf': [
+                {'type': 'integer'},
+                {'type': 'string', 'pattern': r'^-?\d+$'},
+            ]
+        }
+
+
 class Null(Schema):
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'null'}

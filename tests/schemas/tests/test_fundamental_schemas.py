@@ -18,6 +18,12 @@ from schemas.predefined import *
         (Float(), 3.141593),
         (Float(), 128),  # Ints are also floats
 
+        # Int
+        (Int(), 1),
+        (Int(), '1'),  # Ints can also be saved as string
+        (Int(), -1),
+        (Int(), '-1'),
+
         # Map
         (Map({}), {}),
         (
@@ -117,6 +123,11 @@ def test_validation_of_correct_type(schema, instance):
         (Float(), None),
         (Float(), True),
         (Float(), '3.141593'),
+
+        # Int
+        (Int(), True),
+        (Int(), 3.141593),
+        (Int(), 'example-string'),
 
         # Map
         (Map({}), 5),
