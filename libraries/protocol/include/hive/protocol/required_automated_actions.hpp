@@ -7,6 +7,9 @@
 namespace hive { namespace protocol {
 
   /** NOTE: do not change the order of any actions or it will trigger a hardfork.
+    * If you ever try to add actual action you'll need to look in code of various
+    * plugins (f.e. RC), because now they don't even observe notifications for those
+    * (and even if they do, they obviously were not tested properly)
     */
   typedef fc::static_variant<
 #ifdef IS_TEST_NET
