@@ -138,7 +138,7 @@ void update_median_witness_props( database& db )
   } );
 }
 
-void update_witness_schedule4( database& db )
+void update_witness_schedule4( database& db, fc::array<account_name_type, HIVE_MAX_WITNESSES> witness_schedule_object::*shuffled_witnesses )
 {
   const witness_schedule_object& wso = db.get_witness_schedule_object();
   vector< account_name_type > active_witnesses;
@@ -345,12 +345,12 @@ void update_witness_schedule4( database& db )
   {
     for( size_t i = 0; i < active_witnesses.size(); i++ )
     {
-      _wso.current_shuffled_witnesses[i] = active_witnesses[i];
+      (_wso.*shuffled_witnesses)[i] = active_witnesses[i];
     }
 
     for( size_t i = active_witnesses.size(); i < HIVE_MAX_WITNESSES; i++ )
     {
-      _wso.current_shuffled_witnesses[i] = account_name_type();
+      (_wso.*shuffled_witnesses)[i] = account_name_type();
     }
 
     _wso.num_scheduled_witnesses = std::max< uint8_t >( active_witnesses.size(), 1 );
@@ -373,8 +373,8 @@ void update_witness_schedule4( database& db )
 
       uint32_t jmax = _wso.num_scheduled_witnesses - i;
       uint32_t j = i + k%jmax;
-      std::swap( _wso.current_shuffled_witnesses[i],
-              _wso.current_shuffled_witnesses[j] );
+      std::swap((_wso.*shuffled_witnesses)[i],
+                (_wso.*shuffled_witnesses)[j]);
     }
 
     _wso.current_virtual_time = new_virtual_time;
@@ -396,7 +396,36 @@ void update_witness_schedule(database& db)
   {
     if( db.has_hardfork(HIVE_HARDFORK_0_4) )
     {
-      update_witness_schedule4(db);
+      if (db.has_hardfork(HIVE_HARDFORK_1_27))
+      {
+        // there are two cases: if this is the first time we've run after the hardfork, `future_shuffled_witnesses` will
+        // be empty.  We should first compute the new `current_shuffled_witnesses`, then run again to fill the
+        // `future_scheduled_witnesses`.
+        //
+        // every time after that, `future_shuffled_witnesses` will already the next HIVE_MAX_WITNESSES ready,
+        // so we should swap that into `current_shuffled_witnesses` and then compute the new set into 
+        // `future_shuffled_witnesses`
+        const witness_schedule_object& wso = db.get_witness_schedule_object();
+        // hope future_shuffled_witnesses is intialized to an array of empty strings before the hard fork
+        if (wso.future_shuffled_witnesses[0].length())
+        {
+          // the normal case, promote future witnesses to current
+          db.modify(wso, [&](witness_schedule_object& witness_schedule)
+          {
+            witness_schedule.current_shuffled_witnesses = witness_schedule.future_shuffled_witnesses;
+            // for (unsigned i = 0; i < witness_schedule.future_shuffled_witnesses.size(); ++i)
+            //   witness_schedule.current_shuffled_witnesses[i] = witness_schedule.future_shuffled_witnesses[i];
+          });
+        }
+        else
+        {
+          // first call after hard fork
+          update_witness_schedule4(db, &witness_schedule_object::current_shuffled_witnesses);
+        }
+        update_witness_schedule4(db, &witness_schedule_object::future_shuffled_witnesses);
+        return;
+      }
+      update_witness_schedule4(db, &witness_schedule_object::current_shuffled_witnesses);
       return;
     }
 
