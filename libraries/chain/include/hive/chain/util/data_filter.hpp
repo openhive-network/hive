@@ -5,6 +5,8 @@
 
 #include <hive/utilities/plugin_utilities.hpp>
 
+#include <hive/chain/util/operation_extractor.hpp>
+
 #include <boost/container/flat_map.hpp>
 #include <boost/program_options.hpp>
 
@@ -48,8 +50,15 @@ class account_filter: public data_filter
 
 struct operation_helper
 {
-  static bool create( const string& name, operation& op );
-  static string get_op_name( const operation& op );
+  private:
+
+    const type_extractor::operation_extractor& op_extractor;
+
+  public:
+
+    operation_helper( const type_extractor::operation_extractor& _op_extractor );
+    bool create( const string& name, operation& op ) const;
+    string get_op_name( const operation& op ) const;
 };
 
 class operation_filter: public data_filter
@@ -62,9 +71,11 @@ class operation_filter: public data_filter
 
     operations tracked_operations;
 
+    const operation_helper& op_helper;
+
   public:
 
-    operation_filter( const string& _filter_name );
+    operation_filter( const string& _filter_name, const operation_helper& _op_helper );
 
     bool empty() const;
     bool is_tracked_operation( const operation& op ) const;
@@ -82,9 +93,11 @@ class operation_body_filter: public data_filter
 
     body_filters_items body_filters;
 
+    const operation_helper& op_helper;
+
   public:
 
-    operation_body_filter( const string& _filter_name );
+    operation_body_filter( const string& _filter_name, const operation_helper& _op_helper );
 
     bool empty() const;
     bool is_tracked_operation( const operation& op ) const;
