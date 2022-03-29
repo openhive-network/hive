@@ -151,10 +151,19 @@ def test_list_proposals_with_incorrect_values(node, accounts, wallet, start, lim
 @pytest.mark.parametrize(
     'start, limit, order_by_list_proposal_votes, order_direction, status', [
         # START
+            # by_voter_proposal
+        ("[]", 100, 'by_voter_proposal', 'ascending', 'all'),
         ("[accounts[1]]", 100, 'by_voter_proposal', 'ascending', 'all'),
-        # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
+        # # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
         ("['account-2a']", 100, 'by_voter_proposal', 'ascending', 'all'),
+        ("[accounts[1], 3]", 100, 'by_voter_proposal', 'ascending', 'all'),
+        ("[accounts[1], 3, 'additional_argument']", 100, 'by_voter_proposal', 'ascending', 'all'),
+
+            # by proposal voter
+        ("[]", 100, 'by_proposal_voter', 'ascending', 'all'),
         ("[3]", 100, 'by_proposal_voter', 'ascending', 'all'),
+        ("[3, accounts[1]]", 100, 'by_proposal_voter', 'ascending', 'all'),
+        ("[3, accounts[1], 'additional_argument']", 100, 'by_proposal_voter', 'ascending', 'all'),
 
         # LIMIT
         ("['']", 0, 'by_voter_proposal', 'ascending', 'all'),
