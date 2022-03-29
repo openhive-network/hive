@@ -21,129 +21,128 @@ from test_tools import Asset
 
 6. Problem with calling wallet_bridge_api.find_proposals with the wrong data types in the arguments(# BUG6)
 """
+ACCOUNTS = [f'account-{i}' for i in range(5)]
 
-@pytest.fixture
-def order_by_list_proposals(request):
-    return {
-        'by_creator': 29,
-        'by_start_date': 30,
-        'by_end_date': 31
-    }.get(request.param, request.param)
+ORDER_BY_LIST_PROPOSALS = {
+    'by_creator': 29,
+    'by_start_date': 30,
+    'by_end_date': 31
+}
 
+ORDER_BY_LIST_PROPOSAL_VOTES = {
+    'by_voter_proposal': 33,
+    'by_proposal_voter': 34,
+}
 
-@pytest.fixture
-def order_by_list_proposal_votes(request):
-    return {
-        'by_voter_proposal': 33,
-        'by_proposal_voter': 34,
-    }.get(request.param, request.param)
+ORDER_DIRECTION = {
+    'ascending': 0,
+    'descending': 1
+}
 
-
-@pytest.fixture
-def order_direction(request):
-    return {
-        'ascending': 0,
-        'descending': 1
-    }.get(request.param, request.param)
-
-
-@pytest.fixture
-def status(request):
-    return {
-        'all': 0,
-        'inactive': 1,
-        'active': 2,
-        'expired': 3,
-        'votable': 4
-    }.get(request.param, request.param)
+STATUS = {
+    'all': 0,
+    'inactive': 1,
+    'active': 2,
+    'expired': 3,
+    'votable': 4
+}
 
 
-@pytest.fixture
-def accounts(wallet):
-    return create_accounts_with_vests_and_tbd(wallet, 5)
-
-
-@pytest.fixture
-def start(accounts, request):
-    return eval(request.param)
+def date_from_now(*, weeks):
+    future_data = datetime.now() + timedelta(weeks=weeks)
+    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 @pytest.mark.parametrize(
     'start, limit, order_by_list_proposals, order_direction, status', [
         # START
-            # by creator
-        ("[]", 100, 'by_creator', 'ascending', 'all'),
-        ("[accounts[1]]", 100, 'by_creator', 'ascending', 'all'),
+        # by creator
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1]], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
-        ("['account-2a']", 100, 'by_creator', 'ascending', 'all'),
-        ("[accounts[1], date_from_now(weeks=20)]", 100, 'by_creator', 'ascending', 'all'),
-        ("[accounts[1], date_from_now(weeks=25)]", 100, 'by_creator', 'ascending', 'all'),
-        ("[accounts[1], date_from_now(weeks=20), date_from_now(weeks=25)]", 100, 'by_creator', 'ascending', 'all'),
-        ("[accounts[1], date_from_now(weeks=20), date_from_now(weeks=25), 'additional_argument']", 100, 'by_creator', 'ascending', 'all'),
+        (['account-2a'], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1], date_from_now(weeks=20)], 100, ORDER_BY_LIST_PROPOSALS['by_creator'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1], date_from_now(weeks=25)], 100, ORDER_BY_LIST_PROPOSALS['by_creator'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1], date_from_now(weeks=20), date_from_now(weeks=25)], 100, ORDER_BY_LIST_PROPOSALS['by_creator'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1], date_from_now(weeks=20), date_from_now(weeks=25), 'additional_argument'], 100,
+         ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # by start date
-        ("[]", 100, 'by_start_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=20)]", 100, 'by_start_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=20), date_from_now(weeks=25)]", 100, 'by_start_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=20), accounts[1]]", 100, 'by_start_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=20), accounts[1], date_from_now(weeks=25)]", 100, 'by_start_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=20), accounts[1], date_from_now(weeks=25), 'additional_argument']", 100, 'by_start_date', 'ascending', 'all'),
+        ([], 100, 'by_start_date', 'ascending', 'all'),
+        ([date_from_now(weeks=20)], 100, ORDER_BY_LIST_PROPOSALS['by_start_date'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+        ([date_from_now(weeks=20), date_from_now(weeks=25)], 100, ORDER_BY_LIST_PROPOSALS['by_start_date'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=20), ACCOUNTS[1]], 100, ORDER_BY_LIST_PROPOSALS['by_start_date'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=20), ACCOUNTS[1], date_from_now(weeks=25)], 100, ORDER_BY_LIST_PROPOSALS['by_start_date'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=20), ACCOUNTS[1], date_from_now(weeks=25), 'additional_argument'], 100,
+         ORDER_BY_LIST_PROPOSALS['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # by end date
-        ("[]", 100, 'by_end_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=25)]", 100, 'by_end_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=25), date_from_now(weeks=20)]", 100, 'by_end_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=25), accounts[1]]", 100, 'by_end_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=25), accounts[1], date_from_now(weeks=25)]", 100, 'by_end_date', 'ascending', 'all'),
-        ("[date_from_now(weeks=25), accounts[1], date_from_now(weeks=25), 'additional_argument']", 100, 'by_end_date', 'ascending', 'all'),
+        ([], 100, ORDER_BY_LIST_PROPOSALS['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=25)], 100, ORDER_BY_LIST_PROPOSALS['by_end_date'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+        ([date_from_now(weeks=25), date_from_now(weeks=20)], 100, ORDER_BY_LIST_PROPOSALS['by_end_date'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=25), ACCOUNTS[1]], 100, ORDER_BY_LIST_PROPOSALS['by_end_date'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=25), ACCOUNTS[1], date_from_now(weeks=25)], 100, ORDER_BY_LIST_PROPOSALS['by_end_date'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([date_from_now(weeks=25), ACCOUNTS[1], date_from_now(weeks=25), 'additional_argument'], 100,
+         ORDER_BY_LIST_PROPOSALS['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
-        ("['']", 0, 'by_creator', 'ascending', 'all'),
-        ("['']", 1000, 'by_creator', 'ascending', 'all'),
+        ([''], 0, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1000, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
-        ("['']", 100, 'by_creator', 'ascending', 'all'),
-        ("['']", 100, 'by_end_date', 'ascending', 'all'),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER DIRECTION
-        ("['']", 100, 'by_creator', 'ascending', 'all'),
-        ("['']", 100, 'by_creator', 'descending', 'all'),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['descending'], STATUS['all']),
 
         # STATUS
-        ("['']", 100, 'by_creator', 'ascending', 'all'),
-        ("['']", 100, 'by_creator', 'ascending', 'votable'),
-    ],
-    indirect=['start', 'order_by_list_proposals', 'order_direction', 'status']
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['votable']),
+    ]
 )
-def test_list_proposals_with_correct_values(node, accounts, wallet, start, limit, order_by_list_proposals,
+def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by_list_proposals,
                                             order_direction, status):
-    prepare_proposals(wallet, accounts)
+    create_accounts_with_vests_and_tbd(wallet, len(ACCOUNTS))
+    prepare_proposals(wallet, ACCOUNTS)
     node.api.wallet_bridge.list_proposals(start, limit, order_by_list_proposals, order_direction, status)
 
 
 @pytest.mark.parametrize(
     'start, limit, order_by_list_proposals, order_direction, status', [
         # LIMIT
-        ("['']", -1, 'by_creator', 'ascending', 'all'),
-        ("['']", 1001, 'by_creator', 'ascending', 'all'),
+        ([''], -1, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1001, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
-        ("['']", 100, 28, 'ascending', 'all'),
-        ("['']", 100, 32, 'ascending', 'all'),
+        ([''], 100, 28, ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, 32, ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER DIRECTION
-        ("['']", 100, 'by_creator', -1, 'all'),
-        ("['']", 100, 'by_creator', 2, 'all'),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], -1, STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], 2, STATUS['all']),
 
         # STATUS
-        ("['']", 100, 'by_creator', 'ascending', -1),
-        ("['']", 100, 'by_creator', 'ascending', 5),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], -1),
+        ([''], 100, ORDER_BY_LIST_PROPOSALS['by_creator'], ORDER_DIRECTION['ascending'], 5),
     ],
-    indirect=['start', 'order_by_list_proposals', 'order_direction', 'status']
 )
-def test_list_proposals_with_incorrect_values(node, accounts, wallet, start, limit, order_by_list_proposals,
+def test_list_proposals_with_incorrect_values(node, wallet, start, limit, order_by_list_proposals,
                                               order_direction, status):
-    prepare_proposals(wallet, accounts)
+    create_accounts_with_vests_and_tbd(wallet, len(ACCOUNTS))
+    prepare_proposals(wallet, ACCOUNTS)
     with pytest.raises(test_tools.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by_list_proposals, order_direction, status)
 
@@ -151,44 +150,50 @@ def test_list_proposals_with_incorrect_values(node, accounts, wallet, start, lim
 @pytest.mark.parametrize(
     'start, limit, order_by_list_proposal_votes, order_direction, status', [
         # START
-            # by_voter_proposal
-        ("[]", 100, 'by_voter_proposal', 'ascending', 'all'),
-        ("[accounts[1]]", 100, 'by_voter_proposal', 'ascending', 'all'),
+        # by_voter_proposal
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1]], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
         # # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
-        ("['account-2a']", 100, 'by_voter_proposal', 'ascending', 'all'),
-        ("[accounts[1], 3]", 100, 'by_voter_proposal', 'ascending', 'all'),
-        ("[accounts[1], 3, 'additional_argument']", 100, 'by_voter_proposal', 'ascending', 'all'),
+        (['account-2a'], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+        ([ACCOUNTS[1], 3], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+        ([ACCOUNTS[1], 3, 'additional_argument'], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
 
-            # by proposal voter
-        ("[]", 100, 'by_proposal_voter', 'ascending', 'all'),
-        ("[3]", 100, 'by_proposal_voter', 'ascending', 'all'),
-        ("[3, accounts[1]]", 100, 'by_proposal_voter', 'ascending', 'all'),
-        ("[3, accounts[1], 'additional_argument']", 100, 'by_proposal_voter', 'ascending', 'all'),
+        # by proposal voter
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([3], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([3, ACCOUNTS[1]], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+        ([3, ACCOUNTS[1], 'additional_argument'], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'],
+         ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
-        ("['']", 0, 'by_voter_proposal', 'ascending', 'all'),
-        ("['']", 1000, 'by_voter_proposal', 'ascending', 'all'),
+        ([''], 0, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1000, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
-        ("['']", 100, 'by_voter_proposal', 'ascending', 'all'),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
         # BUG with order type ('by_proposal_voter')
-        # ("['']", 100, 'by_proposal_voter', 'ascending', 'all'), # BUG1
+        # ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),   # BUG1
 
         # ORDER DIRECTION
-        ("['']", 100, 'by_voter_proposal', 'ascending', 'all'),
-        ("['']", 100, 'by_voter_proposal', 'descending', 'all'),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['descending'], STATUS['all']),
 
         # STATUS
-        ("['']", 100, 'by_voter_proposal', 'ascending', 'all'),
-        ("['']", 100, 'by_voter_proposal', 'ascending', 'votable'),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['votable']),
     ],
-    indirect=['start', 'order_by_list_proposal_votes', 'order_direction', 'status']
 )
-def test_list_proposal_votes_with_correct_values(node, accounts, wallet, start, limit, order_by_list_proposal_votes,
+def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, order_by_list_proposal_votes,
                                                  order_direction, status):
-    prepare_proposals(wallet, accounts)
+    create_accounts_with_vests_and_tbd(wallet, len(ACCOUNTS))
+    prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
-        for account in accounts:
+        for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
 
     node.api.wallet_bridge.list_proposal_votes(start, limit, order_by_list_proposal_votes, order_direction, status)
@@ -197,54 +202,58 @@ def test_list_proposal_votes_with_correct_values(node, accounts, wallet, start, 
 @pytest.mark.parametrize(
     'start, limit, order_by_list_proposal_votes, order_direction, status', [
         # START
-        # ("[-2]", 100, 'by_proposal_voter', 'ascending', 'all'), # BUG2
+        # ([-2], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),  # BUG2
 
         # LIMIT
-        ("['']", -1, 'by_voter_proposal', 'ascending', 'all'),
-        ("['']", 1001, 'by_voter_proposal', 'ascending', 'all'),
+        ([''], -1, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1001, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
-        ("['']", 100, 32, 'ascending', 'all'),
-        ("['']", 100, 35, 'ascending', 'all'),
+        ([''], 100, 32, ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, 35, ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER DIRECTION
-        ("['']", 100, 'by_voter_proposal', -1, 'all'),
-        ("['']", 100, 'by_voter_proposal', 2, 'all'),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], -1, STATUS['all']),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], 2, STATUS['all']),
 
         # STATUS
-        ("['']", 100, 'by_voter_proposal', 'ascending', -1),
-        ("['']", 100, 'by_voter_proposal', 'ascending', 5),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], -1),
+        ([''], 100, ORDER_BY_LIST_PROPOSAL_VOTES['by_voter_proposal'], ORDER_DIRECTION['ascending'], 5),
     ],
-    indirect=['start', 'order_by_list_proposal_votes', 'order_direction', 'status']
 )
-def test_list_proposal_votes_with_incorrect_values(node, accounts, wallet, start, limit, order_by_list_proposal_votes,
-                                                   order_direction,
-                                                   status):
-    prepare_proposals(wallet, accounts)
+def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, order_by_list_proposal_votes,
+                                                   order_direction, status):
+    create_accounts_with_vests_and_tbd(wallet, len(ACCOUNTS))
+    prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
-        for account in accounts:
+        for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
 
     with pytest.raises(test_tools.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposal_votes(start, limit, order_by_list_proposal_votes, order_direction, status)
 
+@pytest.mark.parametrize(
+    'proposal_id', [
+        0,
+        (0, 1, 2, 3, 4),
+        6,
+    ]
+)
+def test_find_proposals_with_correct_values(node, wallet, proposal_id):
+    create_accounts_with_vests_and_tbd(wallet, len(ACCOUNTS))
+    prepare_proposals(wallet, ACCOUNTS)
 
-def test_find_proposals_with_correct_values(node, wallet):
-    accounts = create_accounts_with_vests_and_tbd(wallet, 5)
-    prepare_proposals(wallet, accounts)
-
-    node.api.wallet_bridge.find_proposals([0, 1, 2, 3, 4])
+    node.api.wallet_bridge.find_proposals([proposal_id])
 
 
 @pytest.mark.parametrize(
     'proposal_id', [
-        # -1,  # OUT OFF LIMITS: too low id (# BUG3)
-        # 6,  # OUT OFF LIMITS: too big id (proposal with this id does not exist) (# BUG3)
+        -1,  # OUT OFF LIMITS: too low id
     ]
 )
 def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
-    accounts = create_accounts_with_vests_and_tbd(wallet, 5)
-    prepare_proposals(wallet, accounts)
+    create_accounts_with_vests_and_tbd(wallet, len(ACCOUNTS))
+    prepare_proposals(wallet, ACCOUNTS)
 
     with pytest.raises(test_tools.exceptions.CommunicationError):
         node.api.wallet_bridge.find_proposals([proposal_id])
@@ -265,11 +274,11 @@ def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
         ([""], 100, 'invalid-argument', 0, 0),
         ([""], 100, True, 0, 0),
 
-        #ORDER DIRECTION
+        # ORDER DIRECTION
         ([""], 100, 29, 'invalid-argument', 0),
         # ([""], 100, 29, True, 0),  # BUG4
 
-        #STATUS
+        # STATUS
         ([""], 100, 29, 0, 'invalid-argument'),
         # ([""], 100, 29, 0, True),  # BUG4
     ]
@@ -320,16 +329,14 @@ def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):
 
 
 def create_accounts_with_vests_and_tbd(wallet, number_of_accounts):
-    accounts = get_accounts_name(wallet.create_accounts(number_of_accounts, 'account'))
+    wallet.create_accounts(number_of_accounts)
     with wallet.in_single_transaction():
-        for account in accounts:
+        for account in ACCOUNTS:
             wallet.api.transfer_to_vesting('initminer', account, Asset.Test(10000))
 
     with wallet.in_single_transaction():
-        for account in accounts:
+        for account in ACCOUNTS:
             wallet.api.transfer('initminer', account, Asset.Tbd(10000), 'memo')
-
-    return accounts
 
 
 def prepare_proposals(wallet, accounts):
@@ -350,8 +357,3 @@ def prepare_proposals(wallet, accounts):
 
 def get_accounts_name(accounts):
     return [account.name for account in accounts]
-
-
-def date_from_now(*, weeks):
-    future_data = datetime.now() + timedelta(weeks=weeks)
-    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
