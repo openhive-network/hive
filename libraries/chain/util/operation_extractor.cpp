@@ -1,6 +1,8 @@
 #include <hive/chain/util/operation_extractor.hpp>
 #include <hive/chain/util/type_extractor_processor.hpp>
 
+#include <fc/reflect/typename.hpp>
+
 #include <boost/type_index.hpp>
 
 namespace type_extractor
@@ -13,8 +15,12 @@ namespace type_extractor
     template <typename T, typename SV>
     void operator()(boost::type<boost::tuple<T, SV>> t) const
     {
-      //TODO: process of `operations_ids`
-      operations_details[ operations_details.size() ] = std::pair<string, bool>(boost::typeindex::type_id<T>().pretty_name(), T{}.is_virtual());
+      auto _name        = boost::typeindex::type_id<T>().pretty_name();
+      auto _short_name  = fc::trim_typename_namespace( _name );
+      int64_t _idx      = static_cast<int64_t>( operations_details.size() );
+
+      operations_ids[ _short_name ] = _idx;
+      operations_details[ _idx ]    = std::pair<string, bool>( _name, T{}.is_virtual() );
     }
   };
 
