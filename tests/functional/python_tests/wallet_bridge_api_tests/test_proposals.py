@@ -71,11 +71,31 @@ def start(accounts, request):
 @pytest.mark.parametrize(
     'start, limit, order_by_list_proposals, order_direction, status', [
         # START
+            # by creator
+        ("[]", 100, 'by_creator', 'ascending', 'all'),
         ("[accounts[1]]", 100, 'by_creator', 'ascending', 'all'),
         # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
         ("['account-2a']", 100, 'by_creator', 'ascending', 'all'),
+        ("[accounts[1], date_from_now(weeks=20)]", 100, 'by_creator', 'ascending', 'all'),
+        ("[accounts[1], date_from_now(weeks=25)]", 100, 'by_creator', 'ascending', 'all'),
+        ("[accounts[1], date_from_now(weeks=20), date_from_now(weeks=25)]", 100, 'by_creator', 'ascending', 'all'),
+        ("[accounts[1], date_from_now(weeks=20), date_from_now(weeks=25), 'additional_argument']", 100, 'by_creator', 'ascending', 'all'),
+
+        # by start date
+        ("[]", 100, 'by_start_date', 'ascending', 'all'),
         ("[date_from_now(weeks=20)]", 100, 'by_start_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=20), date_from_now(weeks=25)]", 100, 'by_start_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=20), accounts[1]]", 100, 'by_start_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=20), accounts[1], date_from_now(weeks=25)]", 100, 'by_start_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=20), accounts[1], date_from_now(weeks=25), 'additional_argument']", 100, 'by_start_date', 'ascending', 'all'),
+
+        # by end date
+        ("[]", 100, 'by_end_date', 'ascending', 'all'),
         ("[date_from_now(weeks=25)]", 100, 'by_end_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=25), date_from_now(weeks=20)]", 100, 'by_end_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=25), accounts[1]]", 100, 'by_end_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=25), accounts[1], date_from_now(weeks=25)]", 100, 'by_end_date', 'ascending', 'all'),
+        ("[date_from_now(weeks=25), accounts[1], date_from_now(weeks=25), 'additional_argument']", 100, 'by_end_date', 'ascending', 'all'),
 
         # LIMIT
         ("['']", 0, 'by_creator', 'ascending', 'all'),
