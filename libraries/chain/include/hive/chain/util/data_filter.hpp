@@ -22,8 +22,6 @@ class data_filter
 
     string filter_name;
 
-  public:
-  
     data_filter( const string& _filter_name );
 };
 
@@ -39,7 +37,7 @@ class account_filter: public data_filter
 
   public:
 
-    account_filter( const string& _filter_name );
+    explicit account_filter( const string& _filter_name );
 
     bool empty() const;
     const account_name_range_index& get_tracked_accounts() const;
