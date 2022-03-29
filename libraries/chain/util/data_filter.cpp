@@ -1,4 +1,4 @@
-#include <hive/utilities/data_filter.hpp>
+#include <hive/chain/util/data_filter.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/exception/exception.hpp>
@@ -86,13 +86,18 @@ void account_filter::fill( const boost::program_options::variables_map& options,
   HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
 }
 
-bool operation_helper::create( const std::string& name, operation& op )
+operation_helper::operation_helper( const type_extractor::operation_extractor& _op_extractor )
+                : op_extractor( _op_extractor )
 {
-  static std::map< string, int64_t > _ops = fc::prepare_variant_info<operation>();
+}
 
-  auto itr = _ops.find( name );
+bool operation_helper::create( const std::string& name, operation& op ) const
+{
+  const auto& _details = op_extractor.get_operation_ids();
 
-  if( itr != _ops.end() )
+  auto itr = _details.find( name );
+
+  if( itr != _details.end() )
   {
     int64_t which = itr->second;
     op.set_which( which );
@@ -103,7 +108,7 @@ bool operation_helper::create( const std::string& name, operation& op )
     return false;
 }
 
-string operation_helper::get_op_name( const operation& op )
+string operation_helper::get_op_name( const operation& op ) const
 {
   string _op_name;
   op.visit( fc::get_static_variant_name( _op_name ) );
@@ -111,7 +116,8 @@ string operation_helper::get_op_name( const operation& op )
   return _op_name;
 }
 
-operation_filter::operation_filter( const string& _filter_name ): data_filter( _filter_name )
+operation_filter::operation_filter( const string& _filter_name, const operation_helper& _op_helper )
+                : data_filter( _filter_name ), op_helper( _op_helper )
 {
 }
 
@@ -133,9 +139,9 @@ bool operation_filter::is_tracked_operation( const operation& op ) const
   DIAGNOSTIC
   (
     if( _result )
-      ilog("[${fn}] Operation: ${op} matched to defined operations", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
+      ilog("[${fn}] Operation: ${op} matched to defined operations", ("fn", filter_name)("op", op_helper.get_op_name( op )) );
     else
-      ilog("[${fn}] Operation: ${op} ignored due to defined tracking filters.", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
+      ilog("[${fn}] Operation: ${op} ignored due to defined tracking filters.", ("fn", filter_name)("op", op_helper.get_op_name( op )) );
   )
 
   return _result;
@@ -159,7 +165,7 @@ void operation_filter::fill( const boost::program_options::variables_map& option
     for( auto& item : _ops )
     {
       operation op;
-      if( operation_helper::create( item, op ) )
+      if( op_helper.create( item, op ) )
       {
         tracked_operations.emplace( op );
       }
@@ -167,7 +173,8 @@ void operation_filter::fill( const boost::program_options::variables_map& option
   }
 }
 
-operation_body_filter::operation_body_filter( const string& _filter_name ): data_filter( _filter_name )
+operation_body_filter::operation_body_filter( const string& _filter_name, const operation_helper& _op_helper )
+                      : data_filter( _filter_name ), op_helper( _op_helper )
 {
 }
 
@@ -227,9 +234,9 @@ bool operation_body_filter::is_tracked_operation( const operation& op ) const
   DIAGNOSTIC
   (
     if( _result )
-      ilog("[${fn}] Operation: ${op} matched to defined body operation filters", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
+      ilog("[${fn}] Operation: ${op} matched to defined body operation filters", ("fn", filter_name)("op", op_helper.get_op_name( op )) );
     else
-      ilog("[${fn}] Operation: ${op} ignored due to defined body operation filters.", ("fn", filter_name)("op", operation_helper::get_op_name( op )) );
+      ilog("[${fn}] Operation: ${op} ignored due to defined body operation filters.", ("fn", filter_name)("op", op_helper.get_op_name( op )) );
   )
 
   return _result;
@@ -247,7 +254,7 @@ void operation_body_filter::fill( const boost::program_options::variables_map& o
   for( auto& item : _items )
   {
     operation op;
-    if( operation_helper::create( item.first, op ) )
+    if( op_helper.create( item.first, op ) )
     {
       body_filters.emplace( std::make_pair( op, item.second ) );
     }

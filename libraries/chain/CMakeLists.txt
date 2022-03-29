@@ -35,6 +35,7 @@ add_library( hive_chain
              util/delayed_voting.cpp
              util/owner_update_limit_mgr.cpp
              util/operation_extractor.cpp
+             util/data_filter.cpp
 
              ${HEADERS}
            )

@@ -8,12 +8,12 @@
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/supplement_operations.hpp>
+#include <hive/chain/util/data_filter.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <hive/utilities/data_filter.hpp>
 
 #include <appbase/application.hpp>
 
