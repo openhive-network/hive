@@ -1,7 +1,7 @@
 # Base docker file having defined environment for build and run of HAF instance.
 # docker build --target=ci-base-image -t registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-xxx -f Dockerfile .
 # To be started from cloned haf source directory.
-ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive
+ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
 ARG CI_IMAGE_TAG=:ubuntu20.04-4 
 ARG BLOCK_LOG_SUFFIX
 
@@ -23,7 +23,7 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
 USER hived
 WORKDIR /home/hived
 
-FROM $CI_REGISTRY_IMAGE/runtime$CI_IMAGE_TAG AS ci-base-image
+FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG AS ci-base-image
 
 ENV LANG=en_US.UTF-8
 
@@ -38,13 +38,13 @@ USER hived
 WORKDIR /home/hived
 
 #docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
-FROM $CI_REGISTRY_IMAGE/ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
 
 RUN sudo -n mkdir -p /home/hived/datadir/blockchain && cd /home/hived/datadir/blockchain && \
   sudo -n wget -c https://gtg.openhive.network/get/blockchain/block_log.5M && \
     sudo -n mv block_log.5M block_log && sudo -n chown -Rc hived:hived /home/hived/datadir/
 
-FROM $CI_REGISTRY_IMAGE/ci-base-image$CI_IMAGE_TAG AS build
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
 ARG BRANCH=master
 ENV BRANCH=${BRANCH:-master}
 
@@ -77,7 +77,7 @@ RUN LOG_FILE=build.log source ./scripts/common.sh && do_clone "$BRANCH" ./hive h
   find . -name *.a  -type f -delete
 
 # Here we could use a smaller image without packages specific to build requirements
-FROM $CI_REGISTRY_IMAGE/ci-base-image$BLOCK_LOG_SUFFIX$CI_IMAGE_TAG as base_instance
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$BLOCK_LOG_SUFFIX$CI_IMAGE_TAG as base_instance
 
 ENV BUILD_IMAGE_TAG=${BUILD_IMAGE_TAG:-:ubuntu20.04-4}
 
@@ -109,7 +109,7 @@ STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
 
-FROM $CI_REGISTRY_IMAGE/base_instance$BLOCK_LOG_SUFFIX$BUILD_IMAGE_TAG as instance
+FROM ${CI_REGISTRY_IMAGE}base_instance$BLOCK_LOG_SUFFIX$BUILD_IMAGE_TAG as instance
 
 #p2p service
 EXPOSE ${P2P_PORT}
@@ -118,7 +118,7 @@ EXPOSE ${WS_PORT}
 # JSON rpc service
 EXPOSE ${HTTP_PORT}
 
-FROM $CI_REGISTRY_IMAGE/instance-5m$BUILD_IMAGE_TAG as data
+FROM ${CI_REGISTRY_IMAGE}instance-5m$BUILD_IMAGE_TAG as data
 
 ADD --chown=hived:hived ./docker/config_5M.ini /home/hived/datadir/config.ini
 

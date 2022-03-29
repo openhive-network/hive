@@ -1,0 +1,25 @@
+.docker_image_builder_job:
+  variables:
+    DOCKER_BUILDKIT: 1
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+  image: docker:20.10.10
+  services:
+    - docker:20.10.10-dind
+
+  before_script:
+    - apk update && apk add bash git ca-certificates curl
+
+.prepare_hived_data_5m_image:
+  extends: .docker_image_builder_job
+
+  variables:
+    SUBMODULE_DIR: "$CI_PROJECT_DIR"
+    SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
+  script:
+    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME"
+
+  artifacts:
+    reports:
+      dotenv: docker_image_name.env
+    expire_in: 6 hours
