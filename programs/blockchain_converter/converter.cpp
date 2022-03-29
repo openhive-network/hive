@@ -416,7 +416,10 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
   void blockchain_converter::sign_header( hp::signed_block_header& _signed_header )
   {
-    _signed_header.sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+    _signed_header.sign(
+      _signed_header.witness == HIVE_INIT_MINER_NAME ? HIVE_INIT_PRIVATE_KEY : _private_key,
+      has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
+    );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )

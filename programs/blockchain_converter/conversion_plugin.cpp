@@ -3,6 +3,7 @@
 #include <fc/optional.hpp>
 
 #include <hive/protocol/types.hpp>
+#include <hive/protocol/asset.hpp>
 #include <hive/protocol/authority.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
@@ -56,6 +57,7 @@ namespace hive { namespace converter { namespace plugins {
     // Change block signing key
     hp::witness_update_operation wop;
     wop.owner = HIVE_INIT_MINER_NAME;
+    wop.url = "https://hive.io/";
     wop.block_signing_key = converter.get_witness_key().get_public_key();
 
     // Create transaction
@@ -64,7 +66,11 @@ namespace hive { namespace converter { namespace plugins {
     trx.set_reference_block( block.previous );
     trx.operations.push_back( uop );
     trx.operations.push_back( wop );
-    converter.sign_transaction( trx );
+
+    trx.signatures.push_back( HIVE_INIT_PRIVATE_KEY.sign_compact(
+      trx.sig_digest( converter.get_chain_id() ),
+      fc::ecc::fc_canonical
+    ) );
 
     block.transactions.push_back( trx );
   }
