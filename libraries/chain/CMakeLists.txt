@@ -34,6 +34,7 @@ add_library( hive_chain
              util/sps_helper.cpp
              util/delayed_voting.cpp
              util/owner_update_limit_mgr.cpp
+             util/operation_extractor.cpp
 
              ${HEADERS}
            )
