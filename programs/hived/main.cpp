@@ -45,17 +45,18 @@ string& version_string()
 
 void info(const hive::protocol::chain_id_type& chainId)
   {
-#ifdef IS_TEST_NET
   std::cerr << "------------------------------------------------------\n\n";
-  std::cerr << "            STARTING TEST NETWORK\n\n";
+#ifdef USE_ALTERNATE_CHAIN_ID
+  std::cerr << "            STARTING "
+# ifdef IS_TEST_NET
+                            "TEST"
+# else
+                            "MIRROR"
+# endif
+                            " NETWORK\n\n";
   std::cerr << "------------------------------------------------------\n";
-  auto initminer_private_key = hive::utilities::key_to_wif(HIVE_INIT_PRIVATE_KEY);
-  std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
-  std::cerr << "initminer private key: " << initminer_private_key << "\n";
-  std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
-  std::cerr << "------------------------------------------------------\n";
+  std::cerr << "initminer private key: " << hive::utilities::key_to_wif(HIVE_INIT_PRIVATE_KEY) << "\n";
 #else
-  std::cerr << "------------------------------------------------------\n\n";
   std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
   std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
   std::cerr << "             %@@@@@@     @@@@@@    %@@@@@,            \n";
@@ -73,11 +74,11 @@ void info(const hive::protocol::chain_id_type& chainId)
   std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
   std::cerr << "                STARTING HIVE NETWORK\n\n";
   std::cerr << "------------------------------------------------------\n";
+#endif
   std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
   std::cerr << "chain id: " << std::string(chainId) << "\n";
   std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
   std::cerr << "------------------------------------------------------\n\n";
-#endif
 
   std::cerr << "hived git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n\n";
   }
