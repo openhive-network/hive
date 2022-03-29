@@ -2527,7 +2527,7 @@ namespace graphene { namespace net {
       {
         std::vector<item_hash_t> blockchain_synopsis = create_blockchain_synopsis_for_peer(peer);
         item_hash_t last_item_seen = blockchain_synopsis.empty() ? item_hash_t() : blockchain_synopsis.back();
-        dlog("sync: sending a request for the next items after ${last_item_seen} to peer ${peer}, (full request is ${blockchain_synopsis}",
+        dlog("sync: sending a request for the next items after ${last_item_seen} to peer ${peer}, (full request is ${blockchain_synopsis})",
              (last_item_seen)
              ("peer", peer->get_remote_endpoint())
              (blockchain_synopsis));
@@ -3185,9 +3185,9 @@ namespace graphene { namespace net {
       catch (const block_older_than_undo_history& e)
       {
         fc_wlog(fc::logger::get("p2p"), "Failed to push sync block #${block_number} ${block_id}: block is on a fork older than our undo history would allow us to switch to: ${e}",
-                (block_number) (block_id) ("e", (fc::exception)e));
+                (block_number)(block_id)("e", (fc::exception)e));
         wlog("Failed to push sync block #${block_number} ${block_id}): block is on a fork older than our undo history would allow us to switch to.",
-             (block_number) (block_id));
+             (block_number)(block_id));
         handle_message_exception = e;
         discontinue_fetching_blocks_from_peer = true;
       }
@@ -3215,12 +3215,12 @@ namespace graphene { namespace net {
       // build up lists for any potentially-blocking operations we need to do, then do them at the end of this function
       std::set<peer_connection_ptr> peers_to_fetch_ids_from;
       std::set<peer_connection_ptr> peers_we_need_to_sync_to;
-      std::map<peer_connection_ptr, std::pair<std::string, fc::oexception> > peers_to_disconnect; // map peer -> pair<reason_string, exception>
-      if( client_accepted_block )
+      std::map<peer_connection_ptr, std::pair<std::string, fc::oexception>> peers_to_disconnect; // map peer -> pair<reason_string, exception>
+      if (client_accepted_block)
       {
         --_total_number_of_unfetched_items;
         dlog("sync: client accepted the block, we now have only ${count} items left to fetch before we're in sync",
-              ("count", _total_number_of_unfetched_items));
+             ("count", _total_number_of_unfetched_items));
         bool is_fork_block = is_hard_fork_block(block_number);
         for (const peer_connection_ptr& peer : _active_connections)
         {
@@ -3252,18 +3252,16 @@ namespace graphene { namespace net {
           {
             if (peer->ids_of_items_to_get.empty() && peer->ids_of_items_being_processed.empty())
             {
-              //dlog( "Cannot pop first element off peer ${peer}'s list, its list is empty", ("peer", peer->get_remote_endpoint() ) );
-              
-              // we don't know for sure that this peer has the item we just received.
-              // If peer is still syncing to us, we know they will ask us for
-              // sync item ids at least one more time and we'll notify them about
-              // the item then, so there's no need to do anything.  If we still need items
-              // from them, we'll be asking them for more items at some point, and
-              // that will clue them in that they are out of sync.  If we're fully in sync
-              // we need to kick off another round of synchronization with them so they can
-              // find out about the new item.
               if (!peer->peer_needs_sync_items_from_us && !peer->we_need_sync_items_from_peer)
               {
+                // We just got a new valid sync block and we don't know for sure that our peers have it.
+                // If peer is still syncing to us, we know they will ask us for
+                // sync item ids at least one more time and we'll notify them about
+                // the item then, so there's no need to do anything.  If we still need items
+                // from them, we'll be asking them for more items at some point, and
+                // that will clue them in that they are out of sync.  But if we're both in sync,
+                // we need to kick off another round of synchronization with them so they can
+                // find out about this new item.
                 dlog("We will be restarting synchronization with peer ${peer}", ("peer", peer->get_remote_endpoint()));
                 peers_we_need_to_sync_to.insert(peer);
               }
@@ -3277,14 +3275,15 @@ namespace graphene { namespace net {
                 peer->last_block_time_delegate_has_seen = block_message_to_send.block.timestamp;
 
                 peer->ids_of_items_being_processed.erase(items_being_processed_iter);
-                //dlog("Removed item from ${endpoint}'s list of items being processed, still processing ${len} blocks",
-                //     ("endpoint", peer->get_remote_endpoint())("len", peer->ids_of_items_being_processed.size()));
-                if (peer->idle() &&
-                    peer->number_of_unfetched_item_ids != 0 && //don't fetch more ids if node says it has no more, we will try resuming sync instead
-                    peer->ids_of_items_to_get.size() < GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH  
-                   )
-                  peers_to_fetch_ids_from.insert(peer);
-                
+                if (peer->idle())
+                {
+                  // if we know the peer has more block ids and we haven't filled our id buffer, get more ids
+                  if (peer->number_of_unfetched_item_ids != 0 && peer->ids_of_items_to_get.size() < GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH)
+                    peers_to_fetch_ids_from.insert(peer);
+                  // if we've processed all blocks from peer that we know about, ask again to find out if more and to tell them we may be in sync now
+                  else if (peer->ids_of_items_to_get.empty() && peer->ids_of_items_being_processed.empty() && peer->number_of_unfetched_item_ids == 0)
+                    peers_to_fetch_ids_from.insert(peer);
+                }
               }
             }
           }
@@ -3414,6 +3413,7 @@ namespace graphene { namespace net {
                   peer->ids_of_items_being_processed.insert(received_block_iter->block_id);
                   //if we've fetched blocks for all ids we have from this peer, lets fetch more if possible (we need this to avoid stall condition)
                   if (peer->ids_of_items_to_get.empty() && 
+                      peer->number_of_unfetched_item_ids != 0 &&
                       peer->we_need_sync_items_from_peer)
                     peers_to_fetch_ids_from.insert(peer);
                 }
