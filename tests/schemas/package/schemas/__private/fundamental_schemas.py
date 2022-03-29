@@ -59,6 +59,33 @@ class Array(Schema):
         }
 
 
+class ArrayStrict(Schema):
+    def __init__(self, *items, **options: Any):
+        """
+        Array Strict checks that the nth element in the instance, matches the nth type specified in the schema.
+            example_array =  [0, 'string', True]
+            example_schema : ArrayStrict(Int(), String(), Bool())
+                example_array[0] -> Int(),
+                example_array[1] -> String(),
+                example_array[2] -> Bool()
+        """
+        super().__init__(**options)
+        self.__items = list(items)
+
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        items_as_list = self.__items.copy()
+        for index, schema in enumerate(items_as_list):
+            if isinstance(schema, Schema):
+                items_as_list[index] = schema._create_schema()
+
+        return {
+            'type': 'array',
+            'prefixItems': items_as_list,
+            "minItems": len(items_as_list),
+            'maxItems': len(items_as_list),
+        }
+
+
 class Bool(Schema):
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'boolean'}
