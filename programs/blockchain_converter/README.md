@@ -18,6 +18,8 @@ You will also have to specify the `chain-id` and `private-key` options, where th
 ### Second authority
 You can optionally specify the `owner`, `active` and `posting` second authority private keys. They will be auto-generated, if not provided.
 
+Initminer has the same private key as in the testnet for genesis block generation.
+
 Note: If you use the `use-same-key` option, second authority keys will be the same as the one, provided using the `private-key` option.
 
 All of the second authority keys will be printed before exiting the program.
