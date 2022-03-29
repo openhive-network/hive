@@ -3252,18 +3252,24 @@ namespace graphene { namespace net {
           {
             if (peer->ids_of_items_to_get.empty() && peer->ids_of_items_being_processed.empty())
             {
-              //dlog( "Cannot pop first element off peer ${peer}'s list, its list is empty", ("peer", peer->get_remote_endpoint() ) );
-              
-              // we don't know for sure that this peer has the item we just received.
-              // If peer is still syncing to us, we know they will ask us for
-              // sync item ids at least one more time and we'll notify them about
-              // the item then, so there's no need to do anything.  If we still need items
-              // from them, we'll be asking them for more items at some point, and
-              // that will clue them in that they are out of sync.  If we're fully in sync
-              // we need to kick off another round of synchronization with them so they can
-              // find out about the new item.
-              if (!peer->peer_needs_sync_items_from_us && !peer->we_need_sync_items_from_peer)
+              if (peer->we_need_sync_items_from_peer)
               {
+                if (peer->number_of_unfetched_item_ids == 0)
+                {
+                  dlog("schedule a synopsys message to tell peer ${peer} we are in sync with them", ("peer", peer->get_remote_endpoint()));
+                  peers_to_fetch_ids_from.insert(peer);
+                }
+              }
+              else if (!peer->peer_needs_sync_items_from_us)
+              {
+                // We just got a new valid sync block and we don't know for sure that our peers have it.
+                // If peer is still syncing to us, we know they will ask us for
+                // sync item ids at least one more time and we'll notify them about
+                // the item then, so there's no need to do anything.  If we still need items
+                // from them, we'll be asking them for more items at some point, and
+                // that will clue them in that they are out of sync.  But if we're both in sync,
+                // we need to kick off another round of synchronization with them so they can
+                // find out about this new item.
                 dlog("We will be restarting synchronization with peer ${peer}", ("peer", peer->get_remote_endpoint()));
                 peers_we_need_to_sync_to.insert(peer);
               }
@@ -3414,6 +3420,7 @@ namespace graphene { namespace net {
                   peer->ids_of_items_being_processed.insert(received_block_iter->block_id);
                   //if we've fetched blocks for all ids we have from this peer, lets fetch more if possible (we need this to avoid stall condition)
                   if (peer->ids_of_items_to_get.empty() && 
+                      peer->number_of_unfetched_item_ids != 0 &&
                       peer->we_need_sync_items_from_peer)
                     peers_to_fetch_ids_from.insert(peer);
                 }
