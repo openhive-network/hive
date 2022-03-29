@@ -52,6 +52,34 @@ class Any_(Schema):
         return {}
 
 
+class Array(Schema):
+    def __init__(self, *items, **options: Any):
+        super().__init__(**options)
+        self.__items = list(items)
+
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        items_as_dicts = []
+        for schema in self.__items:
+            self._assert_that_schema_has_correct_type(schema)
+            items_as_dicts.append(schema._create_schema())
+
+        if len(items_as_dicts) > 1:
+            return {
+                'type': 'array',
+                'items': {
+                    'oneOf': items_as_dicts
+                },
+            }
+        elif len(items_as_dicts) == 0:
+            return {
+                'type': 'array',
+            }
+        return {
+            'type': 'array',
+            'items': items_as_dicts[0],
+        }
+
+
 class Bool(Schema):
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'boolean'}

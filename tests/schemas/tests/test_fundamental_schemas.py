@@ -11,6 +11,17 @@ from schemas.predefined import *
         (Any(), 128),
         (Any(), 'example'),
 
+        # Array
+        (Array(), []),
+        (Array(), [0, True, 'everything-in-the-array']),
+        (Array(Float()), [1.01, 1.02, 1.03]),
+        (Array(Int()), ['0', 1, '2', 3]),
+        (Array(Int(), Bool()), [False, 1, '1']),
+        (Array(Int(enum=['0'])), ['0']),
+        (Array(Int(), minItems=1), [0, 1]),
+        (Array(Int(), maxItems=3), [0, 1, 2]),
+        (Array(Int(), minItems=2, maxItems=3), [0, 1, 2]),
+
         # Bool
         (Bool(), True),
 
@@ -141,6 +152,16 @@ def test_validation_of_correct_type(schema, instance):
 
 @pytest.mark.parametrize(
     'schema, instance', [
+        # Array
+        (Array(), {}),
+        (Array(Int()), ['its-string-not-int']),
+        (Array(Int(enum=[0])), [1]),
+        (Array(Int(enum=[0])), [0, 1]),
+        (Array(Int(), minItems=2), [0]),  # not-enough-elements-in-the-list, parameter minItems
+        (Array(Int(), maxItems=1), [0, 1]),  # too-many-elements-in-the-list, parameter maxItems
+        (Array(Int(), minItems=2, maxItems=3), [0]),
+        (Array(Int(), minItems=2, maxItems=3), [0, 1, 2, 3]),
+
         # Bool
         (Bool(), 0),
         (Bool(), 1),
