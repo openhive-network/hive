@@ -18,6 +18,7 @@ set(sources
    words.cpp
    logging_config.cpp
    database_configuration.cpp
+   data_filter.cpp
    ${HEADERS})
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
@@ -26,7 +27,7 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 add_library( hive_utilities
              ${sources}
              ${HEADERS} )
-target_link_libraries( hive_utilities fc )
+target_link_libraries( hive_utilities fc hive_protocol )
 target_include_directories( hive_utilities
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 if (USE_PCH)
