@@ -18,8 +18,8 @@ testnet_node_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
   script:
-    # TESTNET=ON HIVE_LINT=ON
-    - ./ciscripts/build.sh ON ON
+    # TESTNET=ON HIVE_LINT=OFF
+    - ./ciscripts/build.sh ON OFF
     - mkdir -p "$CI_JOB_NAME"/tests/unit
     - mv build/install-root "$CI_JOB_NAME"
     - mv contrib/hived.run "$CI_JOB_NAME"
