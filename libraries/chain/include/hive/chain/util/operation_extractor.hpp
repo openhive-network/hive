@@ -22,7 +22,7 @@ namespace type_extractor
 
     public:
 
-      explicit operation_extractor();
+      operation_extractor();
 
       const operation_ids_container_t& get_operation_ids() const;
       const operation_details_container_t& get_operation_details() const;

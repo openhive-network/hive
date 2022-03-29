@@ -33,12 +33,6 @@ const account_filter::account_name_range_index& account_filter::get_tracked_acco
 
 bool account_filter::is_tracked_account( const account_name_type& name ) const
 {
-  if( empty() )
-  {
-    DIAGNOSTIC( ilog("[${fn}] Set of tracked accounts is empty.", ("fn", filter_name) ); )
-    return true;
-  }
-
   /// Code below is based on original contents of account_history_plugin_impl::on_pre_apply_operation
   auto itr = tracked_accounts.lower_bound(name);
 
@@ -128,12 +122,6 @@ bool operation_filter::empty() const
 
 bool operation_filter::is_tracked_operation( const operation& op ) const
 {
-  if( empty() )
-  {
-    DIAGNOSTIC( ilog("[${fn}] Set of tracked operations is empty.", ("fn", filter_name) ); )
-    return true;
-  }
-
   bool _result = tracked_operations.find( op ) != tracked_operations.end();
 
   DIAGNOSTIC
@@ -185,12 +173,6 @@ bool operation_body_filter::empty() const
 
 bool operation_body_filter::is_tracked_operation( const operation& op ) const
 {
-  if( empty() )
-  {
-    DIAGNOSTIC( ilog("[${fn}] Set of body operation filters is empty.", ("fn", filter_name) ); )
-    return true;
-  }
-
   bool _result = false;
   auto _found = body_filters.find( op );
 
