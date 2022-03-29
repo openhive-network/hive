@@ -22,6 +22,9 @@ from schemas.predefined import *
         (Array(Int(), maxItems=3), [0, 1, 2]),
         (Array(Int(), minItems=2, maxItems=3), [0, 1, 2]),
 
+        # ArrayStrict
+        (ArrayStrict(Int(), Float(), Bool(), Str()), [0, 1.2, True, 'string']),
+
         # Bool
         (Bool(), True),
 
@@ -161,6 +164,12 @@ def test_validation_of_correct_type(schema, instance):
         (Array(Int(), maxItems=1), [0, 1]),  # too-many-elements-in-the-list, parameter maxItems
         (Array(Int(), minItems=2, maxItems=3), [0]),
         (Array(Int(), minItems=2, maxItems=3), [0, 1, 2, 3]),
+
+        # ArrayStrict
+        (ArrayStrict({}), []),
+        (ArrayStrict(Int(), Float(), Bool()), [1, 1.1, 'its-not-a-bool']),
+        (ArrayStrict(Int(), Float(), Bool()), [1, 1.1, True, 'too-many-elements-in-the-list']),
+        (ArrayStrict(Int(), Str(), Float()), [1, 'not-enough-elements-in-the-list']),
 
         # Bool
         (Bool(), 0),
