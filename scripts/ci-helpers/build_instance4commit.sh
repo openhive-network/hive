@@ -80,7 +80,7 @@ done
 if [ -z "$REGISTRY" ];
 then
   echo "Setting default registry value"
-  REGISTRY=registry.gitlab.syncad.com/hive/hive
+  REGISTRY=registry.gitlab.syncad.com/hive/hive/
 fi
 
 BUILD_IMAGE_TAG=:$COMMIT
@@ -93,14 +93,14 @@ docker build --target=base_instance \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BLOCK_LOG_SUFFIX=${BLOCK_LOG_SUFFIX:-""} \
-  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t $REGISTRY/${IMAGE_TAG_PREFIX}base_instance${BLOCK_LOG_SUFFIX:-""}$BUILD_IMAGE_TAG -f Dockerfile .
+  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}base_instance${BLOCK_LOG_SUFFIX:-""}$BUILD_IMAGE_TAG -f Dockerfile .
 
 docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BLOCK_LOG_SUFFIX=${BLOCK_LOG_SUFFIX:-""} \
-  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t $REGISTRY/${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX:-""}$BUILD_IMAGE_TAG -f Dockerfile .
+  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX:-""}$BUILD_IMAGE_TAG -f Dockerfile .
 
 popd
 
