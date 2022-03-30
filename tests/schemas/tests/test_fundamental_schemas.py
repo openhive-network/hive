@@ -28,6 +28,9 @@ from schemas.predefined import *
         # Bool
         (Bool(), True),
 
+        # Date
+        (Date(), '1970-01-01T00:00:00'),
+
         # Float
         (Float(), 3.141593),
         (Float(), 128),  # Ints are also floats
@@ -176,6 +179,15 @@ def test_validation_of_correct_type(schema, instance):
         (Bool(), 1),
         (Bool(), 'False'),
         (Bool(), 'True'),
+
+        # Date
+        (Date(), 128),
+        (Date(), True),
+        (Date(), '1970/01/01T00:00:00'),
+        (Date(), '1970-01-01-00:00:00'),
+        (Date(), '1970-01-01T00:64:00'),  # Too many minutes
+        (Date(), '1970-01-32T00:00:00'),  # Too many days
+        (Date(), '1970-13-01T00:00:00'),  # Too many months
 
         # Float
         (Float(), None),
