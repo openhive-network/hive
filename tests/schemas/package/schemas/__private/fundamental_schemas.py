@@ -91,6 +91,11 @@ class Bool(Schema):
         return {'type': 'boolean'}
 
 
+class Date(Schema):
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        return {'type': 'date'}
+
+
 class Float(Schema):
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'number'}

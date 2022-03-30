@@ -1,5 +1,7 @@
 import jsonschema
 
+from schemas.__private.custom_checkers import datetime_checker
+
 
 def validate(schema, instance):
     # It allows to add your own types. To do this you should extend `definitions`,
@@ -11,6 +13,7 @@ def validate(schema, instance):
     # Build a new type checkers
     custom_types = default_validator.TYPE_CHECKER.redefine_many(
         definitions={
+            'date': datetime_checker.check_date,
         })
 
     # Build a validator with the new type checkers
