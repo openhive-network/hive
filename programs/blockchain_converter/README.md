@@ -133,6 +133,9 @@ Now your nodes should be able to communicate with each other and produce blocks.
 
 You can also now disable the stale production and increase the required participation in the configuration files.
 
+### Skeleton key
+For all the validations skipped during the replay to work, we should own the `initminer` private key to produce blocks. This option was previously hardcoded and available only in testnet build, but along with the converter development, you can now specify your own "skeleton key" that serves as a unique `initminer` private key and witness key. This option is available **only in `hived`** built as alternate chain (mirrornet or testnet). This option is mandatory when replaying with the `validate-during-replay` option enabled or in the live sync.
+
 ## Configuring altered P2P network
 If you have successfully converted your blockchain using one of the previously mentioned [conversion examples](#Example%20run), you can now create your altered peer-to-peer network.
 
@@ -145,11 +148,13 @@ For that purpose, we will build and configure two nodes (remember to enable the 
 First, you will have to replay nodes using the same altered `block_log` file (copy the converted block log to the `data/blockchain` directory).
 Also, we do not want them to synchronize with the network yet, so we will have to use the `exit-before-sync` flag:
 ```
-alice-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+alice-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 ```
-bob-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1
+bob-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
+(Do not forget about the [skeleton key](#Skeleton%20key)!)
+
 Remember the last irreversible block number.
 
 Now retrieve the main 21 witnesses. You can do that by - for example - iterating through the last 21 blocks starting from the last irreversible block (you can find this data on e.g. [hiveblocks.com](hiveblocks.com)).
@@ -176,7 +181,7 @@ private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 Then you should run the first node (Alice):
 ```
-alice-hived -d alice-data --chain-id 1
+alice-hived -d alice-data --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 
 After that run the blockchain converter:
