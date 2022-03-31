@@ -76,7 +76,7 @@ namespace hive { namespace converter {
 
     void add_second_authority( authority& _auth, authority::classification type );
 
-    void sign_transaction( hp::signed_transaction& trx )const;
+    void sign_transaction( hp::signed_transaction& trx, bool force=false )const;
 
     const hp::private_key_type& get_second_authority_key( authority::classification type )const;
     void set_second_authority_key( const hp::private_key_type& key, authority::classification type );
