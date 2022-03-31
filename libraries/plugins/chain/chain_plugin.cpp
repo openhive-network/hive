@@ -5,6 +5,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/statsd/utility.hpp>
 
+#include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/notifications.hpp>
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>
@@ -732,6 +733,12 @@ bfs::path chain_plugin::state_storage_dir() const
 
 void chain_plugin::set_program_options(options_description& cli, options_description& cfg)
 {
+#ifdef USE_ALTERNATE_CHAIN_ID
+  using hive::protocol::testnet_blockchain_configuration::configuration_data;
+  /// Default initminer priv. key in non-mainnet builds.
+  auto default_skeleton_privkey = hive::utilities::key_to_wif(configuration_data.get_default_initminer_private_key());
+#endif
+
   cfg.add_options()
       ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
@@ -760,6 +767,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
+      ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
 #endif
       ;
 }
@@ -842,6 +850,20 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     {
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
+
+    if(options.count("skeleton-key"))
+    {
+
+      const std::string& wif_key = options.at("skeleton-key").as<std::string>();
+
+      wlog("Setting custom skeleton key: ${sk}", ("sk", wif_key));
+
+      fc::optional<fc::ecc::private_key> skeleton_key = hive::utilities::wif_to_key(wif_key);
+      FC_ASSERT(skeleton_key.valid(), "unable to parse passed skeletpn key: ${sk}", ("sk", wif_key));
+
+      configuration_data.set_skeleton_key(*skeleton_key);
+    }
+
   }
 #endif
 
