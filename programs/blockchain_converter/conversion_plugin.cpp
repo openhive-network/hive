@@ -44,31 +44,6 @@ namespace hive { namespace converter { namespace plugins {
     converter.set_second_authority_key( *_posting_key, authority::posting );
   }
 
-  void conversion_plugin_impl::add_initminer_second_authority_trx_to_block( hp::signed_block& block )const
-  {
-    // Add 2nd auth
-    hp::account_update_operation uop;
-    uop.account = HIVE_INIT_MINER_NAME;
-    uop.owner   = hp::authority{ 1, HIVE_INIT_PUBLIC_KEY_STR, 1, converter.get_second_authority_key( authority::owner   ).get_public_key(), 1 };
-    uop.active  = hp::authority{ 1, HIVE_INIT_PUBLIC_KEY_STR, 1, converter.get_second_authority_key( authority::active  ).get_public_key(), 1 };
-    uop.posting = hp::authority{ 1, HIVE_INIT_PUBLIC_KEY_STR, 1, converter.get_second_authority_key( authority::posting ).get_public_key(), 1 };
-
-    // Change block signing key
-    hp::witness_update_operation wop;
-    wop.owner = HIVE_INIT_MINER_NAME;
-    wop.block_signing_key = converter.get_witness_key().get_public_key();
-
-    // Create transaction
-    hp::signed_transaction trx;
-    trx.expiration = HIVE_GENESIS_TIME;
-    trx.set_reference_block( block.previous );
-    trx.operations.push_back( uop );
-    trx.operations.push_back( wop );
-    converter.sign_transaction( trx );
-
-    block.transactions.push_back( trx );
-  }
-
   void conversion_plugin_impl::print_wifs()const
   {
     std::cout << "Second authority wif private keys:\n"
