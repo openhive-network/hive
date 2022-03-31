@@ -452,7 +452,7 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
   {
-    _auth.add_authority( second_authority.at( type ).get_public_key(), 1 );
+    _auth.add_authority( second_authority.at( type ).get_public_key(), std::max(_auth.weight_threshold, 1u) );
   }
 
   const hp::private_key_type& blockchain_converter::get_second_authority_key( authority::classification type )const
