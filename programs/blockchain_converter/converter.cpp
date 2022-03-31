@@ -344,28 +344,59 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
     _signed_block.previous = previous_block_id;
 
+    std::set<size_t> already_signed_transaction_pos;
+
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
       transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_now_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
-      post_convert_transaction( *transaction_itr );
+      trx_time += 1;
 
       transaction_itr->expiration = trx_time;
-      trx_time += 1;
+
+      hive::protocol::signed_transaction helper_tx;
+      helper_tx.set_reference_block(previous_block_id);
+
+      post_convert_transaction(helper_tx);
+
+      if(helper_tx.operations.empty() == false)
+      {
+        trx_time += 1;
+        helper_tx.expiration = trx_time;
+        sign_transaction(helper_tx, true);
+
+        auto insert_pos = transaction_itr;
+        ++insert_pos;
+        auto new_tx_pos = _signed_block.transactions.insert(insert_pos, helper_tx);
+
+        auto tx_pos = std::distance(_signed_block.transactions.begin(), new_tx_pos);
+
+        already_signed_transaction_pos.insert(tx_pos);
+
+        transaction_itr = new_tx_pos;
+      }
     }
 
     switch( _signed_block.transactions.size() )
     {
       case 0: break; // Skip signatures generation when block does not contain any trxs
-      case 1: sign_transaction( _signed_block.transactions.at( 0 ) ); break; // Optimize signing when block contains only 1 trx
+
+      case 2:
+        if (already_signed_transaction_pos.find(1)== already_signed_transaction_pos.end())
+          sign_transaction(_signed_block.transactions.at(1));
+      case 1:
+        if(already_signed_transaction_pos.find(0) == already_signed_transaction_pos.end())
+          sign_transaction(_signed_block.transactions.at(0));
+        break; // Optimize signing when block contains only 2 trx
+
       default: // There are multiple trxs in block. Enable multithreading
 
       size_t trx_applied_count = 0;
 
       for( size_t i = 0; i < _signed_block.transactions.size(); ++i )
-        if( _signed_block.transactions.at( i ).signatures.size() )
+        if( _signed_block.transactions.at( i ).signatures.size()  && already_signed_transaction_pos.find(i) == already_signed_transaction_pos.end() )
           shared_signatures_stack_in.push( std::make_pair( i, &_signed_block.transactions.at( i ) ) );
         else
           ++trx_applied_count; // We do not have to replace any signature(s) so skip this transaction
@@ -404,13 +435,13 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
     return mainnet_head_block_id;
   }
 
-  void blockchain_converter::sign_transaction( hp::signed_transaction& trx )const
+  void blockchain_converter::sign_transaction( hp::signed_transaction& trx, bool force /*=false*/)const
   {
-    if( trx.signatures.size() )
+    if( trx.signatures.size() || force)
     {
-      if( trx.signatures.size() > 1 )
-        trx.signatures.clear();
-      trx.signatures[ 0 ] = get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical ); // XXX: All operations are being signed using the owner key of the 2nd authority
+      trx.signatures.clear();
+      //trx.signatures.emplace_back(get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical )); // XXX: All operations are being signed using the owner key of the 2nd authority
+      trx.sign(get_second_authority_key(authority::owner), chain_id, has_hardfork(HIVE_HARDFORK_0_20__1944) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
     }
   }
 
