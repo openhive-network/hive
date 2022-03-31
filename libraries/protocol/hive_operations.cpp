@@ -376,10 +376,12 @@ namespace hive { namespace protocol {
 
   void pow_operation::validate()const
   {
+#ifndef HIVE_CONVERTER_BUILD
     props.validate< true >();
     validate_account_name( worker_account );
     FC_ASSERT( work_input() == work.input, "Determninistic input does not match recorded input" );
     work.validate();
+#endif /// HIVE_CONVERTER_BUILD
   }
 
   struct pow2_operation_validate_visitor
@@ -395,8 +397,10 @@ namespace hive { namespace protocol {
 
   void pow2_operation::validate()const
   {
+#ifndef HIVE_CONVERTER_BUILD
     props.validate< true >();
     work.visit( pow2_operation_validate_visitor() );
+#endif /// HIVE_CONVERTER_BUILD
   }
 
   struct pow2_operation_get_required_active_visitor
@@ -417,11 +421,13 @@ namespace hive { namespace protocol {
 
   void pow2_operation::get_required_active_authorities( flat_set<account_name_type>& a )const
   {
+#ifndef HIVE_CONVERTER_BUILD
     if( !new_owner_key )
     {
       pow2_operation_get_required_active_visitor vtor( a );
       work.visit( vtor );
     }
+#endif 
   }
 
   void pow::create( const fc::ecc::private_key& w, const digest_type& i )
