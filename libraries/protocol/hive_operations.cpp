@@ -421,13 +421,11 @@ namespace hive { namespace protocol {
 
   void pow2_operation::get_required_active_authorities( flat_set<account_name_type>& a )const
   {
-#ifndef HIVE_CONVERTER_BUILD
     if( !new_owner_key )
     {
       pow2_operation_get_required_active_visitor vtor( a );
       work.visit( vtor );
     }
-#endif 
   }
 
   void pow::create( const fc::ecc::private_key& w, const digest_type& i )
