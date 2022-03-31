@@ -97,6 +97,9 @@ tests/plugin_test
 tests/intense_test
 tests/performance_test
 
+# Files generated from pattern tests
+.tox/
+
 # Build directories
 *build*/
 build/
