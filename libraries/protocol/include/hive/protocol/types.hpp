@@ -1,6 +1,5 @@
 #pragma once
 #include <hive/protocol/types_fwd.hpp>
-#include <hive/protocol/config.hpp>
 
 #include <hive/protocol/asset_symbol.hpp>
 #include <hive/protocol/fixed_string.hpp>
@@ -31,7 +30,7 @@
 
 namespace hive {
 
-  using                                    fc::uint128_t;
+  using                               fc::uint128_t;
   typedef boost::multiprecision::uint256_t u256;
   typedef boost::multiprecision::uint512_t u512;
 
@@ -105,8 +104,6 @@ namespace hive {
       friend bool operator < ( const public_key_type& p1, const public_key_type& p2) { return p1.key_data < p2.key_data; }
       friend bool operator != ( const public_key_type& p1, const public_key_type& p2);
     };
-
-    #define HIVE_INIT_PUBLIC_KEY (hive::protocol::public_key_type(HIVE_INIT_PUBLIC_KEY_STR))
 
     struct extended_public_key_type
     {

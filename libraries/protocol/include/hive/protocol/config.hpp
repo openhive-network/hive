@@ -2,6 +2,7 @@
  * Copyright (c) 2016 Steemit, Inc., and contributors.
  */
 #pragma once
+#include <hive/protocol/types.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/testnet_blockchain_configuration.hpp>
 
@@ -9,17 +10,29 @@
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
-// Hardcode initminer privat ekey
+#define HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR"
+
 #ifdef USE_ALTERNATE_CHAIN_ID
 
-#define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
-#define HIVE_INIT_PUBLIC_KEY_STR              (std::string( hive::protocol::public_key_type(HIVE_INIT_PRIVATE_KEY.get_public_key()) ))
+using namespace hive::protocol::testnet_blockchain_configuration;
 
-#endif
+/// Testnet or mirror net
+#define HIVE_INIT_PRIVATE_KEY                 (configuration_data.get_initminer_private_key())
+#define HIVE_INIT_PUBLIC_KEY_STR              (std::string(configuration_data.get_initminer_public_key()))
+
+#define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR (configuration_data.get_HF9_compromised_accounts_key())
+
+#else
+
+/// Mainnet 
+#define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
+#define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR
+
+#endif /// USE_ALTERNATE_CHAIN_ID
+
+#define HIVE_INIT_PUBLIC_KEY (hive::protocol::public_key_type(HIVE_INIT_PUBLIC_KEY_STR))
 
 #ifdef IS_TEST_NET
-
-using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef HIVE_ENABLE_SMT
   #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 27, 0) )
