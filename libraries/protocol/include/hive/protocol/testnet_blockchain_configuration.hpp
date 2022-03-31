@@ -1,7 +1,11 @@
 #pragma once
 
-#include<cstdint>
-#include<assert.h>
+#include <hive/protocol/types.hpp>
+
+#include <cstdint>
+#include <string>
+
+#include <assert.h>
 
 namespace hive { namespace protocol { namespace testnet_blockchain_configuration {
   class configuration
@@ -22,8 +26,11 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     // the more severe penalty the closer to comment cashout the vote is
     uint32_t hive_upvote_lockout_seconds = 60 * 5; // 5 minutes
     
-    
+    std::string hive_hf9_compromised_key;
+    hive::protocol::private_key_type hive_initminer_key;
+
     public:
+      configuration();
 
       void reset() { *this = configuration(); }
 
@@ -51,6 +58,22 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint32_t get_hive_mid_voting_seconds() const { return hive_mid_voting_seconds; }
       uint32_t get_hive_cashout_window_seconds() const { return hive_cashout_window_seconds; }
       uint32_t get_hive_upvote_lockout_seconds() const { return hive_upvote_lockout_seconds; }
+
+      std::string get_HF9_compromised_accounts_key() const
+      {
+        return hive_hf9_compromised_key;
+      }
+
+      hive::protocol::private_key_type get_default_initminer_private_key() const;
+
+      hive::protocol::private_key_type get_initminer_private_key() const
+      {
+        return hive_initminer_key;
+      }
+
+      hive::protocol::public_key_type get_initminer_public_key() const;
+
+      void set_skeleton_key(const hive::protocol::private_key_type& private_key);
   };
 
   extern configuration configuration_data;
