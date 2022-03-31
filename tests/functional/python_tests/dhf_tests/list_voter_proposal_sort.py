@@ -301,6 +301,7 @@ if __name__ == '__main__':
             desc = 'descending'
             by_voter_proposal = 'by_voter_proposal'
             by_proposal_voter = 'by_proposal_voter'
+            max_uint_32 = 2**32 - 1
 
             check_api_call( 
                 list_proposal_votes( node_url, [], 100, by_voter_proposal, asc ),
@@ -343,7 +344,7 @@ if __name__ == '__main__':
             )
 
             check_api_call( 
-                list_proposal_votes( node_url, ["tester005", -1], 100, by_voter_proposal, asc ),
+                list_proposal_votes( node_url, ["tester005", max_uint_32], 100, by_voter_proposal, asc ),
                 {}, 
                 "",
                 0,
@@ -351,7 +352,7 @@ if __name__ == '__main__':
             )
 
             check_api_call( 
-                list_proposal_votes( node_url, ["tester005", -1], 100, by_voter_proposal, desc ),
+                list_proposal_votes( node_url, ["tester005", max_uint_32], 100, by_voter_proposal, desc ),
                 {"voter": "tester005", "proposal_id": 4 }, 
                 "voter",
                 25,
