@@ -233,9 +233,6 @@ namespace detail {
         continue;
       }
 
-      if( start_block_num == 1 )
-        conversion_plugin_impl::add_initminer_second_authority_trx_to_block( *block );
-
       if( start_block_num % 1000 == 0 ) // Progress
       {
         if( stop_block_num )

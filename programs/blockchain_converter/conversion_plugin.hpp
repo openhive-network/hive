@@ -17,8 +17,6 @@ namespace hive { namespace converter { namespace plugins {
   protected:
     blockchain_converter converter;
 
-    void add_initminer_second_authority_trx_to_block( hp::signed_block& block )const;
-
   public:
     uint32_t log_per_block = 0, log_specific = 0;
 
