@@ -1,4 +1,5 @@
 #include <hive/protocol/authority.hpp>
+#include <hive/protocol/config.hpp>
 
 namespace hive { namespace protocol {
 

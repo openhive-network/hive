@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/protocol/authority.hpp>
+#include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
 
 namespace hive { namespace protocol {
