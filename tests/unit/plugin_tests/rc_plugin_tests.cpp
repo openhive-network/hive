@@ -1165,6 +1165,618 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing if rc_pending_data resets properly" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
+    skip_flags.skip_reject_not_enough_rc = 0;
+    skip_flags.skip_deduct_rc = 0;
+    skip_flags.skip_negative_rc_balance = 0;
+    skip_flags.skip_reject_unknown_delta_vests = 0;
+    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    const auto& pending_data = db->get< rc_pending_data >();
+
+    auto check_direction = []( const fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES >& values,
+      const std::array< int, HIVE_RC_NUM_RESOURCE_TYPES >& sign )
+    {
+      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+      {
+        switch( sign[i] )
+        {
+          case -1:
+            BOOST_REQUIRE_LT( values[i], 0 );
+            break;
+          case 0:
+            BOOST_REQUIRE_EQUAL( values[i], 0 );
+            break;
+          case 1:
+            BOOST_REQUIRE_GT( values[i], 0 );
+            break;
+          default:
+            assert( false && "Incorrect use" );
+            break;
+        }
+      }
+    };
+    auto check_compare = [&]( const fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES >& v1,
+      const fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES >& v2,
+      const std::array< int, HIVE_RC_NUM_RESOURCE_TYPES >& sign )
+    {
+      fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > diff;
+      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+        diff[i] = v1[i] - v2[i];
+      check_direction( diff, sign );
+    };
+    std::array< int, HIVE_RC_NUM_RESOURCE_TYPES > empty = { 0, 0, 0, 0, 0 };
+
+    BOOST_TEST_MESSAGE( "Pending usage and pending cost are all zero at the start of block" );
+    check_direction( pending_data.get_pending_usage(), empty );
+    check_direction( pending_data.get_pending_cost(), empty );
+    check_direction( pending_data.get_differential_usage(), empty ); //it is empty only because last tx was a transfer
+
+    BOOST_TEST_MESSAGE( "Update active key to generate some usage" );
+    account_update_operation update;
+    update.account = "alice";
+    update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
+    push_transaction( update, alice_private_key );
+    auto first_pending_usage = pending_data.get_pending_usage();
+    auto first_pending_cost = pending_data.get_pending_cost();
+    auto first_diff_usage = pending_data.get_differential_usage();
+    check_direction( first_pending_usage, { 1, 0, 0, 1, 1 } );
+    check_direction( first_pending_cost, { 1, 0, 0, 1, 1 } );
+    check_direction( first_diff_usage, { 0, 0, 0, -1, 0 } );
+
+    BOOST_TEST_MESSAGE( "Make a transfer - differential usage should reset, but pending should not" );
+    transfer_operation transfer;
+    transfer.from = "alice";
+    transfer.to = "bob";
+    transfer.amount = ASSET( "10.000 TESTS" );
+    push_transaction( transfer, alice_private_key );
+    auto second_pending_usage = pending_data.get_pending_usage();
+    auto second_pending_cost = pending_data.get_pending_cost();
+    auto second_diff_usage = pending_data.get_differential_usage();
+    check_direction( second_pending_usage, { 1, 0, 1, 1, 1 } );
+    check_direction( second_pending_cost, { 1, 0, 1, 1, 1 } );
+    check_direction( second_diff_usage, empty ); //differential usage is per transaction so it was reset
+    check_compare( first_pending_usage, second_pending_usage, { -1, 0, -1, -1, -1 } );
+    check_compare( first_pending_cost, second_pending_cost, { -1, 0, -1, -1, -1 } );
+
+    BOOST_TEST_MESSAGE( "Update active key for second time - differential usage resets again to the same value" );
+    update.active = authority( 1, generate_private_key( "alice_active_2" ).get_public_key(), 1 );
+    push_transaction( update, alice_private_key );
+    auto third_pending_usage = pending_data.get_pending_usage();
+    auto third_pending_cost = pending_data.get_pending_cost();
+    auto third_diff_usage = pending_data.get_differential_usage();
+    check_direction( third_pending_usage, { 1, 0, 1, 1, 1 } ); //market bytes usage from transfer remains
+    check_direction( third_pending_cost, { 1, 0, 1, 1, 1 } ); //same with cost
+    check_direction( third_diff_usage, { 0, 0, 0, -1, 0 } ); //differential usage reset again and only contains data on last tx
+    check_compare( second_pending_usage, third_pending_usage, { -1, 0, 0, -1, -1 } );
+    check_compare( second_pending_cost, third_pending_cost, { -1, 0, 0, -1, -1 } );
+    check_compare( first_diff_usage, third_diff_usage, empty );
+
+    BOOST_TEST_MESSAGE( "Attempt to update active key for third time but fail - all values revert to previous" );
+    update.active = authority( 1, "nonexistent", 1 );
+    HIVE_REQUIRE_ASSERT( push_transaction( update, alice_private_key ), "a != nullptr" );
+    check_compare( third_pending_usage, pending_data.get_pending_usage(), empty );
+    check_compare( third_pending_cost, pending_data.get_pending_cost(), empty );
+    check_compare( third_diff_usage, pending_data.get_differential_usage(), empty );
+
+    BOOST_TEST_MESSAGE( "Finalize block and move to new one - pending data and cost are reset (but not differential usage)" );
+    generate_block();
+    //Why two generate_block calls? To understand that we need to understand what generate_block actually
+    //does. When transaction is pushed, it becomes pending (as if it was passed through API or P2P).
+    //generate_block rewinds the state, then it opens (pre-apply block) and produces block out of pending
+    //transactions (assuming they actually fit, because we might've pushed too many for max size of block),
+    //closes the block (post-apply block), tries to reapply pending transactions on top of it (the ones
+    //that became part of recent block will be dropped from list as "known") and finishes. The code after
+    //generate_block call will see the state after reapplication of transactions and not freshly after
+    //reset. To emulate fresh reset we need to actually produce empty block.
+    generate_block();
+    check_direction( pending_data.get_pending_usage(), empty );
+    check_direction( pending_data.get_pending_cost(), empty );
+    check_compare( pending_data.get_differential_usage(), third_diff_usage, empty );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing differential RC usage for selected operations" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
+    skip_flags.skip_reject_not_enough_rc = 0;
+    skip_flags.skip_deduct_rc = 0;
+    skip_flags.skip_negative_rc_balance = 0;
+    skip_flags.skip_reject_unknown_delta_vests = 0;
+    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+
+    generate_block();
+    const auto& pending_data = db->get< rc_pending_data >();
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "initminer", "alice", ASSET( "10.000 TESTS" ) );
+    vest( "initminer", "bob", ASSET( "10.000 TESTS" ) );
+    generate_block();
+
+    auto alice_owner_key = generate_private_key( "alice_owner" );
+    auto bob_owner_key = generate_private_key( "bob_owner" );
+
+    auto check = []( const fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES >& usage, bool empty = false )
+    {
+      BOOST_REQUIRE_EQUAL( usage[ resource_history_bytes ], 0 );
+      BOOST_REQUIRE_EQUAL( usage[ resource_new_accounts ], 0 );
+      BOOST_REQUIRE_EQUAL( usage[ resource_market_bytes ], 0 );
+      if( empty )
+        BOOST_REQUIRE_EQUAL( usage[ resource_state_bytes ], 0 );
+      else
+        BOOST_REQUIRE_LT( usage[ resource_state_bytes ], 0 );
+      BOOST_REQUIRE_EQUAL( usage[ resource_execution_time ], 0 );
+    };
+    //rc_pending_data_reset test showed that differential usage is reset by transaction but not block
+    //so let's make transfer to force reset to zero (that test also showed transfers have zero
+    //differential usage)
+    auto clean = [&]()
+    {
+      transfer_operation transfer;
+      transfer.from = "alice";
+      transfer.to = "bob";
+      transfer.amount = ASSET( "0.001 TESTS" );
+      push_transaction( transfer, alice_owner_key );
+      generate_block();
+      generate_block();
+    };
+
+    BOOST_TEST_MESSAGE( "Update owner key with account_update_operation" );
+    account_update_operation update;
+    update.account = "alice";
+    update.owner = authority( 1, alice_owner_key.get_public_key(), 1 );
+    push_transaction( update, alice_private_key );
+    update.owner.reset();
+    check( pending_data.get_differential_usage() );
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update active key with account_update_operation" );
+    update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
+    push_transaction( update, alice_owner_key );
+    check( pending_data.get_differential_usage() );
+    update.active.reset();
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update posting key with account_update_operation" );
+    update.posting = authority( 1, generate_private_key( "alice_posting" ).get_public_key(), 1 );
+    push_transaction( update, alice_owner_key );
+    check( pending_data.get_differential_usage() );
+    update.posting.reset();
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update memo key with account_update_operation" );
+    update.memo_key = generate_private_key( "alice_memo" ).get_public_key();
+    push_transaction( update, alice_owner_key );
+    check( pending_data.get_differential_usage(), true ); //memo key does not allocate new state
+    update.memo_key = public_key_type();
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update metadata with account_update_operation" );
+    update.json_metadata = "{\"profile_image\":\"https://somewhere.com/myself.png\"}";
+    push_transaction( update, alice_owner_key );
+    check( pending_data.get_differential_usage(), true ); //while metadata allocates state it is
+      //optionally stored which means nodes that don't store it would not be able to calculate
+      //differential usage; that's why metadata is not subject to differential usage calculation
+    update.json_metadata = "";
+    clean();
+
+    account_update2_operation update2;
+    BOOST_TEST_MESSAGE( "Update owner key with account_update2_operation" );
+    update2.account = "bob";
+    update2.owner = authority( 1, bob_owner_key.get_public_key(), 1 );
+    push_transaction( update2, bob_private_key );
+    update2.owner.reset();
+    check( pending_data.get_differential_usage() );
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update active key with account_update2_operation" );
+    update2.active = authority( 1, generate_private_key( "bob_active" ).get_public_key(), 1 );
+    push_transaction( update2, bob_owner_key );
+    check( pending_data.get_differential_usage() );
+    update2.active.reset();
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update posting key with account_update2_operation" );
+    update2.posting = authority( 1, generate_private_key( "bob_posting" ).get_public_key(), 1 );
+    push_transaction( update2, bob_owner_key );
+    check( pending_data.get_differential_usage() );
+    update2.posting.reset();
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update memo key with account_update2_operation" );
+    update2.memo_key = generate_private_key( "bob_memo" ).get_public_key();
+    push_transaction( update2, bob_owner_key );
+    check( pending_data.get_differential_usage(), true ); //memo key does not allocate new state
+    update2.memo_key = public_key_type();
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update metadata with account_update2_operation" );
+    update2.json_metadata = "{\"profile_image\":\"https://somewhere.com/superman.png\"}";
+    update2.posting_json_metadata = "{\"description\":\"I'm here just for test.\"}";
+    push_transaction( update2, bob_owner_key );
+    check( pending_data.get_differential_usage(), true ); //same as in case of account_update_operation
+    update2.json_metadata = "";
+    update2.posting_json_metadata = "";
+    clean();
+
+    BOOST_TEST_MESSAGE( "Register witness with witness_update_operation" );
+    witness_update_operation witness;
+    witness.owner = "alice";
+    witness.url = "https://alice.has.cat";
+    witness.block_signing_key = generate_private_key( "alice_witness" ).get_public_key();
+    witness.props.account_creation_fee = legacy_hive_asset::from_amount( HIVE_MIN_ACCOUNT_CREATION_FEE );
+    witness.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+    witness.props.hbd_interest_rate = 0;
+    witness.fee = asset( 0, HIVE_SYMBOL );
+    push_transaction( witness, alice_owner_key );
+    check( pending_data.get_differential_usage(), true ); //when witness is created differential usage is empty
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update witness with witness_update_operation" );
+    witness.url = "https://alice.wonder.land/my.cat";
+    push_transaction( witness, alice_owner_key );
+    check( pending_data.get_differential_usage() ); //when witness is updated differential usage kicks in
+    clean();
+
+    auto alice_new_owner_key = generate_private_key( "alice_new_owner" );
+    auto bob_new_owner_key = generate_private_key( "bob_new_owner" );
+    auto thief_public_key = generate_private_key( "stolen" ).get_public_key();
+
+    BOOST_TEST_MESSAGE( "Compromise account authority and request recovery with request_account_recovery_operation" );
+    //we can't pretend previous change of owner was from a thief because in testnet we only have 20 blocks
+    //worth of owner history and 3 blocks for recovery after request
+    update.account = "alice";
+    update.owner = authority( 1, thief_public_key, 1 );
+    push_transaction( update, alice_owner_key );
+    update.owner.reset();
+    generate_block();
+    request_account_recovery_operation request;
+    request.account_to_recover = "alice";
+    request.recovery_account = "initminer";
+    request.new_owner_authority = authority( 1, alice_new_owner_key.get_public_key(), 1 );
+    push_transaction( request, init_account_priv_key );
+    check( pending_data.get_differential_usage(), true ); //no differential usage
+    generate_block();
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Recover account with recover_account_operation - subsidized version" );
+    recover_account_operation recover;
+    recover.account_to_recover = "alice";
+    recover.recent_owner_authority = authority( 1, alice_owner_key.get_public_key(), 1 );
+    recover.new_owner_authority = authority( 1, alice_new_owner_key.get_public_key(), 1 );
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( recover );
+    sign( tx, alice_owner_key );
+    sign( tx, alice_new_owner_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+    alice_owner_key = alice_new_owner_key;
+    check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
+    check( pending_data.get_pending_usage(), true ); //this is subsidized
+    clean();
+
+    BOOST_TEST_MESSAGE( "Compromise account authority and request recovery with request_account_recovery_operation" );
+    update.account = "bob";
+    update.owner = authority( 1, thief_public_key, 1 );
+    push_transaction( update, bob_owner_key );
+    update.owner.reset();
+    generate_block();
+    request.account_to_recover = "bob";
+    request.new_owner_authority = authority( 1, bob_new_owner_key.get_public_key(), 1, generate_private_key( "bob_new_owner2" ).get_public_key(), 1 );
+    push_transaction( request, init_account_priv_key );
+    check( pending_data.get_differential_usage(), true ); //no differential usage
+    generate_block();
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Recover account with recover_account_operation - fully paid version" );
+    recover.account_to_recover = "bob";
+    recover.recent_owner_authority = authority( 1, bob_owner_key.get_public_key(), 1 );
+    recover.new_owner_authority = authority( 1, bob_new_owner_key.get_public_key(), 1, generate_private_key( "bob_new_owner2" ).get_public_key(), 1 );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( recover );
+    sign( tx, bob_owner_key );
+    sign( tx, bob_new_owner_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+    bob_owner_key = bob_new_owner_key;
+    check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
+    check( pending_data.get_pending_usage(), true ); //this is fully paid
+    clean();
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing differential RC usage with potentially negative value" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
+    skip_flags.skip_reject_not_enough_rc = 0;
+    skip_flags.skip_deduct_rc = 0;
+    skip_flags.skip_negative_rc_balance = 0;
+    skip_flags.skip_reject_unknown_delta_vests = 0;
+    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+
+    generate_block();
+    const auto& pending_data = db->get< rc_pending_data >();
+
+    PREP_ACTOR( alice )
+      //alice will initially use HIVE_MAX_AUTHORITY_MEMBERSHIP of keys with the same full authority;
+    PREP_ACTOR( barry )
+      //similar to alice, but will be used in discount test at the end (less keys - to tune the usage)
+    PREP_ACTOR( carol )
+      //carol will use two keys (if usage changes, it might end up being not enough to outweight other
+      //state usage of transaction, but for now it is enough to put her in negative when she changes
+      //that to single key);
+    PREP_ACTOR( diana )
+      //diana uses single key from the start
+      //this way only one signature will still be needed, making transactions for alice, carol and diana
+      //weight the same, while alice's authority definition will be way heavier and carol a bit heavier
+
+    account_create_operation create;
+    create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+    create.creator = "initminer";
+    create.new_account_name = "alice";
+    create.owner = authority( 1, alice_public_key, 1 );
+    {
+      string name( "alice0" );
+      for( int i = 1; i < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++i )
+      {
+        name[5] = '0' + i;
+        create.owner.add_authority( generate_private_key( name ).get_public_key(), 1 );
+      }
+    }
+    create.active = create.owner;
+    create.posting = authority( 1, alice_post_key.get_public_key(), 1 );
+    push_transaction( create, init_account_priv_key );
+    create.new_account_name = "barry";
+    create.owner = authority( 1, barry_public_key, 1 );
+    const int NUM_KEYS = 3; //<- use this value to tune usage so in the end we have it small but positive
+    {
+      string name( "barry0" );
+      for( int i = 1; i < NUM_KEYS; ++i )
+      {
+        name[5] = '0' + i;
+        create.owner.add_authority( generate_private_key( name ).get_public_key(), 1 );
+      }
+    }
+    create.active = create.owner;
+    create.posting = authority( 1, barry_post_key.get_public_key(), 1 );
+    push_transaction( create, init_account_priv_key );
+    create.new_account_name = "carol";
+    create.owner = authority( 1, carol_public_key, 1, generate_private_key( "carol1" ).get_public_key(), 1 );
+    create.active = create.owner;
+    create.posting = authority( 1, carol_post_key.get_public_key(), 1 );
+    push_transaction( create, init_account_priv_key );
+    create.new_account_name = "diana";
+    create.owner = authority( 1, diana_public_key, 1 );
+    create.active = create.owner;
+    create.posting = authority( 1, diana_post_key.get_public_key(), 1 );
+    push_transaction( create, init_account_priv_key );
+    generate_block();
+
+    //add some source of RC so they can actually perform those (expensive) operations
+    vest( "initminer", "alice", ASSET( "10.000 TESTS" ) );
+    fund( "alice", 10000 );
+    vest( "initminer", "barry", ASSET( "10.000 TESTS" ) );
+    fund( "barry", 10000 );
+    vest( "initminer", "carol", ASSET( "10.000 TESTS" ) );
+    fund( "carol", 10000 );
+    vest( "initminer", "diana", ASSET( "10.000 TESTS" ) );
+    fund( "diana", 10000 );
+    generate_block();
+    //see explanation at the end of rc_pending_data_reset test
+    //note that we don't actually have access to data on transaction but whole block, so it is
+    //important for this test to always use just one transaction and fully reset before next one
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Changing authority and comparing RC usage" );
+
+    account_update_operation update;
+    update.account = "alice";
+    update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
+    push_transaction( update, alice_private_key );
+    auto alice_diff_usage = pending_data.get_differential_usage();
+    BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_new_accounts ], 0 );
+    BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_market_bytes ], 0 );
+    BOOST_REQUIRE_LT( alice_diff_usage[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_execution_time ], 0 );
+    auto alice_rc_usage = pending_data.get_pending_usage();
+    //check if state usage didn't end up being negative
+    BOOST_REQUIRE_EQUAL( alice_rc_usage[ resource_state_bytes ], 0 );
+    generate_block();
+    generate_block();
+
+    update.account = "carol";
+    update.active = authority( 1, generate_private_key( "carol_active" ).get_public_key(), 1 );
+    push_transaction( update, carol_private_key );
+    auto carol_diff_usage = pending_data.get_differential_usage();
+    BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_new_accounts ], 0 );
+    BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_market_bytes ], 0 );
+    BOOST_REQUIRE_LT( carol_diff_usage[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_execution_time ], 0 );
+    auto carol_rc_usage = pending_data.get_pending_usage();
+    //check if state usage didn't end up being negative
+    BOOST_REQUIRE_EQUAL( carol_rc_usage[ resource_state_bytes ], 0 );
+    generate_block();
+    generate_block();
+
+    update.account = "diana";
+    update.active = authority( 1, generate_private_key( "diana_active" ).get_public_key(), 1 );
+    push_transaction( update, diana_private_key );
+    auto diana_diff_usage = pending_data.get_differential_usage();
+    BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_new_accounts ], 0 );
+    BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_market_bytes ], 0 );
+    BOOST_REQUIRE_LT( diana_diff_usage[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_execution_time ], 0 );
+    auto diana_rc_usage = pending_data.get_pending_usage();
+    BOOST_REQUIRE_GT( diana_rc_usage[ resource_state_bytes ], 0 );
+    generate_block();
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_state_bytes ], HIVE_MAX_AUTHORITY_MEMBERSHIP * diana_diff_usage[ resource_state_bytes ] );
+    BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_state_bytes ], 2 * diana_diff_usage[ resource_state_bytes ] );
+    //check if test actually tests what it was supposed to (state usage would go negative if it wasn't for extra protection)
+    auto no_diff_usage = diana_rc_usage[ resource_state_bytes ] - diana_diff_usage[ resource_state_bytes ];
+    BOOST_REQUIRE_LT( no_diff_usage + alice_diff_usage[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_LT( no_diff_usage + carol_diff_usage[ resource_state_bytes ], 0 );
+
+    BOOST_TEST_MESSAGE( "Changing authority and using its negative usage to discount other operations" );
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    transfer_to_vesting_operation powerup;
+    powerup.from = "barry";
+    powerup.to = "barry";
+    powerup.amount = ASSET( "10.000 TESTS" );
+    tx.operations.push_back( powerup );
+    //that operation on itself has small positive state usage
+    delegate_vesting_shares_operation delegation;
+    delegation.delegator = "barry";
+    delegation.delegatee = "alice";
+    delegation.vesting_shares = ASSET( "5.000000 VESTS" );
+    tx.operations.push_back( delegation );
+    //that operation on itself has fairly noticable positive state usage
+    update.account = "barry";
+    update.active = authority( 1, generate_private_key( "barry_active" ).get_public_key(), 1 );
+    tx.operations.push_back( update );
+    //as we've seen above such update will have significant negative state usage
+    //some more ops so we can get positive state usage at the end (also NUM_KEYS can be used for tuning)
+    delegation.delegatee = "carol";
+    delegation.vesting_shares = ASSET( "5.000000 VESTS" );
+    tx.operations.push_back( delegation );
+    //delegation.delegatee = "diana";
+    //delegation.vesting_shares = ASSET( "5.000000 VESTS" );
+    //tx.operations.push_back( delegation );
+    sign( tx, barry_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+    auto barry_diff_usage = pending_data.get_differential_usage();
+    BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_new_accounts ], 0 );
+    BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_market_bytes ], 0 );
+    BOOST_REQUIRE_LT( barry_diff_usage[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_execution_time ], 0 );
+    auto barry_rc_usage = pending_data.get_pending_usage();
+    //check if we filled transaction enough to overcome discount from account update
+    BOOST_REQUIRE_GT( barry_rc_usage[ resource_state_bytes ], 0 );
+    generate_block();
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Comparing state usage with delegation in separate transaction" );
+    delegation.delegator = "alice";
+    delegation.delegatee = "barry";
+    push_transaction( delegation, alice_private_key );
+    auto alice_delegation_rc_usage = pending_data.get_pending_usage();
+    //check if we tuned the test so single delegation uses more state than authority reducing update mixed with couple delegations
+    BOOST_REQUIRE_LT( barry_rc_usage[ resource_state_bytes ], alice_delegation_rc_usage[ resource_state_bytes ] );
+    generate_block();
+    generate_block();
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing differential RC usage with multiple operations" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
+    skip_flags.skip_reject_not_enough_rc = 0;
+    skip_flags.skip_deduct_rc = 0;
+    skip_flags.skip_negative_rc_balance = 0;
+    skip_flags.skip_reject_unknown_delta_vests = 0;
+    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+
+    ACTORS( (alice)(carol) )
+    generate_block();
+    vest( "initminer", "alice", ASSET( "10.000 TESTS" ) );
+    vest( "initminer", "carol", ASSET( "10.000 TESTS" ) );
+    generate_block();
+    //see explanation at the end of rc_pending_data_reset test
+    //note that we don't actually have access to data on transaction but whole block, so it is
+    //important for this test to always use just one transaction and fully reset before next one
+    generate_block();
+
+    const auto& pending_data = db->get< rc_pending_data >();
+
+    BOOST_TEST_MESSAGE( "Testing when related witness does not exist before transaction" );
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    witness_update_operation witness;
+    witness.owner = "alice";
+    witness.url = "https://alice.wonder.land/my.cat";
+    witness.block_signing_key = generate_private_key( "alice_witness" ).get_public_key();
+    witness.props.account_creation_fee = legacy_hive_asset::from_amount( HIVE_MIN_ACCOUNT_CREATION_FEE );
+    witness.props.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+    witness.props.hbd_interest_rate = 0;
+    witness.fee = asset( 0, HIVE_SYMBOL );
+    tx.operations.push_back( witness );
+    witness.url = "https://alice.has.cat";
+    tx.operations.push_back( witness );
+    sign( tx, alice_private_key );
+    db->push_transaction( tx, 0 );
+    tx.clear();
+    auto alice_state_usage = pending_data.get_pending_usage()[ resource_state_bytes ];
+    generate_block();
+    generate_block();
+
+    witness.owner = "carol";
+    witness.url = "blocks@north.carolina";
+    witness.block_signing_key = generate_private_key( "carol_witness" ).get_public_key();
+    witness.props.account_creation_fee = legacy_hive_asset::from_amount( HIVE_MAX_ACCOUNT_CREATION_FEE / 2 );
+    witness.props.maximum_block_size = HIVE_SOFT_MAX_BLOCK_SIZE;
+    witness.props.hbd_interest_rate = 30 * HIVE_1_PERCENT;
+    witness.fee = asset( 100, HIVE_SYMBOL );
+    push_transaction( witness, carol_private_key );
+    auto carol_state_usage = pending_data.get_pending_usage()[ resource_state_bytes ];
+    generate_block();
+    generate_block();
+
+    //both witnesses take the same state space, even though alice had hers built with two operations
+    //it wouldn't calculate properly if visitor was run in pre-apply transaction instead of pre-apply
+    //operation (second witness update for alice would not yet see state resulting from first update)
+    BOOST_REQUIRE_EQUAL( alice_state_usage - 289, carol_state_usage - 178 ); //the difference is just size of tx
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
