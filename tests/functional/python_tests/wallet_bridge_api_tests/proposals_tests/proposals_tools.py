@@ -3,6 +3,11 @@ from datetime import datetime, timedelta
 from test_tools import Asset
 
 
+def add_quotes_to_bool_or_numeric(argument):
+    if argument is type(int) or type(bool):
+        return f'{argument}'
+
+
 def create_accounts_with_vests_and_tbd(wallet, accounts):
     wallet.create_accounts(len(accounts))
     with wallet.in_single_transaction():
@@ -12,6 +17,15 @@ def create_accounts_with_vests_and_tbd(wallet, accounts):
     with wallet.in_single_transaction():
         for account in accounts:
             wallet.api.transfer('initminer', account, Asset.Tbd(10000), 'memo')
+
+
+def date_from_now(*, weeks):
+    future_data = datetime.now() + timedelta(weeks=weeks)
+    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def get_accounts_name(accounts):
+    return [account.name for account in accounts]
 
 
 def prepare_proposals(wallet, accounts):
@@ -28,12 +42,3 @@ def prepare_proposals(wallet, accounts):
                                        Asset.Tbd(account_number * 100),
                                        f'subject-{account_number}',
                                        'permlink')
-
-
-def get_accounts_name(accounts):
-    return [account.name for account in accounts]
-
-
-def date_from_now(*, weeks):
-    future_data = datetime.now() + timedelta(weeks=weeks)
-    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
