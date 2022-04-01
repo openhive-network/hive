@@ -243,6 +243,31 @@ if( NOT( Boost_VERSION_MACRO LESS 106900 ) )
    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 endif()
 
+
+FIND_PACKAGE(Brotli)
+if( BROTLI_FOUND )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_BROTLI")
+else()
+  set(BROTLI_LIBRARIES)
+  set(BROTLI_INCLUDE_DIRS)
+endif()
+
+FIND_PACKAGE(Zstd)
+if( Zstd_FOUND )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_ZSTD")
+else()
+  set(Zstd_LIBRARIES)
+  set(Zstd_INCLUDE_DIRS)
+endif()
+
+FIND_PACKAGE(ZLIB)
+if( ZLIB_FOUND )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_ZLIB")
+else()
+  set(ZLIB_LIBRARIES)
+  set(ZLIB_INCLUDE_DIRS)
+endif( ZLIB_FOUND )
+
 if( WIN32 )
 
    message( STATUS "Configuring Hive on WIN32")

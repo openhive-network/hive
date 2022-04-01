@@ -75,7 +75,7 @@ namespace chain {
   typedef std::pair<uint32_t, TBenchmarkMidReport> TBenchmark;
 
   struct open_args
-    {
+  {
     fc::path data_dir;
     fc::path shared_mem_dir;
     uint64_t initial_supply = HIVE_INIT_SUPPLY;
@@ -89,13 +89,14 @@ namespace chain {
     fc::variant database_cfg;
     bool replay_in_memory = false;
     std::vector< std::string > replay_memory_indices{};
+    bool enable_block_log_compression = false;
 
     // The following fields are only used on reindexing
     uint32_t stop_replay_at = 0;
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
-    };
+  };
 
   /**
     *   @class database

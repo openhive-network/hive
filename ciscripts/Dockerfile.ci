@@ -7,7 +7,7 @@ ARG RUNTIME_IMAGE_TAG=:ubuntu-20.04
 FROM phusion/baseimage:focal-1.0.0 AS runtime
 ENV LANG=en_US.UTF-8
 
-RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y language-pack-en && apt-get install -y libsnappy1v5 libreadline8 libbrotli1 libzstd1 wget && apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################
 FROM runtime AS builder-tester-base
@@ -20,7 +20,7 @@ RUN apt-get update && \
 FROM builder-tester-base AS builder
 
 RUN apt-get update && \
-    apt-get install -y autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build && \
+    apt-get install -y autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev libbrotli-dev libzstd-dev perl ninja-build && \
     apt-get clean && rm -r /var/lib/apt/lists/*
 
 ###################################

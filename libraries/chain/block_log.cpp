@@ -1,4 +1,5 @@
 #include <hive/chain/block_log.hpp>
+#include <hive/protocol/config.hpp>
 #include <fstream>
 #include <fc/io/raw.hpp>
 
@@ -11,6 +12,19 @@
 #include <unistd.h>
 #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+
+#ifdef HAVE_ZSTD
+# include <zstd.h>
+#endif
+
+#ifdef HAVE_BROTLI
+# include <brotli/encode.h>
+# include <brotli/decode.h>
+#endif
+
+#ifdef HAVE_ZLIB
+# include <zlib.h>
+#endif
 
 #define MMAP_BLOCK_IO
 
@@ -48,6 +62,8 @@ namespace hive { namespace chain {
 
         // only accessed when appending a block, doesn't need locking
         ssize_t block_log_size;
+
+        bool compression_enabled = true;
 
         signed_block read_block_from_offset_and_size(uint64_t offset, uint64_t size);
         signed_block_header read_block_header_from_offset_and_size(uint64_t offset, uint64_t size);
@@ -301,6 +317,64 @@ namespace hive { namespace chain {
     return my->block_log_fd != -1;
   }
 
+  std::pair<uint64_t, block_log::block_flags_t> split_block_start_pos_with_flags(uint64_t block_start_pos_with_flags)
+  {
+    return std::make_pair(block_start_pos_with_flags & 0x00ffffffffffffffull, (block_log::block_flags_t)(block_start_pos_with_flags >> 56));
+  }
+
+  uint64_t combine_block_start_pos_with_flags(uint64_t block_start_pos, block_log::block_flags_t flags)
+  {
+    return block_start_pos | ((uint64_t)flags << 56);
+  }
+
+  uint64_t block_log::append_raw(const char* raw_block_data, size_t raw_block_size, block_flags_t flags)
+  {
+    try
+    {
+      uint64_t block_start_pos = my->block_log_size;
+      uint64_t block_start_pos_with_flags = combine_block_start_pos_with_flags(block_start_pos, flags);
+
+      // what we write to the file is the serialized data, followed by the index of the start of the
+      // serialized data.  Append that index so we can do it in a single write.
+      size_t block_size_including_start_pos = raw_block_size + sizeof(uint64_t);
+      std::unique_ptr<char[]> block_with_start_pos(new char[block_size_including_start_pos]);
+      memcpy(block_with_start_pos.get(), raw_block_data, raw_block_size);
+      *(uint64_t*)(block_with_start_pos.get() + raw_block_size) = block_start_pos_with_flags;
+
+      detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
+      my->block_log_size += block_size_including_start_pos;
+
+      // add it to the index
+      detail::block_log_impl::write_with_retry(my->block_index_fd, &block_start_pos_with_flags, sizeof(block_start_pos_with_flags));
+
+      return block_start_pos;
+    }
+    FC_LOG_AND_RETHROW()
+  }
+
+  std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_flags_t> block_log::read_raw_block_data_by_num(uint32_t block_num) const
+  {
+    uint64_t offsets_with_flags[2] = {0, 0};
+    uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
+    auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets_with_flags, sizeof(offsets_with_flags),  offset_in_index);
+    FC_ASSERT(bytes_read == sizeof(offsets_with_flags));
+
+    uint64_t this_block_start_pos;
+    block_flags_t this_block_flags;
+    std::tie(this_block_start_pos, this_block_flags) = split_block_start_pos_with_flags(offsets_with_flags[0]);
+    uint64_t next_block_start_pos;
+    block_flags_t next_block_flags;
+    std::tie(next_block_start_pos, next_block_flags) = split_block_start_pos_with_flags(offsets_with_flags[1]);
+
+    uint64_t serialized_data_size = next_block_start_pos - this_block_start_pos - sizeof(uint64_t);
+
+    std::unique_ptr<char[]> serialized_data(new char[serialized_data_size]);
+    auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), serialized_data_size, this_block_start_pos);
+    FC_ASSERT(total_read == serialized_data_size);
+
+    return std::make_tuple(std::move(serialized_data), serialized_data_size, this_block_flags);
+  }
+
   // threading guarantees:
   // - this function may only be called by one thread at a time
   // - It is safe to call `append` while any number of other threads 
@@ -311,22 +385,44 @@ namespace hive { namespace chain {
   {
     try
     {
-      uint64_t block_start_pos = my->block_log_size;
+      uint64_t block_start_pos;
       std::vector<char> serialized_block = fc::raw::pack_to_vector(b);
 
-      // what we write to the file is the serialized data, followed by the index of the start of the
-      // serialized data.  Append that index so we can do it in a single write.
-      unsigned serialized_byte_count = serialized_block.size();
-      serialized_block.resize(serialized_byte_count + sizeof(uint64_t));
-      *(uint64_t*)(serialized_block.data() + serialized_byte_count) = block_start_pos;
+      if (my->compression_enabled)
+      {
+        // here, we'll just use the first available method, assuming zstd > brotli > zlib.
+        // in the compress_block_log helper app, we try all three and use the best
+        try
+        {
+          std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size());
+          block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), (block_flags_t)block_flags::zstd);
+        }
+        catch (const fc::exception&)
+        {
+          try
+          {
+            std::tuple<std::unique_ptr<char[]>, size_t> brotli_compressed_block = compress_block_brotli(serialized_block.data(), serialized_block.size());
+            block_start_pos = append_raw(std::get<0>(brotli_compressed_block).get(), std::get<1>(brotli_compressed_block), (block_flags_t)block_flags::brotli);
+          }
+          catch (const fc::exception&)
+          {
+            try
+            {
+              std::tuple<std::unique_ptr<char[]>, size_t> deflate_compressed_block = compress_block_deflate(serialized_block.data(), serialized_block.size());
+              block_start_pos = append_raw(std::get<0>(deflate_compressed_block).get(), std::get<1>(deflate_compressed_block), (block_flags_t)block_flags::deflate);
+            }
+            catch (const fc::exception&)
+            {
+              // all compression methods failed, store the block uncompressed
+              block_start_pos = append_raw(serialized_block.data(), serialized_block.size(), 0);
+            }
+          }
+        }
+      }
+      else // compression not enabled
+        block_start_pos = append_raw(serialized_block.data(), serialized_block.size(), 0);
 
-      detail::block_log_impl::write_with_retry(my->block_log_fd, serialized_block.data(), serialized_block.size());
-      my->block_log_size += serialized_block.size();
-
-      // add it to the index
-      detail::block_log_impl::write_with_retry(my->block_index_fd, &block_start_pos, sizeof(block_start_pos));
-
-      // and update our cached head block
+      // update our cached head block
       boost::shared_ptr<signed_block> new_head = boost::make_shared<signed_block>(b);
       my->head.exchange(new_head);
 
@@ -342,6 +438,48 @@ namespace hive { namespace chain {
     // writes to file descriptors are flushed automatically
   }
 
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_log::block_flags_t flags)
+  {
+    try
+    {
+      switch (flags)
+      {
+      case (block_log::block_flags_t)block_log::block_flags::zstd:
+        return block_log::decompress_block_zstd(raw_block_data, raw_block_size);
+      case (block_log::block_flags_t)block_log::block_flags::brotli:
+        return block_log::decompress_block_brotli(raw_block_data, raw_block_size);
+      case (block_log::block_flags_t)block_log::block_flags::deflate:
+        return block_log::decompress_block_deflate(raw_block_data, raw_block_size);
+      case (block_log::block_flags_t)block_log::block_flags::uncompressed:
+        {
+          std::unique_ptr<char[]> block_data_copy(new char[raw_block_size]);
+          memcpy(block_data_copy.get(), raw_block_data, raw_block_size);
+          return std::make_tuple(std::move(block_data_copy), raw_block_size);
+        }
+      default:
+        FC_THROW("Unrecognized block_flags in block log");
+      }
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Fatal error decompressing block from block log: ${e}", (e));
+      exit(1);
+    }
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_flags_t>&& raw_block_data_tuple)
+  {
+    std::unique_ptr<char[]> raw_block_data = std::get<0>(std::move(raw_block_data_tuple));
+    size_t raw_block_size = std::get<1>(raw_block_data_tuple);
+    block_log::block_flags_t flags = std::get<2>(raw_block_data_tuple);
+
+    // avoid a copy if it's uncompressed
+    if (flags == (block_log::block_flags_t)block_log::block_flags::uncompressed)
+      return std::make_tuple(std::move(raw_block_data), raw_block_size);
+
+    return decompress_raw_block(raw_block_data.get(), raw_block_size, flags);
+  }
+
   optional< signed_block > block_log::read_block_by_num( uint32_t block_num )const
   {
     try
@@ -355,15 +493,13 @@ namespace hive { namespace chain {
         return optional<signed_block>();
       if (block_num == head_block->block_num())
         return *head_block;
+
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
-
-      uint64_t offsets[2] = {0, 0};
-      uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
-      auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets, sizeof(offsets),  offset_in_index);
-      FC_ASSERT(bytes_read == sizeof(offsets));
-      uint64_t serialized_data_size = offsets[1] - offsets[0] - sizeof(uint64_t);
-      return my->read_block_from_offset_and_size(offsets[0], serialized_data_size);
+      std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(read_raw_block_data_by_num(block_num));
+      signed_block block;
+      fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block);
+      return block;
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -384,12 +520,11 @@ namespace hive { namespace chain {
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
 
-      uint64_t offsets[2] = {0, 0};
-      uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
-      auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets, sizeof(offsets),  offset_in_index);
-      FC_ASSERT(bytes_read == sizeof(offsets));
-      uint64_t serialized_data_size = offsets[1] - offsets[0] - sizeof(uint64_t);
-      return my->read_block_header_from_offset_and_size(offsets[0], serialized_data_size);
+      std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(read_raw_block_data_by_num(block_num));
+
+      signed_block_header block_header;
+      fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block_header);
+      return block_header;
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -419,9 +554,14 @@ namespace hive { namespace chain {
         uint32_t number_of_blocks_to_read = last_block_num_from_disk - first_block_num + 1;
         uint32_t number_of_offsets_to_read = number_of_blocks_to_read + 1;
         // read all the offsets in one go
-        std::unique_ptr<uint64_t[]> offsets(new uint64_t[number_of_blocks_to_read + 1]);
+        std::unique_ptr<uint64_t[]> offsets_with_flags(new uint64_t[number_of_blocks_to_read + 1]);
         uint64_t offset_of_first_offset = sizeof(uint64_t) * (first_block_num - 1);
-        detail::block_log_impl::pread_with_retry(my->block_index_fd, offsets.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
+        detail::block_log_impl::pread_with_retry(my->block_index_fd, offsets_with_flags.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
+
+        std::unique_ptr<uint64_t[]> offsets(new uint64_t[number_of_blocks_to_read + 1]);
+        std::unique_ptr<block_flags_t[]> flags(new block_flags_t[number_of_blocks_to_read + 1]);
+        for (unsigned i = 0; i < number_of_blocks_to_read + 1; ++i)
+          std::tie(offsets[i], flags[i]) = split_block_start_pos_with_flags(offsets_with_flags[i]);
 
         // then read all the blocks in one go
         uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
@@ -434,8 +574,11 @@ namespace hive { namespace chain {
         {
           uint64_t offset_in_memory = offsets[i] - offsets[0];
           uint64_t size = offsets[i + 1] - offsets[i] - sizeof(uint64_t);
+
+          std::tuple<std::unique_ptr<char[]>, size_t> decompressed_raw_block = decompress_raw_block(block_data.get() + offset_in_memory, size, flags[i]);
+
           signed_block block;
-          fc::raw::unpack_from_char_array(block_data.get() + offset_in_memory, size, block);
+          fc::raw::unpack_from_char_array(std::get<0>(decompressed_raw_block).get(), std::get<1>(decompressed_raw_block), block);
           result.push_back(std::move(block));
         }
       }
@@ -457,11 +600,24 @@ namespace hive { namespace chain {
       // read the last int64 of the block log into `head_block_offset`, 
       // that's the index of the start of the head block
       FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
+      uint64_t head_block_offset_with_flags;
+      detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), 
+                                               block_log_size - sizeof(head_block_offset_with_flags));
       uint64_t head_block_offset;
-      detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset, sizeof(head_block_offset), 
-                                               block_log_size - sizeof(head_block_offset));
+      block_flags_t flags;
+      std::tie(head_block_offset, flags) = split_block_start_pos_with_flags(head_block_offset_with_flags);
 
-      return my->read_block_from_offset_and_size(head_block_offset, block_log_size - head_block_offset - sizeof(head_block_offset));
+      size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
+
+      std::unique_ptr<char[]> raw_data(new char[raw_data_size]);
+      auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, raw_data.get(), raw_data_size, head_block_offset);
+      FC_ASSERT(total_read == raw_data_size);
+
+      std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(std::make_tuple(std::move(raw_data), raw_data_size, flags));
+
+      signed_block block;
+      fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block);
+      return block;
     }
     FC_LOG_AND_RETHROW()
   }
@@ -567,6 +723,7 @@ namespace hive { namespace chain {
       fc::rename(new_index_file, my->index_file);
 #else //NOT USE_BACKWARDS_INDEX
       ilog( "Reconstructing Block Log Index in forward direction (old slower way, but allows for interruption)..." );
+      // note: this does not handle compressed blocks
       std::fstream block_stream;
       std::fstream index_stream;
 
@@ -624,6 +781,131 @@ namespace hive { namespace chain {
       FC_ASSERT(block_index_stat.st_size/sizeof(uint64_t) == block_num);
     }
     FC_LOG_AND_RETHROW()
+  }
+
+  void block_log::set_compression(bool enabled)
+  {
+    my->compression_enabled = enabled;
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_zstd(const char* uncompressed_block_data, 
+                                                                                          size_t uncompressed_block_size,
+                                                                                          fc::optional<int> compression_level)
+  {
+#ifdef HAVE_ZSTD
+    size_t zstd_max_size = ZSTD_compressBound(uncompressed_block_size);
+    std::unique_ptr<char[]> zstd_compressed_data(new char[zstd_max_size]);
+    size_t zstd_compressed_size = ZSTD_compress(zstd_compressed_data.get(), zstd_max_size,
+                                                uncompressed_block_data, uncompressed_block_size,
+                                                compression_level.value_or(ZSTD_CLEVEL_DEFAULT));
+    if (ZSTD_isError(zstd_compressed_size))
+      FC_THROW("Error compressing block with zstd");
+    return std::make_tuple(std::move(zstd_compressed_data), zstd_compressed_size);
+#else
+    FC_THROW("hived was not configured with zstd support");
+#endif
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_brotli(const char* uncompressed_block_data, 
+                                                                                            size_t uncompressed_block_size,
+                                                                                            fc::optional<int> compression_quality)
+  {
+#ifdef HAVE_BROTLI
+    size_t brotli_compressed_size = BrotliEncoderMaxCompressedSize(uncompressed_block_size);
+    std::unique_ptr<char[]> brotli_compressed_data(new char[brotli_compressed_size]);
+    if (!BrotliEncoderCompress(compression_quality.value_or(BROTLI_DEFAULT_QUALITY), BROTLI_DEFAULT_WINDOW, BROTLI_DEFAULT_MODE,
+                               uncompressed_block_size, (const uint8_t*)uncompressed_block_data, 
+                               &brotli_compressed_size, (uint8_t*)brotli_compressed_data.get()))
+      FC_THROW("Error compressing block with brotli");
+    return std::make_tuple(std::move(brotli_compressed_data), brotli_compressed_size);
+#else
+    FC_THROW("hived was not configured with brotli support");
+#endif
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_deflate(const char* uncompressed_block_data, 
+                                                                                             size_t uncompressed_block_size,
+                                                                                             fc::optional<int> compression_level)
+  {
+#ifdef HAVE_ZLIB
+    z_stream deflate_stream;
+    memset(&deflate_stream, 0, sizeof(deflate_stream));
+    if (deflateInit(&deflate_stream, compression_level.value_or(Z_DEFAULT_COMPRESSION)) == Z_OK)
+    {
+      size_t zlib_max_size = deflateBound(&deflate_stream, uncompressed_block_size);
+      std::unique_ptr<char[]> zlib_compressed_data(new char[zlib_max_size]);
+      deflate_stream.total_in = deflate_stream.avail_in = uncompressed_block_size;
+      deflate_stream.avail_out = zlib_max_size;
+      deflate_stream.next_in = (Bytef*)uncompressed_block_data;
+      deflate_stream.next_out = (Bytef*)zlib_compressed_data.get();
+      if (deflate(&deflate_stream, Z_FINISH) == Z_STREAM_END)
+      {
+        size_t zlib_compressed_size = deflate_stream.total_out;
+        deflateEnd(&deflate_stream);
+        return std::make_tuple(std::move(zlib_compressed_data), zlib_compressed_size);
+      }
+      deflateEnd(&deflate_stream);
+    }
+    FC_THROW("Error compressing block with zlib (deflate)");
+#else
+    FC_THROW("hived was not configured with zlib support");
+#endif
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_zstd(const char* compressed_block_data, 
+                                                                                            size_t compressed_block_size)
+  {
+#ifdef HAVE_ZSTD
+    std::unique_ptr<char[]> uncompressed_block_data(new char[HIVE_MAX_BLOCK_SIZE]);
+    size_t uncompressed_block_size = ZSTD_decompress(uncompressed_block_data.get(), HIVE_MAX_BLOCK_SIZE,
+                                                     compressed_block_data, compressed_block_size);
+    if (ZSTD_isError(uncompressed_block_size))
+      FC_THROW("Error decompressing block with zstd");
+    return std::make_tuple(std::move(uncompressed_block_data), uncompressed_block_size);
+#else
+    FC_THROW("hived was not configured with zstd support");
+#endif
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_brotli(const char* compressed_block_data, 
+                                                                                              size_t compressed_block_size)
+  {
+#ifdef HAVE_BROTLI
+    std::unique_ptr<char[]> uncompressed_block_data(new char[HIVE_MAX_BLOCK_SIZE]);
+    size_t uncompressed_block_size = HIVE_MAX_BLOCK_SIZE;
+    if (BrotliDecoderDecompress(compressed_block_size, (const uint8_t*)compressed_block_data,
+                                &uncompressed_block_size, (uint8_t*)uncompressed_block_data.get()) != BROTLI_DECODER_RESULT_SUCCESS)
+      FC_THROW("Error decompressing block with brotli");
+    return std::make_tuple(std::move(uncompressed_block_data), uncompressed_block_size);
+#else
+    FC_THROW("hived was not configured with brotli support");
+#endif
+  }
+
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_deflate(const char* compressed_block_data, 
+                                                                                               size_t compressed_block_size)
+  {
+#ifdef HAVE_ZLIB
+    z_stream inflate_stream;
+    memset(&inflate_stream, 0, sizeof(inflate_stream));
+    if (inflateInit(&inflate_stream) == Z_OK)
+    {
+      std::unique_ptr<char[]> uncompressed_block_data(new char[HIVE_MAX_BLOCK_SIZE]);
+      inflate_stream.next_in = (Bytef*)compressed_block_data;
+      inflate_stream.avail_in = compressed_block_size;
+      inflate_stream.next_out = (Bytef*)uncompressed_block_data.get(); 
+      inflate_stream.avail_out = HIVE_MAX_BLOCK_SIZE;
+      if (inflate(&inflate_stream, Z_FINISH) == Z_STREAM_END)
+      {
+        size_t uncompressed_block_size = inflate_stream.total_out;
+        inflateEnd(&inflate_stream);
+        return std::make_tuple(std::move(uncompressed_block_data), uncompressed_block_size);
+      }
+    }
+    FC_THROW("Error decompressing block with zlib (deflate)");
+#else
+    FC_THROW("hived was not configured with zlib support");
+#endif
   }
 
 } } // hive::chain

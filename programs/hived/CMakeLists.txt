@@ -27,7 +27,6 @@ if( HIVE_STATIC_BUILD )
       hive_plugins
       ${CMAKE_DL_LIBS}
       ${PLATFORM_SPECIFIC_LIBS}
-      ${BROTLI_LIBRARIES}
    )
 else( HIVE_STATIC_BUILD )
    target_link_libraries( hived PRIVATE
@@ -36,7 +35,6 @@ else( HIVE_STATIC_BUILD )
       hive_plugins
       ${CMAKE_DL_LIBS}
       ${PLATFORM_SPECIFIC_LIBS}
-      ${BROTLI_LIBRARIES}
    )
 endif( HIVE_STATIC_BUILD )
 
