@@ -9,6 +9,11 @@ import local_tools
 # TODO BUG LIST!
 """
 1. Problem with calling wallet_bridge_api.list_proposals with the wrong data types in the arguments(# BUG1) [SOLVED!]
+
+2. Problem with calling wallet_bridge_api.list_proposals with argument "['True']"
+     Sent: {"jsonrpc": "2.0", "id": 1, "method": "wallet_bridge_api.list_proposals", "params": [[[""], "True", "29", "0", "0"]]}'
+     Received: 'message': "Parse Error:Couldn't parse int64_t"
+     (# BUG2)
 """
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -37,9 +42,7 @@ def date_from_now(*, weeks):
     future_data = datetime.now() + timedelta(weeks=weeks)
     return future_data.strftime('%Y-%m-%dT%H:%M:%S')
 
-
-@pytest.mark.parametrize(
-    'start, limit, order_by, order_direction, status', [
+CORRECT_VALUES = [
         # START
         # At the moment there is an assumption, that no more than one start parameter is passed, more are ignored
 
@@ -86,6 +89,7 @@ def date_from_now(*, weeks):
         # LIMIT
         ([''], 0, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1000, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], True, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),   # BUG2
 
         # ORDER BY
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
@@ -99,10 +103,31 @@ def date_from_now(*, weeks):
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['votable']),
     ]
+
+
+@pytest.mark.parametrize(
+    'start, limit, order_by, order_direction, status', CORRECT_VALUES
 )
 def tests_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
     local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     local_tools.prepare_proposals(wallet, ACCOUNTS)
+    node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
+
+
+@pytest.mark.parametrize(
+    'start, limit, order_by, order_direction, status', CORRECT_VALUES
+)
+def tests_with_correct_values_with_quotes(node, wallet, start, limit, order_by, order_direction, status):
+    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    local_tools.prepare_proposals(wallet, ACCOUNTS)
+
+    for start_number in range(len(start)):
+        start[start_number] = local_tools.add_quotes_to_bool_or_numeric(start[start_number])
+    limit = local_tools.add_quotes_to_bool_or_numeric(limit)
+    order_by = local_tools.add_quotes_to_bool_or_numeric(order_by)
+    order_direction = local_tools.add_quotes_to_bool_or_numeric(order_direction)
+    status = local_tools.add_quotes_to_bool_or_numeric(status)
+
     node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
 

@@ -9,6 +9,11 @@ import local_tools
 1. Problem with calling wallet_bridge_api.list_proposal_votes with the wrong data types in the arguments(# BUG1) [SOLVED!]
 
 2. Problem with calling wallet_bridge_api.list_proposal_votes with the wrong data types in argument START(# BUG2)
+
+3. Problem with calling wallet_bridge_api.list_proposal_votes with argument "['True']"
+     Sent: {"jsonrpc": "2.0", "id": 1, "method": "wallet_bridge_api.list_proposal_votes", "params": [[[""], "True", "33", "0", "0"]]}'
+     Received: 'message': "Parse Error:Couldn't parse int64_t"
+     (# BUG3)
 """
 ACCOUNTS = [f'account-{i}' for i in range(5)]
 
@@ -30,11 +35,8 @@ STATUS = {
     'votable': 4
 }
 
-
-@pytest.mark.parametrize(
-    'start, limit, order_by, order_direction, status', [
+CORRECT_VALUES = [
         # START
-        # At the moment there is an assumption, that no more than one start parameter is passed, more are ignored
 
             # by_voter_proposal
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
@@ -59,6 +61,7 @@ STATUS = {
         # LIMIT
         ([''], 0, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1000, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        # ([''], True, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),  # BUG3
 
         # ORDER BY
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
@@ -71,9 +74,32 @@ STATUS = {
         # STATUS
         ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['votable']),
-    ],
+    ]
+
+@pytest.mark.parametrize(
+    'start, limit, order_by, order_direction, status', CORRECT_VALUES,
 )
 def tests_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
+    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    local_tools.prepare_proposals(wallet, ACCOUNTS)
+    with wallet.in_single_transaction():
+        for account in ACCOUNTS:
+            wallet.api.update_proposal_votes(account, [3], 1)
+
+    for start_number in range(len(start)):
+        start[start_number] = local_tools.add_quotes_to_bool_or_numeric(start[start_number])
+    limit = local_tools.add_quotes_to_bool_or_numeric(limit)
+    order_by = local_tools.add_quotes_to_bool_or_numeric(order_by)
+    order_direction = local_tools.add_quotes_to_bool_or_numeric(order_direction)
+    status = local_tools.add_quotes_to_bool_or_numeric(status)
+
+    node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
+
+
+@pytest.mark.parametrize(
+    'start, limit, order_by, order_direction, status', CORRECT_VALUES,
+)
+def tests_with_correct_values_in_quotes(node, wallet, start, limit, order_by, order_direction, status):
     local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     local_tools.prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
