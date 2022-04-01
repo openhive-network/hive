@@ -8,7 +8,7 @@ import local_tools
 
 # TODO BUG LIST!
 """
-1. Problem with calling wallet_bridge_api.list_proposals with the wrong data types in the arguments(# BUG1)
+1. Problem with calling wallet_bridge_api.list_proposals with the wrong data types in the arguments(# BUG1) [SOLVED!]
 """
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -141,19 +141,15 @@ def tests_with_incorrect_values(node, wallet, start, limit, order_by, order_dire
 
         # LIMIT
         ([""], 'invalid-argument', 29, 0, 0),
-        # ([""], True, 29, 0, 0),  # BUG1
 
         # ORDER TYPE
         ([""], 100, 'invalid-argument', 0, 0),
-        ([""], 100, True, 0, 0),
 
         # ORDER DIRECTION
         ([""], 100, 29, 'invalid-argument', 0),
-        # ([""], 100, 29, True, 0),  # BUG1
 
         # STATUS
         ([""], 100, 29, 0, 'invalid-argument'),
-        # ([""], 100, 29, 0, True),  # BUG1
     ]
 )
 def tests_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
