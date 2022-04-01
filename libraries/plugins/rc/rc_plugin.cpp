@@ -31,6 +31,9 @@ namespace hive { namespace plugins { namespace rc {
 
 using hive::plugins::block_data_export::block_data_export_plugin;
 
+bool prepare_differential_usage( const operation& tx, const database& db, count_resources_result& result );
+bool prepare_differential_usage( const optional_automated_action& action, const database& db, count_resources_result& result );
+
 void count_resources( const optional_automated_action& action, const size_t size, count_resources_result& result, const fc::time_point_sec now );
 account_name_type get_resource_user( const optional_automated_action& action );
 
@@ -56,7 +59,7 @@ class rc_plugin_impl
     void on_post_reindex( const reindex_notification& note );
     void on_pre_apply_block( const block_notification& note );
     void on_post_apply_block( const block_notification& note );
-    //void on_pre_apply_transaction( const transaction_notification& note );
+    void on_pre_apply_transaction( const transaction_notification& note );
     void on_post_apply_transaction( const transaction_notification& note );
     void on_pre_apply_operation( const operation_notification& note );
     void on_post_apply_operation( const operation_notification& note );
@@ -316,14 +319,28 @@ int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_inf
   return total_cost;
 }
 
+void rc_plugin_impl::on_pre_apply_transaction( const transaction_notification& note )
+{
+  if( before_first_block() )
+    return;
+
+  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.reset_differential_usage();
+  } );
+}
+
 void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& note )
 { try {
   if( before_first_block() )
     return;
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
   rc_transaction_info tx_info;
+  // Initialize with (negative) usage for state that was updated by transaction
+  tx_info.usage = pending_data.get_differential_usage();
 
   // How many resources does the transaction use?
   count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage, _db.head_block_time() );
@@ -333,7 +350,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   // How many RC does this transaction cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, tx_info );
 
-  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  _db.modify( pending_data, [&]( rc_pending_data& data )
   {
     data.add_pending_usage( tx_info.usage, tx_info.cost );
   } );
@@ -1051,6 +1068,15 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
 
   // ilog( "Calling pre-vtor on ${op}", ("op", note.op) );
   note.op.visit( vtor );
+
+  count_resources_result differential_usage;
+  if( prepare_differential_usage( note.op, _db, differential_usage ) )
+  {
+    _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+    {
+      data.add_differential_usage( differential_usage );
+    } );
+  }
   } FC_CAPTURE_AND_RETHROW( (note.op) )
 }
 
@@ -1117,6 +1143,15 @@ void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notific
   vtor._skip = _skip;
 
   note.action.visit( vtor );
+
+  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.reset_differential_usage();
+
+    count_resources_result differential_usage;
+    if( prepare_differential_usage( note.action, _db, differential_usage ) )
+      data.add_differential_usage( differential_usage );
+  } );
 }
 
 void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notification& note )
@@ -1125,12 +1160,15 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
     return;
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
+  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
   // There is no transaction equivalent for actions, so post apply transaction logic for actions goes here.
   post_apply_optional_action_visitor vtor( _db );
   note.action.visit( vtor );
 
   rc_optional_action_info opt_action_info;
+  // Initialize with (negative) usage for state that was updated by action
+  opt_action_info.usage = pending_data.get_differential_usage();
 
   // How many resources do the optional actions use?
   count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
@@ -1139,7 +1177,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   // How many RC do these actions cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, opt_action_info );
 
-  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  _db.modify( pending_data, [&]( rc_pending_data& data )
   {
     data.add_pending_usage( opt_action_info.usage, opt_action_info.cost );
   } );
@@ -1220,8 +1258,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       { try { my->on_pre_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_block_conn = db.add_post_apply_block_handler( [&]( const block_notification& note )
       { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    //my->_pre_apply_transaction_conn = db.add_pre_apply_transaction_handler( [&]( const transaction_notification& note )
-    //   { try { my->on_pre_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    my->_pre_apply_transaction_conn = db.add_pre_apply_transaction_handler( [&]( const transaction_notification& note )
+      { try { my->on_pre_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_transaction_conn = db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
       { try { my->on_post_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note )
@@ -1301,7 +1339,7 @@ void rc_plugin::plugin_shutdown()
   chain::util::disconnect_signal( my->_post_reindex_conn );
   chain::util::disconnect_signal( my->_pre_apply_block_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
-  // chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
+  chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
