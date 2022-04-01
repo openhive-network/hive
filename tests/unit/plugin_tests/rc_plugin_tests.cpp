@@ -1503,7 +1503,10 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     tx.clear();
     bob_owner_key = bob_new_owner_key;
     check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
-    check( pending_data.get_pending_usage(), true ); //this is fully paid
+    //this is fully paid:
+    BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_execution_time ], 0 );
     clean();
 
     validate_database();

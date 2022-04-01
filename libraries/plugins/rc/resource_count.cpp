@@ -558,10 +558,11 @@ struct count_operation_visitor
 
   void operator()( const recover_account_operation& op ) const
   {
-    subsidized_op = true;
+    subsidized_op = 1 == ( op.new_owner_authority.account_auths.size() + op.new_owner_authority.key_auths.size() );
     subsidized_signatures = 2; //needs recent and new signature
     //note: multisig stolen accounts are not subsidized, circumventing cost of setting up
-    //new multisig is also not allowed
+    //new multisig is also not allowed, in other words only replacing single stolen key
+    //with new single key or account authority is subsidized
 
     //cost still calculated for case when it is not subsidized
     //NOTE: differential usage (see count_differential_operation_visitor)
