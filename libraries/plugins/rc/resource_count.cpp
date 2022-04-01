@@ -132,7 +132,8 @@ bool prepare_differential_usage( const operation& op, const database& db, count_
   count_differential_operation_visitor vtor( size_info, db );
 
   bool nonempty = op.visit( vtor );
-  result[ resource_state_bytes ] += vtor.state_bytes_count;
+  if( nonempty )
+    result[ resource_state_bytes ] += vtor.state_bytes_count;
   return nonempty;
 }
 
@@ -142,7 +143,8 @@ bool prepare_differential_usage( const optional_automated_action& action, const 
   count_differential_optional_action_visitor vtor( size_info, db );
 
   bool nonempty = action.visit( vtor );
-  result[ resource_state_bytes ] += vtor.state_bytes_count;
+  if( nonempty )
+    result[ resource_state_bytes ] += vtor.state_bytes_count;
   return nonempty;
 }
 
