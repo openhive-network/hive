@@ -136,3 +136,17 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+add_executable( compress_block_log compress_block_log.cpp )
+target_include_directories( compress_block_log PRIVATE ${BROTLI_INCLUDE_DIRS})
+target_link_libraries( compress_block_log
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIB} ${PLATFORM_SPECIFIC_LIBS})
+
+install( TARGETS
+   compress_block_log
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+

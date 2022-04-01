@@ -41,9 +41,9 @@ add_library( hive_chain
            )
 
 target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase hive_schema appbase
-                       ${PATCH_MERGE_LIB} )
+                       ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${Zstd_LIBRARIES} ${ZLIB_LIBRARIES})
 target_include_directories( hive_chain
-                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${BROTLI_INCLUDE_DIRS}" "${Zstd_INCLUDE_DIRS}" "${ZLIB_INCLUDE_DIRS}"
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if( CLANG_TIDY_EXE )

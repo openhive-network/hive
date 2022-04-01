@@ -177,6 +177,7 @@ void database::initialize_state_independent_data(const open_args& args)
   with_write_lock([&]()
   {
     _block_log.open(args.data_dir / "block_log");
+    _block_log.set_compression(args.enable_block_log_compression);
   });
 
   _shared_file_full_threshold = args.shared_file_full_threshold;

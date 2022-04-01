@@ -36,6 +36,12 @@ namespace hive { namespace chain {
   class block_log {
     public:
       typedef uint8_t block_flags_t;
+      enum class block_flags {
+        uncompressed = 0,
+        deflate = 1,
+        brotli = 2,
+        zstd = 3
+      };
 
       block_log();
       ~block_log();
@@ -48,19 +54,33 @@ namespace hive { namespace chain {
       bool is_open()const;
 
       uint64_t append( const signed_block& b );
+      uint64_t append_raw(const char* raw_block_data, size_t raw_block_size, block_flags_t flags);
+
       void flush();
-      //TODOoptional<std::pair<std::vector<char>, block_flags_t>> read_raw_block_data_by_num(uint32_t block_num) const;
-      optional< signed_block > read_block_by_num( uint32_t block_num )const;
-      optional< signed_block_header > read_block_header_by_num( uint32_t block_num )const;
+      std::tuple<std::unique_ptr<char[]>, size_t, block_flags_t> read_raw_block_data_by_num(uint32_t block_num) const;
+      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_flags_t>&& raw_block_data_tuple);
+
+      optional<signed_block> read_block_by_num( uint32_t block_num )const;
+      optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
       signed_block read_head()const;
       const boost::shared_ptr<signed_block> head() const;
+      void set_compression(bool enabled);
 
+      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<int> compression_level = fc::optional<int>());
+      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_brotli(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<int> compression_quality = fc::optional<int>());
+      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_deflate(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<int> compression_level = fc::optional<int>());
+
+      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size);
+      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_brotli(const char* compressed_block_data, size_t compressed_block_size);
+      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_deflate(const char* compressed_block_data, size_t compressed_block_size);
     private:
       void construct_index( bool resume = false, uint64_t index_pos = 0 );
+      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_log::block_flags_t flags);
 
       std::unique_ptr<detail::block_log_impl> my;
   };
 
 } }
+FC_REFLECT_ENUM(hive::chain::block_log::block_flags, (uncompressed)(deflate)(brotli)(zstd))
