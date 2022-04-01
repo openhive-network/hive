@@ -6,7 +6,7 @@ import local_tools
 
 # TODO BUG LIST!
 """
-1. Problem with calling wallet_bridge_api.find_proposals with the wrong data types in the arguments(# BUG1)
+1. Problem with calling wallet_bridge_api.find_proposals with the wrong data types in the arguments(# BUG1) [SOLVED!]
 """
 ACCOUNTS = [f'account-{i}' for i in range(5)]
 
@@ -41,7 +41,6 @@ def tests_with_incorrect_values(node, wallet, proposal_id):
 @pytest.mark.parametrize(
     'proposal_id', [
         'invalid-argument',
-        # True,  # BUG1
     ]
 )
 def tests_with_incorrect_type_of_argument(node, proposal_id):
