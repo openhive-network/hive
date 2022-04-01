@@ -75,6 +75,17 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
       // What the last block does has been changed by adding to node_property_object, so we have to re-apply it
       db.pop_block();
+      // ABW: this is highly problematic, since popping block moves all its transactions to popped list,
+      // which means they will be reapplied after push_block calls post-apply block notification (which
+      // calls apply_debug_updates). It means the order between transactions and debug update changes
+      // which can lead to exceptions (that will be fully handled inside HIVE_TRY_NOTIFY, so if you don't
+      // pay attention to log messages, you won't notice). Maybe a better way would be to create debug
+      // operation (that would only work in testnet configuration) or a custom_operation that would be
+      // observed and handled by debug plugin. Such solution would also mean it is possible to interweave
+      // normal transactions and debug updates in single block (f.e. account created, debug filled with
+      // currency, followed by transfer to another account and that repeated for another pair of accounts
+      // - currently it would not work, because there can only be one debug update per block and it is
+      // not applied where it was called in relation to rest of transactions).
       hive::chain::existing_block_flow_control block_ctrl( head_block );
       db.push_block( block_ctrl, skip );
     }
