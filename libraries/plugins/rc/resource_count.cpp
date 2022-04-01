@@ -124,6 +124,9 @@ bool prepare_differential_usage( const operation& op, const database& db, count_
   //first creates account, then sets up complex authorization for it with account update - if we tried
   //differential usage before whole transaction, the affected account would not even exist yet, but
   //when we do it just before each operation then account update will already see correct state
+  //ABW: ok, actually above would not be valid tx (due to authorization object not existing during
+  //signature verification), but we can have two witness updates in the same tx or who knows what future
+  //operations will support differential usage - we are better prepared that way
 
   static const state_object_size_info size_info;
   count_differential_operation_visitor vtor( size_info, db );
