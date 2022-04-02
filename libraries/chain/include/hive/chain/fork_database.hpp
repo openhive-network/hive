@@ -117,6 +117,29 @@ namespace hive { namespace chain {
 
       void set_max_size( uint32_t s );
 
+#define DEBUG_FORKDB_LOCK_TIMES
+      class int_incrementer2
+      {
+        public:
+          int_incrementer2( std::atomic<int32_t>& target) : _target(target)
+          {
+            ++_target;
+            _start_locking = fc::time_point::now();
+          }
+          int_incrementer2( int_incrementer2& ii) : _target(ii._target), _start_locking(ii._start_locking) { ++_target; }
+          ~int_incrementer2()
+          {
+            --_target;
+            fc::microseconds fork_lock_duration = fc::time_point::now() - _start_locking;
+            fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release fork_lock", ("held", fork_lock_duration.count()));
+          }
+          int32_t get()const { return _target; }
+
+        private:
+          std::atomic<int32_t>& _target;
+          fc::time_point _start_locking;
+      };
+
       template< typename Lambda >
       auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) const -> decltype( (*(Lambda*)nullptr)() )
       {
@@ -125,27 +148,31 @@ namespace hive { namespace chain {
 #else
         chainbase::read_lock lock( _rw_lock, boost::defer_lock_t() );
 #endif
+        fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 #ifdef DEBUG_FORKDB_LOCK_TIMES
-        fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, fork_read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", (_read_lock_count)(_write_lock_count)); 
-#endif        
-#ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        chainbase::int_incrementer ii( _read_lock_count );
+        int_incrementer2 ii(_read_lock_count);
 #endif
-
         if( !wait_micro )
         {
           lock.lock();
         }
-        else
+        else //use lock with timeout
         {
-          if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
+          boost::posix_time::ptime timeout_time = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(wait_micro);
+          while (!lock.timed_lock(timeout_time))
           {
-            //fc_wlog(fc::logger::get("chainlock"),"timedout getting fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",(_read_lock_count)(_write_lock_count));
-            CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
+            if (boost::posix_time::microsec_clock::universal_time() >= timeout_time)
+            {
+              fc_wlog(fc::logger::get("chainlock"),"timedout getting fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+                      ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
+              CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
+            }
           }
         }
-        //fc_wlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",(_read_lock_count)(_write_lock_count));
+        fc_wlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
       
         return callback();
       }
@@ -153,38 +180,24 @@ namespace hive { namespace chain {
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        chainbase::write_lock lock( _rw_lock, boost::defer_lock_t() );
-        //fc_wlog(fc::logger::get("chainlock"), "trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", (_read_lock_count)(_write_lock_count));
-#ifdef CHAINBASE_CHECK_LOCKING
-        BOOST_ATTRIBUTE_UNUSED
-        chainbase::int_incrementer ii( _write_lock_count );
-#endif
+//chainbase::write_lock lock( _rw_lock, boost::defer_lock_t() );
+        chainbase::write_lock lock( _rw_lock, boost::interprocess::defer_lock_type() );
+        fc_wlog(fc::logger::get("chainlock"), "trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 #ifdef DEBUG_FORKDB_LOCK_TIMES
-        fc::time_point start_acquire = fc::time_point::now();
+        BOOST_ATTRIBUTE_UNUSED
+        int_incrementer2 ii(_write_lock_count);
 #endif
         lock.lock();
-#ifdef DEBUG_FORKDB_LOCK_TIMES
-        fc::time_point start_locked = fc::time_point::now();
-        fc::microseconds fork_write_acquire = start_locked - start_acquire;
-        fc_wlog(fc::logger::get("chainlock"), "Took ${acquire}µs to get fork_write_lock,  write_lock_count=${_write_lock_count}", ("acquire", fork_write_acquire.count())(_write_lock_count));
-
-        struct lock_release_timer {
-          fc::time_point start_locked;
-          lock_release_timer(fc::time_point start) : start_locked(start) {}
-          ~lock_release_timer() {
-            fc::microseconds fork_writelock_duration = fc::time_point::now() - start_locked;
-            fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to release fork_write_lock", ("held", fork_writelock_duration.count()));
-          }
-        }
-        lock_release_timer(start_locked); 
-#endif
+        fc_wlog(fc::logger::get("chainlock"),"got fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
         return callback();
       }
 
     private:
       mutable chainbase::read_write_mutex _rw_lock;
-      mutable int32_t                     _read_lock_count = 0;
-      mutable int32_t                     _write_lock_count = 0;
+      mutable std::atomic<int32_t> _read_lock_count;
+      mutable std::atomic<int32_t> _write_lock_count;
 
     private:
       /** @return a pointer to the newly pushed item */

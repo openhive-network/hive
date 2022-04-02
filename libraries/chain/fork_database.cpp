@@ -5,7 +5,9 @@
 
 namespace hive { namespace chain {
 
-fork_database::fork_database()
+fork_database::fork_database() :
+  _read_lock_count(0),
+  _write_lock_count(0)
 {
 }
 void fork_database::reset()
