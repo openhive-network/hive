@@ -54,7 +54,7 @@ namespace detail
       const auto& dgpo = _chain.db().get_dynamic_global_properties();
 
       return ( dgpo.time < now - fc::seconds( max_block_age ) );
-    });
+    }, fc::seconds(1));
   }
 
 } // detail

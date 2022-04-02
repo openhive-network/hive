@@ -212,9 +212,9 @@ namespace chain {
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
       optional<signed_block>     fetch_block_by_id( const block_id_type& id )const;
       optional<signed_block_header> fetch_block_header_by_id( const block_id_type& id )const;
-      optional<signed_block_header> fetch_block_header_by_number( uint32_t num )const;
-      optional<signed_block>     fetch_block_by_number( uint32_t num )const;
-      std::vector<signed_block>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count );
+      optional<signed_block_header> fetch_block_header_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      optional<signed_block>     fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      std::vector<signed_block>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
       const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
@@ -574,9 +574,9 @@ namespace chain {
       uint32_t         head_block_num()const;
       block_id_type    head_block_id()const;
 
-      time_point_sec   head_block_time_from_fork_db()const;
-      uint32_t         head_block_num_from_fork_db()const;
-      block_id_type    head_block_id_from_fork_db()const;
+      time_point_sec   head_block_time_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
+      uint32_t         head_block_num_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
+      block_id_type    head_block_id_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
 
       node_property_object& node_properties();
 

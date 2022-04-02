@@ -24,28 +24,23 @@ namespace chainbase {
   // If you want to use the std allocator instead of the boost::interprocess one (for testing purposes) uncomment the following line:
   // #define ENABLE_STD_ALLOCATOR // ENABLE_STD_ALLOCATOR option has been removed from CMake file.
 
-  #ifdef ENABLE_STD_ALLOCATOR
-    template< typename T >
-    using allocator = std::allocator< T >;
+#ifdef ENABLE_STD_ALLOCATOR
+  template< typename T >
+  using allocator = std::allocator< T >;
+#else
+  template< typename T >
+  using allocator = bip::allocator<T, bip::managed_mapped_file::segment_manager>;
+#endif
 
-    typedef boost::shared_mutex read_write_mutex;
-    typedef boost::shared_lock< read_write_mutex > read_lock;
-  #else
-    template< typename T >
-    using allocator = bip::allocator<T, bip::managed_mapped_file::segment_manager>;
+  typedef boost::shared_mutex read_write_mutex;
+  typedef boost::shared_lock<read_write_mutex> read_lock;
+  typedef boost::unique_lock<read_write_mutex> write_lock;
 
-    typedef boost::interprocess::interprocess_sharable_mutex read_write_mutex;
-    typedef boost::interprocess::sharable_lock< read_write_mutex > read_lock;
-  #endif
-
-  //typedef boost::unique_lock< read_write_mutex > write_lock;
-  typedef boost::interprocess::scoped_lock< read_write_mutex > write_lock;
-
-  #ifdef ENABLE_STD_ALLOCATOR
-    #define _ENABLE_STD_ALLOCATOR 1
-  #else
-    #define _ENABLE_STD_ALLOCATOR 0
-  #endif
+#ifdef ENABLE_STD_ALLOCATOR
+# define _ENABLE_STD_ALLOCATOR 1
+#else
+# define _ENABLE_STD_ALLOCATOR 0
+#endif
 
   using shared_string = std::conditional< _ENABLE_STD_ALLOCATOR,
                 std::string,

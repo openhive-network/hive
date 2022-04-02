@@ -81,9 +81,9 @@ namespace hive { namespace chain {
       // functions disagree about what the head block is, so it's not appropriate
       // to rely on these values when, e.g, evaluating blocks or transactions.
       // They're good enough for the p2p layer, though.
-      time_point_sec   head_block_time()const;
-      uint32_t         head_block_num()const;
-      block_id_type    head_block_id()const;
+      time_point_sec   head_block_time(fc::microseconds wait_for_microseconds = fc::microseconds())const;
+      uint32_t         head_block_num(fc::microseconds wait_for_microseconds = fc::microseconds())const;
+      block_id_type    head_block_id(fc::microseconds wait_for_microseconds = fc::microseconds())const;
 
       /**
         *  @return the new head block ( the longest fork )
@@ -99,8 +99,8 @@ namespace hive { namespace chain {
       pair< branch_type, branch_type >  fetch_branch_from(block_id_type first, block_id_type second)const;
       shared_ptr<fork_item>            walk_main_branch_to_num_unlocked( uint32_t block_num )const;
       shared_ptr<fork_item>            walk_main_branch_to_num( uint32_t block_num )const;
-      shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num )const;
-      vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count )const;
+      shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<block_id_type> get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, /* out */ fc::optional<uint32_t>& blocks_number_needed_from_block_log);
 
       struct block_id;
@@ -141,36 +141,25 @@ namespace hive { namespace chain {
       };
 
       template< typename Lambda >
-      auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) const -> decltype( (*(Lambda*)nullptr)() )
+      auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) const -> decltype( (*(Lambda*)nullptr)() )
       {
-#ifndef ENABLE_STD_ALLOCATOR
-        chainbase::read_lock lock( _rw_lock, boost::interprocess::defer_lock_type() );
-#else
-        chainbase::read_lock lock( _rw_lock, boost::defer_lock_t() );
-#endif
+        chainbase::read_lock lock(_rw_lock, boost::defer_lock_t());
+
         fc_wlog(fc::logger::get("chainlock"), "trying to get fork_read_lock, read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 #ifdef DEBUG_FORKDB_LOCK_TIMES
         BOOST_ATTRIBUTE_UNUSED
         int_incrementer2 ii(_read_lock_count);
 #endif
-        if( !wait_micro )
-        {
+        if (wait_for_microseconds == fc::microseconds())
           lock.lock();
-        }
-        else //use lock with timeout
+        else if (!lock.try_lock_for(boost::chrono::microseconds(wait_for_microseconds.count()))) // use lock with timeout
         {
-          boost::posix_time::ptime timeout_time = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(wait_micro);
-          while (!lock.timed_lock(timeout_time))
-          {
-            if (boost::posix_time::microsec_clock::universal_time() >= timeout_time)
-            {
-              fc_wlog(fc::logger::get("chainlock"),"timedout getting fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
-                      ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
-              CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
-            }
-          }
+          fc_wlog(fc::logger::get("chainlock"),"timedout getting fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+                  ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
+          CHAINBASE_THROW_EXCEPTION( forkdb_lock_exception() );
         }
+
         fc_wlog(fc::logger::get("chainlock"),"got fork_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
       
@@ -180,8 +169,7 @@ namespace hive { namespace chain {
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-//chainbase::write_lock lock( _rw_lock, boost::defer_lock_t() );
-        chainbase::write_lock lock( _rw_lock, boost::interprocess::defer_lock_type() );
+        chainbase::write_lock lock(_rw_lock, boost::defer_lock_t());
         fc_wlog(fc::logger::get("chainlock"), "trying to get fork_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
                 ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 #ifdef DEBUG_FORKDB_LOCK_TIMES
@@ -196,8 +184,8 @@ namespace hive { namespace chain {
 
     private:
       mutable chainbase::read_write_mutex _rw_lock;
-      mutable std::atomic<int32_t> _read_lock_count;
-      mutable std::atomic<int32_t> _write_lock_count;
+      mutable std::atomic<int32_t> _read_lock_count = {0};
+      mutable std::atomic<int32_t> _write_lock_count = {0};
 
     private:
       /** @return a pointer to the newly pushed item */

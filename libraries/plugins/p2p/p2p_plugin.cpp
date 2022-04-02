@@ -459,8 +459,7 @@ void p2p_plugin_impl::connection_count_changed( uint32_t peer_count )
 }
 
 uint32_t p2p_plugin_impl::get_block_number( const graphene::net::item_hash_t& block_id )
-{
-  try {
+{ try {
   return block_header::num_from_id(block_id);
 } FC_CAPTURE_AND_RETHROW( (block_id) ) }
 
