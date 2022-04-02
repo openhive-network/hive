@@ -250,10 +250,11 @@ namespace chainbase {
     * In C++ the only way to implement finally is to create a class
     * with a destructor, so that's what we do here.
     */
+  template <typename IntType>
   class int_incrementer
   {
     public:
-      int_incrementer( int32_t& target ) : _target(target)
+      int_incrementer( IntType& target ) : _target(target)
       { ++_target; }
 
       int_incrementer( int_incrementer& ii ) : _target( ii._target )
@@ -266,7 +267,7 @@ namespace chainbase {
       { return _target; }
 
     private:
-      int32_t& _target;
+      IntType& _target;
   };
 
   /**
@@ -917,7 +918,7 @@ namespace chainbase {
 
           vector< std::unique_ptr<abstract_session> > _index_sessions;
           int64_t _revision = -1;
-          int_incrementer _session_incrementer;
+          int_incrementer<int32_t> _session_incrementer;
       };
 
       session start_undo_session();
@@ -1116,40 +1117,33 @@ namespace chainbase {
       }
 
       template< typename Lambda >
-      auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) -> decltype( (*(Lambda*)nullptr)() )
+      auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) -> decltype( (*(Lambda*)nullptr)() )
       {
-#ifndef ENABLE_STD_ALLOCATOR
-        read_lock lock( _rw_lock, bip::defer_lock_type() );
-#else
-        read_lock lock( _rw_lock, boost::defer_lock_t() );
-#endif
+        read_lock lock(_rw_lock, boost::defer_lock_t());
 
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        int_incrementer ii( _read_lock_count );
+        int_incrementer<std::atomic<int32_t>> ii(_read_lock_count);
 #endif
 
-        if( !wait_micro )
-        {
+        if (wait_for_microseconds == fc::microseconds())
           lock.lock();
-        }
-        else
-        {
-          if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
-            CHAINBASE_THROW_EXCEPTION( lock_exception() );
-        }
-        fc_dlog(fc::logger::get("chainlock"),"_read_lock_count=${_read_lock_count}",(_read_lock_count));
+        else if (!lock.try_lock_for(boost::chrono::microseconds(wait_for_microseconds.count())))
+          CHAINBASE_THROW_EXCEPTION( lock_exception() );
+
+        fc_dlog(fc::logger::get("chainlock"), "_read_lock_count=${_read_lock_count}", 
+                ("_read_lock_count", _read_lock_count.load()));
+
         return callback();
       }
 
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        //write_lock lock( _rw_lock, boost::defer_lock_t() );
-        write_lock lock( _rw_lock, boost::interprocess::defer_lock_type() );
+        write_lock lock(_rw_lock, boost::defer_lock_t());
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        int_incrementer ii( _write_lock_count );
+        int_incrementer<std::atomic<int32_t>> ii(_write_lock_count);
 #endif
 
         lock.lock();
@@ -1232,8 +1226,8 @@ namespace chainbase {
 
       bfs::path                                                   _data_dir;
 
-      int32_t                                                     _read_lock_count = 0;
-      int32_t                                                     _write_lock_count = 0;
+      std::atomic<int32_t>                                        _read_lock_count = {0};
+      std::atomic<int32_t>                                        _write_lock_count = {0};
       bool                                                        _enable_require_locking = false;
 
       bool                                                        _is_open = false;

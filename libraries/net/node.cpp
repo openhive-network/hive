@@ -3172,7 +3172,7 @@ namespace graphene { namespace net {
       try
       {
         std::vector<fc::uint160_t> contained_transaction_message_ids;
-        dlog("p2p pushing sync block #${block_number} ${block_id}", (block_number) (block_id));
+        fc_dlog(fc::logger::get("sync"), "p2p pushing sync block #${block_number} ${block_id}", (block_number) (block_id));
         _delegate->handle_block(block_message_to_send, true, contained_transaction_message_ids);
 
         if (block_number % 1000 == 0)

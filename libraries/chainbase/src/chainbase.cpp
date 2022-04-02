@@ -6,9 +6,9 @@
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
-  {
+{
   return 512 * 1024;
-  }
+}
 
   class environment_check {
 

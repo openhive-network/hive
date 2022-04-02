@@ -70,7 +70,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
 {
   get_block_range_return result;
   auto count = args.count;
-  auto head = _db.head_block_num_from_fork_db();
+  auto head = _db.head_block_num_from_fork_db(fc::seconds(1));
   if( args.starting_block_num > head )
     count = 0;
   else if( args.starting_block_num + count - 1 > head )

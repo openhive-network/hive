@@ -588,9 +588,9 @@ optional<signed_block_header> database::fetch_block_header_by_id( const block_id
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required
-optional<signed_block_header> database::fetch_block_header_by_number( uint32_t num )const
+optional<signed_block_header> database::fetch_block_header_by_number( uint32_t num, fc::microseconds wait_for_microseconds )const
 { try {
-  shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block_on_main_branch_by_number( num );
+  shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block_on_main_branch_by_number( num, wait_for_microseconds );
   if (forkdb_item)
     return forkdb_item->data;
 
@@ -598,9 +598,9 @@ optional<signed_block_header> database::fetch_block_header_by_number( uint32_t n
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required
-optional<signed_block> database::fetch_block_by_number( uint32_t block_num )const
+optional<signed_block> database::fetch_block_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
 { try {
-  shared_ptr<fork_item> forkdb_item  = _fork_db.fetch_block_on_main_branch_by_number( block_num );
+  shared_ptr<fork_item> forkdb_item  = _fork_db.fetch_block_on_main_branch_by_number( block_num, wait_for_microseconds );
   if (forkdb_item )
     return forkdb_item ->data;
 
@@ -608,7 +608,7 @@ optional<signed_block> database::fetch_block_by_number( uint32_t block_num )cons
 } FC_LOG_AND_RETHROW() }
 
 //no chainbase lock required
-std::vector<signed_block> database::fetch_block_range( const uint32_t starting_block_num, const uint32_t count )
+std::vector<signed_block> database::fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )
 { try {
   // for debugging, put the head block back so it should straddle the last irreversible
   // const uint32_t starting_block_num = head_block_num() - 30;
@@ -617,7 +617,7 @@ std::vector<signed_block> database::fetch_block_range( const uint32_t starting_b
   FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
   idump((starting_block_num)(count));
 
-  vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count );
+  vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count, wait_for_microseconds );
   idump((fork_items.size()));
   if (!fork_items.empty())
     idump((fork_items.front().num));
@@ -3726,21 +3726,21 @@ block_id_type database::head_block_id()const
 }
 
 //safe to call without chainbase lock
-time_point_sec database::head_block_time_from_fork_db()const
+time_point_sec database::head_block_time_from_fork_db(fc::microseconds wait_for_microseconds)const
 {
-  return _fork_db.head_block_time();
+  return _fork_db.head_block_time(wait_for_microseconds);
 }
 
 //safe to call without chainbase lock
-uint32_t database::head_block_num_from_fork_db()const
+uint32_t database::head_block_num_from_fork_db(fc::microseconds wait_for_microseconds)const
 {
-  return _fork_db.head_block_num();
+  return _fork_db.head_block_num(wait_for_microseconds);
 }
 
 //safe to call without chainbase lock
-block_id_type database::head_block_id_from_fork_db()const
+block_id_type database::head_block_id_from_fork_db(fc::microseconds wait_for_microseconds)const
 {
-  return _fork_db.head_block_id();
+  return _fork_db.head_block_id(wait_for_microseconds);
 }
 
 node_property_object& database::node_properties()

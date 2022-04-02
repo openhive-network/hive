@@ -47,7 +47,7 @@ BOOST_PP_CAT( method, _return ) class :: method ( const BOOST_PP_CAT( method, _a
 {                                                                                                        \
   if( lock )                                                                                            \
   {                                                                                                     \
-    return my->_db.with_read_lock( [&args, this](){ return my->method( args ); });                     \
+    return my->_db.with_read_lock( [&args, this](){ return my->method( args ); }, fc::seconds(1));      \
   }                                                                                                     \
   else                                                                                                  \
   {                                                                                                     \

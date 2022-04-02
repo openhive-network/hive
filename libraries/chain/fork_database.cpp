@@ -5,9 +5,7 @@
 
 namespace hive { namespace chain {
 
-fork_database::fork_database() :
-  _read_lock_count(0),
-  _write_lock_count(0)
+fork_database::fork_database()
 {
 }
 void fork_database::reset()
@@ -211,25 +209,25 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
   FC_LOG_AND_RETHROW()
 }
 
-time_point_sec fork_database::head_block_time()const
+time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
     return _head ? _head->data.timestamp : time_point_sec();
-  });
+  }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
-uint32_t fork_database::head_block_num()const
+uint32_t fork_database::head_block_num(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
     return _head ? _head->num : 0;
-  });
+  }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
-block_id_type fork_database::head_block_id()const
+block_id_type fork_database::head_block_id(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
     return _head ? _head->id : block_id_type();
-  });
+  }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
 
@@ -296,7 +294,7 @@ shared_ptr<fork_item> fork_database::walk_main_branch_to_num( uint32_t block_num
   });
 }
 
-shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint32_t block_num )const
+shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
 {
   return with_read_lock( [&]() {
     vector<item_ptr> blocks = fetch_block_by_number_unlocked(block_num);
@@ -305,10 +303,10 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint3
     if( blocks.size() == 0 )
       return shared_ptr<fork_item>();
     return walk_main_branch_to_num_unlocked(block_num);
-  });
+  }, wait_for_microseconds);
 }
 
-vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count )const
+vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )const
 {
   return with_read_lock( [&]() {
     vector<fork_item> results;
@@ -345,7 +343,7 @@ vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( con
     boost::reverse(results);
   
     return results;
-  });
+  }, wait_for_microseconds);
 }
 
 void fork_database::set_head(shared_ptr<fork_item> h)
@@ -366,8 +364,7 @@ void fork_database::remove(block_id_type id)
 
 std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, 
                                                                   /* out */ fc::optional<uint32_t>& block_number_needed_from_block_log)
-{
-  try {
+{ try {
   return with_read_lock([&]() {
     std::vector<block_id_type> synopsis;
 

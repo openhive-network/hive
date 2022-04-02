@@ -124,15 +124,14 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   if(_dataSource.find_transaction_info(args.id, include_reversible, &blockNo, &txInBlock))
     {
     get_transaction_return result;
-    _db.with_read_lock([this, blockNo, txInBlock, &result]()
-    {
-    auto blk = _db.fetch_block_by_number(blockNo);
-    FC_ASSERT(blk.valid());
-    FC_ASSERT(blk->transactions.size() > txInBlock);
-    result = blk->transactions[txInBlock];
-    result.block_num = blockNo;
-    result.transaction_num = txInBlock;
-    });
+    _db.with_read_lock([this, blockNo, txInBlock, &result]() {
+      auto blk = _db.fetch_block_by_number(blockNo);
+      FC_ASSERT(blk.valid());
+      FC_ASSERT(blk->transactions.size() > txInBlock);
+      result = blk->transactions[txInBlock];
+      result.block_num = blockNo;
+      result.transaction_num = txInBlock;
+    }, fc::seconds(1));
 
     return result;
     }
