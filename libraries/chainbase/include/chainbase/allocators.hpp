@@ -38,7 +38,8 @@ namespace chainbase {
     typedef boost::interprocess::sharable_lock< read_write_mutex > read_lock;
   #endif
 
-  typedef boost::unique_lock< read_write_mutex > write_lock;
+  //typedef boost::unique_lock< read_write_mutex > write_lock;
+  typedef boost::interprocess::scoped_lock< read_write_mutex > write_lock;
 
   #ifdef ENABLE_STD_ALLOCATOR
     #define _ENABLE_STD_ALLOCATOR 1

@@ -1145,7 +1145,8 @@ namespace chainbase {
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        write_lock lock( _rw_lock, boost::defer_lock_t() );
+        //write_lock lock( _rw_lock, boost::defer_lock_t() );
+        write_lock lock( _rw_lock, boost::interprocess::defer_lock_type() );
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
         int_incrementer ii( _write_lock_count );
