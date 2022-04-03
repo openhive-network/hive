@@ -84,6 +84,11 @@ void  fork_database::_push_block(const item_ptr& item)
   _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
 }
 
+shared_ptr<fork_item> fork_database::head()const 
+{
+  return with_read_lock( [&]() { return _head; } );
+}
+
 /**
   *  Iterate through the unlinked cache and insert anything that
   *  links to the newly inserted item.  This will start a recursive
