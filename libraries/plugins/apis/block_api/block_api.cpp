@@ -51,7 +51,7 @@ block_api_impl::~block_api_impl() {}
 DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
-  optional<signed_block_header> header = _db.fetch_block_header_by_number( args.block_num );
+  optional<signed_block_header> header = _db.fetch_block_header_by_number(args.block_num, fc::seconds(1) );
   if (header)
     result.header = *header;
   return result;
@@ -60,7 +60,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_header )
 DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
-  optional<signed_block> block = _db.fetch_block_by_number( args.block_num );
+  optional<signed_block> block = _db.fetch_block_by_number(args.block_num, fc::seconds(1));
   if (block)
     result.block = *block;
   return result;
@@ -77,7 +77,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
-    vector<signed_block> blocks = _db.fetch_block_range( args.starting_block_num, count );
+    vector<signed_block> blocks = _db.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
     result.blocks.reserve(blocks.size());
     for (const signed_block& block : blocks)
       result.blocks.push_back(block);
