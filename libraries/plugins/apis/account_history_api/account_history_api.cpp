@@ -58,9 +58,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
   get_account_history_return result;
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
-
   unsigned int total_processed_items = 0;
-
   if(args.operation_filter_low || args.operation_filter_high)
   {
     uint64_t filter_low = args.operation_filter_low ? *args.operation_filter_low : 0;
@@ -125,7 +123,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     {
     get_transaction_return result;
     _db.with_read_lock([this, blockNo, txInBlock, &result]() {
-      auto blk = _db.fetch_block_by_number(blockNo);
+      auto blk = _db.fetch_block_by_number(blockNo);//iplicitly locked because of chainbase read lock
       FC_ASSERT(blk.valid());
       FC_ASSERT(blk->transactions.size() > txInBlock);
       result = blk->transactions[txInBlock];
