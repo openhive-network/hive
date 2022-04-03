@@ -89,7 +89,7 @@ namespace hive { namespace chain {
         *  @return the new head block ( the longest fork )
         */
       shared_ptr<fork_item>            push_block(const signed_block& b);
-      shared_ptr<fork_item>            head()const { return _head; }
+      shared_ptr<fork_item>            head()const;
       void                             pop_block();
 
       /**
