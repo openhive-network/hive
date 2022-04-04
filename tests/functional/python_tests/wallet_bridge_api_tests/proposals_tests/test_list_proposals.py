@@ -4,7 +4,7 @@ import pytest
 
 import test_tools.exceptions
 
-import local_tools
+import proposals_tools
 
 # TODO BUG LIST!
 """
@@ -13,7 +13,7 @@ import local_tools
 2. Problem with calling wallet_bridge_api.list_proposals with argument "['True']"
      Sent: {"jsonrpc": "2.0", "id": 1, "method": "wallet_bridge_api.list_proposals", "params": [[[""], "True", "29", "0", "0"]]}'
      Received: 'message': "Parse Error:Couldn't parse int64_t"
-     (# BUG2)
+     (# BUG2) [SOLVED !]
 """
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -95,22 +95,25 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
+
         # ORDER DIRECTION
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['descending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_creator'], True, STATUS['all']),
 
         # STATUS
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['votable']),
-    ]
+        ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], True),
+]
 
 
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', CORRECT_VALUES
 )
 def tests_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
-    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    local_tools.prepare_proposals(wallet, ACCOUNTS)
+    proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    proposals_tools.prepare_proposals(wallet, ACCOUNTS)
     node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
 
@@ -118,17 +121,22 @@ def tests_with_correct_values(node, wallet, start, limit, order_by, order_direct
     'start, limit, order_by, order_direction, status', CORRECT_VALUES
 )
 def tests_with_correct_values_with_quotes(node, wallet, start, limit, order_by, order_direction, status):
-    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    local_tools.prepare_proposals(wallet, ACCOUNTS)
+    proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    proposals_tools.prepare_proposals(wallet, ACCOUNTS)
 
     for start_number in range(len(start)):
-        start[start_number] = local_tools.add_quotes_to_bool_or_numeric(start[start_number])
-    limit = local_tools.add_quotes_to_bool_or_numeric(limit)
-    order_by = local_tools.add_quotes_to_bool_or_numeric(order_by)
-    order_direction = local_tools.add_quotes_to_bool_or_numeric(order_direction)
-    status = local_tools.add_quotes_to_bool_or_numeric(status)
+        start[start_number] = proposals_tools.add_quotes_to_bool_or_numeric(start[start_number])
+    limit = proposals_tools.add_quotes_to_bool_or_numeric(limit)
+    order_by = proposals_tools.add_quotes_to_bool_or_numeric(order_by)
+    order_direction = proposals_tools.add_quotes_to_bool_or_numeric(order_direction)
+    status = proposals_tools.add_quotes_to_bool_or_numeric(status)
 
-    node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
+    if limit == 'True' or order_direction == 'True' or status == 'True':   # Bool in quotes have special work and not throw exception
+        with pytest.raises(test_tools.exceptions.CommunicationError):
+            node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
+    else:
+        node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
+
 
 
 @pytest.mark.parametrize(
@@ -140,6 +148,7 @@ def tests_with_correct_values_with_quotes(node, wallet, start, limit, order_by, 
         # ORDER BY
         ([''], 100, 28, ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, 32, ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, True, ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER DIRECTION
         ([''], 100, ORDER_BY['by_creator'], -1, STATUS['all']),
@@ -151,8 +160,8 @@ def tests_with_correct_values_with_quotes(node, wallet, start, limit, order_by, 
     ],
 )
 def tests_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
-    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    local_tools.prepare_proposals(wallet, ACCOUNTS)
+    proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    proposals_tools.prepare_proposals(wallet, ACCOUNTS)
     with pytest.raises(test_tools.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
