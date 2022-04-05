@@ -1,10 +1,12 @@
-from datetime import datetime, timedelta
-
 import pytest
 
 import test_tools.exceptions
 
+<<<<<<< HEAD
 import proposals_tools
+=======
+from .local_tools import as_string, create_accounts_with_vests_and_tbd, date_from_now, prepare_proposals
+>>>>>>> 8bf85f216 (fixup! Rebuild test_list_proposal_votes.py)
 
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -28,15 +30,12 @@ STATUS = {
     'votable': 4
 }
 
-
-def date_from_now(*, weeks):
-    future_data = datetime.now() + timedelta(weeks=weeks)
-    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
-
-
 CORRECT_VALUES = [
         # START
-        # At the moment there is an assumption, that no more than one start parameter is passed, more are ignored
+        # At the moment there is an assumption, that no more than one start parameter is passed, more are ignored.
+        # This is case, that recognize possibility of putting more than one argument in start.
+        (['', 'example-string-argument', True, 123, 123], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
             # by creator
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
@@ -113,11 +112,26 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
+<<<<<<< HEAD
     'start, limit, order_by, order_direction, status', CORRECT_VALUES
 )
 def tests_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
     proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     proposals_tools.prepare_proposals(wallet, ACCOUNTS)
+=======
+    'start, limit, order_by, order_direction, status', [
+        *CORRECT_VALUES,
+        *as_string(CORRECT_VALUES),
+        ([True], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], True, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_creator'], True, STATUS['all']),
+        ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], True),
+    ]
+)
+def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
+    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    prepare_proposals(wallet, ACCOUNTS)
+>>>>>>> 8bf85f216 (fixup! Rebuild test_list_proposal_votes.py)
     node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
 
@@ -163,9 +177,15 @@ def tests_with_correct_values_with_quotes(node, wallet, start, limit, order_by, 
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], 5),
     ],
 )
+<<<<<<< HEAD
 def tests_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
     proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     proposals_tools.prepare_proposals(wallet, ACCOUNTS)
+=======
+def test_list_proposals_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
+    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    prepare_proposals(wallet, ACCOUNTS)
+>>>>>>> 8bf85f216 (fixup! Rebuild test_list_proposal_votes.py)
     with pytest.raises(test_tools.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
