@@ -1,11 +1,11 @@
+import json
 from datetime import datetime, timedelta
 
 from test_tools import Asset
 
-
-def add_quotes_to_bool_or_numeric(argument):
-    if argument is type(int) or type(bool):
-        return f'{argument}'
+def convert_bool_or_numeric_to_string(argument):
+    if type(argument) in (int, bool):
+        return json.dumps(argument)
 
 
 def create_accounts_with_vests_and_tbd(wallet, accounts):

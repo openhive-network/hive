@@ -30,7 +30,7 @@ def tests_with_correct_values(node, wallet, proposal_ids):
 )
 def tests_with_correct_values_in_quotes(node, wallet, proposal_ids):
     for proposal_id_number in range(len(proposal_ids)):
-        proposal_ids[proposal_id_number] = proposals_tools.add_quotes_to_bool_or_numeric(proposal_ids[proposal_id_number])
+        proposal_ids[proposal_id_number] = proposals_tools.convert_bool_or_numeric_to_string(proposal_ids[proposal_id_number])
 
     proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     proposals_tools.prepare_proposals(wallet, ACCOUNTS)
