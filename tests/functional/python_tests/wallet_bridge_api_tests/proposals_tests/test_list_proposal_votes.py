@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 import test_tools.exceptions
@@ -25,7 +27,9 @@ STATUS = {
     'votable': 4
 }
 
-CORRECT_VALUES = [
+
+@pytest.mark.parametrize(
+    'start, limit, order_by, order_direction, status', [
         # START
             # by_voter_proposal
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
@@ -74,10 +78,7 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['votable']),
         ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], True),
-]
-
-@pytest.mark.parametrize(
-    'start, limit, order_by, order_direction, status', CORRECT_VALUES,
+    ]
 )
 def tests_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
     proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -86,56 +87,100 @@ def tests_with_correct_values(node, wallet, start, limit, order_by, order_direct
         for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
 
-    for start_number in range(len(start)):
-        start[start_number] = proposals_tools.convert_bool_or_numeric_to_string(start[start_number])
-
-    limit = proposals_tools.convert_bool_or_numeric_to_string(limit)
-    order_by = proposals_tools.convert_bool_or_numeric_to_string(order_by)
-    order_direction = proposals_tools.convert_bool_or_numeric_to_string(order_direction)
-    status = proposals_tools.convert_bool_or_numeric_to_string(status)
-
     node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
 @pytest.mark.parametrize(
-    'start, limit, order_by, order_direction, status', CORRECT_VALUES,
+    'start, limit, order_by, order_direction, status', [
+        # START
+            # by_voter_proposal
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([10], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        (['non-exist-string'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([ACCOUNTS[1]], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
+        (['account-2a'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([ACCOUNTS[1], 3], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([ACCOUNTS[1], 3, 'additional_argument'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+
+            # by proposal voter
+        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([3], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([3, ACCOUNTS[1]], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        ([3, ACCOUNTS[1], 'additional_argument'], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'],
+         STATUS['all']),
+
+        # LIMIT
+        ([''], 0, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1000, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        # ORDER BY
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
+        # ORDER DIRECTION
+        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['descending'], STATUS['all']),
+
+        # STATUS
+        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['votable']),
+    ]
 )
-def tests_with_correct_values_in_quotes(node, wallet, start, limit, order_by, order_direction, status):
+def tests_with_correct_values_as_strings(node, wallet, start, limit, order_by, order_direction, status):
     proposals_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     proposals_tools.prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
         for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
 
+    for start_number in range(len(start)):
+        start[start_number] = json.dumps(start[start_number])
 
-    if limit == 'True' or order_direction == 'True' or status == 'True':   # Bool in quotes have special work and not throw exception
-        with pytest.raises(test_tools.exceptions.CommunicationError):
-            node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
-    else:
-        node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
+    limit = json.dumps(limit)
+    order_by = json.dumps(order_by)
+    order_direction = json.dumps(order_direction)
+    status = json.dumps(status)
+
+    node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', [
         # START
         ([-2], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([json.dumps(True)], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
         ([''], -1, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1001, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], json.dumps(True), ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
         ([''], 100, 32, ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, 35, ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, True, ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, json.dumps(True), ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER DIRECTION
         ([''], 100, ORDER_BY['by_voter_proposal'], -1, STATUS['all']),
         ([''], 100, ORDER_BY['by_voter_proposal'], 2, STATUS['all']),
+        ([''], 100, ORDER_BY['by_voter_proposal'], json.dumps(True), STATUS['all']),
 
         # STATUS
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], -1),
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], 5),
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], json.dumps(True)),
     ],
 )
 def tests_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
