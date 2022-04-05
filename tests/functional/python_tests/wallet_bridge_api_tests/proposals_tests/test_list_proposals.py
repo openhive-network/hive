@@ -129,12 +129,12 @@ def tests_with_correct_values_with_quotes(node, wallet, start, limit, order_by, 
     proposals_tools.prepare_proposals(wallet, ACCOUNTS)
 
     for start_number in range(len(start)):
-        start[start_number] = proposals_tools.add_quotes_to_bool_or_numeric(start[start_number])
+        start[start_number] = proposals_tools.convert_bool_or_numeric_to_string(start[start_number])
 
-    limit = proposals_tools.add_quotes_to_bool_or_numeric(limit)
-    order_by = proposals_tools.add_quotes_to_bool_or_numeric(order_by)
-    order_direction = proposals_tools.add_quotes_to_bool_or_numeric(order_direction)
-    status = proposals_tools.add_quotes_to_bool_or_numeric(status)
+    limit = proposals_tools.convert_bool_or_numeric_to_string(limit)
+    order_by = proposals_tools.convert_bool_or_numeric_to_string(order_by)
+    order_direction = proposals_tools.convert_bool_or_numeric_to_string(order_direction)
+    status = proposals_tools.convert_bool_or_numeric_to_string(status)
 
     if limit == 'True' or order_direction == 'True' or status == 'True':   # Bool in quotes have special work and not throw exception
         with pytest.raises(test_tools.exceptions.CommunicationError):

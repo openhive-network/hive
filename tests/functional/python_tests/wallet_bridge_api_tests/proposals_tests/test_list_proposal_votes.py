@@ -87,12 +87,12 @@ def tests_with_correct_values(node, wallet, start, limit, order_by, order_direct
             wallet.api.update_proposal_votes(account, [3], 1)
 
     for start_number in range(len(start)):
-        start[start_number] = proposals_tools.add_quotes_to_bool_or_numeric(start[start_number])
+        start[start_number] = proposals_tools.convert_bool_or_numeric_to_string(start[start_number])
 
-    limit = proposals_tools.add_quotes_to_bool_or_numeric(limit)
-    order_by = proposals_tools.add_quotes_to_bool_or_numeric(order_by)
-    order_direction = proposals_tools.add_quotes_to_bool_or_numeric(order_direction)
-    status = proposals_tools.add_quotes_to_bool_or_numeric(status)
+    limit = proposals_tools.convert_bool_or_numeric_to_string(limit)
+    order_by = proposals_tools.convert_bool_or_numeric_to_string(order_by)
+    order_direction = proposals_tools.convert_bool_or_numeric_to_string(order_direction)
+    status = proposals_tools.convert_bool_or_numeric_to_string(status)
 
     node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
