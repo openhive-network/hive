@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 import pprint
 from typing import Any, Dict, List, Optional
 
-import jsonschema
-
 from jsonschema.exceptions import ValidationError
+
+from schemas.__private import custom_validator
 
 
 class Schema(ABC):
@@ -15,7 +15,7 @@ class Schema(ABC):
         return str(self._create_schema())
 
     def validate(self, instance) -> None:
-        jsonschema.validate(
+        custom_validator.validate(
             instance=instance,
             schema=self._create_schema(),
         )
