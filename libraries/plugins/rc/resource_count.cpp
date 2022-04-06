@@ -1,6 +1,8 @@
 
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/plugins/rc/resource_sizes.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/protocol/operations.hpp>
 
@@ -96,13 +98,42 @@ struct count_differential_operation_visitor
     return true;
   }
 
+  bool operator()( const delegate_rc_operation& op ) const
+  {
+    if( op.max_rc == 0 )
+      return false;
+    //we could still calculate differential cost and subsidize other operations in the same tx,
+    //but the mechanism was not specifically meant for such purpose - since operation itself will
+    //not use state in case of max_rc == 0, we don't collect differential usage (at least for now,
+    //might be changed later)
+
+    const auto* from_ptr = _db.find_account( op.from );
+    if( from_ptr == nullptr )
+      return false;
+
+    int64_t usage = 0;
+    for( const auto& to : op.delegatees )
+    {
+      const auto* to_ptr = _db.find_account( to );
+      if( to_ptr == nullptr )
+        return false;
+
+      const auto* delegation_ptr = _db.find< rc_direct_delegation_object, by_from_to >(
+        boost::make_tuple( from_ptr->get_id(), to_ptr->get_id() ) );
+      if( delegation_ptr != nullptr )
+        usage += _w.delegate_rc_base_size;
+    }
+
+    state_bytes_count += usage;
+    return usage != 0;
+  }
+
   // All other operations that don't need differential usage calculation
   bool operator()( const base_operation& ) const { return false; }
 };
 
-typedef count_differential_operation_visitor count_differential_optional_action_visitor;
-
-bool prepare_differential_usage( const operation& op, const database& db, count_resources_result& result )
+template< typename OpType >
+bool prepare_differential_usage( const OpType& op, const database& db, count_resources_result& result )
 {
   //call before each operation is applied to state to compute resource usage prior to change;
   //the idea is that RC usage for some operations can't be properly evaluated from the operation alone,
@@ -137,16 +168,12 @@ bool prepare_differential_usage( const operation& op, const database& db, count_
   return nonempty;
 }
 
-bool prepare_differential_usage( const optional_automated_action& action, const database& db, count_resources_result& result )
-{
-  static const state_object_size_info size_info;
-  count_differential_optional_action_visitor vtor( size_info, db );
-
-  bool nonempty = action.visit( vtor );
-  if( nonempty )
-    result[ resource_state_bytes ] += vtor.state_bytes_count;
-  return nonempty;
-}
+template
+bool prepare_differential_usage< operation >( const operation& op, const database& db, count_resources_result& result );
+template
+bool prepare_differential_usage< rc_plugin_operation >( const rc_plugin_operation& op, const database& db, count_resources_result& result );
+template
+bool prepare_differential_usage< optional_automated_action >( const optional_automated_action& op, const database& db, count_resources_result& result );
 
 struct count_operation_visitor
 {
@@ -421,6 +448,8 @@ struct count_operation_visitor
   {
     //no point in adding state cost of witness_custom_op_object because in only lives up to end of block
     execution_time_count += _e.custom_json_time;
+    //note: extra cost for delegate_rc_operation and (future) similar ops was already collected during
+    //on_post_apply_custom_operation signal handling
   }
 
   void operator()( const custom_binary_operation& o )const
@@ -572,6 +601,13 @@ struct count_operation_visitor
     execution_time_count += _e.recover_account_time;
   }
 
+  void operator()( const delegate_rc_operation& op ) const
+  {
+    if( op.max_rc != 0 )
+      state_bytes_count += _w.delegate_rc_base_size * op.delegatees.size();
+    execution_time_count += _e.delegate_rc_time;
+  }
+
   // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
@@ -663,7 +699,7 @@ void count_resources(
 
   result[ resource_history_bytes ] += action_size;
 
-  // Not expecting actions to create accounts, but better to add it for completeness
+  // Not expecting actions to claim account tokens, but better to add it for completeness
   result[ resource_new_accounts ] += vtor.new_account_op_count;
 
   if( vtor.market_op_count > 0 )
@@ -677,5 +713,32 @@ void count_resources(
     if( usage < 0 )
       usage = 0;
 }
+
+template< typename OpType >
+void count_resource_usage(
+  const OpType& op,
+  count_resources_result& result,
+  const fc::time_point_sec now
+)
+{
+  //this version is to be called for custom operations on top of (actually before) count_resources
+  //for signed_transaction, where general cost of custom operation is collected (along with cost of
+  //transaction etc.); here we supplement that cost for concrete custom operations that are handled
+  //inside hived plugin(s);
+  static const state_object_size_info size_info;
+  static const operation_exec_info exec_info;
+  count_operation_visitor vtor( size_info, exec_info, now );
+
+  op.visit( vtor );
+
+  result[ resource_new_accounts ] += vtor.new_account_op_count;
+  FC_ASSERT( vtor.market_op_count == 0 );
+    //in case some custom operation is tagged as market, we'd probably have to mark all custom ops like that
+  result[ resource_state_bytes ] += vtor.state_bytes_count;
+  result[ resource_execution_time ] += vtor.execution_time_count;
+}
+
+template
+void count_resource_usage< rc_plugin_operation >( const rc_plugin_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
 } } } // hive::plugins::rc

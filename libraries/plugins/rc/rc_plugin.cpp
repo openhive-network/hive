@@ -31,10 +31,11 @@ namespace hive { namespace plugins { namespace rc {
 
 using hive::plugins::block_data_export::block_data_export_plugin;
 
-bool prepare_differential_usage( const operation& tx, const database& db, count_resources_result& result );
-bool prepare_differential_usage( const optional_automated_action& action, const database& db, count_resources_result& result );
-
+template< typename OpType >
+bool prepare_differential_usage( const OpType& op, const database& db, count_resources_result& result );
 void count_resources( const optional_automated_action& action, const size_t size, count_resources_result& result, const fc::time_point_sec now );
+template< typename OpType >
+void count_resource_usage( const OpType& op, count_resources_result& result, const fc::time_point_sec now );
 account_name_type get_resource_user( const optional_automated_action& action );
 
 namespace detail {
@@ -1098,6 +1099,15 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
   vtor._skip = _skip;
 
   op->visit( vtor );
+
+  count_resources_result differential_usage;
+  if( prepare_differential_usage( *op, _db, differential_usage ) )
+  {
+    _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+    {
+      data.add_differential_usage( differential_usage );
+    } );
+  }
 }
 
 void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notification& note )
@@ -1124,6 +1134,16 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
   // dlog( "Calling post-vtor on ${op}", ("op", note.op) );
   post_apply_operation_visitor vtor( _db );
   op->visit( vtor );
+
+  count_resources_result extra_usage;
+  count_resource_usage( *op, extra_usage, _db.head_block_time() );
+  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    //the extra cost is stored on the same counters as differential usage (but as positive values);
+    //we have to handle it here because later we'd have to reinterpret json into concrete custom op
+    //just to collect correct cost
+    data.add_custom_op_usage( extra_usage );
+  } );
 }
 
 void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_notification& note )
