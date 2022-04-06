@@ -87,6 +87,8 @@ struct state_object_size_info
   // recurrent transfer
   const int64_t recurrent_transfer_base_size; //multiply by actual lifetime
 
+  // direct rc delegation
+  const int64_t delegate_rc_base_size; //multiply by number of delegatees
 };
 
 struct operation_exec_info
@@ -147,6 +149,7 @@ struct operation_exec_info
   const int64_t remove_proposal_time;
   const int64_t recurrent_transfer_base_time; //processing separately below
   const int64_t recurrent_transfer_processing_time; //multiply by number of transfers
+  const int64_t delegate_rc_time;
 
   const int64_t verify_authority_time; //multiply by number of signatures
   const int64_t transaction_time;
@@ -195,6 +198,7 @@ FC_REFLECT( hive::plugins::rc::state_object_size_info,
   ( create_proposal_subject_permlink_char_size )
   ( update_proposal_votes_member_size )
   ( recurrent_transfer_base_size )
+  ( delegate_rc_base_size )
   )
 
 FC_REFLECT( hive::plugins::rc::operation_exec_info,
@@ -252,6 +256,7 @@ FC_REFLECT( hive::plugins::rc::operation_exec_info,
   ( remove_proposal_time )
   ( recurrent_transfer_base_time )
   ( recurrent_transfer_processing_time )
+  ( delegate_rc_time )
   ( verify_authority_time )
   ( transaction_time )
   ( recover_account_time )
