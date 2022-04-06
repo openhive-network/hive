@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-import jsonschema
+from schemas.__private import custom_validator
 
 
 class Schema(ABC):
@@ -9,7 +9,7 @@ class Schema(ABC):
         self._options = options
 
     def validate(self, instance) -> None:
-        jsonschema.validate(
+        custom_validator.validate(
             instance=instance,
             schema=self._create_schema(),
         )
