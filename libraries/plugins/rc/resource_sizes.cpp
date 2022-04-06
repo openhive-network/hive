@@ -130,8 +130,11 @@ state_object_size_info::state_object_size_info()
 
   // recurrent transfer
   recurrent_transfer_base_size(
-    sizeof( recurrent_transfer_index::node_type ) * TEMPORARY_STATE_BYTE ) //multiply by actual lifetime
+    sizeof( recurrent_transfer_index::node_type ) * TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
 
+  // direct rc delegation
+  delegate_rc_base_size(
+    sizeof( rc_direct_delegation_index::node_type ) * LASTING_STATE_BYTE ) //multiply by number of delegatees
 {}
 
 operation_exec_info::operation_exec_info()
@@ -203,6 +206,9 @@ operation_exec_info::operation_exec_info()
   remove_proposal_time( 594 + 129492 + 3886 + 1692 ),
   recurrent_transfer_base_time( 811 + 19349 + 330 + 238 ), //processing separately below
   recurrent_transfer_processing_time( 13023 ), //multiply by number of transfers
+  delegate_rc_time( 75000 ), //this is cost over custom json processing (difference between RC delegation and dummy custom json of the same size);
+    //while it depends on number of delegatees, the differences should be neglegible so it was collected for 10 delegatees
+    //once we have real uses of RC delegation we can correct actual average time consumption
 
   verify_authority_time( 95230 ), //multiply by number of signatures
   transaction_time(
