@@ -155,6 +155,12 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
       for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
         differential_usage[i] -= usage[i];
     }
+    //accumulates extra RC usage from custom ops interpreted by hived plugin(s)
+    void add_custom_op_usage( const resource_count_type& usage )
+    {
+      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+        differential_usage[i] += usage[i];
+    }
 
     //resets pending usage and cost counters - should be called in pre-apply block
     void reset_pending_usage()

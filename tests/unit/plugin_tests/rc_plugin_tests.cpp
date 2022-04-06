@@ -2,6 +2,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
@@ -1308,7 +1310,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     generate_block();
     const auto& pending_data = db->get< rc_pending_data >();
 
-    ACTORS( (alice)(bob) )
+    ACTORS( (alice)(bob)(sam) )
     generate_block();
     fund( "alice", ASSET( "1000.000 TESTS" ) );
     vest( "initminer", "alice", ASSET( "10.000 TESTS" ) );
@@ -1507,6 +1509,74 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_state_bytes ], 0 );
     BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_execution_time ], 0 );
+    clean();
+
+    auto calculate_cost = []( const resource_cost_type& costs ) -> int64_t
+    {
+      int64_t result = 0;
+      for( auto& cost : costs )
+        result += cost;
+      return result;
+    };
+
+    BOOST_TEST_MESSAGE( "Create RC delegation with delegate_rc_operation" );
+    delegate_rc_operation rc_delegation;
+    rc_delegation.from = "alice";
+    rc_delegation.delegatees = { "bob" };
+    rc_delegation.max_rc = 10000000;
+    custom_json_operation custom_json;
+    custom_json.required_posting_auths.insert( "alice" );
+    custom_json.id = HIVE_RC_PLUGIN_NAME;
+    custom_json.json = fc::json::to_string( rc_plugin_operation( rc_delegation ) );
+    push_transaction( custom_json, alice_owner_key );
+    auto first_delegation_extra_usage = pending_data.get_differential_usage();
+    BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_new_accounts ], 0 );
+    BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_market_bytes ], 0 );
+    //differential usage counters are also used to hold extra cost of custom ops:
+    BOOST_REQUIRE_GT( first_delegation_extra_usage[ resource_state_bytes ], 0 );
+    BOOST_REQUIRE_GT( first_delegation_extra_usage[ resource_execution_time ], 0 );
+    auto first_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    clean();
+
+    const auto diff_limit = ( first_delegation_cost + 99 ) / 100; //rounded up 1% of first delegation cost
+
+    BOOST_TEST_MESSAGE( "Create and update RC delegation with delegate_rc_operation" );
+    rc_delegation.delegatees = { "bob", "sam" };
+    rc_delegation.max_rc = 5000000;
+    custom_json.json = fc::json::to_string( rc_plugin_operation( rc_delegation ) );
+    push_transaction( custom_json, alice_owner_key );
+    auto second_delegation_extra_usage = pending_data.get_differential_usage();
+    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i ) //just one new delegation like in first case
+      BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[i], second_delegation_extra_usage[i] );
+    auto second_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    //cost of first and second should be almost the same (allowing small difference)
+    BOOST_REQUIRE_LT( abs( first_delegation_cost - second_delegation_cost ), diff_limit );
+    clean();
+
+    BOOST_TEST_MESSAGE( "Update RC delegations with delegate_rc_operation" );
+    rc_delegation.max_rc = 7500000;
+    custom_json.json = fc::json::to_string( rc_plugin_operation( rc_delegation ) );
+    push_transaction( custom_json, alice_owner_key );
+    auto third_delegation_extra_usage = pending_data.get_differential_usage();
+    BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_history_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_new_accounts ], 0 );
+    BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_market_bytes ], 0 );
+    BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_state_bytes ], 0 ); //no extra state - all delegations are updates
+    BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_execution_time ], first_delegation_extra_usage[ resource_execution_time ] );
+    auto third_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    //cost of third should be minuscule (allowing small value)
+    BOOST_REQUIRE_LT( third_delegation_cost, diff_limit );
+    clean();
+
+    //for comparison we're doing the same custom json but with dummy tag, so it is not interpreted
+    BOOST_TEST_MESSAGE( "Fake RC delegation update with delegate_rc_operation under dummy tag" );
+    custom_json.id = "dummy";
+    push_transaction( custom_json, alice_owner_key );
+    check( pending_data.get_differential_usage(), true ); //no differential usage
+    auto dummy_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    //cost should be even lower than that for third actual delegation
+    BOOST_REQUIRE_LT( dummy_delegation_cost, third_delegation_cost );
     clean();
 
     validate_database();
