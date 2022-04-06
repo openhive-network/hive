@@ -1592,6 +1592,10 @@ std::pair<fc::optional<first_type>, fc::optional<second_type>> create_pair( cons
   {
     return v.as< std::pair< fc::optional<first_type>, fc::optional<second_type> > >();
   }
+  catch( fc::bad_cast_exception& e )
+  {
+    throw e;
+  }
   catch(...)
   {
     return std::pair< fc::optional<first_type>, fc::optional<second_type> >();
