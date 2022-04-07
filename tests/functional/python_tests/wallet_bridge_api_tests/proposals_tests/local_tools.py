@@ -6,10 +6,6 @@ from datetime import datetime, timedelta
 
 from test_tools import Asset
 
-def convert_bool_or_numeric_to_string(argument):
-    if type(argument) in (int, bool):
-        return json.dumps(argument)
-
 
 def as_string(value):
     if isinstance(value, str):
