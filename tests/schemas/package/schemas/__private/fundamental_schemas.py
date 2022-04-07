@@ -48,11 +48,17 @@ class Schema(ABC):
 
 
 class Any_(Schema):
+    """
+    Validates anything, as long as it’s valid JSON.
+    """
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {}
 
 
 class Array(Schema):
+    """
+    Documentation: http://json-schema.org/understanding-json-schema/reference/array.html
+    """
     def __init__(self, *items, **options: Any):
         super().__init__(**options)
         self.__items = list(items)
@@ -81,15 +87,19 @@ class Array(Schema):
 
 
 class ArrayStrict(Schema):
+    """
+    Array Strict checks that the nth element in the instance, matches the nth type specified in the schema.
+    example_array =  [0, 'string', True]
+    example_schema : ArrayStrict(Int(), String(), Bool())
+        example_array[0] -> Int(),
+        example_array[1] -> String(),
+        example_array[2] -> Bool()
+    The ArrayStrict is the equivalent of a jsonschema tuple-validation:
+        http://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation
+    The options available for Array can be used in ArrayStrict:
+        http://json-schema.org/understanding-json-schema/reference/array.html
+    """
     def __init__(self, *items, **options: Any):
-        """
-        Array Strict checks that the nth element in the instance, matches the nth type specified in the schema.
-            example_array =  [0, 'string', True]
-            example_schema : ArrayStrict(Int(), String(), Bool())
-                example_array[0] -> Int(),
-                example_array[1] -> String(),
-                example_array[2] -> Bool()
-        """
         super().__init__(**options)
         self.__items = list(items)
 
@@ -108,21 +118,34 @@ class ArrayStrict(Schema):
 
 
 class Bool(Schema):
+    """
+    Documentation: http://json-schema.org/understanding-json-schema/reference/boolean.html
+    """
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'boolean'}
 
 
 class Date(Schema):
+    """
+    Date format used in HIVE ('%Y-%m-%dT%H:%M:%S').
+    """
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'hive-datetime'}
 
 
 class Float(Schema):
+    """
+    Documentation: http://json-schema.org/understanding-json-schema/reference/numeric.html#number
+    """
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'number'}
 
 
 class Int(Schema):
+    """
+    Validates normal JSON ints (e.g. 1, 42, -100), and also converted to strings
+    (e.g. '1', '42', '-100'). All Hive APIs use this int format.
+    """
     def __init__(self, **options: Any):
         super().__init__(**self.__replace_overridden_options(options))
 
@@ -139,6 +162,7 @@ class Map(Schema):
     def __init__(self, schema: Dict, required_keys: Optional[List[str]] = None,
                  allow_additional_properties: bool = False, **options: Any):
         """
+        Validates JSON objects (in Python they are called dicts).
         :param schema: Collection of properties. Each of the individual properties has a key
         (represents the name of the key in instance), and schema (represents the required type,
         for the previously specified key).
@@ -148,8 +172,8 @@ class Map(Schema):
         All instance elements not defined in the schema will be reported as a 'ValidationError'.
         Set this parameter to True, it will allow the correct validation of additional properties in the instance.
         :param options: Other options that can be given in the form of a dictionary.
+        Documentation: http://json-schema.org/understanding-json-schema/reference/object.html
         """
-
         super().__init__(**options)
         self.__allow_additional_properties: bool = allow_additional_properties
         self.__schema = schema
@@ -169,10 +193,16 @@ class Map(Schema):
 
 
 class Null(Schema):
+    """
+    Documentation: http://json-schema.org/understanding-json-schema/reference/null.html
+    """
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'null'}
 
 
 class Str(Schema):
+    """
+    Documentation: http://json-schema.org/understanding-json-schema/reference/string.html
+    """
     def _create_core_of_schema(self) -> Dict[str, Any]:
         return {'type': 'string'}
