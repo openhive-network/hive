@@ -1632,7 +1632,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   {
     case by_voter_proposal:
     {
-      auto key = create_pair<account_name_type, int64_t>( args.start );
+      auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<api_id_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
         boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ),
         result.proposal_votes,
@@ -1649,7 +1649,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     }
     case by_proposal_voter:
     {
-      auto key = create_pair<int64_t, account_name_type>( args.start );
+      auto key = args.start.as< std::pair< fc::optional<api_id_type>, fc::optional<account_name_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
         boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ),
         result.proposal_votes,
