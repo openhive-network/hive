@@ -538,7 +538,10 @@ public:
 
     if( cleanDatabase )
       ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
-    createDbSchema(_storagePath);
+
+    auto _result = createDbSchema(_storagePath);
+    if(  !std::get<1>( _result ) )
+      return;
 
     auto columnDefs = prepareColumnDefinitions(true);
 
@@ -644,8 +647,10 @@ private:
   typedef std::vector<ColumnFamilyDescriptor> ColumnDefinitions;
   ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn);
 
-  /// Returns true if database will need data import.
-  bool createDbSchema(const bfs::path& path);
+  /// std::tuple<A, B>
+  /// A - returns true if database will need data import.
+  /// B - returns false if problems with opening db appeared.
+  std::tuple<bool, bool> createDbSchema(const bfs::path& path);
 
   void cleanupColumnHandles()
   {
@@ -1622,7 +1627,7 @@ account_history_rocksdb_plugin::impl::ColumnDefinitions account_history_rocksdb_
   return columnDefs;
 }
 
-bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
+std::tuple<bool, bool> account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
 {
   DB* db = nullptr;
 
@@ -1639,7 +1644,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
   {
     cleanupColumnHandles(db);
     delete db;
-    return false; /// DB does not need data import.
+    return { false, true }; /// { DB does not need data import, an application is not closed }
   }
 
   options.create_if_missing = true;
@@ -1665,14 +1670,16 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
 
     delete db;
 
-    return true; /// DB needs data import
+    return { true, true }; /// { DB needs data import, an application is not closed }
   }
   else
   {
     elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", s.ToString()));
 
-    return false;
+    appbase::app().generate_interrupt_request();
+
+    return { false, false };/// { DB does not need data import, an application is closed }
   }
 }
 
