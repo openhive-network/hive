@@ -334,8 +334,8 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   } );
 
   // Who pays the cost?
-  tx_info.resource_user = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info.resource_user, total_cost, _skip, _is_processing_block
+  tx_info.payer = get_resource_user( note.transaction );
+  use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -346,7 +346,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
   {
-    export_data->tx_info.push_back( tx_info );
+    export_data->txs.push_back( tx_info );
   }
   else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY) == 0 )
   {
@@ -429,7 +429,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       int64_t pool = pool_obj.get_pool(i);
 
       block_info.pool[i] = pool;
-      block_info.pool_share[i] = pool_obj.count_share(i);
+      block_info.share[i] = pool_obj.count_share(i);
       block_info.budget[i] = params.budget_per_time_unit;
       block_info.usage[i] = pending_data.get_pending_usage()[i];
       block_info.cost[i] = pending_data.get_pending_cost()[i];
@@ -481,7 +481,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
-    export_data->block_info = block_info;
+    export_data->block = block_info;
   else if( debug_print )
     dlog( "${b} : ${i}", ( "b", gpo.head_block_number )( "i", block_info ) );
 } FC_CAPTURE_AND_RETHROW( (note.block) ) }
@@ -1158,8 +1158,8 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   } );
 
   // Who pays the cost?
-  opt_action_info.resource_user = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info.resource_user, total_cost, _skip, _is_processing_block
+  opt_action_info.payer = get_resource_user( note.action );
+  use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -1173,7 +1173,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
     dlog( "${b} : ${i}", ("b", gpo.head_block_number)("i", opt_action_info) );
   }
   if( export_data )
-    export_data->opt_action_info.push_back( opt_action_info );
+    export_data->opt_actions.push_back( opt_action_info );
 }
 
 void rc_plugin_impl::validate_database()
