@@ -446,12 +446,12 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       if( i == resource_new_accounts )
       {
         int64_t new_consensus_pool = gpo.available_account_subsidies;
-        block_info.new_accounts_adjustment = new_consensus_pool - new_pool;
-        if( block_info.new_accounts_adjustment != 0 )
+        if( new_consensus_pool != new_pool )
         {
+          block_info.new_accounts_adjustment = new_consensus_pool - new_pool;
           ilog( "resource_new_accounts adjustment on block ${b}: ${a}",
             ("a", block_info.new_accounts_adjustment)("b", gpo.head_block_number) );
-          pool += block_info.new_accounts_adjustment;
+          pool = new_consensus_pool;
         }
       }
 

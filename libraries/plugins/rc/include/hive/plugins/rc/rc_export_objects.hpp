@@ -34,7 +34,7 @@ struct rc_block_info
   fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES >
                             share;
   int64_t                   regen = 0;
-  int64_t                   new_accounts_adjustment = 0;
+  optional< int64_t >       new_accounts_adjustment;
 };
 
 struct exp_rc_data
