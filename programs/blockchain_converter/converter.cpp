@@ -333,8 +333,6 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
     current_block_ptr = &_signed_block;
 
-    check_for_hardfork( _signed_block );
-
     auto trx_time = trx_now_time;
 
     if( trx_now_time == auto_trx_time )
@@ -424,6 +422,9 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
     // Sign header (using given witness' private key)
     sign_header( _signed_block );
+
+    //Increasing a number of hardfork has to be done after processing a whole block.
+    check_for_hardfork( _signed_block );
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
