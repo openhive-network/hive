@@ -2712,10 +2712,11 @@ serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list
   return { my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals };
 }
 
-serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( const vector< database_api::api_id_type >& proposal_ids )
+serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( const variant& proposal_ids )
 {
   my->require_online();
-  return { my->_remote_wallet_bridge_api->find_proposals( {variant( proposal_ids )}, LOCK ).proposals };
+  vector<variant> args{std::move(proposal_ids)};
+  return { my->_remote_wallet_bridge_api->find_proposals( {args}, LOCK ).proposals };
 }
 
 serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api::list_proposal_votes(
