@@ -187,7 +187,7 @@ class wallet_api
       * @param account_name the names of the accounts to provide information about
       * @returns the public account data stored in the blockchain
       */
-    serializer_wrapper<vector<database_api::api_account_object>> get_accounts( const vector<string>& account_names ) const;
+    serializer_wrapper<vector<database_api::api_account_object>> get_accounts( fc::variant account_names ) const;
 
     /** Returns the current wallet filename.
       *

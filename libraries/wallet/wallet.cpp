@@ -375,10 +375,11 @@ public:
     return *account;
   }
 
-  vector<database_api::api_account_object> get_accounts( const vector<string>& account_names ) const
+  vector<database_api::api_account_object> get_accounts( fc::variant account_names ) const
   {
     require_online();
-    return _remote_wallet_bridge_api->get_accounts( {variant(account_names)}, LOCK );
+    vector<variant> args{std::move(account_names)};
+    return _remote_wallet_bridge_api->get_accounts( {args}, LOCK );
   }
 
   string get_wallet_filename() const { return _wallet_filename; }
@@ -648,7 +649,7 @@ public:
 
     /// TODO: fetch the accounts specified via other_auths as well.
 
-    auto approving_account_objects = _remote_wallet_bridge_api->get_accounts({variant(v_approving_account_names)}, LOCK);
+    auto approving_account_objects = get_accounts( variant(v_approving_account_names) );
 
     /// TODO: recursively check one layer deeper in the authority tree for keys
 
@@ -993,10 +994,10 @@ serializer_wrapper<database_api::api_account_object> wallet_api::get_account( co
   return { my->get_account( account_name ) };
 }
 
-serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_accounts( const vector<string>& account_names ) const
+serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_accounts( fc::variant account_names ) const
 {
   my->require_online();
-  return { my->get_accounts( account_names ) };
+  return { my->get_accounts( std::move( account_names ) ) };
 }
 
 void wallet_api::import_key(const string& wif_key)
@@ -1716,7 +1717,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
   FC_ASSERT( !is_locked() );
   my->require_online();
   vector<variant> args{delegator, delegatee};
-  auto accounts = my->_remote_wallet_bridge_api->get_accounts( { args  }, LOCK );
+  auto accounts = my->get_accounts( std::move( variant{ args } ) );
   FC_ASSERT( accounts.size() == 2 , "One or more of the accounts specified do not exist." );
   FC_ASSERT( delegator == accounts[0].name, "Delegator account is not right?" );
   FC_ASSERT( delegatee == accounts[1].name, "Delegator account is not right?" );
