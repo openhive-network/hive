@@ -19,7 +19,20 @@ struct rc_info
   account_name_type         payer;
   resource_count_type       usage;
   resource_cost_type        cost;
+  optional< uint32_t >      share; //share (in ppm) of overall cost in max mana for payer (only filled for BDE)
   optional< uint8_t >       op; //only filled when there is just one operation in tx
+
+  void add_share( int64_t total_cost, int64_t max_rc )
+  {
+    if( max_rc != 0 )
+    {
+      fc::uint128_t ppm( total_cost );
+      ppm *= 1'000'000;
+      ppm += max_rc / 2;
+      ppm /= max_rc;
+      share = ppm.to_integer();
+    }
+  }
 };
 
 typedef rc_info rc_transaction_info;
@@ -71,6 +84,7 @@ FC_REFLECT( hive::plugins::rc::rc_transaction_info,
   (payer)
   (usage)
   (cost)
+  (share)
   (op)
 )
 
