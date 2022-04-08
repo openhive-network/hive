@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
 
     BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_object ), 368u );
     //singleton
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 136u );
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 176u );
     //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data ), 88u );
     //singleton
