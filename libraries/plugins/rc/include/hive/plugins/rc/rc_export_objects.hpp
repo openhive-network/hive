@@ -45,9 +45,22 @@ struct exp_rc_data
 
   virtual void to_variant( fc::variant& v )const override;
 
-  rc_block_info                          block;
-  std::vector< rc_transaction_info >     txs;
-  std::vector< rc_optional_action_info > opt_actions;
+  void add_tx_info( const rc_transaction_info& tx_info )
+  {
+    if( !txs.valid() )
+      txs = std::vector< rc_transaction_info >();
+    txs->emplace_back( tx_info );
+  }
+  void add_opt_action_info( const rc_optional_action_info& action_info )
+  {
+    if( !opt_actions.valid() )
+      opt_actions = std::vector< rc_optional_action_info >();
+    opt_actions->emplace_back( action_info );
+  }
+
+  rc_block_info                                      block;
+  optional< std::vector< rc_transaction_info > >     txs;
+  optional< std::vector< rc_optional_action_info > > opt_actions;
 };
 
 } } } // hive::plugins::rc
