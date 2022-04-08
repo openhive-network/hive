@@ -2,8 +2,6 @@ import pytest
 
 from test_tools import exceptions
 
-# TODO BUG LIST!
-# 1. Problem with run command wallet_bridge_api.find_proposals() with additional argument. (#BUG1)
 
 COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('list_proposals', ([""], 100, 29, 0, 0)),
@@ -59,7 +57,14 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
     'wallet_bridge_api_command, arguments', COMMANDS_WITH_CORRECT_ARGUMENTS
 )
 def test_run_command_with_additional_argument(node, wallet_bridge_api_command, arguments):
-    if wallet_bridge_api_command != 'find_proposals':  # BUG1
+
+    if type(arguments) is int:
+        getattr(node.api.wallet_bridge, wallet_bridge_api_command)(arguments, 'additional_string_argument')
+    elif type(arguments) is list:
+        getattr(node.api.wallet_bridge, wallet_bridge_api_command)(arguments, 'additional_string_argument')
+    elif type(arguments) is str:
+        getattr(node.api.wallet_bridge, wallet_bridge_api_command)(arguments, 'additional_string_argument')
+    else:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
 
 
