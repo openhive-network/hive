@@ -1,10 +1,13 @@
 from collections.abc import Iterable
 import json
 
-
 from datetime import datetime, timedelta
 
 from test_tools import Asset
+
+def date_from_now(*, weeks):
+    future_data = datetime.now() + timedelta(weeks=weeks)
+    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def as_string(value):
@@ -18,7 +21,6 @@ def as_string(value):
 
 
 def test_as_string():
-
     assert as_string(10) == '10'
     assert as_string(True) == 'true'
     assert as_string('string') == 'string'
@@ -27,9 +29,8 @@ def test_as_string():
 
 
 def create_accounts_with_vests_and_tbd(wallet, accounts):
-    accounts_in_node = wallet.create_accounts(len(accounts))
-    assert get_accounts_name(accounts_in_node) == accounts,\
-        " Account names passed to the function are different from the accounts created inside the function"
+    created_accounts = wallet.create_accounts(len(accounts))
+    assert get_accounts_name(created_accounts) == accounts
 
     with wallet.in_single_transaction():
         for account in accounts:
