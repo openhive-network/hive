@@ -1,10 +1,8 @@
-import json
-
 import pytest
 
 import test_tools.exceptions
 
-from . import local_tools
+from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
 
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -57,6 +55,9 @@ CORRECT_VALUES = [
 
         ([ACCOUNTS[1]], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
+        # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
+        (['account-2a'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+
         ([3, ACCOUNTS[1]], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         ([3, ACCOUNTS[1], 'additional_argument'], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'],
@@ -83,7 +84,7 @@ CORRECT_VALUES = [
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', [
         *CORRECT_VALUES,
-        *local_tools.as_string(CORRECT_VALUES),
+        *as_string(CORRECT_VALUES),
         ([True], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], True, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 100, ORDER_BY['by_proposal_voter'], True, STATUS['all']),
@@ -91,8 +92,8 @@ CORRECT_VALUES = [
     ]
 )
 def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
-    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    local_tools.prepare_proposals(wallet, ACCOUNTS)
+    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
         for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
@@ -128,8 +129,8 @@ def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, ord
     ],
 )
 def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
-    local_tools.create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    local_tools.prepare_proposals(wallet, ACCOUNTS)
+    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+    prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
         for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
