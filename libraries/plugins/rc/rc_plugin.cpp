@@ -346,7 +346,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
   {
-    export_data->txs.push_back( tx_info );
+    export_data->add_tx_info( tx_info );
   }
   else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY) == 0 )
   {
@@ -1173,7 +1173,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
     dlog( "${b} : ${i}", ("b", gpo.head_block_number)("i", opt_action_info) );
   }
   if( export_data )
-    export_data->opt_actions.push_back( opt_action_info );
+    export_data->add_opt_action_info( opt_action_info );
 }
 
 void rc_plugin_impl::validate_database()
