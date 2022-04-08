@@ -1168,12 +1168,14 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
-  if( (gpo.head_block_number % HIVE_BLOCKS_PER_DAY) == 0 )
+  if( export_data )
+  {
+    export_data->add_opt_action_info( opt_action_info );
+  }
+  else if( (gpo.head_block_number % HIVE_BLOCKS_PER_DAY) == 0 )
   {
     dlog( "${b} : ${i}", ("b", gpo.head_block_number)("i", opt_action_info) );
   }
-  if( export_data )
-    export_data->add_opt_action_info( opt_action_info );
 }
 
 void rc_plugin_impl::validate_database()
