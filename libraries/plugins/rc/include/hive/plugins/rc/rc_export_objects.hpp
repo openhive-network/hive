@@ -19,6 +19,7 @@ struct rc_info
   account_name_type         payer;
   resource_count_type       usage;
   resource_cost_type        cost;
+  optional< uint8_t >       op; //only filled when there is just one operation in tx
 };
 
 typedef rc_info rc_transaction_info;
@@ -70,6 +71,7 @@ FC_REFLECT( hive::plugins::rc::rc_transaction_info,
   (payer)
   (usage)
   (cost)
+  (op)
 )
 
 FC_REFLECT( hive::plugins::rc::rc_block_info,

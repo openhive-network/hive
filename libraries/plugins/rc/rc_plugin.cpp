@@ -324,6 +324,8 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // How many resources does the transaction use?
   count_resources( note.transaction, tx_info.usage );
+  if( note.transaction.operations.size() == 1 )
+    tx_info.op = note.transaction.operations.front().which();
 
   // How many RC does this transaction cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, tx_info );
@@ -1152,6 +1154,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // How many resources do the optional actions use?
   count_resources( note.action, opt_action_info.usage );
+  opt_action_info.op = note.action.which();
 
   // How many RC do these actions cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, opt_action_info );
