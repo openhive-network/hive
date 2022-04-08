@@ -423,6 +423,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   bool debug_print = ( ( gpo.head_block_number % HIVE_BLOCKS_PER_DAY ) == 0 );
   _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& pool_obj )
   {
+    bool budget_adjustment = false;
     for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
     {
       const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
@@ -430,7 +431,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 
       block_info.pool[i] = pool;
       block_info.share[i] = pool_obj.count_share(i);
-      block_info.budget[i] = params.budget_per_time_unit;
+      if( pool_obj.set_budget( i, params.budget_per_time_unit ) )
+        budget_adjustment = true;
       block_info.usage[i] = pending_data.get_pending_usage()[i];
       block_info.cost[i] = pending_data.get_pending_cost()[i];
       block_info.decay[i] = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
@@ -440,7 +442,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
         pool_obj.add_usage( i, -active_bucket->get_usage(i) );
       pool_obj.add_usage( i, block_info.usage[i] );
 
-      int64_t new_pool = pool - block_info.decay[i] + block_info.budget[i] - block_info.usage[i];
+      int64_t new_pool = pool - block_info.decay[i] + params.budget_per_time_unit - block_info.usage[i];
       pool = new_pool;
 
       if( i == resource_new_accounts )
@@ -468,6 +470,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       */
     }
     pool_obj.recalculate_resource_weights( params_obj );
+    if( budget_adjustment )
+      block_info.budget = pool_obj.get_last_known_budget();
   } );
 
   _db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )

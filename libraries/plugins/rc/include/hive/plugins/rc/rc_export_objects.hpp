@@ -27,7 +27,8 @@ typedef rc_info rc_optional_action_info;
 struct rc_block_info
 {
   resource_count_type       decay;
-  resource_count_type       budget; //aside from pool of new accounts this is constant
+  optional< resource_count_type >
+                            budget; //aside from pool of new accounts this is constant
   resource_count_type       usage;
   resource_count_type       pool;
   resource_cost_type        cost;
