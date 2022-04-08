@@ -1341,7 +1341,7 @@ class wallet_api
       * Find proposal with given id
       * @param _ids - array with ids of wanted proposals to be founded.
       */
-    serializer_wrapper<vector< database_api::api_proposal_object >> find_proposals( const fc::variant& proposal_ids );
+    serializer_wrapper<vector< database_api::api_proposal_object >> find_proposals( fc::variant proposal_ids );
 
     /**
       * List proposal votes
