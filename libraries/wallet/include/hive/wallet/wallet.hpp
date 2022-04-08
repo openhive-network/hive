@@ -1415,7 +1415,7 @@ class wallet_api
      *
      *  @param accounts The vector of accounts
      */
-    serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( const vector< account_name_type >& accounts );
+    serializer_wrapper<vector< rc::rc_account_api_object >> find_rc_accounts( fc::variant accounts );
 
     /**
      *  List RC accounts.

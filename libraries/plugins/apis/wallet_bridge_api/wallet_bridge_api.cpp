@@ -688,12 +688,17 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
 {
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "Array of account names is required as first argument" );
-  const auto array_args = args.get_array()[0].get_array();
+  FC_ASSERT( args.get_array()[0].is_array(), "find_rc_accounts needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const auto _names = arguments.get_array()[0];
+  FC_ASSERT( _names.is_array(), "Array of account names is required as first argument" );
+  auto __names = _names.get_array();
 
   std::vector< protocol::account_name_type >  accounts;
-  accounts.reserve(array_args.size());
-  for (const auto& arg : array_args)
+  accounts.reserve(__names.size());
+  for (const auto& arg : __names)
     accounts.push_back(arg.as<protocol::account_name_type>());
 
   return _rc_api->find_rc_accounts({ accounts }).rc_accounts;

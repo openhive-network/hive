@@ -2807,9 +2807,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
   return {my->sign_transaction( trx, broadcast )};
 }
 
-serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( const vector< account_name_type >& accounts )
+serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( fc::variant accounts )
 {
-  return {my->_remote_wallet_bridge_api->find_rc_accounts( {variant( accounts )}, LOCK )};
+  vector<variant> args{std::move(accounts)};
+  return {my->_remote_wallet_bridge_api->find_rc_accounts( {args}, LOCK )};
 }
 
 serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
