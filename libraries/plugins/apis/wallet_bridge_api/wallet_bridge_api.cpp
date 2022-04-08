@@ -400,16 +400,25 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
 {
+  FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "Array of account names is required as first argument" );
-  const auto account_names = args.get_array()[0].get_array();
-  const bool delayed_votes_active = true;
-  get_accounts_return result;
-  result.reserve(account_names.size());
+  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
 
-  for( const auto& acc_name: account_names )
+  const auto _names = arguments.get_array()[0];
+  FC_ASSERT( _names.is_array(), "Array of account names is required as first argument" );
+
+  get_accounts_return result;
+
+  const bool delayed_votes_active = true;
+
+  auto _accounts = _names.as< vector< protocol::account_name_type > >();
+  result.reserve(_accounts.size());
+
+  for( const auto& acc_name: _accounts )
   {
-    const chain::account_object* account = _db.find_account(acc_name.get_string());
+    const chain::account_object* account = _db.find_account( acc_name );
     if (account)
       result.push_back(database_api::api_account_object( *account, _db, delayed_votes_active ) );
   }
