@@ -74,6 +74,14 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
       pool_array[ poolIdx ] = value;
     }
 
+    //sets new value of per-block budget - returns if there was any change in value
+    bool set_budget( int poolIdx, int64_t value )
+    {
+      bool result = ( last_known_budget[ poolIdx ] != value );
+      last_known_budget[ poolIdx ] = value;
+      return result;
+    }
+
     //accumulates usage statistics for given resource
     void add_usage( int poolIdx, int64_t resource_consumed )
     {
@@ -110,9 +118,13 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
     //for logging purposes only!!! calculates share (in basis points) of resource in global rc inflation
     uint16_t count_share( int poolIdx ) const { return get_weight( poolIdx ) * HIVE_100_PERCENT / get_weight_divisor(); }
 
+    //gives last known per-block budget
+    const resource_count_type& get_last_known_budget() const { return last_known_budget; }
+
   private:
     resource_count_type pool_array;
     resource_count_type usage_in_window;
+    resource_count_type last_known_budget;
     fc::int_array< uint64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_weights; //in basis points of respective block-budgets
     uint64_t sum_of_resource_weights = 1; //should never be zero
 
@@ -325,6 +337,7 @@ FC_REFLECT( hive::plugins::rc::rc_pool_object,
   (id)
   (pool_array)
   (usage_in_window)
+  (last_known_budget)
   (resource_weights)
   (sum_of_resource_weights)
 )

@@ -42,15 +42,16 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
 
     BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_object ), 368u );
     //singleton
-    BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 48u );
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 176u );
     //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data ), 88u );
     //singleton
     BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 80u );
     //permanent, as many as account_object, 1.3M atm
-
+    BOOST_CHECK_EQUAL( sizeof( rc::rc_usage_bucket_object ), 48u );
+    //always HIVE_RC_WINDOW_BUCKET_COUNT objects
     BOOST_CHECK_EQUAL( sizeof( rc::rc_direct_delegation_object ), 24u );
-    //permanent, growing with number of active rc delegations
+    //lasting, most likely more popular than regular delegation so count should be expected in the millions
 
     BOOST_CHECK_EQUAL( sizeof( reputation::reputation_object ), 32u );
     //lasting, as many as account_object, 1.3M atm
