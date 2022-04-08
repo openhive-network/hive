@@ -16,7 +16,7 @@ using hive::protocol::account_name_type;
 
 struct rc_info
 {
-  account_name_type         resource_user;
+  account_name_type         payer;
   resource_count_type       usage;
   resource_cost_type        cost;
 };
@@ -32,7 +32,7 @@ struct rc_block_info
   resource_count_type       pool;
   resource_cost_type        cost;
   fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES >
-                            pool_share;
+                            share;
   int64_t                   regen = 0;
   int64_t                   new_accounts_adjustment = 0;
 };
@@ -45,15 +45,15 @@ struct exp_rc_data
 
   virtual void to_variant( fc::variant& v )const override;
 
-  rc_block_info                          block_info;
-  std::vector< rc_transaction_info >     tx_info;
-  std::vector< rc_optional_action_info > opt_action_info;
+  rc_block_info                          block;
+  std::vector< rc_transaction_info >     txs;
+  std::vector< rc_optional_action_info > opt_actions;
 };
 
 } } } // hive::plugins::rc
 
 FC_REFLECT( hive::plugins::rc::rc_transaction_info,
-  (resource_user)
+  (payer)
   (usage)
   (cost)
 )
@@ -64,13 +64,13 @@ FC_REFLECT( hive::plugins::rc::rc_block_info,
   (usage)
   (pool)
   (cost)
-  (pool_share)
+  (share)
   (regen)
   (new_accounts_adjustment)
 )
 
 FC_REFLECT( hive::plugins::rc::exp_rc_data,
-  (block_info)
-  (tx_info)
-  (opt_action_info)
+  (block)
+  (txs)
+  (opt_actions)
 )
