@@ -192,7 +192,7 @@ std::vector< std::pair< int64_t, account_name_type > > dump_all_rc_accounts( con
   return result;
 }
 
-void use_account_rcs(
+int64_t use_account_rcs(
   database& db,
   const dynamic_global_property_object& gpo,
   const account_name_type& account_name,
@@ -214,11 +214,11 @@ void use_account_rcs(
         "Tried to execute transaction with no resource user",
         );
     }
-    return;
+    return 0;
   }
 
 #ifdef IS_TEST_NET
-  if( whitelist.count( account_name ) ) return;
+  if( whitelist.count( account_name ) ) return 0;
 #endif
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
@@ -226,7 +226,8 @@ void use_account_rcs(
   const rc_account_object& rc_account = db.get< rc_account_object, by_name >( account_name );
 
   manabar_params mbparams;
-  mbparams.max_mana = get_maximum_rc( account, rc_account );
+  auto max_mana = get_maximum_rc( account, rc_account );
+  mbparams.max_mana = max_mana;
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try{
@@ -273,10 +274,16 @@ void use_account_rcs(
     }
 
     if( (!has_mana) && ( skip.skip_negative_rc_balance || (gpo.time.sec_since_epoch() <= 1538211600) ) )
+    {
+      max_mana = 0;
       return;
+    }
 
     if( skip.skip_deduct_rc )
+    {
+      max_mana = 0;
       return;
+    }
 
     fc::uint128_t min_mana( mbparams.max_mana );
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
@@ -284,6 +291,8 @@ void use_account_rcs(
     rca.rc_manabar.use_mana( rc, -min_mana.to_int64() );
   } );
   }FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
+
+  return max_mana;
 }
 
 int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info )
@@ -337,7 +346,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip, _is_processing_block
+  auto max_rc = use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -348,6 +357,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
   {
+    tx_info.add_share( total_cost, max_rc );
     export_data->add_tx_info( tx_info );
   }
   else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY) == 0 )
@@ -1166,7 +1176,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip, _is_processing_block
+  auto max_rc = use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -1177,6 +1187,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
   {
+    opt_action_info.add_share( total_cost, max_rc );
     export_data->add_opt_action_info( opt_action_info );
   }
   else if( (gpo.head_block_number % HIVE_BLOCKS_PER_DAY) == 0 )
