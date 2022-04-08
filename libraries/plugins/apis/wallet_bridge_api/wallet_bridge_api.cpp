@@ -543,11 +543,18 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "Array of proposal ids is required as first argument" );
-  const auto array_args = args.get_array()[0].get_array();
+  FC_ASSERT( args.get_array()[0].is_array(), "find_proposals needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const auto _ids = arguments.get_array()[0];
+  FC_ASSERT( _ids.is_array(), "Array of proposal ids is required as first argument" );
+  auto __ids = _ids.get_array();
+
   vector<int64_t> ids;
-  ids.reserve(array_args.size());
-  for (const auto& arg : array_args)
+  ids.reserve(__ids.size());
+
+  for (const auto& arg : __ids)
     ids.push_back(arg.as<int64_t>());
 
   return _database_api->find_proposals({ids});
