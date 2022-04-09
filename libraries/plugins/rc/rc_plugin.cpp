@@ -376,12 +376,7 @@ void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
     elog( "Nested block processing!" );
   _is_processing_block = true; //should be cleared in either on_post_apply_block or on_fail_apply_block
   if( before_first_block() )
-  {
-    if( _db.head_block_num() == _enable_at_block )
-      on_first_block();
-    else
-      return;
-  }
+    return;
 
   _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
   {
@@ -395,7 +390,11 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     elog( "Block processing not started correctly!" );
   _is_processing_block = false; //should always be paired with on_pre_apply_block call
   if( before_first_block() )
+  {
+    if( note.block_num >= _enable_at_block )
+      on_first_block(); //all state will be ready for full processing cycle in next block
     return;
+  }
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( gpo.total_vesting_shares.amount <= 0 )
@@ -1291,7 +1290,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();
     if( start_block > 0 )
     {
-      my->_enable_at_block = start_block;
+      my->_enable_at_block = start_block; //starts at the end of given block
     }
 
     if( options.count( "rc-account-whitelist" ) > 0 )
