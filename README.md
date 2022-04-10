@@ -42,7 +42,7 @@ The technical development of the Hive blockchain itself is carried out by the fo
 
 # Installation
 
-Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 18.04.
+Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 20.04 LTS.
 
 ## Quickstart
 
@@ -52,11 +52,11 @@ Just want to get up and running quickly? We have pre-built Docker images for you
 
 We **strongly** recommend using one of our pre-built Docker images or using Docker to build Hive. Both of these processes are described in the [Quickstart Guide](doc/exchangequickstart.md).
 
-But if you would still like to build from source, we also have [build instructions](doc/building.md) for Linux (Ubuntu LTS) and macOS.
+But if you would still like to build from source, we also have [build instructions](doc/building.md) for Linux (Ubuntu LTS).
 
 ## Dockerized Consensus Node
 
-To run a Hive node (ca. 16GB of memory is required at the moment):
+To run a Hive node (ca. 24GB of memory is required at the moment):
 
     docker run \
         -d -p 2001:2001 -p 8090:8090 --name hived \
@@ -66,7 +66,7 @@ To run a Hive node (ca. 16GB of memory is required at the moment):
 
 ## CLI Wallet
 
-We provide a basic cli wallet for interfacing with `hived`. The wallet is self-documented via command line help. The node you connect to via the cli wallet needs to be running the `account_by_key_api`, `condenser_api`, and needs to be configured to accept WebSocket connections via `webserver-ws-endpoint`.
+We provide a basic cli wallet for interfacing with `hived`. The wallet is self-documented via command line help. The node you connect to via the cli wallet needs to be running the `account_by_key_api`, `condenser_api`, `wallet_bridge_api` and needs to be configured to accept WebSocket connections via `webserver-ws-endpoint`.
 
 ## Testing
 

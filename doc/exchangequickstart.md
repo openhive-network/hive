@@ -1,11 +1,11 @@
 Exchange Quickstart
 -------------------
 
-System Requirements: A dedicated server or virtual machine with a minimum of 20GB of RAM, and at least 400GB of fast **local**  storage (such as SSD or NVMe). Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
+System Requirements: A dedicated server or virtual machine with a minimum of 24GB of RAM, and at least 600GB of fast **local**  storage (such as SSD or NVMe). Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
 
 With the right equipment and technical configuration a reindex should take **no longer than 36 hours**.  If recommendations are not followed precisely, the reindex can drag on for days or even weeks with significant slowdowns towards the end.
 
-Physically attached SSD will ensure an optimal reindex time. SSD over a NAS or some kind of network storage backed by SSD will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.xlarge, it comes with a physically attached NVMe drive (it must be formatted and mounted on instance launch).
+Physically attached NVMe will ensure an optimal reindex time. NVMe over a NAS or some kind of network storage backed by NVMe will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.xlarge, it comes with a physically attached NVMe drive (it must be formatted and mounted on instance launch).
 
 You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your `blockchain` directory is empty and does not contain a `block_log`. If you are not using docker, you can download a `block_log` from [here](https://gtg.openhive.network/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart hived after already being synced.
 
@@ -13,12 +13,7 @@ We recommend using docker to both build and run Hive for exchanges. Docker is th
 
 ### Install docker and git (if not already installed)
 
-On Ubuntu 18.04+:
-```
-apt-get update && apt-get install git docker.io -y
-```
-
-On other distributions you can install docker with the native package manager or with the script from get.docker.com:
+You can install docker with the native package manager or with the script from get.docker.com:
 ```
 curl -fsSL get.docker.com -o get-docker.sh
 sh get-docker.sh
