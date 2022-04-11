@@ -890,7 +890,8 @@ bool wallet_api::copy_wallet_file(const string& destination_filename)
 optional<serializer_wrapper<block_api::api_signed_block_object>> wallet_api::get_block(uint32_t num)
 {
   my->require_online();
-  block_api::get_block_return res = my->_remote_wallet_bridge_api->get_block( {num}, LOCK );
+  vector<variant> args{num};
+  block_api::get_block_return res = my->_remote_wallet_bridge_api->get_block( {args}, LOCK );
   if( res.block.valid() )
     return serializer_wrapper<block_api::api_signed_block_object>{ std::move( *(res.block) ) };
   else

@@ -243,7 +243,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_block )
 {
   FC_ASSERT(_block_api , "block_api_plugin not enabled." );
   verify_args( args, 1 );
-  const uint32_t block_num = args.get_array()[0].as<uint32_t>();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_block needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const uint32_t block_num = arguments.get_array()[0].as<uint32_t>();
   get_block_return result;
   result.block = _block_api->get_block({block_num}).block;
   return result;
@@ -389,7 +393,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_dynamic_global_properties )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
 {
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  FC_ASSERT( args.get_array()[0].is_array(), "get_account needs at least one argument" );
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
