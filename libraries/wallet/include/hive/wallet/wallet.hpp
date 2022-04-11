@@ -1390,8 +1390,7 @@ class wallet_api
       * Finds a recurrent transfer
       * @param from The account from which the funds are coming from
       */
-  serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers(
-          const account_name_type& from );
+  serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> find_recurrent_transfers( fc::variant from );
 
     fc::signal<void(bool)> lock_changed;
 
