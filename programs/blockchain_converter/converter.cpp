@@ -288,7 +288,7 @@ namespace hive { namespace converter {
 #endif
 
 #ifndef HIVE_BC_HF_N_CASE_MACRO
-#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.block_num() == HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
+#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.block_num() >= HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
                                                         && current_hardfork < n ) { ++current_hardfork; \
 std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n' << std::flush; }
 #endif
