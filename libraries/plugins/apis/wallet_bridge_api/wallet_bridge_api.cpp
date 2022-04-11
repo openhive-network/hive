@@ -584,7 +584,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
 DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
 {
   verify_args( args, 1 );
-  const protocol::transaction_id_type id = args.get_array()[0].as<protocol::transaction_id_type>();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const protocol::transaction_id_type id = arguments.get_array()[0].as<protocol::transaction_id_type>();
   return _database_api->is_known_transaction({id}).is_known;
 }
 

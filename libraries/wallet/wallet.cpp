@@ -602,7 +602,8 @@ public:
   {
     require_online();
     initialize_transaction_header(tx);
-    if (_remote_wallet_bridge_api->is_known_transaction({variant(tx.id())},LOCK))
+    vector<variant> args{variant(tx.id())};
+    if (_remote_wallet_bridge_api->is_known_transaction({args},LOCK))
     {
       // create a custom operation with a random 64-bit integer which will give this
       // transaction a new id
