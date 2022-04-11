@@ -1717,7 +1717,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
   FC_ASSERT( !is_locked() );
   my->require_online();
   vector<variant> args{delegator, delegatee};
-  auto accounts = my->get_accounts( std::move( variant{ args } ) );
+  auto accounts = my->get_accounts( variant{ args } );
   FC_ASSERT( accounts.size() == 2 , "One or more of the accounts specified do not exist." );
   FC_ASSERT( delegator == accounts[0].name, "Delegator account is not right?" );
   FC_ASSERT( delegatee == accounts[1].name, "Delegator account is not right?" );
