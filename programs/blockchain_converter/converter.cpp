@@ -288,7 +288,7 @@ namespace hive { namespace converter {
 #endif
 
 #ifndef HIVE_BC_HF_N_CASE_MACRO
-#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.block_num() >= HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
+#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.block_num() > HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
                                                         && current_hardfork < n ) { ++current_hardfork; \
 std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n' << std::flush; }
 #endif
@@ -311,7 +311,7 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
   void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
   {
     // Expands to the if/elses that increment current_hardfork every time _signed_block.block_num()
-    // is greater than or equals the original number of the block with hardfork applied in the mainnet
+    // is greater than the original number of the block with hardfork applied in the mainnet
     HIVE_BC_HF_ALL_CASE_MACRO();
   }
 
@@ -334,6 +334,8 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
     this->mainnet_head_block_id = _signed_block.previous;
 
     current_block_ptr = &_signed_block;
+
+    check_for_hardfork( _signed_block );
 
     auto trx_time = trx_now_time;
 
@@ -424,9 +426,6 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
     // Sign header (using given witness' private key)
     sign_header( _signed_block );
-
-    //Increasing a number of hardfork has to be done after processing a whole block.
-    check_for_hardfork( _signed_block );
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
