@@ -584,7 +584,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
 DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
 {
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  FC_ASSERT( args.get_array()[0].is_array(), "is_known_transaction needs at least one argument" );
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
@@ -613,7 +613,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposal_votes )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
 {
   verify_args( args, 1 );
-  const string reward_fund_name = args.get_array()[0].get_string();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_reward_fund needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const string reward_fund_name = arguments.get_array()[0].get_string();
   auto fund = _db.find< chain::reward_fund_object, chain::by_name >( reward_fund_name );
   FC_ASSERT( fund != nullptr, "Invalid reward fund name" );
   return database_api::api_reward_fund_object( *fund, _db );
