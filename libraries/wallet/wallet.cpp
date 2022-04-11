@@ -2772,10 +2772,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(broadcast) )
 }
 
-serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers(const account_name_type& from)
+serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers( fc::variant from )
 {
   my->require_online();
-  return { my->_remote_wallet_bridge_api->find_recurrent_transfers( variant{from}, LOCK ) };
+  vector<variant> args{std::move(from)};
+  return { my->_remote_wallet_bridge_api->find_recurrent_transfers( {args}, LOCK ) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(

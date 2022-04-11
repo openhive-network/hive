@@ -718,7 +718,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
 {
   verify_args( args, 1 );
-  const string acc_name = args.get_array()[0].get_string();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const string acc_name = arguments.get_array()[0].get_string();
   return _database_api->find_recurrent_transfers( { acc_name } ).recurrent_transfers;
 }
 
