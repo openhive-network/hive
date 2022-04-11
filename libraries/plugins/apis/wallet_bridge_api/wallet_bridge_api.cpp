@@ -480,7 +480,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_collateralized_conversion_requests 
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  const protocol::account_name_type account = args.get_array()[0].get_string();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const protocol::account_name_type account = arguments.get_array()[0].get_string();
   return _database_api->find_collateralized_conversion_requests({account}).requests;
 }
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )

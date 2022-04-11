@@ -734,7 +734,7 @@ class wallet_api
       *
       * @returns All pending collateralized conversion requests by account
       */
-    serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> get_collateralized_conversion_requests( const string& owner );
+    serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> get_collateralized_conversion_requests( fc::variant owner );
 
     /** Update witness properties for the given account.
       *
