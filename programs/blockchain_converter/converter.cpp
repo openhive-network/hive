@@ -310,7 +310,8 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
   void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
   {
-    // Expands to the if/elses that increment current_hardfork every time _signed_block.timestamp equals to the original timestamp of the hardfork
+    // Expands to the if/elses that increment current_hardfork every time _signed_block.block_num()
+    // is greater than or equals the original number of the block with hardfork applied in the mainnet
     HIVE_BC_HF_ALL_CASE_MACRO();
   }
 
