@@ -521,7 +521,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  const protocol::account_name_type acc_name = args.get_array()[0].get_string();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_owner_history needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const protocol::account_name_type acc_name = arguments.get_array()[0].get_string();
   return _database_api->find_owner_histories({acc_name});
 }
 

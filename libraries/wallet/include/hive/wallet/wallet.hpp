@@ -1227,7 +1227,7 @@ class wallet_api
       const string& new_recovery_account,
       bool broadcast );
 
-    vector< database_api::api_owner_authority_history_object > get_owner_history( const string& account )const;
+    vector< database_api::api_owner_authority_history_object > get_owner_history( fc::variant account )const;
 
     /**
       *  Account operations have sequence numbers from 0 to N where N is the most recent operation. This method

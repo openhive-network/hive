@@ -1411,10 +1411,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::change_recovery_acc
   return { my->sign_transaction( tx, broadcast ) };
 }
 
-vector< database_api::api_owner_authority_history_object > wallet_api::get_owner_history( const string& account )const
+vector< database_api::api_owner_authority_history_object > wallet_api::get_owner_history( fc::variant account )const
 {
   my->require_online();
-  return my->_remote_wallet_bridge_api->get_owner_history( {account}, LOCK ).owner_auths;
+  vector<variant> args{std::move(account)};
+  return my->_remote_wallet_bridge_api->get_owner_history( {args}, LOCK ).owner_auths;
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::update_account(
