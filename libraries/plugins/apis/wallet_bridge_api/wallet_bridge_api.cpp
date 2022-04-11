@@ -595,6 +595,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
 {
+  FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "is_known_transaction needs at least one argument" );
   const auto arguments = args.get_array()[0];
@@ -656,6 +657,8 @@ protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& arg
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 {
+  FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
+  FC_ASSERT( _p2p, "p2p_plugin not enabled." );
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "broadcast_transaction_synchronous needs at least one argument" );
   const auto arguments = args.get_array()[0];
@@ -663,8 +666,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   auto tx = get_trx( arguments );
-  FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-  FC_ASSERT( _p2p, "p2p_plugin not enabled." );
 
   auto txid = tx.id();
   boost::promise< broadcast_transaction_synchronous_return > p;
@@ -718,17 +719,18 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 {
+  FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "broadcast_transaction needs at least one argument" );
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   return _network_broadcast_api->broadcast_transaction( { get_trx( arguments ) } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
 {
+  FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "find_recurrent_transfers needs at least one argument" );
   const auto arguments = args.get_array()[0];
@@ -740,6 +742,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
 {
+  FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   verify_args( args, 1 );
   FC_ASSERT( args.get_array()[0].is_array(), "find_rc_accounts needs at least one argument" );
   const auto arguments = args.get_array()[0];
@@ -759,8 +762,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 {
-  verify_args( args, 1 );
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least three arguments");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
@@ -774,8 +777,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
 {
-  verify_args( args, 1 );
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+  verify_args( args, 1 );
   FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least three arguments");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
