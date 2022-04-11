@@ -472,7 +472,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_conversion_requests )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  const protocol::account_name_type account = args.get_array()[0].get_string();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_conversion_requests needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  const protocol::account_name_type account = arguments.get_array()[0].get_string();
   return _database_api->find_hbd_conversion_requests({account}).requests;
 }
 
@@ -480,7 +484,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_collateralized_conversion_requests 
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  FC_ASSERT( args.get_array()[0].is_array(), "get_collateralized_conversion_requests needs at least one argument" );
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
@@ -722,7 +726,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
 {
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  FC_ASSERT( args.get_array()[0].is_array(), "find_recurrent_transfers needs at least one argument" );
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
