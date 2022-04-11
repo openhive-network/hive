@@ -546,8 +546,7 @@ public:
         save_wallet_file();
       if( broadcast )
       {
-        //_remote_wallet_bridge_api->broadcast_transaction( tx );
-        auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous({variant(tx)}, LOCK);
+        auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous(vector<variant>{{variant(tx)}}, LOCK);
         FC_UNUSED(result);
       }
       return tx;
@@ -802,7 +801,7 @@ public:
       try {
         if( blocking )
         {
-          auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( {variant(tx)}, LOCK );
+          auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(tx)}}, LOCK );
           annotated_signed_transaction rtrx(tx);
           rtrx.block_num = result.block_num;
           rtrx.transaction_num = result.trx_num;
@@ -810,7 +809,7 @@ public:
         }
         else
         {
-          _remote_wallet_bridge_api->broadcast_transaction( {variant(tx)}, LOCK );
+          _remote_wallet_bridge_api->broadcast_transaction( vector<variant>{{variant(tx)}}, LOCK );
           return annotated_signed_transaction(tx);
         }
       }

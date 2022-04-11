@@ -645,8 +645,12 @@ protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& arg
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 {
   verify_args( args, 1 );
+  FC_ASSERT( args.get_array()[0].is_array(), "broadcast_transaction_synchronous needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
-  auto tx = get_trx( args );
+  auto tx = get_trx( arguments );
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   FC_ASSERT( _p2p, "p2p_plugin not enabled." );
 
@@ -703,8 +707,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 {
   verify_args( args, 1 );
+  FC_ASSERT( args.get_array()[0].is_array(), "broadcast_transaction needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-  return _network_broadcast_api->broadcast_transaction( { get_trx( args ) } );
+  return _network_broadcast_api->broadcast_transaction( { get_trx( arguments ) } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
