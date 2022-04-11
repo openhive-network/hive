@@ -726,7 +726,7 @@ class wallet_api
       *
       * @returns All pending conversion requests by account
       */
-    serializer_wrapper<vector< database_api::api_convert_request_object >> get_conversion_requests( const string& owner );
+    serializer_wrapper<vector< database_api::api_convert_request_object >> get_conversion_requests( fc::variant owner );
 
     /** Returns collateralized conversion requests by an account
       *
