@@ -367,11 +367,12 @@ public:
     return result;
   }
 
-  database_api::api_account_object get_account( const string& account_name ) const
+  database_api::api_account_object get_account( fc::variant account_name ) const
   {
     require_online();
-    auto account = _remote_wallet_bridge_api->get_account( { account_name }, LOCK );
-    FC_ASSERT( account.valid(), "Unknown account" );
+    vector<variant> args{std::move(account_name)};
+    auto account = _remote_wallet_bridge_api->get_account( {args}, LOCK );
+    FC_ASSERT( account.valid(), "Account does not exist" );
     return *account;
   }
 
@@ -1455,27 +1456,26 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   FC_ASSERT( !is_locked() );
   my->require_online();
 
-  auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
-  FC_ASSERT( account.valid(), "Account does not exist" );
-  FC_ASSERT( account_name == account->name, "Account name doesn't match?" );
+  auto account = my->get_account( { account_name } );
+  FC_ASSERT( account_name == account.name, "Account name doesn't match?" );
 
   account_update_operation op;
   op.account = account_name;
-  op.memo_key = account->memo_key;
-  op.json_metadata = account->json_metadata;
+  op.memo_key = account.memo_key;
+  op.json_metadata = account.json_metadata;
 
   authority new_auth;
 
   switch( type )
   {
     case( owner ):
-      new_auth = account->owner;
+      new_auth = account.owner;
       break;
     case( active ):
-      new_auth = account->active;
+      new_auth = account.active;
       break;
     case( posting ):
-      new_auth = account->posting;
+      new_auth = account.posting;
       break;
   }
 
@@ -1528,27 +1528,26 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   FC_ASSERT( !is_locked() );
   my->require_online();
 
-  auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
-  FC_ASSERT( account.valid(), "Account does not exist" );
-  FC_ASSERT( account_name == account->name, "Account name doesn't match?" );
+  auto account = my->get_account( { account_name } );
+  FC_ASSERT( account_name == account.name, "Account name doesn't match?" );
 
   account_update_operation op;
   op.account = account_name;
-  op.memo_key = account->memo_key;
-  op.json_metadata = account->json_metadata;
+  op.memo_key = account.memo_key;
+  op.json_metadata = account.json_metadata;
 
   authority new_auth;
 
   switch( type )
   {
     case( owner ):
-      new_auth = account->owner;
+      new_auth = account.owner;
       break;
     case( active ):
-      new_auth = account->active;
+      new_auth = account.active;
       break;
     case( posting ):
-      new_auth = account->posting;
+      new_auth = account.posting;
       break;
   }
 
@@ -1600,28 +1599,27 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   FC_ASSERT( !is_locked() );
   my->require_online();
 
-  auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
-  FC_ASSERT( account.valid(), "Account does not exist" );
-  FC_ASSERT( account_name == account->name, "Account name doesn't match?" );
+  auto account = my->get_account( { account_name } );
+  FC_ASSERT( account_name == account.name, "Account name doesn't match?" );
   FC_ASSERT( threshold != 0, "Authority is implicitly satisfied" );
 
   account_update_operation op;
   op.account = account_name;
-  op.memo_key = account->memo_key;
-  op.json_metadata = account->json_metadata;
+  op.memo_key = account.memo_key;
+  op.json_metadata = account.json_metadata;
 
   authority new_auth;
 
   switch( type )
   {
     case( owner ):
-      new_auth = account->owner;
+      new_auth = account.owner;
       break;
     case( active ):
-      new_auth = account->active;
+      new_auth = account.active;
       break;
     case( posting ):
-      new_auth = account->posting;
+      new_auth = account.posting;
       break;
   }
 
@@ -1665,13 +1663,12 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_meta
   FC_ASSERT( !is_locked() );
   my->require_online();
 
-  auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
-  FC_ASSERT( account.valid(), "Account does not exist" );
-  FC_ASSERT( account_name == account->name, "Account name doesn't match?" );
+  auto account = my->get_account( { account_name } );
+  FC_ASSERT( account_name == account.name, "Account name doesn't match?" );
 
   account_update_operation op;
   op.account = account_name;
-  op.memo_key = account->memo_key;
+  op.memo_key = account.memo_key;
   op.json_metadata = json_meta;
 
   signed_transaction tx;
@@ -1689,14 +1686,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo
   FC_ASSERT( !is_locked() );
   my->require_online();
 
-  auto account = my->_remote_wallet_bridge_api->get_account( { account_name }, LOCK );
-  FC_ASSERT( account.valid(), "Account does not exist" );
-  FC_ASSERT( account_name == account->name, "Account name doesn't match?" );
+  auto account = my->get_account( { account_name } );
+  FC_ASSERT( account_name == account.name, "Account name doesn't match?" );
 
   account_update_operation op;
   op.account = account_name;
   op.memo_key = key;
-  op.json_metadata = account->json_metadata;
+  op.json_metadata = account.json_metadata;
 
   signed_transaction tx;
   tx.operations.push_back(op);
