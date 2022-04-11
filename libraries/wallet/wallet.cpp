@@ -2346,10 +2346,11 @@ serializer_wrapper<vector< database_api::api_convert_request_object >> wallet_ap
   return { my->_remote_wallet_bridge_api->get_conversion_requests( {owner_account}, LOCK ) };
 }
 
-serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> wallet_api::get_collateralized_conversion_requests( const string& owner_account )
+serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> wallet_api::get_collateralized_conversion_requests( fc::variant owner_account )
 {
   my->require_online();
-  return { my->_remote_wallet_bridge_api->get_collateralized_conversion_requests( {owner_account}, LOCK ) };
+  vector<variant> args{std::move(owner_account)};
+  return { my->_remote_wallet_bridge_api->get_collateralized_conversion_requests( {args}, LOCK ) };
 }
 
 string wallet_api::decrypt_memo( string encrypted_memo )
