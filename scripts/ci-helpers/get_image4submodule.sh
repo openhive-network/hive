@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#set -euo pipefail 
+set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
@@ -10,11 +10,14 @@ IMGNAME=data
 
 source "$SCRIPTPATH/docker_image_utils.sh"
 
-submodule_path="${1}"
+submodule_path=${1:?"Missing arg 1 for submodule path variable"}
 
 REGISTRY=${2:?"Missing arg 2 for REGISTRY variable"}
 
 DOTENV_VAR_NAME=${3:?"Missing name of dot-env variable"}
+
+REGISTRY_USER=${4:?"Missing arg 4 for REGISTRY_USER variable"}
+REGISTRY_PASSWORD=${5:?"Missing arg 5 for REGISTRY_PASSWORD variable"}
 
 retrieve_submodule_commit () {
   local p="${1}"
@@ -32,11 +35,11 @@ commit=$( retrieve_submodule_commit ${submodule_path} )
 
 img=$( build_image_name $IMGNAME $commit $REGISTRY )
 
-echo $CI_IMG_BUILDER_PASSWORD | docker login -u $CI_IMG_BUILDER_USER $REGISTRY --password-stdin
+echo $REGISTRY_PASSWORD | docker login -u $REGISTRY_USER $REGISTRY --password-stdin
 
-docker_image_exists $IMGNAME $commit $REGISTRY
+image_exists=0
 
-image_exists=$?
+docker_image_exists $IMGNAME $commit $REGISTRY image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
