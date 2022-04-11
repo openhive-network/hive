@@ -18,6 +18,7 @@
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
+#include <hive/protocol/hardfork_block.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -287,7 +288,7 @@ namespace hive { namespace converter {
 #endif
 
 #ifndef HIVE_BC_HF_N_CASE_MACRO
-#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.timestamp.sec_since_epoch() >= HIVE_HARDFORK_ ##data ## _ ##n ## _TIME \
+#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.block_num() == HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
                                                         && current_hardfork < n ) { ++current_hardfork; \
 std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n' << std::flush; }
 #endif
