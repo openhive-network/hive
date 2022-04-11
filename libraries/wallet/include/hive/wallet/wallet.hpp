@@ -224,7 +224,7 @@ class wallet_api
       *
       * @return transaction as a JSON object literal
       */
-    serializer_wrapper<annotated_signed_transaction> get_transaction( transaction_id_type trx_id )const;
+    serializer_wrapper<annotated_signed_transaction> get_transaction( fc::variant trx_id )const;
 
     /** Checks whether the wallet has just been created and has not yet had a password set.
       *

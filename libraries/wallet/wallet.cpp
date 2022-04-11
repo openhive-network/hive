@@ -2594,10 +2594,11 @@ void wallet_api::set_transaction_expiration(uint32_t seconds)
   my->set_transaction_expiration(seconds);
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::get_transaction( transaction_id_type id )const
+serializer_wrapper<annotated_signed_transaction> wallet_api::get_transaction( fc::variant id )const
 {
   my->require_online();
-  return { my->_remote_wallet_bridge_api->get_transaction( {variant(id)}, LOCK ) };
+  vector<variant> args{std::move(id)};
+  return { my->_remote_wallet_bridge_api->get_transaction( {args}, LOCK ) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
