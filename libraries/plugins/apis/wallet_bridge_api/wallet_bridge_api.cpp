@@ -389,7 +389,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_dynamic_global_properties )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
 {
   verify_args( args, 1 );
-  chain::account_name_type acc_name = args.get_array()[0].get_string();
+  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+
+  chain::account_name_type acc_name = arguments.get_array()[0].get_string();
   const chain::account_object* account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
