@@ -288,9 +288,10 @@ namespace hive { namespace converter {
 #endif
 
 #ifndef HIVE_BC_HF_N_CASE_MACRO
-#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( _signed_block.block_num() > HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
+#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( block_num > HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
                                                         && current_hardfork < n ) { ++current_hardfork; \
-std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block.block_num() << '\n' << std::flush; }
+/* block number is decreased in this log due to the fact that hardforks are being applied before converting every block */ \
+std::cout << "HF applied: " << current_hardfork << " in block " << block_num - 1 << '\n' << std::flush; }
 #endif
 
 #ifndef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
@@ -304,8 +305,10 @@ std::cout << "HF applied: " << current_hardfork << " in block " << _signed_block
 
 #ifndef HIVE_BC_HF_ALL_CASE_MACRO
 #  define HIVE_BC_HF_ALL_CASE_MACRO() \
-  if(false){} /* For else ifs */ \
-  BOOST_PP_REPEAT( HIVE_BC_HARDFORKS_MAJOR_SIZE, HIVE_BC_HF_ALL_CASE_MACRO_LOOP, )
+  { const auto block_num = _signed_block.block_num(); \
+    if(false){} /* For else ifs */ \
+    BOOST_PP_REPEAT( HIVE_BC_HARDFORKS_MAJOR_SIZE, HIVE_BC_HF_ALL_CASE_MACRO_LOOP, ) \
+  }
 #endif
 
   void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
