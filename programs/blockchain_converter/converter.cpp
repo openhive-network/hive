@@ -280,7 +280,7 @@ namespace hive { namespace converter {
 
 // Range of the hive blockchain hardforks
 #define HIVE_BC_HF_CHAIN_1_START BOOST_PP_ADD(1, HIVE_BC_HF_CHAIN_0_STOP)
-#define HIVE_BC_HF_CHAIN_1_START HIVE_NUM_HARDFORKS
+#define HIVE_BC_HF_CHAIN_1_STOP  HIVE_NUM_HARDFORKS
 
 // Hard fork applier implementation - lambda that returns true if block with given number already has requested hardfork
 #define HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL(_z, minor, major)                                     \
@@ -296,25 +296,20 @@ namespace hive { namespace converter {
     major                                                 \
   )
 
-// Checks for the hardfork using const reference to the given block object and reference to the hard fork number
-#define HIVE_BC_HF_CHECK_FOR_HARDFORK(block_obj, fork_num)                                               \
-  {                                                                                                      \
-    static const std::array< std::function< bool(uint32_t) >, HIVE_NUM_HARDFORKS + 1 > fork_appliers = { \
-      BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR,)                      \
-      [](uint32_t) -> bool { return false; } /* always reject the non-existing hard fork */              \
-    };                                                                                                   \
-                                                                                                         \
-    const uint32_t block_num = block_obj.block_num();                                                    \
-    if( fork_appliers.at(fork_num)(block_num) )                                                          \
-    {                                                                                                    \
-      ++fork_num;                                                                                        \
-      std::cout << "HF applied: " << fork_num_ref << " in block " << block_num - 1 << std::endl;         \
-    }                                                                                                    \
-  }
-
+  // Checks for the hardfork using const reference to the given signed block object and applies all of the hard forks that have not been yet applied
   void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
   {
-    HIVE_BC_HF_CHECK_FOR_HARDFORK(_signed_block, current_hardfork);
+    static const std::array< std::function< bool(uint32_t) >, HIVE_NUM_HARDFORKS + 1 > fork_appliers = {
+      BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR, 0)
+      [](uint32_t) -> bool { return false; } /* always reject the non-existing hard fork */
+    };
+
+    const uint32_t block_num = _signed_block.block_num();
+    if( fork_appliers.at(current_hardfork)(block_num) )
+    {
+      ++current_hardfork;
+      std::cout << "HF applied: " << current_hardfork << " in block " << block_num - 1 << std::endl;
+    }
   }
 
 // Cleanup definitions as they were already used and thus no longer required
@@ -325,7 +320,6 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_CHAIN_1_START
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
-#undef HIVE_BC_HF_CHECK_FOR_HARDFORK
 
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
