@@ -15,6 +15,7 @@
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
+#include <hive/protocol/hardfork_block.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -121,7 +122,10 @@ namespace detail {
               std::cout << uint32_t(c);
             std::cout << "\nCurrent sig:  ";
 
-            const auto sig_other = converter.get_second_authority_key( hp::authority::owner ).sign_compact( trx.sig_digest( /* Current chain id: */ converter.get_chain_id() ) );
+            const auto sig_other = converter.get_second_authority_key( hp::authority::owner ).sign_compact(
+              trx.sig_digest( /* Current chain id: */ converter.get_chain_id() ),
+              block->block_num() > HIVE_HARDFORK_0_20_BLOCK ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
+            );
 
             // Display the current sig
             for( const auto c : sig_other )
