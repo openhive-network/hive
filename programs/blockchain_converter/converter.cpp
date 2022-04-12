@@ -269,64 +269,63 @@ namespace hive { namespace converter {
 
   const fc::time_point_sec blockchain_converter::auto_trx_time = fc::time_point::min();
 
-#ifndef HIVE_BC_HARDFORKS_MAJOR_SIZE
-#  define HIVE_BC_HARDFORKS_MAJOR_SIZE 2
-#endif
+// When we have definition like `HIVE_HARDFORK_1_24_BLOCK`, `1` would stand for the **major** version and `24` for the **minor** version
+//
+// Number of the existing blockchain forks (major versions)
+#define HIVE_BC_HF_CHAINS_NUMBER  2
 
-#ifndef HIVE_BC_HARDFORKS_0_START
-#  define HIVE_BC_HARDFORKS_0_START 1
-#endif
-#ifndef HIVE_BC_HARDFORKS_0_STOP
-#  define HIVE_BC_HARDFORKS_0_STOP 23
-#endif
+// Range of the pre-hive blockchain hardforks
+#define HIVE_BC_HF_CHAIN_0_START  1
+#define HIVE_BC_HF_CHAIN_0_STOP  23
 
-#ifndef HIVE_BC_HARDFORKS_1_START
-#  define HIVE_BC_HARDFORKS_1_START BOOST_PP_ADD( 1, HIVE_BC_HARDFORKS_0_STOP )
-#endif
-#ifndef HIVE_BC_HARDFORKS_1_STOP
-#  define HIVE_BC_HARDFORKS_1_STOP HIVE_NUM_HARDFORKS
-#endif
+// Range of the hive blockchain hardforks
+#define HIVE_BC_HF_CHAIN_1_START BOOST_PP_ADD(1, HIVE_BC_HF_CHAIN_0_STOP)
+#define HIVE_BC_HF_CHAIN_1_START HIVE_NUM_HARDFORKS
 
-#ifndef HIVE_BC_HF_N_CASE_MACRO
-#  define HIVE_BC_HF_N_CASE_MACRO(z, n, data) else if ( block_num > HIVE_HARDFORK_ ##data ## _ ##n ## _BLOCK \
-                                                        && current_hardfork < n ) { ++current_hardfork; \
-/* block number is decreased in this log due to the fact that hardforks are being applied before converting every block */ \
-std::cout << "HF applied: " << current_hardfork << " in block " << block_num - 1 << '\n' << std::flush; }
-#endif
+// Hard fork applier implementation - lambda that returns true if block with given number already has requested hardfork
+#define HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL(_z, minor, major)                                     \
+  [](uint32_t block_num) -> bool { return block_num > HIVE_HARDFORK_## major ##_## minor ##_BLOCK; } \
+  , /* Note: comma as an array separator */
 
-#ifndef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
-#  define HIVE_BC_HF_ALL_CASE_MACRO_LOOP(z, n, data) \
-  BOOST_PP_REPEAT_FROM_TO( HIVE_BC_HARDFORKS_ ##n ## _START, \
-                           BOOST_PP_ADD( 1, HIVE_BC_HARDFORKS_ ##n ## _STOP ), \
-                           HIVE_BC_HF_N_CASE_MACRO, \
-                           n \
-                           )
-#endif
+// Generates fork appliers for all of the chains
+#define HIVE_BC_HF_FORK_APPLIER_GENERATOR(_z, major, ...) \
+  BOOST_PP_REPEAT_FROM_TO(                                \
+    HIVE_BC_HF_CHAIN_## major ##_START,                   \
+    BOOST_PP_ADD(1, HIVE_BC_HF_CHAIN_## major ##_STOP ),  \
+    HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL,               \
+    major                                                 \
+  )
 
-#ifndef HIVE_BC_HF_ALL_CASE_MACRO
-#  define HIVE_BC_HF_ALL_CASE_MACRO() \
-  { const auto block_num = _signed_block.block_num(); \
-    if(false){} /* For else ifs */ \
-    BOOST_PP_REPEAT( HIVE_BC_HARDFORKS_MAJOR_SIZE, HIVE_BC_HF_ALL_CASE_MACRO_LOOP, ) \
+// Checks for the hardfork using const reference to the given block object and reference to the hard fork number
+#define HIVE_BC_HF_CHECK_FOR_HARDFORK(block_obj, fork_num)                                               \
+  {                                                                                                      \
+    static const std::array< std::function< bool(uint32_t) >, HIVE_NUM_HARDFORKS + 1 > fork_appliers = { \
+      BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR,)                      \
+      [](uint32_t) -> bool { return false; } /* always reject the non-existing hard fork */              \
+    };                                                                                                   \
+                                                                                                         \
+    const uint32_t block_num = block_obj.block_num();                                                    \
+    if( fork_appliers.at(fork_num)(block_num) )                                                          \
+    {                                                                                                    \
+      ++fork_num;                                                                                        \
+      std::cout << "HF applied: " << fork_num_ref << " in block " << block_num - 1 << std::endl;         \
+    }                                                                                                    \
   }
-#endif
 
   void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
   {
-    // Expands to the if/elses that increment current_hardfork every time _signed_block.block_num()
-    // is greater than the original number of the block with hardfork applied in the mainnet
-    HIVE_BC_HF_ALL_CASE_MACRO();
+    HIVE_BC_HF_CHECK_FOR_HARDFORK(_signed_block, current_hardfork);
   }
 
-// Cleanup defines
-#undef HIVE_BC_HARDFORKS_MAJOR_SIZE
-#undef HIVE_BC_HARDFORKS_0_START
-#undef HIVE_BC_HARDFORKS_0_STOP
-#undef HIVE_BC_HARDFORKS_1_START
-#undef HIVE_BC_HARDFORKS_1_STOP
-#undef HIVE_BC_HF_N_CASE_MACRO
-#undef HIVE_BC_HF_ALL_CASE_MACRO_LOOP
-#undef HIVE_BC_HF_ALL_CASE_MACRO
+// Cleanup definitions as they were already used and thus no longer required
+#undef HIVE_BC_HF_CHAINS_NUMBER
+#undef HIVE_BC_HF_CHAIN_0_START
+#undef HIVE_BC_HF_CHAIN_0_STOP
+#undef HIVE_BC_HF_CHAIN_1_START
+#undef HIVE_BC_HF_CHAIN_1_START
+#undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
+#undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
+#undef HIVE_BC_HF_CHECK_FOR_HARDFORK
 
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
