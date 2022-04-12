@@ -359,7 +359,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
   _result.reserve( names.size() );
   for( const auto& name : names )
   {
-    fc::variants _v = { name };
+    vector<variant> _v = { vector<variant>{ name } };
     _result.emplace_back( *( get_account( _v ) ) );
   }
 

@@ -20,7 +20,7 @@ def test_different_false_cases(wallet):
         response = wallet.api.get_account('not-exists')
     except Exception as e:
         message = str(e)
-        assert message.find('Unknown account') != -1
+        assert message.find('Account does not exist') != -1
 
     try:
         response = wallet.api.create_account('initminer')
