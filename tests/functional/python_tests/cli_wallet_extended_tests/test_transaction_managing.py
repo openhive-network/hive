@@ -67,7 +67,7 @@ def test_transaction(wallet):
     [
         "node.api.condenser.broadcast_transaction(transaction)",
         "node.api.network_broadcast.broadcast_transaction(trx=transaction)",
-        "node.api.wallet_bridge.broadcast_transaction([transaction])",
+        "node.api.wallet_bridge.broadcast_transaction(transaction)",
     ]
 )
 def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcasting):
