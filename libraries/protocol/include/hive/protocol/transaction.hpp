@@ -49,6 +49,7 @@ using fc::ecc::canonical_signature_type;
     void get_required_authorities( flat_set< account_name_type >& active,
                           flat_set< account_name_type >& owner,
                           flat_set< account_name_type >& posting,
+                          flat_set< account_name_type >& witness,
                           vector< authority >& other )const;
   };
 
@@ -67,6 +68,7 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const witness_public_key_getter& get_witness_key,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -78,6 +80,7 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const witness_public_key_getter& get_witness_key,
       hive::protocol::pack_type pack,
       uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
@@ -91,6 +94,7 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const witness_public_key_getter& get_witness_key,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,

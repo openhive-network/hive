@@ -594,7 +594,12 @@ struct count_operation_visitor
     market_op_count++;
   }
 
-  void operator()( const recover_account_operation& op ) const
+  void operator()( const witness_block_approve_operation& op )const
+  {
+  }
+
+  // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
+  void operator()( const recover_account_operation& ) const
   {
     subsidized_op = 1 == ( op.new_owner_authority.account_auths.size() + op.new_owner_authority.key_auths.size() );
     subsidized_signatures = 2; //needs recent and new signature

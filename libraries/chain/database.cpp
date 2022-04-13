@@ -121,6 +121,7 @@ class database_impl
     evaluator_registry< operation >                 _evaluator_registry;
     evaluator_registry< required_automated_action > _req_action_evaluator_registry;
     evaluator_registry< optional_automated_action > _opt_action_evaluator_registry;
+    std::map<account_name_type, block_id_type>      _last_approved_block_by_witness;
 };
 
 database_impl::database_impl( database& self )
@@ -1177,6 +1178,12 @@ bool database::_push_block( const block_flow_control& block_ctrl )
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
+bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+{
+  const signed_transaction& trx = full_transaction->get_transaction();
+  return trx.operations.size() == 1 && trx.operations.front().which() == operation::tag<witness_block_approve_operation>::value;
+}
+
 /**
   * Attempts to push the transaction into the pending queue
   *
@@ -1211,6 +1218,13 @@ void database::push_transaction( const std::shared_ptr<full_transaction_type>& f
 
 void database::_push_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
+  if (is_fast_confirm_transaction(full_transaction))
+  {
+    // fast-confirm transactions are just processed in memory, they're not added to the blockchain
+    process_fast_confirm_transaction(full_transaction);
+    return;
+  }
+
   // If this is the first transaction pushed after applying a block, start a new undo session.
   // This allows us to quickly rewind to the clean state of the head block, in case a new block arrives.
   if (!_pending_tx_session.valid())
@@ -3774,6 +3788,7 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
+  _my->_evaluator_registry.register_evaluator< witness_block_approve_evaluator          >();
 
 
 #ifdef IS_TEST_NET
@@ -4645,6 +4660,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     auto get_active  = [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).active ); };
     auto get_owner   = [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).owner );  };
     auto get_posting = [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).posting );  };
+    auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
 
     try
     {
@@ -4659,6 +4675,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
                                        get_active,
                                        get_owner,
                                        get_posting,
+                                       get_witness_key,
                                        HIVE_MAX_SIG_CHECK_DEPTH,
                                        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
                                        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
@@ -5238,8 +5255,141 @@ void database::update_signing_witness(const witness_object& signing_witness, con
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
+void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+{ try {
+  bool witness_is_scheduled = false;
+  signed_transaction trx = full_transaction->get_transaction();
+
+  const witness_block_approve_operation& block_approve_op = trx.operations.front().get<witness_block_approve_operation>();
+  ilog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
+
+  const witness_schedule_object& wso = get_witness_schedule_object();
+  vector<const witness_object*> wit_objs;
+  wit_objs.reserve(wso.num_scheduled_witnesses);
+  std::set<account_name_type> scheduled_witnesses;
+  for (int i = 0; i < wso.num_scheduled_witnesses; i++)
+  {
+    wit_objs.push_back(&get_witness(wso.current_shuffled_witnesses[i]));
+    scheduled_witnesses.insert(wit_objs.back()->owner);
+    if (!witness_is_scheduled && 
+        block_approve_op.witness == wit_objs.back()->owner)
+      witness_is_scheduled = true;
+  }
+  idump((scheduled_witnesses));
+
+  if (!witness_is_scheduled)
+  {
+    ilog("Received a fast-confirm from witness ${witness} who is not on the schedule, ignoring", ("witness", block_approve_op.witness));
+    return;
+  }
+  
+  _my->_last_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
+  idump((_my->_last_approved_block_by_witness));
+
+  uint32_t old_last_irreversible_block = update_last_irreversible_block();
+  migrate_irreversible_state(old_last_irreversible_block);
+} FC_CAPTURE_AND_RETHROW() }
+
 uint32_t database::update_last_irreversible_block()
 { try {
+#if 1
+  uint32_t old_last_irreversible = get_last_irreversible_block_num();
+  /**
+    * Prior to voting taking over, we must be more conservative...
+    *
+    */
+  if (head_block_num() < HIVE_START_MINER_VOTING_BLOCK)
+  {
+    if (head_block_num() > HIVE_MAX_WITNESSES) 
+    {
+      uint32_t new_last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
+
+      if (new_last_irreversible_block_num > get_last_irreversible_block_num())
+        set_last_irreversible_block_num(new_last_irreversible_block_num);
+    }
+    return old_last_irreversible;
+  }
+
+  uint32_t head_block_number = head_block_num();
+  if (old_last_irreversible == head_block_number)
+  {
+    ilog("Head-block is already irreversible, nothing to do");
+    return old_last_irreversible;
+  }
+  idump((head_block_number)(old_last_irreversible));
+
+  // we'll need to know who the current scheduled witnesses are, because their opinions are
+  // the only ones that matter
+  std::set<account_name_type> scheduled_witnesses;
+  const witness_schedule_object& wso = get_witness_schedule_object();
+  for (int i = 0; i < wso.num_scheduled_witnesses; i++)
+    scheduled_witnesses.insert(get_witness(wso.current_shuffled_witnesses[i]).owner);
+  idump((scheduled_witnesses));
+
+  // and we need the list of reversible blocks
+  vector<fork_item> main_branch = _fork_db.fetch_block_range_on_main_branch_by_number(old_last_irreversible + 1, head_block_number - old_last_irreversible);
+  // main_branch begins with the first reversible block head block and goes up to the head block
+  idump((main_branch.size())(main_branch.front().full_block->get_block_num())(main_branch.back().full_block->get_block_num()));
+
+  // we'll walk down the main_branch, starting at the head block, and add witness names to the set
+  // when they approve a block (and implicitly all of its ancestors).  If we reach the irreversible
+  // threshold, make that block and all of its predecessors irreversible.
+  std::set<account_name_type> witnesses_approving_branch;
+  fc::optional<uint32_t> new_last_irreversible_block;
+
+  for (auto iter = main_branch.rbegin(); iter != main_branch.rend(); ++iter)
+  {
+    const block_id_type& block_id = iter->get_block_id();
+    const std::shared_ptr<full_block_type>& full_block = iter->full_block;
+    ilog("Considering block ${num}", ("num", full_block->get_block_num()));
+    const signed_block_header& header = full_block->get_block_header();
+
+    // if a witness generated this block, we have strong reason to believe they approve it
+    if (scheduled_witnesses.find(header.witness) != scheduled_witnesses.end())
+      witnesses_approving_branch.insert(header.witness);
+
+    // check all other scheduled witnesses that haven't expressed an opinion on this 
+    // chain to see if they've fast-confirmed this block
+    for (const account_name_type& scheduled_witness : scheduled_witnesses)
+      if (witnesses_approving_branch.find(scheduled_witness) == witnesses_approving_branch.end())
+      {
+        auto iter = _my->_last_approved_block_by_witness.find(scheduled_witness);
+        if (iter != _my->_last_approved_block_by_witness.end() && iter->second == block_id)
+          witnesses_approving_branch.insert(scheduled_witness);
+      }
+
+    unsigned witnesses_required_for_irreversiblity = scheduled_witnesses.size() * HIVE_IRREVERSIBLE_THRESHOLD / HIVE_100_PERCENT;
+    if (witnesses_approving_branch.size() >= witnesses_required_for_irreversiblity)
+    {
+      ilog("Making block ${num} irreversible, ${witnesses_approving_branch} witnesses approve it", 
+           ("num", full_block->get_block_num())("witnesses_approving_branch", witnesses_approving_branch.size()));
+      new_last_irreversible_block = full_block->get_block_num();
+      break;
+    }
+    else
+    {
+      ilog("Can't make block ${num} irreversible, only ${witnesses_approving_branch} out of a required ${witnesses_required_for_irreversiblity} approve it", 
+           ("num", full_block->get_block_num())("witnesses_approving_branch", witnesses_approving_branch.size())(witnesses_required_for_irreversiblity));
+    }
+  }
+  if (!new_last_irreversible_block)
+  {
+    ilog("Leaving process_fast_confirm_transaction without making any new blocks irreversible");
+    return old_last_irreversible;
+  }
+
+  ilog("Found a new last irreversible block: ${new_last_irreversible_block}", (new_last_irreversible_block));
+  set_last_irreversible_block_num(*new_last_irreversible_block);
+
+  // clean up any fast-confirms that are no longer relevant to reversible blocks
+  for (auto iter = _my->_last_approved_block_by_witness.begin(); iter != _my->_last_approved_block_by_witness.end();)
+    if (block_header::num_from_id(iter->second) <= *new_last_irreversible_block)
+      iter = _my->_last_approved_block_by_witness.erase(iter);
+    else
+      ++iter;
+
+  return old_last_irreversible;
+#else
   uint32_t old_last_irreversible = get_last_irreversible_block_num();
 
   /**
@@ -5287,6 +5437,7 @@ uint32_t database::update_last_irreversible_block()
     }
   }
   return old_last_irreversible;
+#endif
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)

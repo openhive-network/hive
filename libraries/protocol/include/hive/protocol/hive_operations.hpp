@@ -1120,6 +1120,15 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
   };
 
+  struct witness_block_approve_operation : public base_operation
+  {
+    account_name_type witness;
+    block_id_type     block_id;
+
+    void validate()const;
+    void get_required_witness_signatures( flat_set<account_name_type>& a )const{ a.insert(witness); }
+  };
+
   } } // hive::protocol
 
 
@@ -1278,3 +1287,4 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
