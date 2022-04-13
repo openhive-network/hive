@@ -318,8 +318,11 @@ namespace detail {
     {
       std::set<account_name_type> scheduled_witnesses;
       const witness_schedule_object& wso = _db.get_witness_schedule_object();
+      const fc::array<account_name_type, HIVE_MAX_WITNESSES> &shuffled_witnesses = 
+        _db.has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE) && wso.future_shuffled_witnesses[0].length() ? wso.future_shuffled_witnesses : wso.current_shuffled_witnesses;
       for (int i = 0; i < wso.num_scheduled_witnesses; i++)
-        scheduled_witnesses.insert(_db.get_witness(wso.current_shuffled_witnesses[i]).owner);
+        scheduled_witnesses.insert(_db.get_witness(shuffled_witnesses[i]).owner);
+      idump((scheduled_witnesses));
 
       for (const account_name_type& witness_name : _witnesses)
       {

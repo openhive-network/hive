@@ -5264,18 +5264,14 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   ilog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
 
   const witness_schedule_object& wso = get_witness_schedule_object();
-  vector<const witness_object*> wit_objs;
-  wit_objs.reserve(wso.num_scheduled_witnesses);
-  std::set<account_name_type> scheduled_witnesses;
+  const fc::array<account_name_type, HIVE_MAX_WITNESSES> &shuffled_witnesses = 
+    has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE) && wso.future_shuffled_witnesses[0].length() ? wso.future_shuffled_witnesses : wso.current_shuffled_witnesses;
   for (int i = 0; i < wso.num_scheduled_witnesses; i++)
-  {
-    wit_objs.push_back(&get_witness(wso.current_shuffled_witnesses[i]));
-    scheduled_witnesses.insert(wit_objs.back()->owner);
-    if (!witness_is_scheduled && 
-        block_approve_op.witness == wit_objs.back()->owner)
+    if (block_approve_op.witness == get_witness(shuffled_witnesses[i]).owner)
+    {
       witness_is_scheduled = true;
-  }
-  idump((scheduled_witnesses));
+      break;
+    }
 
   if (!witness_is_scheduled)
   {
@@ -5322,8 +5318,10 @@ uint32_t database::update_last_irreversible_block()
   // the only ones that matter
   std::set<account_name_type> scheduled_witnesses;
   const witness_schedule_object& wso = get_witness_schedule_object();
+  const fc::array<account_name_type, HIVE_MAX_WITNESSES> &shuffled_witnesses = 
+    has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE) && wso.future_shuffled_witnesses[0].length() ? wso.future_shuffled_witnesses : wso.current_shuffled_witnesses;
   for (int i = 0; i < wso.num_scheduled_witnesses; i++)
-    scheduled_witnesses.insert(get_witness(wso.current_shuffled_witnesses[i]).owner);
+    scheduled_witnesses.insert(get_witness(shuffled_witnesses[i]).owner);
   idump((scheduled_witnesses));
 
   // and we need the list of reversible blocks
