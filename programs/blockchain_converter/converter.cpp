@@ -222,7 +222,7 @@ namespace hive { namespace converter {
 
 
   blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, bool increase_block_size )
-    : _private_key( _private_key ), chain_id( chain_id ), increase_block_size( increase_block_size ), signers_exit( false ), current_hardfork( 0 )
+    : _private_key( _private_key ), chain_id( chain_id ), increase_block_size( increase_block_size ), signers_exit( false )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
@@ -283,9 +283,8 @@ namespace hive { namespace converter {
 #define HIVE_BC_HF_CHAIN_1_STOP  HIVE_NUM_HARDFORKS
 
 // Hard fork applier implementation - lambda that returns true if block with given number already has requested hardfork
-#define HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL(_z, minor, major)                                     \
-  [](uint32_t block_num) -> bool { return block_num > HIVE_HARDFORK_## major ##_## minor ##_BLOCK; } \
-  , /* Note: comma as an array separator */
+#define HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL(_z, minor, major) \
+  HIVE_HARDFORK_## major ##_## minor ##_BLOCK, /* Note: comma as an array separator */
 
 // Generates fork appliers for all of the chains
 #define HIVE_BC_HF_FORK_APPLIER_GENERATOR(_z, major, ...) \
@@ -296,21 +295,9 @@ namespace hive { namespace converter {
     major                                                 \
   )
 
-  // Checks for the hardfork using const reference to the given signed block object and applies all of the hard forks that have not been yet applied
-  void blockchain_converter::check_for_hardfork( const hp::signed_block& _signed_block )
-  {
-    static const std::array< std::function< bool(uint32_t) >, HIVE_NUM_HARDFORKS + 1 > fork_appliers = {
-      BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR, 0)
-      [](uint32_t) -> bool { return false; } /* always reject the non-existing hard fork */
-    };
-
-    const uint32_t block_num = _signed_block.block_num();
-    if( fork_appliers.at(current_hardfork)(block_num) )
-    {
-      ++current_hardfork;
-      std::cout << "HF applied: " << current_hardfork << " in block " << block_num - 1 << std::endl;
-    }
-  }
+  const std::array< uint32_t, HIVE_NUM_HARDFORKS > blockchain_converter::hardfork_blocks = {
+    BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR, 0)
+  };
 
 // Cleanup definitions as they were already used and thus no longer required
 #undef HIVE_BC_HF_CHAINS_NUMBER
@@ -323,15 +310,9 @@ namespace hive { namespace converter {
 
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
-    if( mainnet_head_block_id == hp::block_id_type{} ) // Check for all the hardforks if mainnet_head_block_id is not yet assigned
-      for( int i = 0; i < HIVE_NUM_HARDFORKS; ++i )
-        check_for_hardfork( _signed_block );
-
     this->mainnet_head_block_id = _signed_block.previous;
 
     current_block_ptr = &_signed_block;
-
-    check_for_hardfork( _signed_block );
 
     auto trx_time = trx_now_time;
 
@@ -497,14 +478,19 @@ namespace hive { namespace converter {
     return chain_id;
   }
 
-  uint32_t blockchain_converter::get_current_hardfork()const
-  {
-    return current_hardfork;
-  }
-
   bool blockchain_converter::has_hardfork( uint32_t hf )const
   {
-    return current_hardfork >= hf;
+    return has_hardfork( hf, get_current_block() );
+  }
+
+  bool blockchain_converter::has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )const
+  {
+    return has_hardfork( hf, _signed_block.block_num() );
+  }
+
+  bool blockchain_converter::has_hardfork( uint32_t hf, uint32_t block_num )const
+  {
+    return block_num > hardfork_blocks[hf];
   }
 
   const hp::signed_block& blockchain_converter::get_current_block()const
