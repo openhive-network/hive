@@ -8,9 +8,12 @@
 #include <thread>
 #include <vector>
 #include <utility>
+#include <atomic>
+#include <array>
 
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
+#include <fc/time.hpp>
 
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
