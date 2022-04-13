@@ -197,7 +197,7 @@ namespace detail {
     if( log_out.is_open() )
       log_out.close();
 
-    if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770, converter.get_converter_head_block_num() ) )
+    if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
   }
 

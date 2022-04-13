@@ -491,7 +491,7 @@ namespace hive { namespace converter {
 
   bool blockchain_converter::has_hardfork( uint32_t hf )const
   {
-    return has_hardfork( hf, get_current_block() );
+    return has_hardfork( hf, get_converter_head_block_num() );
   }
 
   bool blockchain_converter::has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )const
