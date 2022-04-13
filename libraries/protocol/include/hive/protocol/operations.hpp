@@ -73,6 +73,7 @@ namespace hive { namespace protocol {
         update_proposal_operation, // 47
         collateralized_convert_operation, // 48
         recurrent_transfer_operation, // 49
+        witness_block_approve_operation, // 50
 
 #ifdef HIVE_ENABLE_SMT
         /// SMT operations
@@ -134,6 +135,7 @@ namespace hive { namespace protocol {
                               flat_set<string>& active,
                               flat_set<string>& owner,
                               flat_set<string>& posting,
+                              flat_set<string>& witness,
                               vector<authority>&  other );
 
   void operation_validate( const operation& op );*/

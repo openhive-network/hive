@@ -21,14 +21,16 @@ struct get_required_auth_visitor
   flat_set< account_name_type >&        active;
   flat_set< account_name_type >&        owner;
   flat_set< account_name_type >&        posting;
+  flat_set< account_name_type >&        witness;
   std::vector< authority >&  other;
 
   get_required_auth_visitor(
       flat_set< account_name_type >& a,
       flat_set< account_name_type >& own,
       flat_set< account_name_type >& post,
+      flat_set< account_name_type >& wit,
       std::vector< authority >& oth )
-    : active( a ), owner( own ), posting( post ), other( oth ) {}
+    : active( a ), owner( own ), posting( post ), witness( wit ), other( oth ) {}
 
   template< typename ...Ts >
   void operator()( const fc::static_variant< Ts... >& v )
@@ -44,6 +46,7 @@ struct get_required_auth_visitor
     v.get_required_active_authorities( active );
     v.get_required_owner_authorities( owner );
     v.get_required_posting_authorities( posting );
+    v.get_required_witness_signatures( witness );
     v.get_required_authorities( other );
   }
 };
@@ -63,6 +66,7 @@ void operation_get_required_authorities( const OperationType& op,               
                             flat_set< account_name_type >& active,  \
                             flat_set< account_name_type >& owner,   \
                             flat_set< account_name_type >& posting, \
+                            flat_set< account_name_type >& witness, \
                             vector< authority >& other );           \
                                                       \
 } } /* hive::protocol */

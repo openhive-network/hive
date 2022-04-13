@@ -65,9 +65,10 @@ void operation_get_required_authorities( const OperationType& op,          \
                             flat_set< account_name_type >& active,         \
                             flat_set< account_name_type >& owner,          \
                             flat_set< account_name_type >& posting,        \
+                            flat_set< account_name_type >& witness,        \
                             std::vector< authority >& other ) \
 {                                                                          \
-  op.visit( hive::protocol::get_required_auth_visitor( active, owner, posting, other ) ); \
+  op.visit( hive::protocol::get_required_auth_visitor( active, owner, posting, witness, other ) ); \
 }                                                                          \
                                                   \
 } } /* hive::protocol */

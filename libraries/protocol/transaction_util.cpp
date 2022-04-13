@@ -7,6 +7,7 @@ void verify_authority(const required_authorities_type& required_authorities,
                       const authority_getter& get_active,
                       const authority_getter& get_owner,
                       const authority_getter& get_posting,
+                      const witness_public_key_getter& get_witness_key,
                       uint32_t max_recursion_depth /* = HIVE_MAX_SIG_CHECK_DEPTH */,
                       uint32_t max_membership /* = HIVE_MAX_AUTHORITY_MEMBERSHIP */,
                       uint32_t max_account_auths /* = HIVE_MAX_SIG_CHECK_ACCOUNTS */,
@@ -24,6 +25,7 @@ void verify_authority(const required_authorities_type& required_authorities,
   if( required_authorities.required_posting.size() ) {
     FC_ASSERT( required_authorities.required_active.size() == 0 );
     FC_ASSERT( required_authorities.required_owner.size() == 0 );
+    FC_ASSERT( required_authorities.required_witness.size() == 0 );
     FC_ASSERT( required_authorities.other.size() == 0 );
 
     flat_set<public_key_type> avail;
@@ -80,6 +82,12 @@ void verify_authority(const required_authorities_type& required_authorities,
     HIVE_ASSERT( owner_approvals.find(id) != owner_approvals.end() ||
                 s.check_authority(get_owner(id)),
                 tx_missing_owner_auth, "Missing Owner Authority ${id}", ("id",id)("auth",get_owner(id)) );
+  }
+
+  for( const auto& id : required_authorities.required_witness )
+  {
+    HIVE_ASSERT( s.signed_by(get_witness_key(id)),
+                 tx_missing_witness_auth, "Missing Witness Authority ${id}, key ${key}", (id)("key", get_witness_key(id)) );
   }
 
   HIVE_ASSERT(

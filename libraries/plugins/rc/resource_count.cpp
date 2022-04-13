@@ -391,6 +391,10 @@ struct count_operation_visitor
     market_op_count++;
   }
 
+  void operator()( const witness_block_approve_operation& op )const
+  {
+  }
+
   // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
   void operator()( const recover_account_operation& ) const
   {
