@@ -159,7 +159,7 @@ if( NOT CLANG_TIDY_EXE )
     message( STATUS "clang-tidy not found" )
   endif()
 elseif( VERSION LESS 3.6 )
-   messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
+   message( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
 else()
    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
    EXECUTE_PROCESS(
