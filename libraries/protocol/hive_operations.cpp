@@ -747,4 +747,10 @@ namespace hive { namespace protocol {
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 
+  void witness_block_approve_operation::validate()const
+  { try {
+      validate_account_name( witness );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+
 } } // hive::protocol

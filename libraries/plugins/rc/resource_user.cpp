@@ -23,6 +23,11 @@ struct get_resource_user_visitor
     return op.account_to_recover;
   }
 
+  account_name_type operator()( const witness_block_approve_operation& op )const
+  {
+    return op.witness;
+  }
+
   template< typename Op >
   account_name_type operator()( const Op& op )const
   {

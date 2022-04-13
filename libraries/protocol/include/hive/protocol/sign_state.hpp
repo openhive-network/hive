@@ -7,6 +7,7 @@
 namespace hive { namespace protocol {
 
 typedef std::function<authority(const string&)> authority_getter;
+typedef std::function<public_key_type(const string&)> witness_public_key_getter;
 
 struct sign_state
 {

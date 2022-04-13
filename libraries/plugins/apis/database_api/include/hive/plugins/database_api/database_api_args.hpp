@@ -600,6 +600,7 @@ struct verify_signatures_args
   vector< account_name_type >   required_owner;
   vector< account_name_type >   required_active;
   vector< account_name_type >   required_posting;
+  vector< account_name_type >   required_witness;
   vector< authority >           required_other;
 
   void get_required_owner_authorities( flat_set< account_name_type >& a )const
@@ -615,6 +616,11 @@ struct verify_signatures_args
   void get_required_posting_authorities( flat_set< account_name_type >& a )const
   {
     a.insert( required_posting.begin(), required_posting.end() );
+  }
+
+  void get_required_witness_signatures( flat_set< account_name_type >& a )const
+  {
+    a.insert( required_witness.begin(), required_witness.end() );
   }
 
   void get_required_authorities( vector< authority >& a )const
@@ -927,6 +933,7 @@ FC_REFLECT( hive::plugins::database_api::verify_signatures_args,
   (required_owner)
   (required_active)
   (required_posting)
+  (required_witness)
   (required_other) )
 
 FC_REFLECT( hive::plugins::database_api::verify_signatures_return,

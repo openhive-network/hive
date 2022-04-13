@@ -84,15 +84,18 @@ account_name_type get_transaction_user( const signed_transaction& tx )
   flat_set< account_name_type > active;
   flat_set< account_name_type > owner;
   flat_set< account_name_type > posting;
+  flat_set< account_name_type > witness;
   vector< authority > other;
 
-  tx.get_required_authorities( active, owner, posting, other );
+  tx.get_required_authorities( active, owner, posting, witness, other );
 
   for( const account_name_type& name : posting )
     return name;
   for( const account_name_type& name : active )
     return name;
   for( const account_name_type& name : owner )
+    return name;
+  for( const account_name_type& name : witness )
     return name;
   return account_name_type();
 }

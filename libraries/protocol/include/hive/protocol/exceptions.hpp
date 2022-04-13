@@ -26,6 +26,7 @@ namespace hive { namespace protocol {
   FC_DECLARE_DERIVED_EXCEPTION( tx_missing_other_auth,             hive::protocol::transaction_auth_exception, 3040000, "missing required other authority" )
   FC_DECLARE_DERIVED_EXCEPTION( tx_irrelevant_sig,                 hive::protocol::transaction_exception, 3050000, "irrelevant signature included" )
   FC_DECLARE_DERIVED_EXCEPTION( tx_duplicate_sig,                  hive::protocol::transaction_exception, 3060000, "duplicate signature included" )
+  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_witness_auth,           hive::protocol::transaction_exception, 3070000, "missing required witness signature" )
 
   #define HIVE_RECODE_EXC( cause_type, effect_type ) \
     catch( const cause_type& e ) \
