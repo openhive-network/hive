@@ -426,7 +426,7 @@ namespace hive { namespace converter {
 
   hp::signature_type blockchain_converter::generate_signature( const hp::signed_transaction& trx, authority::classification type )const
   {
-    return get_second_authority_key( authority::owner ).sign_compact(
+    return get_second_authority_key( type ).sign_compact(
             trx.sig_digest( chain_id ),
             has_hardfork( HIVE_HARDFORK_0_20_BLOCK ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
           );
