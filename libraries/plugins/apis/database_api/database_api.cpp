@@ -1695,6 +1695,7 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     HIVE_MAX_SIG_CHECK_DEPTH,
     _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
 
@@ -1728,6 +1729,10 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
         result.keys.insert( k );
       return authority( auth );
     },
+    [&]( account_name_type witness_name )
+    {
+      return _db.get_witness(witness_name).signing_key;
+    },
     HIVE_MAX_SIG_CHECK_DEPTH,
     _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
   );
@@ -1742,6 +1747,7 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     args.pack,
     HIVE_MAX_SIG_CHECK_DEPTH,
     HIVE_MAX_AUTHORITY_MEMBERSHIP,
@@ -1790,6 +1796,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).active ); },
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).posting ); },
+      [this]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
       HIVE_MAX_SIG_CHECK_DEPTH );
   }
   catch( fc::exception& ) { result.valid = false; }

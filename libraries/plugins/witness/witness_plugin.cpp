@@ -84,6 +84,7 @@ namespace detail {
     boost::signals2::connection   _pre_apply_operation_conn;
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
+    uint32_t _last_fast_confirmation_block_number = 0;
   };
 
   class witness_generate_block_flow_control final : public generate_block_flow_control
@@ -307,6 +308,62 @@ namespace detail {
       if( it == idx.end() )
         break;
       _db.remove( *it );
+    }
+
+    // Broadcast a transaction to let the other witnesses know we've accepted this block for fast 
+    // confirmation.
+    // I think it's called multiple times during a fork switch, which isn't what we want, so
+    // only generate this transaction if our head block number has increased
+    if (note.block_num > _last_fast_confirmation_block_number)
+    {
+      std::set<account_name_type> scheduled_witnesses;
+      const witness_schedule_object& wso = _db.get_witness_schedule_object();
+      for (int i = 0; i < wso.num_scheduled_witnesses; i++)
+        scheduled_witnesses.insert(_db.get_witness(wso.current_shuffled_witnesses[i]).owner);
+
+      for (const account_name_type& witness_name : _witnesses)
+      {
+        ilog("In on_post_apply_block(), checking witness ${witness_name}", (witness_name));
+        if (witness_name != note.full_block->get_block().witness && 
+            scheduled_witnesses.find(witness_name) != scheduled_witnesses.end())
+          try
+          {
+            chain::public_key_type scheduled_key;
+            try
+            {
+              scheduled_key = _db.get<chain::witness_object, chain::by_name>(witness_name).signing_key;
+            }
+            catch (const fc::exception& e)
+            {
+              elog("crap: ${e}", (e));
+            }
+            auto private_key_itr = _private_keys.find(scheduled_key);
+            if (private_key_itr != _private_keys.end())
+            {
+              witness_block_approve_operation op;
+              op.witness = witness_name;
+              op.block_id = note.block_id;
+
+              signed_transaction tx;
+              tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+              tx.operations.push_back( op );
+              tx.sign(private_key_itr->second, _db.get_chain_id(), fc::ecc::fc_canonical);
+
+              ilog("Broadcasting fast-confirm transaction for ${witness_name}", (witness_name));
+              uint32_t skip = _db.get_node_properties().skip_flags;
+
+              std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_signed_transaction(tx, hive::protocol::serialization_mode_controller::get_current_pack(), false);
+              _db.push_transaction(full_transaction, skip);
+              appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
+            }
+          }
+          catch (const fc::exception& e)
+          {
+            elog("Failed to broadcast fast-confirmation transaction for witness ${witness_name}: ${e}", (witness_name)(e));
+          }
+      }
+
+      _last_fast_confirmation_block_number = note.block_num;
     }
   }
 

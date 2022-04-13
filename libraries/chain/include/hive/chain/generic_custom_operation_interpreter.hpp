@@ -173,23 +173,26 @@ class generic_custom_operation_interpreter
       flat_set<account_name_type> outer_active;
       flat_set<account_name_type> outer_owner;
       flat_set<account_name_type> outer_posting;
+      flat_set<account_name_type> outer_witness;
       std::vector< authority >    outer_other;
 
       flat_set<account_name_type> inner_active;
       flat_set<account_name_type> inner_owner;
       flat_set<account_name_type> inner_posting;
+      flat_set<account_name_type> inner_witness;
       std::vector< authority >    inner_other;
 
-      operation_get_required_authorities( outer_o, outer_active, outer_owner, outer_posting, outer_other );
+      operation_get_required_authorities( outer_o, outer_active, outer_owner, outer_posting, outer_witness, outer_other );
       for( const CustomOperationType& inner_o : custom_operations )
       {
         operation_validate( inner_o );
-        operation_get_required_authorities( inner_o, inner_active, inner_owner, inner_posting, inner_other );
+        operation_get_required_authorities( inner_o, inner_active, inner_owner, inner_posting, inner_witness, inner_other );
       }
 
       FC_ASSERT( inner_owner == outer_owner );
       FC_ASSERT( inner_active == outer_active );
       FC_ASSERT( inner_posting == outer_posting );
+      FC_ASSERT( inner_witness == outer_witness );
       FC_ASSERT( inner_other == outer_other );
 
       for( const CustomOperationType& inner_o : custom_operations )
