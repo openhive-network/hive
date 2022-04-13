@@ -231,11 +231,9 @@ namespace hive { namespace converter {
         while( !signers_exit.load() )
           if( shared_signatures_stack_in.pop( local_trx ) )
           {
-            // std::cout << "Worker: " << worker_index << " just got a new job. Trx index: " << local_trx.first << ". Signing... ";
-            while( ! shared_signatures_stack_out.push( std::make_pair( local_trx.first,
-              get_second_authority_key( authority::owner ).sign_compact( local_trx.second->sig_digest( get_chain_id() ), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical )
-              ) ) ) continue;
-            // std::cout << "Done.\n";
+            while( !shared_signatures_stack_out.push(
+              std::make_pair(local_trx.first, generate_signature( *local_trx.second ))
+            ) ) continue;
           }
       }, i ) );
   }
@@ -310,7 +308,10 @@ namespace hive { namespace converter {
 
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
-    this->mainnet_head_block_id = _signed_block.previous;
+    touch( _signed_block ); // Update the mainnet head block id
+    // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
+    // `limit_order_create_operation` operation generation, we can override the previous block id in our block:
+    _signed_block.previous = previous_block_id;
 
     current_block_ptr = &_signed_block;
 
@@ -320,8 +321,6 @@ namespace hive { namespace converter {
       trx_time = _signed_block.timestamp; // Deduce time from the signed block
     else
       trx_time += HIVE_BLOCK_INTERVAL; // Apply min expiration time and then increase this value to avoid trx id duplication
-
-    _signed_block.previous = previous_block_id;
 
     std::set<size_t> already_signed_transaction_pos;
 
@@ -425,13 +424,20 @@ namespace hive { namespace converter {
     return hp::block_header::num_from_id(mainnet_head_block_id) + 2;
   }
 
+  hp::signature_type blockchain_converter::generate_signature( const hp::signed_transaction& trx, authority::classification type )const
+  {
+    return get_second_authority_key( authority::owner ).sign_compact(
+            trx.sig_digest( chain_id ),
+            has_hardfork( HIVE_HARDFORK_0_20_BLOCK ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
+          );
+  }
+
   void blockchain_converter::sign_transaction( hp::signed_transaction& trx, bool force /*=false*/)const
   {
     if( trx.signatures.size() || force)
     {
       trx.signatures.clear();
-      //trx.signatures.emplace_back(get_second_authority_key( authority::owner ).sign_compact( trx.sig_digest( chain_id ), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical )); // XXX: All operations are being signed using the owner key of the 2nd authority
-      trx.sign(get_second_authority_key(authority::owner), chain_id, has_hardfork(HIVE_HARDFORK_0_20__1944) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+      trx.signatures.push_back( generate_signature(trx) ); // XXX: All operations are being signed using the owner key of the 2nd authority
     }
   }
 
@@ -489,6 +495,16 @@ namespace hive { namespace converter {
     return chain_id;
   }
 
+  void blockchain_converter::touch( const hp::signed_block_header& _signed_header )
+  {
+    touch(_signed_header.previous);
+  }
+
+  void blockchain_converter::touch( const hp::block_id_type& id )
+  {
+    mainnet_head_block_id = id;
+  }
+
   bool blockchain_converter::has_hardfork( uint32_t hf )const
   {
     return has_hardfork( hf, get_converter_head_block_num() );
@@ -501,7 +517,7 @@ namespace hive { namespace converter {
 
   bool blockchain_converter::has_hardfork( uint32_t hf, uint32_t block_num )const
   {
-    return block_num > hardfork_blocks[hf];
+    return block_num > hardfork_blocks.at(hf);
   }
 
   const hp::signed_block& blockchain_converter::get_current_block()const

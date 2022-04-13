@@ -77,6 +77,7 @@ namespace hive { namespace converter {
 
     void add_second_authority( authority& _auth, authority::classification type );
 
+    hp::signature_type generate_signature( const hp::signed_transaction& trx, authority::classification type = authority::owner )const;
     void sign_transaction( hp::signed_transaction& trx, bool force=false )const;
 
     const hp::private_key_type& get_second_authority_key( authority::classification type )const;
@@ -90,18 +91,20 @@ namespace hive { namespace converter {
     const hp::chain_id_type& get_chain_id()const;
 
     /**
-     * @return either true or false if the block that is currently being converted has given hardfork
+     * @brief Alters the current converter state by changing the saved mainnet head block id.
+     *        This function can be used to "move in time", e.g. if you want to apply hardforks
+     *        without running the actual block conversion. Useful in the initial checks like the chain id validation
      */
+    void touch( const hp::signed_block_header& _signed_header );
+    void touch( const hp::block_id_type& id ); // Function override if you want to directly set your mainnet head block id
+
     bool has_hardfork( uint32_t hf )const;
-    /**
-     * @return either true or false if block with specified number has given hardfork
-     */
     bool has_hardfork( uint32_t hf, uint32_t block_num )const;
-    /**
-     * @return either true or false if specified reference to the signed block object has given hardfork
-     */
     bool has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )const;
 
+    /**
+     * @throws if there is no block being currently converted
+     */
     const hp::signed_block& get_current_block()const;
 
     bool block_size_increase_enabled()const;
