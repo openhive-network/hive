@@ -112,6 +112,8 @@ namespace detail {
         if( block->transactions.size() )
           if( block->transactions.begin()->signatures.size() )
           {
+            converter.touch(*block);
+
             const auto& trx = *block->transactions.begin();
             const auto& sig = *block->transactions.begin()->signatures.begin();
 
@@ -122,10 +124,7 @@ namespace detail {
               std::cout << uint32_t(c);
             std::cout << "\nCurrent sig:  ";
 
-            const auto sig_other = converter.get_second_authority_key( hp::authority::owner ).sign_compact(
-              trx.sig_digest( /* Current chain id: */ converter.get_chain_id() ),
-              block->block_num() > HIVE_HARDFORK_0_20_BLOCK ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
-            );
+            const auto sig_other = converter.generate_signature(trx);
 
             // Display the current sig
             for( const auto c : sig_other )
