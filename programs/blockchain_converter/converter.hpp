@@ -51,13 +51,12 @@ namespace hive { namespace converter {
     bool increase_block_size;
 
     std::atomic_bool        signers_exit;
-    std::atomic< uint32_t > current_hardfork;
 
     mutable std::mutex second_auth_mutex;
 
     hp::block_id_type mainnet_head_block_id;
 
-    void check_for_hardfork( const hp::signed_block& _signed_block );
+    static const std::array< uint32_t, HIVE_NUM_HARDFORKS > hardfork_blocks;
 
   public:
     /// Used in convert_signed_block to specify that expiration time of the transaction should not be altered (automatically deduct expiration time of the transaction using timestamp of the signed block)
@@ -88,8 +87,18 @@ namespace hive { namespace converter {
     const hp::private_key_type& get_witness_key()const;
     const hp::chain_id_type& get_chain_id()const;
 
-    uint32_t get_current_hardfork()const;
+    /**
+     * @return either true or false if the block that is currently being converted has given hardfork
+     */
     bool has_hardfork( uint32_t hf )const;
+    /**
+     * @return either true or false if block with specified number has given hardfork
+     */
+    bool has_hardfork( uint32_t hf, uint32_t block_num )const;
+    /**
+     * @return either true or false if specified reference to the signed block object has given hardfork
+     */
+    bool has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )const;
 
     const hp::signed_block& get_current_block()const;
 
