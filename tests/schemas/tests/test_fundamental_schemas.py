@@ -18,6 +18,40 @@ from schemas.predefined import *
         (Float(), 3.141593),
         (Float(), 128),  # Ints are also floats
 
+        # Int
+        (Int(), 1),
+        (Int(), '1'),  # Ints can also be saved as string
+        (Int(), -1),
+        (Int(), '-1'),
+        (Int(multipleOf=2), 4),  # Multiple of 2, so 4, 6, 8, 10 ... 122 its valid
+        (Int(multipleOf=2), '4'),
+        (Int(multipleOf='2'), 4),
+        (Int(multipleOf='2'), '4'),
+        (Int(minimum=1), 1),  # instance >= 1
+        (Int(minimum=1), '1'),
+        (Int(minimum='1'), 1),
+        (Int(minimum='1'), '1'),
+        (Int(maximum=2), 2),  # instance <= 2
+        (Int(maximum=2), '2'),
+        (Int(maximum='2'), 2),
+        (Int(maximum='2'), '2'),
+        (Int(exclusiveMinimum=1), 2),  # instance > 1
+        (Int(exclusiveMinimum=1), '2'),
+        (Int(exclusiveMinimum='1'), 2),
+        (Int(exclusiveMinimum='1'), '2'),
+        (Int(exclusiveMaximum=10), 9),  # instance < 10
+        (Int(exclusiveMaximum=10), '9'),
+        (Int(exclusiveMaximum='10'), 9),
+        (Int(exclusiveMaximum='10'), '9'),
+        (Int(minimum=1, exclusiveMaximum=10), 9),
+        (Int(minimum=1, exclusiveMaximum=10), '9'),
+        (Int(minimum=1, exclusiveMaximum='10'), 9),
+        (Int(minimum=1, exclusiveMaximum='10'), '9'),
+        (Int(minimum='1', exclusiveMaximum=10), 9),
+        (Int(minimum='1', exclusiveMaximum=10), '9'),
+        (Int(minimum='1', exclusiveMaximum='10'), 9),
+        (Int(minimum='1', exclusiveMaximum='10'), '9'),
+
         # Map
         (Map({}), {}),
         (
@@ -117,6 +151,42 @@ def test_validation_of_correct_type(schema, instance):
         (Float(), None),
         (Float(), True),
         (Float(), '3.141593'),
+
+        # Int
+        (Int(), True),
+        (Int(), 3.141593),
+        (Int(), 'example-string'),
+        (Int(multipleOf=2), 3),
+        (Int(multipleOf=2), '3'),
+        (Int(multipleOf='2'), 3),
+        (Int(multipleOf='2'), '3'),
+        (Int(multipleOf='incorrect-value'), '3'),
+        (Int(minimum=2), 1),
+        (Int(minimum=2), '1'),
+        (Int(minimum='2'), 1),
+        (Int(minimum='2'), '1'),
+        (Int(minimum='2'), '1'),
+        (Int(minimum='incorrect-value'), '1'),
+        (Int(maximum=1), 2),
+        (Int(maximum=1), '2'),
+        (Int(maximum='1'), 2),
+        (Int(maximum='1'), '2'),
+        (Int(maximum='incorrect-value'), '2'),
+        (Int(exclusiveMinimum=1), 1),
+        (Int(exclusiveMinimum=1), '1'),
+        (Int(exclusiveMinimum='1'), 1),
+        (Int(exclusiveMinimum='1'), '1'),
+        (Int(exclusiveMinimum='incorrect-value'), '1'),
+        (Int(exclusiveMaximum=10), 10),
+        (Int(exclusiveMaximum=10), '10'),
+        (Int(exclusiveMaximum='10'), 10),
+        (Int(exclusiveMaximum='10'), '10'),
+        (Int(exclusiveMaximum='incorrect-value'), '10'),
+        (Int(minimum=1, exclusiveMaximum=10), 10),
+        (Int(minimum=1, exclusiveMaximum=10), '10'),
+        (Int(minimum=1, exclusiveMaximum='10'), 10),
+        (Int(minimum=1, exclusiveMaximum='10'), '10'),
+        (Int(minimum=1, exclusiveMaximum='incorrect-value'), '10'),
 
         # Map
         (Map({}), 5),

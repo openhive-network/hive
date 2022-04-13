@@ -62,6 +62,19 @@ class Float(Schema):
         return {'type': 'number'}
 
 
+class Int(Schema):
+    def __init__(self, **options: Any):
+        super().__init__(**self.__replace_overridden_options(options))
+
+    @staticmethod
+    def __replace_overridden_options(options: Dict[str, Any]):
+        validators_to_change = ['multipleOf', 'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum']
+        return {f'HiveInt.{k}' if k in validators_to_change else k: v for k, v in options.items()}
+
+    def _create_core_of_schema(self) -> [str, Any]:
+        return {'type': 'hive-int'}
+
+
 class Map(Schema):
     def __init__(self, schema: Dict, required_keys: Optional[List[str]] = None,
                  allow_additional_properties: bool = False, **options: Any):
