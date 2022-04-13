@@ -414,6 +414,17 @@ namespace hive { namespace converter {
     return mainnet_head_block_id;
   }
 
+  uint32_t blockchain_converter::get_converter_head_block_num()const
+  {
+    /*
+     * If we used `current_block_ptr` here, it would be impossible for the users to access this function outside the conversion scope.
+     * The solution is the usage of the `mainnet_head_block_id`, which we hold a copy of. First, we calculate the block number from the block id
+     * which is in the standard implementation: `num_from_id(id) + 1` (block numbers should be the same in both mainnet and mirrornet)
+     * and then we add 1 because `mainnet_head_block_id` points to the block **before** the actual block to be converted.
+     */
+    return hp::block_header::num_from_id(mainnet_head_block_id) + 2;
+  }
+
   void blockchain_converter::sign_transaction( hp::signed_transaction& trx, bool force /*=false*/)const
   {
     if( trx.signatures.size() || force)

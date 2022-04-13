@@ -71,6 +71,8 @@ namespace hive { namespace converter {
 
     const hp::block_id_type& get_mainnet_head_block_id()const;
 
+    uint32_t get_converter_head_block_num()const;
+
     void sign_header( hp::signed_block_header& _signed_header );
 
     void add_second_authority( authority& _auth, authority::classification type );
