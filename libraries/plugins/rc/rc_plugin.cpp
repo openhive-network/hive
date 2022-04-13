@@ -274,16 +274,10 @@ int64_t use_account_rcs(
     }
 
     if( (!has_mana) && ( skip.skip_negative_rc_balance || (gpo.time.sec_since_epoch() <= 1538211600) ) )
-    {
-      max_mana = 0;
       return;
-    }
 
     if( skip.skip_deduct_rc )
-    {
-      max_mana = 0;
       return;
-    }
 
     fc::uint128_t min_mana( mbparams.max_mana );
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
@@ -346,7 +340,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  auto max_rc = use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip, _is_processing_block
+  tx_info.max = use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -357,7 +351,6 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
   {
-    tx_info.add_share( total_cost, max_rc );
     export_data->add_tx_info( tx_info );
   }
   else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY) == 0 )
@@ -1175,7 +1168,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  auto max_rc = use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip, _is_processing_block
+  opt_action_info.max = use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip, _is_processing_block
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -1186,7 +1179,6 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
   {
-    opt_action_info.add_share( total_cost, max_rc );
     export_data->add_opt_action_info( opt_action_info );
   }
   else if( (gpo.head_block_number % HIVE_BLOCKS_PER_DAY) == 0 )
