@@ -104,87 +104,80 @@ if( HIVE_CONVERTER_BUILD OR BUILD_HIVE_TESTNET )
 endif()
 
 OPTION( HIVE_LINT "Enable linting with clang-tidy during compilation" OFF )
-find_program(
-   CLANG_TIDY_EXE
-   NAMES "clang-tidy"
-   DOC "Path to clain-tidy executable"
-)
 
-SET( CLANG_TIDY_IGNORED
-"-fuchsia-default-arguments-*\
-,-clang-diagnostic-unknown-warning-option\
-,-bugprone-lambda-function-name\
-,-llvm-qualified-auto\
-,-misc-non-private-member-variables-in-classes\
-,-cert-dcl16-c\
-,-bugprone-narrowing-conversions\
-,-bugprone-macro-parentheses\
-,-bugprone-branch-clone\
-,-cert-oop54-cpp\
-,-fuchsia-statically-constructed-objects\
-,-performance-unnecessary-value-param\
-,-bugprone-exception-escape\
-,-clang-analyzer-cplusplus.NewDeleteLeaks\
-,-fuchsia-default-arguments\
-,-fuchsia-trailing-return\
-,-clang-analyzer-optin.cplusplus.UninitializedObject\
-,-bugprone-signed-char-misuse\
-,-hicpp-*\
-,-cert-err60-cpp\
-,-llvm-namespace-comment\
-,-cert-err09-cpp\
-,-cert-err61-cpp\
-,-fuchsia-overloaded-operator\
-,-misc-throw-by-value-catch-by-reference\
-,-misc-unused-parameters\
-,-clang-analyzer-core.uninitialized.Assign\
-,-llvm-include-order\
-,-clang-diagnostic-unused-lambda-capture\
-,-misc-macro-parentheses\
-,-boost-use-to-string\
-,-misc-lambda-function-name\
-,-cert-err58-cpp\
-,-cert-err34-c\
-,-cppcoreguidelines-*\
-,-modernize-*\
-,-clang-diagnostic-#pragma-messages\
-,-google-*\
-,-readability-*"
-)
+if( HIVE_LINT )
+  find_program(
+    CLANG_TIDY_EXE
+    NAMES "clang-tidy"
+    DOC "Path to clain-tidy executable"
+  )
 
-if( NOT CLANG_TIDY_EXE )
-  IF( HIVE_LINT )
-    message( FATAL_ERROR  "Clang tidy tool is not found, but is required by enabled HIVE_LINT option")
+  SET( CLANG_TIDY_IGNORED
+  "-fuchsia-default-arguments-*\
+  ,-clang-diagnostic-unknown-warning-option\
+  ,-bugprone-lambda-function-name\
+  ,-llvm-qualified-auto\
+  ,-misc-non-private-member-variables-in-classes\
+  ,-cert-dcl16-c\
+  ,-bugprone-narrowing-conversions\
+  ,-bugprone-macro-parentheses\
+  ,-bugprone-branch-clone\
+  ,-cert-oop54-cpp\
+  ,-fuchsia-statically-constructed-objects\
+  ,-performance-unnecessary-value-param\
+  ,-bugprone-exception-escape\
+  ,-clang-analyzer-cplusplus.NewDeleteLeaks\
+  ,-fuchsia-default-arguments\
+  ,-fuchsia-trailing-return\
+  ,-clang-analyzer-optin.cplusplus.UninitializedObject\
+  ,-bugprone-signed-char-misuse\
+  ,-hicpp-*\
+  ,-cert-err60-cpp\
+  ,-llvm-namespace-comment\
+  ,-cert-err09-cpp\
+  ,-cert-err61-cpp\
+  ,-fuchsia-overloaded-operator\
+  ,-misc-throw-by-value-catch-by-reference\
+  ,-misc-unused-parameters\
+  ,-clang-analyzer-core.uninitialized.Assign\
+  ,-llvm-include-order\
+  ,-clang-diagnostic-unused-lambda-capture\
+  ,-misc-macro-parentheses\
+  ,-boost-use-to-string\
+  ,-misc-lambda-function-name\
+  ,-cert-err58-cpp\
+  ,-cert-err34-c\
+  ,-cppcoreguidelines-*\
+  ,-modernize-*\
+  ,-clang-diagnostic-#pragma-messages\
+  ,-google-*\
+  ,-readability-*"
+  )
+
+  if( NOT CLANG_TIDY_EXE )
+    message( FATAL_ERROR "Clang tidy tool is not found, but is required by enabled HIVE_LINT option" )
+  elseif( VERSION LESS 3.6 )
+    message( FATAL_ERROR "clang-tidy found but only supported with CMake version >= 3.6" )
   else()
-    message( STATUS "clang-tidy not found" )
-  endif()
-elseif( VERSION LESS 3.6 )
-   message( FATAL_ERROR "clang-tidy found but only supported with CMake version >= 3.6" )
-else()
-   message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
-   EXECUTE_PROCESS(
-           COMMAND ${CLANG_TIDY_EXE} --version
-           OUTPUT_VARIABLE CLANG_VERSION
-           ERROR_QUIET
-           OUTPUT_STRIP_TRAILING_WHITESPACE
-   )
-   STRING( REPLACE "\n" ";" CLANG_VERSION ${CLANG_VERSION} )
-   LIST( GET CLANG_VERSION 1 CLANG_VERSION )
-   STRING( REGEX MATCH "[0-9]+" CLANG_VERSION ${CLANG_VERSION} )
-   MESSAGE( STATUS "clang-tidy version: ${CLANG_VERSION}")
-   if( HIVE_LINT )
-       SET( CLANG_ALL_CHECKS "--checks=*" )
-       IF ( CLANG_VERSION LESS 10 )
-           SET( CLANG_ALL_CHECKS "-checks=*" )
-       ENDIF()
+    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
+    EXECUTE_PROCESS(
+      COMMAND ${CLANG_TIDY_EXE} --version
+      OUTPUT_VARIABLE CLANG_VERSION
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    STRING( REPLACE "\n" ";" CLANG_VERSION ${CLANG_VERSION} )
+    LIST( GET CLANG_VERSION 1 CLANG_VERSION )
+    STRING( REGEX MATCH "[0-9]+" CLANG_VERSION ${CLANG_VERSION} )
+    MESSAGE( STATUS "clang-tidy version: ${CLANG_VERSION}" )
+    SET( CLANG_ALL_CHECKS "--checks=*" )
+    IF ( CLANG_VERSION LESS 10 )
+      SET( CLANG_ALL_CHECKS "-checks=*" )
+    ENDIF()
 
-      message( STATUS "Linting enabled" )
-      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};${CLANG_ALL_CHECKS},${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
-   else()
-      unset( CLANG_TIDY_EXE )
-      message( STATUS "Linting disabled" )
-   endif()
-endif( NOT CLANG_TIDY_EXE )
+    set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};${CLANG_ALL_CHECKS},${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
+  endif( NOT CLANG_TIDY_EXE )
+endif( HIVE_LINT )
 
 OPTION( HIVE_FAIL_ON_WARNINGS "Treat compile warnings as errors. Auto-enabled with HIVE_LINT" HIVE_LINT )
 if( HIVE_FAIL_ON_WARNINGS )
