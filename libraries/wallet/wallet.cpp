@@ -638,11 +638,12 @@ public:
     flat_set< account_name_type >   req_active_approvals;
     flat_set< account_name_type >   req_owner_approvals;
     flat_set< account_name_type >   req_posting_approvals;
+    flat_set< account_name_type >   req_witness_approvals;
     vector< authority >  other_auths;
 
     if( _use_automatic_authority == true )
     {
-      tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, other_auths );
+      tx.get_required_authorities( req_active_approvals, req_owner_approvals, req_posting_approvals, req_witness_approvals, other_auths );
     }
     else
     {
@@ -665,6 +666,8 @@ public:
 
     for( const auto& a : req_posting_approvals )
       v_approving_account_names.push_back(a);
+
+    /// TODO: handle the op that must be signed using witness keys
 
     /// TODO: fetch the accounts specified via other_auths as well.
 
@@ -845,6 +848,11 @@ public:
             return (*maybe_account)->posting;
 
           return null_auth;
+        },
+        [&]( const string& witness_name ) -> public_key_type
+        {
+          auto maybe_witness = get_witness(witness_name);
+          return maybe_witness ? maybe_witness->signing_key : public_key_type();
         },
         HIVE_MAX_SIG_CHECK_DEPTH,
         HIVE_MAX_AUTHORITY_MEMBERSHIP,

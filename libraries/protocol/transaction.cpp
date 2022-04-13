@@ -90,10 +90,11 @@ void transaction::set_reference_block( const block_id_type& reference_block )
 void transaction::get_required_authorities( flat_set< account_name_type >& active,
                               flat_set< account_name_type >& owner,
                               flat_set< account_name_type >& posting,
+                              flat_set< account_name_type >& witness,
                               vector< authority >& other )const
 {
   for( const auto& op : operations )
-    operation_get_required_authorities( op, active, owner, posting, other );
+    operation_get_required_authorities( op, active, owner, posting, witness, other );
 }
 
 flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, hive::protocol::pack_type pack )const
@@ -118,6 +119,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   const authority_getter& get_active,
   const authority_getter& get_owner,
   const authority_getter& get_posting,
+  const witness_public_key_getter& get_witness_key,
   uint32_t max_recursion_depth,
   uint32_t max_membership,
   uint32_t max_account_auths,
@@ -126,8 +128,9 @@ set<public_key_type> signed_transaction::get_required_signatures(
   flat_set< account_name_type > required_active;
   flat_set< account_name_type > required_owner;
   flat_set< account_name_type > required_posting;
+  flat_set< account_name_type > required_witness;
   vector< authority > other;
-  get_required_authorities( required_active, required_owner, required_posting, other );
+  get_required_authorities( required_active, required_owner, required_posting, required_witness, other );
 
   /** posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
@@ -182,13 +185,14 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   const authority_getter& get_active,
   const authority_getter& get_owner,
   const authority_getter& get_posting,
+  const witness_public_key_getter& get_witness_key,
   uint32_t max_recursion,
   uint32_t max_membership,
   uint32_t max_account_auths,
   canonical_signature_type canon_type
   ) const
 {
-  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, max_recursion, max_membership, max_account_auths, canon_type );
+  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, get_witness_key, max_recursion, max_membership, max_account_auths, canon_type );
   flat_set< public_key_type > result( s.begin(), s.end() );
 
   for( const public_key_type& k : s )
@@ -202,6 +206,7 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
         get_active,
         get_owner,
         get_posting,
+        get_witness_key,
         max_recursion,
         max_membership,
         max_account_auths,
@@ -224,6 +229,7 @@ void signed_transaction::verify_authority(const chain_id_type& chain_id,
                                           const authority_getter& get_active,
                                           const authority_getter& get_owner,
                                           const authority_getter& get_posting,
+                                          const witness_public_key_getter& get_witness_key,
                                           hive::protocol::pack_type pack,
                                           uint32_t max_recursion,
                                           uint32_t max_membership,
@@ -235,6 +241,7 @@ void signed_transaction::verify_authority(const chain_id_type& chain_id,
                                    get_active,
                                    get_owner,
                                    get_posting,
+                                   get_witness_key,
                                    max_recursion,
                                    max_membership,
                                    max_account_auths,
