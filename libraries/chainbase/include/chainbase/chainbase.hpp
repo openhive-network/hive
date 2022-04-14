@@ -251,24 +251,27 @@ namespace chainbase {
     * with a destructor, so that's what we do here.
     */
   template <typename IntType>
-  class int_incrementer
-  {
-    public:
-      int_incrementer( IntType& target ) : _target(target)
-      { ++_target; }
+    class int_incrementer
+    {
+      public:
+        int_incrementer( IntType& target) : _target(target)
+      {
+        ++_target;
+        _start_locking = fc::time_point::now();
+      }
+        int_incrementer( int_incrementer& ii) : _target(ii._target), _start_locking(ii._start_locking) { ++_target; }
+        ~int_incrementer()
+        {
+          --_target;
+          fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
+          fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase_lock", ("held", lock_duration.count()));
+        }
+        int32_t get()const { return _target; }
 
-      int_incrementer( int_incrementer& ii ) : _target( ii._target )
-      { ++_target; }
-
-      ~int_incrementer()
-      { --_target; }
-
-      int32_t get()const
-      { return _target; }
-
-    private:
-      IntType& _target;
-  };
+      private:
+        IntType& _target;
+        fc::time_point _start_locking;
+    };
 
   /**
     *  The value_type stored in the multiindex container must have a integer field accessible through
@@ -1129,7 +1132,11 @@ namespace chainbase {
         if (wait_for_microseconds == fc::microseconds())
           lock.lock();
         else if (!lock.try_lock_for(boost::chrono::microseconds(wait_for_microseconds.count())))
+        {
+          fc_wlog(fc::logger::get("chainlock"),"timedout getting chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+                  ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
           CHAINBASE_THROW_EXCEPTION( lock_exception() );
+        }
 
         fc_dlog(fc::logger::get("chainlock"), "_read_lock_count=${_read_lock_count}", 
                 ("_read_lock_count", _read_lock_count.load()));
@@ -1140,6 +1147,8 @@ namespace chainbase {
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
+        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
         write_lock lock(_rw_lock, boost::defer_lock_t());
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
@@ -1147,6 +1156,8 @@ namespace chainbase {
 #endif
 
         lock.lock();
+        fc_wlog(fc::logger::get("chainlock"),"got chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
 
         return callback();
       }
