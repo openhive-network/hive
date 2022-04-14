@@ -450,12 +450,35 @@ namespace fc { namespace http {
             }
             ~websocket_client_impl()
             {
-               if(_connection )
-               {
+              /*
+                Basic information:
+                  The rule is that if you do let an exception propagate out of a destructor,
+                  and that destructor was for an automatic object that was being directly destroyed by stack unwinding, then std::terminate would be called
+
+                More information:
+                  In C++11, a destructor will be implicitly declared noexcept, and therefore,
+                  allowing an exception to propagate out of it will call std::terminate unconditionally.
+
+                Solution:
+                  The exception has to be caught in a destructor.
+              */
+              if(_connection )
+              {
+                try
+                {
                   _connection->close(0, "client closed");
                   _connection.reset();
                   _closed->wait();
-               }
+                }
+                catch(const std::exception& e)
+                {
+                  wlog( "closing connection failed: ${ex}", ("ex", e.what()) );
+                }
+                catch(...)
+                {
+                  wlog( "closing connection failed" );
+                }
+              }
             }
             fc::promise<void>::ptr             _connected;
             fc::promise<void>::ptr             _closed;
