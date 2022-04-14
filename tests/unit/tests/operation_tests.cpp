@@ -10464,7 +10464,20 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
     const witness_object& alice_witness = db->get_witness( "alice" );
     wdump((alice_witness));
 
-    const account_object& _alice = db->get_account("alice");
+    //const account_object& _alice = db->get_account("alice");
+
+    {
+      witness_block_approve_operation op;
+      op.witness = "mallory";
+      op.block_id = db->head_block_id();
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+
+      BOOST_TEST_MESSAGE( "--- Test failure when no account is not a witness" );
+      HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_witness_auth );
+    }
 
     witness_block_approve_operation op;
     op.witness = "alice";
