@@ -692,6 +692,9 @@ namespace chain {
       void clear_accounts( const std::set< std::string >& cleared_accounts );
       void clear_account( const account_object& account );
 
+      // return the set of witnesses whose opinion we use for computing irreversibility.  Roughly, before HF26, it's the 
+      // current_shuffled_witnesses, after, it's the set that will take effect at the end of the current round, the future_shuffled_witnesses
+      const fc::array<account_name_type, HIVE_MAX_WITNESSES>& get_witness_schedule_for_irreversibility(const witness_schedule_object& wso);
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }
