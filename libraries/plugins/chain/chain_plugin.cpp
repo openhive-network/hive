@@ -298,6 +298,7 @@ void chain_plugin_impl::start_write_processing()
       hive::notify_hived_status("syncing");
       ilog("Write processing thread started.");
       fc::set_thread_name("write_queue");
+      fc::thread::current().set_name("write_queue");
       cumulative_times_last_reported_time = fc::time_point::now();
 
       const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);

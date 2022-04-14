@@ -194,6 +194,7 @@ void webserver_plugin_impl::start_webserver()
     ws_thread = std::make_shared<std::thread>( [&, ws_and_http_uses_same_endpoint]()
     {
       ilog( "start processing ws thread" );
+      fc::thread::current().set_name("websocket");
       try
       {
         ws_server.clear_access_channels( websocketpp::log::alevel::all );
@@ -241,6 +242,7 @@ void webserver_plugin_impl::start_webserver()
     http_thread = std::make_shared<std::thread>( [&]()
     {
       ilog( "start processing http thread" );
+      fc::thread::current().set_name("http");
       try
       {
         http_server.clear_access_channels( websocketpp::log::alevel::all );
@@ -276,6 +278,7 @@ void webserver_plugin_impl::start_webserver()
   if( unix_endpoint ) {
     unix_thread = std::make_shared<std::thread>( [&]() {
       ilog( "start processing unix http thread" );
+      fc::thread::current().set_name("unix_http");
       try {
         unix_server.clear_access_channels( websocketpp::log::alevel::all );
         unix_server.clear_error_channels( websocketpp::log::elevel::all );
