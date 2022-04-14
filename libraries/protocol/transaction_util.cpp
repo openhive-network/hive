@@ -86,8 +86,17 @@ void verify_authority(const required_authorities_type& required_authorities,
 
   for( const auto& id : required_authorities.required_witness )
   {
-    HIVE_ASSERT( s.signed_by(get_witness_key(id)),
-                 tx_missing_witness_auth, "Missing Witness Authority ${id}, key ${key}", (id)("key", get_witness_key(id)) );
+    public_key_type signing_key;
+    try
+    {
+      signing_key = get_witness_key(id);
+    }
+    catch (const fc::exception&)
+    {
+      FC_THROW_EXCEPTION(tx_missing_witness_auth, "Missing Witness Authority ${id}", (id));
+    }
+    HIVE_ASSERT(s.signed_by(signing_key),
+                tx_missing_witness_auth, "Missing Witness Authority ${id}, key ${signing_key}", (id)(signing_key));
   }
 
   HIVE_ASSERT(
