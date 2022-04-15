@@ -4,6 +4,11 @@ import test_tools.exceptions
 
 from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
 
+# TODO PROBLEM LIST!
+"""
+1. I found a problem with checking the types of arguments in 'start'. For sort 'by_voter_proposal' it is 
+   possible to put all types as username. For sort 'by_proposal_voter' the argument type id is limited to numeric.
+"""
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
 
@@ -41,22 +46,13 @@ CORRECT_VALUES = [
         # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
         (['account-2a'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
-        ([ACCOUNTS[1], 4], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([ACCOUNTS[1], 4], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         ([ACCOUNTS[1], 3, 'additional_argument'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'],
          STATUS['all']),
 
             # by proposal voter
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
-
-        (['true'], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
-
         ([3], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
-
-        ([ACCOUNTS[1]], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
-
-        # Start from nonexistent account (name "account-2a" is alphabetically between 'account-2' and 'account-3').
-        (['account-2a'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         ([3, ACCOUNTS[1]], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
@@ -69,15 +65,15 @@ CORRECT_VALUES = [
 
         # ORDER BY
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([3], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER DIRECTION
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['descending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['descending'], STATUS['all']),
 
         # STATUS
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['votable']),
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['votable']),
     ]
 
 
@@ -85,10 +81,11 @@ CORRECT_VALUES = [
     'start, limit, order_by, order_direction, status', [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
+        ([True], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([True], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], True, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
-        ([''], 100, ORDER_BY['by_proposal_voter'], True, STATUS['all']),
-        ([''], 100, ORDER_BY['by_proposal_voter'], ORDER_DIRECTION['ascending'], True),
+        ([''], 100, ORDER_BY['by_voter_proposal'], True, STATUS['all']),
+        ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], True),
     ]
 )
 def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
@@ -142,11 +139,23 @@ def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, o
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', [
         # START
-        ('non-exist-acc', 100, 33, 0, 0),
-        (True, 100, 33, 0, 0),
-        (100, 100, 33, 0, 0),
-        ([{}], 100, 33, 0, 0),
-        ([[]], 100, 33, 0, 0),
+            # by_voter_proposal
+        ('non-exist-acc', 100, ORDER_BY['by_voter_proposal'], 0, 0),
+        (True, 100, ORDER_BY['by_voter_proposal'], 0, 0),
+        (100, 100, ORDER_BY['by_voter_proposal'], 0, 0),
+        ([{}], 100, ORDER_BY['by_voter_proposal'], 0, 0),
+        ([[]], 100, ORDER_BY['by_voter_proposal'], 0, 0),
+
+            # by proposal voter
+        ('non-exist-acc', 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        (True, 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        (100, 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        ([{}], 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        ([[]], 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        ([''], 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        (['true'], 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        (['account2a'], 100, ORDER_BY['by_proposal_voter'], 0, 0),
+        ([ACCOUNTS[1]], 100, ORDER_BY['by_proposal_voter'], 0, 0),
 
         # LIMIT
         ([""], 'invalid-argument', 33, 0, 0),
