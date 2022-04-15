@@ -1122,6 +1122,8 @@ namespace chainbase {
       template< typename Lambda >
       auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) -> decltype( (*(Lambda*)nullptr)() )
       {
+        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
+                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
         read_lock lock(_rw_lock, boost::defer_lock_t());
 
 #ifdef CHAINBASE_CHECK_LOCKING
