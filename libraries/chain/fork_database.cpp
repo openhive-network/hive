@@ -283,7 +283,7 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
 
 shared_ptr<fork_item> fork_database::walk_main_branch_to_num_unlocked( uint32_t block_num )const
 {
-  shared_ptr<fork_item> next = head();
+  shared_ptr<fork_item> next = _head; //don't call head(), we already have a read lock
   if( block_num > next->num )
     return shared_ptr<fork_item>();
 
