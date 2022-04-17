@@ -105,8 +105,9 @@ namespace hive { namespace chain {
 
   FC_DECLARE_DERIVED_EXCEPTION( internal_exception, hive::chain::chain_exception, 4990000, "internal exception" )
 
-  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1, "Exceeds max authority fan-out" )
-  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2, "Auth account not found" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1,  "Exceeds max authority fan-out" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2,  "Auth account not found" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( peer_is_on_an_unreachable_fork, 3, "Peer is on an unreachable fork" )
 
 } } // hive::chain
 
