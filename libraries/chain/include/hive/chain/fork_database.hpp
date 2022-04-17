@@ -90,6 +90,7 @@ namespace hive { namespace chain {
         */
       shared_ptr<fork_item>            push_block(const signed_block& b);
       shared_ptr<fork_item>            head()const;
+      shared_ptr<fork_item>            head_unlocked()const;
       void                             pop_block();
 
       /**
@@ -100,6 +101,7 @@ namespace hive { namespace chain {
       shared_ptr<fork_item>            walk_main_branch_to_num_unlocked( uint32_t block_num )const;
       shared_ptr<fork_item>            walk_main_branch_to_num( uint32_t block_num )const;
       shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      shared_ptr<fork_item>            fetch_block_on_main_branch_by_number_unlocked( uint32_t block_num )const;
       vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<block_id_type> get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, /* out */ fc::optional<uint32_t>& blocks_number_needed_from_block_log);
 

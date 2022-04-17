@@ -2,6 +2,7 @@
 
 #include <hive/chain/database_exceptions.hpp>
 #include <boost/range/algorithm/reverse.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 namespace hive { namespace chain {
 
@@ -87,6 +88,11 @@ void  fork_database::_push_block(const item_ptr& item)
 shared_ptr<fork_item> fork_database::head()const 
 {
   return with_read_lock( [&]() { return _head; } );
+}
+
+shared_ptr<fork_item> fork_database::head_unlocked()const
+{
+  return _head;
 }
 
 /**
@@ -302,13 +308,18 @@ shared_ptr<fork_item> fork_database::walk_main_branch_to_num( uint32_t block_num
 shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
 {
   return with_read_lock( [&]() {
-    vector<item_ptr> blocks = fetch_block_by_number_unlocked(block_num);
-    if( blocks.size() == 1 )
-      return blocks[0];
-    if( blocks.size() == 0 )
-      return shared_ptr<fork_item>();
-    return walk_main_branch_to_num_unlocked(block_num);
+    return fetch_block_on_main_branch_by_number_unlocked(block_num);
   }, wait_for_microseconds);
+}
+
+shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number_unlocked( uint32_t block_num )const
+{
+  vector<item_ptr> blocks = fetch_block_by_number_unlocked(block_num);
+  if( blocks.size() == 1 )
+    return blocks[0];
+  if( blocks.size() == 0 )
+    return shared_ptr<fork_item>();
+  return walk_main_branch_to_num_unlocked(block_num);
 }
 
 vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )const
@@ -467,6 +478,5 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     return synopsis;
   });    
 } FC_LOG_AND_RETHROW() }
-
 
 } } // hive::chain

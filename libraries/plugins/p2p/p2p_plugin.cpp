@@ -102,6 +102,7 @@ public:
   virtual void handle_transaction( const graphene::net::trx_message& ) override;
   virtual void handle_message( const graphene::net::message& ) override;
   virtual std::vector< graphene::net::item_hash_t > get_block_ids( const std::vector< graphene::net::item_hash_t >&, uint32_t&, uint32_t ) override;
+  virtual std::vector< graphene::net::item_hash_t > get_block_ids_old_impl( const std::vector< graphene::net::item_hash_t >&, uint32_t&, uint32_t );
   virtual graphene::net::message get_item( const graphene::net::item_id& ) override;
   virtual std::vector< graphene::net::item_hash_t > get_blockchain_synopsis( const graphene::net::item_hash_t&, uint32_t ) override;
   std::vector< graphene::net::item_hash_t > get_blockchain_synopsis_orig( const graphene::net::item_hash_t& reference_point, uint32_t number_of_blocks_after_reference_point );
@@ -238,6 +239,22 @@ void p2p_plugin_impl::handle_message( const graphene::net::message& message_to_p
 }
 
 std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std::vector< graphene::net::item_hash_t >& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
+{ try {
+  try
+  {
+    std::vector<graphene::net::item_hash_t> new_block_ids = chain.db().get_block_ids(blockchain_synopsis, remaining_item_count, limit);
+    std::vector<graphene::net::item_hash_t> old_block_ids = get_block_ids_old_impl(blockchain_synopsis, remaining_item_count, limit);
+    if (new_block_ids != old_block_ids)
+      elog("old and new implementations of get_block_ids differ! ${new_block_ids} vs ${new_block_ids}", (new_block_ids)(old_block_ids));
+    return new_block_ids;
+  }
+  catch (const hive::chain::internal_peer_is_on_an_unreachable_fork&)
+  {
+    FC_THROW_EXCEPTION(graphene::net::peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
+  }
+} FC_CAPTURE_AND_RETHROW((blockchain_synopsis)(remaining_item_count)(limit)) }
+
+std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids_old_impl(const std::vector< graphene::net::item_hash_t >& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
 { try {
   vector<block_id_type> result;
   remaining_item_count = 0;
