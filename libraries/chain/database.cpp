@@ -42,6 +42,7 @@
 #include <fc/io/fstream.hpp>
 
 #include <boost/scope_exit.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 #include <iostream>
 
@@ -552,12 +553,34 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
   FC_CAPTURE_AND_RETHROW( (block_num) )
 }
 
+// requires forkdb read lock
+block_id_type database::find_block_id_for_num_unlocked(uint32_t block_num)const
+{
+  try
+  {
+    if (block_num == 0)
+      return block_id_type();
+
+    // See if fork DB has the item
+    shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+    if (fitem)
+      return fitem->id;
+
+    // Next we check if block_log has it. Irreversible blocks are here.
+    optional<signed_block_header> b = _block_log.read_block_header_by_num(block_num);
+    if (b)
+      return b->id();
+    return block_id_type(); //this block_num couldn't be found
+  }
+  FC_CAPTURE_AND_RETHROW((block_num))
+}
+
 //no chainbase lock required
 block_id_type database::get_block_id_for_num( uint32_t block_num )const
 {
   block_id_type bid = find_block_id_for_num( block_num );
   if (bid == block_id_type())
-    FC_THROW_EXCEPTION(fc::key_not_found_exception,"block number not found");
+    FC_THROW_EXCEPTION(fc::key_not_found_exception, "block number not found");
   return bid;
 }
 
@@ -7089,8 +7112,8 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
       else
       {
         wlog("Unable to generate a usable synopsis because the peer we're generating it for forked too long ago "
-            "(our chains diverge before block #${reference_point_block_num}",
-            (reference_point_block_num));
+             "(our chains diverge before block #${reference_point_block_num}",
+             (reference_point_block_num));
         // TODO: get the right type of exception here
         //FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Peer is on a fork I'm unable to switch to");
         FC_THROW("Peer is on a fork I'm unable to switch to");
@@ -7109,6 +7132,70 @@ std::deque<block_id_type>::const_iterator database::find_first_item_not_in_block
       return is_known_block_unlocked(block_id);
     });
   });
+}
+
+// requires forkdb read lock, does not require chainbase lock
+bool database::is_included_block_unlocked(const block_id_type& block_id)
+{ try {
+  uint32_t block_num = block_header::num_from_id(block_id);
+  if (block_num == 0)
+    return block_id == block_id_type();
+
+  // See if fork DB has the item
+  shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+  if (fitem)
+    return block_id == fitem->id;
+
+  block_id_type block_id_in_preferred_chain = find_block_id_for_num_unlocked(block_num);
+  return block_id == block_id_in_preferred_chain;
+} FC_CAPTURE_AND_RETHROW() }
+
+std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
+{
+  return _fork_db.with_read_lock([&]() {
+    vector<block_id_type> result;
+    remaining_item_count = 0;
+    shared_ptr<fork_item> head = _fork_db.head_unlocked();
+    if (!head)
+      return result;
+    uint32_t head_block_num = head->num;
+
+    result.reserve(limit);
+    block_id_type last_known_block_id;
+    if (blockchain_synopsis.empty() || 
+        (blockchain_synopsis.size() == 1 && blockchain_synopsis[0] == block_id_type()))
+    {
+      // peer has sent us an empty synopsis meaning they have no blocks.
+      // A bug in old versions would cause them to send a synopsis containing block 000000000
+      // when they had an empty blockchain, so pretend they sent the right thing here.
+      // do nothing, leave last_known_block_id set to zero
+    }
+    else
+    {
+      bool found_a_block_in_synopsis = false;
+      for (const block_id_type& block_id_in_synopsis : boost::adaptors::reverse(blockchain_synopsis))
+        if (block_id_in_synopsis == block_id_type() || is_included_block_unlocked(block_id_in_synopsis))
+        {
+          last_known_block_id = block_id_in_synopsis;
+          found_a_block_in_synopsis = true;
+          break;
+        }
+
+      if (!found_a_block_in_synopsis)
+        FC_THROW_EXCEPTION(internal_peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
+    }
+
+    for (uint32_t num = block_header::num_from_id(last_known_block_id);
+         num <= head_block_num && result.size() < limit;
+         ++num)
+      if (num > 0)
+        result.push_back(find_block_id_for_num_unlocked(num));
+
+    if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 
+      remaining_item_count = head_block_num - block_header::num_from_id(result.back());
+
+    return result;
+  });    
 }
 
 } } //hive::chain
