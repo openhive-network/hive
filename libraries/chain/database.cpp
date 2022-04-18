@@ -7152,15 +7152,19 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
 
 std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
 {
-  return _fork_db.with_read_lock([&]() {
-    vector<block_id_type> result;
-    remaining_item_count = 0;
-    shared_ptr<fork_item> head = _fork_db.head_unlocked();
-    if (!head)
-      return result;
-    uint32_t head_block_num = head->num;
+  uint32_t first_block_num_in_reply;
+  uint32_t last_block_from_block_log_in_reply;
+  shared_ptr<fork_item> head;
+  uint32_t head_block_num;
+  vector<block_id_type> result;
 
-    result.reserve(limit);
+  _fork_db.with_read_lock([&]() {
+    remaining_item_count = 0;
+    head = _fork_db.head_unlocked();
+    if (!head)
+      return;
+    head_block_num = head->num;
+
     block_id_type last_known_block_id;
     if (blockchain_synopsis.empty() || 
         (blockchain_synopsis.size() == 1 && blockchain_synopsis[0] == block_id_type()))
@@ -7185,17 +7189,69 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
         FC_THROW_EXCEPTION(internal_peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
     }
 
-    for (uint32_t num = block_header::num_from_id(last_known_block_id);
-         num <= head_block_num && result.size() < limit;
-         ++num)
-      if (num > 0)
-        result.push_back(find_block_id_for_num_unlocked(num));
+    first_block_num_in_reply = block_header::num_from_id(last_known_block_id);
+    if (first_block_num_in_reply == 0)
+      ++first_block_num_in_reply;
+    uint32_t last_block_num_in_reply = std::min(head_block_num, first_block_num_in_reply + limit - 1);
+    uint32_t result_size = last_block_num_in_reply - first_block_num_in_reply + 1;
 
-    if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 
-      remaining_item_count = head_block_num - block_header::num_from_id(result.back());
+    result.resize(result_size);
 
-    return result;
+    uint32_t last_irreversible_block_num = _fork_db.last_irreversible_block_num_unlocked();
+    last_block_from_block_log_in_reply = std::min(last_irreversible_block_num, last_block_num_in_reply);
+
+    uint32_t first_block_num_from_fork_db_in_reply = std::max(last_irreversible_block_num + 1, first_block_num_in_reply);
+    //idump((first_block_num_in_reply)(last_block_from_block_log_in_reply)(first_block_num_from_fork_db_in_reply)(last_block_num_in_reply));
+
+    for (uint32_t block_num = first_block_num_from_fork_db_in_reply; 
+         block_num <= last_block_num_in_reply;
+         ++block_num)
+    {
+      shared_ptr<fork_item> item_from_forkdb = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+      assert(item_from_forkdb);
+      uint32_t index_in_result = block_num - first_block_num_in_reply;
+      result[index_in_result] = item_from_forkdb->id;
+    }
   });    
+
+  if (!head)
+  {
+    remaining_item_count = 0;
+    return result;
+  }
+
+  for (uint32_t block_num = first_block_num_in_reply;
+       block_num <= last_block_from_block_log_in_reply;
+       ++block_num)
+  {
+    optional<signed_block_header> block_header = _block_log.read_block_header_by_num(block_num);
+    assert(block_header);
+    if (!block_header)
+    {
+      elog("Huh? Block log didn't have block ${block_num}, I thought it would", (block_num));
+    }
+    uint32_t index_in_result = block_num - first_block_num_in_reply;
+    result[index_in_result] = block_header->id();
+  }
+
+  if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 
+    remaining_item_count = head_block_num - block_header::num_from_id(result.back());
+  else
+    remaining_item_count = 0;
+
+  std::vector<uint32_t> block_numbers;
+  for (unsigned i = 0; i < result.size(); ++i)
+    block_numbers.push_back(block_header::num_from_id(result[i]));
+
+  for (unsigned i = 0; i < result.size(); ++i)
+  {
+    uint32_t block_num = first_block_num_in_reply + i;
+    if (block_num != block_header::num_from_id(result[i]))
+      elog("Error, generated a garbage list of block ids: ${i}, ${block_numbers}", (i)(block_numbers));
+    FC_THROW("Error, generated a garbage list of block ids");
+  }
+
+  return result;
 }
 
 } } //hive::chain

@@ -251,27 +251,27 @@ namespace chainbase {
     * with a destructor, so that's what we do here.
     */
   template <typename IntType>
-    class int_incrementer
+  class int_incrementer
+  {
+    public:
+      int_incrementer( IntType& target) : _target(target)
     {
-      public:
-        int_incrementer( IntType& target) : _target(target)
+      ++_target;
+      _start_locking = fc::time_point::now();
+    }
+      int_incrementer( int_incrementer& ii) : _target(ii._target), _start_locking(ii._start_locking) { ++_target; }
+      ~int_incrementer()
       {
-        ++_target;
-        _start_locking = fc::time_point::now();
+        --_target;
+        fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
+        fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase_lock", ("held", lock_duration.count()));
       }
-        int_incrementer( int_incrementer& ii) : _target(ii._target), _start_locking(ii._start_locking) { ++_target; }
-        ~int_incrementer()
-        {
-          --_target;
-          fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
-          fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase_lock", ("held", lock_duration.count()));
-        }
-        int32_t get()const { return _target; }
+      int32_t get()const { return _target; }
 
-      private:
-        IntType& _target;
-        fc::time_point _start_locking;
-    };
+    private:
+      IntType& _target;
+      fc::time_point _start_locking;
+  };
 
   /**
     *  The value_type stored in the multiindex container must have a integer field accessible through
