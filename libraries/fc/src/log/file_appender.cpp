@@ -166,14 +166,20 @@ namespace fc {
 
       if (my->cfg.delta_times)
       {
-        if (my->last_log_message_timestamp)
+        fc::optional<fc::time_point> last_log_message_timestamp;
         {
-          microseconds time_since_last_message = m.get_context().get_timestamp() - *my->last_log_message_timestamp;
+          fc::scoped_lock<boost::mutex> lock( my->slock );
+          last_log_message_timestamp = my->last_log_message_timestamp;
+          my->last_log_message_timestamp = m.get_context().get_timestamp();
+        }
+
+        if (last_log_message_timestamp)
+        {
+          microseconds time_since_last_message = m.get_context().get_timestamp() - *last_log_message_timestamp;
           line << " Δ" << std::setw(7) << time_since_last_message.count() << "µs ";
         }
         else
           line << "            ";
-        my->last_log_message_timestamp = m.get_context().get_timestamp();
       }
 
       line << " " << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
