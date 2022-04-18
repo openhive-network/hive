@@ -45,7 +45,7 @@ namespace hive { namespace converter { namespace plugins { namespace node_based_
 
 namespace detail {
 
-  FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from node" );
+  FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from the node while processing input block" );
 
   void handle_error_response_from_node( const error_response_from_node& error )
   {
@@ -185,9 +185,10 @@ namespace detail {
 
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
       if( var_obj.contains( "error" ) )
-        FC_THROW_EXCEPTION( error_response_from_node, "${msg}",
+        FC_THROW_EXCEPTION( error_response_from_node, " ${block_num}: ${msg}",
                            ("msg", var_obj["error"].get_object()["message"].get_string())
                            ("detailed",var_obj["error"].get_object())
+                           ("block_num", hp::block_header::num_from_id(converter.get_mainnet_head_block_id()) + 1)
                           );
 
       // By this point `result` should be present in the response
