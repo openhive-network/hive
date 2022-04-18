@@ -95,6 +95,12 @@ shared_ptr<fork_item> fork_database::head_unlocked()const
   return _head;
 }
 
+uint32_t fork_database::last_irreversible_block_num_unlocked()const
+{
+  auto const& block_num_idx = _index.get<block_num>();
+  return (*block_num_idx.begin())->num;
+}
+
 /**
   *  Iterate through the unlinked cache and insert anything that
   *  links to the newly inserted item.  This will start a recursive
