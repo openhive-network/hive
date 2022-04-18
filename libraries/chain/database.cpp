@@ -553,28 +553,6 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
   FC_CAPTURE_AND_RETHROW( (block_num) )
 }
 
-// requires forkdb read lock
-block_id_type database::find_block_id_for_num_unlocked(uint32_t block_num)const
-{
-  try
-  {
-    if (block_num == 0)
-      return block_id_type();
-
-    // See if fork DB has the item
-    shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
-    if (fitem)
-      return fitem->id;
-
-    // Next we check if block_log has it. Irreversible blocks are here.
-    optional<signed_block_header> b = _block_log.read_block_header_by_num(block_num);
-    if (b)
-      return b->id();
-    return block_id_type(); //this block_num couldn't be found
-  }
-  FC_CAPTURE_AND_RETHROW((block_num))
-}
-
 //no chainbase lock required
 block_id_type database::get_block_id_for_num( uint32_t block_num )const
 {
@@ -7146,18 +7124,27 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
   if (fitem)
     return block_id == fitem->id;
 
-  block_id_type block_id_in_preferred_chain = find_block_id_for_num_unlocked(block_num);
-  return block_id == block_id_in_preferred_chain;
+
+  // Next we check if block_log has it. Irreversible blocks are here.
+  optional<signed_block_header> block_header = _block_log.read_block_header_by_num(block_num);
+  return block_header && block_id == block_header->id();
 } FC_CAPTURE_AND_RETHROW() }
 
+// used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and generates 
+// a sequential list of block ids that builds off of the last item in the synopsis that we have in
+// common
+// no chainbase lock required
 std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
 {
   uint32_t first_block_num_in_reply;
+  uint32_t last_block_num_in_reply;
   uint32_t last_block_from_block_log_in_reply;
   shared_ptr<fork_item> head;
   uint32_t head_block_num;
   vector<block_id_type> result;
 
+  // get and hold a fork database lock so a fork switch can't happen while we're in the middle of creating
+  // this list of block ids
   _fork_db.with_read_lock([&]() {
     remaining_item_count = 0;
     head = _fork_db.head_unlocked();
@@ -7189,10 +7176,13 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
         FC_THROW_EXCEPTION(internal_peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
     }
 
+    // the list will be composed of block ids from the block_log first, followed by ones from the fork database.
+    // when building our reply, we'll fill in the ones from the fork_database first, so we can release the 
+    // fork_db lock, then we'll grab the ids from the block_log at our leisure.
     first_block_num_in_reply = block_header::num_from_id(last_known_block_id);
     if (first_block_num_in_reply == 0)
       ++first_block_num_in_reply;
-    uint32_t last_block_num_in_reply = std::min(head_block_num, first_block_num_in_reply + limit - 1);
+    last_block_num_in_reply = std::min(head_block_num, first_block_num_in_reply + limit - 1);
     uint32_t result_size = last_block_num_in_reply - first_block_num_in_reply + 1;
 
     result.resize(result_size);
@@ -7212,7 +7202,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
       uint32_t index_in_result = block_num - first_block_num_in_reply;
       result[index_in_result] = item_from_forkdb->id;
     }
-  });    
+  }); // drop the forkdb lock   
 
   if (!head)
   {
@@ -7226,30 +7216,14 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
   {
     optional<signed_block_header> block_header = _block_log.read_block_header_by_num(block_num);
     assert(block_header);
-    if (!block_header)
-    {
-      elog("Huh? Block log didn't have block ${block_num}, I thought it would", (block_num));
-    }
     uint32_t index_in_result = block_num - first_block_num_in_reply;
     result[index_in_result] = block_header->id();
   }
 
   if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 
-    remaining_item_count = head_block_num - block_header::num_from_id(result.back());
+    remaining_item_count = head_block_num - last_block_num_in_reply;
   else
     remaining_item_count = 0;
-
-  std::vector<uint32_t> block_numbers;
-  for (unsigned i = 0; i < result.size(); ++i)
-    block_numbers.push_back(block_header::num_from_id(result[i]));
-
-  for (unsigned i = 0; i < result.size(); ++i)
-  {
-    uint32_t block_num = first_block_num_in_reply + i;
-    if (block_num != block_header::num_from_id(result[i]))
-      elog("Error, generated a garbage list of block ids: ${i}, ${block_numbers}", (i)(block_numbers));
-    FC_THROW("Error, generated a garbage list of block ids");
-  }
 
   return result;
 }
