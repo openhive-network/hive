@@ -510,12 +510,12 @@ namespace hive { namespace converter {
     return has_hardfork( hf, get_converter_head_block_num() );
   }
 
-  bool blockchain_converter::has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )const
+  bool blockchain_converter::has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )
   {
     return has_hardfork( hf, _signed_block.block_num() );
   }
 
-  bool blockchain_converter::has_hardfork( uint32_t hf, uint32_t block_num )const
+  bool blockchain_converter::has_hardfork( uint32_t hf, uint32_t block_num )
   {
     return block_num > hardfork_blocks.at(hf);
   }

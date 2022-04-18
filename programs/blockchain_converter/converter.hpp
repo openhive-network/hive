@@ -97,13 +97,15 @@ namespace hive { namespace converter {
      * @brief Alters the current converter state by changing the saved mainnet head block id.
      *        This function can be used to "move in time", e.g. if you want to apply hardforks
      *        without running the actual block conversion. Useful in the initial checks like the chain id validation
+     * @note Saved mainnet head block id is the original value of the `previous` struct member of the currently
+     *       processed or the previously processed block
      */
     void touch( const hp::signed_block_header& _signed_header );
     void touch( const hp::block_id_type& id ); // Function override if you want to directly set your mainnet head block id
 
     bool has_hardfork( uint32_t hf )const;
-    bool has_hardfork( uint32_t hf, uint32_t block_num )const;
-    bool has_hardfork( uint32_t hf, const hp::signed_block& _signed_block )const;
+    static bool has_hardfork( uint32_t hf, uint32_t block_num );
+    static bool has_hardfork( uint32_t hf, const hp::signed_block& _signed_block );
 
     /**
      * @throws if there is no block being currently converted
