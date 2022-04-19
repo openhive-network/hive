@@ -516,7 +516,7 @@ namespace hive { namespace converter {
 
   bool blockchain_converter::has_hardfork( uint32_t hf, uint32_t block_num )
   {
-    return block_num > hardfork_blocks.at(hf);
+    return block_num > hardfork_blocks.at(hf - 1);
   }
 
   const hp::signed_block& blockchain_converter::get_current_block()const
