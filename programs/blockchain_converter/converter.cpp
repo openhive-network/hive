@@ -293,8 +293,9 @@ namespace hive { namespace converter {
     major                                                 \
   )
 
-  const std::array< uint32_t, HIVE_NUM_HARDFORKS > blockchain_converter::hardfork_blocks = {
-    BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR, 0)
+  const std::array< uint32_t, HIVE_NUM_HARDFORKS + 1 > blockchain_converter::hardfork_blocks = {
+    BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR, 0) /*, */
+    static_cast< uint32_t >(-1) // Default value for future hardforks (maximum block number - should never evaluate to `true` in #has_hardfork)
   };
 
 // Cleanup definitions as they were already used and thus no longer required
@@ -516,6 +517,9 @@ namespace hive { namespace converter {
 
   bool blockchain_converter::has_hardfork( uint32_t hf, uint32_t block_num )
   {
+    if( hf > HIVE_NUM_HARDFORKS )
+      hf = HIVE_NUM_HARDFORKS + 1; // See #hardfork_blocks - default value for future hard forks: 2^32 - 1
+
     return block_num > hardfork_blocks.at(hf - 1);
   }
 
