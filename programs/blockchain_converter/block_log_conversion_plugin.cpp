@@ -22,7 +22,6 @@
 #include <boost/program_options.hpp>
 
 #include <string>
-#include <iostream>
 #include <memory>
 
 #include "conversion_plugin.hpp"
@@ -94,8 +93,9 @@ namespace detail {
     {
       FC_ASSERT( start_block_num <= log_in.head()->block_num(), "cannot resume conversion from a block that is not in the block_log",
         ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->block_num()) );
-      std::cout << "Continuing conversion from the block with number " << start_block_num
-                << "\nValidating the chain id...\n";
+
+      ilog("Continuing conversion from the block with number ${block_num}", ("block_num", start_block_num));
+      ilog("Validating the chain id...");
 
       last_block_id = log_out.head()->id(); // Required to resume the conversion
 
@@ -115,21 +115,13 @@ namespace detail {
             converter.touch(*block);
 
             const auto& trx = *block->transactions.begin();
-            const auto& sig = *block->transactions.begin()->signatures.begin();
+            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", trx.id())("block_num", block->block_num()));
 
-            std::cout << "Comparing signatures in trx " << trx.id().str() << " in block: " << block->block_num() << ": \n"
-                      << "Previous sig: " << std::hex;
-            // Display the previous sig
-            for( const auto c : sig )
-              std::cout << uint32_t(c);
-            std::cout << "\nCurrent sig:  ";
+            const auto& sig = *block->transactions.begin()->signatures.begin();
+            ilog("Previous signature: ${sig}", ("sig", sig));
 
             const auto sig_other = converter.generate_signature(trx);
-
-            // Display the current sig
-            for( const auto c : sig_other )
-              std::cout << uint32_t(c);
-            std::cout << std::dec << std::endl;
+            ilog("Current signature: ${sig}", ("sig", sig_other));
 
             if( sig == sig_other )
               chain_id_match = true;
@@ -143,8 +135,9 @@ namespace detail {
       }
       FC_ASSERT( chain_id_match, "Previous output block log chain id does not match the specified one or the owner key of the 2nd authority has changed",
         ("chain_id", converter.get_chain_id())("owner_key", key_to_wif(converter.get_second_authority_key( hp::authority::owner ))) );
+
+      dlog("Chain id match");
     }
-    std::cout << "Chain id match\n";
 
     if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
       stop_block_num = log_in.head()->block_num();
@@ -155,33 +148,18 @@ namespace detail {
       FC_ASSERT( block.valid(), "unable to read block", ("block_num", start_block_num) );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-      {
-        fc::json json_block;
-        fc::variant v;
-        fc::to_variant( *block, v );
-
-        std::cout << "Rewritten block: " << start_block_num
-          << ". Data before conversion: " << json_block.to_string( v ) << '\n';
-      }
+        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
       last_block_id = converter.convert_signed_block( *block, last_block_id );
 
       if( start_block_num % 1000 == 0 ) // Progress
-      {
-        std::cout << "[ " << int( float(start_block_num) / stop_block_num * 100 ) << "% ]: " << start_block_num << '/' << stop_block_num << " blocks rewritten.\r";
-        std::cout.flush();
-      }
+        ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
+          ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
 
       log_out.append( *block );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-      {
-        fc::json json_block;
-        fc::variant v;
-        fc::to_variant( *block, v );
-
-        std::cout << "After conversion: " << json_block.to_string( v ) << '\n';
-      }
+        dlog("After conversion: ${block}", ("block", *block));
     }
 
     if( !appbase::app().is_interrupt_request() )
@@ -197,7 +175,7 @@ namespace detail {
       log_out.close();
 
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
-      std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
+      wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
   }
 
 } // detail
