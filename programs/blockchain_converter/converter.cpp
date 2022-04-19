@@ -427,11 +427,11 @@ namespace hive { namespace converter {
   {
     return get_second_authority_key( type ).sign_compact(
             trx.sig_digest( chain_id ),
-            has_hardfork( HIVE_HARDFORK_0_20_BLOCK ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
+            has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
           );
   }
 
-  void blockchain_converter::sign_transaction( hp::signed_transaction& trx, bool force /*=false*/)const
+  void blockchain_converter::sign_transaction( hp::signed_transaction& trx, bool force )const
   {
     if( trx.signatures.size() || force)
     {
