@@ -9,7 +9,7 @@ echo "BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}"
 echo "HIVE_LINT=${HIVE_LINT}"
 
 BUILD_DIR="${PWD}/build"
-CMAKE_BUILD_TYPE=Release
+CMAKE_BUILD_TYPE=RelWithDebInfo
 TIME_BEGIN=$( date -u +%s )
 
 git submodule update --init --recursive
