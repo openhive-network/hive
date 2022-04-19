@@ -95,7 +95,7 @@ shared_ptr<fork_item> fork_database::head_unlocked()const
   return _head;
 }
 
-uint32_t fork_database::last_irreversible_block_num_unlocked()const
+uint32_t fork_database::get_oldest_block_num_unlocked()const
 {
   auto const& block_num_idx = _index.get<block_num>();
   return (*block_num_idx.begin())->num;
