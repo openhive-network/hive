@@ -59,7 +59,7 @@ namespace hive { namespace converter {
 
     hp::block_id_type mainnet_head_block_id;
 
-    static const std::array< uint32_t, HIVE_NUM_HARDFORKS > hardfork_blocks;
+    static const std::array< uint32_t, HIVE_NUM_HARDFORKS + 1 > hardfork_blocks;
 
   public:
     /// Used in convert_signed_block to specify that expiration time of the transaction should not be altered (automatically deduct expiration time of the transaction using timestamp of the signed block)
