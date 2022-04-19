@@ -91,7 +91,7 @@ namespace hive { namespace chain {
       shared_ptr<fork_item>            push_block(const signed_block& b);
       shared_ptr<fork_item>            head()const;
       shared_ptr<fork_item>            head_unlocked()const;
-      uint32_t                         last_irreversible_block_num_unlocked()const;
+      uint32_t                         get_oldest_block_num_unlocked()const;
       void                             pop_block();
 
       /**

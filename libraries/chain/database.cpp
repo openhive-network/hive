@@ -7187,10 +7187,10 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
 
     result.resize(result_size);
 
-    uint32_t last_irreversible_block_num = _fork_db.last_irreversible_block_num_unlocked();
-    last_block_from_block_log_in_reply = std::min(last_irreversible_block_num, last_block_num_in_reply);
+    uint32_t oldest_block_num_in_forkdb = _fork_db.get_oldest_block_num_unlocked();
+    last_block_from_block_log_in_reply = std::min(oldest_block_num_in_forkdb - 1, last_block_num_in_reply);
 
-    uint32_t first_block_num_from_fork_db_in_reply = std::max(last_irreversible_block_num + 1, first_block_num_in_reply);
+    uint32_t first_block_num_from_fork_db_in_reply = std::max(oldest_block_num_in_forkdb, first_block_num_in_reply);
     //idump((first_block_num_in_reply)(last_block_from_block_log_in_reply)(first_block_num_from_fork_db_in_reply)(last_block_num_in_reply));
 
     for (uint32_t block_num = first_block_num_from_fork_db_in_reply; 
