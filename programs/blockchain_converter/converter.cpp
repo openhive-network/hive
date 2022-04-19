@@ -1,6 +1,5 @@
 #include "converter.hpp"
 
-#include <iostream>
 #include <array>
 #include <string>
 #include <thread>
@@ -19,6 +18,8 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/block.hpp>
 #include <hive/protocol/hardfork_block.hpp>
+
+#include <fc/log/logger.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
@@ -91,7 +92,7 @@ namespace hive { namespace converter {
   const hp::custom_binary_operation& convert_operations_visitor::operator()( hp::custom_binary_operation& op )const
   {
     op.required_auths.clear();
-    std::cout << "Clearing custom_binary_operation required_auths in block: " << converter.get_current_block().block_num() << '\n';
+    wlog( "Clearing custom_binary_operation required_auths in block: ${block_num}", ("block_num", converter.get_current_block().block_num()) );
 
     return op;
   }

@@ -25,7 +25,6 @@
 
 #include <memory>
 #include <string>
-#include <iostream>
 #include <mutex>
 
 #include "conversion_plugin.hpp"
@@ -163,7 +162,7 @@ namespace detail {
   void node_based_conversion_plugin_impl::close()
   {
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
-      std::cerr << "Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log\n";
+      wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
   }
 
   variant_object node_based_conversion_plugin_impl::post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data )
@@ -213,11 +212,11 @@ namespace detail {
     if( !start_block_num )
       start_block_num = gpo["head_block_number"].as< uint32_t >() + 1;
 
-    std::cout << "Continuing conversion from the block with number " << start_block_num
-                << "\nValidating the chain id...\n";
+    ilog("Continuing conversion from the block with number ${block_num}", ("block_num", start_block_num));
+    ilog("Validating the chain id...");
 
     validate_chain_id( converter.get_chain_id() );
-    std::cout << "Chain id match\n";
+    dlog("Chain id match");
 
     fc::optional< hp::signed_block > block;
 
@@ -231,7 +230,7 @@ namespace detail {
       }
       else
       {
-        std::cout << "Could not parse the block with number " << start_block_num << " from the host. Propably the block has not been produced yet. Retrying in 1 second...\n";
+        wlog("Could not parse the block with number ${block_num} from the host. Propably the block has not been produced yet. Retrying in 1 second...", ("block_num", start_block_num));
         fc::usleep(fc::seconds(1));
       }
     }
@@ -274,7 +273,7 @@ namespace detail {
 
       if( !block.valid() )
       {
-        std::cout << "Could not parse the block with number " << start_block_num << " from the host. Propably the block has not been produced yet. Retrying in 1 second...\n";
+        wlog("Could not parse the block with number ${block_num} from the host. Propably the block has not been produced yet. Retrying in 1 second...", ("block_num", start_block_num));
         fc::usleep(fc::seconds(1));
         --start_block_num;
         continue;
@@ -283,20 +282,14 @@ namespace detail {
       if( start_block_num % 1000 == 0 ) // Progress
       {
         if( stop_block_num )
-          std::cout << "[ " << int( float(start_block_num) / stop_block_num * 100 ) << "% ]: " << start_block_num << '/' << stop_block_num << " blocks rewritten.\r";
+          ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
+            ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
         else
-          std::cout << start_block_num << " blocks rewritten.\r";
-        std::cout.flush();
+          ilog("${block_num} blocks rewritten", ("block_num", start_block_num));
       }
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-      {
-        fc::variant v;
-        fc::to_variant( *block, v );
-
-        std::cout << "Rewritten block: " << start_block_num
-          << ". Data before conversion: " << fc::json::to_string( v ) << '\n';
-      }
+        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
@@ -308,12 +301,7 @@ namespace detail {
       }
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-      {
-        fc::variant v;
-        fc::to_variant( *block, v );
-
-        std::cout << "After conversion: " << fc::json::to_string( v ) << '\n';
-      }
+        dlog("After conversion: ${block}", ("block", *block));
 
       for( const auto& trx : block->transactions )
         if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
@@ -322,13 +310,11 @@ namespace detail {
           transmit( trx );
     }
 
-    std::cout << "In order to resume your live conversion pass the \'-R " << start_block_num - 1 << "\' option to the converter next time" << std::endl;
+    dlog("In order to resume your live conversion pass the \'-R ${block_num}\' option to the converter next time", ("block_num", start_block_num - 1));
 
     if( error_response_count )
-    {
-      std::cerr << error_response_count << " (" << int(float(error_response_count) / total_request_count * 100)
-                << "% of total " << total_request_count << ") node errors detected!" << std::endl;
-    }
+      wlog("${errors} (${percent})% of total ${total}) node errors detected",
+        ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
 
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
@@ -400,7 +386,7 @@ namespace detail {
       {
         if( result_offset + 1 > get_block_buffer().size() ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
         {
-          std::cout << "Note: using uncached receive to save your computers memory on block " << num << '\r';
+          ilog("Note: using uncached receive to save your computers memory on block ${block_num}", ("block_num", num));
           block_buffer_obj = fc::variant_object{}; // Clear block_buffer_obj to free now redundant memory
           return receive_uncached( num );
         }
