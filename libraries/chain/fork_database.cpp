@@ -204,10 +204,7 @@ vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)cons
     auto itr = block_num_idx.lower_bound(num);
     while( itr != block_num_idx.end() && itr->get()->num == num )
     {
-      if( (*itr)->num == num )
-        result.push_back( *itr );
-      else
-        break;
+      result.push_back( *itr );
       ++itr;
     }
     return result;
@@ -320,6 +317,8 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint3
 
 shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number_unlocked( uint32_t block_num )const
 {
+  if (!_head || block_num > _head->num)
+    return shared_ptr<fork_item>();
   vector<item_ptr> blocks = fetch_block_by_number_unlocked(block_num);
   if( blocks.size() == 1 )
     return blocks[0];
