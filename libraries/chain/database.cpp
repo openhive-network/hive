@@ -7112,7 +7112,7 @@ std::deque<block_id_type>::const_iterator database::find_first_item_not_in_block
   });
 }
 
-// requires forkdb read lock, does not require chainbase lock
+// precondition: requires forkdb read lock, does not require chainbase lock
 bool database::is_included_block_unlocked(const block_id_type& block_id)
 { try {
   uint32_t block_num = block_header::num_from_id(block_id);
@@ -7136,6 +7136,7 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
 // no chainbase lock required
 std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
 {
+  ilog("get_block_ids");
   uint32_t first_block_num_in_reply;
   uint32_t last_block_num_in_reply;
   uint32_t last_block_from_block_log_in_reply;
@@ -7146,6 +7147,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
   // get and hold a fork database lock so a fork switch can't happen while we're in the middle of creating
   // this list of block ids
   _fork_db.with_read_lock([&]() {
+    ilog("got fork_read_lock in get_block_ids");
     remaining_item_count = 0;
     head = _fork_db.head_unlocked();
     if (!head)
@@ -7165,13 +7167,16 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     {
       bool found_a_block_in_synopsis = false;
       for (const block_id_type& block_id_in_synopsis : boost::adaptors::reverse(blockchain_synopsis))
+      {
+        ilog("block_id=${block_id_in_synopsis",(block_id_in_synopsis));
         if (block_id_in_synopsis == block_id_type() || is_included_block_unlocked(block_id_in_synopsis))
         {
           last_known_block_id = block_id_in_synopsis;
           found_a_block_in_synopsis = true;
           break;
         }
-
+      }
+      idump((found_a_block_in_synopsis)(last_known_block_id));
       if (!found_a_block_in_synopsis)
         FC_THROW_EXCEPTION(internal_peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
     }
@@ -7191,12 +7196,13 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     last_block_from_block_log_in_reply = std::min(oldest_block_num_in_forkdb - 1, last_block_num_in_reply);
 
     uint32_t first_block_num_from_fork_db_in_reply = std::max(oldest_block_num_in_forkdb, first_block_num_in_reply);
-    //idump((first_block_num_in_reply)(last_block_from_block_log_in_reply)(first_block_num_from_fork_db_in_reply)(last_block_num_in_reply));
+    idump((first_block_num_in_reply)(last_block_from_block_log_in_reply)(first_block_num_from_fork_db_in_reply)(last_block_num_in_reply));
 
     for (uint32_t block_num = first_block_num_from_fork_db_in_reply; 
          block_num <= last_block_num_in_reply;
          ++block_num)
     {
+      idump((block_num));
       shared_ptr<fork_item> item_from_forkdb = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
       assert(item_from_forkdb);
       uint32_t index_in_result = block_num - first_block_num_in_reply;
@@ -7206,6 +7212,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
 
   if (!head)
   {
+    ilog("done get_block_ids");
     remaining_item_count = 0;
     return result;
   }
@@ -7224,7 +7231,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     remaining_item_count = head_block_num - last_block_num_in_reply;
   else
     remaining_item_count = 0;
-
+  ilog("done get_block_ids");
   return result;
 }
 
