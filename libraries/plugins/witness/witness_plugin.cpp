@@ -314,6 +314,9 @@ namespace detail {
     // confirmation.
     // I think it's called multiple times during a fork switch, which isn't what we want, so
     // only generate this transaction if our head block number has increased
+    //
+    // TODO: we probably shouldn't broadcast anything if our head block is older than some threshold
+    //       so we don't spam the network if we fall behind and are catching back up
     if (note.block_num > _last_fast_confirmation_block_number)
     {
       std::set<account_name_type> scheduled_witnesses;
@@ -337,7 +340,7 @@ namespace detail {
             }
             catch (const fc::exception& e)
             {
-              elog("crap: ${e}", (e));
+              elog("unable to get witness's signing key for witness ${witness_name}: ${e}", (witness_name)(e));
             }
             auto private_key_itr = _private_keys.find(scheduled_key);
             if (private_key_itr != _private_keys.end())
@@ -347,6 +350,7 @@ namespace detail {
               op.block_id = note.block_id;
 
               signed_transaction tx;
+              tx.set_reference_block(_db.head_block_id());
               tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
               tx.operations.push_back( op );
               tx.sign(private_key_itr->second, _db.get_chain_id(), fc::ecc::fc_canonical);
