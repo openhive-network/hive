@@ -156,6 +156,14 @@ from schemas.predefined import *
         # Null
         (Null(), None),
 
+        # OneOf
+        (OneOf(Int(), Str()), 1),
+        (OneOf(Int(), Str()), 'example'),
+        (OneOf(Int(multipleOf=3), Int(multipleOf=5)), 10),
+        (OneOf(Int(multipleOf=3), Int(multipleOf=5)), 9),
+        (OneOf(Null(), Map({'key_0': Int(), 'key_1': Str()})), None),
+        (OneOf(Null(), Map({'key_0': Int(), 'key_1': Str()})), {'key_0': 1, 'key_1': 'string'}),
+
         # String
         (Str(), 'example-string'),
         (Str(minLength=3), '012'),
@@ -308,6 +316,11 @@ def test_validation_of_correct_type(schema, instance):
         # Null
         (Null(), 0),
         (Null(), ''),
+
+        # OneOf
+        (OneOf(Int(), Str()), '1'),
+        (OneOf(Int(multipleOf=5), Int(multipleOf=3)), 2),
+        (OneOf(Int(multipleOf=5), Int(multipleOf=3)), 15),
 
         # String
         (Str(), 1),
