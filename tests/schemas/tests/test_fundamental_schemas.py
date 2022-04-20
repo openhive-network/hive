@@ -10,6 +10,11 @@ from schemas.predefined import *
         (AllOf(Str(), Int()), '1'),
         (AllOf(Str()), 'string'),
 
+        # AnyOf
+        (AnyOf(Int(), Str()), 1),
+        (AnyOf(Int(), Str()), '1'),  # Both of schemas match the instance
+        (AnyOf(Int(), Str()), 'example'),
+
         # Any
         (Any(), True),
         (Any(), 128),
@@ -165,6 +170,10 @@ def test_validation_of_correct_type(schema, instance):
         # AllOf
         (AllOf(Str(), Int()), 1),
         (AllOf(Int()), 'its-string-not-int'),
+
+        # AnyOf
+        (AnyOf(Int(), Str()), False),
+        (AnyOf(Int()), 'its-string-not-int'),
 
         # Array
         (Array(), {}),

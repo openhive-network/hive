@@ -67,6 +67,25 @@ class AllOf(Schema):
         }
 
 
+class AnyOf(Schema):
+    """
+    AnyOf: (OR) The instance must be valid for any (one or more) of the given subschemas
+    Documentation: http://json-schema.org/understanding-json-schema/reference/combining.html#anyof
+    """
+    def __init__(self, *items, **options: Any):
+        super().__init__(**options)
+        self.__items = list(items)
+
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        items_as_dicts = []
+        for schema in self.__items:
+            self._assert_that_schema_has_correct_type(schema)
+            items_as_dicts.append(schema._create_schema())
+
+        return {
+            'anyOf': items_as_dicts
+        }
+
 
 class Any_(Schema):
     """
