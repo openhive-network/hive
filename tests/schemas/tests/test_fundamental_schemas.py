@@ -6,6 +6,10 @@ from schemas.predefined import *
 
 @pytest.mark.parametrize(
     'schema, instance', [
+        # AllOf
+        (AllOf(Str(), Int()), '1'),
+        (AllOf(Str()), 'string'),
+
         # Any
         (Any(), True),
         (Any(), 128),
@@ -158,6 +162,10 @@ def test_validation_of_correct_type(schema, instance):
 
 @pytest.mark.parametrize(
     'schema, instance', [
+        # AllOf
+        (AllOf(Str(), Int()), 1),
+        (AllOf(Int()), 'its-string-not-int'),
+
         # Array
         (Array(), {}),
         (Array(Int()), ['its-string-not-int']),

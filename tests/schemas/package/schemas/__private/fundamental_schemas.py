@@ -47,6 +47,27 @@ class Schema(ABC):
                                   f'  schemas/package/schemas/predefined.py')
 
 
+class AllOf(Schema):
+    """
+    AllOf: (AND) The instance must be valid for all of the subschemas
+    Documentation: http://json-schema.org/understanding-json-schema/reference/combining.html#allof
+    """
+    def __init__(self, *items, **options: Any):
+        super().__init__(**options)
+        self.__items = list(items)
+
+    def _create_core_of_schema(self) -> Dict[str, Any]:
+        items_as_dicts = []
+        for schema in self.__items:
+            self._assert_that_schema_has_correct_type(schema)
+            items_as_dicts.append(schema._create_schema())
+
+        return {
+            'allOf': items_as_dicts
+        }
+
+
+
 class Any_(Schema):
     """
     Validates anything, as long as it’s valid JSON.
