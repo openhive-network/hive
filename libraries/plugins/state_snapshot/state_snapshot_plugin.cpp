@@ -918,6 +918,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
+      void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
+
     private:
       state_snapshot_plugin&  _self;
       database&               _mainDb;
@@ -1216,12 +1218,23 @@ void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_exter
 void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_index* idx, index_dump_reader* reader)
   {
   try
-    {
+  {
     reader->set_processing_success(false);
     idx->load_snapshot(*reader);
     reader->set_processing_success(true);
-    }
-  FC_CAPTURE_LOG_AND_RETHROW((reader->getIndexDescription())(reader->getCurrentlyProcessedId()))
+  }
+  catch( boost::interprocess::bad_alloc& ex )
+  {
+    wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
+    wlog( "${details}", ("details",ex.what()) );
+    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+    throw;
+  }
+  catch(...)
+  {
+    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+    throw fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unknown error occured when a snapshot's loading" ), std::current_exception() );
+  }
   }
 
 void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotName)
@@ -1306,7 +1319,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   elog("Snapshot generation FAILED.");
   }
 
-void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
+void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
   bfs::path actualStoragePath = _storagePath / snapshotName;
   actualStoragePath = actualStoragePath.normalize();
@@ -1390,6 +1403,15 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
   ilog("Validate_invariants finished...");
 
   _mainDb.set_snapshot_loaded();
+  }
+
+void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
+  {
+    try
+    {
+      load_snapshot_impl( snapshotName, openArgs );
+    }
+    FC_CAPTURE_LOG_AND_RETHROW( (snapshotName) );
   }
 
 void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive::chain::open_args& openArgs)
