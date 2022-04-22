@@ -52,24 +52,18 @@ SET( SOURCES testnet_blockchain_configuration.cpp
 
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol STATIC ${SOURCES} )
-add_library( hive_protocol_shared SHARED ${SOURCES} )
-set_target_properties( hive_protocol_shared PROPERTIES CXX_VISIBILITY_PRESET "default" )
 
 target_link_libraries( hive_protocol hive_schema fc )
-target_link_libraries( hive_protocol_shared hive_schema_shared fc_shared )
 
 target_include_directories( hive_protocol
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
-target_include_directories( hive_protocol_shared
-        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if( CLANG_TIDY_EXE )
-   set_target_properties( hive_protocol hive_protocol_shared PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}" )
+   set_target_properties( hive_protocol PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}" )
 endif( CLANG_TIDY_EXE )
 
 INSTALL( TARGETS
    hive_protocol
-   hive_protocol_shared
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib
