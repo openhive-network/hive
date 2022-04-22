@@ -271,9 +271,6 @@ add_subdirectory( vendor/equihash )
 
 setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
 
-setup_library( fc_shared SOURCES ${sources} LIBRARY_TYPE SHARED DONT_INSTALL_LIBRARY )
-set_target_properties( fc_shared PROPERTIES CXX_VISIBILITY_PRESET "default" )
-
 # begin readline stuff
 find_package(Curses)
 
@@ -321,7 +318,6 @@ ELSE()
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
       target_compile_options(fc PUBLIC -Wall -fnon-call-exceptions)
-      target_compile_options(fc_shared PUBLIC -Wall -fnon-call-exceptions)
     endif()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fnon-call-exceptions")
   ENDIF()
@@ -391,16 +387,12 @@ SET( private_includes
 
 target_include_directories(fc PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-target_include_directories(fc_shared PUBLIC ${public_includes} PRIVATE ${private_includes})
-
 #target_link_libraries( fc PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
 
 target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
-
-target_link_libraries( fc_shared PUBLIC ${LINK_USR_LOCAL_LIB} equihash_shared ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${BOOST_LIBRARIS_DYNAMIC} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB}_shared )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
