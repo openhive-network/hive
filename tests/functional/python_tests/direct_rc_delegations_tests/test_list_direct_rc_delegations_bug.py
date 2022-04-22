@@ -8,7 +8,10 @@ from test_tools import Asset
 
         (
                 'alice', 'bob',
-                [{'from': 'alice', 'to': 'bob', 'delegated_rc': 5}]
+                [
+                    {'from': 'alice', 'to': 'bob', 'delegated_rc': 5},
+                    {'from': 'alice', 'to': 'carol', 'delegated_rc': 10}
+                ]
         ),
         (
                 'alice', '',
