@@ -19,6 +19,8 @@ DOTENV_VAR_NAME=${3:?"Missing name of dot-env variable"}
 REGISTRY_USER=${4:?"Missing arg 4 for REGISTRY_USER variable"}
 REGISTRY_PASSWORD=${5:?"Missing arg 5 for REGISTRY_PASSWORD variable"}
 
+DO_PULL=${6:-0}
+
 retrieve_submodule_commit () {
   local p="${1}"
   pushd "$p" >/dev/null 2>&1
@@ -43,8 +45,13 @@ docker_image_exists $IMGNAME $commit $REGISTRY image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
-  echo "${img} image exists. Pulling..."
-  docker pull "$img"
+  if [ ${DO_PULL} -eq 0 ];
+  then
+    echo "${img} image exists. Pull skipped..."
+  else
+    echo "${img} image exists. Pulling..."
+    docker pull "$img"
+  fi
 else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
