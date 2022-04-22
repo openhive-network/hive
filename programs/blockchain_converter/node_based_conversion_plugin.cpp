@@ -340,6 +340,9 @@ namespace detail {
 
   const fc::variants& node_based_conversion_plugin_impl::get_block_buffer()const
   {
+    FC_ASSERT( block_buffer_obj.contains("blocks"), "There are no blocks present. It may be caused by either no receive requests"
+      " performed yet or by the buffering stage completion" );
+
     return block_buffer_obj["blocks"].get_array();
   }
 
@@ -365,40 +368,44 @@ namespace detail {
 
   fc::optional< hp::signed_block > node_based_conversion_plugin_impl::receive( uint32_t num )
   {
-    uint64_t result_offset = num - last_block_range_start;
+    if( last_block_range_start != uint64_t(-1) && !block_buffer_obj.size() )
+    { // Receive uncached if it is not a first receive and there are no properties in the `block_buffer_obj`
+      return receive_uncached( num );
+    } // Note: Outside of the main try/catch to prevent polluting of the fc exception stacktrace
 
     try
     {
-      if(    num < last_block_range_start // Initial check ( when last_block_range_start is uint64_t(-1) )
-          || num >= last_block_range_start + block_buffer_size // number out of buffered blocks range
-        )
-      {
-        fc::http::connection local_input_con;
+      uint64_t result_offset = num - last_block_range_start;
 
+      if( num < last_block_range_start // Initial check ( when last_block_range_start is uint64_t(-1) )
+          || num >= last_block_range_start + block_buffer_size ) // number out of buffered blocks range
+      {
         last_block_range_start = block_buffer_size == 1 ? num : num - ( num % block_buffer_size == 0 ? block_buffer_size : num % block_buffer_size ) + 1;
-        auto var_obj = post( local_input_con, input_url, "block_api.get_block_range",
-          "{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "}" );
+        result_offset = num - last_block_range_start; // Re-calculate the result offset after the `last_block_range_start` has been changed
+
+        const std::string body = "{\"starting_block_num\":" + std::to_string( last_block_range_start ) + ",\"count\":" + std::to_string( block_buffer_size ) + "}";
+
+        fc::http::connection local_input_con;
+        auto var_obj = post( local_input_con, input_url, "block_api.get_block_range", body );
+
         FC_ASSERT( var_obj.contains("blocks"), "No blocks in JSON response", ("reply", var_obj) );
+        // Ensures safety also removing redundant variant_object values copying
+        FC_ASSERT( var_obj.size() == 1, "There should be only one entry (\'blocks\') in the \'block_api.get_block_range\' response" );
 
         block_buffer_obj = var_obj;
-      }
-      else if( last_block_range_start != uint64_t(-1) ) // Initial value of last_block_range_start check (first receive call) - block_buffer_obj not initialized yet
-      {
-        if( result_offset + 1 > get_block_buffer().size() ) // Not enough blocks cached (not enough blocks in blockchain so stop wasting time on caching)
+
+        // If there are no blocks, stop buffering and start uncached receive
+        if( !get_block_buffer().size() )
         {
-          ilog("Note: using uncached receive to save your computers memory on block ${block_num}", ("block_num", num));
-          block_buffer_obj = fc::variant_object{}; // Clear block_buffer_obj to free now redundant memory
+          dlog("Started uncached receive on block ${block_num} to save your computers memory", ("block_num", num));
+          // Clear block_buffer_obj to free now redundant memory and signal that buffering is done by removing `blocks` key
+          block_buffer_obj = fc::variant_object{};
           return receive_uncached( num );
         }
       }
 
-      const auto& block_buf = get_block_buffer();
-      result_offset = num - last_block_range_start;
-
-      if( result_offset + 1 > block_buf.size() || result_offset + 1 == 0 )
-        return fc::optional< hp::signed_block >();
-
-      return block_buf.at( result_offset ).template as< hp::signed_block >();
+      // Do not handle `get_block_buffer().size() >= result_offset` due to the previous check
+      return get_block_buffer().at( result_offset ).template as< hp::signed_block >();
     }
     catch( const error_response_from_node& error )
     {
