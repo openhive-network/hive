@@ -390,19 +390,19 @@ namespace hive { namespace chain {
 
       if (my->compression_enabled)
       {
-        // here, we'll just use the first available method, assuming zstd > brotli > zlib.
+        // here, we'll just use the first available method, assuming brotli > zstd > zlib.
         // in the compress_block_log helper app, we try all three and use the best
         try
         {
-          std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size());
-          block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), (block_flags_t)block_flags::zstd);
+          std::tuple<std::unique_ptr<char[]>, size_t> brotli_compressed_block = compress_block_brotli(serialized_block.data(), serialized_block.size());
+          block_start_pos = append_raw(std::get<0>(brotli_compressed_block).get(), std::get<1>(brotli_compressed_block), (block_flags_t)block_flags::brotli);
         }
         catch (const fc::exception&)
         {
           try
           {
-            std::tuple<std::unique_ptr<char[]>, size_t> brotli_compressed_block = compress_block_brotli(serialized_block.data(), serialized_block.size());
-            block_start_pos = append_raw(std::get<0>(brotli_compressed_block).get(), std::get<1>(brotli_compressed_block), (block_flags_t)block_flags::brotli);
+            std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size());
+            block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), (block_flags_t)block_flags::zstd);
           }
           catch (const fc::exception&)
           {
