@@ -413,9 +413,9 @@ int main(int argc, char** argv)
     for (const auto& value : total_count_by_method)
       ilog("    ${method}: ${count}", ("method", value.first)("count", value.second));
     ilog("Total bytes if all blocks compressed by compression method:");
-    ilog("    zstd: ${total_zstd_size}", (total_zstd_size));
-    ilog("    brotli: ${total_brotli_size}", (total_brotli_size));
-    ilog("    deflate: ${total_deflate_size}", (total_deflate_size));
+    ilog("    zstd: ${total_zstd_size}", ("total_zstd_size", total_zstd_size + size_of_start_positions));
+    ilog("    brotli: ${total_brotli_size}", ("total_brotli_size", total_brotli_size + size_of_start_positions));
+    ilog("    deflate: ${total_deflate_size}", ("total_deflate_size", total_deflate_size + size_of_start_positions));
   }
   catch ( const std::exception& e )
   {
