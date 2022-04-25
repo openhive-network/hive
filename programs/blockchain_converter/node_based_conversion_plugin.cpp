@@ -239,33 +239,24 @@ namespace detail {
     uint32_t lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
     hp::block_id_type lib_id = get_previous_from_block( lib_num );
 
-    std::mutex lib_id_mutex;
-
-    auto gpo_update_task = fc::async( [&]() {
-      while( !appbase::app().is_interrupt_request() )
+    const auto update_lib_id = [&]() {
+      try
       {
-        try
+        // Update dynamic global properties object and check if there is a new irreversible block
+        // If so, then update lib id
+        gpo = get_dynamic_global_properties();
+        uint32_t new_lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+        if( lib_num != new_lib_num )
         {
-          const std::lock_guard< std::mutex > lib_id_lock( lib_id_mutex );
-
-          // Update dynamic global properties object and check if there is a new irreversible block
-          // If so, then update lib id
-          gpo = get_dynamic_global_properties();
-          uint32_t new_lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
-          if( lib_num != new_lib_num )
-          {
-            lib_num = new_lib_num;
-            lib_id  = get_previous_from_block( lib_num );
-          }
+          lib_num = new_lib_num;
+          lib_id  = get_previous_from_block( lib_num );
         }
-        catch( const error_response_from_node& error )
-        {
-          handle_error_response_from_node( error );
-        }
-
-        fc::usleep(fc::milliseconds(HIVE_BLOCK_INTERVAL * 1000 / 2));
       }
-    } );
+      catch( const error_response_from_node& error )
+      {
+        handle_error_response_from_node( error );
+      }
+    };
 
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
@@ -294,11 +285,7 @@ namespace detail {
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      {
-        const std::lock_guard< std::mutex > lib_id_lock( lib_id_mutex );
-
-        converter.convert_signed_block( *block, lib_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
-      }
+      converter.convert_signed_block( *block, lib_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", *block));
@@ -308,6 +295,9 @@ namespace detail {
           break;
         else
           transmit( trx );
+
+      if( start_block_num % 10 == 0 )
+        update_lib_id();
     }
 
     dlog("In order to resume your live conversion pass the \'-R ${block_num}\' option to the converter next time", ("block_num", start_block_num - 1));
