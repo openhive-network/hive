@@ -72,3 +72,23 @@ def test_list_rc_direct_delegations_with_expected_empty_output(node, wallet, fro
     delegations = node.api.wallet_bridge.list_rc_direct_delegations([from_, to], 100)
 
     assert len(delegations) == 0
+
+
+# @pytest.mark.skip(reason="Tests check for an unresolved problem. Run the tests after fixing the problems.")
+@pytest.mark.parametrize(
+    'from_, to', [
+        ('alice', 'bob'),
+        ('alice', 'andrew'),
+    ]
+)
+def test_list_rc_direct_delegations_with_expected_non_empty_output(node, wallet, from_, to):
+    with wallet.in_single_transaction():
+        wallet.api.create_account('initminer', 'alice', '{}')
+        wallet.api.create_account('initminer', 'bob', '{}')
+        wallet.api.create_account('initminer', 'andrew', '{}')
+
+    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(0.1))
+    wallet.api.delegate_rc('alice', ['bob'], 5)
+    delegations = node.api.wallet_bridge.list_rc_direct_delegations([from_, to], 100)
+
+    assert len(delegations) != 0
