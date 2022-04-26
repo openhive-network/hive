@@ -246,12 +246,12 @@ namespace detail {
       {
         // Update dynamic global properties object and check if there is a new irreversible block
         // If so, then update lib id
-        gpo = get_dynamic_global_properties();
+        gpo = get_dynamic_global_properties( output_urls.at(0) );
         uint32_t new_lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
         if( lib_num != new_lib_num )
         {
           lib_num = new_lib_num;
-          lib_id  = get_previous_from_block( lib_num );
+          lib_id  = get_previous_from_block( lib_num, output_urls.at(0) );
         }
       }
       catch( const error_response_from_node& error )
@@ -310,8 +310,6 @@ namespace detail {
 
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
-
-    gpo_update_task.wait();
   }
 
   void node_based_conversion_plugin_impl::transmit( const hp::signed_transaction& trx, const fc::url& using_url )
