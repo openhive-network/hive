@@ -383,18 +383,18 @@ namespace detail {
         FC_ASSERT( var_obj.size() == 1, "There should be only one entry (\'blocks\') in the \'block_api.get_block_range\' response" );
 
         block_buffer_obj = var_obj;
-
-        // If there are no blocks, stop buffering and start uncached receive
-        if( !get_block_buffer().size() )
-        {
-          dlog("Started uncached receive on block ${block_num} to save your computers memory", ("block_num", num));
-          // Clear block_buffer_obj to free now redundant memory and signal that buffering is done by removing `blocks` key
-          block_buffer_obj = fc::variant_object{};
-          return receive_uncached( num );
-        }
       }
 
-      // Do not handle `get_block_buffer().size() >= result_offset` due to the previous check
+      const auto& block_buf = get_block_buffer();
+      // If there are no blocks, stop buffering and start uncached receive
+      if( !block_buf.size() || result_offset >= block_buf.size() )
+      {
+        dlog("Started uncached receive on block ${block_num} to save your computers memory", ("block_num", num));
+        // Clear block_buffer_obj to free now redundant memory and signal that buffering is done by removing `blocks` key
+        block_buffer_obj = fc::variant_object{};
+        return receive_uncached( num );
+      }
+
       return get_block_buffer().at( result_offset ).template as< hp::signed_block >();
     }
     catch( const error_response_from_node& error )
