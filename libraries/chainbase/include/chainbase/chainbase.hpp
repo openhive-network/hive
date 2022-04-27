@@ -949,9 +949,12 @@ namespace chainbase {
         _index_types.back()->add_index( *this );
       }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
       auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager()) {
         return _segment->get_segment_manager();
       }
+#pragma GCC diagnostic pop
 
       unsigned long long get_total_system_memory() const
       {

@@ -11,7 +11,7 @@
 #include <fc/network/resolve.hpp>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -29,6 +29,8 @@
 #include <thread>
 #include <memory>
 #include <iostream>
+
+using namespace boost::placeholders;
 
 namespace hive { namespace plugins { namespace webserver {
 

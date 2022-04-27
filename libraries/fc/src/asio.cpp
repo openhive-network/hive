@@ -163,7 +163,7 @@ namespace fc {
           resolver res( fc::asio::default_io_service() );
           promise<std::vector<boost::asio::ip::tcp::endpoint> >::ptr p( new promise<std::vector<boost::asio::ip::tcp::endpoint> >("tcp::resolve completion") );
           res.async_resolve( boost::asio::ip::tcp::resolver::query(hostname,port),
-                            boost::bind( detail::resolve_handler<boost::asio::ip::tcp::endpoint,resolver_iterator>, p, _1, _2 ) );
+                            boost::bind( detail::resolve_handler<boost::asio::ip::tcp::endpoint,resolver_iterator>, p, boost::placeholders::_1, boost::placeholders::_2 ) );
           return p->wait();;
         }
         FC_RETHROW_EXCEPTIONS(warn, "")
@@ -177,7 +177,7 @@ namespace fc {
           resolver res( fc::asio::default_io_service() );
           promise<std::vector<endpoint> >::ptr p( new promise<std::vector<endpoint> >("udp::resolve completion") );
           res.async_resolve( resolver::query(hostname,port),
-                              boost::bind( detail::resolve_handler<endpoint,resolver_iterator>, p, _1, _2 ) );
+                              boost::bind( detail::resolve_handler<endpoint,resolver_iterator>, p, boost::placeholders::_1, boost::placeholders::_2 ) );
           return p->wait();
         }
         FC_RETHROW_EXCEPTIONS(warn, "")

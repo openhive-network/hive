@@ -16,7 +16,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
-#include <boost/bind.hpp>
+//#include <boost/bind/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/thread/future.hpp>

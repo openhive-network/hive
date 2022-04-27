@@ -26,7 +26,7 @@
 #include <rocksdb/sst_file_reader.h>
 #include <rocksdb/utilities/write_batch_with_index.h>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/type.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/io_service.hpp>
