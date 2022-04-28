@@ -17,7 +17,7 @@ struct state_object_size_info
 
   // account create (all versions)
   const int64_t account_create_base_size;
-  const int64_t account_json_metadata_char_size;
+  //const int64_t account_json_metadata_char_size;
   const int64_t authority_account_member_size;
   const int64_t authority_key_member_size;
 
@@ -168,7 +168,7 @@ FC_REFLECT( hive::plugins::rc::state_object_size_info,
   ( LASTING_STATE_BYTE )
   ( PERSISTENT_STATE_BYTE )
   ( account_create_base_size )
-  ( account_json_metadata_char_size )
+  //( account_json_metadata_char_size )
   ( authority_account_member_size )
   ( authority_key_member_size )
   ( owner_authority_history_object_size )
