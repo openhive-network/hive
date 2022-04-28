@@ -198,7 +198,6 @@ namespace chainbase {
     * CHAINBASE_OBJECT( account_object ) or
     * CHAINBASE_OBJECT( dynamic_global_property_object, true )
     * first parameter is a class name, second (true or false, default false) tells if default constructor should be allowed
-    * Note that with MIRA enabled default constructors will be allowed anyway as it uses them during unpacking of object contents.
     */
   #define CHAINBASE_OBJECT( ... ) BOOST_PP_OVERLOAD(CHAINBASE_OBJECT_,__VA_ARGS__)(__VA_ARGS__)
 
