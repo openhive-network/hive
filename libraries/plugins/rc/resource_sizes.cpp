@@ -27,11 +27,11 @@ state_object_size_info::state_object_size_info()
   // account create (all versions)
   account_create_base_size(
     sizeof( account_index::node_type ) * PERSISTENT_STATE_BYTE +
-    sizeof( account_metadata_index::node_type ) * PERSISTENT_STATE_BYTE +
+    //sizeof( account_metadata_index::node_type ) * PERSISTENT_STATE_BYTE +
     sizeof( account_authority_index::node_type ) * PERSISTENT_STATE_BYTE +
     sizeof( rc_account_index::node_type ) * PERSISTENT_STATE_BYTE ),
-  account_json_metadata_char_size(
-    PERSISTENT_STATE_BYTE ),
+  //account_json_metadata_char_size(
+  //  PERSISTENT_STATE_BYTE ),
   authority_account_member_size(
     sizeof( shared_authority::account_authority_map::value_type ) * PERSISTENT_STATE_BYTE ),
   authority_key_member_size(

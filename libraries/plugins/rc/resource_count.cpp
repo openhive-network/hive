@@ -205,11 +205,14 @@ struct count_operation_visitor
   {
     state_bytes_count +=
         _w.account_create_base_size
-      + _w.account_json_metadata_char_size * op.json_metadata.size()
+      //+ _w.account_json_metadata_char_size * op.json_metadata.size()
       + get_authority_dynamic_size( op.owner )
       + get_authority_dynamic_size( op.active )
       + get_authority_dynamic_size( op.posting );
     //note: initial delegation from fee was only active before RC - compare with account_create_with_delegation_operation
+    //note2: not charging for metadata because its existence is optional (COLLECT_ACCOUNT_METADATA - only
+    //API nodes should use it and only until we move it to HAF), which means it is not possible to
+    //handle it with differential usage counter, which finally leads to massive overcharge
     execution_time_count += _e.account_create_time;
   }
 
@@ -217,11 +220,12 @@ struct count_operation_visitor
   {
     state_bytes_count +=
         _w.account_create_base_size
-      + _w.account_json_metadata_char_size * op.json_metadata.size()
+      //+ _w.account_json_metadata_char_size * op.json_metadata.size()
       + get_authority_dynamic_size( op.owner )
       + get_authority_dynamic_size( op.active )
       + get_authority_dynamic_size( op.posting );
     //compare with account_create_operation and delegate_vesting_shares_operation
+    //also see note2 there
     state_bytes_count += _w.vesting_delegation_object_size;
     execution_time_count += _e.account_create_with_delegation_time;
   }
@@ -271,11 +275,12 @@ struct count_operation_visitor
   {
     state_bytes_count +=
         _w.account_create_base_size
-      + _w.account_json_metadata_char_size * op.json_metadata.size()
+      //+ _w.account_json_metadata_char_size * op.json_metadata.size()
       + get_authority_dynamic_size( op.owner )
       + get_authority_dynamic_size( op.active )
       + get_authority_dynamic_size( op.posting );
     //basically the same as account_create_operation
+    //also see note2 there
     execution_time_count += _e.create_claimed_account_time;
   }
 
@@ -397,7 +402,8 @@ struct count_operation_visitor
       state_bytes_count += get_authority_dynamic_size( *op.active );
     if( op.posting )
       state_bytes_count += get_authority_dynamic_size( *op.posting );
-    state_bytes_count += _w.account_json_metadata_char_size * op.json_metadata.size();
+    //state_bytes_count += _w.account_json_metadata_char_size * op.json_metadata.size();
+    //see note2 in routine for account_create_operation
     execution_time_count += _e.account_update_time;
   }
 
@@ -410,8 +416,9 @@ struct count_operation_visitor
       state_bytes_count += get_authority_dynamic_size( *op.active );
     if( op.posting )
       state_bytes_count += get_authority_dynamic_size( *op.posting );
-    state_bytes_count += _w.account_json_metadata_char_size
-      * ( op.json_metadata.size() + op.posting_json_metadata.size() );
+    //state_bytes_count += _w.account_json_metadata_char_size
+    //  * ( op.json_metadata.size() + op.posting_json_metadata.size() );
+    //see note2 in routine for account_create_operation
     execution_time_count += _e.account_update2_time;
   }
 
