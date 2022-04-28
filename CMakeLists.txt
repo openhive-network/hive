@@ -99,13 +99,6 @@ if( CHAINBASE_CHECK_LOCKING )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCHAINBASE_CHECK_LOCKING" )
 endif()
 
-OPTION( CLEAR_VOTES "Build source to clear old votes from memory" ON )
-if( CLEAR_VOTES )
-  MESSAGE( STATUS "   CONFIGURING TO CLEAR OLD VOTES FROM MEMORY" )
-else()
-  MESSAGE( FATAL_ERROR "   NOTE: CLEAR OLD VOTES OPTION HAS BEEN DEPRECATED" )
-endif()
-
 OPTION( HIVE_STATIC_BUILD "Build hived as a static library (ON or OFF)" OFF )
 if( HIVE_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
    MESSAGE( STATUS "Statuc build is not available on Windows or OS X" )
