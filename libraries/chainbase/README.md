@@ -34,7 +34,7 @@ enum tables {
  */
 class book : public chainbase::object<book_table, book>
 {
-   /** defines access to default constructor (deleted, enabled for MIRA)
+   /** defines access to default constructor (deleted)
      * as well as "id_type id" mandatory member as a primary key
      * and other standard things
      * If access to default constructor is necessary for some reason
