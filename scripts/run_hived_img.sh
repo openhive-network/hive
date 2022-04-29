@@ -33,7 +33,7 @@ IMAGE_NAME=
 
 add_docker_arg() {
   local arg="$1"
-#  echo "Processing hived argument: ${arg}"
+#  echo "Processing docker argument: ${arg}"
   
   DOCKER_ARGS+=("$arg")
 }
@@ -102,8 +102,7 @@ CMD_ARGS+=("${HIVED_ARGS[@]}")
 #echo "Using docker image: $IMAGE_NAME"
 #echo "Additional hived args: ${CMD_ARGS[@]}"
 
-docker container rm "$CONTAINER_NAME" || true
-
+docker container rm -f -v -l "$CONTAINER_NAME" 2>/dev/null || true
 docker run -itd --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 
