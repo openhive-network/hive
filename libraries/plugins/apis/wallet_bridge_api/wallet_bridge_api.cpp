@@ -549,7 +549,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 3 );
   const protocol::account_name_type account = arguments.get_array()[0].get_string();
-  const uint32_t from = arguments.get_array()[1].as<uint32_t>();
+  const uint64_t from = arguments.get_array()[1].as<uint64_t>();
   const uint32_t limit = arguments.get_array()[2].as<uint32_t>();
 
   return _account_history_api->get_account_history({account, from, limit}).history;
