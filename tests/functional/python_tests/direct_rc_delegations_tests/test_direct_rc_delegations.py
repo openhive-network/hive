@@ -15,8 +15,8 @@ def test_direct_rc_delegations(wallet):
         wallet.api.transfer(receiver, receiver, '0.001 TESTS', '', 'true')
     except tt.exceptions.CommunicationError as e:
         message = str(e.response)
-        found = message.find('receiver has 0 RC, needs 4 RC. Please wait to transact')
-        assert found != -1
+        found = message.find('receiver has 0 RC, needs 1 RC. Please wait to transact')
+        assert found != -1, str(message)
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
     rc_receiver2 = wallet.api.find_rc_accounts([receiver2])[0]
     rc_delegator = wallet.api.find_rc_accounts([delegator])[0]
@@ -43,7 +43,7 @@ def test_direct_rc_delegations(wallet):
     assert (rc_delegator['delegated_rc'] == 20)
     assert (rc_delegator['received_delegated_rc'] == 0)
     assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar'][
-        'current_mana'] - 23)  # 20 + 3, 3 is the base cost of an rc delegation op, 20 is the amount delegated
+        'current_mana'] - 21)  # 20 + 1, 1 is the base cost of an rc delegation op, 20 is the amount delegated
 
     print('testing list direct delegations api')
 
@@ -65,7 +65,7 @@ def test_direct_rc_delegations(wallet):
     assert (rc_delegator['delegated_rc'] == 60)
     assert (rc_delegator['received_delegated_rc'] == 0)
     assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar'][
-        'current_mana'] - 66)  # 50 + 3 x 2, 3 is the base cost of an rc delegation op, 50 is the amount delegated
+        'current_mana'] - 62)  # 60 + 1 x 2, 1 is the base cost of an rc delegation op, 60 is the amount delegated
 
     print('Reducing the delegation to 20 to {}'.format(receiver))
     wallet.api.delegate_rc(delegator, [receiver], 20, 'true')
@@ -78,7 +78,7 @@ def test_direct_rc_delegations(wallet):
     assert (rc_delegator['delegated_rc'] == 30)
     assert (rc_delegator['received_delegated_rc'] == 0)
     assert (rc_delegator['rc_manabar']['current_mana'] == rc_delegator_before['rc_manabar'][
-        'current_mana'] - 69)  # amount remains the same - 3 because current rc is not given back from reducing the delegation, and we paid 3 for the extra op
+        'current_mana'] - 63)  # amount remains the same - 1 because current rc is not given back from reducing the delegation, and we paid 1 for the extra op
 
     print('deleting the delegation to {}'.format(receiver))
     wallet.api.delegate_rc(delegator, [receiver], 0, 'true')

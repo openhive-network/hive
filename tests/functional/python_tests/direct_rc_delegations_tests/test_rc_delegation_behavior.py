@@ -73,7 +73,7 @@ def test_large_rc_delegation(node, wallet: tt.Wallet):
     # This way, 'cost of transaction' is always same and is possible to delegate maximal, huge amount of RC.
     accounts = get_accounts_name(wallet.create_accounts(2, 'receiver'))
 
-    cost_of_transaction = 11100
+    cost_of_transaction = 150117
     node.wait_for_block_with_number(3)
     wallet.api.transfer_to_vesting('initminer', accounts[0], tt.Asset.Test(200000000))
     rc_to_delegate = int(get_rc_account_info(accounts[0], wallet)['rc_manabar']['current_mana']) - cost_of_transaction

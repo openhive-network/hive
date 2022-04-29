@@ -64,7 +64,7 @@ def test_different_false_cases(wallet):
         response = wallet.api.vote('alice', 'bob', 'hello-world', 99)
     except Exception as e:
         message = str(e)
-        assert message.find('Account: alice has 0 RC, needs 3 RC') != -1
+        assert message.find('Account: alice has 0 RC, needs 1 RC') != -1
 
     try:
         with wallet.in_single_transaction(broadcast=False) as transaction:
