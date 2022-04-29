@@ -112,6 +112,7 @@ find_program(
 
 SET( CLANG_TIDY_IGNORED
 "-fuchsia-default-arguments-*\
+,-clang-diagnostic-unknown-warning-option\
 ,-bugprone-lambda-function-name\
 ,-llvm-qualified-auto\
 ,-misc-non-private-member-variables-in-classes\
