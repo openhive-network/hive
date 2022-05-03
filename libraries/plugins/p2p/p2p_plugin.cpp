@@ -205,7 +205,7 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
   }
   else
   {
-    ilog("Block ignored due to start p2p_plugin shutdown");
+    dlog("Block ignored due to start p2p_plugin shutdown");
     FC_THROW_EXCEPTION(graphene::net::p2p_node_shutting_down_exception, "Preventing further processing of ignored block...");
   }
   return false;
