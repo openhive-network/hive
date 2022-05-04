@@ -463,8 +463,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  const protocol::account_name_type acc_name = args.get_array()[0].as<protocol::account_name_type>();
-  const auto& witnesses = _database_api->find_witnesses({{acc_name}}).witnesses;
+  FC_ASSERT(args.get_array()[0].is_array(), "get_witness needs at least one argument");
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+  const string witness_name = arguments.get_array()[0].as<protocol::account_name_type>();
+  const auto& witnesses = _database_api->find_witnesses({{witness_name}}).witnesses;
   get_witness_return result;
   if (!witnesses.empty())
     result = witnesses.front();

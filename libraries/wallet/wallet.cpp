@@ -582,7 +582,8 @@ public:
   optional< database_api::api_witness_object > get_witness( const string& owner_account )
   {
     require_online();
-    return _remote_wallet_bridge_api->get_witness( {owner_account}, LOCK );
+    vector<variant> args{owner_account};
+    return _remote_wallet_bridge_api->get_witness( {args}, LOCK );
   }
 
     /// Common body for claim_account_creation and claim_account_creation_nonblocking
