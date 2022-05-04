@@ -359,7 +359,7 @@ namespace detail {
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
         break;
       case block_production_condition::low_participation:
-        elog("Not producing block because node appears to be on a minority fork with only ${pct}% witness participation", ("pct", capture["pct"]) );
+        elog("Not producing block because node appears to be on a minority fork with only ${pct}% witness participation", ("pct", capture["pct"]/HIVE_1_PERCENT) );
         break;
       case block_production_condition::lag:
         elog("Not producing block because node didn't wake up within ${t}ms of the slot time.", ("t", BLOCK_PRODUCING_LAG_TIME));
