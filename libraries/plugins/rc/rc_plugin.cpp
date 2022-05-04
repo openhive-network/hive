@@ -238,7 +238,7 @@ int64_t use_account_rcs(
 
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
-    if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    if( !skip.skip_reject_not_enough_rc )
     {
       if( db.is_in_control() )
       {
