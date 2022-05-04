@@ -533,8 +533,6 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -674,8 +672,6 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -857,8 +853,6 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -1063,8 +1057,6 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -1176,8 +1168,6 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -1302,8 +1292,6 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -1593,8 +1581,6 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 
@@ -1790,8 +1776,6 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
     skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_deduct_rc = 0;
-    skip_flags.skip_negative_rc_balance = 0;
     skip_flags.skip_reject_unknown_delta_vests = 0;
     rc_plugin->set_rc_plugin_skip_flags( skip_flags );
 

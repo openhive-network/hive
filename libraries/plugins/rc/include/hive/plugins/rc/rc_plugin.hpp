@@ -23,10 +23,10 @@ using namespace appbase;
 
 struct rc_plugin_skip_flags
 {
-  uint32_t skip_reject_not_enough_rc       : 1;
-  uint32_t skip_deduct_rc                  : 1;
-  uint32_t skip_negative_rc_balance        : 1;
-  uint32_t skip_reject_unknown_delta_vests : 1;
+  //if set it disables check if payer has enough RC mana; node that has it set is not allowed to produce blocks or broadcast transactions
+  uint32_t skip_reject_not_enough_rc       : 1; //should be false for mainnet and true for unit tests
+  //if set the RC bug caused by missing proper update of last_max_rc in some operation will not stop the node
+  uint32_t skip_reject_unknown_delta_vests : 1; //should be true for mainnet and false for unit tests
 };
 
 class rc_plugin : public appbase::plugin< rc_plugin >

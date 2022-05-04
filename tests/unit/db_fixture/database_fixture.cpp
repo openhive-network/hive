@@ -112,8 +112,6 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   
   hive::plugins::rc::rc_plugin_skip_flags rc_skip;
   rc_skip.skip_reject_not_enough_rc = 1;
-  rc_skip.skip_deduct_rc = 0;
-  rc_skip.skip_negative_rc_balance = 1;
   rc_skip.skip_reject_unknown_delta_vests = 0;
   rc_plugin->set_rc_plugin_skip_flags( rc_skip );
 

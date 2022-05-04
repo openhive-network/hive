@@ -51,8 +51,6 @@ class rc_plugin_impl
       _self( _plugin )
     {
       _skip.skip_reject_not_enough_rc = 0;
-      _skip.skip_deduct_rc = 0;
-      _skip.skip_negative_rc_balance = 0;
       _skip.skip_reject_unknown_delta_vests = 1;
     }
 
@@ -272,12 +270,6 @@ int64_t use_account_rcs(
         }
       }
     }
-
-    if( (!has_mana) && skip.skip_negative_rc_balance )
-      return;
-
-    if( skip.skip_deduct_rc )
-      return;
 
     fc::uint128_t min_mana( mbparams.max_mana );
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
@@ -609,6 +601,8 @@ struct pre_apply_operation_visitor
 
     if( mbparams.max_mana != rc_account.last_max_rc )
     {
+      // this situation indicates a bug in RC code, most likely some operation that affects RC was not
+      // properly handled by setting new value for last_max_rc after RC changed
       if( !_skip.skip_reject_unknown_delta_vests )
       {
         HIVE_ASSERT( false, plugin_exception,
