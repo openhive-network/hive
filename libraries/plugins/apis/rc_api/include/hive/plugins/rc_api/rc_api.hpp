@@ -39,6 +39,7 @@ typedef void_type get_resource_pool_args;
 struct resource_pool_api_object
 {
   int64_t pool = 0;
+  uint16_t fill_level = 0; //how much (in bps) does current pool stand vs pool equilibrium value
 };
 
 struct get_resource_pool_return
@@ -151,6 +152,7 @@ FC_REFLECT( hive::plugins::rc::get_resource_params_return,
 
 FC_REFLECT( hive::plugins::rc::resource_pool_api_object,
   (pool)
+  (fill_level)
   )
 
 FC_REFLECT( hive::plugins::rc::get_resource_pool_return,
