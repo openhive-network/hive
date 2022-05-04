@@ -315,7 +315,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
 
-  const protocol::account_name_type account = arguments.get_array()[0].get_string();
+  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
   const auto route = arguments.get_array()[1].as<database_api::withdraw_route_type>();
 
   database_api::find_withdraw_vesting_routes_return _result;
@@ -372,7 +372,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
   FC_ASSERT(args.get_array()[0].is_array(), "list_accounts needs at least one argument");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
-  const protocol::account_name_type lowerbound = arguments.get_array()[0].get_string();
+  const protocol::account_name_type lowerbound = arguments.get_array()[0].as<protocol::account_name_type>();
   uint32_t limit = arguments.get_array()[1].as<uint32_t>();
   FC_ASSERT( limit <= 1000 );
   const auto& accounts_by_name = _db.get_index< chain::account_index, chain::by_name >();
@@ -397,7 +397,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  chain::account_name_type acc_name = arguments.get_array()[0].get_string();
+  chain::account_name_type acc_name = arguments.get_array()[0].as<protocol::account_name_type>();
   const chain::account_object* account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
@@ -454,7 +454,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_witnesses )
   FC_ASSERT(args.get_array()[0].is_array(), "list_witnesses needs at least one argument");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
-  const string lowerbound = arguments.get_array()[0].get_string();
+  const string lowerbound = arguments.get_array()[0].as<protocol::account_name_type>();
   const uint32_t limit = arguments.get_array()[1].as<uint32_t>();
   return _database_api->list_witnesses({lowerbound, limit, database_api::by_name});
 }
@@ -463,7 +463,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  const protocol::account_name_type acc_name = args.get_array()[0].get_string();
+  const protocol::account_name_type acc_name = args.get_array()[0].as<protocol::account_name_type>();
   const auto& witnesses = _database_api->find_witnesses({{acc_name}}).witnesses;
   get_witness_return result;
   if (!witnesses.empty())
@@ -480,7 +480,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_conversion_requests )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  const protocol::account_name_type account = arguments.get_array()[0].get_string();
+  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
   return _database_api->find_hbd_conversion_requests({account}).requests;
 }
 
@@ -492,7 +492,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_collateralized_conversion_requests 
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  const protocol::account_name_type account = arguments.get_array()[0].get_string();
+  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
   return _database_api->find_collateralized_conversion_requests({account}).requests;
 }
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
@@ -514,7 +514,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
   const auto arguments = args.get_array()[0];
   FC_ASSERT(arguments.is_array(), "get_open_orders needs at least one argument");
   verify_args( arguments, 1 );
-  const protocol::account_name_type account = arguments.get_array()[0].get_string();
+  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
 
   vector< database_api::api_limit_order_object > _result;
   const auto& idx = _db.get_index< chain::limit_order_index, chain::by_account >();
@@ -537,7 +537,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  const protocol::account_name_type acc_name = arguments.get_array()[0].get_string();
+  const protocol::account_name_type acc_name = arguments.get_array()[0].as<protocol::account_name_type>();
   return _database_api->find_owner_histories({acc_name});
 }
 
@@ -548,7 +548,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
   FC_ASSERT(args.get_array()[0].is_array(), "get_account_history needs at least one argument");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 3 );
-  const protocol::account_name_type account = arguments.get_array()[0].get_string();
+  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
   const uint64_t from = arguments.get_array()[1].as<uint64_t>();
   const uint32_t limit = arguments.get_array()[2].as<uint32_t>();
 
@@ -630,7 +630,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  const string reward_fund_name = arguments.get_array()[0].get_string();
+  const string reward_fund_name = arguments.get_array()[0].as<protocol::account_name_type>();
   auto fund = _db.find< chain::reward_fund_object, chain::by_name >( reward_fund_name );
   FC_ASSERT( fund != nullptr, "Invalid reward fund name" );
   return database_api::api_reward_fund_object( *fund, _db );
@@ -736,7 +736,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  const string acc_name = arguments.get_array()[0].get_string();
+  const string acc_name = arguments.get_array()[0].as<protocol::account_name_type>();
   return _database_api->find_recurrent_transfers( { acc_name } ).recurrent_transfers;
 }
 
