@@ -60,9 +60,6 @@ p2p-seed-node = 127.0.0.1:2001
 # Skip rejecting transactions when account has insufficient RCs. This is not recommended.
 rc-skip-reject-not-enough-rc = 0
 
-# Generate historical resource credits
-rc-compute-historical-rc = 0
-
 # Size to batch statsd messages.
 statsd-batchsize = 1
 

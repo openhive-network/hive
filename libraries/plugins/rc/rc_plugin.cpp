@@ -1248,7 +1248,6 @@ void rc_plugin::set_program_options( options_description& cli, options_descripti
 {
   cfg.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::value<bool>()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
-    ("rc-compute-historical-rc", bpo::value<bool>()->default_value( false ), "Generate historical resource credits" )
 #ifdef IS_TEST_NET
     ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
     ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
@@ -1256,7 +1255,6 @@ void rc_plugin::set_program_options( options_description& cli, options_descripti
     ;
   cli.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::bool_switch()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
-    ("rc-compute-historical-rc", bpo::bool_switch()->default_value( false ), "Generate historical resource credits" )
 #ifdef IS_TEST_NET
     ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
     ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
@@ -1306,12 +1304,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     fc::mutable_variant_object state_opts;
 
     my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
-    state_opts["rc-compute-historical-rc"] = options.at( "rc-compute-historical-rc" ).as<bool>();
 #ifndef IS_TEST_NET
-    if( !options.at( "rc-compute-historical-rc" ).as<bool>() )
-    {
-      my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
-    }
+    my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
 #else
     uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();
     if( start_block > 0 )
