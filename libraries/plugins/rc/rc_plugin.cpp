@@ -251,7 +251,7 @@ int64_t use_account_rcs(
       }
       else
       {
-        if( !has_mana && db.is_processing_block() )
+        if( !has_mana && db.is_processing_block() && db.has_hardfork( HIVE_HARDFORK_1_26 ) )
         {
           //when we didn't have is_processing_block as part of condition the messages below would also
           //be produced when pending transactions were reapplied after new block arrived even though
