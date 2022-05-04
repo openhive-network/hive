@@ -223,7 +223,7 @@ namespace hive { namespace converter {
 
 
   blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, bool increase_block_size )
-    : _private_key( _private_key ), chain_id( chain_id ), increase_block_size( increase_block_size ), signers_exit( false )
+    : _private_key( _private_key ), chain_id( chain_id ), shared_signatures_stack_in(10000), shared_signatures_stack_out(10000), increase_block_size( increase_block_size ), signers_exit( false ) 
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
