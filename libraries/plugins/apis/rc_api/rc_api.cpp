@@ -71,11 +71,14 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_pool )
   get_resource_pool_return result;
   fc::mutable_variant_object mvo;
   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+  const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
   for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
   {
+    const auto& pool_params = params_obj.resource_param_array[i].resource_dynamics_params;
     resource_pool_api_object api_pool;
     api_pool.pool = pool_obj.get_pool(i);
+    api_pool.fill_level = ( api_pool.pool * HIVE_100_PERCENT ) / pool_params.pool_eq;
     mvo( fc::reflector< rc_resource_types >::to_string( i ), api_pool );
   }
 
