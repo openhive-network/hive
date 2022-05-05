@@ -1940,7 +1940,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
 
   witness_update_operation op;
 
-  optional< database_api::api_witness_object > wit = my->_remote_wallet_bridge_api->get_witness( {witness_account_name}, LOCK );
+  vector<variant> args{witness_account_name};
+  optional< database_api::api_witness_object > wit = my->_remote_wallet_bridge_api->get_witness( {args}, LOCK );
   if( !wit.valid() )
   {
     op.url = url;
