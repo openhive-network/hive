@@ -1,4 +1,5 @@
 #include <fc/log/logger.hpp>
+#include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
 #include <hive/chain/block_log.hpp>
 
@@ -9,6 +10,7 @@
 #include <chrono>
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
@@ -34,7 +36,7 @@ struct compressed_block
   uint32_t block_number;
   size_t compressed_block_size = 0;
   std::unique_ptr<char[]> compressed_block_data;
-  hive::chain::block_log::block_flags_t flags = 0;
+  hive::chain::block_log::block_attributes_t attributes;
 };
 
 bool enable_zstd = true;
@@ -46,6 +48,7 @@ fc::optional<int> deflate_level;
 
 uint32_t starting_block_number = 1;
 fc::optional<uint32_t> blocks_to_compress;
+fc::optional<fc::path> raw_block_output_path;
 
 std::mutex queue_mutex;
 std::condition_variable queue_condition_variable;
@@ -71,6 +74,11 @@ const uint32_t blocks_to_prefetch = 100;
 
 void compress_blocks()
 {
+#ifdef HAVE_ZSTD
+  // each compression thread gets its own context
+  ZSTD_CCtx* zstd_compression_context = ZSTD_createCCtx();
+  ZSTD_DCtx* zstd_decompression_context = ZSTD_createDCtx();
+#endif
   while (true)
   {
     // wait until there is work in the pending queue
@@ -104,8 +112,11 @@ void compress_blocks()
       size_t size;
       std::unique_ptr<char[]> data;
       hive::chain::block_log::block_flags method;
+      fc::optional<uint8_t> dictionary_number;
     };
     std::vector<compressed_data> compressed_versions;
+
+    fc::optional<uint8_t> dictionary_number_to_use = std::min<uint8_t>(uncompressed->block_number / 1000000, 62);
 
     // zstd
     if (enable_zstd)
@@ -113,11 +124,16 @@ void compress_blocks()
       {
         compressed_data zstd_compressed_data;
         fc::time_point before = fc::time_point::now();
-        std::tie(zstd_compressed_data.data, zstd_compressed_data.size) = hive::chain::block_log::compress_block_zstd(uncompressed->uncompressed_block_data.get(), uncompressed->uncompressed_block_size, zstd_level);
+        //idump((uncompressed->block_number)(uncompressed->uncompressed_block_size));
+        std::tie(zstd_compressed_data.data, zstd_compressed_data.size) = hive::chain::block_log::compress_block_zstd(uncompressed->uncompressed_block_data.get(), uncompressed->uncompressed_block_size, dictionary_number_to_use, zstd_level, zstd_compression_context);
+        //idump((fc::to_hex(zstd_compressed_data.data.get(), zstd_compressed_data.size))(uncompressed->uncompressed_block_size)(zstd_compressed_data.size));
+        //idump((zstd_compressed_data.size));
+
         fc::time_point after_compress = fc::time_point::now();
-        hive::chain::block_log::decompress_block_zstd(zstd_compressed_data.data.get(), zstd_compressed_data.size);
+        hive::chain::block_log::decompress_block_zstd(zstd_compressed_data.data.get(), zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
         fc::time_point after_decompress = fc::time_point::now();
         zstd_compressed_data.method = hive::chain::block_log::block_flags::zstd;
+        zstd_compressed_data.dictionary_number = dictionary_number_to_use;
 
         {
           std::unique_lock<std::mutex> lock(queue_mutex);
@@ -192,7 +208,8 @@ void compress_blocks()
       if (compressed_versions.front().size < uncompressed->uncompressed_block_size)
       {
         ++total_count_by_method[compressed_versions.front().method];
-        compressed->flags = (hive::chain::block_log::block_flags_t)compressed_versions.front().method;
+        compressed->attributes.flags = compressed_versions.front().method;
+        compressed->attributes.dictionary_number = compressed_versions.front().dictionary_number;
         compressed->compressed_block_size = compressed_versions.front().size;
         compressed->compressed_block_data = std::move(compressed_versions.front().data);
       }
@@ -201,7 +218,7 @@ void compress_blocks()
         ++total_count_by_method[hive::chain::block_log::block_flags::uncompressed];
         compressed->compressed_block_size = uncompressed->uncompressed_block_size;
         compressed->compressed_block_data = std::move(uncompressed->uncompressed_block_data);
-        compressed->flags = (hive::chain::block_log::block_flags_t)hive::chain::block_log::block_flags::uncompressed;
+        compressed->attributes.flags = hive::chain::block_log::block_flags::uncompressed;
       }
     }
     else
@@ -209,7 +226,7 @@ void compress_blocks()
       ++total_count_by_method[hive::chain::block_log::block_flags::uncompressed];
       compressed->compressed_block_size = uncompressed->uncompressed_block_size;
       compressed->compressed_block_data = std::move(uncompressed->uncompressed_block_data);
-      compressed->flags = (hive::chain::block_log::block_flags_t)hive::chain::block_log::block_flags::uncompressed;
+      compressed->attributes.flags = hive::chain::block_log::block_flags::uncompressed;
     }
 
     {
@@ -274,7 +291,7 @@ void drain_completed_queue(const fc::path& block_log)
     dlog("writer thread writing compressed block ${block_number} to the compressed block log", ("block_number", compressed->block_number));
 
     // write it out
-    log.append_raw(compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->flags);
+    log.append_raw(compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes);
 
     if (compressed->block_number % 100000 == 0)
     {
@@ -307,6 +324,7 @@ void fill_pending_queue(const fc::path& block_log)
       exit(1);
     }
     uint32_t head_block_num = log.head()->block_num();
+    idump((head_block_num));
     if (blocks_to_compress && *blocks_to_compress > head_block_num - 1)
     {
       elog("Error: input block log does not contain ${blocks_to_compress} blocks (it's head block number is ${head_block_num})", (blocks_to_compress)(head_block_num));
@@ -335,6 +353,18 @@ void fill_pending_queue(const fc::path& block_log)
 
       uncompressed_block->uncompressed_block_size = std::get<1>(raw_block_data);
       uncompressed_block->uncompressed_block_data = std::get<0>(std::move(raw_block_data));
+      idump((uncompressed_block->uncompressed_block_size));
+
+      if (raw_block_output_path)
+      {
+        std::string first_subdir_name = std::to_string(current_block_number / 1000000 * 1000000);
+        std::string second_subdir_name = std::to_string(current_block_number / 100000 * 100000);
+        fc::path raw_block_dir = *raw_block_output_path / first_subdir_name / second_subdir_name;
+        fc::create_directories(raw_block_dir);
+        fc::path raw_block_filename = raw_block_dir / (fc::to_string(current_block_number) + ".bin");
+        std::ofstream raw_block_stream(raw_block_filename.generic_string());
+        raw_block_stream.write(uncompressed_block->uncompressed_block_data.get(), uncompressed_block->uncompressed_block_size);
+      }
 
       // push it to the queue
       {
@@ -380,6 +410,7 @@ int main(int argc, char** argv)
     options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(1), "The number of threads to use for compression");
     options.add_options()("input-block-log,i", boost::program_options::value<std::string>()->required(), "The directory containing the input block log");
     options.add_options()("output-block-log,o", boost::program_options::value<std::string>()->required(), "The directory to contain the compressed block log");
+    options.add_options()("dump-raw-blocks", boost::program_options::value<std::string>(), "A directory in which to dump raw, uncompressed blocks (one block per file)");
     options.add_options()("starting-block-number,s", boost::program_options::value<uint32_t>()->default_value(1), "Start at the given block number (for benchmarking only, values > 1 will generate an unusable block log)");
     options.add_options()("block-count,n", boost::program_options::value<uint32_t>(), "Stop after this many blocks");
     options.add_options()("help,h", "Print usage instructions");
@@ -426,6 +457,8 @@ int main(int argc, char** argv)
     fc::path output_block_log_path;
     if (options_map.count("output-block-log"))
       output_block_log_path = options_map["output-block-log"].as<std::string>();
+    if (options_map.count("dump-raw-blocks"))
+      raw_block_output_path = options_map["dump-raw-blocks"].as<std::string>();
     std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
     std::shared_ptr<std::thread> drain_queue_thread = std::make_shared<std::thread>([&](){ drain_completed_queue(output_block_log_path / "block_log"); });
     std::vector<std::shared_ptr<std::thread>> compress_blocks_threads;
