@@ -125,7 +125,8 @@ namespace detail {
     : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
-
+    idump((use_now_time)(input_url)(output_urls));
+    
     static const auto check_url = []( const auto& url ) {
       FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
       FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
