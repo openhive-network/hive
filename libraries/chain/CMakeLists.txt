@@ -1,4 +1,5 @@
 file(GLOB HEADERS "include/hive/chain/*.hpp" "include/hive/chain/util/*.hpp" "include/hive/chain/smt_objects/*.hpp" "include/hive/chain/sps_objects/*.hpp")
+add_subdirectory(zstd_dictionaries)
 
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_chain
@@ -22,6 +23,7 @@ add_library( hive_chain
 
              shared_authority.cpp
              block_log.cpp
+             block_compression_dictionaries.cpp
 
              generic_custom_operation_interpreter.cpp
 
@@ -40,10 +42,10 @@ add_library( hive_chain
              ${HEADERS}
            )
 
-target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase hive_schema appbase
-                       ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${Zstd_LIBRARIES} ${ZLIB_LIBRARIES})
+target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase hive_schema appbase libzstd_static hive_chain_zstd_dictionaries
+                       ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${ZLIB_LIBRARIES})
 target_include_directories( hive_chain
-                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${BROTLI_INCLUDE_DIRS}" "${Zstd_INCLUDE_DIRS}" "${ZLIB_INCLUDE_DIRS}"
+                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${BROTLI_INCLUDE_DIRS}" "${ZLIB_INCLUDE_DIRS}"
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if( CLANG_TIDY_EXE )

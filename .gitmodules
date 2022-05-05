@@ -13,3 +13,6 @@
 [submodule "schemas"]
 	path = tests/schemas
 	url = ../schemas.git
+[submodule "libraries/vendor/zstd"]
+	path = libraries/vendor/zstd
+	url = https://github.com/facebook/zstd.git
