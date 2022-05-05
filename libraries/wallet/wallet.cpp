@@ -5,7 +5,9 @@
 #include <hive/utilities/words.hpp>
 
 #include <hive/protocol/base.hpp>
+#include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/version.hpp>
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
 #include <hive/wallet/reflect_util.hpp>
@@ -317,7 +319,19 @@ public:
     result["participation"]             = (100*dynamic_props.value.recent_slots_filled.popcount()) / 128.0;
     result["median_hbd_price"]          = serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
     result["account_creation_fee"]      = serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
-    result["post_reward_fund"]          = serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund(vector<variant>( {HIVE_POST_REWARD_FUND_NAME} ), LOCK ) };
+
+    using protocol::hardfork_version;
+    hardfork_version current_hardfork_version;
+    fc::from_variant(result["hardfork_version"], current_hardfork_version);
+    if (current_hardfork_version >= HIVE_HARDFORK_0_17_VERSION)
+    {
+      result["post_reward_fund"] = serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund(vector<variant>( {HIVE_POST_REWARD_FUND_NAME} ), LOCK ) };
+    }
+    else
+    {
+      result["post_reward_fund"] = fc::variant();
+    }
+
     return result;
   }
 
