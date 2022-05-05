@@ -767,12 +767,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least three arguments");
+  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least one arguments");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
 
   rc::list_rc_accounts_args api_lra_args;
-  api_lra_args.start = arguments.get_array()[0];
+  api_lra_args.start = arguments.get_array()[0].as<protocol::account_name_type>();
   api_lra_args.limit = arguments.get_array()[1].as<uint32_t>();
 
   return _rc_api->list_rc_accounts(api_lra_args).rc_accounts;
@@ -782,7 +782,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least three arguments");
+  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least one arguments");
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 2 );
 
