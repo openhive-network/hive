@@ -328,6 +328,11 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
+      //by default, use transaction's original expiration time
+      if (trx_now_time == auto_trx_time)
+        trx_time = transaction_itr->expiration + fc::seconds(1);
+      wlog("###### trx_time=${trx_time}",(trx_time));
+
       transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_now_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
