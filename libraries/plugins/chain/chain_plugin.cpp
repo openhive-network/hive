@@ -156,7 +156,7 @@ class chain_plugin_impl
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
-    std::atomic<uint32_t>               peer_count;
+    std::atomic<uint32_t>               peer_count = {0};
 
     fc::time_point cumulative_times_last_reported_time;
     fc::microseconds cumulative_time_waiting_for_locks;
