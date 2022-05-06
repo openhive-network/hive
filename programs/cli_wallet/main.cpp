@@ -104,6 +104,7 @@ int main( int argc, char** argv )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
       ("format-type", bpo::value< std::string >(), "Allows to change formatting for functions that require special formatting" )
+      ("legacy-format", bpo::value< bool >()->default_value( true ), "Allows to generate JSON using legacy/non legacy format. By default is true." )
       ;
     vector<string> allowed_ips;
 
@@ -229,10 +230,12 @@ int main( int argc, char** argv )
       }
     };
 
+    bool _legacy_format = options["legacy-format"].as<bool>();
+
     if( wdata.offline )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_format( options, format_type::textformat ) );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_format( options, format_type::textformat ), _legacy_format );
     }
     else
     {
@@ -263,7 +266,7 @@ int main( int argc, char** argv )
         format = get_format( options, format_type::noformat );
       else
         format = get_format( options, format_type::textformat );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), format );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), format, _legacy_format );
       closed_connection = con->closed.connect([=]{
         cerr << "Server has disconnected us.\n";
         wallet_cli->stop();
