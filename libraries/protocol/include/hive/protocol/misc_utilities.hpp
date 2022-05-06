@@ -18,6 +18,7 @@ enum curve_id
 
 struct dynamic_serializer
 {
+  static const bool default_legacy_value = false;
   /*
     This switch is used for switching of serialization.
   */
@@ -26,10 +27,13 @@ struct dynamic_serializer
 
 struct legacy_switcher
 {
-  const bool old_legacy_enabled = false;
+  const bool old_legacy_enabled = dynamic_serializer::default_legacy_value;
 
+  legacy_switcher();
   legacy_switcher( bool val );
   ~legacy_switcher();
+
+  static std::string info();
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );
@@ -62,7 +66,6 @@ namespace fc {
   {
     try
     {
-      legacy_switcher switcher( true );
       to_variant( a.value, var );
     } FC_CAPTURE_AND_RETHROW()
   }
