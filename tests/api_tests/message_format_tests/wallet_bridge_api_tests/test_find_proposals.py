@@ -8,10 +8,11 @@ from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_
 ACCOUNTS = [f'account-{i}' for i in range(5)]
 
 CORRECT_VALUES = [
-            [0],
-            [0, 1, 2, 3, 4],
-            [6],
-        ]
+    [0],
+    [0, 1, 2, 3, 4],
+    [6],
+]
+
 
 @pytest.mark.parametrize(
     'proposal_ids', [
