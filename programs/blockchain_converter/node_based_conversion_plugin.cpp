@@ -116,8 +116,6 @@ namespace detail {
     uint64_t             total_request_count = 0;
 
     bool use_now_time;
-
-    hp::legacy_switcher _use_legacy_serialization = false;
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
