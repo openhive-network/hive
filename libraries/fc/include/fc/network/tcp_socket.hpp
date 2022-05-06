@@ -74,6 +74,7 @@ namespace fc {
       void     close();
       void     accept( tcp_socket& s );
       void     set_reuse_address(bool enable = true); // set SO_REUSEADDR, call before listen
+      void     set_send_buffer_size(int new_send_buffer_size);
       void     listen( uint16_t port );
       void     listen( const fc::ip::endpoint& ep );
       fc::ip::endpoint get_local_endpoint() const;

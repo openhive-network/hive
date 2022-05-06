@@ -4778,6 +4778,7 @@ namespace graphene { namespace net {
       }
 
       _tcp_server.set_reuse_address();
+      _tcp_server.set_send_buffer_size(MAX_MESSAGE_SIZE);
       try
       {
         if( listen_endpoint.get_address() != fc::ip::address() )
@@ -4839,6 +4840,7 @@ namespace graphene { namespace net {
     {
       new_peer->get_socket().open();
       new_peer->get_socket().set_reuse_address();
+      new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
       new_peer->connection_initiation_time = fc::time_point::now();
       _handshaking_connections.insert(new_peer);
       _rate_limiter.add_tcp_socket(&new_peer->get_socket());
