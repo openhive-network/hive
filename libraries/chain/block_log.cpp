@@ -370,7 +370,6 @@ namespace hive { namespace chain {
     uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
     auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets_with_flags, sizeof(offsets_with_flags),  offset_in_index);
     FC_ASSERT(bytes_read == sizeof(offsets_with_flags));
-    idump((offsets_with_flags[0])(offsets_with_flags[1]));
 
     uint64_t this_block_start_pos;
     block_attributes_t this_block_attributes;
@@ -380,7 +379,6 @@ namespace hive { namespace chain {
     std::tie(next_block_start_pos, next_block_attributes) = split_block_start_pos_with_flags(offsets_with_flags[1]);
 
     uint64_t serialized_data_size = next_block_start_pos - this_block_start_pos - sizeof(uint64_t);
-    idump((this_block_start_pos)(next_block_start_pos)(serialized_data_size));
 
     std::unique_ptr<char[]> serialized_data(new char[serialized_data_size]);
     auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), serialized_data_size, this_block_start_pos);
@@ -617,12 +615,10 @@ namespace hive { namespace chain {
       uint64_t head_block_offset_with_flags;
       detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), 
                                                block_log_size - sizeof(head_block_offset_with_flags));
-      idump((head_block_offset_with_flags));
       uint64_t head_block_offset;
 
       block_attributes_t attributes;
       std::tie(head_block_offset, attributes) = split_block_start_pos_with_flags(head_block_offset_with_flags);
-      idump((head_block_offset)(attributes));
       size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
 
       std::unique_ptr<char[]> raw_data(new char[raw_data_size]);
@@ -633,7 +629,6 @@ namespace hive { namespace chain {
 
       signed_block block;
       fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block);
-      idump((block));
       return block;
     }
     FC_LOG_AND_RETHROW()

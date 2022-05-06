@@ -5,8 +5,9 @@
 #include <hive/chain/block_compression_dictionaries.hpp>
 
 // we store our dictionaries in compressed form, this is the maximum size
-// one will be when decompressed
-#define MAX_DICTIONARY_LENGTH (4 << 20)
+// one will be when decompressed.  At the time of writing, we've decided
+// to use 220K dictionaries
+#define MAX_DICTIONARY_LENGTH (1 << 20)
 
 std::mutex dictionaries_mutex;
 struct raw_dictionary_info
