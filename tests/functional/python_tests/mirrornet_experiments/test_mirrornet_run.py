@@ -122,12 +122,6 @@ def test_network_setup(world):
     witness_node_0.config.private_key = [Account(witness).private_key for witness in witnesses_group_0]
     witness_node_0.config.plugin.remove('account_history_rocksdb')  # To speed up replay
     witness_node_0.config.plugin.remove('account_history_api')  # To speed up replay
-    logger.info('Replaying WitnessNode0...')
-    witness_node_0.run(
-        replay_from=BLOCK_LOG,
-        arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-        exit_before_synchronization=True,
-    )
 
     witnesses_group_1 = witnesses[10:]
     witness_node_1 = world.create_witness_node(witnesses=witnesses_group_1)
@@ -136,12 +130,21 @@ def test_network_setup(world):
     witness_node_1.config.private_key = [Account(witness).private_key for witness in witnesses_group_1]
     witness_node_1.config.plugin.remove('account_history_rocksdb')  # To speed up replay
     witness_node_1.config.plugin.remove('account_history_api')  # To speed up replay
-    logger.info('Replaying WitnessNode1...')
-    witness_node_1.run(
-        replay_from=BLOCK_LOG,
-        arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-        exit_before_synchronization=True,
-    )
+
+    executor = ThreadPoolExecutor(max_workers=2)
+    futures = []
+    for witness_node in [witness_node_0, witness_node_1]:
+        futures.append(
+            executor.submit(
+                witness_node.run,
+                replay_from=BLOCK_LOG,
+                arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
+                exit_before_synchronization=True,
+            )
+        )
+
+    for future in futures:
+        future.result()
 
     logger.info('================= After replays =================')
 
