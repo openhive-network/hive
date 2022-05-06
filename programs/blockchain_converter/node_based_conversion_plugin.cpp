@@ -115,7 +115,7 @@ namespace detail {
     uint64_t             error_response_count = 0;
     uint64_t             total_request_count = 0;
 
-    hp::legacy_switcher _use_legacy_serialization = false;
+    bool use_now_time;
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
