@@ -2,7 +2,12 @@
 
 namespace hive { namespace protocol {
 
-thread_local bool dynamic_serializer::legacy_enabled = false;
+thread_local bool dynamic_serializer::legacy_enabled = dynamic_serializer::default_legacy_value;
+
+legacy_switcher::legacy_switcher() : old_legacy_enabled( dynamic_serializer::legacy_enabled )
+{
+  dynamic_serializer::legacy_enabled = !dynamic_serializer::legacy_enabled;
+}
 
 legacy_switcher::legacy_switcher( bool val ) : old_legacy_enabled( dynamic_serializer::legacy_enabled )
 {
@@ -12,6 +17,11 @@ legacy_switcher::legacy_switcher( bool val ) : old_legacy_enabled( dynamic_seria
 legacy_switcher::~legacy_switcher()
 {
   dynamic_serializer::legacy_enabled = old_legacy_enabled;
+}
+
+std::string legacy_switcher::info()
+{
+  return dynamic_serializer::legacy_enabled ? "a legacy format" : "non legacy format";
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )
