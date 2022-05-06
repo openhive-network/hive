@@ -560,7 +560,7 @@ void p2p_plugin::plugin_shutdown()
 
 void p2p_plugin::broadcast_block( const hive::protocol::signed_block& block )
 {
-  ulog("Broadcasting block #${n}", ("n", block.block_num()));
+  ulog("Broadcasting block #${n} with ${t} transactions", ("n", block.block_num()) ("t", block.transactions.size()));
   my->node->broadcast( graphene::net::block_message( block ) );
 }
 
