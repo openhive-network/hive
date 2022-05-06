@@ -233,8 +233,8 @@ class wallet_api_impl
 
 public:
   wallet_api& self;
-  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api )
-    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api)
+  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, bool legacy_format )
+    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _legacy_format( legacy_format )
   {
     init_prototype_ops();
   }
@@ -939,6 +939,8 @@ public:
   authorities_type                        _authorities_to_use;
   bool                                    _use_automatic_authority = true;
 
+  bool                                    _legacy_format = dynamic_serializer::default_legacy_value;
+
 #ifdef __unix__
   mode_t                  _old_umask;
 #endif
@@ -972,10 +974,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 namespace hive { namespace wallet {
 
 wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id,
-    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, format_type _format, bool _legacy_format )
-  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api)), exit_promise(exit_promise), is_daemon(is_daemon), format(_format)
+    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, format_type _format, bool legacy_format )
+  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api, legacy_format)), exit_promise(exit_promise), is_daemon(is_daemon), format(_format)
 {
-  hive::protocol::dynamic_serializer::legacy_enabled = _legacy_format;
 }
 
 wallet_api::~wallet_api(){}

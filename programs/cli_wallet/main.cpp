@@ -104,7 +104,7 @@ int main( int argc, char** argv )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
       ("format-type", bpo::value< std::string >(), "Allows to change formatting for functions that require special formatting" )
-      ("legacy-format", bpo::value< bool >()->default_value( true ), "Allows to generate JSON using legacy/non legacy format. By default is true." )
+      ("legacy-format", bpo::value< bool >()->default_value( dynamic_serializer::legacy_enabled ), "Allows to generate JSON using legacy/non legacy format. By default is true." )
       ;
     vector<string> allowed_ips;
 

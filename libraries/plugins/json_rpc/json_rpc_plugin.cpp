@@ -356,8 +356,8 @@ namespace detail
                   {
                     if( method_name == "network_broadcast_api.broadcast_transaction" )
                     {
-                      legacy_switcher switcher( true );
-                      ilog("Change of serialization - a legacy is enabled now");
+                      legacy_switcher switcher;
+                      ilog("Change of serialization( `network_broadcast_api.broadcast_transaction' ) - ${format} is enabled now", ("format", legacy_switcher::info()) );
                       response.result = (*call)( func_args );
                     }
                     else
