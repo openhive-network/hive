@@ -164,7 +164,7 @@ def test_network_setup(world):
     for witness in witnesses:
         wallet.api.update_witness(
             witness, 'url', Account(witness).public_key,
-            {"account_creation_fee": Asset.Hive(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+            {'account_creation_fee': Asset.Hive(3), 'maximum_block_size': 65536, 'sbd_interest_rate': 0}
         )
 
     wallet.close()
