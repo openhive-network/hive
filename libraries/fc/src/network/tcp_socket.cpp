@@ -307,6 +307,15 @@ namespace fc {
     }
 #endif // __APPLE__
   }
+
+  void tcp_server::set_send_buffer_size(int new_send_buffer_size)
+  {
+    if( !my )
+      my = new impl;
+    boost::asio::socket_base::send_buffer_size option(new_send_buffer_size);
+    my->_accept.set_option(option);
+  }
+
   void tcp_server::listen( uint16_t port )
   {
     if( !my )
