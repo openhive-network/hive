@@ -236,6 +236,11 @@ namespace fc {
 #endif // __APPLE__
   }
 
+  void tcp_socket::set_send_buffer_size(int new_send_buffer_size)
+  {
+    boost::asio::socket_base::send_buffer_size option(new_send_buffer_size);
+    my->_sock.set_option(option);
+  }
 
   class tcp_server::impl {
     public:
