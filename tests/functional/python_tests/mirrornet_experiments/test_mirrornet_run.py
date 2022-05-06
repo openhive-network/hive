@@ -1,11 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor
-import datetime
 import os
 import time
 
 import pytest
 
-from test_tools import Account, Asset, BlockLog, logger, Wallet
+from test_tools import BlockLog, logger
+
+from .local_tools import Mirrornet
+
 
 BLOCK_LOG, BLOCK_LOG_LENGTH = {
     'long': [
@@ -76,7 +77,7 @@ def test_continuation_of_block_production_after_replay(world):
     witness_node.run(
         replay_from=BLOCK_LOG,
         arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-        time_offset="@2016-09-15 19:47:24",
+        time_offset='@2016-09-15 19:47:24',
     )
 
     while True:
@@ -94,83 +95,14 @@ def test_network_setup(world):
                  'abit', 'wackou', 'steemed', 'joseph', 'jesta', 'pharesim', 'datasecuritynode', 'boatymcboatface',
                  'steemychicken1', 'ihashfury', 'delegate.lafona', 'au1nethyb1', 'witness.svk', 'silversteem']
 
-    # Count time offset
-    t0 = datetime.datetime.strptime('@2016-09-15 19:47:21', '@%Y-%m-%d %H:%M:%S').replace(tzinfo=datetime.timezone.utc)
-    diff = datetime.datetime.now(datetime.timezone.utc) - t0
-    time_offset = f'-{int(diff.total_seconds())}'
+    mirrornet = Mirrornet(world, '/home/dev/blocks/5M/mirrornet/block_log', '@2016-09-15 19:47:24')
 
-    init_node = world.create_init_node()
-    init_node.config.witness = witnesses
-    init_node.config.shared_file_size = SHARED_FILE_SIZE
-    init_node.config.p2p_seed_node = '0.0.0.0:12345'  # Non-existing address works as no p2p seed nodes
-    init_node.config.private_key = SKELETON_KEY
-    init_node.config.plugin.remove('account_history_rocksdb')  # To speed up replay
-    init_node.config.plugin.remove('account_history_api')  # To speed up replay
-    logger.info('Running InitNode...')
-    init_node.run(
-        replay_from=BLOCK_LOG,
-        arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-        time_offset=time_offset,
-    )
+    init_node = mirrornet.create_and_run_init_node(witnesses=witnesses)
 
-    logger.info('InitNode is replayed and produce blocks')
+    witness_node_0 = mirrornet.create_witness_node(witnesses=witnesses[:10])
+    witness_node_1 = mirrornet.create_witness_node(witnesses=witnesses[10:])
 
-    witnesses_group_0 = witnesses[:10]
-    witness_node_0 = world.create_witness_node(witnesses=witnesses_group_0)
-    witness_node_0.config.shared_file_size = SHARED_FILE_SIZE
-    witness_node_0.config.p2p_seed_node = init_node.get_p2p_endpoint()
-    witness_node_0.config.private_key = [Account(witness).private_key for witness in witnesses_group_0]
-    witness_node_0.config.plugin.remove('account_history_rocksdb')  # To speed up replay
-    witness_node_0.config.plugin.remove('account_history_api')  # To speed up replay
-
-    witnesses_group_1 = witnesses[10:]
-    witness_node_1 = world.create_witness_node(witnesses=witnesses_group_1)
-    witness_node_1.config.shared_file_size = SHARED_FILE_SIZE
-    witness_node_1.config.p2p_seed_node = init_node.get_p2p_endpoint()
-    witness_node_1.config.private_key = [Account(witness).private_key for witness in witnesses_group_1]
-    witness_node_1.config.plugin.remove('account_history_rocksdb')  # To speed up replay
-    witness_node_1.config.plugin.remove('account_history_api')  # To speed up replay
-
-    executor = ThreadPoolExecutor(max_workers=2)
-    futures = []
-    for witness_node in [witness_node_0, witness_node_1]:
-        futures.append(
-            executor.submit(
-                witness_node.run,
-                replay_from=BLOCK_LOG,
-                arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-                exit_before_synchronization=True,
-            )
-        )
-
-    for future in futures:
-        future.result()
-
-    logger.info('================= After replays =================')
-
-    witness_node_0.run(
-        arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-        time_offset=time_offset,
-    )
-    logger.info('witness_node_0 is run!')
-    witness_node_1.config.p2p_seed_node = witness_node_0.get_p2p_endpoint()
-    witness_node_1.run(
-        arguments=[f'--chain-id={CHAIN_ID}', f'--skeleton-key={SKELETON_KEY}'],
-        time_offset=time_offset,
-    )
-    logger.info('witness_node_1 is run!')
-
-    logger.info('Deactivate witnesses on init node and activate them on witness nodes...')
-    wallet = Wallet(attach_to=witness_node_0, additional_arguments=[f'--chain-id={CHAIN_ID}'])
-    wallet.api.import_key(SKELETON_KEY)
-
-    for witness in witnesses:
-        wallet.api.update_witness(
-            witness, 'url', Account(witness).public_key,
-            {'account_creation_fee': Asset.Hive(3), 'maximum_block_size': 65536, 'sbd_interest_rate': 0}
-        )
-
-    wallet.close()
+    mirrornet.run_witness_nodes(witness_node_0, witness_node_1)
 
     logger.info('Closing InitNode, because all network is set up and is no longer needed.')
     init_node.close()
