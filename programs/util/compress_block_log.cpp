@@ -353,7 +353,6 @@ void fill_pending_queue(const fc::path& block_log)
 
       uncompressed_block->uncompressed_block_size = std::get<1>(raw_block_data);
       uncompressed_block->uncompressed_block_data = std::get<0>(std::move(raw_block_data));
-      idump((uncompressed_block->uncompressed_block_size));
 
       if (raw_block_output_path)
       {
