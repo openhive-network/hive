@@ -972,9 +972,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 namespace hive { namespace wallet {
 
 wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id,
-    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, format_type _format )
+    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, format_type _format, bool _legacy_format )
   : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api)), exit_promise(exit_promise), is_daemon(is_daemon), format(_format)
-{}
+{
+  hive::protocol::dynamic_serializer::legacy_enabled = _legacy_format;
+}
 
 wallet_api::~wallet_api(){}
 
