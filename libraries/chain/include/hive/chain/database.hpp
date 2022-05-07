@@ -90,6 +90,7 @@ namespace chain {
     bool replay_in_memory = false;
     std::vector< std::string > replay_memory_indices{};
     bool enable_block_log_compression = false;
+    int block_log_compression_level = 15;
 
     // The following fields are only used on reindexing
     uint32_t stop_replay_at = 0;

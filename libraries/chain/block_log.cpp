@@ -70,6 +70,11 @@ namespace hive { namespace chain {
 
         bool compression_enabled = true;
 
+        // during testing (around block 63M) we found level 15 to be a good balance between ratio 
+        // and compression/decompression times of ~3.5ms & 65μs, so we're making level 15 the default, and the 
+        // dictionaries are optimized for level 15
+        int zstd_level = 15; 
+
         signed_block read_block_from_offset_and_size(uint64_t offset, uint64_t size);
         signed_block_header read_block_header_from_offset_and_size(uint64_t offset, uint64_t size);
     };
@@ -402,19 +407,20 @@ namespace hive { namespace chain {
 
       if (my->compression_enabled)
       {
-        // here, we'll just use the first available method, assuming brotli > zstd > zlib.
+        // here, we'll just use the first available method, assuming zstd > brotli > zlib.
         // in the compress_block_log helper app, we try all three and use the best
         try
         {
-          std::tuple<std::unique_ptr<char[]>, size_t> brotli_compressed_block = compress_block_brotli(serialized_block.data(), serialized_block.size());
-          block_start_pos = append_raw(std::get<0>(brotli_compressed_block).get(), std::get<1>(brotli_compressed_block), {block_flags::brotli});
+          fc::optional<uint8_t> dictionary_number_to_use = get_best_available_zstd_compression_dictionary_number_for_block(b.block_num());
+          std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size(), dictionary_number_to_use, my->zstd_level);
+          block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), {block_flags::zstd});
         }
         catch (const fc::exception&)
         {
           try
           {
-            std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size(), b.block_num());
-            block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), {block_flags::zstd});
+            std::tuple<std::unique_ptr<char[]>, size_t> brotli_compressed_block = compress_block_brotli(serialized_block.data(), serialized_block.size());
+            block_start_pos = append_raw(std::get<0>(brotli_compressed_block).get(), std::get<1>(brotli_compressed_block), {block_flags::brotli});
           }
           catch (const fc::exception&)
           {
@@ -798,6 +804,11 @@ namespace hive { namespace chain {
   void block_log::set_compression(bool enabled)
   {
     my->compression_enabled = enabled;
+  }
+
+  void block_log::set_compression_level(int level)
+  {
+    my->zstd_level = level;
   }
 
   std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd_helper(const char* uncompressed_block_data, 

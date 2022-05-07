@@ -2,6 +2,7 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/block_compression_dictionaries.hpp>
 
 #include <boost/thread/future.hpp>
 #include <boost/program_options.hpp>
@@ -10,6 +11,7 @@
 #include <chrono>
 #include <memory>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <mutex>
 #include <condition_variable>
@@ -49,6 +51,7 @@ fc::optional<int> deflate_level;
 uint32_t starting_block_number = 1;
 fc::optional<uint32_t> blocks_to_compress;
 fc::optional<fc::path> raw_block_output_path;
+bool benchmark_decompression = false;
 
 std::mutex queue_mutex;
 std::condition_variable queue_condition_variable;
@@ -90,7 +93,7 @@ void compress_blocks()
         queue_condition_variable.wait(lock);
       if (pending_queue.empty() && all_blocks_enqueued)
       {
-        ilog("No more blocks to compress, exiting worker thread");
+        dlog("No more blocks to compress, exiting worker thread");
         return;
       }
 
@@ -116,7 +119,7 @@ void compress_blocks()
     };
     std::vector<compressed_data> compressed_versions;
 
-    fc::optional<uint8_t> dictionary_number_to_use = std::min<uint8_t>(uncompressed->block_number / 1000000, 62);
+    fc::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(uncompressed->block_number);
 
     // zstd
     if (enable_zstd)
@@ -130,7 +133,8 @@ void compress_blocks()
         //idump((zstd_compressed_data.size));
 
         fc::time_point after_compress = fc::time_point::now();
-        hive::chain::block_log::decompress_block_zstd(zstd_compressed_data.data.get(), zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
+        if (benchmark_decompression)
+          hive::chain::block_log::decompress_block_zstd(zstd_compressed_data.data.get(), zstd_compressed_data.size, dictionary_number_to_use, zstd_decompression_context);
         fc::time_point after_decompress = fc::time_point::now();
         zstd_compressed_data.method = hive::chain::block_log::block_flags::zstd;
         zstd_compressed_data.dictionary_number = dictionary_number_to_use;
@@ -156,7 +160,8 @@ void compress_blocks()
         fc::time_point before = fc::time_point::now();
         std::tie(brotli_compressed_data.data, brotli_compressed_data.size) = hive::chain::block_log::compress_block_brotli(uncompressed->uncompressed_block_data.get(), uncompressed->uncompressed_block_size, brotli_quality);
         fc::time_point after_compress = fc::time_point::now();
-        hive::chain::block_log::decompress_block_brotli(brotli_compressed_data.data.get(), brotli_compressed_data.size);
+        if (benchmark_decompression)
+          hive::chain::block_log::decompress_block_brotli(brotli_compressed_data.data.get(), brotli_compressed_data.size);
         fc::time_point after_decompress = fc::time_point::now();
         brotli_compressed_data.method = hive::chain::block_log::block_flags::brotli;
 
@@ -181,7 +186,8 @@ void compress_blocks()
         fc::time_point before = fc::time_point::now();
         std::tie(deflate_compressed_data.data, deflate_compressed_data.size) = hive::chain::block_log::compress_block_deflate(uncompressed->uncompressed_block_data.get(), uncompressed->uncompressed_block_size, deflate_level);
         fc::time_point after_compress = fc::time_point::now();
-        hive::chain::block_log::decompress_block_deflate(deflate_compressed_data.data.get(), deflate_compressed_data.size);
+        if (benchmark_decompression)
+          hive::chain::block_log::decompress_block_deflate(deflate_compressed_data.data.get(), deflate_compressed_data.size);
         fc::time_point after_decompress = fc::time_point::now();
         deflate_compressed_data.method = hive::chain::block_log::block_flags::deflate;
 
@@ -295,9 +301,14 @@ void drain_completed_queue(const fc::path& block_log)
 
     if (compressed->block_number % 100000 == 0)
     {
-      ilog("at block ${block_number}: total uncompressed ${input_size} compressed to ${output_size}", 
+      float total_compression_ratio = 100.f * (1.f - (float)(total_compressed_size + size_of_start_positions) / (float)(total_uncompressed_size + size_of_start_positions));
+      std::ostringstream total_compression_ratio_string;
+      total_compression_ratio_string << std::fixed << std::setprecision(2) << total_compression_ratio;
+
+      ilog("at block ${block_number}: total uncompressed ${input_size} compressed to ${output_size} (${total_compression_ratio}%)", 
            ("block_number", compressed->block_number)("input_size", total_uncompressed_size + size_of_start_positions)
-           ("output_size", total_compressed_size + size_of_start_positions));
+           ("output_size", total_compressed_size + size_of_start_positions)
+           ("total_compression_ratio", total_compression_ratio_string.str()));
     }
 
 
@@ -375,7 +386,7 @@ void fill_pending_queue(const fc::path& block_log)
 
       ++current_block_number;
     }
-    ilog("All uncompressed blocks enqueued, exiting the fill_ending_queue() thread");
+    dlog("All uncompressed blocks enqueued, exiting the fill_ending_queue() thread");
 
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
@@ -401,11 +412,12 @@ int main(int argc, char** argv)
 
     boost::program_options::options_description options("Allowed options");
     options.add_options()("enable-zstd", boost::program_options::value<std::string>()->default_value("yes"), "Whether to use zstd compression");
-    options.add_options()("enable-brotli", boost::program_options::value<std::string>()->default_value("yes"), "Whether to use brotli compression");
-    options.add_options()("enable-deflate", boost::program_options::value<std::string>()->default_value("yes"), "Whether to use deflate compression");
-    options.add_options()("zstd-level", boost::program_options::value<int>(), zstd_levels_description.c_str());
+    options.add_options()("enable-brotli", boost::program_options::value<std::string>()->default_value("no"), "Whether to use brotli compression");
+    options.add_options()("enable-deflate", boost::program_options::value<std::string>()->default_value("no"), "Whether to use deflate compression");
+    options.add_options()("zstd-level", boost::program_options::value<int>()->default_value(15), zstd_levels_description.c_str());
     options.add_options()("brotli-quality", boost::program_options::value<int>(), "The brotli compression quality to use (0 - 11)");
     options.add_options()("deflate-level", boost::program_options::value<int>(), "The zlib deflate compression level to use (0 - 9)");
+    options.add_options()("benchmark-decompression", "decompress each block and report the decompression times at the end");
     options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(1), "The number of threads to use for compression");
     options.add_options()("input-block-log,i", boost::program_options::value<std::string>()->required(), "The directory containing the input block log");
     options.add_options()("output-block-log,o", boost::program_options::value<std::string>()->required(), "The directory to contain the compressed block log");
@@ -425,12 +437,15 @@ int main(int argc, char** argv)
     enable_brotli = options_map["enable-brotli"].as<std::string>() == "yes";
     enable_deflate = options_map["enable-deflate"].as<std::string>() == "yes";
 
-    if (options_map.count("zstd-level"))
-      zstd_level = options_map["zstd-level"].as<int>();
+    zstd_level = options_map["zstd-level"].as<int>();
+    ilog("Compressing using zstd level ${zstd_level}", (zstd_level));
+
     if (options_map.count("brotli-quality"))
       brotli_quality = options_map["brotli-quality"].as<int>();
     if (options_map.count("deflate-level"))
       deflate_level = options_map["deflate-level"].as<int>();
+
+    benchmark_decompression = options_map.count("benchmark-decompression") > 0;
 
     unsigned jobs = options_map["jobs"].as<int>();
 
@@ -481,10 +496,11 @@ int main(int argc, char** argv)
            ("total_zstd_size", total_zstd_size + size_of_start_positions)
            (total_zstd_compression_time)
            ("average_zstd_time", total_zstd_compression_time.count() / total_blocks_processed));
-      ilog("          decompression total time: ${total_zstd_decompression_time}μs, average time per block: ${average_zstd_decompression_time}μs", 
-           ("total_zstd_size", total_zstd_size + size_of_start_positions)
-           (total_zstd_decompression_time)
-           ("average_zstd_decompression_time", total_zstd_decompression_time.count() / total_blocks_processed));
+      if (benchmark_decompression)
+        ilog("          decompression total time: ${total_zstd_decompression_time}μs, average time per block: ${average_zstd_decompression_time}μs", 
+             ("total_zstd_size", total_zstd_size + size_of_start_positions)
+             (total_zstd_decompression_time)
+             ("average_zstd_decompression_time", total_zstd_decompression_time.count() / total_blocks_processed));
     }
     if (enable_brotli)
     {
@@ -492,10 +508,11 @@ int main(int argc, char** argv)
            ("total_brotli_size", total_brotli_size + size_of_start_positions)
            (total_brotli_compression_time)
            ("average_brotli_time", total_brotli_compression_time.count() / total_blocks_processed));
-      ilog("          decompression total time: ${total_brotli_decompression_time}μs, average time per block: ${average_brotli_decompression_time}μs", 
-           ("total_brotli_size", total_brotli_size + size_of_start_positions)
-           (total_brotli_decompression_time)
-           ("average_brotli_decompression_time", total_brotli_decompression_time.count() / total_blocks_processed));
+      if (benchmark_decompression)
+        ilog("          decompression total time: ${total_brotli_decompression_time}μs, average time per block: ${average_brotli_decompression_time}μs", 
+             ("total_brotli_size", total_brotli_size + size_of_start_positions)
+             (total_brotli_decompression_time)
+             ("average_brotli_decompression_time", total_brotli_decompression_time.count() / total_blocks_processed));
     }
     if (enable_deflate)
     {
@@ -503,10 +520,11 @@ int main(int argc, char** argv)
            ("total_deflate_size", total_deflate_size + size_of_start_positions)
            (total_deflate_compression_time)
            ("average_deflate_time", total_deflate_compression_time.count() / total_blocks_processed));
-      ilog("          decompression total time: ${total_deflate_decompression_time}μs, average time per block: ${average_deflate_decompression_time}μs", 
-           ("total_deflate_size", total_deflate_size + size_of_start_positions)
-           (total_deflate_decompression_time)
-           ("average_deflate_decompression_time", total_deflate_decompression_time.count() / total_blocks_processed));
+      if (benchmark_decompression)
+        ilog("          decompression total time: ${total_deflate_decompression_time}μs, average time per block: ${average_deflate_decompression_time}μs", 
+             ("total_deflate_size", total_deflate_size + size_of_start_positions)
+             (total_deflate_decompression_time)
+             ("average_deflate_decompression_time", total_deflate_decompression_time.count() / total_blocks_processed));
     }
   }
   catch ( const std::exception& e )

@@ -127,6 +127,7 @@ class chain_plugin_impl
     bool                             replay_in_memory = false;
     std::vector< std::string >       replay_memory_indices{};
     bool                             enable_block_log_compression = false;
+    int                              block_log_compression_level = 15;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
 
     uint32_t allow_future_time = 5;
@@ -584,6 +585,7 @@ void chain_plugin_impl::initial_settings()
   db_open_args.replay_in_memory = replay_in_memory;
   db_open_args.replay_memory_indices = replay_memory_indices;
   db_open_args.enable_block_log_compression = enable_block_log_compression;
+  db_open_args.block_log_compression_level = block_log_compression_level;
 }
 
 bool chain_plugin_impl::check_data_consistency()
@@ -769,6 +771,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
       ("enable-block-log-compression", bpo::bool_switch()->default_value(false), "Compress blocks as they're added to the block log" )
+      ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -812,6 +815,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   my->validate_invariants = options.at( "validate-database-invariants" ).as<bool>();
   my->dump_memory_details = options.at( "dump-memory-details" ).as<bool>();
   my->enable_block_log_compression = options.at( "enable-block-log-compression" ).as<bool>();
+  my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
   if( options.count( "flush-state-interval" ) )
     my->flush_interval = options.at( "flush-state-interval" ).as<uint32_t>();
   else
