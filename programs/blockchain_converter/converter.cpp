@@ -1,5 +1,6 @@
 #include "converter.hpp"
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <thread>
@@ -29,8 +30,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& trx_now_time )
-    : converter( converter ), trx_now_time( trx_now_time ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset )
+    : converter( converter ), block_offset( block_offset ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -99,11 +100,8 @@ namespace hive { namespace converter {
 
   const hp::escrow_transfer_operation& convert_operations_visitor::operator()( hp::escrow_transfer_operation& op )const
   {
-    if( trx_now_time != blockchain_converter::auto_trx_time )
-    { // For the live conversion
-      op.escrow_expiration = trx_now_time + (op.escrow_expiration-converter.get_current_block().timestamp);
-      op.ratification_deadline = trx_now_time + (op.ratification_deadline-converter.get_current_block().timestamp);
-    }
+    op.escrow_expiration += block_offset;
+    op.ratification_deadline += block_offset;
 
     return op;
   }
@@ -114,10 +112,8 @@ namespace hive { namespace converter {
     {
       uint32_t rand_offset = converter.get_mainnet_head_block_id()._hash[ 4 ] % 86400;
       op.expiration = std::min( op.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION + rand_offset ) );
-    }
-    else if( trx_now_time != blockchain_converter::auto_trx_time )
-    { // For the live conversion
-      op.expiration = trx_now_time + (op.expiration-converter.get_current_block().timestamp);
+    } else {
+      op.expiration += block_offset;
     }
 
     return op;
@@ -125,10 +121,7 @@ namespace hive { namespace converter {
 
   const hp::limit_order_create2_operation& convert_operations_visitor::operator()( hp::limit_order_create2_operation& op )const
   {
-    if( trx_now_time != blockchain_converter::auto_trx_time )
-    { // For the live conversion
-      op.expiration = trx_now_time + (op.expiration-converter.get_current_block().timestamp);
-    }
+    op.expiration += block_offset;
 
     return op;
   }
@@ -266,8 +259,6 @@ namespace hive { namespace converter {
     }
   }
 
-  const fc::time_point_sec blockchain_converter::auto_trx_time = fc::time_point::min();
-
 // When we have definition like `HIVE_HARDFORK_1_24_BLOCK`, `1` would stand for the **major** version and `24` for the **minor** version
 //
 // Number of the existing blockchain forks (major versions)
@@ -308,7 +299,7 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -317,29 +308,29 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    auto trx_time = trx_now_time;
+    auto trx_time_offset = _signed_block.timestamp - now_time;
 
-    if( trx_now_time == auto_trx_time )
-      trx_time = _signed_block.timestamp; // Deduce time from the signed block
-    else
-      trx_time += HIVE_BLOCK_INTERVAL; // Apply min expiration time and then increase this value to avoid trx id duplication
+    const auto apply_trx_expiration_offset = [&](hp::transaction& trx) {
+      // Add transactoin time offset to avoid txids duplication
+      trx_time_offset += 1;
+
+      // Apply either deduced transaction expiration value or the maximum one
+      trx.expiration = std::min(
+        // Apply either minimum transaction expiration value or the desired one
+        std::max(_signed_block.timestamp + trx_time_offset - HIVE_BLOCK_INTERVAL, trx.expiration + trx_time_offset),
+        _signed_block.timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL
+      );
+    };
 
     std::set<size_t> already_signed_transaction_pos;
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      //by default, use transaction's original expiration time
-      if (trx_now_time == auto_trx_time)
-        trx_time = transaction_itr->expiration + fc::seconds(1);
-      wlog("###### trx_time=${trx_time}",(trx_time));
-
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_now_time ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, now_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
-      trx_time += 1;
-
-      transaction_itr->expiration = trx_time;
+      apply_trx_expiration_offset(*transaction_itr);
 
       hive::protocol::signed_transaction helper_tx;
       helper_tx.set_reference_block(previous_block_id);
@@ -348,8 +339,8 @@ namespace hive { namespace converter {
 
       if(helper_tx.operations.empty() == false)
       {
-        trx_time += 1;
-        helper_tx.expiration = trx_time;
+        apply_trx_expiration_offset(helper_tx);
+
         sign_transaction(helper_tx, true);
 
         auto insert_pos = transaction_itr;
