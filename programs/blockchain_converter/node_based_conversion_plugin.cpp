@@ -261,6 +261,8 @@ namespace detail {
       }
     };
 
+    uint32_t gpo_interval = 0;
+
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
       block = receive( start_block_num );
@@ -288,7 +290,9 @@ namespace detail {
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      converter.convert_signed_block( *block, lib_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
+      converter.convert_signed_block( *block, lib_id,
+        gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * (gpo_interval+1)) /* Deduce the now time */
+      );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", *block));
@@ -299,7 +303,9 @@ namespace detail {
         else
           transmit( block->transactions.at(i), output_urls.at( i % output_urls.size() ) );
 
-      if( start_block_num % 10 == 0 )
+      gpo_interval = start_block_num % 10;
+
+      if( gpo_interval == 0 )
         update_lib_id();
     }
 
