@@ -2,10 +2,13 @@
 #include <fc/filesystem.hpp>
 #include <hive/protocol/block.hpp>
 
-struct ZSTD_CCtx_s;
-typedef struct ZSTD_CCtx_s ZSTD_CCtx;
-struct ZSTD_DCtx_s;
-typedef struct ZSTD_DCtx_s ZSTD_DCtx;
+extern "C"
+{
+  struct ZSTD_CCtx_s;
+  typedef struct ZSTD_CCtx_s ZSTD_CCtx;
+  struct ZSTD_DCtx_s;
+  typedef struct ZSTD_DCtx_s ZSTD_DCtx;
+}
 
 namespace hive { namespace chain {
 
@@ -83,6 +86,7 @@ namespace hive { namespace chain {
       signed_block read_head()const;
       const boost::shared_ptr<signed_block> head() const;
       void set_compression(bool enabled);
+      void set_compression_level(int level);
 
       static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<uint8_t> dictionary_number, 
                                                                              fc::optional<int> compression_level = fc::optional<int>(), 
