@@ -150,7 +150,7 @@ namespace detail {
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id );
+      last_block_id = converter.convert_signed_block( *block, last_block_id, block->timestamp );
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",

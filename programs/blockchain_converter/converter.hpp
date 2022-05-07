@@ -62,15 +62,12 @@ namespace hive { namespace converter {
     static const std::array< uint32_t, HIVE_NUM_HARDFORKS + 1 > hardfork_blocks;
 
   public:
-    /// Used in convert_signed_block to specify that expiration time of the transaction should not be altered (automatically deduct expiration time of the transaction using timestamp of the signed block)
-    static const fc::time_point_sec auto_trx_time;
-
     /// All converted blocks will be signed using given private key
     blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1, bool increase_block_size = true );
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
-    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time = auto_trx_time );
+    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time );
 
     const hp::block_id_type& get_mainnet_head_block_id()const;
 
@@ -119,12 +116,12 @@ namespace hive { namespace converter {
   {
   private:
     blockchain_converter& converter;
-    const fc::time_point_sec& trx_now_time;
+    fc::time_point_sec block_offset;
 
   public:
     typedef hp::operation result_type;
 
-    convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& trx_now_time = blockchain_converter::auto_trx_time );
+    convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset );
 
     const hp::account_create_operation& operator()( hp::account_create_operation& op )const;
 
