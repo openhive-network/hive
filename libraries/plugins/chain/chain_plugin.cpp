@@ -755,7 +755,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("checkpoint,c", bpo::value<vector<string>>()->composing(), "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
       ("flush-state-interval", bpo::value<uint32_t>(),
         "flush shared memory changes to disk every N blocks")
-      ("enable-block-log-compression", bpo::bool_switch()->default_value(false), "Compress blocks using zstd as they're added to the block log" )
+      ("enable-block-log-compression", boost::program_options::value<bool>()->default_value(false), "Compress blocks using zstd as they're added to the block log" )
       ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
       ;
   cli.add_options()

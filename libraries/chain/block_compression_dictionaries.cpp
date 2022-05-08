@@ -55,8 +55,8 @@ const decompressed_raw_dictionary_info& get_decompressed_raw_dictionary(uint8_t 
     if (ZSTD_isError(uncompressed_dictionary_size))
       FC_THROW("Error decompressing dictionary ${dictionary_number} with zstd", (dictionary_number));
 
-    ilog("Decompressing dictionary number ${dictionary_number}, expanded ${compressed_size} to ${uncompressed_dictionary_size}", 
-         (dictionary_number)("compressed_size", raw_iter->second.size)(uncompressed_dictionary_size));
+    // ilog("Decompressing dictionary number ${dictionary_number}, expanded ${compressed_size} to ${uncompressed_dictionary_size}", 
+    //      (dictionary_number)("compressed_size", raw_iter->second.size)(uncompressed_dictionary_size));
 
     // copy into a memory buffer of exactly the right size
     std::unique_ptr<char[]> resized_buffer(new char[uncompressed_dictionary_size]);

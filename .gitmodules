@@ -16,3 +16,6 @@
 [submodule "libraries/vendor/zstd"]
 	path = libraries/vendor/zstd
 	url = https://github.com/facebook/zstd.git
+[submodule "libraries/chain/compression_dictionaries"]
+	path = libraries/chain/compression_dictionaries
+	url = ../compression_dictionaries.git
