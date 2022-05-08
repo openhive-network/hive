@@ -15,21 +15,10 @@
 #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
-#ifdef HAVE_ZSTD
-# ifndef ZSTD_STATIC_LINKING_ONLY
-#  define ZSTD_STATIC_LINKING_ONLY
-# endif
-# include <zstd.h>
+#ifndef ZSTD_STATIC_LINKING_ONLY
+# define ZSTD_STATIC_LINKING_ONLY
 #endif
-
-#ifdef HAVE_BROTLI
-# include <brotli/encode.h>
-# include <brotli/decode.h>
-#endif
-
-#ifdef HAVE_ZLIB
-# include <zlib.h>
-#endif
+#include <zstd.h>
 
 #define MMAP_BLOCK_IO
 
@@ -407,8 +396,6 @@ namespace hive { namespace chain {
 
       if (my->compression_enabled)
       {
-        // here, we'll just use the first available method, assuming zstd > brotli > zlib.
-        // in the compress_block_log helper app, we try all three and use the best
         try
         {
           fc::optional<uint8_t> dictionary_number_to_use = get_best_available_zstd_compression_dictionary_number_for_block(b.block_num());
@@ -417,24 +404,8 @@ namespace hive { namespace chain {
         }
         catch (const fc::exception&)
         {
-          try
-          {
-            std::tuple<std::unique_ptr<char[]>, size_t> brotli_compressed_block = compress_block_brotli(serialized_block.data(), serialized_block.size());
-            block_start_pos = append_raw(std::get<0>(brotli_compressed_block).get(), std::get<1>(brotli_compressed_block), {block_flags::brotli});
-          }
-          catch (const fc::exception&)
-          {
-            try
-            {
-              std::tuple<std::unique_ptr<char[]>, size_t> deflate_compressed_block = compress_block_deflate(serialized_block.data(), serialized_block.size());
-              block_start_pos = append_raw(std::get<0>(deflate_compressed_block).get(), std::get<1>(deflate_compressed_block), {block_flags::deflate});
-            }
-            catch (const fc::exception&)
-            {
-              // all compression methods failed, store the block uncompressed
-              block_start_pos = append_raw(serialized_block.data(), serialized_block.size(), {block_flags::uncompressed});
-            }
-          }
+          // compression failed for some unknown reason, store the block uncompressed
+          block_start_pos = append_raw(serialized_block.data(), serialized_block.size(), {block_flags::uncompressed});
         }
       }
       else // compression not enabled
@@ -464,10 +435,6 @@ namespace hive { namespace chain {
       {
       case block_log::block_flags::zstd:
         return block_log::decompress_block_zstd(raw_block_data, raw_block_size, attributes.dictionary_number);
-      case block_log::block_flags::brotli:
-        return block_log::decompress_block_brotli(raw_block_data, raw_block_size);
-      case block_log::block_flags::deflate:
-        return block_log::decompress_block_deflate(raw_block_data, raw_block_size);
       case block_log::block_flags::uncompressed:
         {
           std::unique_ptr<char[]> block_data_copy(new char[raw_block_size]);
@@ -817,7 +784,6 @@ namespace hive { namespace chain {
                                                                          ZSTD_CCtx* compression_context,
                                                                          fc::optional<int> compression_level)
   {
-#ifdef HAVE_ZSTD
     if (dictionary_number)
     {
       ZSTD_CDict* compression_dictionary = get_zstd_compression_dictionary(*dictionary_number, compression_level.value_or(ZSTD_CLEVEL_DEFAULT));
@@ -845,23 +811,15 @@ namespace hive { namespace chain {
     size_t zstd_max_size = ZSTD_compressBound(uncompressed_block_size);
     std::unique_ptr<char[]> zstd_compressed_data(new char[zstd_max_size]);
 
-#if 1
     size_t zstd_compressed_size = ZSTD_compress2(compression_context, 
                                                  zstd_compressed_data.get(), zstd_max_size,
                                                  uncompressed_block_data, uncompressed_block_size);
-#else
-    size_t zstd_compressed_size = ZSTD_compress_usingCDict(compression_context,
-                                                           zstd_compressed_data.get(), zstd_max_size,
-                                                           uncompressed_block_data, uncompressed_block_size,
-                                                           get_zstd_compression_dictionary(*dictionary_number, compression_level.value_or(ZSTD_CLEVEL_DEFAULT)));
-#endif
 
     if (ZSTD_isError(zstd_compressed_size))
       FC_THROW("Error compressing block with zstd");
 
 
     return std::make_tuple(std::move(zstd_compressed_data), zstd_compressed_size);
-#endif
   }
 
   /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_zstd(const char* uncompressed_block_data, 
@@ -870,7 +828,6 @@ namespace hive { namespace chain {
                                                                                           fc::optional<int> compression_level,
                                                                                           fc::optional<ZSTD_CCtx*> compression_context_for_reuse)
   {
-#ifdef HAVE_ZSTD
     if (compression_context_for_reuse)
     {
       ZSTD_CCtx_reset(*compression_context_for_reuse, ZSTD_reset_session_and_parameters);
@@ -891,55 +848,6 @@ namespace hive { namespace chain {
                                       dictionary_number,
                                       compression_context,
                                       compression_level);
-#else
-    FC_THROW("hived was not configured with zstd support");
-#endif
-  }
-
-  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_brotli(const char* uncompressed_block_data, 
-                                                                                            size_t uncompressed_block_size,
-                                                                                            fc::optional<int> compression_quality)
-  {
-#ifdef HAVE_BROTLI
-    size_t brotli_compressed_size = BrotliEncoderMaxCompressedSize(uncompressed_block_size);
-    std::unique_ptr<char[]> brotli_compressed_data(new char[brotli_compressed_size]);
-    if (!BrotliEncoderCompress(compression_quality.value_or(BROTLI_DEFAULT_QUALITY), BROTLI_DEFAULT_WINDOW, BROTLI_DEFAULT_MODE,
-                               uncompressed_block_size, (const uint8_t*)uncompressed_block_data, 
-                               &brotli_compressed_size, (uint8_t*)brotli_compressed_data.get()))
-      FC_THROW("Error compressing block with brotli");
-    return std::make_tuple(std::move(brotli_compressed_data), brotli_compressed_size);
-#else
-    FC_THROW("hived was not configured with brotli support");
-#endif
-  }
-
-  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_deflate(const char* uncompressed_block_data, 
-                                                                                             size_t uncompressed_block_size,
-                                                                                             fc::optional<int> compression_level)
-  {
-#ifdef HAVE_ZLIB
-    z_stream deflate_stream;
-    memset(&deflate_stream, 0, sizeof(deflate_stream));
-    if (deflateInit(&deflate_stream, compression_level.value_or(Z_DEFAULT_COMPRESSION)) == Z_OK)
-    {
-      size_t zlib_max_size = deflateBound(&deflate_stream, uncompressed_block_size);
-      std::unique_ptr<char[]> zlib_compressed_data(new char[zlib_max_size]);
-      deflate_stream.total_in = deflate_stream.avail_in = uncompressed_block_size;
-      deflate_stream.avail_out = zlib_max_size;
-      deflate_stream.next_in = (Bytef*)uncompressed_block_data;
-      deflate_stream.next_out = (Bytef*)zlib_compressed_data.get();
-      if (deflate(&deflate_stream, Z_FINISH) == Z_STREAM_END)
-      {
-        size_t zlib_compressed_size = deflate_stream.total_out;
-        deflateEnd(&deflate_stream);
-        return std::make_tuple(std::move(zlib_compressed_data), zlib_compressed_size);
-      }
-      deflateEnd(&deflate_stream);
-    }
-    FC_THROW("Error compressing block with zlib (deflate)");
-#else
-    FC_THROW("hived was not configured with zlib support");
-#endif
   }
 
   std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd_helper(const char* compressed_block_data,
@@ -972,7 +880,6 @@ namespace hive { namespace chain {
                                                                                             fc::optional<uint8_t> dictionary_number,
                                                                                             fc::optional<ZSTD_DCtx*> decompression_context_for_reuse)
   {
-#ifdef HAVE_ZSTD
     if (decompression_context_for_reuse)
     {
       ZSTD_DCtx_reset(*decompression_context_for_reuse, ZSTD_reset_session_and_parameters);
@@ -992,50 +899,6 @@ namespace hive { namespace chain {
                                         dictionary_number,
                                         decompression_context);
 
-#else
-    FC_THROW("hived was not configured with zstd support");
-#endif
-  }
-
-  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_brotli(const char* compressed_block_data, 
-                                                                                              size_t compressed_block_size)
-  {
-#ifdef HAVE_BROTLI
-    std::unique_ptr<char[]> uncompressed_block_data(new char[HIVE_MAX_BLOCK_SIZE]);
-    size_t uncompressed_block_size = HIVE_MAX_BLOCK_SIZE;
-    if (BrotliDecoderDecompress(compressed_block_size, (const uint8_t*)compressed_block_data,
-                                &uncompressed_block_size, (uint8_t*)uncompressed_block_data.get()) != BROTLI_DECODER_RESULT_SUCCESS)
-      FC_THROW("Error decompressing block with brotli");
-    return std::make_tuple(std::move(uncompressed_block_data), uncompressed_block_size);
-#else
-    FC_THROW("hived was not configured with brotli support");
-#endif
-  }
-
-  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_deflate(const char* compressed_block_data, 
-                                                                                               size_t compressed_block_size)
-  {
-#ifdef HAVE_ZLIB
-    z_stream inflate_stream;
-    memset(&inflate_stream, 0, sizeof(inflate_stream));
-    if (inflateInit(&inflate_stream) == Z_OK)
-    {
-      std::unique_ptr<char[]> uncompressed_block_data(new char[HIVE_MAX_BLOCK_SIZE]);
-      inflate_stream.next_in = (Bytef*)compressed_block_data;
-      inflate_stream.avail_in = compressed_block_size;
-      inflate_stream.next_out = (Bytef*)uncompressed_block_data.get(); 
-      inflate_stream.avail_out = HIVE_MAX_BLOCK_SIZE;
-      if (inflate(&inflate_stream, Z_FINISH) == Z_STREAM_END)
-      {
-        size_t uncompressed_block_size = inflate_stream.total_out;
-        inflateEnd(&inflate_stream);
-        return std::make_tuple(std::move(uncompressed_block_data), uncompressed_block_size);
-      }
-    }
-    FC_THROW("Error decompressing block with zlib (deflate)");
-#else
-    FC_THROW("hived was not configured with zlib support");
-#endif
   }
 
 } } // hive::chain

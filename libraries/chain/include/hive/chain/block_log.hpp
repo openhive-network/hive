@@ -53,9 +53,7 @@ namespace hive { namespace chain {
       // .    = unused
       enum class block_flags {
         uncompressed = 0,
-        deflate = 1,
-        brotli = 2,
-        zstd = 3
+        zstd = 1 
       };
       struct block_attributes_t {
         block_flags flags = block_flags::uncompressed;
@@ -91,14 +89,9 @@ namespace hive { namespace chain {
       static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<uint8_t> dictionary_number, 
                                                                              fc::optional<int> compression_level = fc::optional<int>(), 
                                                                              fc::optional<ZSTD_CCtx*> compression_context = fc::optional<ZSTD_CCtx*>());
-      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_brotli(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<int> compression_quality = fc::optional<int>());
-      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_deflate(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<int> compression_level = fc::optional<int>());
-
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size, 
                                                                                fc::optional<uint8_t> dictionary_number = fc::optional<int>(), 
                                                                                fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
-      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_brotli(const char* compressed_block_data, size_t compressed_block_size);
-      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_deflate(const char* compressed_block_data, size_t compressed_block_size);
     private:
       void construct_index( bool resume = false, uint64_t index_pos = 0 );
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
@@ -107,5 +100,5 @@ namespace hive { namespace chain {
   };
 
 } }
-FC_REFLECT_ENUM(hive::chain::block_log::block_flags, (uncompressed)(deflate)(brotli)(zstd))
+FC_REFLECT_ENUM(hive::chain::block_log::block_flags, (uncompressed)(zstd))
 FC_REFLECT(hive::chain::block_log::block_attributes_t, (flags)(dictionary_number))
