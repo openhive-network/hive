@@ -1,4 +1,6 @@
-#define ZSTD_STATIC_LINKING_ONLY
+#ifndef ZSTD_STATIC_LINKING_ONLY
+# define ZSTD_STATIC_LINKING_ONLY
+#endif
 #include <zstd.h>
 
 #include <thread>
