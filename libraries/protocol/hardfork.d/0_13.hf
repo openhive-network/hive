@@ -5,6 +5,6 @@
 #define HIVE_HARDFORK_0_13__257 (HIVE_HARDFORK_0_13)
 
 #define HIVE_HARDFORK_0_13_TIME  1471269600 // Mon, 15 Aug 2016 14:00:00 GMT
-#define HIVE_HARDFORK_0_13_VERSION hardfork_version( 0, 13 )
+#define HIVE_HARDFORK_0_13_VERSION hive::protocol::hardfork_version( 0, 13 )
 
 #endif

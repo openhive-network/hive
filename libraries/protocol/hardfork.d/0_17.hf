@@ -17,7 +17,7 @@
 
 #define HIVE_HARDFORK_0_17_TIME  1490886000 // Thu, 30 March 2017 15:00:00 UTC (11:00:00 EDT)
 
-#define HIVE_HARDFORK_0_17_VERSION hardfork_version( 0, 17 )
+#define HIVE_HARDFORK_0_17_VERSION hive::protocol::hardfork_version( 0, 17 )
 
 #define HIVE_HF_17_NUM_POSTS     (49357)
 #define HIVE_HF_17_NUM_REPLIES   (242051)

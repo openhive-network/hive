@@ -5,5 +5,5 @@
 // Mon Jul  4 01:00:00 UTC 2016
 // Sun Jul  3 21:00:00 EDT 2016
 #define HIVE_HARDFORK_0_8_TIME 1467594000
-#define HIVE_HARDFORK_0_8_VERSION hardfork_version( 0, 8 )
+#define HIVE_HARDFORK_0_8_VERSION hive::protocol::hardfork_version( 0, 8 )
 #endif

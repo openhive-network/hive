@@ -2,5 +2,5 @@
 #define HIVE_HARDFORK_0_1 1
 // 4/25/2016 17:30:00 GMT
 #define HIVE_HARDFORK_0_1_TIME 1461605400
-#define HIVE_HARDFORK_0_1_VERSION hardfork_version( 0, 1 )
+#define HIVE_HARDFORK_0_1_VERSION hive::protocol::hardfork_version( 0, 1 )
 #endif

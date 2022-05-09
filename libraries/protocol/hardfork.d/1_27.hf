@@ -4,6 +4,6 @@
 
 #define HIVE_HARDFORK_1_27_TIME 1654084800 // Wednesday, 1 June 2022 12:00:00
 
-#define HIVE_HARDFORK_1_27_VERSION hardfork_version( 1, 27 )
+#define HIVE_HARDFORK_1_27_VERSION hive::protocol::hardfork_version( 1, 27 )
 
 #endif
