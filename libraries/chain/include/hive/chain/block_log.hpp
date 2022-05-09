@@ -46,9 +46,10 @@ namespace hive { namespace chain {
       // in the block log (and index), the positions are stored as 64-bit integers.  We'll use the lower 
       // 48-bits as the actual position, and the upper 16 as flags that tell us how the block is stored
       // hi    lo|hi    lo|hi      |        |        |        |        |      lo|
-      // cc.....d|<-dict->|<--------------------- position -------------------->|
-      // cc   = block_flags, two bits specifying the compression method, or uncompressed
-      // d    = one bit, if 1 the block uses a custom dictionary
+      // c......d|<-dict->|<--------------------- position -------------------->|
+      // c    = block_flags, one bit specifying the compression method, or uncompressed
+      //        (this was briefly two bits when we were testing other compression methods)
+      // d    = one bit, if 1 the block uses a custom compression dictionary
       // dict = the number specifying the dictionary used to compress the block, if d = 1, otherwise undefined
       // .    = unused
       enum class block_flags {
