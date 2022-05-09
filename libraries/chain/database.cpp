@@ -304,6 +304,16 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
   {
     uint32_t cur_block_num = block.block_num();
 
+    if (cur_block_num % 100000 == 0)
+    {
+      std::ostringstream percent_complete_stream;
+      percent_complete_stream << std::fixed << std::setprecision(2) << double(cur_block_num) * 100 / last_block_num;
+      ulog("   ${cur_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
+           ("percent_complete", percent_complete_stream.str())
+           (cur_block_num)(last_block_num)
+           ("free_memory_megabytes", get_free_memory() >> 20));
+    }
+
     apply_block( block, skip_flags );
 
     if( !appbase::app().is_interrupt_request() )
