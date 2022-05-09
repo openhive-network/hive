@@ -21,5 +21,5 @@
 #else
 #define HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME (1467295200-(60*60*24*6))
 #endif
-#define HIVE_HARDFORK_0_6_VERSION hardfork_version( 0, 6 )
+#define HIVE_HARDFORK_0_6_VERSION hive::protocol::hardfork_version( 0, 6 )
 #endif

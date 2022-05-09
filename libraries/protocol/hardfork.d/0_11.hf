@@ -3,6 +3,6 @@
 #define HIVE_HARDFORK_0_11__169 HIVE_HARDFORK_0_11
 
 #define HIVE_HARDFORK_0_11_TIME 1468767600 // 2016-07-17T15:00:00 UTC (11:00:00 EDT)
-#define HIVE_HARDFORK_0_11_VERSION hardfork_version( 0, 11 )
+#define HIVE_HARDFORK_0_11_VERSION hive::protocol::hardfork_version( 0, 11 )
 
 #endif
