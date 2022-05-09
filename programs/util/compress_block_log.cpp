@@ -347,7 +347,7 @@ int main(int argc, char** argv)
     std::string zstd_levels_description = zstd_levels_description_stream.str();
 
     boost::program_options::options_description options("Allowed options");
-    options.add_options()("enable-zstd", boost::program_options::value<std::string>()->default_value("yes"), "Whether to use zstd compression");
+    options.add_options()("decompress", boost::program_options::bool_switch()->default_value(false), "Instead of compressing the block log, decompress it");
     options.add_options()("zstd-level", boost::program_options::value<int>()->default_value(15), zstd_levels_description.c_str());
     options.add_options()("benchmark-decompression", "decompress each block and report the decompression times at the end");
     options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(1), "The number of threads to use for compression");
@@ -365,7 +365,7 @@ int main(int argc, char** argv)
     boost::program_options::variables_map options_map;
     boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(options).positional(positional_options).run(), options_map);
 
-    enable_zstd = options_map["enable-zstd"].as<std::string>() == "yes";
+    enable_zstd = !options_map["decompress"].as<bool>();
 
     zstd_level = options_map["zstd-level"].as<int>();
     ilog("Compressing using zstd level ${zstd_level}", (zstd_level));

@@ -89,7 +89,7 @@ namespace chain {
     fc::variant database_cfg;
     bool replay_in_memory = false;
     std::vector< std::string > replay_memory_indices{};
-    bool enable_block_log_compression = false;
+    bool enable_block_log_compression = true;
     int block_log_compression_level = 15;
 
     // The following fields are only used on reindexing
