@@ -82,6 +82,7 @@ namespace hive { namespace chain {
       optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
+      std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
       signed_block read_head()const;
       const boost::shared_ptr<signed_block> head() const;
       void set_compression(bool enabled);
