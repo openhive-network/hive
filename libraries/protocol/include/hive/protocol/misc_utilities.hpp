@@ -42,6 +42,7 @@ template<typename T>
 struct serializer_wrapper
 {
   T value;
+  bool legacy_enabled = dynamic_serializer::default_legacy_value;
 };
 
 } } // hive::protocol
@@ -66,6 +67,7 @@ namespace fc {
   {
     try
     {
+      legacy_switcher switcher( a.legacy_enabled );
       to_variant( a.value, var );
     } FC_CAPTURE_AND_RETHROW()
   }
