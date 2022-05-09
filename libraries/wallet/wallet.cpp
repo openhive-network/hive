@@ -1170,7 +1170,7 @@ optional<serializer_wrapper<database_api::api_witness_object>> wallet_api::get_w
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::set_voting_proxy(const string& account_to_modify, const string& voting_account, bool broadcast /* = false */)
-{ return { my->set_voting_proxy(account_to_modify, voting_account, broadcast) }; }
+{ return { my->set_voting_proxy(account_to_modify, voting_account, broadcast), my->_legacy_format }; }
 
 void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
 
@@ -2564,7 +2564,7 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
 
   }
 
-  return wallet_formatter::get_account_history( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result }, format );
+  return wallet_formatter::get_account_history( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result, my->_legacy_format }, format );
 }
 
 variant wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
@@ -2573,7 +2573,7 @@ variant wallet_api::get_withdraw_routes( const string& account, database_api::wi
   vector<variant> args{ account, variant{ type } };
   auto _result = my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK );
 
-  return wallet_formatter::get_withdraw_routes( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result }, format );
+  return wallet_formatter::get_withdraw_routes( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result, my->_legacy_format }, format );
 }
 
 variant wallet_api::get_order_book( uint32_t limit )
@@ -2584,7 +2584,7 @@ variant wallet_api::get_order_book( uint32_t limit )
   vector<variant> args{ limit };
   auto _result = my->_remote_wallet_bridge_api->get_order_book( {args}, LOCK );
 
-  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result }, format );
+  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result, my->_legacy_format }, format );
 }
 
 variant wallet_api::get_open_orders( const string& accountname )
@@ -2594,7 +2594,7 @@ variant wallet_api::get_open_orders( const string& accountname )
   vector<variant> args{ accountname };
   auto _result = my->_remote_wallet_bridge_api->get_open_orders( {args}, LOCK );
 
-  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result }, format );
+  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result, my->_legacy_format }, format );
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
