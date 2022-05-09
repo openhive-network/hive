@@ -39,6 +39,7 @@
 #include <fc/rpc/websocket_api.hpp>
 #include <fc/smart_ref_impl.hpp>
 
+#include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/key_conversion.hpp>
 
 #include <hive/protocol/protocol.hpp>
@@ -87,6 +88,7 @@ int main( int argc, char** argv )
     boost::program_options::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
+      ("version,v", "Print git revision sha of this cli_wallet build.")
       ("offline,o", "Run the wallet in offline mode.")
       ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
@@ -112,6 +114,11 @@ int main( int argc, char** argv )
     if( options.count("help") )
     {
       std::cout << opts << "\n";
+      return 0;
+    }
+    if( options.count("version") )
+    {
+      std::cout << "hive_git_revision: " << std::string( hive::utilities::git_revision_sha ) << "\n";
       return 0;
     }
     if( options.count("rpc-http-allowip") && options.count("rpc-http-endpoint") ) {

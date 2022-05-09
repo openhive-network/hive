@@ -6,10 +6,10 @@ from test_tools import logger, paths_to_executables
 
 def test_help_option():
     only_args_to_be_founded = [
-        '--help', '--offline', '--server-rpc-endpoint', '--cert-authority',
-        '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint',
-        '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock',
-        '--daemon', '--rpc-http-allowip', '--wallet-file', '--chain-id', '--format-type'
+        '--help', '--version', '--offline', '--server-rpc-endpoint',
+        '--cert-authority', '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint',
+        '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock', '--daemon',
+        '--rpc-http-allowip', '--wallet-file', '--chain-id', '--format-type'
     ]
 
     cli_wallet_path = paths_to_executables.get_path_of('cli_wallet')
@@ -40,6 +40,7 @@ def test_wallet_help_default_values():
         default_values[parameter] = default_value[1] if default_value is not None else None
 
     assert default_values['--help'] is None
+    assert default_values['--version'] is None
     assert default_values['--offline'] is None
     assert default_values['--server-rpc-endpoint'] == 'ws://127.0.0.1:8090'
     assert default_values['--cert-authority'] == '_default'
