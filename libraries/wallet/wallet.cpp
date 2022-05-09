@@ -886,6 +886,9 @@ public:
 
     if( broadcast ) {
       try {
+        auto v = _remote_wallet_bridge_api->get_version({}, LOCK);
+        FC_ASSERT( _hive_chain_id == v.chain_id, "chain id on wallet does not mach chain id on node" );
+
         if( blocking )
         {
           auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(tx)}}, LOCK );
