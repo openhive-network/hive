@@ -589,6 +589,8 @@ public:
   serializer_wrapper<annotated_signed_transaction> build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
     const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer);
 
+  hive::protocol::asset get_asset( const fc::variant& val );
+
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
   {
     FC_ASSERT( tx_expiration_seconds < HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -960,6 +962,14 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 
     return { tx_signer(tx), _transaction_serialization };
   } FC_CAPTURE_AND_RETHROW((creator))
+}
+
+hive::protocol::asset wallet_api_impl::get_asset( const fc::variant& val )
+{
+  serializer_wrapper<hive::protocol::asset> _amount = { hive::protocol::asset(), _legacy_format };
+  fc::from_variant( val, _amount );
+
+  return _amount.value;
 }
 
 } } } // hive::wallet::detail
@@ -2080,9 +2090,9 @@ string wallet_api::get_encrypted_memo( const string& from, const string& to, con
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer(const string& from, const string& to,
-  const serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
+  const fc::variant& amount, const string& memo, bool broadcast )
 {
-  return { transfer_and_broadcast(from, to, amount.value, memo, broadcast, true) };
+  return { transfer_and_broadcast(from, to, my->get_asset( amount ), memo, broadcast, true) };
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_nonblocking(const string& from, const string& to,

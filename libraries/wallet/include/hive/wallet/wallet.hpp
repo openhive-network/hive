@@ -819,7 +819,7 @@ class wallet_api
     serializer_wrapper<annotated_signed_transaction> transfer(
       const string& from,
       const string& to,
-      const serializer_wrapper<hive::protocol::asset>& amount,
+      const fc::variant& amount,
       const string& memo,
       bool broadcast = false);
 
