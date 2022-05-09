@@ -22,7 +22,7 @@ else()
                       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/api_documentation_standin.cpp )
 endif()
 
-add_library( hive_wallet wallet.cpp ${CMAKE_CURRENT_BINARY_DIR}/api_documentation.cpp ${HEADERS} )
+add_library( hive_wallet wallet.cpp wallet_serializer_wrapper.cpp ${CMAKE_CURRENT_BINARY_DIR}/api_documentation.cpp ${HEADERS} )
 target_link_libraries( hive_wallet PRIVATE graphene_net hive_chain hive_protocol hive_utilities fc condenser_api_plugin follow_plugin wallet_bridge_api_plugin ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 target_include_directories( hive_wallet PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

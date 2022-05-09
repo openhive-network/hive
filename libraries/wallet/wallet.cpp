@@ -234,8 +234,9 @@ class wallet_api_impl
 public:
   wallet_api& self;
   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization, const std::string& store_transaction )
-    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _transaction_serialization( transaction_serialization ), _store_transaction(store_transaction)
+    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
   {
+    wallet_transaction_serialization::transaction_serialization = transaction_serialization;
     init_prototype_ops();
   }
 
@@ -297,10 +298,10 @@ public:
     return _checksum == fc::sha512();
   }
 
-  serializer_wrapper<database_api::api_dynamic_global_property_object> get_dynamic_global_properties() const
+  wallet_serializer_wrapper<database_api::api_dynamic_global_property_object> get_dynamic_global_properties() const
   {
     require_online();
-    return { _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK), _transaction_serialization };
+    return { _remote_wallet_bridge_api->get_dynamic_global_properties({}, LOCK) };
   }
 
   variant info() const
@@ -317,14 +318,14 @@ public:
     result["head_block_id"]             = dynamic_props.value.head_block_id;
     result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.value.time, time_point_sec(time_point::now()), " old");
     result["participation"]             = (100*dynamic_props.value.recent_slots_filled.popcount()) / 128.0;
-    result["median_hbd_price"]          = serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK), _transaction_serialization };
-    result["account_creation_fee"]      = serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee, _transaction_serialization };
+    result["median_hbd_price"]          = wallet_serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
+    result["account_creation_fee"]      = wallet_serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
 
     protocol::hardfork_version current_hardfork_version;
     fc::from_variant(result["hardfork_version"], current_hardfork_version);
     if (current_hardfork_version >= HIVE_HARDFORK_0_17_VERSION)
     {
-      result["post_reward_fund"] = serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund(vector<variant>( {HIVE_POST_REWARD_FUND_NAME} ), LOCK ), _transaction_serialization };
+      result["post_reward_fund"] = wallet_serializer_wrapper<database_api::api_reward_fund_object>{ _remote_wallet_bridge_api->get_reward_fund(vector<variant>( {HIVE_POST_REWARD_FUND_NAME} ), LOCK ) };
     }
     else
     {
@@ -588,7 +589,7 @@ public:
   }
 
     /// Common body for claim_account_creation and claim_account_creation_nonblocking
-  serializer_wrapper<annotated_signed_transaction> build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
+  wallet_serializer_wrapper<annotated_signed_transaction> build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
     const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer);
 
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
@@ -934,7 +935,7 @@ public:
     try
     {
       fc::variant _v;
-      fc::to_variant( serializer_wrapper<annotated_signed_transaction>{ trx, _transaction_serialization }, _v );
+      fc::to_variant( wallet_serializer_wrapper<annotated_signed_transaction>{ trx }, _v );
 
       std::ofstream _file_json( _store_transaction + ".json", std::ios_base::out );
       _file_json << fc::json::to_string( _v );
@@ -970,7 +971,6 @@ public:
   authorities_type                        _authorities_to_use;
   bool                                    _use_automatic_authority = true;
 
-  transaction_serialization_type          _transaction_serialization = serialization_mode_controller::default_transaction_serialization;
   std::string                             _store_transaction;
 
 #ifdef __unix__
@@ -979,7 +979,7 @@ public:
   const string _wallet_filename_extension = ".wallet";
 };
 
-serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
   const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer)
 {
   try
@@ -995,7 +995,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
     tx.operations.push_back(op);
     tx.validate();
 
-    return { tx_signer(tx), _transaction_serialization };
+    return { tx_signer(tx) };
   } FC_CAPTURE_AND_RETHROW((creator))
 }
 
@@ -1018,18 +1018,18 @@ bool wallet_api::copy_wallet_file(const string& destination_filename)
   return my->copy_wallet_file(destination_filename);
 }
 
-optional<serializer_wrapper<block_api::api_signed_block_object>> wallet_api::get_block(uint32_t num)
+optional<wallet_serializer_wrapper<block_api::api_signed_block_object>> wallet_api::get_block(uint32_t num)
 {
   my->require_online();
   vector<variant> args{num};
   block_api::get_block_return res = my->_remote_wallet_bridge_api->get_block( {args}, LOCK );
   if( res.block.valid() )
-    return serializer_wrapper<block_api::api_signed_block_object>{ std::move( *(res.block) ), my->_transaction_serialization };
+    return wallet_serializer_wrapper<block_api::api_signed_block_object>{ std::move( *(res.block) ) };
   else
-    return serializer_wrapper<block_api::api_signed_block_object>{ block_api::api_signed_block_object(), my->_transaction_serialization };
+    return wallet_serializer_wrapper<block_api::api_signed_block_object>{ block_api::api_signed_block_object() };
 }
 
-serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::get_ops_in_block(uint32_t block_num, bool only_virtual)
+wallet_serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::get_ops_in_block(uint32_t block_num, bool only_virtual)
 {
   my->require_online();
   vector< variant > args{block_num, only_virtual};
@@ -1040,7 +1040,7 @@ serializer_wrapper<vector< account_history::api_operation_object >> wallet_api::
     result.push_back(op);
 
   result.shrink_to_fit();
-  return { result, my->_transaction_serialization };
+  return { result };
 }
 
 variant wallet_api::list_my_accounts()
@@ -1058,7 +1058,7 @@ variant wallet_api::list_my_accounts()
   vector<variant> args{ variant{ pub_keys } };
 
   auto _result = my->_remote_wallet_bridge_api->list_my_accounts( {args}, LOCK );
-  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result, my->_transaction_serialization }, output_formatter );
+  return wallet_formatter::list_my_accounts( wallet_serializer_wrapper<vector<database_api::api_account_object>>{ _result }, output_formatter );
 }
 
 vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, uint32_t limit)
@@ -1110,7 +1110,7 @@ brain_key_info wallet_api::suggest_brain_key()const
   return result;
 }
 
-string wallet_api::serialize_transaction( const serializer_wrapper<signed_transaction>& tx )const
+string wallet_api::serialize_transaction( const wallet_serializer_wrapper<signed_transaction>& tx )const
 {
   return fc::to_hex(fc::raw::pack_to_vector(tx));
 }
@@ -1121,16 +1121,16 @@ string wallet_api::get_wallet_filename() const
 }
 
 
-serializer_wrapper<database_api::api_account_object> wallet_api::get_account( const string& account_name ) const
+wallet_serializer_wrapper<database_api::api_account_object> wallet_api::get_account( const string& account_name ) const
 {
   my->require_online();
-  return { my->get_account( account_name ), my->_transaction_serialization };
+  return { my->get_account( account_name ) };
 }
 
-serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_accounts( fc::variant account_names ) const
+wallet_serializer_wrapper<vector<database_api::api_account_object>> wallet_api::get_accounts( fc::variant account_names ) const
 {
   my->require_online();
-  return { my->get_accounts( std::move( account_names ) ), my->_transaction_serialization };
+  return { my->get_accounts( std::move( account_names ) ) };
 }
 
 void wallet_api::import_key(const string& wif_key)
@@ -1191,32 +1191,32 @@ vector< account_name_type > wallet_api::list_witnesses(const string& lowerbound,
   return result;
 }
 
-optional<serializer_wrapper<database_api::api_witness_object>> wallet_api::get_witness( const string& owner_account)
+optional<wallet_serializer_wrapper<database_api::api_witness_object>> wallet_api::get_witness( const string& owner_account)
 {
   my->require_online();
   optional<database_api::api_witness_object> res = my->get_witness(owner_account);
   if( res.valid() )
-    return serializer_wrapper<database_api::api_witness_object>{ std::move( *res ), my->_transaction_serialization };
+    return wallet_serializer_wrapper<database_api::api_witness_object>{ std::move( *res ) };
   else
-    return serializer_wrapper<database_api::api_witness_object>{ database_api::api_witness_object(), my->_transaction_serialization };
+    return wallet_serializer_wrapper<database_api::api_witness_object>{ database_api::api_witness_object() };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::set_voting_proxy(const string& account_to_modify, const string& voting_account, bool broadcast /* = false */)
-{ return { my->set_voting_proxy(account_to_modify, voting_account, broadcast), my->_transaction_serialization }; }
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::set_voting_proxy(const string& account_to_modify, const string& voting_account, bool broadcast /* = false */)
+{ return { my->set_voting_proxy(account_to_modify, voting_account, broadcast) }; }
 
 void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::sign_transaction(
-  const serializer_wrapper<annotated_signed_transaction>& tx, bool broadcast /* = false */)
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::sign_transaction(
+  const wallet_serializer_wrapper<annotated_signed_transaction>& tx, bool broadcast /* = false */)
 { try {
   signed_transaction appbase_tx( tx.value );
   annotated_signed_transaction result = my->sign_transaction( appbase_tx, broadcast);
-  return { result, my->_transaction_serialization };
+  return { result };
 } FC_CAPTURE_AND_RETHROW( (tx) ) }
 
-serializer_wrapper<operation> wallet_api::get_prototype_operation(const string& operation_name)
+wallet_serializer_wrapper<operation> wallet_api::get_prototype_operation(const string& operation_name)
 {
-  return { my->get_prototype_operation( operation_name ), my->_transaction_serialization };
+  return { my->get_prototype_operation( operation_name ) };
 }
 
 variant wallet_api::help()const
@@ -1337,14 +1337,14 @@ pair<public_key_type,string> wallet_api::get_private_key_from_password( const st
   return std::make_pair( public_key_type( priv.get_public_key() ), key_to_wif( priv ) );
 }
 
-serializer_wrapper<database_api::api_feed_history_object> wallet_api::get_feed_history()const
+wallet_serializer_wrapper<database_api::api_feed_history_object> wallet_api::get_feed_history()const
 {
   my->require_online();
-  return { my->_remote_wallet_bridge_api->get_feed_history({}, LOCK), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->get_feed_history({}, LOCK) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creation(const string& creator,
-                                                                            const serializer_wrapper<hive::protocol::asset>& fee,
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creation(const string& creator,
+                                                                            const wallet_serializer_wrapper<hive::protocol::asset>& fee,
                                                                             bool broadcast )const
 {
   return { my->build_claim_account_creation(creator, fee.value,
@@ -1355,8 +1355,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creat
     ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creation_nonblocking(const string& creator,
-                                                                                        const serializer_wrapper<hive::protocol::asset>& fee,
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creation_nonblocking(const string& creator,
+                                                                                        const wallet_serializer_wrapper<hive::protocol::asset>& fee,
                                                                                         bool broadcast )const
 {
   return { my->build_claim_account_creation(creator, fee.value,
@@ -1372,7 +1372,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_account_creat
   * provide their desired keys. The resulting account may not be controllable by this
   * wallet.
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with_keys(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with_keys(
   const string& creator,
   const string& new_account_name,
   const string& json_meta,
@@ -1382,7 +1382,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
   public_key_type memo,
   bool broadcast )const
 {
-  serializer_wrapper<hive::protocol::asset> no_funds;
+  wallet_serializer_wrapper<hive::protocol::asset> no_funds;
   return { create_funded_account_with_keys(creator, new_account_name, no_funds, "", json_meta, owner,
     active, posting, memo, broadcast) };
 }
@@ -1392,9 +1392,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
  * provide their desired keys. The resulting account may not be controllable by this
  * wallet.
  */
-serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_account_with_keys( const string& creator,
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_account_with_keys( const string& creator,
                                                                                       const string& new_account_name,
-                                                                                      const serializer_wrapper<hive::protocol::asset>& initial_amount,
+                                                                                      const wallet_serializer_wrapper<hive::protocol::asset>& initial_amount,
                                                                                       const string& memo,
                                                                                       const string& json_meta,
                                                                                       public_key_type owner_key,
@@ -1458,7 +1458,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_accou
 
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner)(active)(memo)(broadcast) ) }
 
 
@@ -1467,10 +1467,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_funded_accou
   * provide their desired keys. The resulting account may not be controllable by this
   * wallet.
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with_keys_delegated(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with_keys_delegated(
   const string& creator,
-  const serializer_wrapper<hive::protocol::asset>& hive_fee,
-  const serializer_wrapper<hive::protocol::asset>& delegated_vests,
+  const wallet_serializer_wrapper<hive::protocol::asset>& hive_fee,
+  const wallet_serializer_wrapper<hive::protocol::asset>& delegated_vests,
   const string& new_account_name,
   const string& json_meta,
   public_key_type owner,
@@ -1495,10 +1495,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta)(owner)(active)(memo)(broadcast) ) }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::request_account_recovery( const string& recovery_account, const string& account_to_recover, authority new_authority, bool broadcast )
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::request_account_recovery( const string& recovery_account, const string& account_to_recover, authority new_authority, bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   request_account_recovery_operation op;
@@ -1510,10 +1510,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::request_account_rec
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::recover_account( const string& account_to_recover, authority recent_authority, authority new_authority, bool broadcast ) {
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::recover_account( const string& account_to_recover, authority recent_authority, authority new_authority, bool broadcast ) {
   FC_ASSERT( !is_locked() );
 
   recover_account_operation op;
@@ -1525,10 +1525,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recover_account( co
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::change_recovery_account( const string& owner, const string& new_recovery_account, bool broadcast ) {
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::change_recovery_account( const string& owner, const string& new_recovery_account, bool broadcast ) {
   FC_ASSERT( !is_locked() );
 
   change_recovery_account_operation op;
@@ -1539,7 +1539,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::change_recovery_acc
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
 vector< database_api::api_owner_authority_history_object > wallet_api::get_owner_history( fc::variant account )const
@@ -1549,7 +1549,7 @@ vector< database_api::api_owner_authority_history_object > wallet_api::get_owner
   return my->_remote_wallet_bridge_api->get_owner_history( {args}, LOCK ).owner_auths;
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_account(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account(
   const string& account_name,
   const string& json_meta,
   public_key_type owner,
@@ -1574,12 +1574,12 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account(
     tx.operations.push_back(op);
     tx.validate();
 
-    return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+    return { my->sign_transaction( tx, broadcast ) };
   }
   FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(owner)(active)(memo)(broadcast) )
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_key(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_key(
   const string& account_name,
   authority_type type,
   public_key_type key,
@@ -1648,10 +1648,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_account(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_account(
   const string& account_name,
   authority_type type,
   const string& auth_account,
@@ -1720,10 +1720,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_threshold(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_threshold(
   const string& account_name,
   authority_type type,
   uint32_t threshold,
@@ -1785,10 +1785,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_meta(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_meta(
   const string& account_name,
   const string& json_meta,
   bool broadcast )
@@ -1808,10 +1808,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_meta
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo_key(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo_key(
   const string& account_name,
   public_key_type key,
   bool broadcast )
@@ -1831,10 +1831,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_memo
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_and_broadcast(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_and_broadcast(
   const string& delegator,
   const string& delegatee,
   const hive::protocol::asset& vesting_shares,
@@ -1872,34 +1872,34 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
 
   tx.validate();
 
-  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ), my->_transaction_serialization };
+  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares(
   const string& delegator,
   const string& delegatee,
-  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
   bool broadcast )
 {
   return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares.value,
     optional<hive::protocol::asset>(), optional<string>(), broadcast, true) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_nonblocking(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_nonblocking(
   const string& delegator,
   const string& delegatee,
-  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
   bool broadcast )
 {
   return { delegate_vesting_shares_and_transfer_and_broadcast(delegator, delegatee, vesting_shares.value,
     optional<hive::protocol::asset>(), optional<string>(), broadcast, false) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer(
   const string& delegator,
   const string& delegatee,
-  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
-  const serializer_wrapper<hive::protocol::asset>& transfer_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const wallet_serializer_wrapper<hive::protocol::asset>& transfer_amount,
   optional<string> transfer_memo,
   bool broadcast )
 {
@@ -1907,11 +1907,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
     transfer_amount.value, transfer_memo, broadcast, true) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_nonblocking(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares_and_transfer_nonblocking(
   const string& delegator,
   const string& delegatee,
-  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
-  const serializer_wrapper<hive::protocol::asset>& transfer_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const wallet_serializer_wrapper<hive::protocol::asset>& transfer_amount,
   optional<string> transfer_memo,
   bool broadcast )
 {
@@ -1924,7 +1924,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
   *  This method will genrate new owner, active, and memo keys for the new account which
   *  will be controlable by this wallet.
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::create_account(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_account(
   const string& creator,
   const string& new_account_name,
   const string& json_meta,
@@ -1946,10 +1946,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account(
   *  This method will genrate new owner, active, and memo keys for the new account which
   *  will be controlable by this wallet.
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_delegated(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_delegated(
   const string& creator,
-  const serializer_wrapper<hive::protocol::asset>& hive_fee,
-  const serializer_wrapper<hive::protocol::asset>& delegated_vests,
+  const wallet_serializer_wrapper<hive::protocol::asset>& hive_fee,
+  const wallet_serializer_wrapper<hive::protocol::asset>& delegated_vests,
   const string& new_account_name,
   const string& json_meta,
   bool broadcast )
@@ -1967,11 +1967,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_dele
 } FC_CAPTURE_AND_RETHROW( (creator)(new_account_name)(json_meta) ) }
 
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   const string& witness_account_name,
   const string& url,
   public_key_type block_signing_key,
-  const serializer_wrapper<legacy_chain_properties>& props,
+  const wallet_serializer_wrapper<legacy_chain_properties>& props,
   bool broadcast  )
 {
   FC_ASSERT( !is_locked() );
@@ -2001,10 +2001,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   tx.operations.push_back(op);
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::vote_for_witness(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::vote_for_witness(
   const string& voting_account,
   const string& witness_to_vote_for,
   bool approve,
@@ -2021,7 +2021,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::vote_for_witness(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 } FC_CAPTURE_AND_RETHROW( (voting_account)(witness_to_vote_for)(approve)(broadcast) ) }
 
 void wallet_api::check_memo(
@@ -2117,19 +2117,19 @@ string wallet_api::get_encrypted_memo( const string& from, const string& to, con
   }
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer(const string& from, const string& to,
-  const serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer(const string& from, const string& to,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
 {
   return { transfer_and_broadcast(from, to, amount.value, memo, broadcast, true) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_nonblocking(const string& from, const string& to,
-  const serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_nonblocking(const string& from, const string& to,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast )
 {
   return { transfer_and_broadcast(from, to, amount.value, memo, broadcast, false) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_and_broadcast(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_and_broadcast(
   const string& from,
   const string& to,
   const hive::protocol::asset& amount,
@@ -2152,17 +2152,17 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_and_broadc
   tx.validate();
 
   my->make_transaction_unique(tx, from);
-  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ), my->_transaction_serialization };
+  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ) };
 } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(broadcast) ) }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_transfer(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_transfer(
   const string& from,
   const string& to,
   const string& agent,
   uint32_t escrow_id,
-  const serializer_wrapper<hive::protocol::asset>& hbd_amount,
-  const serializer_wrapper<hive::protocol::asset>& hive_amount,
-  const serializer_wrapper<hive::protocol::asset>& fee,
+  const wallet_serializer_wrapper<hive::protocol::asset>& hbd_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& hive_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& fee,
   const time_point_sec& ratification_deadline,
   const time_point_sec& escrow_expiration,
   const string& json_meta,
@@ -2185,10 +2185,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_transfer(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_approve(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_approve(
   const string& from,
   const string& to,
   const string& agent,
@@ -2209,10 +2209,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_approve(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_dispute(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_dispute(
   const string& from,
   const string& to,
   const string& agent,
@@ -2232,18 +2232,18 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_dispute(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_release(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_release(
   const string& from,
   const string& to,
   const string& agent,
   const string& who,
   const string& receiver,
   uint32_t escrow_id,
-  const serializer_wrapper<hive::protocol::asset>& hbd_amount,
-  const serializer_wrapper<hive::protocol::asset>& hive_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& hbd_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& hive_amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2260,16 +2260,16 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_release(
   signed_transaction tx;
   tx.operations.push_back( op );
   tx.validate();
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
 /**
   *  Transfers into savings happen immediately, transfers from savings take 72 hours
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_savings(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_savings(
   const string& from,
   const string& to,
-  const serializer_wrapper<hive::protocol::asset>& amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount,
   const string& memo,
   bool broadcast )
 {
@@ -2285,17 +2285,17 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_savings
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
 /**
   * @param request_id - an unique ID assigned by from account, the id is used to cancel the operation and can be reused after the transfer completes
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_from_savings(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_from_savings(
   const string& from,
   uint32_t request_id,
   const string& to,
-  const serializer_wrapper<hive::protocol::asset>& amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount,
   const string& memo,
   bool broadcast )
 {
@@ -2312,14 +2312,14 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_from_savin
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
 /**
   *  @param request_id the id used in transfer_from_savings
   *  @param from the account that initiated the transfer
   */
-serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_transfer_from_savings(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_transfer_from_savings(
   const string& from,
   uint32_t request_id,
   bool broadcast )
@@ -2332,22 +2332,22 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_transfer_fro
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting(
-  const string& from, const string& to, const serializer_wrapper<hive::protocol::asset>& amount, bool broadcast )
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting(
+  const string& from, const string& to, const wallet_serializer_wrapper<hive::protocol::asset>& amount, bool broadcast )
 {
   return { transfer_to_vesting_and_broadcast(from, to, amount.value, broadcast, true) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting_nonblocking(
-  const string& from, const string& to, const serializer_wrapper<hive::protocol::asset>& amount, bool broadcast )
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting_nonblocking(
+  const string& from, const string& to, const wallet_serializer_wrapper<hive::protocol::asset>& amount, bool broadcast )
 {
   return { transfer_to_vesting_and_broadcast(from, to, amount.value, broadcast, false) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting_and_broadcast(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting_and_broadcast(
   const string& from, const string& to, const hive::protocol::asset& amount, bool broadcast, bool blocking )
 {
   FC_ASSERT( !is_locked() );
@@ -2362,12 +2362,12 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_vesting
 
   my->make_transaction_unique(tx, from);
 
-  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ), my->_transaction_serialization };
+  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::withdraw_vesting(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::withdraw_vesting(
   const string& from,
-  const serializer_wrapper<hive::protocol::asset>& vesting_shares,
+  const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2379,10 +2379,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::withdraw_vesting(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::set_withdraw_vesting_route(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::set_withdraw_vesting_route(
   const string& from,
   const string& to,
   uint16_t percent,
@@ -2400,12 +2400,12 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::set_withdraw_vestin
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hbd(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hbd(
   const string& from,
-  const serializer_wrapper<hive::protocol::asset>& amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2418,12 +2418,12 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hbd(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hive_with_collateral(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hive_with_collateral(
   const string& from,
-  const serializer_wrapper<hive::protocol::asset>& collateral_amount,
+  const wallet_serializer_wrapper<hive::protocol::asset>& collateral_amount,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2436,11 +2436,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::convert_hive_with_c
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_collateral(
-  const serializer_wrapper<hive::protocol::asset>& hbd_amount_to_get )
+wallet_serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_collateral(
+  const wallet_serializer_wrapper<hive::protocol::asset>& hbd_amount_to_get )
 {
   //must reflect calculations from collateralized_convert_evaluator::do_apply
 
@@ -2452,12 +2452,12 @@ serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_collateral(
   uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
   asset required_collateral = asset( _amount.to_uint64(), HIVE_SYMBOL );
 
-  return { required_collateral, my->_transaction_serialization };
+  return { required_collateral };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
   const string& witness,
-  const serializer_wrapper<price>& exchange_rate,
+  const wallet_serializer_wrapper<price>& exchange_rate,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2469,21 +2469,21 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<vector< database_api::api_convert_request_object >> wallet_api::get_conversion_requests( fc::variant owner_account )
+wallet_serializer_wrapper<vector< database_api::api_convert_request_object >> wallet_api::get_conversion_requests( fc::variant owner_account )
 {
   my->require_online();
   vector<variant> args{std::move(owner_account)};
-  return { my->_remote_wallet_bridge_api->get_conversion_requests( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->get_conversion_requests( {args}, LOCK ) };
 }
 
-serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> wallet_api::get_collateralized_conversion_requests( fc::variant owner_account )
+wallet_serializer_wrapper<vector< database_api::api_collateralized_convert_request_object >> wallet_api::get_collateralized_conversion_requests( fc::variant owner_account )
 {
   my->require_online();
   vector<variant> args{std::move(owner_account)};
-  return { my->_remote_wallet_bridge_api->get_collateralized_conversion_requests( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->get_collateralized_conversion_requests( {args}, LOCK ) };
 }
 
 string wallet_api::decrypt_memo( string encrypted_memo )
@@ -2528,7 +2528,7 @@ string wallet_api::decrypt_memo( string encrypted_memo )
   return encrypted_memo;
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::decline_voting_rights(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::decline_voting_rights(
   const string& account,
   bool decline,
   bool broadcast )
@@ -2542,14 +2542,14 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::decline_voting_righ
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balance(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balance(
   const string& account,
-  const serializer_wrapper<hive::protocol::asset>& reward_hive,
-  const serializer_wrapper<hive::protocol::asset>& reward_hbd,
-  const serializer_wrapper<hive::protocol::asset>& reward_vests,
+  const wallet_serializer_wrapper<hive::protocol::asset>& reward_hive,
+  const wallet_serializer_wrapper<hive::protocol::asset>& reward_hbd,
+  const wallet_serializer_wrapper<hive::protocol::asset>& reward_vests,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2563,7 +2563,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balanc
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
 variant wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
@@ -2596,7 +2596,7 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
 
   }
 
-  return wallet_formatter::get_account_history( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result, my->_transaction_serialization }, output_formatter );
+  return wallet_formatter::get_account_history( wallet_serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result }, output_formatter );
 }
 
 variant wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
@@ -2605,7 +2605,7 @@ variant wallet_api::get_withdraw_routes( const string& account, database_api::wi
   vector<variant> args{ account, variant{ type } };
   auto _result = my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK );
 
-  return wallet_formatter::get_withdraw_routes( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result, my->_transaction_serialization }, output_formatter );
+  return wallet_formatter::get_withdraw_routes( wallet_serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result }, output_formatter );
 }
 
 variant wallet_api::get_order_book( uint32_t limit )
@@ -2616,7 +2616,7 @@ variant wallet_api::get_order_book( uint32_t limit )
   vector<variant> args{ limit };
   auto _result = my->_remote_wallet_bridge_api->get_order_book( {args}, LOCK );
 
-  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result, my->_transaction_serialization }, output_formatter );
+  return wallet_formatter::get_order_book( wallet_serializer_wrapper<market_history::get_order_book_return>{ _result }, output_formatter );
 }
 
 variant wallet_api::get_open_orders( const string& accountname )
@@ -2626,14 +2626,14 @@ variant wallet_api::get_open_orders( const string& accountname )
   vector<variant> args{ accountname };
   auto _result = my->_remote_wallet_bridge_api->get_open_orders( {args}, LOCK );
 
-  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result, my->_transaction_serialization }, output_formatter );
+  return wallet_formatter::get_open_orders( wallet_serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result }, output_formatter );
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
   const string& owner,
   uint32_t order_id,
-  const serializer_wrapper<hive::protocol::asset>& amount_to_sell,
-  const serializer_wrapper<hive::protocol::asset>& min_to_receive,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount_to_sell,
+  const wallet_serializer_wrapper<hive::protocol::asset>& min_to_receive,
   bool fill_or_kill,
   uint32_t expiration_sec,
   bool broadcast )
@@ -2651,10 +2651,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_order(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_order(
   const string& owner,
   uint32_t orderid,
   bool broadcast )
@@ -2668,10 +2668,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_order(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::post_comment(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::post_comment(
   const string& author,
   const string& permlink,
   const string& parent_author,
@@ -2695,10 +2695,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::post_comment(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::vote(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::vote(
   const string& voter,
   const string& author,
   const string& permlink,
@@ -2718,7 +2718,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::vote(
   tx.operations.push_back( op );
   tx.validate();
 
-  return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( tx, broadcast ) };
 }
 
 void wallet_api::set_transaction_expiration(uint32_t seconds)
@@ -2726,11 +2726,11 @@ void wallet_api::set_transaction_expiration(uint32_t seconds)
   my->set_transaction_expiration(seconds);
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::get_transaction( fc::variant id )const
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::get_transaction( fc::variant id )const
 {
   my->require_online();
   vector<variant> args{std::move(id)};
-  return { my->_remote_wallet_bridge_api->get_transaction( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->get_transaction( {args}, LOCK ) };
 }
 
 void wallet_api::use_authority( authority_type type, const account_name_type& account_name )
@@ -2743,7 +2743,7 @@ void wallet_api::use_automatic_authority()
   my->use_automatic_authority();
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
 {
   get_account( follower );
   FC_ASSERT( !following.empty() );
@@ -2764,15 +2764,15 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
   trx.operations.push_back( jop );
   trx.validate();
 
-  return { my->sign_transaction( trx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( trx, broadcast ) };
 }
 
-  serializer_wrapper<annotated_signed_transaction>  wallet_api::create_proposal(
+  wallet_serializer_wrapper<annotated_signed_transaction>  wallet_api::create_proposal(
     const account_name_type& creator,
     const account_name_type& receiver,
     time_point_sec start_date,
     time_point_sec end_date,
-    const serializer_wrapper<hive::protocol::asset>& daily_pay,
+    const wallet_serializer_wrapper<hive::protocol::asset>& daily_pay,
     string subject,
     string permlink,
     bool broadcast )
@@ -2791,13 +2791,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
     signed_transaction trx;
     trx.operations.push_back( cp );
     trx.validate();
-    return { my->sign_transaction( trx, broadcast ), my->_transaction_serialization };
+    return { my->sign_transaction( trx, broadcast ) };
   }
 
- serializer_wrapper<annotated_signed_transaction> wallet_api::update_proposal(
+ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_proposal(
   int64_t proposal_id,
   const account_name_type& creator,
-  const serializer_wrapper<hive::protocol::asset>& daily_pay,
+  const wallet_serializer_wrapper<hive::protocol::asset>& daily_pay,
   string subject,
   string permlink,
   optional<time_point_sec> end_date,
@@ -2822,10 +2822,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::follow( const strin
   signed_transaction trx;
   trx.operations.push_back( up );
   trx.validate();
-  return { my->sign_transaction( trx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( trx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::update_proposal_votes(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_proposal_votes(
   const account_name_type& voter,
   const flat_set< int64_t >& proposals,
   bool approve,
@@ -2842,10 +2842,10 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_proposal_vot
   signed_transaction trx;
   trx.operations.push_back( upv );
   trx.validate();
-  return { my->sign_transaction( trx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( trx, broadcast ) };
 }
 
-serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list_proposals( fc::variant start,
+wallet_serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list_proposals( fc::variant start,
                                   uint32_t limit,
                                   database_api::sort_order_type order_by,
                                   database_api::order_direction_type order_type,
@@ -2853,17 +2853,17 @@ serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::list
 {
   my->require_online();
   vector<variant> args{std::move(start), limit, order_by, order_type, status};
-  return { my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals, my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->list_proposals( {args}, LOCK ).proposals };
 }
 
-serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( fc::variant proposal_ids )
+wallet_serializer_wrapper<vector< database_api::api_proposal_object >> wallet_api::find_proposals( fc::variant proposal_ids )
 {
   my->require_online();
   vector<variant> args{std::move(proposal_ids)};
-  return { my->_remote_wallet_bridge_api->find_proposals( {args}, LOCK ).proposals, my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->find_proposals( {args}, LOCK ).proposals };
 }
 
-serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api::list_proposal_votes(
+wallet_serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api::list_proposal_votes(
   fc::variant start,
   uint32_t limit,
   database_api::sort_order_type order_by,
@@ -2872,10 +2872,10 @@ serializer_wrapper<vector< database_api::api_proposal_vote_object >> wallet_api:
 {
   my->require_online();
   vector<variant> args{std::move( start ), limit, order_by, order_type, status};
-  return { my->_remote_wallet_bridge_api->list_proposal_votes( {args}, LOCK ).proposal_votes, my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->list_proposal_votes( {args}, LOCK ).proposal_votes };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::remove_proposal(const account_name_type& deleter,
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::remove_proposal(const account_name_type& deleter,
                                             const flat_set< int64_t >& ids, bool broadcast )
 {
   FC_ASSERT( !is_locked() );
@@ -2887,13 +2887,13 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::remove_proposal(con
   signed_transaction trx;
   trx.operations.push_back( rp );
   trx.validate();
-  return { my->sign_transaction( trx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( trx, broadcast ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
  const account_name_type& from,
  const account_name_type& to,
- const serializer_wrapper<hive::protocol::asset>& amount,
+ const wallet_serializer_wrapper<hive::protocol::asset>& amount,
  const string& memo,
  uint16_t recurrence,
  uint16_t executions,
@@ -2913,18 +2913,18 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::recurrent_transfer(
     tx.operations.push_back( op );
     tx.validate();
 
-    return { my->sign_transaction( tx, broadcast ), my->_transaction_serialization };
+    return { my->sign_transaction( tx, broadcast ) };
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(broadcast) )
 }
 
-serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers( fc::variant from )
+wallet_serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers( fc::variant from )
 {
   my->require_online();
   vector<variant> args{std::move(from)};
-  return { my->_remote_wallet_bridge_api->find_recurrent_transfers( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->find_recurrent_transfers( {args}, LOCK ) };
 }
 
-serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
             const account_name_type& from,
             const flat_set<account_name_type>& delegatees,
             int64_t max_rc,
@@ -2949,29 +2949,29 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_rc(
   signed_transaction trx;
   trx.operations.push_back( op );
   trx.validate();
-  return { my->sign_transaction( trx, broadcast ), my->_transaction_serialization };
+  return { my->sign_transaction( trx, broadcast ) };
 }
 
-serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( fc::variant accounts )
+wallet_serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::find_rc_accounts( fc::variant accounts )
 {
   vector<variant> args{std::move(accounts)};
-  return { my->_remote_wallet_bridge_api->find_rc_accounts( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->find_rc_accounts( {args}, LOCK ) };
 }
 
-serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
+wallet_serializer_wrapper<vector< rc::rc_account_api_object >> wallet_api::list_rc_accounts(
             const string& start,
             uint32_t limit)
 {
   vector<variant> args{start , limit};
-  return { my->_remote_wallet_bridge_api->list_rc_accounts( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->list_rc_accounts( {args}, LOCK ) };
 }
 
-serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> wallet_api::list_rc_direct_delegations(
+wallet_serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> wallet_api::list_rc_direct_delegations(
             fc::variant start,
             uint32_t limit)
 {
   vector<variant> args{std::move( start ), limit};
-  return { my->_remote_wallet_bridge_api->list_rc_direct_delegations( {args}, LOCK ), my->_transaction_serialization };
+  return { my->_remote_wallet_bridge_api->list_rc_direct_delegations( {args}, LOCK ) };
 }
 
 } } // hive::wallet
