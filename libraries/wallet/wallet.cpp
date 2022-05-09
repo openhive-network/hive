@@ -320,8 +320,7 @@ public:
     result["median_hbd_price"]          = serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
     result["account_creation_fee"]      = serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
 
-    using protocol::hardfork_version;
-    hardfork_version current_hardfork_version;
+    protocol::hardfork_version current_hardfork_version;
     fc::from_variant(result["hardfork_version"], current_hardfork_version);
     if (current_hardfork_version >= HIVE_HARDFORK_0_17_VERSION)
     {
