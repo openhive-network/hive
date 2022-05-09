@@ -2,6 +2,7 @@
 
 #include <fc/variant.hpp>
 
+#include <hive/wallet/wallet_serializer_wrapper.hpp>
 #include <hive/protocol/asset.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_args.hpp>
 
@@ -17,7 +18,6 @@
 namespace hive { namespace wallet {
 
 using namespace hive::plugins::wallet_bridge_api;
-using hive::protocol::serializer_wrapper;
 
 enum class output_formatter_type : uint8_t { none, text, json };
 
@@ -107,7 +107,7 @@ struct wallet_formatter
     return get_result( std::stringstream(), _out_json, output_formatter );
   }
 
-  static variant list_my_accounts( const serializer_wrapper<list_my_accounts_return>& accounts, output_formatter_type output_formatter )
+  static variant list_my_accounts( const wallet_serializer_wrapper<list_my_accounts_return>& accounts, output_formatter_type output_formatter )
   {
     if( output_formatter == output_formatter_type::none )
     {
@@ -159,10 +159,10 @@ struct wallet_formatter
     return get_result( _out_text, _out_json, output_formatter );
   }
 
-  static std::pair<string, string> get_name_content( const serializer_wrapper<protocol::operation>& op )
+  static std::pair<string, string> get_name_content( const protocol::operation& op )
   {
     variant _v;
-    to_variant( op, _v );
+    to_variant( wallet_serializer_wrapper<protocol::operation>{ op }, _v );
 
     if( _v.is_array() )
       return std::make_pair( _v.get_array()[0].as_string(), fc::json::to_string( _v.get_array()[1] ) );
@@ -186,13 +186,12 @@ struct wallet_formatter
     out_text << std::left << setw(10) << block << " ";
     out_text << std::left << setw(50) << trx_id.str() << " ";
 
-    serializer_wrapper<protocol::operation> _op = { op };
-    auto _name_content = get_name_content( _op );
+    auto _name_content = get_name_content( op );
     out_text << std::left << setw(20) << _name_content.first << " ";
     out_text << std::left << setw(50) << _name_content.second << "\n";
   }
 
-  static variant get_account_history( const serializer_wrapper<get_account_history_return>& history, output_formatter_type output_formatter )
+  static variant get_account_history( const wallet_serializer_wrapper<get_account_history_return>& history, output_formatter_type output_formatter )
   {
     if( output_formatter == output_formatter_type::none )
     {
@@ -226,7 +225,7 @@ struct wallet_formatter
       return ASSET_TO_REAL( price.base ) / ASSET_TO_REAL( price.quote );
   }
 
-  static variant get_open_orders( const serializer_wrapper<get_open_orders_return>& orders, output_formatter_type output_formatter )
+  static variant get_open_orders( const wallet_serializer_wrapper<get_open_orders_return>& orders, output_formatter_type output_formatter )
   {
     if( output_formatter == output_formatter_type::none )
     {
@@ -274,7 +273,7 @@ struct wallet_formatter
     return get_result( _out_text, _out_json, output_formatter );
   }
 
-  static variant get_order_book( const serializer_wrapper<get_order_book_return>& orders_in_wrapper, output_formatter_type output_formatter )
+  static variant get_order_book( const wallet_serializer_wrapper<get_order_book_return>& orders_in_wrapper, output_formatter_type output_formatter )
   {
     if( output_formatter == output_formatter_type::none )
     {
@@ -382,7 +381,7 @@ struct wallet_formatter
     return get_result( _out_text, _out_json, output_formatter );
   }
 
-  static variant get_withdraw_routes( const serializer_wrapper<get_withdraw_routes_return>& routes, output_formatter_type output_formatter )
+  static variant get_withdraw_routes( const wallet_serializer_wrapper<get_withdraw_routes_return>& routes, output_formatter_type output_formatter )
   {
     if( output_formatter == output_formatter_type::none )
       return variant{ routes };

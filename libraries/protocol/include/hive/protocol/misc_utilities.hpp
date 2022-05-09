@@ -95,7 +95,7 @@ namespace fc {
   {
     try
     {
-      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+      mode_guard guard( a.transaction_serialization );
       from_variant( var, a.value );
     } FC_CAPTURE_AND_RETHROW()
   }
