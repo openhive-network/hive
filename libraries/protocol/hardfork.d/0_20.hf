@@ -27,6 +27,6 @@
 #define HIVE_HARDFORK_0_20__SP190 (HIVE_HARDFORK_0_20)
 
 
-#define HIVE_HARDFORK_0_20_VERSION hardfork_version( 0, 20 )
+#define HIVE_HARDFORK_0_20_VERSION hive::protocol::hardfork_version( 0, 20 )
 
 #endif

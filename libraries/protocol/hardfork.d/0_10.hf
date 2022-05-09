@@ -5,5 +5,5 @@
 
 #define HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 fc::seconds(60*30) /// 30 min
 #define HIVE_HARDFORK_0_10_TIME 1468584000  //2016-07-15T12:00:00 UTC
-#define HIVE_HARDFORK_0_10_VERSION hardfork_version( 0, 10 )
+#define HIVE_HARDFORK_0_10_VERSION hive::protocol::hardfork_version( 0, 10 )
 #endif

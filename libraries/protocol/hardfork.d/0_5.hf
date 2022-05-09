@@ -10,5 +10,5 @@
 
 // May 31 2016 17:00:00 UTC (1:00 PM EDT)
 #define HIVE_HARDFORK_0_5_TIME 1464714000
-#define HIVE_HARDFORK_0_5_VERSION hardfork_version( 0, 5 )
+#define HIVE_HARDFORK_0_5_VERSION hive::protocol::hardfork_version( 0, 5 )
 #endif

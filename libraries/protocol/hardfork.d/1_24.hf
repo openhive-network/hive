@@ -7,7 +7,7 @@
   #define HIVE_HARDFORK_1_24_TIME 1601992800 // Tuesday, 06-Oct-2020 14:00:00 UTC
 #endif
 
-#define HIVE_HARDFORK_1_24_VERSION hardfork_version( 1, 24 )
+#define HIVE_HARDFORK_1_24_VERSION hive::protocol::hardfork_version( 1, 24 )
 
 // hive.fund replaces steem.dao as treasury account
 #define HIVE_HARDFORK_1_24_TREASURY_RENAME HIVE_HARDFORK_1_24

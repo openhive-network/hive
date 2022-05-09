@@ -3,7 +3,7 @@
 #define HIVE_HARDFORK_0_9__141 HIVE_HARDFORK_0_9
 
 #define HIVE_HARDFORK_0_9_TIME 1468454400 // 2016-07-14T00:00:00 UTC
-#define HIVE_HARDFORK_0_9_VERSION hardfork_version( 0, 9 )
+#define HIVE_HARDFORK_0_9_VERSION hive::protocol::hardfork_version( 0, 9 )
 
 namespace hardfork9
 {
