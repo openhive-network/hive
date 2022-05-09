@@ -398,9 +398,11 @@ namespace hive { namespace chain {
       {
         try
         {
-          fc::optional<uint8_t> dictionary_number_to_use = get_best_available_zstd_compression_dictionary_number_for_block(b.block_num());
-          std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size(), dictionary_number_to_use, my->zstd_level);
-          block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), {block_flags::zstd});
+          block_attributes_t attributes;
+          attributes.flags = block_flags::zstd;
+          attributes.dictionary_number = get_best_available_zstd_compression_dictionary_number_for_block(b.block_num());
+          std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size(), attributes.dictionary_number, my->zstd_level);
+          block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), attributes);
         }
         catch (const fc::exception&)
         {
@@ -575,30 +577,35 @@ namespace hive { namespace chain {
     FC_CAPTURE_LOG_AND_RETHROW((first_block_num)(count))
   }
 
+  std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> block_log::read_raw_head_block() const
+  {
+    ssize_t block_log_size = get_file_size(my->block_log_fd);
+
+    // read the last int64 of the block log into `head_block_offset`, 
+    // that's the index of the start of the head block
+    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
+    uint64_t head_block_offset_with_flags;
+    detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), 
+                                             block_log_size - sizeof(head_block_offset_with_flags));
+    uint64_t head_block_offset;
+
+    block_attributes_t attributes;
+    std::tie(head_block_offset, attributes) = split_block_start_pos_with_flags(head_block_offset_with_flags);
+    size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
+
+    std::unique_ptr<char[]> raw_data(new char[raw_data_size]);
+    auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, raw_data.get(), raw_data_size, head_block_offset);
+    FC_ASSERT(total_read == raw_data_size);
+
+    return std::make_tuple(std::move(raw_data), raw_data_size, attributes);
+  }
+
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
   signed_block block_log::read_head()const
   {
     try
     {
-      ssize_t block_log_size = get_file_size(my->block_log_fd);
-
-      // read the last int64 of the block log into `head_block_offset`, 
-      // that's the index of the start of the head block
-      FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
-      uint64_t head_block_offset_with_flags;
-      detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), 
-                                               block_log_size - sizeof(head_block_offset_with_flags));
-      uint64_t head_block_offset;
-
-      block_attributes_t attributes;
-      std::tie(head_block_offset, attributes) = split_block_start_pos_with_flags(head_block_offset_with_flags);
-      size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
-
-      std::unique_ptr<char[]> raw_data(new char[raw_data_size]);
-      auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, raw_data.get(), raw_data_size, head_block_offset);
-      FC_ASSERT(total_read == raw_data_size);
-
-      std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(std::make_tuple(std::move(raw_data), raw_data_size, attributes));
+      std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(read_raw_head_block());
 
       signed_block block;
       fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block);

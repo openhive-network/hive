@@ -274,13 +274,13 @@ void fill_pending_queue(const fc::path& block_log)
     }
     uint32_t head_block_num = log.head()->block_num();
     idump((head_block_num));
-    if (blocks_to_compress && *blocks_to_compress > head_block_num - 1)
+    if (blocks_to_compress && *blocks_to_compress > head_block_num)
     {
       elog("Error: input block log does not contain ${blocks_to_compress} blocks (it's head block number is ${head_block_num})", (blocks_to_compress)(head_block_num));
       exit(1);
     }
     
-    uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress - 1 : head_block_num - 1;
+    uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress : head_block_num;
     ilog("Compressing blocks ${starting_block_number} to ${stop_at_block}", (starting_block_number)(stop_at_block));
 
     uint32_t current_block_number = starting_block_number;
@@ -298,7 +298,8 @@ void fill_pending_queue(const fc::path& block_log)
       block_to_compress* uncompressed_block = new block_to_compress;
       uncompressed_block->block_number = current_block_number;
 
-      std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = hive::chain::block_log::decompress_raw_block(log.read_raw_block_data_by_num(current_block_number));
+      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log::block_attributes_t> raw_compressed_block_data = current_block_number == head_block_num ? log.read_raw_head_block() : log.read_raw_block_data_by_num(current_block_number);
+      std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = hive::chain::block_log::decompress_raw_block(std::move(raw_compressed_block_data));
 
       uncompressed_block->uncompressed_block_size = std::get<1>(raw_block_data);
       uncompressed_block->uncompressed_block_data = std::get<0>(std::move(raw_block_data));
