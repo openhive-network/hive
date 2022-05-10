@@ -62,7 +62,7 @@ namespace detail {
 
     node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
       const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id,
-      size_t signers_size, size_t block_buffer_size, bool use_now_time );
+      size_t signers_size, size_t block_buffer_size );
 
     void open( fc::http::connection& con, const fc::url& url );
     void close();
@@ -115,18 +115,16 @@ namespace detail {
     uint64_t             error_response_count = 0;
     uint64_t             total_request_count = 0;
 
-    bool use_now_time;
-
     hp::legacy_switcher _use_legacy_serialization = false;
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
-    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size, bool use_now_time )
-    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size ), use_now_time( use_now_time )
+    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size )
+    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
-    idump((use_now_time)(input_url)(output_urls));
-    
+    idump((input_url)(output_urls));
+
     static const auto check_url = []( const auto& url ) {
       FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
       FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
@@ -474,11 +472,15 @@ namespace detail {
   {
     cfg.add_options()
       ( "block-buffer-size", bpo::value< size_t >()->default_value( 1000 ), "Block buffer size" )
-      ( "use-now-time,T", bpo::bool_switch()->default_value( false ), "Set expiration time of the transactions to the current system time (works only with the node_based_conversion plugin)" );
+      ( "use-now-time,T", bpo::bool_switch()->default_value( false ), "(deprecated) "
+        "Set expiration time of the transactions to the current system time (works only with the node_based_conversion plugin)" );
   }
 
   void node_based_conversion_plugin::plugin_initialize( const bpo::variables_map& options )
   {
+    if( options.count("use-now-time") )
+      wlog("\'--use-now-time\' option has been deprecated in favor of the relative transaction expiration times feature!");
+
     FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
     FC_ASSERT( options.count("output"), "You have to specify the output source for the " HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " plugin" );
 
@@ -507,7 +509,7 @@ namespace detail {
     my = std::make_unique< detail::node_based_conversion_plugin_impl >(
           input_v.at(0), output_v,
           *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >(),
-          options["block-buffer-size"].as< size_t >(), options["use-now-time"].as< bool >()
+          options["block-buffer-size"].as< size_t >()
         );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
