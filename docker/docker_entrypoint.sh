@@ -50,7 +50,7 @@ sudo -Enu hived /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
-  --data-dir=/home/hived/datadir \
+  --data-dir=/home/hived/datadir --shared-file-dir=/home/hived/shm_dir \
   ${HIVED_ARGS[@]} 2>&1 | tee -i hived.log
 echo "$? Hived process finished execution."
 EOF
