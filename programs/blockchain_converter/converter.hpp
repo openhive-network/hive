@@ -118,7 +118,7 @@ namespace hive { namespace converter {
   {
   private:
     blockchain_converter& converter;
-    fc::time_point_sec block_offset;
+    uint32_t block_offset;
 
   public:
     typedef hp::operation result_type;
