@@ -65,7 +65,7 @@ while [ $# -gt 0 ]; do
         ;;
     --shared-file-dir=*)
         HIVED_SHM_FILE_DIR="${1#*=}"
-        add_hived_arg "--shared-file-dir=/home/hived/shm_dir"
+        # do not pass this arg to the hived directly - it has already passed path: /home/hived/shm_dir inside docker_entrypoint.sh
         add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
         ;;
      --name=*)
@@ -103,6 +103,6 @@ CMD_ARGS+=("${HIVED_ARGS[@]}")
 #echo "Additional hived args: ${CMD_ARGS[@]}"
 
 docker container rm -f -v -l "$CONTAINER_NAME" 2>/dev/null || true
-docker run -itd --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+docker run --rm -itd --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 
