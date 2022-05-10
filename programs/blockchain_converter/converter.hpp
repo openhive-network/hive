@@ -57,6 +57,7 @@ namespace hive { namespace converter {
 
     mutable std::mutex second_auth_mutex;
 
+    hp::block_id_type converter_head_block_id;
     hp::block_id_type mainnet_head_block_id;
 
     static const std::array< uint32_t, HIVE_NUM_HARDFORKS + 1 > hardfork_blocks;
@@ -69,6 +70,7 @@ namespace hive { namespace converter {
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
     hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time );
 
+    const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;
 
     uint32_t get_converter_head_block_num()const;

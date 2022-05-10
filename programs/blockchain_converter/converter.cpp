@@ -93,7 +93,7 @@ namespace hive { namespace converter {
   const hp::custom_binary_operation& convert_operations_visitor::operator()( hp::custom_binary_operation& op )const
   {
     op.required_auths.clear();
-    wlog( "Clearing custom_binary_operation required_auths in block: ${block_num}", ("block_num", converter.get_current_block().block_num()) );
+    wlog( "Clearing custom_binary_operation required_auths in block: ${block_num}", ("block_num", converter.get_converter_head_block_num()) );
 
     return op;
   }
@@ -128,7 +128,7 @@ namespace hive { namespace converter {
 
   const hp::pow_operation& convert_operations_visitor::operator()( hp::pow_operation& op )const
   {
-    op.block_id = converter.get_current_block().previous;
+    op.block_id = converter.get_converter_head_block_id();
 
     converter.add_pow_key( op.worker_account, op.work.worker );
 
@@ -152,7 +152,7 @@ namespace hive { namespace converter {
 
     auto& prev_block = op.work.which() ? op.work.get< hp::equihash_pow >().prev_block : op.work.get< hp::pow2 >().input.prev_block;
 
-    prev_block = converter.get_current_block().previous;
+    prev_block = converter.get_converter_head_block_id();
 
     return op;
   }
@@ -216,7 +216,7 @@ namespace hive { namespace converter {
 
 
   blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, bool increase_block_size )
-    : _private_key( _private_key ), chain_id( chain_id ), shared_signatures_stack_in(10000), shared_signatures_stack_out(10000), increase_block_size( increase_block_size ), signers_exit( false ) 
+    : _private_key( _private_key ), chain_id( chain_id ), shared_signatures_stack_in(10000), shared_signatures_stack_out(10000), increase_block_size( increase_block_size ), signers_exit( false )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
@@ -305,6 +305,8 @@ namespace hive { namespace converter {
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
     // `limit_order_create_operation` operation generation, we can override the previous block id in our block:
     _signed_block.previous = previous_block_id;
+
+    converter_head_block_id = _signed_block.previous;
 
     current_block_ptr = &_signed_block;
 
@@ -404,6 +406,11 @@ namespace hive { namespace converter {
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
     return _signed_block.id();
+  }
+
+  const hp::block_id_type& blockchain_converter::get_converter_head_block_id()const
+  {
+    return converter_head_block_id;
   }
 
   const hp::block_id_type& blockchain_converter::get_mainnet_head_block_id()const
