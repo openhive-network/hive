@@ -31,7 +31,7 @@ namespace hive { namespace converter {
   using hp::authority;
 
   convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset )
-    : converter( converter ), block_offset( block_offset ) {}
+    : converter( converter ), block_offset( block_offset.sec_since_epoch() ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -310,17 +310,17 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    auto trx_time_offset = _signed_block.timestamp - now_time;
+    fc::microseconds trx_time_offset = _signed_block.timestamp - now_time;
 
     const auto apply_trx_expiration_offset = [&](hp::transaction& trx) {
       // Add transactoin time offset to avoid txids duplication
-      trx_time_offset += 1;
+      trx_time_offset += fc::seconds(1);
 
       // Apply either deduced transaction expiration value or the maximum one
       trx.expiration = std::min(
         // Apply either minimum transaction expiration value or the desired one
-        std::max(_signed_block.timestamp + trx_time_offset - HIVE_BLOCK_INTERVAL, trx.expiration + trx_time_offset),
-        _signed_block.timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL
+        std::max(_signed_block.timestamp + trx_time_offset - fc::seconds(HIVE_BLOCK_INTERVAL), trx.expiration + trx_time_offset),
+        _signed_block.timestamp + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL)
       );
     };
 
