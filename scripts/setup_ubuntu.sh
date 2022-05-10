@@ -28,7 +28,7 @@ install_all_runtime_packages() {
 
 install_all_dev_packages() {
   apt-get update && apt-get install -y \
-  git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libicu66 libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
+  git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
   autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build \
   \
   screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil && \
