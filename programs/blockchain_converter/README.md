@@ -31,7 +31,24 @@ As the `input` option value you will have to specify a path to a non-empty input
 
 #### `node_based_conversion`
 `node_based_conversion` plugin relies on the remote nodes.
-As the `input` option value you will have to specify an URL to the original input mainnet node (make sure that given node uses block API and database API) and as the `output` option value you should specify URLs to the nodes with altered chain (make sure that given nodes use condenser API). If you want to convert old transactions, use the `use-now-time` option to alter the expiration time of the transactions to the current timestamp for nodes to accept them.
+As the `input` option value you will have to specify an URL to the original input mainnet node (make sure that given node uses block API and database API) and as the `output` option value you should specify URLs to the nodes with altered chain (make sure that given nodes use condenser API).
+
+In favor of the old `use-now-time` option there is a new feature that calculates transaction expiration times based on the time gap between output node
+head block time and the timestamp of the block that is currently being converted. There is also a transaction expiration check that should perfectly work for the majority of converted transactions (formula):
+```c++
+// Apply either deduced transaction expiration value or the maximum one
+min(
+  // Apply either minimum transaction expiration value or the desired one
+  max( block_to_convert.timestamp + trx_time_offset - HIVE_BLOCK_INTERVAL, transaction_to_convert.expiration + trx_time_offset),
+  block_to_convert.timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL
+)
+```
+
+where:
+* `trx_time_offset` is the mentioned time gap plus the safety "nonce" for the transactions to avoid their ids duplication
+* `HIVE_BLOCK_INTERVAL` is the standard hive block production interval which (in the standard configuration) is 3 seconds
+* `HIVE_MAX_TIME_UNTIL_EXPIRATION` is the maximum time until the transaction expiration which (in the standard configuration) is 1 hour
+
 
 This plugin retrieves blocks from the remote and holds them in the block buffer. You can specify the block buffer size with the `block-buffer-size` option, which defaults to 1000.
 
@@ -187,11 +204,9 @@ alice-hived -d alice-data --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcE
 
 After that run the blockchain converter:
 ```
-blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key --use-now-time
+blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
 As the input node we are using `https://api.deathwing.me:80`. You can use any fully-replayed mainnet node that has an HTTP webserver.
-
-Note that there is the `--use-now-time` option present. Setting this option is recommended and you should use it whenever you are sending transactions that have an expiration time older than now - `HIVE_MAX_TIME_UNTIL_EXPIRATION` (which refers to 1 hour in the standard build).
 
 It is also recommended to set the `-R` option, which explicitly tells the converter from which mainnet block it should resume the conversion process.
 
