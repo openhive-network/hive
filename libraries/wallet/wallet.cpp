@@ -590,6 +590,7 @@ public:
     const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer);
 
   hive::protocol::asset get_asset( const fc::variant& val );
+  fc::variant get_variant( const hive::protocol::asset& val );
 
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
   {
@@ -966,10 +967,19 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 
 hive::protocol::asset wallet_api_impl::get_asset( const fc::variant& val )
 {
-  serializer_wrapper<hive::protocol::asset> _amount = { hive::protocol::asset(), _legacy_format };
-  fc::from_variant( val, _amount );
+  serializer_wrapper<hive::protocol::asset> _asset = { hive::protocol::asset(), _legacy_format };
+  fc::from_variant( val, _asset );
 
-  return _amount.value;
+  return _asset.value;
+}
+
+fc::variant wallet_api_impl::get_variant( const hive::protocol::asset& val )
+{
+  serializer_wrapper<hive::protocol::asset> _asset = { val, _legacy_format };
+  fc::variant _v;
+  fc::to_variant( _asset, _v );
+
+  return _v;
 }
 
 } } } // hive::wallet::detail
@@ -1355,8 +1365,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::create_account_with
   public_key_type memo,
   bool broadcast )const
 {
-  fc::variant no_funds;
-  return { create_funded_account_with_keys(creator, new_account_name, no_funds, "", json_meta, owner,
+  return { create_funded_account_with_keys(creator, new_account_name, my->get_variant( hive::protocol::asset() ), "", json_meta, owner,
     active, posting, memo, broadcast) };
 }
 
