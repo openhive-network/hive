@@ -39,11 +39,14 @@ def world_with_witnesses(world, witness_names):
     beta_net.create_witness_node(witnesses=beta_witness_names)
     node_under_test = beta_net.create_api_node(name = 'NodeUnderTest')
 
+    unneeded_default_plugins = ["account_by_key","account_by_key_api","account_history_rocksdb","account_history_api","condenser_api","debug_node_api","market_history_api","reputation_api","rewards_api"]
     for node in world.nodes():
-        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr,p2p"} '\
-                                 '{"name":"user","level":"debug","appender":"stderr,p2p"} '\
-                                 '{"name":"chainlock","level":"debug","appender":"p2p"} '\
-                                 '{"name":"sync","level":"debug","appender":"p2p"} '\
-                                 '{"name":"p2p","level":"debug","appender":"p2p"}'
+        for p in unneeded_default_plugins:
+            node.config.plugin.remove(p)
+        node.config.log_logger = '{"name":"default","level":"info","appender":"stderr,p2p"} '\
+                                 '{"name":"user","level":"info","appender":"stderr,p2p"} '\
+                                 '{"name":"chainlock","level":"error","appender":"p2p"} '\
+                                 '{"name":"sync","level":"info","appender":"p2p"} '\
+                                 '{"name":"p2p","level":"info","appender":"p2p"}'
 
     yield world
