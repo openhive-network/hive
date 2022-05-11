@@ -1091,7 +1091,7 @@ class wallet_api
       * @return the signed version of the transaction
       */
     serializer_wrapper<annotated_signed_transaction> sign_transaction(
-      const serializer_wrapper<annotated_signed_transaction>& tx,
+      const fc::variant& tx,
       bool broadcast = false);
 
     /** Returns an uninitialized object representing a given blockchain operation.

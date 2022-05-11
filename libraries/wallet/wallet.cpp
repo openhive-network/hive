@@ -589,7 +589,10 @@ public:
   serializer_wrapper<annotated_signed_transaction> build_claim_account_creation(const string& creator, const hive::protocol::asset& fee,
     const std::function<annotated_signed_transaction(signed_transaction)>& tx_signer);
 
+  template<typename return_type>
+  return_type get_object( const fc::variant& val );
   hive::protocol::asset get_asset( const fc::variant& val );
+  annotated_signed_transaction get_trx( const fc::variant& val );
   fc::variant get_variant( const hive::protocol::asset& val );
 
   void set_transaction_expiration( uint32_t tx_expiration_seconds )
@@ -965,12 +968,23 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
   } FC_CAPTURE_AND_RETHROW((creator))
 }
 
-hive::protocol::asset wallet_api_impl::get_asset( const fc::variant& val )
+template<typename return_type>
+return_type wallet_api_impl::get_object( const fc::variant& val )
 {
-  serializer_wrapper<hive::protocol::asset> _asset = { hive::protocol::asset(), _legacy_format };
+  serializer_wrapper<return_type> _asset = { return_type(), _legacy_format };
   fc::from_variant( val, _asset );
 
   return _asset.value;
+}
+
+hive::protocol::asset wallet_api_impl::get_asset( const fc::variant& val )
+{
+  return get_object<hive::protocol::asset>( val );
+}
+
+annotated_signed_transaction wallet_api_impl::get_trx( const fc::variant& val )
+{
+  return get_object<annotated_signed_transaction>( val );
 }
 
 fc::variant wallet_api_impl::get_variant( const hive::protocol::asset& val )
@@ -1190,9 +1204,9 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::set_voting_proxy(co
 void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::sign_transaction(
-  const serializer_wrapper<annotated_signed_transaction>& tx, bool broadcast /* = false */)
+  const fc::variant& tx, bool broadcast /* = false */)
 { try {
-  signed_transaction appbase_tx( tx.value );
+  signed_transaction appbase_tx( my->get_trx( tx ) );
   annotated_signed_transaction result = my->sign_transaction( appbase_tx, broadcast);
   return { result, my->_transaction_serialization };
 } FC_CAPTURE_AND_RETHROW( (tx) ) }
