@@ -595,6 +595,7 @@ public:
   hive::protocol::asset get_asset( const fc::variant& val );
   annotated_signed_transaction get_annotated_signed_transaction( const fc::variant& val );
   signed_transaction get_signed_transaction( const fc::variant& val );
+  legacy_chain_properties get_legacy_chain_properties( const fc::variant& val );
 
   fc::variant get_variant( const hive::protocol::asset& val );
 
@@ -993,6 +994,11 @@ annotated_signed_transaction wallet_api_impl::get_annotated_signed_transaction( 
 signed_transaction wallet_api_impl::get_signed_transaction( const fc::variant& val )
 {
   return get_object<signed_transaction>( val );
+}
+
+legacy_chain_properties wallet_api_impl::get_legacy_chain_properties( const fc::variant& val )
+{
+  return get_object<legacy_chain_properties>( val );
 }
 
 fc::variant wallet_api_impl::get_variant( const hive::protocol::asset& val )
@@ -1976,7 +1982,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   const string& witness_account_name,
   const string& url,
   public_key_type block_signing_key,
-  const serializer_wrapper<legacy_chain_properties>& props,
+  const fc::variant& props,
   bool broadcast  )
 {
   FC_ASSERT( !is_locked() );
@@ -1999,7 +2005,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness(
   }
   op.owner = witness_account_name;
   op.block_signing_key = block_signing_key;
-  op.props = props.value;
+  op.props = my->get_legacy_chain_properties( props );
 
   signed_transaction tx;
   tx.operations.push_back(op);

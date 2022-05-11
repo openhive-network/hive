@@ -762,7 +762,7 @@ class wallet_api
       const string& witness_name,
       const string& url,
       public_key_type block_signing_key,
-      const serializer_wrapper<legacy_chain_properties>& props,
+      const fc::variant& props,
       bool broadcast = false);
 
     /** Set the governance voting proxy for an account.
