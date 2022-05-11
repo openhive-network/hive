@@ -20,6 +20,8 @@ namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
 
+using hive::protocol::legacy_switcher;
+
 class wallet_bridge_api_impl
 {
   public:
@@ -649,7 +651,9 @@ protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& arg
   }
   catch( fc::bad_cast_exception& e )
   {
-    return ( args.get_array()[0].as<hive::protocol::serializer_wrapper<protocol::signed_transaction>>() ).value;
+    legacy_switcher switcher;
+    ilog("Change of serialization( `wallet_bridge_api_impl::get_trx' ) - ${format} is enabled now", ("format", legacy_switcher::info()) );
+    return args.get_array()[0].as<protocol::signed_transaction>();
   }
 }
 
