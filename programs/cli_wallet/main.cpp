@@ -142,6 +142,21 @@ int main( int argc, char** argv )
       }
     }
 
+#ifdef USE_ALTERNATE_CHAIN_ID
+    std::cout << "STARTING "
+# ifdef IS_TEST_NET
+                            "TEST"
+# else
+                            "MIRROR"
+# endif
+                            " WALLET\n";
+#else
+    std::cout << "STARTING HIVE WALLET\n";
+#endif
+    std::cout << "chain id: " << std::string(_hive_chain_id) << "\n";
+    std::cout << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
+    std::cout << "git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n";
+
     fc::path data_dir;
     fc::logging_config cfg;
     fc::path log_dir = data_dir / "logs";
