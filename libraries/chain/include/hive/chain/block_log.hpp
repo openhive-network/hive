@@ -95,7 +95,7 @@ namespace hive { namespace chain {
                                                                                fc::optional<uint8_t> dictionary_number = fc::optional<int>(), 
                                                                                fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
     private:
-      void construct_index( bool resume = false, uint64_t index_pos = 0 );
+      void construct_index(bool resume = false);
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
 
       std::unique_ptr<detail::block_log_impl> my;
