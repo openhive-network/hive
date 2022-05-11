@@ -36,9 +36,9 @@ As the `input` option value you will have to specify an URL to the original inpu
 In favor of the old `use-now-time` option there is a new feature that calculates transaction expiration times based on the time gap between output node
 head block time and the timestamp of the block that is currently being converted. There is also a transaction expiration check that should perfectly work for the majority of converted transactions (formula):
 ```c++
-// Apply either deduced transaction expiration value or the maximum one
+// Use the deduced transaction expiration value, unless it would be too far in the future to be allowed, then use largest future time
 min(
-  // Apply either minimum transaction expiration value or the desired one
+  // Try to match relative expiration time of original transaction to including block, unless it would be so short that transaction would likely expire. After more thought, I'm starting to question the logic on this, maybe we would prefer if these transactions don't expire if at all possible (after all, they got into mainnet). But let's leave this as-is for now.
   max( block_to_convert.timestamp + trx_time_offset - HIVE_BLOCK_INTERVAL, transaction_to_convert.expiration + trx_time_offset),
   block_to_convert.timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL
 )
