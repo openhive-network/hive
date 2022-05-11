@@ -5,7 +5,7 @@ from pathlib import Path
 import time
 from threading import Event
 
-from test_tools import logger, Asset, Wallet, BlockLog
+from test_tools import logger, Asset, Wallet, BlockLog, Account
 from test_tools.private.wait_for import wait_for_event
 
 
@@ -32,6 +32,20 @@ def test_massive_trxs(world_with_witnesses):
                Wallet(attach_to=alpha_witness_node), Wallet(attach_to=beta_witness_node), Wallet(attach_to=node_under_test)]
     number_of_threads = len(wallets) * 10
 
+    seed_account = Account("seed")
+    for wallet in wallets:
+        wallet.api.set_transaction_expiration(45*60)
+        wallet.api.import_key(seed_account.private_key)
+
+    accounts = ["alice", "bob", "carol"]
+    account_count = len(accounts)
+
+    for a in accounts:
+        wallets[0].api.create_account_with_keys('initminer', a, '{}', seed_account.public_key, seed_account.public_key, seed_account.public_key, seed_account.public_key)
+        wallets[0].api.transfer('initminer', a, Asset.Test(1000.0), 'initial cash')
+
+    node_under_test.wait_number_of_blocks(2)
+
     executor = ThreadPoolExecutor(max_workers=number_of_threads)
     event = Event()
 
@@ -40,7 +54,10 @@ def test_massive_trxs(world_with_witnesses):
         def func(event, wallet, i):
             for j in itertools.count(start=1):
                 for k in range(2000):
-                    wallet.api.transfer_nonblocking('initminer', 'initminer', Asset.Test(0.1), f'memo {i} {j} {k}')
+                    try:
+                        wallet.api.transfer_nonblocking(accounts[k % account_count], accounts[(k+1) % account_count], Asset.Test(0.1), f'memo {i} {j} {k}')
+                    except Exception:
+                        pass
                 if event.is_set():
                     return
 
