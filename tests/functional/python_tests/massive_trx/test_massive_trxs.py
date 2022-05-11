@@ -63,11 +63,17 @@ def test_massive_trxs(world_with_witnesses):
 
         executor.submit(func, event, wallet, i)
 
-    while alpha_witness_node.get_number_of_forks()==0 and \
-            beta_witness_node.get_number_of_forks()==0 and \
-            node_under_test.get_number_of_forks()==0:
-        #logger.info(f'{node_under_test} number_of_forks {node_under_test.get_number_of_forks()}')
-        time.sleep(1)
+    logger.info('Starting main loop')
+    try:
+        while alpha_witness_node.get_number_of_forks()==0 and \
+              beta_witness_node.get_number_of_forks()==0 and \
+              node_under_test.get_number_of_forks()==0:
+            #logger.info(f'{node_under_test} number_of_forks {node_under_test.get_number_of_forks()}')
+            time.sleep(1)
+    except KeyboardInterrupt:
+        event.set()
+        executor.shutdown(wait=True)
+        raise
     logger.info(f'Detected fork')
     event.set()
 
