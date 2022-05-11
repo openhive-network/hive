@@ -54,12 +54,12 @@ def test_massive_trxs(world_with_witnesses):
         def func(event, wallet, i):
             for j in itertools.count(start=1):
                 for k in range(2000):
+                    if event.is_set():
+                        return
                     try:
                         wallet.api.transfer_nonblocking(accounts[k % account_count], accounts[(k+1) % account_count], Asset.Test(0.1), f'memo {i} {j} {k}')
                     except Exception:
                         pass
-                if event.is_set():
-                    return
 
         executor.submit(func, event, wallet, i)
 
