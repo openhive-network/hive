@@ -231,7 +231,7 @@ namespace detail
 
     for( auto& op_obj : ops )
     {
-      result.push_back( hive::protocol::serializer_wrapper<api_operation_object>( { api_operation_object( op_obj, op_obj.op ) } ) );
+      result.push_back( hive::protocol::serializer_wrapper<api_operation_object>( { api_operation_object( op_obj, op_obj.op ), true/*legacy_enabled*/ } ) );
       result.back().value.op_in_trx = op_obj.op_in_trx;
     }
 
@@ -717,7 +717,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    return hive::protocol::serializer_wrapper<annotated_signed_transaction>( { _account_history_api->get_transaction( { args[0].as< transaction_id_type >() } ) } );
+    return hive::protocol::serializer_wrapper<annotated_signed_transaction>( { _account_history_api->get_transaction( { args[0].as< transaction_id_type >(), true/*legacy_enabled*/ } ) } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_required_signatures )
@@ -889,7 +889,7 @@ namespace detail
     {
       api_operation_object obj( entry.second, entry.second.op );
       obj.op_in_trx = entry.second.op_in_trx;
-      result.emplace( entry.first, hive::protocol::serializer_wrapper<api_operation_object>{ obj } );
+      result.emplace( entry.first, hive::protocol::serializer_wrapper<api_operation_object>{ obj, true/*legacy_enabled*/ } );
     }
 
     return result;
