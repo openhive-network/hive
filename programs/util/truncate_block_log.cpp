@@ -1,36 +1,16 @@
-#include <hive/chain/database.hpp>
-#include <hive/protocol/block.hpp>
-#include <fc/io/raw.hpp>
+#include <iostream>
 
 int main( int argc, char** argv, char** envp )
 {
-  try
-  {
-    if(argc != 4)
-      {
-      std::cout << "Usage: truncate_block_log <input_block_log_path> <output_block_log_path> <block_number>" << std::endl;
-      return 0;
-      }
-
-    fc::path blockLogPath(argv[1]);
-    const char* maxBlockNumber = argv[3];
-    fc::path outputBlockLogPath(argv[2]);
-
-    uint32_t maxBlock = atoi(maxBlockNumber);
-
-    hive::chain::block_log log;
-
-    ilog("Trying to open input block_log file: `${i}'", ("i", blockLogPath));
-    ilog("Truncated block_log will be saved into file: `${i}'", ("i", outputBlockLogPath));
-
-    log.rewrite(blockLogPath, outputBlockLogPath, maxBlock);
-
-    log.close();
-  }
-  catch ( const std::exception& e )
-  {
-    edump( ( std::string( e.what() ) ) );
-  }
-
-  return 0;
+  std::cout << "The truncate_block_log tool has been removed, as it wasn't compatible\n";
+  std::cout << "with block log compression\n";
+  std::cout << "\n";
+  std::cout << "If you want to generate a truncated copy of an exiting block log,\n";
+  std::cout << "the `compress_block_log` utility will do this via the `--block-count`\n";
+  std::cout << "argument.  If you don't wish to use compression in your truncated log\n";
+  std::cout << "you can also specify `--decompress`.\n";
+  std::cout << "\n";
+  std::cout << "You can also use the repair_block_log.sh shell script to truncate\n";
+  std::cout << "an existing block in-place (without making a copy)\n";
+  return 1;
 }
