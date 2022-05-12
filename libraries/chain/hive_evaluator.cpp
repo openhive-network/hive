@@ -2107,7 +2107,7 @@ void pow_apply( database& db, Operation o )
       auth.posting = auth.owner;
     });
 
-    db.push_virtual_operation( account_created_operation(new_account.name, "", asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    db.push_virtual_operation( account_created_operation(new_account.name, o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
 
   const auto& worker_account = db.get_account( o.get_worker_account() ); // verify it exists
@@ -2252,7 +2252,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
         w.pow_worker        = dgp.total_pow;
     });
 
-    _db.push_virtual_operation( account_created_operation(new_account.name, "", asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    _db.push_virtual_operation( account_created_operation(new_account.name, worker_account, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
   else
   {
@@ -2508,7 +2508,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
-  _db.push_virtual_operation( account_created_operation(new_account.name, "", asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+  _db.push_virtual_operation( account_created_operation(new_account.name, o.creator, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
 }
 
 void request_account_recovery_evaluator::do_apply( const request_account_recovery_operation& o )
