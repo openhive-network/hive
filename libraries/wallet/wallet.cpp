@@ -596,6 +596,7 @@ public:
   annotated_signed_transaction get_annotated_signed_transaction( const fc::variant& val );
   signed_transaction get_signed_transaction( const fc::variant& val );
   legacy_chain_properties get_legacy_chain_properties( const fc::variant& val );
+  price get_price( const fc::variant& val );
 
   fc::variant get_variant( const hive::protocol::asset& val );
 
@@ -999,6 +1000,11 @@ signed_transaction wallet_api_impl::get_signed_transaction( const fc::variant& v
 legacy_chain_properties wallet_api_impl::get_legacy_chain_properties( const fc::variant& val )
 {
   return get_object<legacy_chain_properties>( val );
+}
+
+price wallet_api_impl::get_price( const fc::variant& val )
+{
+  return get_object<price>( val );
 }
 
 fc::variant wallet_api_impl::get_variant( const hive::protocol::asset& val )
@@ -2467,13 +2473,13 @@ serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_collateral(
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::publish_feed(
   const string& witness,
-  const serializer_wrapper<price>& exchange_rate,
+  const fc::variant& exchange_rate,
   bool broadcast )
 {
   FC_ASSERT( !is_locked() );
   feed_publish_operation op;
   op.publisher     = witness;
-  op.exchange_rate = price( exchange_rate.value );
+  op.exchange_rate = my->get_price( exchange_rate );
 
   signed_transaction tx;
   tx.operations.push_back( op );

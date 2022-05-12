@@ -1079,7 +1079,7 @@ class wallet_api
       */
     serializer_wrapper<annotated_signed_transaction> publish_feed(
       const string& witness,
-      const serializer_wrapper<price>& exchange_rate,
+      const fc::variant& exchange_rate,
       bool broadcast );
 
     /** Signs a transaction.
