@@ -40,7 +40,7 @@ head block time and the timestamp of the block that is currently being converted
 min(
   // Try to match relative expiration time of original transaction to including block, unless it would be so short that transaction would likely expire. After more thought, I'm starting to question the logic on this, maybe we would prefer if these transactions don't expire if at all possible (after all, they got into mainnet). But let's leave this as-is for now.
   max( block_to_convert.timestamp + trx_time_offset - HIVE_BLOCK_INTERVAL, transaction_to_convert.expiration + trx_time_offset),
-  block_to_convert.timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL
+  now_time - HIVE_BLOCK_INTERVAL + HIVE_MAX_TIME_UNTIL_EXPIRATION
 )
 ```
 

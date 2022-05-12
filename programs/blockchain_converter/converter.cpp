@@ -310,7 +310,7 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    fc::microseconds trx_time_offset = _signed_block.timestamp - now_time;
+    fc::microseconds trx_time_offset = now_time - _signed_block.timestamp;
 
     const auto apply_trx_expiration_offset = [&](hp::transaction& trx) {
       // Add transactoin time offset to avoid txids duplication
@@ -320,7 +320,7 @@ namespace hive { namespace converter {
       trx.expiration = std::min(
         // Apply either minimum transaction expiration value or the desired one
         std::max(_signed_block.timestamp + trx_time_offset - fc::seconds(HIVE_BLOCK_INTERVAL), trx.expiration + trx_time_offset),
-        _signed_block.timestamp + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL)
+        now_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL)
       );
     };
 
