@@ -4436,6 +4436,10 @@ namespace graphene { namespace net {
         try
         {
           _tcp_server.accept( new_peer->get_socket() );
+          new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
+          idump((new_peer->get_socket().get_no_delay()));
+          new_peer->get_socket().set_no_delay(true);
+          idump((new_peer->get_socket().get_no_delay()));
           ilog( "accepted inbound connection from ${remote_endpoint}", ("remote_endpoint", new_peer->get_socket().remote_endpoint() ) );
           if (_node_is_shutting_down)
             return;
@@ -4780,6 +4784,10 @@ namespace graphene { namespace net {
       _tcp_server.set_reuse_address();
       int server_send_buffer_size = _tcp_server.set_send_buffer_size(MAX_MESSAGE_SIZE);
       idump((server_send_buffer_size));
+      idump((_tcp_server.get_no_delay()));
+      _tcp_server.set_no_delay(true);
+      idump((_tcp_server.get_no_delay()));
+
       try
       {
         if( listen_endpoint.get_address() != fc::ip::address() )
@@ -4843,6 +4851,10 @@ namespace graphene { namespace net {
       new_peer->get_socket().set_reuse_address();
       int peer_send_buffer_size = new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
       idump((peer_send_buffer_size));
+      idump((new_peer->get_socket().get_no_delay()));
+      new_peer->get_socket().set_no_delay(true);
+      idump((new_peer->get_socket().get_no_delay()));
+  
       new_peer->connection_initiation_time = fc::time_point::now();
       _handshaking_connections.insert(new_peer);
       _rate_limiter.add_tcp_socket(&new_peer->get_socket());

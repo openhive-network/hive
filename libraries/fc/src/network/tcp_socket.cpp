@@ -253,6 +253,19 @@ namespace fc {
     return new_send_buffer_reading.value();
   }
 
+  bool tcp_socket::get_no_delay()
+  {
+    boost::asio::ip::tcp::no_delay option;
+    my->_sock.get_option(option);
+    return option.value();
+  }
+
+  void tcp_socket::set_no_delay(bool no_delay_flag)
+  {
+    boost::asio::ip::tcp::no_delay option(no_delay_flag);
+    my->_sock.set_option(option);
+  }
+
   class tcp_server::impl {
     public:
       impl()
@@ -337,6 +350,23 @@ namespace fc {
     wdump((new_send_buffer_reading.value()));
 
     return new_send_buffer_reading.value();
+  }
+
+  bool tcp_server::get_no_delay()
+  {
+    if (!my)
+      my = new impl;
+    boost::asio::ip::tcp::no_delay option;
+    my->_accept.get_option(option);
+    return option.value();
+  }
+
+  void tcp_server::set_no_delay(bool no_delay_flag)
+  {
+    if (!my)
+      my = new impl;
+    boost::asio::ip::tcp::no_delay option(no_delay_flag);
+    my->_accept.set_option(option);
   }
 
   void tcp_server::listen( uint16_t port )
