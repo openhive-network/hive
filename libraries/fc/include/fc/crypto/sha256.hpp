@@ -28,7 +28,7 @@ class sha256
     static sha256 hash( const T& t )
     {
       sha256::encoder e;
-      fc::raw::pack(e,t);
+      fc::raw::pack(e,t,fc::raw::pack_flags());
       return e.result();
     }
 

@@ -13,22 +13,22 @@ namespace hive { namespace protocol {
 digest_type signed_transaction::merkle_digest()const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, *this );
+  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
   return enc.result();
 }
 
 digest_type transaction::digest()const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, *this );
+  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
   return enc.result();
 }
 
 digest_type transaction::sig_digest( const chain_id_type& chain_id )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id );
-  fc::raw::pack( enc, *this );
+  fc::raw::pack( enc, chain_id, fc::raw::pack_flags() );
+  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
   return enc.result();
 }
 
@@ -68,8 +68,8 @@ const signature_type& hive::protocol::signed_transaction::sign( const private_ke
 signature_type hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id );
-  fc::raw::pack( enc, *this );
+  fc::raw::pack( enc, chain_id, fc::raw::pack_flags() );
+  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
   return key.sign_compact( enc.result(), canon_type );
 }
 

@@ -1005,7 +1005,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
 
     std::vector<char>& storage = infoCache.back().second;
 
-    chainbase::serialization::pack_to_buffer(storage, info);
+    chainbase::serialization::pack_to_buffer(storage, info, fc::raw::pack_flags());
     Slice key(info.name);
     Slice value(storage.data(), storage.size());
 

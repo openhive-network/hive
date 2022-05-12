@@ -83,9 +83,9 @@ namespace fc {
   namespace raw
   {
     template<typename Stream>
-    inline void pack( Stream& s, const ip::address& v )
+    inline void pack( Stream& s, const ip::address& v, const pack_flags& flags )
     {
-       fc::raw::pack( s, uint32_t(v) );
+       fc::raw::pack( s, uint32_t(v), flags );
     }
     template<typename Stream>
     inline void unpack( Stream& s, ip::address& v, uint32_t depth )
@@ -97,10 +97,10 @@ namespace fc {
     }
 
     template<typename Stream>
-    inline void pack( Stream& s, const ip::endpoint& v )
+    inline void pack( Stream& s, const ip::endpoint& v, const pack_flags& flags )
     {
-       fc::raw::pack( s, v.get_address() );
-       fc::raw::pack( s, v.port() );
+       fc::raw::pack( s, v.get_address(), flags );
+       fc::raw::pack( s, v.port(), flags );
     }
     template<typename Stream>
     inline void unpack( Stream& s, ip::endpoint& v, uint32_t depth )

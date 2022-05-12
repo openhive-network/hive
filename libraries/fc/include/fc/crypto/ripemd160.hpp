@@ -29,7 +29,7 @@ class ripemd160
     static ripemd160 hash( const T& t ) 
     { 
       ripemd160::encoder e; 
-      fc::raw::pack(e,t);
+      fc::raw::pack(e,t,fc::raw::pack_flags());
       return e.result(); 
     } 
 

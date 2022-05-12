@@ -66,8 +66,8 @@ template< typename Storage >
 void check_pack( const std::string& s, const hive::protocol::fixed_string_impl< Storage >& fs )
 {
   std::stringstream ss, sfs;
-  fc::raw::pack( ss, s );
-  fc::raw::pack( sfs, fs );
+  fc::raw::pack( ss, s, fc::raw::pack_flags() );
+  fc::raw::pack( sfs, fs, fc::raw::pack_flags() );
   std::string packed = ss.str();
   if( packed != sfs.str() )
   {

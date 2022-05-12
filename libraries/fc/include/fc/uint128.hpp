@@ -131,7 +131,7 @@ namespace fc
   namespace raw
   {
     template<typename Stream>
-    inline void pack( Stream& s, const uint128& u ) { s.write( (char*)&u, sizeof(u) ); }
+    inline void pack( Stream& s, const uint128& u, const pack_flags& flags ) { s.write( (char*)&u, sizeof(u) ); }
     template<typename Stream>
     inline void unpack( Stream& s, uint128& u, uint32_t ) { s.read( (char*)&u, sizeof(u) ); }
   }

@@ -13,12 +13,12 @@ typedef chainbase::t_vector< char > buffer_type;
 
 namespace fc { namespace raw {
 
-template< typename T, typename B > inline void pack_to_buffer( B& raw, const T& v )
+template< typename T, typename B > inline void pack_to_buffer( B& raw, const T& v, const pack_flags& flags )
 {
-  auto size = pack_size( v );
+  auto size = pack_size( v, flags );
   raw.resize( size );
   datastream< char* > ds( raw.data(), size );
-  pack( ds, v );
+  pack( ds, v, flags );
 }
 
 template< typename T, typename B > inline void unpack_from_buffer( const B& raw, T& v )

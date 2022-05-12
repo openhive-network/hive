@@ -59,7 +59,7 @@ namespace raw
 {
 
 template<typename Stream, typename T>
-inline void pack(Stream& s, const chainbase::oid<T>& id)
+inline void pack(Stream& s, const chainbase::oid<T>& id, const pack_flags& flags)
 {
   s.write((const char*)&id, sizeof(id));
 }
@@ -71,7 +71,7 @@ inline void unpack(Stream& s, chainbase::oid<T>& id, uint32_t depth = 0)
 }
 
 template<typename Stream, typename T>
-void pack(Stream& s, const chainbase::oid_ref<T>& id)
+void pack(Stream& s, const chainbase::oid_ref<T>& id, const pack_flags& flags)
 {
   s.write((const char*)&id, sizeof(id));
 }

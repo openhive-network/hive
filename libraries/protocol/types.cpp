@@ -47,7 +47,7 @@ namespace hive { namespace protocol {
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
-    auto data = fc::raw::pack_to_vector( k );
+    auto data = fc::raw::pack_to_vector( k, fc::raw::pack_flags() );
     return HIVE_ADDRESS_PREFIX + fc::to_base58( data.data(), data.size() );
   }
 
@@ -101,7 +101,7 @@ namespace hive { namespace protocol {
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
-    auto data = fc::raw::pack_to_vector( k );
+    auto data = fc::raw::pack_to_vector( k, fc::raw::pack_flags() );
     return HIVE_ADDRESS_PREFIX + fc::to_base58( data.data(), data.size() );
   }
 
@@ -155,7 +155,7 @@ namespace hive { namespace protocol {
     binary_key k;
     k.data = key_data;
     k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
-    auto data = fc::raw::pack_to_vector( k );
+    auto data = fc::raw::pack_to_vector( k, fc::raw::pack_flags() );
     return HIVE_ADDRESS_PREFIX + fc::to_base58( data.data(), data.size() );
   }
 

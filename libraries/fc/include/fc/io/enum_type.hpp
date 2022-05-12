@@ -63,9 +63,9 @@ namespace fc
   namespace raw 
   { 
     template<typename Stream, typename IntType, typename EnumType>
-    inline void pack( Stream& s, const fc::enum_type<IntType,EnumType>& tp )
+    inline void pack( Stream& s, const fc::enum_type<IntType,EnumType>& tp, const pack_flags& flags )
     {
-       fc::raw::pack( s, static_cast<IntType>(tp) );
+       fc::raw::pack( s, static_cast<IntType>(tp), flags );
     }
 
     template<typename Stream, typename IntType, typename EnumType>

@@ -43,7 +43,7 @@ template< typename T >
 uint64_t get_wire_size()
 {
   T data;
-  return fc::raw::pack_to_vector( data ).size();
+  return fc::raw::pack_to_vector( data, fc::raw::pack_flags() ).size();
 }
 
 struct size_check_type_visitor
@@ -105,10 +105,10 @@ int main( int argc, char** argv )
         std::cout << "\n";
     }
     std::cout << "]\n";
-    std::cerr << "Size of block header: " << sizeof( block_header ) << " " << fc::raw::pack_size( block_header() ) << "\n";
+    std::cerr << "Size of block header: " << sizeof( block_header ) << " " << fc::raw::pack_size( block_header(), fc::raw::pack_flags() ) << "\n";
   }
   catch ( const fc::exception& e ){ edump((e.to_detail_string())); }
   idump((sizeof(signed_block)));
-  idump((fc::raw::pack_size(signed_block())));
+  idump((fc::raw::pack_size(signed_block(), fc::raw::pack_flags())));
   return 0;
 }

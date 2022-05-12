@@ -66,7 +66,7 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   // TODO:  Move this to _push_block() so session is restored.
   if( !(skip & chain::database::skip_block_size_check) )
   {
-    FC_ASSERT( fc::raw::pack_size(pending_block) <= HIVE_MAX_BLOCK_SIZE );
+    FC_ASSERT( fc::raw::pack_size(pending_block, fc::raw::pack_flags()) <= HIVE_MAX_BLOCK_SIZE );
   }
 
   _db.push_block( pending_block, skip );
@@ -104,7 +104,7 @@ void block_producer::apply_pending_transactions(
       chain::signed_block& pending_block)
 {
   // The 4 is for the max size of the transaction vector length
-  size_t total_block_size = fc::raw::pack_size( pending_block ) + 4;
+  size_t total_block_size = fc::raw::pack_size( pending_block, fc::raw::pack_flags() ) + 4;
   const auto& gpo = _db.get_dynamic_global_properties();
   uint64_t maximum_block_size = gpo.maximum_block_size; //HIVE_MAX_BLOCK_SIZE;
   uint64_t maximum_transaction_partition_size = maximum_block_size -  ( maximum_block_size * gpo.required_actions_partition_percent ) / HIVE_100_PERCENT;
@@ -148,7 +148,7 @@ void block_producer::apply_pending_transactions(
     if( tx.expiration < when )
       continue;
 
-    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx );
+    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx, fc::raw::pack_flags() );
 
     // postpone transaction if it would make block too big
     if( new_total_size >= maximum_transaction_partition_size )
@@ -184,7 +184,7 @@ void block_producer::apply_pending_transactions(
 
   while( pending_required_itr != pending_required_action_idx.end() && pending_required_itr->execution_time <= when )
   {
-    uint64_t new_total_size = total_block_size + fc::raw::pack_size( pending_required_itr->action );
+    uint64_t new_total_size = total_block_size + fc::raw::pack_size( pending_required_itr->action, fc::raw::pack_flags() );
 
     // required_actions_partizion_size is a lower bound of requirement.
     // If we have extra space to include actions we should use it.
@@ -220,7 +220,7 @@ FC_TODO( "Remove ifdef when required actions are added" )
 
   while( pending_optional_itr != pending_optional_action_idx.end() && pending_optional_itr->execution_time <= when )
   {
-    uint64_t new_total_size = total_block_size + fc::raw::pack_size( pending_optional_itr->action );
+    uint64_t new_total_size = total_block_size + fc::raw::pack_size( pending_optional_itr->action, fc::raw::pack_flags() );
 
     if( new_total_size > maximum_block_size )
       break;

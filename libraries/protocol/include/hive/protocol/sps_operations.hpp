@@ -121,8 +121,8 @@ namespace fc {
 
   namespace raw {
       template<typename Stream, typename T>
-      inline void pack( Stream& s, const flat_set_ex<T>& value ) {
-        pack( s, static_cast< const flat_set<T>& >( value ) );
+      inline void pack( Stream& s, const flat_set_ex<T>& value, const pack_flags& flags ) {
+        pack( s, static_cast< const flat_set<T>& >( value ), flags );
       }
 
       template<typename Stream, typename T>

@@ -125,12 +125,12 @@ namespace fc {
        namespace bip = boost::interprocess;
 
        template<typename Stream, typename T, typename... A>
-       inline void pack( Stream& s, const bip::vector<T,A...>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       inline void pack( Stream& s, const bip::vector<T,A...>& value, const pack_flags& flags ) {
+         pack( s, unsigned_int((uint32_t)value.size()), flags );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
-           fc::raw::pack( s, *itr );
+           fc::raw::pack( s, *itr, flags );
            ++itr;
          }
        }

@@ -26,7 +26,7 @@ class sha224
     static sha224 hash( const T& t ) 
     { 
       sha224::encoder e; 
-      fc::raw::pack(e,t);
+      fc::raw::pack(e,t,fc::raw::pack_flags());
       return e.result(); 
     } 
 

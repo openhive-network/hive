@@ -8,12 +8,12 @@
 namespace fc {
    namespace raw {
        template<typename Stream, typename T>
-       inline void pack( Stream& s, const flat_set<T>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       inline void pack( Stream& s, const flat_set<T>& value, const pack_flags& flags ) {
+         pack( s, unsigned_int((uint32_t)value.size()), flags );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
-           fc::raw::pack( s, *itr );
+           fc::raw::pack( s, *itr, flags );
            ++itr;
          }
        }
@@ -32,12 +32,12 @@ namespace fc {
          }
        }
        template<typename Stream, typename K, typename... V>
-       inline void pack( Stream& s, const flat_map<K,V...>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       inline void pack( Stream& s, const flat_map<K,V...>& value, const pack_flags& flags ) {
+         pack( s, unsigned_int((uint32_t)value.size()), flags );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
-           fc::raw::pack( s, *itr );
+           fc::raw::pack( s, *itr, flags );
            ++itr;
          }
        }
@@ -58,13 +58,13 @@ namespace fc {
        }
 
        template<typename Stream, typename T, typename A>
-       void pack( Stream& s, const bip::vector<T,A>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       void pack( Stream& s, const bip::vector<T,A>& value, const pack_flags& flags ) {
+         pack( s, unsigned_int((uint32_t)value.size()), flags );
          if( !std::is_fundamental<T>::value ) {
             auto itr = value.begin();
             auto end = value.end();
             while( itr != end ) {
-              fc::raw::pack( s, *itr );
+              fc::raw::pack( s, *itr, flags );
               ++itr;
             }
          } else {

@@ -201,7 +201,7 @@ namespace hive { namespace converter {
   const hp::witness_set_properties_operation& convert_operations_visitor::operator()( hp::witness_set_properties_operation& op )const
   {
     if( converter.block_size_increase_enabled() )
-      op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
+      op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE, fc::raw::pack_flags() );
 
     const auto apply_witness_key_on_prop = [&]( const std::string& key )
       {
@@ -211,7 +211,7 @@ namespace hive { namespace converter {
         {
           fc::raw::unpack_from_vector( key_itr->second, signing_key );
           if( signing_key != hp::public_key_type{} )
-            key_itr->second = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key() );
+            key_itr->second = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key(), fc::raw::pack_flags() );
         }
       };
 

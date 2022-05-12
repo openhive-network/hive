@@ -20,12 +20,12 @@ namespace serialization
 {
 
 template< typename T, typename B >
-inline void pack_to_buffer(B& raw, const T& v)
+inline void pack_to_buffer(B& raw, const T& v, const fc::raw::pack_flags& flags)
   {
-  auto size = fc::raw::pack_size(v);
+  auto size = fc::raw::pack_size(v, flags);
   raw.resize(size);
   fc::datastream< char* > ds(raw.data(), size);
-  fc::raw::pack(ds, v);
+  fc::raw::pack(ds, v, flags );
   }
 
 template< typename T, typename B >
@@ -260,7 +260,7 @@ private:
           ("i", id)("l", _startId)("r", _endId));
 
         serializedCache.emplace_back(id, std::vector<char>());
-        serialization::pack_to_buffer(serializedCache.back().second, object);
+        serialization::pack_to_buffer(serializedCache.back().second, object, fc::raw::pack_flags());
 
         //std::string dump = worker->prettifyObject(fc::variant(object), serializedCache.back().second);
         //if(dump.empty() == false)

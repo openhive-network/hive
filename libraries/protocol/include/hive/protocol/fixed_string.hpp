@@ -190,9 +190,9 @@ using fixed_string = typename fixed_string_impl_for_size<N>::t;
 namespace fc { namespace raw {
 
 template< typename Stream, typename Storage >
-inline void pack( Stream& s, const hive::protocol::fixed_string_impl< Storage >& u )
+inline void pack( Stream& s, const hive::protocol::fixed_string_impl< Storage >& u, const pack_flags& flags )
 {
-  pack( s, std::string( u ) );
+  pack( s, std::string( u ), flags );
 }
 
 template< typename Stream, typename Storage >

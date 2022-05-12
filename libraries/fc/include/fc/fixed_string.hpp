@@ -98,9 +98,9 @@ namespace fc {
   namespace raw
   {
     template<typename Stream, typename Storage>
-    inline void pack( Stream& s, const fc::fixed_string<Storage>& u ) {
+    inline void pack( Stream& s, const fc::fixed_string<Storage>& u, const pack_flags& flags ) {
        unsigned_int size = u.size();
-       pack( s, size );
+       pack( s, size, flags );
        s.write( (const char*)&u.data, size );
     }
 

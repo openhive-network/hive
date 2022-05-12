@@ -10,47 +10,48 @@ namespace fc { namespace raw {
     class variant_packer : public variant::visitor
     {
        public:
-         variant_packer( Stream& _s ):s(_s){}
+         variant_packer( Stream& _s, const pack_flags& _flags ):s(_s), f(_flags){}
          virtual void handle()const { }
          virtual void handle( const int64_t& v )const
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
          virtual void handle( const uint64_t& v )const
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
          virtual void handle( const double& v )const 
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
          virtual void handle( const bool& v )const
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
          virtual void handle( const string& v )const
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
          virtual void handle( const variant_object& v)const
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
          virtual void handle( const variants& v)const
          {
-            fc::raw::pack( s, v );
+            fc::raw::pack( s, v, f );
          }
         
          Stream& s;
+         const pack_flags& f;
         
     };
 
 
     template<typename Stream> 
-    inline void pack( Stream& s, const variant& v )
+    inline void pack( Stream& s, const variant& v, const pack_flags& flags )
     {
-       pack( s, uint8_t(v.get_type()) );
-       v.visit( variant_packer<Stream>(s) );
+       pack( s, uint8_t(v.get_type()), flags );
+       v.visit( variant_packer<Stream>(s, flags) );
     }
     template<typename Stream> 
     inline void unpack( Stream& s, variant& v, uint32_t depth )
@@ -118,14 +119,14 @@ namespace fc { namespace raw {
     }
 
     template<typename Stream> 
-    inline void pack( Stream& s, const variant_object& v ) 
+    inline void pack( Stream& s, const variant_object& v, const pack_flags& flags ) 
     {
        unsigned_int vs = (uint32_t)v.size();
-       pack( s, vs );
+       pack( s, vs, flags );
        for( auto itr = v.begin(); itr != v.end(); ++itr )
        {
-          pack( s, itr->key() );
-          pack( s, itr->value() );
+          pack( s, itr->key(), flags );
+          pack( s, itr->value(), flags );
        }
     }
     template<typename Stream> 

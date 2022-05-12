@@ -58,7 +58,7 @@ struct legacy_hive_asset
 namespace fc { namespace raw {
 
 template< typename Stream >
-inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type& sym )
+inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type& sym, const pack_flags& flags )
 {
   switch( sym.ser )
   {
@@ -69,7 +69,7 @@ inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type
     case OBSOLETE_SYMBOL_LEGACY_SER_5:
       wlog( "pack legacy serialization ${s}", ("s", sym.ser) );
     case OBSOLETE_SYMBOL_SER:
-      pack( s, sym.ser );
+      pack( s, sym.ser, flags );
       break;
     default:
       FC_ASSERT( false, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );

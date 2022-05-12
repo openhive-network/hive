@@ -51,7 +51,7 @@ class serialize_member_visitor
       if( !(_in.*member) )
         return;
 
-      vector<char> v = fc::raw::pack_to_vector( *(_in.*member) );
+      vector<char> v = fc::raw::pack_to_vector( *(_in.*member), fc::raw::pack_flags() );
       if(strcmp("hbd_interest_rate", name) == 0)
         name = "sbd_interest_rate";
       else

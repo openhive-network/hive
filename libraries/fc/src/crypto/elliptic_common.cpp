@@ -128,8 +128,8 @@ namespace fc { namespace ecc {
     public_key public_key::child( const fc::sha256& offset )const
     {
        fc::sha256::encoder enc;
-       fc::raw::pack( enc, *this );
-       fc::raw::pack( enc, offset );
+       fc::raw::pack( enc, *this, fc::raw::pack_flags() );
+       fc::raw::pack( enc, offset, fc::raw::pack_flags() );
 
        return add( enc.result() );
     }
@@ -137,8 +137,8 @@ namespace fc { namespace ecc {
     private_key private_key::child( const fc::sha256& offset )const
     {
        fc::sha256::encoder enc;
-       fc::raw::pack( enc, get_public_key() );
-       fc::raw::pack( enc, offset );
+       fc::raw::pack( enc, get_public_key(), fc::raw::pack_flags() );
+       fc::raw::pack( enc, offset, fc::raw::pack_flags() );
        return generate_from_seed( get_secret(), enc.result() );
     }
 

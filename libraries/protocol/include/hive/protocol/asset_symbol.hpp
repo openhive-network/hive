@@ -148,8 +148,9 @@ namespace fc { namespace raw {
 // NAI internal storage of legacy assets
 
 template< typename Stream >
-inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
+inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym, const pack_flags& flags )
 {
+  //take into consideration `flags` !!!!!!
   switch( sym.space() )
   {
     case hive::protocol::asset_symbol_type::legacy_space:
@@ -169,11 +170,11 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
         default:
           FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
       }
-      pack( s, ser );
+      pack( s, ser, flags );
       break;
     }
     case hive::protocol::asset_symbol_type::smt_nai_space:
-      pack( s, sym.asset_num );
+      pack( s, sym.asset_num, flags );
       break;
     default:
       FC_ASSERT( false, "Cannot serialize unknown asset symbol" );

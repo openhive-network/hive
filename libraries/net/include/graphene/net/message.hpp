@@ -68,7 +68,7 @@ namespace graphene { namespace net {
      message( const T& m ) 
      {
         msg_type = T::type;
-        data     = fc::raw::pack_to_vector(m);
+        data     = fc::raw::pack_to_vector(m, fc::raw::pack_flags());
         size     = (uint32_t)data.size();
      }
 

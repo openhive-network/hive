@@ -110,7 +110,7 @@ void stats_export_plugin_impl::on_post_apply_block( const block_notification& no
 
     api_stats_transaction_data_object& tx_stats = stats->transaction_stats.back();
     tx_stats.user = get_transaction_user( tx );
-    tx_stats.size = fc::raw::pack_size( tx );
+    tx_stats.size = fc::raw::pack_size( tx, fc::raw::pack_flags() );
   }
 
   stats->free_memory = _db.get_free_memory();

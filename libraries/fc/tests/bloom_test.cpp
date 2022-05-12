@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(bloom_test_1)
          }
       }
 //      wdump((filter));
-      auto packed_filter = fc::raw::pack_to_vector(filter);
+      auto packed_filter = fc::raw::pack_to_vector(filter, fc::raw::pack_flags());
 //      wdump((packed_filter.size()));
 //      wdump((packed_filter));
       std::stringstream out;

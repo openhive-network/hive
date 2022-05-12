@@ -254,7 +254,7 @@ public:
       plain_keys data;
       data.keys = _keys;
       data.checksum = _checksum;
-      auto plain_txt = fc::raw::pack_to_vector(data);
+      auto plain_txt = fc::raw::pack_to_vector(data, fc::raw::pack_flags());
       _wallet.cipher_keys = fc::aes_encrypt( data.checksum, plain_txt );
     }
   }
@@ -1129,7 +1129,7 @@ brain_key_info wallet_api::suggest_brain_key()const
 
 string wallet_api::serialize_transaction( const fc::variant& tx )const
 {
-  return fc::to_hex(fc::raw::pack_to_vector( my->get_signed_transaction( tx ) ));
+  return fc::to_hex(fc::raw::pack_to_vector( my->get_signed_transaction( tx ), fc::raw::pack_flags() ));
 }
 
 string wallet_api::get_wallet_filename() const
@@ -2111,11 +2111,11 @@ string wallet_api::get_encrypted_memo_using_keys( const public_key_type& from_ke
   auto shared_secret = from_priv.get_shared_secret( m.to );
 
   fc::sha512::encoder enc;
-  fc::raw::pack( enc, m.nonce );
-  fc::raw::pack( enc, shared_secret );
+  fc::raw::pack( enc, m.nonce, fc::raw::pack_flags() );
+  fc::raw::pack( enc, shared_secret, fc::raw::pack_flags() );
   auto encrypt_key = enc.result();
 
-  m.encrypted = fc::aes_encrypt( encrypt_key, fc::raw::pack_to_vector(memo.substr(1)) );
+  m.encrypted = fc::aes_encrypt( encrypt_key, fc::raw::pack_to_vector(memo.substr(1), fc::raw::pack_flags()) );
   m.check = fc::sha256::hash( encrypt_key )._hash[0];
   return m;
 }
@@ -2526,8 +2526,8 @@ string wallet_api::decrypt_memo( string encrypted_memo )
         shared_secret = from_key->get_shared_secret( m->to );
       }
       fc::sha512::encoder enc;
-      fc::raw::pack( enc, m->nonce );
-      fc::raw::pack( enc, shared_secret );
+      fc::raw::pack( enc, m->nonce, fc::raw::pack_flags() );
+      fc::raw::pack( enc, shared_secret, fc::raw::pack_flags());
       auto encryption_key = enc.result();
 
       uint32_t check = fc::sha256::hash( encryption_key )._hash[0];

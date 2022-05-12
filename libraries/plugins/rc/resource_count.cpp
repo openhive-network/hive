@@ -431,7 +431,7 @@ void count_resources(
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
-  const int64_t tx_size = int64_t( fc::raw::pack_size( tx ) );
+  const int64_t tx_size = int64_t( fc::raw::pack_size( tx, fc::raw::pack_flags() ) );
   count_operation_visitor vtor( size_info, exec_info );
 
   for( const operation& op : tx.operations )
@@ -465,7 +465,7 @@ void count_resources(
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
-  const int64_t action_size = int64_t( fc::raw::pack_size( action ) );
+  const int64_t action_size = int64_t( fc::raw::pack_size( action, fc::raw::pack_flags() ) );
   count_optional_action_visitor vtor( size_info, exec_info );
 
   result[ resource_history_bytes ] += action_size;

@@ -277,9 +277,9 @@ namespace fc {
       }
 
       template<typename Stream>
-      void pack( Stream& s, const fc::ecc::public_key& pk)
+      void pack( Stream& s, const fc::ecc::public_key& pk, const pack_flags& flags)
       {
-          fc::raw::pack( s, pk.serialize() );
+          fc::raw::pack( s, pk.serialize(), flags );
       }
 
       template<typename Stream>
@@ -291,9 +291,9 @@ namespace fc {
       }
 
       template<typename Stream>
-      void pack( Stream& s, const fc::ecc::private_key& pk)
+      void pack( Stream& s, const fc::ecc::private_key& pk, const pack_flags& flags)
       {
-          fc::raw::pack( s, pk.get_secret() );
+          fc::raw::pack( s, pk.get_secret(), flags );
       }
 
   } // namespace raw

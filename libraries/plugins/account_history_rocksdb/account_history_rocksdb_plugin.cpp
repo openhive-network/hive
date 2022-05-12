@@ -115,10 +115,10 @@ template <class T>
 serialize_buffer_t dump(const T& obj)
   {
   serialize_buffer_t serializedObj;
-  auto size = fc::raw::pack_size(obj);
+  auto size = fc::raw::pack_size(obj, fc::raw::pack_flags());
   serializedObj.resize(size);
   fc::datastream<char*> ds(serializedObj.data(), size);
-  fc::raw::pack(ds, obj);
+  fc::raw::pack(ds, obj, fc::raw::pack_flags());
   return serializedObj;
   }
 
@@ -684,11 +684,11 @@ private:
     obj.id = _operationSeqId++;
 
     serialize_buffer_t serializedObj;
-    auto size = fc::raw::pack_size(obj);
+    auto size = fc::raw::pack_size(obj, fc::raw::pack_flags());
     serializedObj.resize(size);
     {
       fc::datastream<char*> ds(serializedObj.data(), size);
-      fc::raw::pack(ds, obj);
+      fc::raw::pack(ds, obj, fc::raw::pack_flags() );
     }
 
     id_slice_t idSlice(obj.id);
@@ -1928,10 +1928,10 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
     obj.op_in_trx = opInTx;
     obj.is_virtual = hive::protocol::is_virtual_operation( op );
     obj.timestamp = _mainDb.head_block_time();
-    auto size = fc::raw::pack_size( op );
+    auto size = fc::raw::pack_size( op, fc::raw::pack_flags() );
     obj.serialized_op.resize( size );
     fc::datastream< char* > ds( obj.serialized_op.data(), size );
-    fc::raw::pack( ds, op );
+    fc::raw::pack( ds, op, fc::raw::pack_flags() );
 
     importOperation( obj, impacted );
 
@@ -1987,10 +1987,10 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
     obj.op_in_trx = n.op_in_trx;
     obj.is_virtual = n.virtual_op;
     obj.timestamp = _mainDb.head_block_time();
-    auto size = fc::raw::pack_size( n.op );
+    auto size = fc::raw::pack_size( n.op, fc::raw::pack_flags() );
     obj.serialized_op.resize( size );
     fc::datastream< char* > ds( obj.serialized_op.data(), size );
-    fc::raw::pack( ds, n.op );
+    fc::raw::pack( ds, n.op, fc::raw::pack_flags() );
 
     importOperation( obj, impacted );
   }
@@ -2004,10 +2004,10 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       o.op_in_trx = n.op_in_trx;
       o.is_virtual = n.virtual_op;
       o.timestamp = _mainDb.head_block_time();
-      auto size = fc::raw::pack_size( n.op );
+      auto size = fc::raw::pack_size( n.op, fc::raw::pack_flags() );
       o.serialized_op.resize( size );
       fc::datastream< char* > ds( o.serialized_op.data(), size );
-      fc::raw::pack( ds, n.op );
+      fc::raw::pack( ds, n.op, fc::raw::pack_flags() );
       o.impacted.insert( o.impacted.end(), impacted.begin(), impacted.end() );
     });
   }

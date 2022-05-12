@@ -217,10 +217,10 @@ namespace raw
 
 #ifndef ENABLE_STD_ALLOCATOR
 template< typename Stream >
-void pack( Stream& s, const chainbase::shared_string& ss )
+void pack( Stream& s, const chainbase::shared_string& ss, const pack_flags& flags )
 {
   std::string str = hive::chain::to_string( ss );
-  fc::raw::pack( s, str );
+  fc::raw::pack( s, str, flags );
 }
 
 template< typename Stream >
@@ -234,12 +234,12 @@ void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth )
 #endif
 
 template< typename Stream, typename E, typename A >
-void pack( Stream& s, const boost::interprocess::deque<E, A>& dq )
+void pack( Stream& s, const boost::interprocess::deque<E, A>& dq, const pack_flags& flags )
 {
   // This could be optimized
   std::vector<E> temp;
   std::copy( dq.begin(), dq.end(), std::back_inserter(temp) );
-  pack( s, temp );
+  pack( s, temp, flags );
 }
 
 template< typename Stream, typename E, typename A >
@@ -255,14 +255,14 @@ void unpack( Stream& s, boost::interprocess::deque<E, A>& dq, uint32_t depth )
 }
 
 template< typename Stream, typename K, typename V, typename C, typename A >
-void pack( Stream& s, const boost::interprocess::flat_map< K, V, C, A >& value )
+void pack( Stream& s, const boost::interprocess::flat_map< K, V, C, A >& value, const pack_flags& flags )
 {
-  fc::raw::pack( s, unsigned_int((uint32_t)value.size()) );
+  fc::raw::pack( s, unsigned_int((uint32_t)value.size()), flags );
   auto itr = value.begin();
   auto end = value.end();
   while( itr != end )
   {
-    fc::raw::pack( s, *itr );
+    fc::raw::pack( s, *itr, flags );
     ++itr;
   }
 }

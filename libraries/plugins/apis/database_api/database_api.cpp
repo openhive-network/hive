@@ -1683,7 +1683,7 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
 
 DEFINE_API_IMPL( database_api_impl, get_transaction_hex )
 {
-  return get_transaction_hex_return( { fc::to_hex( fc::raw::pack_to_vector( args.trx ) ) } );
+  return get_transaction_hex_return( { fc::to_hex( fc::raw::pack_to_vector( args.trx, fc::raw::pack_flags() ) ) } );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_required_signatures )

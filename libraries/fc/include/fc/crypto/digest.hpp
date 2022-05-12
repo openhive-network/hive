@@ -9,7 +9,7 @@ namespace fc {
    fc::sha256 digest( const T& value )
    {
       fc::sha256::encoder enc;
-      fc::raw::pack( enc, value );
+      fc::raw::pack( enc, value, fc::raw::pack_flags() );
       return enc.result();
    }
 }

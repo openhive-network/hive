@@ -45,7 +45,7 @@ FC_REFLECT(book, (id)(a)(b))
 
 namespace fc {namespace raw {
 template<typename Stream>
-inline void pack(Stream& s, const book&)
+inline void pack(Stream& s, const book&, const pack_flags& flags)
   {
   }
 

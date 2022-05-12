@@ -5,6 +5,7 @@
 
 #include <fc/io/fstream.hpp>
 #include <fc/io/raw.hpp>
+#include <fc/io/pack_flags.hpp>
 
 #include <fc/log/logger.hpp>
 
@@ -351,13 +352,13 @@ void              aes_save( const fc::path& file, const fc::sha512& key, std::ve
 { try {
    auto cipher = aes_encrypt( key, plain_text );
    fc::sha512::encoder check_enc;
-   fc::raw::pack( check_enc, key );
-   fc::raw::pack( check_enc, cipher );
+   fc::raw::pack( check_enc, key, fc::raw::pack_flags() );
+   fc::raw::pack( check_enc, cipher, fc::raw::pack_flags() );
    auto check = check_enc.result();
 
    fc::ofstream out(file);
-   fc::raw::pack( out, check );
-   fc::raw::pack( out, cipher );
+   fc::raw::pack( out, check, fc::raw::pack_flags() );
+   fc::raw::pack( out, cipher, fc::raw::pack_flags() );
 } FC_RETHROW_EXCEPTIONS( warn, "", ("file",file) ) }
 
 /**
@@ -375,8 +376,8 @@ std::vector<char> aes_load( const fc::path& file, const fc::sha512& key )
    fc::raw::unpack( in, cipher );
 
    fc::sha512::encoder check_enc;
-   fc::raw::pack( check_enc, key );
-   fc::raw::pack( check_enc, cipher );
+   fc::raw::pack( check_enc, key, fc::raw::pack_flags() );
+   fc::raw::pack( check_enc, cipher, fc::raw::pack_flags() );
 
    FC_ASSERT( check_enc.result() == check );
 

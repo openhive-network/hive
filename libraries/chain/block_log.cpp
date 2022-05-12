@@ -287,7 +287,7 @@ namespace hive { namespace chain {
       if(out_pos != pos)
         ilog("Block position mismatch");
 
-      auto data = fc::raw::pack_to_vector(tmp);
+      auto data = fc::raw::pack_to_vector(tmp, fc::raw::pack_flags());
       output_block_stream.write(data.data(), data.size());
       output_block_stream.write((char*)&out_pos, sizeof(out_pos));
 
@@ -386,7 +386,7 @@ namespace hive { namespace chain {
     try
     {
       uint64_t block_start_pos;
-      std::vector<char> serialized_block = fc::raw::pack_to_vector(b);
+      std::vector<char> serialized_block = fc::raw::pack_to_vector(b, fc::raw::pack_flags());
 
       if (my->compression_enabled)
       {

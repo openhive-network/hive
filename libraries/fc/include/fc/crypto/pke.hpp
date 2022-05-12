@@ -86,7 +86,7 @@ namespace fc {
         template<typename Stream>
         void pack( Stream& s, const fc::public_key& pk)
         {
-            fc::raw::pack( s, pk.serialize() );
+            fc::raw::pack( s, pk.serialize(), flags );
         }
 
         template<typename Stream>
@@ -100,7 +100,7 @@ namespace fc {
         template<typename Stream>
         void pack( Stream& s, const fc::private_key& pk)
         {
-            fc::raw::pack( s, pk.serialize() );
+            fc::raw::pack( s, pk.serialize(), flags );
         }
     }
   class variant;

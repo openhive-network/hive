@@ -42,7 +42,7 @@ namespace fc {
   namespace raw  
   {
     template<typename Stream>
-    inline void pack( Stream& s, const real128& value_to_pack ) { s.write( (char*)&value_to_pack, sizeof(value_to_pack) ); }
+    inline void pack( Stream& s, const real128& value_to_pack, const pack_flags& flags ) { s.write( (char*)&value_to_pack, sizeof(value_to_pack) ); }
     template<typename Stream>
     inline void unpack( Stream& s, real128& value_to_unpack, uint32_t ) { s.read( (char*)&value_to_unpack, sizeof(value_to_unpack) ); }
   }

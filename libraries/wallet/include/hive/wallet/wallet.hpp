@@ -46,7 +46,7 @@ struct memo_data {
   vector<char>    encrypted;
 
   operator string()const {
-    auto data = fc::raw::pack_to_vector(*this);
+    auto data = fc::raw::pack_to_vector(*this, fc::raw::pack_flags());
     auto base58 = fc::to_base58( data );
     return '#'+base58;
   }
