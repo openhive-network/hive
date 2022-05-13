@@ -42,8 +42,8 @@ FC_REFLECT( witness_properties,
 class serialize_member_visitor
 {
   public:
-    serialize_member_visitor( const witness_properties& in, flat_map< string, vector<char> >& out )
-      : _in(in), _out(out) {}
+    serialize_member_visitor( const witness_properties& in, flat_map< string, vector<char> >& out, const fc::raw::pack_flags& flags )
+      : _in(in), _out(out), _flags(flags) {}
 
     template<typename Member, class Class, Member (Class::*member)>
     void operator()( const char* name )const
@@ -51,7 +51,7 @@ class serialize_member_visitor
       if( !(_in.*member) )
         return;
 
-      vector<char> v = fc::raw::pack_to_vector( *(_in.*member), fc::raw::pack_flags() );
+      vector<char> v = fc::raw::pack_to_vector( *(_in.*member), _flags );
       if(strcmp("hbd_interest_rate", name) == 0)
         name = "sbd_interest_rate";
       else
@@ -64,10 +64,14 @@ class serialize_member_visitor
   private:
     const witness_properties& _in;
     flat_map< string, vector<char> >& _out;
+    const fc::raw::pack_flags& _flags;
 };
 
 int main( int argc, char** argv, char** envp )
 {
+  //TODO : These flags should be set by a command line.
+  fc::raw::pack_flags _flags;
+
   // Serialize the witness_set_properties_operation
   // Take a sequence of witness_properties, one per line
   while( std::cin )
@@ -83,7 +87,7 @@ int main( int argc, char** argv, char** envp )
       witness_properties wprops;
       witness_set_properties_operation op;
       fc::from_variant( v, wprops );
-      serialize_member_visitor vtor( wprops, op.props );
+      serialize_member_visitor vtor( wprops, op.props, _flags );
 
       // For each field
       fc::reflector< witness_properties >::visit( vtor );

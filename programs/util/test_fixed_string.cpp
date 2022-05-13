@@ -63,11 +63,11 @@ void check_variant( const std::string& s, const hive::protocol::fixed_string_imp
 }
 
 template< typename Storage >
-void check_pack( const std::string& s, const hive::protocol::fixed_string_impl< Storage >& fs )
+void check_pack( const std::string& s, const hive::protocol::fixed_string_impl< Storage >& fs, const fc::raw::pack_flags& flags )
 {
   std::stringstream ss, sfs;
-  fc::raw::pack( ss, s, fc::raw::pack_flags() );
-  fc::raw::pack( sfs, fs, fc::raw::pack_flags() );
+  fc::raw::pack( ss, s, flags );
+  fc::raw::pack( sfs, fs, flags );
   std::string packed = ss.str();
   if( packed != sfs.str() )
   {
@@ -87,6 +87,9 @@ void check_pack( const std::string& s, const hive::protocol::fixed_string_impl< 
 
 int main( int argc, char** argv, char** envp )
 {
+  //TODO : These flags should be set by a command line.
+  fc::raw::pack_flags _flags;
+
   std::vector< std::string > all_strings;
   std::vector< hive::protocol::fixed_string< 16 > > all_fixed_string_16s;
   std::vector< std::vector< uint32_t > > sim_index;
@@ -149,7 +152,7 @@ int main( int argc, char** argv, char** envp )
     }
 
     check_variant( s, fs );
-    check_pack( s, fs );
+    check_pack( s, fs, _flags );
 
     for( const uint32_t& j : sim_index[i] )
     {
@@ -222,7 +225,7 @@ int main( int argc, char** argv, char** envp )
     }
 
     check_variant( s, fs );
-    check_pack( s, fs );
+    check_pack( s, fs, _flags );
 
     for( const uint32_t& j : sim_index[i] )
     {
@@ -295,7 +298,7 @@ int main( int argc, char** argv, char** envp )
     }
 
     check_variant( s, fs );
-    check_pack( s, fs );
+    check_pack( s, fs, _flags );
 
     for( const uint32_t& j : sim_index[i] )
     {

@@ -29,8 +29,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& trx_now_time )
-    : converter( converter ), trx_now_time( trx_now_time ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::raw::pack_flags& flags, const fc::time_point_sec& trx_now_time )
+    : converter( converter ), flags( flags ), trx_now_time( trx_now_time ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -201,7 +201,7 @@ namespace hive { namespace converter {
   const hp::witness_set_properties_operation& convert_operations_visitor::operator()( hp::witness_set_properties_operation& op )const
   {
     if( converter.block_size_increase_enabled() )
-      op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE, fc::raw::pack_flags() );
+      op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE, flags );
 
     const auto apply_witness_key_on_prop = [&]( const std::string& key )
       {
@@ -211,7 +211,7 @@ namespace hive { namespace converter {
         {
           fc::raw::unpack_from_vector( key_itr->second, signing_key );
           if( signing_key != hp::public_key_type{} )
-            key_itr->second = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key(), fc::raw::pack_flags() );
+            key_itr->second = fc::raw::pack_to_vector( converter.get_witness_key().get_public_key(), flags );
         }
       };
 
@@ -308,7 +308,7 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::raw::pack_flags& flags, const fc::time_point_sec& trx_now_time )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -328,7 +328,7 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, trx_now_time ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, flags, trx_now_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 

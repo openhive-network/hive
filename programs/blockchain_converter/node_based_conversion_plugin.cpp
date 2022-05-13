@@ -213,6 +213,9 @@ namespace detail {
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
+    //TODO : These flags should be set by a command line.
+    fc::raw::pack_flags _flags;
+
     auto gpo = get_dynamic_global_properties( output_urls.at(0) );
 
     if( !start_block_num )
@@ -285,7 +288,7 @@ namespace detail {
       if( block->transactions.size() == 0 )
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      converter.convert_signed_block( *block, lib_id, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
+      converter.convert_signed_block( *block, lib_id, _flags, use_now_time ? time_point_sec{ fc::time_point::now() } : blockchain_converter::auto_trx_time );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", *block));

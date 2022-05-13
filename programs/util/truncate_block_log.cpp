@@ -23,7 +23,9 @@ int main( int argc, char** argv, char** envp )
     ilog("Trying to open input block_log file: `${i}'", ("i", blockLogPath));
     ilog("Truncated block_log will be saved into file: `${i}'", ("i", outputBlockLogPath));
 
-    log.rewrite(blockLogPath, outputBlockLogPath, maxBlock);
+    //TODO : These flags should be set by a command line.
+    fc::raw::pack_flags _flags;
+    log.rewrite(blockLogPath, outputBlockLogPath, maxBlock, _flags);
 
     log.close();
   }

@@ -68,6 +68,9 @@ namespace detail {
 
   void block_log_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
+    //TODO : These flags should be set by a command line.
+    fc::raw::pack_flags _flags;
+
     FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
     FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
@@ -150,7 +153,7 @@ namespace detail {
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id );
+      last_block_id = converter.convert_signed_block( *block, last_block_id, _flags );
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",

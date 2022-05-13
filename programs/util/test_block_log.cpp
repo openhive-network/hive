@@ -15,6 +15,9 @@ int main( int argc, char** argv, char** envp )
 {
   try
   {
+    //TODO : These flags should be set by a command line.
+    fc::raw::pack_flags _flags;
+
     //hive::chain::database db;
     hive::chain::block_log log;
 
@@ -29,32 +32,32 @@ int main( int argc, char** argv, char** envp )
     b1.witness = "alice";
     b1.previous = hive::protocol::block_id_type();
 
-    log.append( b1 );
+    log.append( b1, _flags );
     log.flush();
     idump( (b1) );
     dump_head(log);
-    idump( (fc::raw::pack_size(b1, fc::raw::pack_flags())) );
+    idump( (fc::raw::pack_size(b1, _flags)) );
 
     hive::protocol::signed_block b2;
     b2.witness = "bob";
     b2.previous = b1.id();
 
-    log.append( b2 );
+    log.append( b2, _flags );
     log.flush();
     idump( (b2) );
     dump_head(log);
-    idump( (fc::raw::pack_size(b2, fc::raw::pack_flags())) );
+    idump( (fc::raw::pack_size(b2, _flags)) );
 
     auto r1 = log.read_block_by_num( 1 );
     idump( (r1) );
-    idump( (fc::raw::pack_size(*r1, fc::raw::pack_flags())) );
+    idump( (fc::raw::pack_size(*r1, _flags)) );
 
     auto r2 = log.read_block_by_num( 2 );
     idump( (r2) );
-    idump( (fc::raw::pack_size(*r2, fc::raw::pack_flags())) );
+    idump( (fc::raw::pack_size(*r2, _flags)) );
 
     idump( (log.read_head()) );
-    idump( (fc::raw::pack_size(log.read_head(), fc::raw::pack_flags())));
+    idump( (fc::raw::pack_size(log.read_head(), _flags)));
 
     auto r3 = log.read_block_by_num( 3 );
     idump( (r3) );

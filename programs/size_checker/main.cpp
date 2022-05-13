@@ -40,10 +40,10 @@ using namespace hive::protocol;
 std::vector< fc::variant_object > g_op_types;
 
 template< typename T >
-uint64_t get_wire_size()
+uint64_t get_wire_size( const fc::raw::pack_flags& flags )
 {
   T data;
-  return fc::raw::pack_to_vector( data, fc::raw::pack_flags() ).size();
+  return fc::raw::pack_to_vector( data, flags ).size();
 }
 
 struct size_check_type_visitor
@@ -51,7 +51,8 @@ struct size_check_type_visitor
   typedef void result_type;
 
   int t = 0;
-  size_check_type_visitor(int _t ):t(_t){}
+  const fc::raw::pack_flags& flags;
+  size_check_type_visitor(int _t, const fc::raw::pack_flags& _flags ):t(_t), flags(_flags){}
 
   template<typename Type>
   result_type operator()( const Type& op )const
@@ -59,13 +60,16 @@ struct size_check_type_visitor
     fc::mutable_variant_object vo;
     vo["name"] = fc::get_typename<Type>::name();
     vo["mem_size"] = sizeof( Type );
-    vo["wire_size"] = get_wire_size<Type>();
+    vo["wire_size"] = get_wire_size<Type>( flags );
     g_op_types.push_back( vo );
   }
 };
 
 int main( int argc, char** argv )
 {
+  //TODO : These flags should be set by a command line.
+  fc::raw::pack_flags _flags;
+
   try
   {
     hive::protocol::operation op;
@@ -87,7 +91,7 @@ int main( int argc, char** argv )
     for( int32_t i = 0; i < op.count(); ++i )
     {
       op.set_which(i);
-      op.visit( size_check_type_visitor(i) );
+      op.visit( size_check_type_visitor(i, _flags) );
     }
 
     // sort them by mem size
@@ -105,10 +109,10 @@ int main( int argc, char** argv )
         std::cout << "\n";
     }
     std::cout << "]\n";
-    std::cerr << "Size of block header: " << sizeof( block_header ) << " " << fc::raw::pack_size( block_header(), fc::raw::pack_flags() ) << "\n";
+    std::cerr << "Size of block header: " << sizeof( block_header ) << " " << fc::raw::pack_size( block_header(), _flags ) << "\n";
   }
   catch ( const fc::exception& e ){ edump((e.to_detail_string())); }
   idump((sizeof(signed_block)));
-  idump((fc::raw::pack_size(signed_block(), fc::raw::pack_flags())));
+  idump((fc::raw::pack_size(signed_block(), _flags)));
   return 0;
 }
