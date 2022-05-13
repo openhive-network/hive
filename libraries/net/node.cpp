@@ -4436,6 +4436,7 @@ namespace graphene { namespace net {
         try
         {
           _tcp_server.accept( new_peer->get_socket() );
+          new_peer->get_socket().set_receive_buffer_size(MAX_MESSAGE_SIZE);
           new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
           idump((new_peer->get_socket().get_no_delay()));
           new_peer->get_socket().set_no_delay(true);
@@ -4782,6 +4783,8 @@ namespace graphene { namespace net {
       }
 
       _tcp_server.set_reuse_address();
+      int server_receive_buffer_size = _tcp_server.set_receive_buffer_size(MAX_MESSAGE_SIZE);
+      idump((server_receive_buffer_size));
       int server_send_buffer_size = _tcp_server.set_send_buffer_size(MAX_MESSAGE_SIZE);
       idump((server_send_buffer_size));
       idump((_tcp_server.get_no_delay()));

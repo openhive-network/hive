@@ -236,6 +236,23 @@ namespace fc {
 #endif // __APPLE__
   }
 
+  int tcp_socket::set_receive_buffer_size(int new_receive_buffer_size)
+  {
+    //read and log old receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
+    my->_sock.get_option(old_receive_buffer_reading);
+    wdump((old_receive_buffer_reading.value()));
+
+    boost::asio::socket_base::receive_buffer_size option(new_receive_buffer_size);
+    my->_sock.set_option(option);
+
+    //read new value and log receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size new_receive_buffer_reading;
+    my->_sock.get_option(new_receive_buffer_reading);
+    wdump((new_receive_buffer_reading.value()));
+    return new_receive_buffer_reading.value();
+  }
+
   int tcp_socket::set_send_buffer_size(int new_send_buffer_size)
   {
     //read and log old send_buffer_size
@@ -330,6 +347,26 @@ namespace fc {
       }
     }
 #endif // __APPLE__
+  }
+
+  int tcp_server::set_receive_buffer_size(int new_receive_buffer_size)
+  {
+    if( !my )
+      my = new impl;
+    //read and log old receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
+    my->_accept.get_option(old_receive_buffer_reading);
+    wdump((old_receive_buffer_reading.value()));
+
+    boost::asio::socket_base::receive_buffer_size option(new_receive_buffer_size);
+    my->_accept.set_option(option);
+
+    //read and log new receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size new_receive_buffer_reading;
+    my->_accept.get_option(new_receive_buffer_reading);
+    wdump((new_receive_buffer_reading.value()));
+
+    return new_receive_buffer_reading.value();
   }
 
   int tcp_server::set_send_buffer_size(int new_send_buffer_size)

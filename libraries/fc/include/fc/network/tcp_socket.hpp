@@ -20,6 +20,7 @@ namespace fc {
       void     enable_keep_alives(const fc::microseconds& interval);
       void     set_io_hooks(tcp_socket_io_hooks* new_hooks);
       void     set_reuse_address(bool enable = true); // set SO_REUSEADDR
+      int      set_receive_buffer_size(int new_receive_buffer_size);
       int      set_send_buffer_size(int new_send_buffer_size);
       bool     get_no_delay();
       void     set_no_delay(bool no_delay_flag);
@@ -27,11 +28,7 @@ namespace fc {
       fc::ip::endpoint local_endpoint() const;
 
       using istream::get;
-      void get( char& c )
-      {
-          read( &c, 1 );
-      }
-
+      void get( char& c ) { read( &c, 1 ); }
 
       /// istream interface
       /// @{
@@ -76,6 +73,7 @@ namespace fc {
       void     close();
       void     accept( tcp_socket& s );
       void     set_reuse_address(bool enable = true); // set SO_REUSEADDR, call before listen
+      int      set_receive_buffer_size(int new_receive_buffer_size);
       int      set_send_buffer_size(int new_send_buffer_size);
       bool     get_no_delay();
       void     set_no_delay(bool no_delay_flag);
