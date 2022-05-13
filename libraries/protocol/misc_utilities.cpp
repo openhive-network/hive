@@ -2,26 +2,29 @@
 
 namespace hive { namespace protocol {
 
-thread_local bool dynamic_serializer::legacy_enabled = dynamic_serializer::default_legacy_value;
+thread_local transaction_serialization_type dynamic_serializer::transaction_serialization = dynamic_serializer::default_transaction_serialization;
 
-legacy_switcher::legacy_switcher() : old_legacy_enabled( dynamic_serializer::legacy_enabled )
+legacy_switcher::legacy_switcher() : old_transaction_serialization( dynamic_serializer::transaction_serialization )
 {
-  dynamic_serializer::legacy_enabled = !dynamic_serializer::legacy_enabled;
+  if( dynamic_serializer::transaction_serialization == transaction_serialization_type::hf26 )
+    dynamic_serializer::transaction_serialization = transaction_serialization_type::legacy;
+  else
+    dynamic_serializer::transaction_serialization = transaction_serialization_type::hf26;
 }
 
-legacy_switcher::legacy_switcher( bool val ) : old_legacy_enabled( dynamic_serializer::legacy_enabled )
+legacy_switcher::legacy_switcher( transaction_serialization_type val ) : old_transaction_serialization( dynamic_serializer::transaction_serialization )
 {
-  dynamic_serializer::legacy_enabled = val;
+  dynamic_serializer::transaction_serialization = val;
 }
 
 legacy_switcher::~legacy_switcher()
 {
-  dynamic_serializer::legacy_enabled = old_legacy_enabled;
+  dynamic_serializer::transaction_serialization = old_transaction_serialization;
 }
 
 std::string legacy_switcher::info()
 {
-  return dynamic_serializer::legacy_enabled ? "a legacy format" : "non legacy format";
+  return dynamic_serializer::transaction_serialization == transaction_serialization_type::legacy ? "legacy format" : "hf26 format";
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )
