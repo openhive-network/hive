@@ -9,7 +9,7 @@ def test_help_option():
         '--help', '--version', '--offline', '--server-rpc-endpoint',
         '--cert-authority', '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint',
         '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock', '--daemon',
-        '--rpc-http-allowip', '--wallet-file', '--chain-id', '--format-type', '--legacy-format'
+        '--rpc-http-allowip', '--wallet-file', '--chain-id', '--output-formatter', '--legacy-format'
     ]
 
     cli_wallet_path = paths_to_executables.get_path_of('cli_wallet')
@@ -54,5 +54,5 @@ def test_wallet_help_default_values():
     assert default_values['--rpc-http-allowip'] is None
     assert default_values['--wallet-file'] == 'wallet.json'
     assert default_values['--chain-id'] == '18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e'
-    assert default_values['--format-type'] is None
+    assert default_values['--output-formatter'] is None
     assert default_values['--legacy-format'] == '1'
