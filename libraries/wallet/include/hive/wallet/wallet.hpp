@@ -27,6 +27,9 @@ typedef uint16_t transaction_handle_type;
 
 struct memo_data {
 
+  memo_data(){}
+  memo_data( const fc::raw::pack_flags& _flags ): flags( _flags ){}
+
   static optional<memo_data> from_string( string str ) {
     try {
       if( str.size() > sizeof(memo_data) && str[0] == '#') {
@@ -44,9 +47,10 @@ struct memo_data {
   uint64_t        nonce = 0;
   uint32_t        check = 0;
   vector<char>    encrypted;
+  const fc::raw::pack_flags flags;
 
   operator string()const {
-    auto data = fc::raw::pack_to_vector(*this, fc::raw::pack_flags());
+    auto data = fc::raw::pack_to_vector(*this, flags);
     auto base58 = fc::to_base58( data );
     return '#'+base58;
   }
@@ -91,7 +95,7 @@ class wallet_api
 {
   public:
     wallet_api( const wallet_data& initial_data, const chain_id_type& _hive_chain_id,
-        const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter, transaction_serialization_type transaction_serialization );
+        const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter, transaction_serialization_type transaction_serialization, pack_mode_type pack_mode );
     virtual ~wallet_api();
 
     bool copy_wallet_file( const string& destination_filename );
