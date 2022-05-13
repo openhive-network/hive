@@ -974,8 +974,8 @@ serializer_wrapper<annotated_signed_transaction> wallet_api_impl::build_claim_ac
 namespace hive { namespace wallet {
 
 wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id,
-    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, format_type _format, bool legacy_format )
-  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api, legacy_format)), exit_promise(exit_promise), is_daemon(is_daemon), format(_format)
+    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter, bool legacy_format )
+  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api, legacy_format)), exit_promise(exit_promise), is_daemon(is_daemon), output_formatter(_output_formatter)
 {
 }
 
@@ -1026,7 +1026,7 @@ variant wallet_api::list_my_accounts()
   vector<variant> args{ variant{ pub_keys } };
 
   auto _result = my->_remote_wallet_bridge_api->list_my_accounts( {args}, LOCK );
-  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result, my->_legacy_format }, format );
+  return wallet_formatter::list_my_accounts( serializer_wrapper<vector<database_api::api_account_object>>{ _result, my->_legacy_format }, output_formatter );
 }
 
 vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, uint32_t limit)
@@ -1204,7 +1204,7 @@ variant wallet_api::help()const
     }
   }
 
-  return wallet_formatter::help( _result, format );
+  return wallet_formatter::help( _result, output_formatter );
 }
 
 variant wallet_api::gethelp(const string& method)const
@@ -1219,7 +1219,7 @@ variant wallet_api::gethelp(const string& method)const
   else
     _result += "No help defined for method " + method + "\n";
 
-  return wallet_formatter::gethelp( _result, format );
+  return wallet_formatter::gethelp( _result, output_formatter );
 }
 
 bool wallet_api::load_wallet_file( string wallet_filename )
@@ -2537,7 +2537,7 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::claim_reward_balanc
 variant wallet_api::get_account_history( const string& account, uint32_t from, uint32_t limit )
 {
   my->require_online();
-  vector<variant> args{account, from, limit, variant{ format_type::noformat } };
+  vector<variant> args{account, from, limit, variant{ output_formatter_type::none } };
 
   auto _result = my->_remote_wallet_bridge_api->get_account_history( {args}, LOCK );
 
@@ -2564,7 +2564,7 @@ variant wallet_api::get_account_history( const string& account, uint32_t from, u
 
   }
 
-  return wallet_formatter::get_account_history( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result, my->_legacy_format }, format );
+  return wallet_formatter::get_account_history( serializer_wrapper<std::map<uint32_t, account_history::api_operation_object>>{ _result, my->_legacy_format }, output_formatter );
 }
 
 variant wallet_api::get_withdraw_routes( const string& account, database_api::withdraw_route_type type )const
@@ -2573,7 +2573,7 @@ variant wallet_api::get_withdraw_routes( const string& account, database_api::wi
   vector<variant> args{ account, variant{ type } };
   auto _result = my->_remote_wallet_bridge_api->get_withdraw_routes( {args} , LOCK );
 
-  return wallet_formatter::get_withdraw_routes( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result, my->_legacy_format }, format );
+  return wallet_formatter::get_withdraw_routes( serializer_wrapper<vector<database_api::api_withdraw_vesting_route_object>>{ _result, my->_legacy_format }, output_formatter );
 }
 
 variant wallet_api::get_order_book( uint32_t limit )
@@ -2584,7 +2584,7 @@ variant wallet_api::get_order_book( uint32_t limit )
   vector<variant> args{ limit };
   auto _result = my->_remote_wallet_bridge_api->get_order_book( {args}, LOCK );
 
-  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result, my->_legacy_format }, format );
+  return wallet_formatter::get_order_book( serializer_wrapper<market_history::get_order_book_return>{ _result, my->_legacy_format }, output_formatter );
 }
 
 variant wallet_api::get_open_orders( const string& accountname )
@@ -2594,7 +2594,7 @@ variant wallet_api::get_open_orders( const string& accountname )
   vector<variant> args{ accountname };
   auto _result = my->_remote_wallet_bridge_api->get_open_orders( {args}, LOCK );
 
-  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result, my->_legacy_format }, format );
+  return wallet_formatter::get_open_orders( serializer_wrapper<vector<database_api::api_limit_order_object>>{ _result, my->_legacy_format }, output_formatter );
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::create_order(

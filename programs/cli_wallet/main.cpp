@@ -103,7 +103,7 @@ int main( int argc, char** argv )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
       ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
-      ("format-type", bpo::value< std::string >(), "Allows to change formatting for functions that require special formatting" )
+      ("output-formatter", bpo::value< std::string >(), "Allows to present a result in different ways. Possible values(none/text/json)" )
       ("legacy-format", bpo::value< bool >()->default_value( !dynamic_serializer::legacy_enabled ), "Allows to generate JSON using legacy/non legacy format. By default is true." )
       ;
     vector<string> allowed_ips;
@@ -215,12 +215,12 @@ int main( int argc, char** argv )
 
     auto wallet_cli = std::make_shared<fc::rpc::cli>();
 
-    auto get_format = []( const bpo::variables_map& options, format_type default_format )
+    auto get_output_formatter = []( const bpo::variables_map& options, output_formatter_type default_format )
     {
-      if( options.count("format-type") )
+      if( options.count("output-formatter") )
       {
-        fc::variant _v = options["format-type"].as<std::string>();
-        format_type _result;
+        fc::variant _v = options["output-formatter"].as<std::string>();
+        output_formatter_type _result;
         from_variant( _v, _result );
         return _result;
       }
@@ -235,7 +235,7 @@ int main( int argc, char** argv )
     if( wdata.offline )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_format( options, format_type::textformat ), _legacy_format );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_output_formatter( options, output_formatter_type::text ), _legacy_format );
     }
     else
     {
@@ -261,12 +261,12 @@ int main( int argc, char** argv )
       auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
       auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
 
-      format_type format;
+      output_formatter_type output_format;
       if( options.count("daemon") )
-        format = get_format( options, format_type::noformat );
+        output_format = get_output_formatter( options, output_formatter_type::none );
       else
-        format = get_format( options, format_type::textformat );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), format, _legacy_format );
+        output_format = get_output_formatter( options, output_formatter_type::text );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), output_format, _legacy_format );
       closed_connection = con->closed.connect([=]{
         cerr << "Server has disconnected us.\n";
         wallet_cli->stop();
