@@ -4855,6 +4855,8 @@ namespace graphene { namespace net {
       new_peer->get_socket().set_reuse_address();
       int peer_send_buffer_size = new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
       idump((peer_send_buffer_size));
+      int peer_receive_buffer_size = new_peer->get_socket().set_receive_buffer_size(MAX_MESSAGE_SIZE);
+      idump((peer_receive_buffer_size));
       idump((new_peer->get_socket().get_no_delay()));
       new_peer->get_socket().set_no_delay(true);
       idump((new_peer->get_socket().get_no_delay()));
