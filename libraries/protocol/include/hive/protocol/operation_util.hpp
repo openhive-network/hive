@@ -102,7 +102,7 @@ struct extended_serialization_functor
         return name_map;
     }();
 
-    if( !hive::protocol::dynamic_serializer::legacy_enabled )
+    if( hive::protocol::dynamic_serializer::transaction_serialization == hive::protocol::transaction_serialization_type::hf26 )
       return false;
 
     auto ar = v.get_array();
@@ -127,7 +127,7 @@ struct extended_variant_creator_functor
   template<typename T>
   fc::variant create( const T& v ) const
   {
-    if( hive::protocol::dynamic_serializer::legacy_enabled )
+    if( hive::protocol::dynamic_serializer::transaction_serialization == hive::protocol::transaction_serialization_type::legacy )
     {
       auto name = hive::protocol::trim_legacy_typename_namespace( fc::get_typename< T >::name() );
       return variants( { variant( name ), variant( v ) } );
