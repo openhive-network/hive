@@ -640,9 +640,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
 }
 
 /*
-  Methods `broadcast_transaction_synchronous`, `broadcast_transaction` can be called from:
-  a) `cli_wallet` internally  (non legacy )
-  b) by regular API call      (non legacy or legacy( a transaction was created by `cli_wallet`)).
+  Methods `broadcast_transaction_synchronous`, `broadcast_transaction` can be called for a transaction that was created by either `legacy or `HF26` serialization.
   It's necessary to process both situations correctly.
 */
 protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& args )
