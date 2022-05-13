@@ -4678,7 +4678,6 @@ void database::_apply_transaction(const signed_transaction& trx)
   }
 
   auto& trx_idx = get_index<transaction_index>();
-  const chain_id_type& chain_id = get_chain_id();
   // idump((trx_id)(skip&skip_transaction_dupe_check));
   FC_ASSERT( (skip & skip_transaction_dupe_check) ||
           trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end(),
@@ -4695,6 +4694,7 @@ void database::_apply_transaction(const signed_transaction& trx)
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.begin();
 
+      const chain_id_type& chain_id = get_chain_id();
       trx.verify_authority( chain_id, get_active, get_owner, get_posting, HIVE_MAX_SIG_CHECK_DEPTH,
         has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
         has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
