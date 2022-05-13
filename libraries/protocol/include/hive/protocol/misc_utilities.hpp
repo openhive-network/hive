@@ -16,21 +16,23 @@ enum curve_id
   convergent_square_root
 };
 
+enum class transaction_serialization_type : uint8_t { legacy, hf26 };
+
 struct dynamic_serializer
 {
-  static const bool default_legacy_value = false;
+  static const transaction_serialization_type default_transaction_serialization = transaction_serialization_type::hf26;
   /*
     This switch is used for switching of serialization.
   */
-  thread_local static bool legacy_enabled;
+  thread_local static transaction_serialization_type transaction_serialization;
 };
 
 struct legacy_switcher
 {
-  const bool old_legacy_enabled = dynamic_serializer::default_legacy_value;
+  const transaction_serialization_type old_transaction_serialization = dynamic_serializer::default_transaction_serialization;
 
   legacy_switcher();
-  legacy_switcher( bool val );
+  legacy_switcher( transaction_serialization_type val );
   ~legacy_switcher();
 
   static std::string info();
@@ -42,7 +44,7 @@ template<typename T>
 struct serializer_wrapper
 {
   T value;
-  bool legacy_enabled = dynamic_serializer::default_legacy_value;
+  transaction_serialization_type transaction_serialization = dynamic_serializer::default_transaction_serialization;
 };
 
 } } // hive::protocol
@@ -58,6 +60,13 @@ FC_REFLECT_ENUM(
   (convergent_square_root)
 )
 
+
+FC_REFLECT_ENUM(
+  hive::protocol::transaction_serialization_type,
+  (legacy)
+  (hf26)
+)
+
 namespace fc {
 
   using hive::protocol::legacy_switcher;
@@ -67,7 +76,7 @@ namespace fc {
   {
     try
     {
-      legacy_switcher switcher( a.legacy_enabled );
+      legacy_switcher switcher( a.transaction_serialization );
       to_variant( a.value, var );
     } FC_CAPTURE_AND_RETHROW()
   }
@@ -77,7 +86,7 @@ namespace fc {
   {
     try
     {
-      legacy_switcher switcher( true );
+      legacy_switcher switcher( hive::protocol::transaction_serialization_type::legacy );
       from_variant( var, a.value );
     } FC_CAPTURE_AND_RETHROW()
   }
