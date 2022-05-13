@@ -261,7 +261,7 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log::rewrite(const fc::path& input_file, const fc::path& output_file, uint32_t max_block_num)
+  void block_log::rewrite(const fc::path& input_file, const fc::path& output_file, uint32_t max_block_num, const fc::raw::pack_flags& flags)
   {
     std::ifstream intput_block_stream(input_file.generic_string().c_str(), std::ios::in | std::ios::binary);
     std::ofstream output_block_stream(output_file.generic_string().c_str(), std::ios::out | std::ios::binary | std::ios::app);
@@ -287,7 +287,7 @@ namespace hive { namespace chain {
       if(out_pos != pos)
         ilog("Block position mismatch");
 
-      auto data = fc::raw::pack_to_vector(tmp, fc::raw::pack_flags());
+      auto data = fc::raw::pack_to_vector(tmp, flags);
       output_block_stream.write(data.data(), data.size());
       output_block_stream.write((char*)&out_pos, sizeof(out_pos));
 
@@ -381,12 +381,12 @@ namespace hive { namespace chain {
   //   are reading the block log.
   // There is no real use-case for multiple writers so it's not worth
   // adding a lock to allow it.
-  uint64_t block_log::append( const signed_block& b )
+  uint64_t block_log::append( const signed_block& b, const fc::raw::pack_flags& flags )
   {
     try
     {
       uint64_t block_start_pos;
-      std::vector<char> serialized_block = fc::raw::pack_to_vector(b, fc::raw::pack_flags());
+      std::vector<char> serialized_block = fc::raw::pack_to_vector(b, flags);
 
       if (my->compression_enabled)
       {

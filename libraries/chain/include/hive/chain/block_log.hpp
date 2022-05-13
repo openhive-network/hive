@@ -48,12 +48,12 @@ namespace hive { namespace chain {
 
       void open( const fc::path& file );
 
-      void rewrite(const fc::path& inputFile, const fc::path& outputFile, uint32_t maxBlockNo);
+      void rewrite(const fc::path& inputFile, const fc::path& outputFile, uint32_t maxBlockNo, const fc::raw::pack_flags& flags);
 
       void close();
       bool is_open()const;
 
-      uint64_t append( const signed_block& b );
+      uint64_t append( const signed_block& b, const fc::raw::pack_flags& flags );
       uint64_t append_raw(const char* raw_block_data, size_t raw_block_size, block_flags_t flags);
 
       void flush();

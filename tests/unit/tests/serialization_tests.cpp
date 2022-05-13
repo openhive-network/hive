@@ -61,13 +61,13 @@ BOOST_AUTO_TEST_CASE(transaction_object_test)
   const auto& txo = db->create<hive::chain::transaction_object>([&](chain::transaction_object& transaction) {
     transaction.trx_id = trx.id();
     transaction.expiration = trx.expiration;
-    fc::raw::pack_to_buffer(transaction.packed_trx, trx, fc::raw::pack_flags());
+    fc::raw::pack_to_buffer(transaction.packed_trx, trx, db->get_pack_flags());
     ilog("TRX packed into vector having ${s} bytes lentgh", ("s", transaction.packed_trx.size()));
   });
 
   std::vector<char> packed_trx_copy(txo.packed_trx.cbegin(), txo.packed_trx.cend());
 
-  auto packed = fc::raw::pack_to_vector(txo, fc::raw::pack_flags());
+  auto packed = fc::raw::pack_to_vector(txo, db->get_pack_flags());
 
   ilog("Generated vector size: ${s}", ("s", packed.size()));
 
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE( serialization_raw_test )
     op.amount = asset(100,HIVE_SYMBOL);
 
     trx.operations.push_back( op );
-    auto packed = fc::raw::pack_to_vector( trx, fc::raw::pack_flags() );
+    auto packed = fc::raw::pack_to_vector( trx, db->get_pack_flags() );
     signed_transaction unpacked = fc::raw::unpack_from_vector<signed_transaction>(packed);
     unpacked.validate();
     BOOST_CHECK( trx.digest() == unpacked.digest() );
@@ -261,9 +261,9 @@ BOOST_AUTO_TEST_CASE( asset_test )
 }
 
 template< typename T >
-std::string hex_bytes( const T& obj )
+std::string hex_bytes( const T& obj, const fc::raw::pack_flags& flags )
 {
-  std::vector<char> data = fc::raw::pack_to_vector( obj, fc::raw::pack_flags() );
+  std::vector<char> data = fc::raw::pack_to_vector( obj, flags );
   std::ostringstream ss;
   static const char hexdigits[] = "0123456789abcdef";
 
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
         asset a = asset( amount, symbol );
         vector<char> v_old;
         old_pack_asset( v_old, a );
-        vector<char> v_cur = fc::raw::pack_to_vector(a, fc::raw::pack_flags());
+        vector<char> v_cur = fc::raw::pack_to_vector(a, db->get_pack_flags());
         // ilog( "${a} : ${d}", ("a", a)("d", hex_bytes( v_old )) );
         // ilog( "${a} : ${d}", ("a", a)("d", hex_bytes( v_cur )) );
         BOOST_CHECK( v_cur == v_old );
@@ -673,7 +673,7 @@ BOOST_AUTO_TEST_CASE( min_block_size )
   signed_block b;
   while( b.witness.length() < HIVE_MIN_ACCOUNT_NAME_LENGTH )
     b.witness += 'a';
-  size_t min_size = fc::raw::pack_size( b, fc::raw::pack_flags() );
+  size_t min_size = fc::raw::pack_size( b, db->get_pack_flags() );
   BOOST_CHECK( min_size == HIVE_MIN_BLOCK_SIZE );
 }
 
@@ -841,8 +841,8 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
       b2.transactions.push_back( tx );
     }
 
-    fc::raw::pack( ss2, b2, fc::raw::pack_flags() );
-    fc::raw::pack( ss1, b1, fc::raw::pack_flags() );
+    fc::raw::pack( ss2, b2, db->get_pack_flags() );
+    fc::raw::pack( ss1, b1, db->get_pack_flags() );
 
     signed_block unpacked_block;
     fc::raw::unpack( ss2, unpacked_block );
@@ -886,8 +886,8 @@ BOOST_AUTO_TEST_CASE( unpack_recursion_test )
 
     for ( int i = 0; i < recursion_level; i++ )
     {
-      fc::raw::pack( ss, unsigned_int( allocation_per_level ), fc::raw::pack_flags() );
-      fc::raw::pack( ss, static_cast< uint8_t >( variant::array_type ), fc::raw::pack_flags() );
+      fc::raw::pack( ss, unsigned_int( allocation_per_level ), db->get_pack_flags() );
+      fc::raw::pack( ss, static_cast< uint8_t >( variant::array_type ), db->get_pack_flags() );
     }
 
     std::vector< fc::variant > v;
@@ -901,17 +901,17 @@ BOOST_AUTO_TEST_CASE( unpack_array_limit_test )
   try
   {
     std::stringstream ss;
-    fc::raw::pack( ss, unsigned_int( MAX_ARRAY_ALLOC_SIZE-1 ), fc::raw::pack_flags() );
+    fc::raw::pack( ss, unsigned_int( MAX_ARRAY_ALLOC_SIZE-1 ), db->get_pack_flags() );
     for( int i = 0; i < MAX_ARRAY_ALLOC_SIZE-1; ++i )
-      fc::raw::pack( ss, static_cast< uint8_t >( i % 256 ), fc::raw::pack_flags() );
+      fc::raw::pack( ss, static_cast< uint8_t >( i % 256 ), db->get_pack_flags() );
 
     std::vector< uint8_t > v;
     fc::raw::unpack( ss, v );
 
     // now increase size by one
-    fc::raw::pack( ss, static_cast< uint8_t >( (MAX_ARRAY_ALLOC_SIZE-1) % 256 ), fc::raw::pack_flags() );
+    fc::raw::pack( ss, static_cast< uint8_t >( (MAX_ARRAY_ALLOC_SIZE-1) % 256 ), db->get_pack_flags() );
     ss.seekp( 0 );
-    fc::raw::pack( ss, unsigned_int( MAX_ARRAY_ALLOC_SIZE ), fc::raw::pack_flags() );
+    fc::raw::pack( ss, unsigned_int( MAX_ARRAY_ALLOC_SIZE ), db->get_pack_flags() );
     ss.seekg( 0 );
     v.clear();
     HIVE_REQUIRE_THROW( fc::raw::unpack( ss, v ), fc::assert_exception );

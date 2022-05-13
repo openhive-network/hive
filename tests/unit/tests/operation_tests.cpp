@@ -3522,7 +3522,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
-    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0, fc::raw::pack_flags() );
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0, db->get_pack_flags() );
     set_witness_props( props );
 
     fund( "alice", ASSET( "100.000 TBD" ) );
@@ -3798,7 +3798,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
-    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0, fc::raw::pack_flags() );
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0, db->get_pack_flags() );
     set_witness_props( props );
 
     fund( "alice", ASSET( "0.042 TESTS" ) );
@@ -3845,7 +3845,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
-    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0, fc::raw::pack_flags() );
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0, db->get_pack_flags() );
     set_witness_props( props );
 
     fund( "alice", ASSET( "50000000.000 TESTS" ) );
@@ -8738,97 +8738,97 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- success when signing key is present" );
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), db->get_pack_flags() );
     prop_op.validate();
 
     BOOST_TEST_MESSAGE( "--- failure when setting account_creation_fee with incorrect symbol" );
-    prop_op.props[ "account_creation_fee" ] = fc::raw::pack_to_vector( ASSET( "2.000 TBD" ), fc::raw::pack_flags() );
+    prop_op.props[ "account_creation_fee" ] = fc::raw::pack_to_vector( ASSET( "2.000 TBD" ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when setting maximum_block_size below HIVE_MIN_BLOCK_SIZE_LIMIT" );
     prop_op.props.erase( "account_creation_fee" );
-    prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MIN_BLOCK_SIZE_LIMIT - 1, fc::raw::pack_flags() );
+    prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MIN_BLOCK_SIZE_LIMIT - 1, db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when setting hbd_interest_rate with negative number" );
     prop_op.props.erase( "maximum_block_size" );
-    prop_op.props[ "sbd_interest_rate" ] = fc::raw::pack_to_vector( -700, fc::raw::pack_flags() );
+    prop_op.props[ "sbd_interest_rate" ] = fc::raw::pack_to_vector( -700, db->get_pack_flags() );
     //ABW: works also with outdated "sbd_interest_rate" instead of "hbd_interest_rate"
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when setting hbd_interest_rate to HIVE_100_PERCENT + 1" );
     prop_op.props.erase( "sbd_interest_rate" );
-    prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( HIVE_100_PERCENT + 1, fc::raw::pack_flags() );
+    prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( HIVE_100_PERCENT + 1, db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when setting new hbd_exchange_rate with HBD / HIVE" );
     prop_op.props.erase( "hbd_interest_rate" );
-    prop_op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET( "1.000 TESTS" ), ASSET( "10.000 TBD" ) ), fc::raw::pack_flags() );
+    prop_op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET( "1.000 TESTS" ), ASSET( "10.000 TBD" ) ), db->get_pack_flags() );
     //ABW: works also with outdated "sbd_exchange_rate" instead of "hbd_exchange_rate"
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when setting new url with length of zero" );
     prop_op.props.erase( "sbd_exchange_rate" );
-    prop_op.props[ "url" ] = fc::raw::pack_to_vector( "", fc::raw::pack_flags() );
+    prop_op.props[ "url" ] = fc::raw::pack_to_vector( "", db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when setting new url with non UTF-8 character" );
     prop_op.props[ "url" ].clear();
-    prop_op.props[ "url" ] = fc::raw::pack_to_vector( "\xE0\x80\x80", fc::raw::pack_flags() );
+    prop_op.props[ "url" ] = fc::raw::pack_to_vector( "\xE0\x80\x80", db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- success when account subsidy rate is reasonable" );
     prop_op.props.clear();
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), fc::raw::pack_flags() );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 5000 ), fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), db->get_pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 5000 ), db->get_pack_flags() );
     prop_op.validate();
 
     BOOST_TEST_MESSAGE( "--- failure when budget is zero" );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 0 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 0 ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when budget is negative" );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( -5000 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( -5000 ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- success when budget is just under too big" );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 268435455 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 268435455 ), db->get_pack_flags() );
     prop_op.validate();
 
     BOOST_TEST_MESSAGE( "--- failure when account subsidy budget is just a little too big" );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 268435456 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 268435456 ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when account subsidy budget is enormous" );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 0x50000000 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( int32_t( 0x50000000 ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- success when account subsidy decay is reasonable" );
     prop_op.props.clear();
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), fc::raw::pack_flags() );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( 300000 ), fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), db->get_pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( 300000 ), db->get_pack_flags() );
     prop_op.validate();
 
     BOOST_TEST_MESSAGE( "--- failure when account subsidy decay is zero" );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( 0 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( 0 ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- failure when account subsidy decay is very small" );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( 40 ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( 40 ), db->get_pack_flags() );
     HIVE_REQUIRE_THROW( prop_op.validate(), fc::assert_exception );
 
     uint64_t unit = uint64_t(1) << HIVE_RD_DECAY_DENOM_SHIFT;
 
     BOOST_TEST_MESSAGE( "--- success when account subsidy decay is one year" );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / HIVE_BLOCKS_PER_YEAR ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / HIVE_BLOCKS_PER_YEAR ), db->get_pack_flags() );
     prop_op.validate();
 
     BOOST_TEST_MESSAGE( "--- success when account subsidy decay is one day" );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / HIVE_BLOCKS_PER_DAY ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / HIVE_BLOCKS_PER_DAY ), db->get_pack_flags() );
     prop_op.validate();
 
     BOOST_TEST_MESSAGE( "--- success when account subsidy decay is one hour" );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / ((60*60)/HIVE_BLOCK_INTERVAL) ), fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( uint32_t( unit / ((60*60)/HIVE_BLOCK_INTERVAL) ), db->get_pack_flags() );
     prop_op.validate();
   }
   FC_LOG_AND_RETHROW()
@@ -8842,7 +8842,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_authorities )
 
     witness_set_properties_operation op;
     op.owner = "alice";
-    op.props[ "key" ] = fc::raw::pack_to_vector( generate_private_key( "key" ).get_public_key(), fc::raw::pack_flags() );
+    op.props[ "key" ] = fc::raw::pack_to_vector( generate_private_key( "key" ).get_public_key(), db->get_pack_flags() );
 
     flat_set< account_name_type > auths;
     flat_set< account_name_type > expected;
@@ -8913,8 +8913,8 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     const witness_object& alice_witness = db->get_witness( "alice" );
     witness_set_properties_operation prop_op;
     prop_op.owner = "alice";
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), fc::raw::pack_flags() );
-    prop_op.props[ "account_creation_fee" ] = fc::raw::pack_to_vector( ASSET( "2.000 TESTS" ), fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), db->get_pack_flags() );
+    prop_op.props[ "account_creation_fee" ] = fc::raw::pack_to_vector( ASSET( "2.000 TESTS" ), db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -8923,7 +8923,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
 
     // Setting maximum_block_size
     prop_op.props.erase( "account_creation_fee" );
-    prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MIN_BLOCK_SIZE_LIMIT + 1, fc::raw::pack_flags() );
+    prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MIN_BLOCK_SIZE_LIMIT + 1, db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -8932,7 +8932,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
 
     // Setting hbd_interest_rate
     prop_op.props.erase( "maximum_block_size" );
-    prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 700, fc::raw::pack_flags() );
+    prop_op.props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 700, db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -8944,7 +8944,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     signing_key = generate_private_key( "new_key" );
     public_key_type alice_pub = signing_key.get_public_key();
     prop_op.props.erase( "hbd_interest_rate" );
-    prop_op.props[ "new_signing_key" ] = fc::raw::pack_to_vector( alice_pub, fc::raw::pack_flags() );
+    prop_op.props[ "new_signing_key" ] = fc::raw::pack_to_vector( alice_pub, db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, old_signing_key );
@@ -8954,8 +8954,8 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     // Setting new hbd_exchange_rate
     prop_op.props.erase( "new_signing_key" );
     prop_op.props[ "key" ].clear();
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), fc::raw::pack_flags() );
-    prop_op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET(" 1.000 TBD" ), ASSET( "100.000 TESTS" ) ), fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), db->get_pack_flags() );
+    prop_op.props[ "sbd_exchange_rate" ] = fc::raw::pack_to_vector( price( ASSET(" 1.000 TBD" ), ASSET( "100.000 TESTS" ) ), db->get_pack_flags() );
     //ABW: works also with outdated "sbd_exchange_rate" instead of "hbd_exchange_rate"
     tx.clear();
     tx.operations.push_back( prop_op );
@@ -8966,7 +8966,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
 
     // Setting new url
     prop_op.props.erase( "sbd_exchange_rate" );
-    prop_op.props[ "url" ] = fc::raw::pack_to_vector( "foo.bar", fc::raw::pack_flags() );
+    prop_op.props[ "url" ] = fc::raw::pack_to_vector( "foo.bar", db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -8974,7 +8974,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     BOOST_REQUIRE( alice_witness.url == "foo.bar" );
 
     // Setting new extranious_property
-    prop_op.props[ "extraneous_property" ] = fc::raw::pack_to_vector( "foo", fc::raw::pack_flags() );
+    prop_op.props[ "extraneous_property" ] = fc::raw::pack_to_vector( "foo", db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -8983,7 +8983,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     BOOST_TEST_MESSAGE( "--- Testing failure when 'key' does not match witness signing key" );
     prop_op.props.erase( "extranious_property" );
     prop_op.props[ "key" ].clear();
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( old_signing_key.get_public_key(), fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( old_signing_key.get_public_key(), db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, old_signing_key );
@@ -8991,8 +8991,8 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
 
     BOOST_TEST_MESSAGE( "--- Testing setting account subsidy rate" );
     prop_op.props[ "key" ].clear();
-    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), fc::raw::pack_flags() );
-    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( HIVE_ACCOUNT_SUBSIDY_PRECISION, fc::raw::pack_flags() );
+    prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key(), db->get_pack_flags() );
+    prop_op.props[ "account_subsidy_budget" ] = fc::raw::pack_to_vector( HIVE_ACCOUNT_SUBSIDY_PRECISION, db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -9002,7 +9002,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     BOOST_TEST_MESSAGE( "--- Testing setting account subsidy pool cap" );
     uint64_t day_decay = ( uint64_t(1) << HIVE_RD_DECAY_DENOM_SHIFT ) / HIVE_BLOCKS_PER_DAY;
     prop_op.props.erase( "account_subsidy_decay" );
-    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( day_decay, fc::raw::pack_flags() );
+    prop_op.props[ "account_subsidy_decay" ] = fc::raw::pack_to_vector( day_decay, db->get_pack_flags() );
     tx.clear();
     tx.operations.push_back( prop_op );
     sign( tx, signing_key );
@@ -9090,8 +9090,8 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     auto set_subsidy_budget = [&]( int32_t budget, uint32_t decay )
     {
       flat_map< string, vector<char> > props;
-      props["account_subsidy_budget"] = fc::raw::pack_to_vector( budget, fc::raw::pack_flags() );
-      props["account_subsidy_decay"] = fc::raw::pack_to_vector( decay, fc::raw::pack_flags() );
+      props["account_subsidy_budget"] = fc::raw::pack_to_vector( budget, db->get_pack_flags() );
+      props["account_subsidy_decay"] = fc::raw::pack_to_vector( decay, db->get_pack_flags() );
       set_witness_props( props );
     };
 

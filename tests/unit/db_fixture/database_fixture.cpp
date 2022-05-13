@@ -721,8 +721,8 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
   {
     witness_set_properties_operation op;
     op.owner = HIVE_INIT_MINER_NAME + fc::to_string( i );
-    op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price, fc::raw::pack_flags() );
-    op.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key, fc::raw::pack_flags() );
+    op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price, db->get_pack_flags() );
+    op.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key, db->get_pack_flags() );
 
     trx.operations.push_back( op );
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -752,7 +752,7 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
     op.owner = HIVE_INIT_MINER_NAME + (i == 0 ? "" : fc::to_string( i ));
     op.props = props;
     if( props.find( "key" ) == props.end() )
-      op.props["key"] = fc::raw::pack_to_vector( init_account_pub_key, fc::raw::pack_flags() );
+      op.props["key"] = fc::raw::pack_to_vector( init_account_pub_key, db->get_pack_flags() );
 
     trx.operations.push_back( op );
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );

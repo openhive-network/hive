@@ -3054,8 +3054,8 @@ BOOST_AUTO_TEST_CASE( generate_account_subsidies )
     // set_subsidy_budget creates a lot of blocks, so there should be enough for a few accounts
     // half-life of 10 minutes
     flat_map< string, vector<char> > props;
-    props["account_subsidy_budget"] = fc::raw::pack_to_vector( int32_t( 5123 ), fc::raw::pack_flags() );
-    props["account_subsidy_decay"] = fc::raw::pack_to_vector( uint32_t( 249617279 ), fc::raw::pack_flags() );
+    props["account_subsidy_budget"] = fc::raw::pack_to_vector( int32_t( 5123 ), db->get_pack_flags() );
+    props["account_subsidy_decay"] = fc::raw::pack_to_vector( uint32_t( 249617279 ), db->get_pack_flags() );
     set_witness_props( props );
 
     while( true )
@@ -3115,8 +3115,8 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     // set_subsidy_budget creates a lot of blocks, so there should be enough for a few accounts
     // half-life of 10 minutes
     flat_map< string, vector<char> > props;
-    props["account_subsidy_budget"] = fc::raw::pack_to_vector( int32_t( 5000 ), fc::raw::pack_flags() );
-    props["account_subsidy_decay"] = fc::raw::pack_to_vector( uint32_t( 249617279 ), fc::raw::pack_flags() );
+    props["account_subsidy_budget"] = fc::raw::pack_to_vector( int32_t( 5000 ), db->get_pack_flags() );
+    props["account_subsidy_decay"] = fc::raw::pack_to_vector( uint32_t( 249617279 ), db->get_pack_flags() );
     set_witness_props( props );
 
     while( true )

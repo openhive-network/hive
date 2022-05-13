@@ -90,7 +90,7 @@ void block_log_info_plugin_impl::on_post_apply_block( const block_notification& 
 
 
   uint64_t offset = state.total_size;
-  std::vector< char > data = fc::raw::pack_to_vector( b, fc::raw::pack_flags() );
+  std::vector< char > data = fc::raw::pack_to_vector( b, _db.get_pack_flags() );
   for( int i=0; i<8; i++ )
   {
     data.push_back( (char) (offset & 0xFF) );

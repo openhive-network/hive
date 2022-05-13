@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE( full_block )
     {
       req_action.account = HIVE_INIT_MINER_NAME + fc::to_string( num_actions );
       db.push_required_action( req_action );
-      block_size += fc::raw::pack_size( required_automated_action( req_action ), fc::raw::pack_flags() );
+      block_size += fc::raw::pack_size( required_automated_action( req_action ), db.get_pack_flags() );
       num_actions++;
     }
 

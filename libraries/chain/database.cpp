@@ -1258,7 +1258,7 @@ void database::push_transaction( const signed_transaction& trx, uint32_t skip )
   {
     try
     {
-      auto trx_size = fc::raw::pack_size( trx, fc::raw::pack_flags() );
+      auto trx_size = fc::raw::pack_size( trx, get_pack_flags() );
       //ABW: why is that limit related to block size and not HIVE_MAX_TRANSACTION_SIZE?
       auto trx_size_limit = get_dynamic_global_properties().maximum_block_size - 256;
       FC_ASSERT( trx_size <= trx_size_limit, "Transaction too large - size = ${s}, limit ${l}",
@@ -4308,7 +4308,7 @@ void database::_apply_block( const signed_block& next_block )
   const witness_object& signing_witness = validate_block_header(skip, next_block);
 
   const auto& gprops = get_dynamic_global_properties();
-  auto block_size = fc::raw::pack_size( next_block, fc::raw::pack_flags() );
+  auto block_size = fc::raw::pack_size( next_block, get_pack_flags() );
   if( has_hardfork( HIVE_HARDFORK_0_12 ) )
   {
     FC_ASSERT( block_size <= gprops.maximum_block_size, "Block Size is too Big", ("next_block_num",next_block_num)("block_size", block_size)("max",gprops.maximum_block_size) );
@@ -4748,7 +4748,7 @@ void database::_apply_transaction(const signed_transaction& trx)
     create<transaction_object>([&](transaction_object& transaction) {
       transaction.trx_id = trx_id;
       transaction.expiration = trx.expiration;
-      fc::raw::pack_to_buffer( transaction.packed_trx, trx, fc::raw::pack_flags() );
+      fc::raw::pack_to_buffer( transaction.packed_trx, trx, get_pack_flags() );
     });
 
     if( _benchmark_dumper.is_enabled() )
@@ -4844,7 +4844,7 @@ void database::process_required_actions( const required_automated_actions& actio
       // We're done processing actions in the block.
       if( pending_itr != pending_action_idx.end() && pending_itr->execution_time <= head_block_time() )
       {
-        total_actions_size += fc::raw::pack_size( pending_itr->action, fc::raw::pack_flags() );
+        total_actions_size += fc::raw::pack_size( pending_itr->action, get_pack_flags() );
         const auto& gpo = get_dynamic_global_properties();
         uint64_t required_actions_partition_size = ( gpo.maximum_block_size * gpo.required_actions_partition_percent ) / HIVE_100_PERCENT;
         FC_ASSERT( total_actions_size > required_actions_partition_size,
@@ -4866,7 +4866,7 @@ void database::process_required_actions( const required_automated_actions& actio
 
     apply_required_action( *actions_itr );
 
-    total_actions_size += fc::raw::pack_size( *actions_itr, fc::raw::pack_flags() );
+    total_actions_size += fc::raw::pack_size( *actions_itr, get_pack_flags() );
 
     remove( *pending_itr );
     ++actions_itr;
@@ -5392,7 +5392,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
         {
-          _block_log.append( block_itr->get()->data );
+          _block_log.append( block_itr->get()->data, get_pack_flags() );
         }
 
         _block_log.flush();
@@ -6245,6 +6245,13 @@ void database::apply_hardfork( uint32_t hardfork )
   {
     case HIVE_HARDFORK_0_1:
       perform_vesting_share_split( 1000000 );
+
+      /*
+        IMPORTANT!!!
+        This is temporary so as to validate new style of packing.
+        Finally NAI will be enabled in HF26.
+      */
+      _pack_mgr.enable_nai();
       break;
     case HIVE_HARDFORK_0_2:
       retally_witness_votes();
