@@ -18,6 +18,7 @@
 #include <appbase/plugin.hpp>
 
 #include <fc/signals.hpp>
+#include <fc/io/pack_flags.hpp>
 
 #include <fc/log/logger.hpp>
 
@@ -795,6 +796,11 @@ namespace chain {
         return _hardfork_versions;
       }
 
+      const fc::raw::pack_flags& get_pack_flags() const
+      {
+        return _pack_mgr.get_pack_flags();
+      }
+
     private:
 
       std::unique_ptr< database_impl > _my;
@@ -835,6 +841,8 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
+
+      fc::raw::pack_manager         _pack_mgr;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;
