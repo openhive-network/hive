@@ -4653,6 +4653,13 @@ void database::_apply_transaction(const signed_transaction& trx)
 
   uint32_t skip = get_node_properties().skip_flags;
 
+  if( !( skip & skip_transaction_dupe_check ) )
+  {
+    auto& trx_idx = get_index<transaction_index>();
+    FC_ASSERT( trx_idx.indices().get<by_trx_id>().find( trx_id ) == trx_idx.indices().get<by_trx_id>().end(),
+      "Duplicate transaction check failed", ( "trx_id", trx_id ) );
+  }
+
   if( !(skip&skip_validate) )   /* issue #505 explains why this skip_flag is disabled */
   {
     if( _benchmark_dumper.is_enabled() )
@@ -4676,12 +4683,6 @@ void database::_apply_transaction(const signed_transaction& trx)
       trx.validate();
     }
   }
-
-  auto& trx_idx = get_index<transaction_index>();
-  // idump((trx_id)(skip&skip_transaction_dupe_check));
-  FC_ASSERT( (skip & skip_transaction_dupe_check) ||
-          trx_idx.indices().get<by_trx_id>().find(trx_id) == trx_idx.indices().get<by_trx_id>().end(),
-          "Duplicate transaction check failed", ("trx_ix", trx_id) );
 
   if( !(skip & (skip_transaction_signatures | skip_authority_check) ) )
   {
