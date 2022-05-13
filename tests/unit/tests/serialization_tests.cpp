@@ -508,11 +508,11 @@ namespace
   }
 
   template< typename T >
-  T serialize_with_legacy( const std::string& data, bool legacy_enabled )
+  T serialize_with_legacy( const std::string& data, hive::protocol::transaction_serialization_type transaction_serialization )
   {
     try
     {
-      legacy_switcher switcher( legacy_enabled );
+      legacy_switcher switcher( transaction_serialization );
       T result = fc::json::from_string( data ).as < T >();
       return result;
     } FC_LOG_AND_RETHROW();
@@ -528,14 +528,14 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_test )
     BOOST_CHECK_NO_THROW(
       coe_legacy = serialize_with_legacy< comment_options_extension >(
         "[0,{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}]", // condenser_api output
-        true
+        hive::protocol::transaction_serialization_type::legacy
       );
     );
 
     BOOST_CHECK_NO_THROW(
       coe_new = serialize_with_legacy< comment_options_extension >(
         "{\"type\":\"comment_payout_beneficiaries\",\"value\":{\"beneficiaries\":[{\"account\":\"alice\",\"weight\":10000}]}}", // block_api output
-        false
+        hive::protocol::transaction_serialization_type::hf26
       );
     );
 
@@ -553,14 +553,14 @@ BOOST_AUTO_TEST_CASE( pow2_work_test )
     BOOST_CHECK_NO_THROW(
       work_legacy = serialize_with_legacy< pow2_work >(
         "[0,{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}]", // condenser_api output
-        true
+        hive::protocol::transaction_serialization_type::legacy
       );
     );
 
     BOOST_CHECK_NO_THROW(
       work_new = serialize_with_legacy< pow2_work >(
         "{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"alice\",\"prev_block\":\"abcdef\",\"nonce\":1050},\"pow_summary\":0}}", // block_api output
-        false
+        hive::protocol::transaction_serialization_type::hf26
       );
     );
 
@@ -581,14 +581,14 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
     BOOST_CHECK_NO_THROW(
       op_legacy = serialize_with_legacy< legacy_operation >(
         "[\"transfer\",{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]", // condenser_api output
-        true
+        hive::protocol::transaction_serialization_type::legacy
       ).get< legacy_transfer_operation >();
     );
 
     BOOST_CHECK_NO_THROW(
       op_new = serialize_with_legacy< operation >(
         "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"alice\",\"to\":\"bob\",\"amount\":{\"amount\":\"1234\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"test\"}}", // block_api output
-        false
+        hive::protocol::transaction_serialization_type::hf26
       ).get< transfer_operation >();
     );
 
@@ -606,14 +606,14 @@ BOOST_AUTO_TEST_CASE( block_header_test )
     BOOST_CHECK_NO_THROW(
       ex_legacy = serialize_with_legacy< block_header_extensions >(
         "[\"version\",\"1.2.3\"]", // condenser_api output
-        true
+        hive::protocol::transaction_serialization_type::legacy
       );
     );
 
     BOOST_CHECK_NO_THROW(
       ex_new = serialize_with_legacy< block_header_extensions >(
         "{\"type\":\"version\",\"value\":\"1.2.3\"}", // block_api output
-        false
+        hive::protocol::transaction_serialization_type::hf26
       );
     );
 
