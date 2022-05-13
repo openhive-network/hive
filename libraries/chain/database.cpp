@@ -4660,6 +4660,36 @@ void database::_apply_transaction(const signed_transaction& trx)
       "Duplicate transaction check failed", ( "trx_id", trx_id ) );
   }
 
+  //Skip all manner of expiration and TaPoS checking if we're on block 1; It's impossible that the transaction is
+  //expired, and TaPoS makes no sense as no blocks exist.
+  if( BOOST_LIKELY( head_block_num() > 0 ) )
+  {
+    fc::time_point_sec now = head_block_time();
+
+    HIVE_ASSERT( trx.expiration <= now + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ), transaction_expiration_exception,
+      "", ( "trx.expiration", trx.expiration )( "now", now )( "max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+    if( has_hardfork( HIVE_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
+      HIVE_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.expiration ) );
+    else
+      HIVE_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.expiration ) );
+
+    if( !( skip & skip_tapos_check ) )
+    {
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.begin();
+
+      block_summary_object::id_type bsid( trx.ref_block_num );
+      const auto& tapos_block_summary = get< block_summary_object >( bsid );
+      //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
+      HIVE_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[ 1 ], transaction_tapos_exception,
+        "", ( "trx.ref_block_prefix", trx.ref_block_prefix )
+        ( "tapos_block_summary", tapos_block_summary.block_id._hash[ 1 ] ) );
+
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.end( "transaction", "tapos check" );
+    }
+  }
+
   if( !(skip&skip_validate) )   /* issue #505 explains why this skip_flag is disabled */
   {
     if( _benchmark_dumper.is_enabled() )
@@ -4709,35 +4739,6 @@ void database::_apply_transaction(const signed_transaction& trx)
       if( get_shared_db_merkle().find( head_block_num() + 1 ) == get_shared_db_merkle().end() )
         throw e;
     }
-  }
-
-  //Skip all manner of expiration and TaPoS checking if we're on block 1; It's impossible that the transaction is
-  //expired, and TaPoS makes no sense as no blocks exist.
-  if( BOOST_LIKELY(head_block_num() > 0) )
-  {
-    if( !(skip & skip_tapos_check) )
-    {
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.begin();
-
-      block_summary_object::id_type bsid( trx.ref_block_num );
-      const auto& tapos_block_summary = get< block_summary_object >( bsid );
-      //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
-      HIVE_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
-              "", ("trx.ref_block_prefix", trx.ref_block_prefix)
-              ("tapos_block_summary",tapos_block_summary.block_id._hash[1]));
-
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.end( "transaction", "tapos check" );
-    }
-
-    fc::time_point_sec now = head_block_time();
-
-    HIVE_ASSERT( trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
-            "", ("trx.expiration",trx.expiration)("now",now)("max_til_exp",HIVE_MAX_TIME_UNTIL_EXPIRATION));
-    if( has_hardfork( HIVE_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
-      HIVE_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
-    HIVE_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
   }
 
   //Insert transaction into unique transactions database.
