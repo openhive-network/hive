@@ -59,7 +59,7 @@ target_link_libraries( hive_chain hive_jsonball hive_protocol fc chainbase hive_
                        ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${ZLIB_LIBRARIES})
 target_include_directories( hive_chain
                             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${BROTLI_INCLUDE_DIRS}" "${ZLIB_INCLUDE_DIRS}"
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/zstd/lib")
 if ( HAS_COMPRESSION_DICTIONARIES )
   target_compile_definitions( hive_chain PUBLIC -DHAS_COMPRESSION_DICTIONARIES )
 endif()
