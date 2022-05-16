@@ -164,21 +164,16 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_blocks;
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
+
+    class write_request_visitor;
 };
 
-struct write_request_visitor
+struct chain_plugin_impl::write_request_visitor
 {
-  write_request_visitor() {}
+  write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
 
-  database* db;
-  uint32_t  skip = 0;
-  fc::optional< fc::exception >* except;
-  std::shared_ptr< abstract_block_producer > block_generator;
-
-  uint32_t pushed_transaction_counter = 0;
-
-  fc::microseconds* cumulative_time_processing_blocks;
-  fc::microseconds* cumulative_time_processing_transactions;
+  chain_plugin_impl& cp;
+  write_context* cxt = nullptr;
 
   typedef bool result_type;
 
@@ -190,18 +185,18 @@ struct write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_block", 1.0f )
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      result = db->push_block( *block, skip );
-      *cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
+      result = cp.db.push_block( *block, cxt->skip );
+      cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
     }
     catch( const fc::exception& e )
     {
-      *except = e;
+      cxt->except = e;
     }
     catch( ... )
     {
-      *except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
-                                        std::current_exception());
+      cxt->except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
+                                            std::current_exception());
     }
 
     return result;
@@ -215,21 +210,21 @@ struct write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      db->push_transaction( *trx );
-      *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
+      cp.db.push_transaction( *trx );
+      cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       result = true;
     }
     catch( const fc::exception& e )
     {
-      *except = e;
+      cxt->except = e;
     }
     catch( ... )
     {
       elog("Unknown exception while pushing transaction.");
-      *except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing transaction." ),
-                                        std::current_exception());
+      cxt->except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing transaction." ),
+                                            std::current_exception());
     }
 
     return result;
@@ -241,11 +236,11 @@ struct write_request_visitor
 
     try
     {
-      if( !block_generator )
+      if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      req->block = block_generator->generate_block(
+      req->block = cp.block_generator->generate_block(
         req->when,
         req->witness_owner,
         req->block_signing_private_key,
@@ -257,12 +252,12 @@ struct write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      *except = e;
+      cxt->except = e;
     }
     catch( ... )
     {
-      *except = fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
-                              std::current_exception() );
+      cxt->except = fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
+                                             std::current_exception() );
     }
 
     return result;
@@ -305,12 +300,7 @@ void chain_plugin_impl::start_write_processing()
 
       const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);
       bool is_syncing = true;
-      write_request_visitor req_visitor;
-      req_visitor.db = &db;
-      req_visitor.block_generator = block_generator;
-      req_visitor.cumulative_time_processing_blocks = &cumulative_time_processing_blocks;
-      req_visitor.cumulative_time_processing_transactions = &cumulative_time_processing_transactions;
-
+      write_request_visitor req_visitor( *this );
       request_promise_visitor prom_visitor;
 
       /* This loop monitors the write request queue and performs writes to the database. These
@@ -388,8 +378,7 @@ void chain_plugin_impl::start_write_processing()
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
           while (true)
           {
-            req_visitor.skip = cxt->skip;
-            req_visitor.except = &(cxt->except);
+            req_visitor.cxt = cxt;
             cxt->success = cxt->req_ptr.visit( req_visitor );
             cxt->prom_ptr.visit( prom_visitor );
 
