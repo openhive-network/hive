@@ -4949,7 +4949,28 @@ namespace graphene { namespace net {
               ("count", _active_connections.size()));
     }
 
+
+    // format a byte count like 409869 into "409.8 KiB"
+    const unsigned formatted_network_bytes_length = 9; // "123.4 KiB" is 9 chars
+    std::string format_network_bytes(uint64_t bytes)
+    {
+      std::ostringstream bytes_stream;
+      bytes_stream << std::right << std::setw(5) << std::fixed << std::setprecision(1);
+      if (bytes > 1099511627776)
+        bytes_stream << (bytes / 1099511627776.0) << " TiB";
+      else if (bytes > 1073741824)
+        bytes_stream << (bytes / 1073741824.0) << " GiB";
+      else if (bytes > 1048576)
+        bytes_stream << (bytes / 1048576.0) << " MiB";
+      else if (bytes > 1024)
+        bytes_stream << (bytes / 1024.0) << " KiB";
+      else
+        bytes_stream << bytes << "   B";
+      return bytes_stream.str();
+    }
+
     // format a speed like 409869 into "409.8 KiB/s"
+    const unsigned formatted_network_speed_length = 11; // "123.4 KiB/s" is 11 chars
     std::string format_network_speed(float speed_bps)
     {
       std::ostringstream speed_stream;
@@ -4964,7 +4985,6 @@ namespace graphene { namespace net {
         speed_stream << speed_bps << "   B/s";
       return speed_stream.str();
     }
-    const unsigned formatted_network_speed_length = 11; // "123.4 KiB/s" is 11 chars
 
     // draw a crude ascii bar chart
     std::vector<std::string> graph_values(const boost::circular_buffer<uint32_t>& read_speeds, 
@@ -5088,6 +5108,52 @@ namespace graphene { namespace net {
       ilog( "--------- END MEMORY USAGE ------------" );
 
       ilog( "--------- NETWORK USAGE ---------------" );
+
+      // first, log the stats per peer, most talkative first
+      try
+      {
+        fc::time_point current_time = fc::time_point::now();
+        struct peer_network_stats {
+          fc::optional<fc::ip::endpoint> endpoint;
+          uint64_t total_bytes_sent;
+          uint64_t total_bytes_received;
+          fc::microseconds connection_duration;
+          float bytes_per_second() const { return connection_duration != fc::microseconds() ? ((float)(total_bytes_sent + total_bytes_received) / ((float)connection_duration.count() / fc::seconds(1).count())) : 0.f; }
+        };
+        std::vector<peer_network_stats> network_stats_by_peer;
+        for (const peer_connection_ptr& peer : _active_connections)
+          network_stats_by_peer.push_back({peer->get_remote_endpoint(), peer->get_total_bytes_sent(), peer->get_total_bytes_received(), current_time - peer->get_connection_time()});
+        std::sort(network_stats_by_peer.begin(), network_stats_by_peer.end(), [](const peer_network_stats& lhs, const peer_network_stats& rhs) { return lhs.bytes_per_second() > rhs.bytes_per_second(); });
+        ilog("Per peer (stats over the entire duration of their connection):");
+        ilog("peer                 |      speed |        sent |    received | connection time");
+        ilog("---------------------+------------+-------------+-------------+----------------");
+        for (const peer_network_stats& stat : network_stats_by_peer)
+        {
+          std::string speed = format_network_speed(stat.bytes_per_second());
+          int speed_padding = std::max<int>(formatted_network_speed_length - speed.length(), 0);
+          std::string bytes_sent = format_network_bytes(stat.total_bytes_sent);
+          int bytes_sent_padding = std::max<int>(3 + formatted_network_bytes_length - bytes_sent.length(), 0);
+          std::string bytes_received = format_network_bytes(stat.total_bytes_received);
+          int bytes_received_padding = std::max<int>(3 + formatted_network_bytes_length - bytes_received.length(), 0);
+          std::string endpoint_string = fc::json::to_string(stat.endpoint);
+          int endpoint_padding = std::max<int>(23 - endpoint_string.length(), 0);
+          ilog("${endpoint}${endpoint_padding}|${speed_padding}${speed} |${bytes_sent_padding}${bytes_sent} |${bytes_received_padding}${bytes_received} | ${ago}",
+               ("endpoint", stat.endpoint)("endpoint_padding", std::string(endpoint_padding, ' '))
+               (speed)("speed_padding", std::string(speed_padding, ' '))
+               (bytes_sent)("bytes_sent_padding", std::string(bytes_sent_padding, ' '))
+               (bytes_received)("bytes_received_padding", std::string(bytes_received_padding, ' '))
+               ("ago", get_approximate_relative_time_string(current_time - stat.connection_duration, current_time, "")));
+        }
+        ilog("                                                                               ");
+      }
+      catch (const fc::exception& e)
+      {
+        edump((e));
+      }
+      catch (...)
+      {
+      }
+
       if (!_average_network_read_speed_seconds.empty())
       {
         std::vector<std::string> graph = graph_values(_average_network_read_speed_seconds, _average_network_write_speed_seconds, 
