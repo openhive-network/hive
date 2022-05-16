@@ -259,7 +259,7 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
            ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
     FC_ASSERT(opt_block.valid());
     fc_dlog(fc::logger::get("chainlock"),"Serving up block #${num}", ("num", opt_block->block_num()));
-    return block_message(*opt_block);
+    return block_message(*opt_block, fc::raw::pack_flags());
   }
   fc_dlog(fc::logger::get("chainlock"),"get_item getting a transaction will get a db read lock");
   return chain.db().with_read_lock( [&]()
@@ -561,7 +561,7 @@ void p2p_plugin::plugin_shutdown()
 void p2p_plugin::broadcast_block( const hive::protocol::signed_block& block )
 {
   ulog("Broadcasting block #${n}", ("n", block.block_num()));
-  my->node->broadcast( graphene::net::block_message( block ) );
+  my->node->broadcast( graphene::net::block_message( block, fc::raw::pack_flags() ) );
 }
 
 void p2p_plugin::broadcast_transaction( const hive::protocol::signed_transaction& tx )

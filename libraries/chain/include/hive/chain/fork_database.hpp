@@ -19,8 +19,8 @@ namespace hive { namespace chain {
     private:
       fork_item(){}
     public:
-      fork_item( signed_block d )
-      :num(d.block_num()),id(d.id()),data( std::move(d) ){}
+      fork_item( signed_block d, const fc::raw::pack_flags& flags )
+      :num(d.block_num()),id(d.id( flags )),data( std::move(d) ){}
 
       block_id_type previous_id()const { return data.previous; }
 
@@ -61,7 +61,7 @@ namespace hive { namespace chain {
       /// The maximum number of blocks that may be skipped in an out-of-order push
       const static int MAX_BLOCK_REORDERING = 1024;
 
-      fork_database();
+      fork_database( const fc::raw::pack_flags& flags );
       void reset();
 
       void                             start_block(signed_block b);
@@ -200,6 +200,7 @@ namespace hive { namespace chain {
       fork_multi_index_type    _unlinked_index;
       fork_multi_index_type    _index;
       shared_ptr<fork_item>    _head;
+      const fc::raw::pack_flags& flags;
   };
 
 } } // hive::chain

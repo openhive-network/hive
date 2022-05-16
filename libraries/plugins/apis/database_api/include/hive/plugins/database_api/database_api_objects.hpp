@@ -849,8 +849,8 @@ struct api_signed_block_object : public signed_block
 {
   api_signed_block_object( const signed_block& block, const fc::raw::pack_flags& flags ) : signed_block( block )
   {
-    block_id = id();
-    signing_key = signee();
+    block_id = id( flags );
+    signing_key = signee( flags );
     transaction_ids.reserve( transactions.size() );
     for( const signed_transaction& tx : transactions )
       transaction_ids.push_back( tx.id( flags ) );

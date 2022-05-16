@@ -106,8 +106,8 @@ namespace graphene { namespace net {
       static const core_message_type_enum type;
 
       block_message(){}
-      block_message(const signed_block& blk )
-      :block(blk),block_id(blk.id()){}
+      block_message(const signed_block& blk, const fc::raw::pack_flags& flags )
+      :block(blk),block_id(blk.id( flags )){}
 
       signed_block    block;
       block_id_type   block_id;

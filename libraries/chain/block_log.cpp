@@ -749,7 +749,7 @@ namespace hive { namespace chain {
         block_stream.read( (char*)&pos, sizeof( pos ) );
 
         ilog("Resuming Block Log Index. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
-                                                            ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
+                                                            ( "n", tmp.block_num() )( "trx", tmp.id( fc::raw::pack_flags() ) )( "pos", pos ) );
       }
 
       while( !appbase::app().is_interrupt_request() && pos < end_pos )
@@ -761,7 +761,7 @@ namespace hive { namespace chain {
 
       if( appbase::app().is_interrupt_request() )
         ilog("Creating Block Log Index is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )( bytes position: ${pos} )",
-                                                            ( "n", tmp.block_num() )( "trx", tmp.id() )( "pos", pos ) );
+                                                            ( "n", tmp.block_num() )( "trx", tmp.id( fc::raw::pack_flags() ) )( "pos", pos ) );
 
       /// Flush and reopen to be sure that given index file has been saved.
       /// Otherwise just executed replay, next stopped by ctrl+C can again corrupt this file. 

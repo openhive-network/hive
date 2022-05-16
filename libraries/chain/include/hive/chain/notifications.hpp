@@ -6,9 +6,9 @@ namespace hive { namespace chain {
 
 struct block_notification
 {
-  block_notification( const hive::protocol::signed_block& b ) : block(b)
+  block_notification( const hive::protocol::signed_block& b, const fc::raw::pack_flags& flags ) : block(b)
   {
-    block_id = b.id();
+    block_id = b.id( flags );
     prev_block_id = b.previous;
     block_num = hive::protocol::block_header::num_from_id( block_id );
   }

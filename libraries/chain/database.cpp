@@ -126,7 +126,7 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : _my( new database_impl(*this) ) {}
+  : _my( new database_impl(*this) ), _fork_db( get_pack_flags() ) {}
 
 database::~database()
 {
@@ -232,7 +232,7 @@ void database::load_state_initial_data(const open_args& args)
   {
     optional<signed_block> head_block = _block_log.read_block_by_num(head_block_num());
     // This assertion should be caught and a reindex should occur
-    FC_ASSERT(head_block && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain.");
+    FC_ASSERT(head_block && head_block->id( get_pack_flags() ) == head_block_id(), "Chain state does not match block log. Please reindex blockchain.");
 
     _fork_db.start_block(*head_block);
   }
@@ -330,7 +330,7 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
 
   if( appbase::app().is_interrupt_request() )
   {
-    ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block.block_num() )( "trx", block.id() ) );
+    ilog("Replaying is interrupted on user request. Last applied: ( block number: ${n} )( trx: ${trx} )", ( "n", block.block_num() )( "trx", block.id( get_pack_flags() ) ) );
   }
   else
   {
@@ -507,7 +507,7 @@ bool database::is_known_block(const block_id_type& id)const
     return true;
 
   optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num(protocol::block_header::num_from_id(id));
-  return block_header_from_block_log ? block_header_from_block_log->id() == id : false;
+  return block_header_from_block_log ? block_header_from_block_log->id( get_pack_flags() ) == id : false;
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required, but fork database read lock is required
@@ -517,7 +517,7 @@ bool database::is_known_block_unlocked(const block_id_type& id)const
     return true;
 
   optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num(protocol::block_header::num_from_id(id));
-  return block_header_from_block_log ? block_header_from_block_log->id() == id : false;
+  return block_header_from_block_log ? block_header_from_block_log->id( get_pack_flags() ) == id : false;
 } FC_CAPTURE_AND_RETHROW() }
 
 /**
@@ -558,7 +558,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
     // Next we check if block_log has it. Irreversible blocks are here.
     optional<signed_block_header> b = _block_log.read_block_header_by_num( block_num );
     if( b )
-      return b->id();
+      return b->id( get_pack_flags() );
     return block_id_type(); //this block_num couldn't be found
   }
   FC_CAPTURE_AND_RETHROW( (block_num) )
@@ -581,7 +581,7 @@ optional<signed_block> database::fetch_block_by_id( const block_id_type& id )con
     return fork_item->data;
 
   optional<signed_block> block_from_block_log = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
-  if( block_from_block_log && block_from_block_log->id() == id )
+  if( block_from_block_log && block_from_block_log->id( get_pack_flags() ) == id )
     return *block_from_block_log;
   return optional<signed_block>();
 } FC_CAPTURE_AND_RETHROW() }
@@ -594,7 +594,7 @@ optional<signed_block_header> database::fetch_block_header_by_id( const block_id
     return forkdb_item->data;
 
   optional<signed_block_header> block_header_from_block_log = _block_log.read_block_header_by_num( protocol::block_header::num_from_id( id ) );
-  if (block_header_from_block_log && block_header_from_block_log->id() == id)
+  if (block_header_from_block_log && block_header_from_block_log->id( get_pack_flags() ) == id)
     return *block_header_from_block_log;
   return optional<signed_block>();
 } FC_CAPTURE_AND_RETHROW() }
@@ -1088,7 +1088,7 @@ bool database::push_block(const signed_block& new_block, uint32_t skip)
   {
     auto itr = _checkpoints.find( block_num );
     if( itr != _checkpoints.end() )
-      FC_ASSERT( new_block.id() == itr->second, "Block did not match checkpoint", ("checkpoint",*itr)("block_id",new_block.id()) );
+      FC_ASSERT( new_block.id( get_pack_flags() ) == itr->second, "Block did not match checkpoint", ("checkpoint",*itr)("block_id",new_block.id( get_pack_flags() )) );
 
     if( _checkpoints.rbegin()->first >= block_num )
       skip = skip_witness_signature
@@ -1167,8 +1167,8 @@ bool database::_push_block(const signed_block& new_block)
       //Only switch forks if new_head is actually higher than head
       if( new_head->data.block_num() > head_block_num() )
       {
-        wlog( "Switching to fork: ${id}", ("id",new_head->data.id()) );
-        auto branches = _fork_db.fetch_branch_from(new_head->data.id(), head_block_id());
+        wlog( "Switching to fork: ${id}", ("id",new_head->data.id( get_pack_flags() )) );
+        auto branches = _fork_db.fetch_branch_from(new_head->data.id( get_pack_flags() ), head_block_id());
 
         // pop blocks until we hit the common ancestor block
         while( head_block_id() != branches.second.back()->data.previous )
@@ -1179,7 +1179,7 @@ bool database::_push_block(const signed_block& new_block)
         // push all blocks on the new fork
         for( auto ritr = branches.first.rbegin(); ritr != branches.first.rend(); ++ritr )
         {
-            ilog( "pushing blocks from fork ${n} ${id}", ("n",(*ritr)->data.block_num())("id",(*ritr)->data.id()) );
+            ilog( "pushing blocks from fork ${n} ${id}", ("n",(*ritr)->data.block_num())("id",(*ritr)->data.id( get_pack_flags() )) );
             optional<fc::exception> except;
             try
             {
@@ -1195,7 +1195,7 @@ bool database::_push_block(const signed_block& new_block)
               // remove the rest of branches.first from the fork_db, those blocks are invalid
               while( ritr != branches.first.rend() )
               {
-                _fork_db.remove( (*ritr)->data.id() );
+                _fork_db.remove( (*ritr)->data.id( get_pack_flags() ) );
                 ++ritr;
               }
 
@@ -1236,7 +1236,7 @@ bool database::_push_block(const signed_block& new_block)
   catch( const fc::exception& e )
   {
     elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
-    _fork_db.remove(new_block.id());
+    _fork_db.remove(new_block.id( get_pack_flags() ));
     throw;
   }
 
@@ -4224,7 +4224,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 
 void database::_apply_block( const signed_block& next_block )
 {
-  block_notification note( next_block );
+  block_notification note( next_block, get_pack_flags() );
 
   try {
   notify_pre_apply_block( note );
@@ -4290,7 +4290,7 @@ void database::_apply_block( const signed_block& next_block )
 
     try
     {
-      FC_ASSERT( next_block.transaction_merkle_root == merkle_root, "Merkle check failed", ("next_block.transaction_merkle_root",next_block.transaction_merkle_root)("calc",merkle_root)("next_block",next_block)("id",next_block.id()) );
+      FC_ASSERT( next_block.transaction_merkle_root == merkle_root, "Merkle check failed", ("next_block.transaction_merkle_root",next_block.transaction_merkle_root)("calc",merkle_root)("next_block",next_block)("id",next_block.id( get_pack_flags() )) );
     }
     catch( fc::assert_exception& e )
     {
@@ -5154,7 +5154,7 @@ const witness_object& database::validate_block_header( uint32_t skip, const sign
   const witness_object& witness = get_witness( next_block.witness );
 
   if( !(skip&skip_witness_signature) )
-    FC_ASSERT( next_block.validate_signee( witness.signing_key,
+    FC_ASSERT( next_block.validate_signee( witness.signing_key, get_pack_flags(),
       has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical ) );
 
   if( !(skip&skip_witness_schedule_check) )
@@ -5175,7 +5175,7 @@ void database::create_block_summary(const signed_block& next_block)
 { try {
   block_summary_object::id_type bsid( next_block.block_num() & 0xffff );
   modify( get< block_summary_object >( bsid ), [&](block_summary_object& p) {
-      p.block_id = next_block.id();
+      p.block_id = next_block.id( get_pack_flags() );
   });
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -7103,7 +7103,7 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
       // we're getting this block from the database because it's the reference point,
       // not because it's the last irreversible.
       // We can only do this if the reference point really is in the blockchain
-      if (block->id() == reference_point)
+      if (block->id( get_pack_flags() ) == reference_point)
         synopsis.insert(synopsis.begin(), reference_point);
       else
       {
@@ -7116,7 +7116,7 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
       }
     }
     else
-      synopsis.insert(synopsis.begin(), block->id());
+      synopsis.insert(synopsis.begin(), block->id( get_pack_flags() ));
   }
   return synopsis;
 }
@@ -7145,7 +7145,7 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
 
   // Next we check if block_log has it. Irreversible blocks are here.
   optional<signed_block_header> block_header = _block_log.read_block_header_by_num(block_num);
-  return block_header && block_id == block_header->id();
+  return block_header && block_id == block_header->id( get_pack_flags() );
 } FC_CAPTURE_AND_RETHROW() }
 
 // used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and generates 
@@ -7235,7 +7235,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     optional<signed_block_header> block_header = _block_log.read_block_header_by_num(block_num);
     assert(block_header);
     uint32_t index_in_result = block_num - first_block_num_in_reply;
-    result[index_in_result] = block_header->id();
+    result[index_in_result] = block_header->id( get_pack_flags() );
   }
 
   if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 

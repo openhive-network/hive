@@ -97,7 +97,7 @@ namespace detail {
       ilog("Continuing conversion from the block with number ${block_num}", ("block_num", start_block_num));
       ilog("Validating the chain id...");
 
-      last_block_id = log_out.head()->id(); // Required to resume the conversion
+      last_block_id = log_out.head()->id( converter.get_pack_flags() ); // Required to resume the conversion
 
       // Validate the chain id on conversion resume (in the best-case scenario, the complexity of this check is nearly constant - when the last block in the output block log has transactions with signatures)
       bool chain_id_match = false;

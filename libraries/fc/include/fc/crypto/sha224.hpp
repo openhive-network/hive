@@ -23,10 +23,10 @@ class sha224
     static sha224 hash( const string& );
 
     template<typename T>
-    static sha224 hash( const T& t ) 
+    static sha224 hash( const T& t, const fc::raw::pack_flags& flags ) 
     { 
       sha224::encoder e; 
-      fc::raw::pack(e,t,fc::raw::pack_flags());
+      fc::raw::pack(e,t,flags);
       return e.result(); 
     } 
 

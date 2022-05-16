@@ -407,7 +407,7 @@ namespace hive { namespace converter {
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
-    return _signed_block.id();
+    return _signed_block.id( flags );
   }
 
   const hp::block_id_type& blockchain_converter::get_mainnet_head_block_id()const

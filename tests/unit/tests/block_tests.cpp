@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       // n.b. we generate HIVE_MIN_UNDO_HISTORY+1 extra blocks which will be discarded on save
       for( uint32_t i = 1; ; ++i )
       {
-        BOOST_CHECK( db.head_block_id() == b.id() );
+        BOOST_CHECK( db.head_block_id() == b.id( db.get_pack_flags() ) );
         //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
         //BOOST_CHECK( cur_witness != prev_witness );
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       b = cutoff_block;
       for( uint32_t i = 0; i < 200; ++i )
       {
-        BOOST_CHECK( db.head_block_id() == b.id() );
+        BOOST_CHECK( db.head_block_id() == b.id( db.get_pack_flags() ) );
 
         //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       // only db2 should switch to the new fork, db1 should not
       PUSH_BLOCK( db1, b );
       BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
-      BOOST_CHECK_EQUAL(db2.head_block_id().str(), b.id().str());
+      BOOST_CHECK_EQUAL(db2.head_block_id().str(), b.id( db1.get_pack_flags() ).str());
     }
 
     //The two databases are on distinct forks now, but at the same height. Make a block on db2, make it invalid, then
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       good_block = b;
       b.transactions.emplace_back(signed_transaction());
       b.transactions.back().operations.emplace_back(transfer_operation());
-      b.sign( init_account_priv_key );
+      b.sign( init_account_priv_key, db1.get_pack_flags() );
       BOOST_CHECK_EQUAL(b.block_num(), 14u);
       HIVE_CHECK_THROW(PUSH_BLOCK( db1, b ), fc::exception);
     }

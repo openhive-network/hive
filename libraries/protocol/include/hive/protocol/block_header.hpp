@@ -24,7 +24,7 @@ namespace hive { namespace protocol {
 
   struct block_header
   {
-    digest_type                   digest()const;
+    digest_type                   digest( const fc::raw::pack_flags& flags )const;
     block_id_type                 previous;
     uint32_t                      block_num()const { return num_from_id(previous) + 1; }
     fc::time_point_sec            timestamp;
@@ -37,10 +37,10 @@ namespace hive { namespace protocol {
 
   struct signed_block_header : public block_header
   {
-    block_id_type              id()const;
-    fc::ecc::public_key        signee( fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 )const;
-    void                       sign( const fc::ecc::private_key& signer, fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 );
-    bool                       validate_signee( const fc::ecc::public_key& expected_signee, fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 )const;
+    block_id_type              id( const fc::raw::pack_flags& flags )const;
+    fc::ecc::public_key        signee( const fc::raw::pack_flags& flags, fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 )const;
+    void                       sign( const fc::ecc::private_key& signer, const fc::raw::pack_flags& flags, fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 );
+    bool                       validate_signee( const fc::ecc::public_key& expected_signee, const fc::raw::pack_flags& flags, fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 )const;
 
     signature_type             witness_signature;
   };

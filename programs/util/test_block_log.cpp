@@ -40,7 +40,7 @@ int main( int argc, char** argv, char** envp )
 
     hive::protocol::signed_block b2;
     b2.witness = "bob";
-    b2.previous = b1.id();
+    b2.previous = b1.id( _flags );
 
     log.append( b2, _flags );
     log.flush();

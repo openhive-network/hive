@@ -572,8 +572,8 @@ namespace hive { namespace protocol {
     validate_account_name( first_block.witness );
     FC_ASSERT( first_block.witness   == second_block.witness );
     FC_ASSERT( first_block.timestamp == second_block.timestamp );
-    FC_ASSERT( first_block.signee()  == second_block.signee() );
-    FC_ASSERT( first_block.id() != second_block.id() );
+    FC_ASSERT( first_block.signee( fc::raw::pack_flags() )  == second_block.signee( fc::raw::pack_flags() ) );
+    FC_ASSERT( first_block.id( fc::raw::pack_flags() ) != second_block.id( fc::raw::pack_flags() ) );
   }
 
   void escrow_transfer_operation::validate()const

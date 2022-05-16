@@ -25,10 +25,10 @@ class sha256
     static sha256 hash( const sha256& );
 
     template<typename T>
-    static sha256 hash( const T& t )
+    static sha256 hash( const T& t, const fc::raw::pack_flags& flags = fc::raw::pack_flags() )
     {
       sha256::encoder e;
-      fc::raw::pack(e,t,fc::raw::pack_flags());
+      fc::raw::pack(e,t,flags);
       return e.result();
     }
 

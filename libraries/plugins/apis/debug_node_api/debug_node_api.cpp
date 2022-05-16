@@ -83,7 +83,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
       }
       catch( const fc::exception& e )
       {
-        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", block->block_num())("bid", block->id())("i", i)("n", count) );
+        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", block->block_num())("bid", block->id( _db.get_pack_flags() ))("i", i)("n", count) );
         elog( "Exception backtrace: ${bt}", ("bt", e.to_detail_string()) );
       }
     }

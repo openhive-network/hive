@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-fork_database::fork_database()
+fork_database::fork_database( const fc::raw::pack_flags& flags ): flags( flags )
 {
 }
 void fork_database::reset()
@@ -29,7 +29,7 @@ void fork_database::pop_block()
 
 void fork_database::start_block(signed_block b)
 {
-  auto item = std::make_shared<fork_item>(std::move(b));
+  auto item = std::make_shared<fork_item>( fork_item{ std::move(b), flags } );
   with_write_lock( [&]() {
     _index.insert(item);
     _head = item;
@@ -42,15 +42,15 @@ void fork_database::start_block(signed_block b)
   */
 shared_ptr<fork_item> fork_database::push_block(const signed_block& b)
 {
-  auto item = std::make_shared<fork_item>(b);
+  auto item = std::make_shared<fork_item>( fork_item{ b, flags });
   return with_write_lock( [&]() {
     try {
       _push_block(item);
     }
     catch ( const unlinkable_block_exception& e )
     {
-      wlog( "Pushing block to fork database that failed to link: ${id}, ${num}", ("id",b.id())("num",b.block_num()) );
-      wlog( "Head: ${num}, ${id}", ("num",_head->data.block_num())("id",_head->data.id()) );
+      wlog( "Pushing block to fork database that failed to link: ${id}, ${num}", ("id",b.id( flags ))("num",b.block_num()) );
+      wlog( "Head: ${num}, ${id}", ("num",_head->data.block_num())("id",_head->data.id( flags )) );
       _unlinked_index.insert( item );
       throw;
     }

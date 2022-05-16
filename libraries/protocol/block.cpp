@@ -4,9 +4,9 @@
 #include <algorithm>
 
 namespace hive { namespace protocol {
-  digest_type block_header::digest()const
+  digest_type block_header::digest( const fc::raw::pack_flags& flags )const
   {
-    return digest_type::hash(*this);
+    return digest_type::hash(*this,flags);
   }
 
   uint32_t block_header::num_from_id(const block_id_type& id)
@@ -14,9 +14,9 @@ namespace hive { namespace protocol {
     return fc::endian_reverse_u32(id._hash[0]);
   }
 
-  block_id_type signed_block_header::id()const
+  block_id_type signed_block_header::id( const fc::raw::pack_flags& flags )const
   {
-    auto tmp = fc::sha224::hash( *this );
+    auto tmp = fc::sha224::hash( *this, flags );
     tmp._hash[0] = fc::endian_reverse_u32(block_num()); // store the block num in the ID, 160 bits is plenty for the hash
     static_assert( sizeof(tmp._hash[0]) == 4, "should be 4 bytes" );
     block_id_type result;
@@ -24,19 +24,19 @@ namespace hive { namespace protocol {
     return result;
   }
 
-  fc::ecc::public_key signed_block_header::signee( fc::ecc::canonical_signature_type canon_type )const
+  fc::ecc::public_key signed_block_header::signee( const fc::raw::pack_flags& flags, fc::ecc::canonical_signature_type canon_type )const
   {
-    return fc::ecc::public_key( witness_signature, digest(), canon_type );
+    return fc::ecc::public_key( witness_signature, digest( flags ), canon_type );
   }
 
-  void signed_block_header::sign( const fc::ecc::private_key& signer, fc::ecc::canonical_signature_type canon_type )
+  void signed_block_header::sign( const fc::ecc::private_key& signer, const fc::raw::pack_flags& flags, fc::ecc::canonical_signature_type canon_type )
   {
-    witness_signature = signer.sign_compact( digest(), canon_type );
+    witness_signature = signer.sign_compact( digest( flags ), canon_type );
   }
 
-  bool signed_block_header::validate_signee( const fc::ecc::public_key& expected_signee, fc::ecc::canonical_signature_type canon_type )const
+  bool signed_block_header::validate_signee( const fc::ecc::public_key& expected_signee, const fc::raw::pack_flags& flags, fc::ecc::canonical_signature_type canon_type )const
   {
-    return signee( canon_type ) == expected_signee;
+    return signee( flags, canon_type ) == expected_signee;
   }
 
   checksum_type signed_block::calculate_merkle_root( const fc::raw::pack_flags& flags )const

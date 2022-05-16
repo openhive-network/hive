@@ -61,7 +61,7 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   // _pending_tx_session.
 
   if( !(skip & chain::database::skip_witness_signature) )
-    pending_block.sign( block_signing_private_key, _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+    pending_block.sign( block_signing_private_key, _db.get_pack_flags(), _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
 
   // TODO:  Move this to _push_block() so session is restored.
   if( !(skip & chain::database::skip_block_size_check) )
