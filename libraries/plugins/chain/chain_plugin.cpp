@@ -69,6 +69,7 @@ struct write_context
   bool                          success = true;
   fc::optional< fc::exception > except;
   promise_ptr                   prom_ptr;
+  fc::time_point                timestamp;
 };
 
 namespace detail {
@@ -172,10 +173,35 @@ struct chain_plugin_impl::write_request_visitor
 {
   write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
 
+  //cumulative data on transactions since last block
+  fc::microseconds total_time_tx_spent_in_queue;
+  uint32_t         count_tx_processed = 0;
+  uint32_t         count_tx_accepted = 0;
+
   chain_plugin_impl& cp;
   write_context* cxt = nullptr;
 
   typedef bool result_type;
+
+  void on_block( const fc::time_point& now, uint32_t block_num, bool is_new )
+  {
+    if( count_tx_processed > 0 )
+    {
+      ilog( "Processed ${c} txs since last block (${a} accepted), avg queue wait ${t}µs",
+        ( "c", count_tx_processed )
+        ( "a", count_tx_accepted )
+        ( "t", total_time_tx_spent_in_queue.count() / count_tx_processed )
+      );
+      count_tx_processed = 0;
+      count_tx_accepted = 0;
+      total_time_tx_spent_in_queue = fc::microseconds();
+    }
+    ilog( "Queue wait for ${f}block #${b}: ${t}µs",
+      ( "f", is_new?"new ":"" )
+      ( "b", block_num )
+      ( "t", ( now - cxt->timestamp ).count() )
+    );
+  }
 
   bool operator()( const signed_block* block )
   {
@@ -185,6 +211,7 @@ struct chain_plugin_impl::write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_block", 1.0f )
       fc::time_point time_before_pushing_block = fc::time_point::now();
+      on_block( time_before_pushing_block, block->block_num(), false );
       result = cp.db.push_block( *block, cxt->skip );
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
@@ -210,11 +237,14 @@ struct chain_plugin_impl::write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
+      ++count_tx_processed;
+      total_time_tx_spent_in_queue += time_before_pushing_transaction - cxt->timestamp;
       cp.db.push_transaction( *trx );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       result = true;
+      ++count_tx_accepted;
     }
     catch( const fc::exception& e )
     {
@@ -240,6 +270,7 @@ struct chain_plugin_impl::write_request_visitor
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
+      on_block( fc::time_point::now(), cp.db.head_block_num() + 1, true );
       req->block = cp.block_generator->generate_block(
         req->when,
         req->witness_owner,
@@ -974,6 +1005,7 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
   write_context cxt;
   cxt.req_ptr = &block;
   cxt.skip = skip;
+  cxt.timestamp = fc::time_point::now();
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1021,6 +1053,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
 {
   write_context cxt;
   cxt.req_ptr = &trx;
+  cxt.timestamp = fc::time_point::now();
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1068,6 +1101,7 @@ hive::chain::signed_block chain_plugin::generate_block(
   generate_block_request req( when, witness_owner, block_signing_private_key, skip );
   write_context cxt;
   cxt.req_ptr = &req;
+  cxt.timestamp = fc::time_point::now();
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
