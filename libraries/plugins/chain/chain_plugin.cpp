@@ -139,6 +139,7 @@ class chain_plugin_impl
     std::mutex                       queue_mutex;
     std::condition_variable          queue_condition_variable;
     std::queue<write_context*>       write_queue;
+    size_t                           write_queue_size = 0; //modified along with write_queue so we can read it outside lock
     bool                             running = true;
 
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
@@ -387,6 +388,7 @@ void chain_plugin_impl::start_write_processing()
           // otherwise, we woke because the write_queue is non-empty
           cxt = write_queue.front();
           write_queue.pop();
+          --write_queue_size;
         }
 
         cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
@@ -441,6 +443,7 @@ void chain_plugin_impl::start_write_processing()
               }
               cxt = write_queue.front();
               write_queue.pop();
+              --write_queue_size;
             }
 
             last_popped_item_time = fc::time_point::now();
@@ -1025,6 +1028,7 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
+      ++( my->write_queue_size );
     }
     my->queue_condition_variable.notify_one();
     accept_block_future.get();
@@ -1038,6 +1042,7 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
+      ++( my->write_queue_size );
     }
     my->queue_condition_variable.notify_one();
     accept_block_future.wait();
@@ -1070,6 +1075,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
+      ++( my->write_queue_size );
     }
     my->queue_condition_variable.notify_one();
     accept_transaction_future.get();
@@ -1083,6 +1089,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
+      ++( my->write_queue_size );
     }
     my->queue_condition_variable.notify_one();
     accept_transaction_future.wait();
@@ -1110,6 +1117,7 @@ hive::chain::signed_block chain_plugin::generate_block(
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
     my->write_queue.push(&cxt);
+    ++( my->write_queue_size );
   }
   my->queue_condition_variable.notify_one();
 
