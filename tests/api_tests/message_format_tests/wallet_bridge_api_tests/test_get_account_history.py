@@ -4,13 +4,6 @@ from test_tools import exceptions
 
 from .local_tools import as_string
 
-# TODO BUG LIST!
-"""
-2. Problem with running wallet_bridge_api.get_account_history with correct value:
-    Sent: {"jsonrpc": "2.0", "id": 1, "method": "wallet_bridge_api.get_account_history", "params": [["account-0", 1, 0]]}
-    Received: 'Assert Exception:args.start >= args.limit-1: start must be greater than or equal to limit-1 (start is 0-based index)'
-     (# BUG2)
-"""
 
 ACCOUNTS = [f'account-{i}' for i in range(10)]
 
@@ -33,7 +26,6 @@ CORRECT_VALUES = [
 
         # LIMIT
         (ACCOUNTS[0], -1, 0),
-        # (ACCOUNTS[0], 1, 0),  # BUG2
         (ACCOUNTS[0], -1, 1000),
 ]
 
@@ -60,6 +52,7 @@ def test_get_account_history_with_correct_value(node, wallet, account, from_, li
 
         # LIMIT
         (ACCOUNTS[5], -1, -1),
+        (ACCOUNTS[0], 1, 0),
         (ACCOUNTS[5], -1, 1001),
     ]
 )
