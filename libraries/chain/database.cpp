@@ -1118,6 +1118,7 @@ bool database::push_block(const signed_block& new_block, uint32_t skip)
       try
       {
         result = _push_block(new_block);
+        ilog( "Block ${b} successfully applied.", ( "b", new_block.block_num() ) );
       }
       FC_CAPTURE_AND_RETHROW( (new_block) )
 

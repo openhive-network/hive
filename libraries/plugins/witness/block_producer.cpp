@@ -69,6 +69,7 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   {
     FC_ASSERT( fc::raw::pack_size(pending_block) <= HIVE_MAX_BLOCK_SIZE );
   }
+  ilog( "New block ${b} successfully produced.", ( "b", pending_block.block_num() ) );
 
   _db.push_block( pending_block, skip );
 
