@@ -233,11 +233,11 @@ class wallet_api_impl
 
 public:
   wallet_api& self;
-  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization, pack_mode_type pack_mode )
+  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization, fc::raw::pack_mode_type pack_mode )
     : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _transaction_serialization( transaction_serialization )
   {
-    if( pack_mode == pack_mode_type::hf26 )
-      _pack_mgr.enable_nai();
+    if( pack_mode == fc::raw::pack_mode_type::hf26 )
+      _pack_mgr.enable_hf26_pack();
 
     init_prototype_ops();
   }
@@ -1028,7 +1028,7 @@ fc::variant wallet_api_impl::get_variant( const hive::protocol::asset& val )
 namespace hive { namespace wallet {
 
 wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id,
-    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter, transaction_serialization_type transaction_serialization, pack_mode_type pack_mode )
+    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter, transaction_serialization_type transaction_serialization, fc::raw::pack_mode_type pack_mode )
   : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api, transaction_serialization, pack_mode)), exit_promise(exit_promise), is_daemon(is_daemon), output_formatter(_output_formatter)
 {
 }

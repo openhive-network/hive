@@ -212,7 +212,7 @@ int main( int argc, char** argv )
     transaction_serialization_type _transaction_serialization;
     from_variant( fc::variant{ options["transaction-serialization"].as<std::string>() }, _transaction_serialization );
 
-    pack_mode_type _pack_mode;
+    fc::raw::pack_mode_type _pack_mode;
     from_variant( fc::variant{ options["pack-mode"].as<std::string>() }, _pack_mode );
 
     if( wdata.offline )

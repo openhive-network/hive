@@ -1,13 +1,15 @@
 #pragma once
 
+#include <cstdint>
+
 namespace fc { namespace raw {
+
+  enum class pack_mode_type : uint8_t { legacy, hf26 };
 
   struct pack_flags
   {
-    bool nai = false;
+    pack_mode_type pack_mode = pack_mode_type::legacy;
   };
-
-  using fc::raw::pack_flags;
 
   class pack_manager
   {
@@ -17,9 +19,9 @@ namespace fc { namespace raw {
 
     public:
 
-      void enable_nai()
+      void enable_hf26_pack()
       {
-        flags.nai = true;
+        flags.pack_mode = pack_mode_type::hf26;
       }
 
       const pack_flags& get_pack_flags() const

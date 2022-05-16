@@ -150,10 +150,9 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym, const pack_flags& flags )
 {
-  //take into consideration `flags` !!!!!!
-  switch( sym.space() )
+  switch( flags.pack_mode )
   {
-    case hive::protocol::asset_symbol_type::legacy_space:
+    case fc::raw::pack_mode_type::legacy:
     {
       uint64_t ser = 0;
       switch( sym.asset_num )
@@ -173,7 +172,7 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym, const
       pack( s, ser, flags );
       break;
     }
-    case hive::protocol::asset_symbol_type::smt_nai_space:
+    case fc::raw::pack_mode_type::hf26:
       pack( s, sym.asset_num, flags );
       break;
     default:

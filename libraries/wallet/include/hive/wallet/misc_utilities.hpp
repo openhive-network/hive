@@ -20,7 +20,6 @@ using namespace hive::plugins::wallet_bridge_api;
 using hive::protocol::serializer_wrapper;
 
 enum class output_formatter_type : uint8_t { none, text, json };
-enum class pack_mode_type : uint8_t { legacy, hf26 };
 
 using std::function;
 using fc::variant;
@@ -438,4 +437,4 @@ struct wallet_formatter
 } } //hive::wallet
 
 FC_REFLECT_ENUM( hive::wallet::output_formatter_type, (none)(text)(json) )
-FC_REFLECT_ENUM( hive::wallet::pack_mode_type, (legacy)(hf26) )
+FC_REFLECT_ENUM( fc::raw::pack_mode_type, (legacy)(hf26) )

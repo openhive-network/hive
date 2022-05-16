@@ -6251,7 +6251,7 @@ void database::apply_hardfork( uint32_t hardfork )
         This is temporary so as to validate new style of packing.
         Finally NAI will be enabled in HF26.
       */
-      _pack_mgr.enable_nai();
+      _pack_mgr.enable_hf26_pack();
       break;
     case HIVE_HARDFORK_0_2:
       retally_witness_votes();
