@@ -816,8 +816,8 @@ public:
     }
 
     auto dyn_props = get_dynamic_global_properties();
-    tx.set_reference_block( dyn_props.value.head_block_id );
-    tx.set_expiration( dyn_props.value.time + fc::seconds(_tx_expiration_seconds) );
+    //tx.set_reference_block( dyn_props.value.head_block_id );
+    //tx.set_expiration( dyn_props.value.time + fc::seconds(_tx_expiration_seconds) );
     tx.signatures.clear();
 
     //idump((_keys));

@@ -176,6 +176,7 @@ namespace detail {
 
     void limit_custom_op_count( const operation& op )const
     {
+      return;
       flat_set< account_name_type > impacted;
       app::operation_get_impacted_accounts( op, impacted );
 
