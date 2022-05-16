@@ -70,6 +70,7 @@ struct write_context
   fc::optional< fc::exception > except;
   promise_ptr                   prom_ptr;
   fc::time_point                timestamp;
+  uint32_t                      congestion = 0;
 };
 
 namespace detail {
@@ -176,6 +177,8 @@ struct chain_plugin_impl::write_request_visitor
 
   //cumulative data on transactions since last block
   fc::microseconds total_time_tx_spent_in_queue;
+  uint64_t         total_tx_congestion = 0;
+  uint32_t         max_tx_congestion = 0;
   uint32_t         count_tx_processed = 0;
   uint32_t         count_tx_accepted = 0;
 
@@ -188,19 +191,24 @@ struct chain_plugin_impl::write_request_visitor
   {
     if( count_tx_processed > 0 )
     {
-      ilog( "Processed ${c} txs since last block (${a} accepted), avg queue wait ${t}µs",
+      ilog( "Processed ${c} txs since last block (${a} accepted), avg queue wait ${t}µs, avg/max congestion ${ac}/${mc}",
         ( "c", count_tx_processed )
         ( "a", count_tx_accepted )
         ( "t", total_time_tx_spent_in_queue.count() / count_tx_processed )
+        ( "ac", total_tx_congestion / count_tx_processed )
+        ( "mc", max_tx_congestion )
       );
       count_tx_processed = 0;
       count_tx_accepted = 0;
+      max_tx_congestion = 0;
+      total_tx_congestion = 0;
       total_time_tx_spent_in_queue = fc::microseconds();
     }
-    ilog( "Queue wait for ${f}block #${b}: ${t}µs",
+    ilog( "Queue wait for ${f}block #${b}: ${t}µs, ${c} congestion",
       ( "f", is_new?"new ":"" )
       ( "b", block_num )
       ( "t", ( now - cxt->timestamp ).count() )
+      ( "c", cxt->congestion )
     );
   }
 
@@ -240,6 +248,9 @@ struct chain_plugin_impl::write_request_visitor
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_processed;
       total_time_tx_spent_in_queue += time_before_pushing_transaction - cxt->timestamp;
+      total_tx_congestion += cxt->congestion;
+      if( max_tx_congestion < cxt->congestion )
+        max_tx_congestion = cxt->congestion;
       cp.db.push_transaction( *trx );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
@@ -995,6 +1006,16 @@ void chain_plugin::connection_count_changed(uint32_t peer_count)
   fc_wlog(fc::logger::get("default"),"peer_count changed: ${peer_count}",(peer_count));
 }
 
+// adds data used for logging statistics
+inline void supplement_write_context( write_context& cxt, size_t queue_size, bool syncing = false )
+{
+  cxt.timestamp = fc::time_point::now();
+  //const size_t CRITICAL_CONGESTION = syncing ? 100'000 : 10'000;
+  //if( queue_size >= CRITICAL_CONGESTION )
+  //  wlog( "Critical write_queue congestion: ${s}", ( "s", queue_size ) );
+  cxt.congestion = static_cast< decltype( cxt.congestion ) >( queue_size );
+}
+
 bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */  )
 {
   if (currently_syncing && block.block_num() % 10000 == 0)
@@ -1008,7 +1029,7 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
   write_context cxt;
   cxt.req_ptr = &block;
   cxt.skip = skip;
-  cxt.timestamp = fc::time_point::now();
+  supplement_write_context( cxt, my->write_queue_size, currently_syncing );
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1058,7 +1079,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
 {
   write_context cxt;
   cxt.req_ptr = &trx;
-  cxt.timestamp = fc::time_point::now();
+  supplement_write_context( cxt, my->write_queue_size );
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1108,7 +1129,7 @@ hive::chain::signed_block chain_plugin::generate_block(
   generate_block_request req( when, witness_owner, block_signing_private_key, skip );
   write_context cxt;
   cxt.req_ptr = &req;
-  cxt.timestamp = fc::time_point::now();
+  supplement_write_context( cxt, my->write_queue_size );
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
