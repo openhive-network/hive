@@ -112,13 +112,13 @@ public:
 namespace
 {
 template <class T>
-serialize_buffer_t dump(const T& obj)
+serialize_buffer_t dump(const T& obj, const fc::raw::pack_flags& flags)
   {
   serialize_buffer_t serializedObj;
-  auto size = fc::raw::pack_size(obj, fc::raw::pack_flags());
+  auto size = fc::raw::pack_size(obj, flags);
   serializedObj.resize(size);
   fc::datastream<char*> ds(serializedObj.data(), size);
-  fc::raw::pack(ds, obj, fc::raw::pack_flags());
+  fc::raw::pack(ds, obj, flags);
   return serializedObj;
   }
 
@@ -416,10 +416,10 @@ public:
     return false;
   }
 
-  void putAHInfo(const account_name_type& name, const account_history_info& ahInfo)
+  void putAHInfo(const account_name_type& name, const account_history_info& ahInfo, const fc::raw::pack_flags& flags)
   {
     _ahInfoCache[name] = ahInfo;
-    auto serializeBuf = dump(ahInfo);
+    auto serializeBuf = dump(ahInfo, flags);
     ah_info_by_name_slice_t nameSlice(name.data);
     auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
     checkStatus(s);
@@ -1706,7 +1706,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
       }
 
     auto nextEntryId = ++ahInfo.newestEntryId;
-    _writeBuffer.putAHInfo(name, ahInfo);
+    _writeBuffer.putAHInfo(name, ahInfo, _mainDb.get_pack_flags());
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, nextEntryId));
     id_slice_t valueSlice(obj.id);
@@ -1720,7 +1720,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
     ahInfo.newestEntryId = ahInfo.oldestEntryId = 0;
     ahInfo.oldestEntryTimestamp = obj.timestamp;
 
-    _writeBuffer.putAHInfo(name, ahInfo);
+    _writeBuffer.putAHInfo(name, ahInfo, _mainDb.get_pack_flags());
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, 0));
     id_slice_t valueSlice(obj.id);
