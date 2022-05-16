@@ -10,7 +10,7 @@ from test_tools import logger, constants, World
 from test_tools.private.scope import context
 from test_tools.private.scope.scope_fixtures import *  # pylint: disable=wildcard-import, unused-wildcard-import
 
-from witnesses import alpha_witness_names, beta_witness_names
+from witnesses import alpha1_witness_names, alpha2_witness_names, beta1_witness_names, beta2_witness_names, gamma1_witness_names, gamma2_witness_names
 
 
 def pytest_exception_interact(report):
@@ -26,18 +26,25 @@ def world():
 
 @pytest.fixture()
 def witness_names():
-    return alpha_witness_names, beta_witness_names
+    return alpha1_witness_names, alpha2_witness_names, beta1_witness_names, beta2_witness_names, gamma1_witness_names, gamma2_witness_names
 
 
 @pytest.fixture(scope="function")
 def world_with_witnesses(world, witness_names):
-    alpha_witness_names, beta_witness_names = witness_names
+    alpha1, alpha2, beta1, beta2, gamma1, gamma2 = witness_names
 
     alpha_net = world.create_network('Alpha')
-    alpha_net.create_witness_node(witnesses=alpha_witness_names)
+    alpha_net.create_witness_node(witnesses=alpha1)
+    alpha_net.create_witness_node(witnesses=alpha2)
+    #alpha_nut = alpha_net.create_api_node(name = 'AlphaNUT')
     beta_net = world.create_network('Beta')
-    beta_net.create_witness_node(witnesses=beta_witness_names)
-    node_under_test = beta_net.create_api_node(name = 'NodeUnderTest')
+    beta_net.create_witness_node(witnesses=beta1)
+    beta_net.create_witness_node(witnesses=beta2)
+    #beta_nut = beta_net.create_api_node(name = 'BetaNUT')
+    gamma_net = world.create_network('Gamma')
+    gamma_net.create_witness_node(witnesses=gamma1)
+    gamma_net.create_witness_node(witnesses=gamma2)
+    #gamma_nut = gamma_net.create_api_node(name = 'GammaNUT')
 
     unneeded_default_plugins = ["account_by_key","account_by_key_api","account_history_rocksdb","account_history_api","condenser_api","debug_node_api","market_history_api","reputation_api","rewards_api"]
     for node in world.nodes():

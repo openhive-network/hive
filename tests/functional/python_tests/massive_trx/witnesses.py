@@ -1,2 +1,6 @@
-alpha_witness_names = [f'witness{i}-alpha' for i in range(12)]
-beta_witness_names = [f'witness{i}-beta' for i in range(8)]
+alpha1_witness_names = [f'witness{i}-alpha' for i in range(4)]
+alpha2_witness_names = [f'witness{i}-beta' for i in range(3)]
+beta1_witness_names = [f'witness{i}-alpha' for i in range(4, 8)]
+beta2_witness_names = [f'witness{i}-beta' for i in range(3, 6)]
+gamma1_witness_names = [f'witness{i}-alpha' for i in range(8, 12)]
+gamma2_witness_names = [f'witness{i}-beta' for i in range(6, 8)]
