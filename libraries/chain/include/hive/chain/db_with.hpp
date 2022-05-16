@@ -57,54 +57,32 @@ struct pending_transactions_restorer
     bool apply_trxs = true;
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
-
-    for( const auto& tx : _db._popped_tx )
+    auto handle_tx = [&]( const signed_transaction& tx )
     {
-      if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT ) apply_trxs = false;
-
-      if( apply_trxs )
-      {
-        try {
-          if( !_db.is_known_transaction( tx.id() ) ) {
-            // since push_transaction() takes a signed_transaction,
-            // the operation_results field will be ignored.
-            _db._push_transaction( tx );
-            applied_txs++;
-          }
-        } catch ( const fc::exception&  ) {}
-      }
-      else
-      {
-        _db._pending_tx.push_back( tx );
-        postponed_txs++;
-      }
-    }
-    _db._popped_tx.clear();
-    for( const signed_transaction& tx : _pending_transactions )
-    {
-      if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT ) apply_trxs = false;
+      if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
+        apply_trxs = false;
 
       if( apply_trxs )
       {
         try
         {
-          if( !_db.is_known_transaction( tx.id() ) ) {
+          if( !_db.is_known_transaction( tx.id() ) )
+          {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
             _db._push_transaction( tx );
-            applied_txs++;
+            ++applied_txs;
           }
         }
         catch( const transaction_exception& e )
         {
           dlog( "Pending transaction became invalid after switching to block ${b} ${n} ${t}",
-            ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()) );
-          dlog( "The invalid transaction caused exception ${e}", ("e", e.to_detail_string()) );
-          dlog( "${t}", ("t", tx) );
+            ( "b", _db.head_block_id() )( "n", _db.head_block_num() )( "t", _db.head_block_time() ) );
+          dlog( "The invalid transaction caused exception ${e}", ( "e", e.to_detail_string() ) );
+          dlog( "${t}", ( "t", tx ) );
         }
         catch( const fc::exception& e )
         {
-
           /*
           dlog( "Pending transaction became invalid after switching to block ${b} ${n} ${t}",
             ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()) );
@@ -116,13 +94,21 @@ struct pending_transactions_restorer
       else
       {
         _db._pending_tx.push_back( tx );
-        postponed_txs++;
+        ++postponed_txs;
       }
-    }
+    };
 
-    if( postponed_txs++ )
+    for( const auto& tx : _db._popped_tx )
+      handle_tx( tx );
+    _db._popped_tx.clear();
+
+    for( const auto& tx : _pending_transactions )
+      handle_tx( tx );
+
+    if( postponed_txs )
     {
-      wlog( "Postponed ${p} pending transactions. ${a} were applied.", ("p", postponed_txs)("a", applied_txs) );
+      wlog( "Postponed ${p} pending transactions. ${a} were applied.",
+        ( "p", postponed_txs )( "a", applied_txs ) );
     }
   }
 
