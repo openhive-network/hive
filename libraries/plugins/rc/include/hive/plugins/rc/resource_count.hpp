@@ -38,7 +38,8 @@ typedef resource_count_type count_resources_result;
 
 void count_resources(
   const hive::protocol::signed_transaction& tx,
-  count_resources_result& result
+  count_resources_result& result,
+  const fc::raw::pack_flags& flags
   );
 
 } } } // hive::plugins::rc
