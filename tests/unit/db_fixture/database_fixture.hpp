@@ -190,7 +190,7 @@ do {                                                              \
 #define OP2TX(OP,TX,KEY) \
 TX.operations.push_back( OP ); \
 TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION ); \
-TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
+TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062, db->get_pack_flags() );
 
 #define PUSH_OP(OP,KEY) \
 { \

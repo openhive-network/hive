@@ -119,14 +119,14 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_block_num >().empty() );
 
     // Transaction 0 should not be tracked
-    auto tso = db->find< transaction_status_object, by_trx_id >( tx0.id() );
+    auto tso = db->find< transaction_status_object, by_trx_id >( tx0.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso == nullptr );
 
-    auto api_return = tx_status_api->api->find_transaction( { .transaction_id = tx0.id() } );
+    auto api_return = tx_status_api->api->find_transaction( { .transaction_id = tx0.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx0.id(), tx0_expiration  } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx0.id( db->get_pack_flags() ), tx0_expiration  } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
@@ -147,15 +147,15 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     db->push_transaction( tx1, 0 );
 
     // Transaction 1 exists in the mem pool
-    tso = db->find< transaction_status_object, by_trx_id >( tx1.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx1.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num == 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id(), tx1_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ), tx1_expiration } );
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
@@ -194,43 +194,43 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     db->push_transaction( tx3, 0 );
 
     // Transaction 1 exists in a block
-    tso = db->find< transaction_status_object, by_trx_id >( tx1.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx1.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num == db->head_block_num() );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_reversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( api_return.block_num == db->head_block_num() );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id(), tx1_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ), tx1_expiration } );
     BOOST_REQUIRE( api_return.status == within_reversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( api_return.block_num == db->head_block_num() );
 
     // Transaction 2 exists in a mem pool
-    tso = db->find< transaction_status_object, by_trx_id >( tx2.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx2.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num == 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id(), tx2_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ), tx2_expiration } );
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
     // Transaction 3 exists in a mem pool
-    tso = db->find< transaction_status_object, by_trx_id >( tx3.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx3.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num == 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id(), tx3_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ), tx3_expiration } );
     BOOST_REQUIRE( api_return.status == within_mempool );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
@@ -239,44 +239,44 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH );
 
     // Transaction 1 exists in a block
-    tso = db->find< transaction_status_object, by_trx_id >( tx1.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx1.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id(), tx1_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ), tx1_expiration } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
     // Transaction 2 exists in a block
-    tso = db->find< transaction_status_object, by_trx_id >( tx2.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx2.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id(), tx2_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ), tx2_expiration } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
     // Transaction 3 exists in a block
-    tso = db->find< transaction_status_object, by_trx_id >( tx3.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx3.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id(), tx3_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ), tx3_expiration } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
@@ -286,43 +286,43 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_blocks( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL );
 
     // Transaction 1 is no longer tracked
-    tso = db->find< transaction_status_object, by_trx_id >( tx1.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx1.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso == nullptr );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id(), tx1_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ), tx1_expiration } );
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
     // Transaction 2 exists in a block
-    tso = db->find< transaction_status_object, by_trx_id >( tx2.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx2.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id(), tx2_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ), tx2_expiration } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
     // Transaction 3 exists in a block
-    tso = db->find< transaction_status_object, by_trx_id >( tx3.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx3.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso != nullptr );
     BOOST_REQUIRE( tso->block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id(), tx3_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ), tx3_expiration } );
     BOOST_REQUIRE( api_return.status == within_irreversible_block );
     BOOST_REQUIRE( api_return.block_num.valid() );
     BOOST_REQUIRE( *api_return.block_num > 0 );
@@ -332,26 +332,26 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_block();
 
     // Transaction 2 is no longer tracked
-    tso = db->find< transaction_status_object, by_trx_id >( tx2.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx2.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso == nullptr );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id(), tx2_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ), tx2_expiration } );
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
     // Transaction 3 is no longer tracked
-    tso = db->find< transaction_status_object, by_trx_id >( tx3.id() );
+    tso = db->find< transaction_status_object, by_trx_id >( tx3.id( db->get_pack_flags() ) );
     BOOST_REQUIRE( tso == nullptr );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id(), tx3_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3.id( db->get_pack_flags() ), tx3_expiration } );
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
@@ -364,19 +364,19 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     generate_block();
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id(), tx1_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1.id( db->get_pack_flags() ), tx1_expiration } );
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id() } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ) } );
     BOOST_REQUIRE( api_return.status == unknown );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
-    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id(), tx2_expiration } );
+    api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2.id( db->get_pack_flags() ), tx2_expiration } );
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
@@ -428,7 +428,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     BOOST_REQUIRE( tx_status->state_is_valid() );
 
-    const auto& tx_status_obj = db->get< transaction_status_object, by_trx_id >( tx4.id() );
+    const auto& tx_status_obj = db->get< transaction_status_object, by_trx_id >( tx4.id( db->get_pack_flags() ) );
     db->remove( tx_status_obj );
 
     // Upper bound of transaction status state should cause state to be invalid
@@ -454,7 +454,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) - 1 );
 
-    const auto& tx_status_obj2 = db->get< transaction_status_object, by_trx_id >( tx5.id() );
+    const auto& tx_status_obj2 = db->get< transaction_status_object, by_trx_id >( tx5.id( db->get_pack_flags() ) );
     db->remove( tx_status_obj2 );
 
     // Lower bound of transaction status state should cause state to be invalid

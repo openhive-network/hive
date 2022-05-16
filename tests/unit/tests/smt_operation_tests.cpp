@@ -1909,7 +1909,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
 
       tx.operations.push_back( op );
       tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.sign( alice_private_key, this->db->get_chain_id(), fc::ecc::bip_0062 );
+      tx.sign( alice_private_key, this->db->get_chain_id(), fc::ecc::bip_0062, db1->get_pack_flags() );
 
       this->db->push_transaction( tx, 0 );
 

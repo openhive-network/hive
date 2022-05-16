@@ -20,11 +20,11 @@ using fc::ecc::canonical_signature_type;
     vector<operation>  operations;
     extensions_type    extensions;
 
-    digest_type         digest()const;
-    transaction_id_type id()const;
+    digest_type         digest( const fc::raw::pack_flags& flags )const;
+    transaction_id_type id( const fc::raw::pack_flags& flags )const;
     void                validate() const;
     void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
-    digest_type         sig_digest( const chain_id_type& chain_id )const;
+    digest_type         sig_digest( const chain_id_type& chain_id, const fc::raw::pack_flags& flags )const;
 
     void set_expiration( fc::time_point_sec expiration_time );
     void set_reference_block( const block_id_type& reference_block );
@@ -57,9 +57,9 @@ using fc::ecc::canonical_signature_type;
     signed_transaction( const transaction& trx = transaction() )
       : transaction(trx){}
 
-    const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ );
+    const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/, const fc::raw::pack_flags& flags );
 
-    signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ )const;
+    signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/, const fc::raw::pack_flags& flags )const;
 
     set<public_key_type> get_required_signatures(
       const chain_id_type& chain_id,
@@ -67,6 +67,7 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const fc::raw::pack_flags& flags,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -78,6 +79,7 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const fc::raw::pack_flags& flags,
       uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -90,25 +92,26 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const fc::raw::pack_flags& flags,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
       canonical_signature_type canon_type = fc::ecc::fc_canonical
       ) const;
 
-    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/ )const;
+    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, const fc::raw::pack_flags& flags )const;
 
     vector<signature_type> signatures;
 
-    digest_type merkle_digest()const;
+    digest_type merkle_digest( const fc::raw::pack_flags& flags )const;
 
     void clear() { operations.clear(); signatures.clear(); }
   };
 
   struct annotated_signed_transaction : public signed_transaction {
     annotated_signed_transaction(){}
-    annotated_signed_transaction( const signed_transaction& trx )
-    :signed_transaction(trx),transaction_id(trx.id()){}
+    annotated_signed_transaction( const signed_transaction& trx, const fc::raw::pack_flags& flags )
+    :signed_transaction(trx),transaction_id(trx.id( flags )){}
 
     transaction_id_type transaction_id;
     uint32_t            block_num = 0;

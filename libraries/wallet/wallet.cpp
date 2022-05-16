@@ -566,7 +566,7 @@ public:
         auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous(vector<variant>{{variant(tx)}}, LOCK);
         FC_UNUSED(result);
       }
-      return tx;
+      return { tx, _pack_mgr.get_pack_flags() };
   } FC_CAPTURE_AND_RETHROW( (account_name)(creator_account_name)(broadcast) ) }
 
   annotated_signed_transaction set_voting_proxy(const string& account_to_modify, const string& proxy, bool broadcast /* = false */)
@@ -643,7 +643,7 @@ public:
   {
     require_online();
     initialize_transaction_header(tx);
-    vector<variant> args{variant(tx.id())};
+    vector<variant> args{variant(tx.id( _pack_mgr.get_pack_flags() ))};
     if (_remote_wallet_bridge_api->is_known_transaction({args},LOCK))
     {
       // create a custom operation with a random 64-bit integer which will give this
@@ -875,6 +875,7 @@ public:
 
           return null_auth;
         },
+        _pack_mgr.get_pack_flags(),
         HIVE_MAX_SIG_CHECK_DEPTH,
         HIVE_MAX_AUTHORITY_MEMBERSHIP,
         HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -885,7 +886,7 @@ public:
       {
         auto it = available_private_keys.find(k);
         FC_ASSERT( it != available_private_keys.end() );
-        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical, _pack_mgr.get_pack_flags() );
       }
     }
     else
@@ -894,7 +895,7 @@ public:
       {
         auto it = available_private_keys.find(k);
         FC_ASSERT( it != available_private_keys.end() );
-        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical, _pack_mgr.get_pack_flags() );
       }
     }
 
@@ -903,7 +904,7 @@ public:
         if( blocking )
         {
           auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(tx)}}, LOCK );
-          annotated_signed_transaction rtrx(tx);
+          annotated_signed_transaction rtrx(tx, _pack_mgr.get_pack_flags());
           rtrx.block_num = result.block_num;
           rtrx.transaction_num = result.trx_num;
           return rtrx;
@@ -911,16 +912,16 @@ public:
         else
         {
           _remote_wallet_bridge_api->broadcast_transaction( vector<variant>{{variant(tx)}}, LOCK );
-          return annotated_signed_transaction(tx);
+          return annotated_signed_transaction(tx, _pack_mgr.get_pack_flags());
         }
       }
       catch (const fc::exception& e)
       {
-        elog("Caught exception while broadcasting tx ${id}: ${e}", ("id", tx.id().str())("e", e.to_detail_string()) );
+        elog("Caught exception while broadcasting tx ${id}: ${e}", ("id", tx.id( _pack_mgr.get_pack_flags() ).str())("e", e.to_detail_string()) );
         throw;
       }
     }
-    return tx;
+    return { tx, _pack_mgr.get_pack_flags() };
   }
 
   operation get_prototype_operation( const string& operation_name )
@@ -1894,6 +1895,11 @@ serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_sh
   tx.validate();
 
   return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ), my->_transaction_serialization };
+}
+
+transaction_id_type wallet_api::get_transaction_id( const signed_transaction& trx )const
+{
+  return trx.id( my->_pack_mgr.get_pack_flags() );
 }
 
 serializer_wrapper<annotated_signed_transaction> wallet_api::delegate_vesting_shares(

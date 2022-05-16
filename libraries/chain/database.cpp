@@ -4286,7 +4286,7 @@ void database::_apply_block( const signed_block& next_block )
     if( _benchmark_dumper.is_enabled() )
       _benchmark_dumper.begin();
 
-    auto merkle_root = next_block.calculate_merkle_root();
+    auto merkle_root = next_block.calculate_merkle_root( get_pack_flags() );
 
     try
     {
@@ -4647,7 +4647,7 @@ void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
 
 void database::_apply_transaction(const signed_transaction& trx)
 { try {
-  transaction_notification note(trx);
+  transaction_notification note(trx, get_pack_flags());
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;
 
@@ -4695,7 +4695,7 @@ void database::_apply_transaction(const signed_transaction& trx)
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.begin();
 
-      trx.verify_authority( chain_id, get_active, get_owner, get_posting, HIVE_MAX_SIG_CHECK_DEPTH,
+      trx.verify_authority( chain_id, get_active, get_owner, get_posting, get_pack_flags(), HIVE_MAX_SIG_CHECK_DEPTH,
         has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
         has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
         has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );

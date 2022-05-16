@@ -14,13 +14,13 @@ using namespace hive::chain;
 
 struct api_signed_block_object : public signed_block
 {
-  api_signed_block_object( const signed_block& block ) : signed_block( block )
+  api_signed_block_object( const signed_block& block, const fc::raw::pack_flags& flags ) : signed_block( block )
   {
     block_id = id();
     signing_key = signee();
     transaction_ids.reserve( transactions.size() );
     for( const signed_transaction& tx : transactions )
-      transaction_ids.push_back( tx.id() );
+      transaction_ids.push_back( tx.id( flags ) );
   }
   api_signed_block_object() {}
 

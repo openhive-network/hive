@@ -84,7 +84,7 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
     // Update all status objects with the transaction current block number
     for ( const auto& e : note.block.transactions )
     {
-      const auto& tx_status_obj = _db.get< transaction_status_object, by_trx_id >( e.id() );
+      const auto& tx_status_obj = _db.get< transaction_status_object, by_trx_id >( e.id( _db.get_pack_flags() ) );
 
       _db.modify( tx_status_obj, [&] ( transaction_status_object& obj )
       {
@@ -128,7 +128,7 @@ fc::optional< transaction_id_type > transaction_status_impl::get_earliest_transa
     const auto block = _db.fetch_block_by_number(block_num);
     FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
     if ( block->transactions.size() > 0 )
-      return block->transactions.front().id();
+      return block->transactions.front().id( _db.get_pack_flags() );
   }
   return {};
 }
@@ -147,7 +147,7 @@ fc::optional< transaction_id_type > transaction_status_impl::get_latest_transact
     const auto block = _db.fetch_block_by_number(block_num);
     FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
     if ( block->transactions.size() > 0 )
-      return block->transactions.back().id();
+      return block->transactions.back().id( _db.get_pack_flags() );
   }
   return {};
 }
@@ -209,7 +209,7 @@ void transaction_status_impl::rebuild_state()
     for (const auto& e : block->transactions)
       _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
       {
-        obj.transaction_id = e.id();
+        obj.transaction_id = e.id( _db.get_pack_flags() );
         obj.block_num = block_num;
       } );
   }

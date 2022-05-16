@@ -566,7 +566,7 @@ void p2p_plugin::broadcast_block( const hive::protocol::signed_block& block )
 
 void p2p_plugin::broadcast_transaction( const hive::protocol::signed_transaction& tx )
 {
-  ulog("Broadcasting tx #${id}", ("id", tx.id()));
+  ulog("Broadcasting tx #${id}", ("id", tx.id( my->chain.db().get_pack_flags() )));
   my->node->broadcast( graphene::net::trx_message( tx ) );
 }
 

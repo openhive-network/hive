@@ -4055,7 +4055,7 @@ namespace graphene { namespace net {
           if (message_to_process.msg_type == trx_message_type)
           {
             trx_message transaction_message_to_process = message_to_process.as<trx_message>();
-            dlog("passing message containing transaction ${trx} to client", ("trx", transaction_message_to_process.trx.id()));
+            dlog("passing message containing transaction ${trx} to client", ("trx", transaction_message_to_process.trx.id( fc::raw::pack_flags() )));
             _delegate->handle_transaction(transaction_message_to_process);
           }
           else
@@ -5278,7 +5278,7 @@ namespace graphene { namespace net {
       else if( item_to_broadcast.msg_type == graphene::net::trx_message_type )
       {
         graphene::net::trx_message transaction_message_to_broadcast = item_to_broadcast.as<graphene::net::trx_message>();
-        hash_of_message_contents = transaction_message_to_broadcast.trx.id(); // for debugging
+        hash_of_message_contents = transaction_message_to_broadcast.trx.id( fc::raw::pack_flags() ); // for debugging
         dlog( "broadcasting trx: ${trx}", ("trx", transaction_message_to_broadcast) );
       }
       message_hash_type hash_of_item_to_broadcast = item_to_broadcast.id();

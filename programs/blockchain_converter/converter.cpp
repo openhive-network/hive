@@ -222,8 +222,8 @@ namespace hive { namespace converter {
   }
 
 
-  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, bool increase_block_size )
-    : _private_key( _private_key ), chain_id( chain_id ), increase_block_size( increase_block_size ), signers_exit( false )
+  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, const fc::raw::pack_flags& flags, size_t signers_size, bool increase_block_size )
+    : _private_key( _private_key ), chain_id( chain_id ), flags( flags ), increase_block_size( increase_block_size ), signers_exit( false )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
@@ -308,7 +308,7 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::raw::pack_flags& flags, const fc::time_point_sec& trx_now_time )
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -400,7 +400,7 @@ namespace hive { namespace converter {
       }
     }
 
-    _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
+    _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root( flags );
 
     // Sign header (using given witness' private key)
     sign_header( _signed_block );
@@ -428,7 +428,7 @@ namespace hive { namespace converter {
   hp::signature_type blockchain_converter::generate_signature( const hp::signed_transaction& trx, authority::classification type )const
   {
     return get_second_authority_key( type ).sign_compact(
-            trx.sig_digest( chain_id ),
+            trx.sig_digest( chain_id, flags ),
             has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
           );
   }
@@ -444,7 +444,7 @@ namespace hive { namespace converter {
 
   void blockchain_converter::sign_header( hp::signed_block_header& _signed_header )
   {
-    _signed_header.sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+    _signed_header.sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical, flags );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
@@ -535,4 +535,8 @@ namespace hive { namespace converter {
     return increase_block_size;
   }
 
+  const fc::raw::pack_flags& blockchain_converter::get_pack_flags() const
+  {
+    return flags;
+  }
 } } // hive::converter

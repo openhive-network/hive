@@ -874,7 +874,7 @@ void database_fixture::vote( std::string _author, std::string _permlink, std::st
 
 void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)
 {
-  trx.sign( key, db->get_chain_id(), default_sig_canon );
+  trx.sign( key, db->get_chain_id(), default_sig_canon, db->get_pack_flags() );
 }
 
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
@@ -927,7 +927,7 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
 
     tx.operations.push_back( op );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062 );
+    tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062, db->get_pack_flags() );
 
     this->db->push_transaction( tx, 0 );
 
@@ -996,7 +996,7 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     tx.operations.push_back( op1 );
     tx.operations.push_back( op2 );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062 );
+    tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062, db->get_pack_flags() );
     this->db->push_transaction( tx, 0 );
 
     this->generate_block();
@@ -1020,7 +1020,7 @@ void push_invalid_operation(const operation& invalid_op, const fc::ecc::private_
   signed_transaction tx;
   tx.operations.push_back( invalid_op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  tx.sign( key, db->get_chain_id(), fc::ecc::bip_0062 );
+  tx.sign( key, db->get_chain_id(), fc::ecc::bip_0062, db->get_pack_flags() );
   HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::assert_exception );
 }
 

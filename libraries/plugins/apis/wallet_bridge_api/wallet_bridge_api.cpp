@@ -195,7 +195,7 @@ void wallet_bridge_api_impl::on_post_apply_block( const protocol::signed_block& 
       for( size_t trx_num = 0; trx_num < b.transactions.size(); ++trx_num )
       {
         const auto& trx = b.transactions[trx_num];
-        auto id = trx.id();
+        auto id = trx.id( _db.get_pack_flags() );
         auto itr = _callbacks.find( id );
         if( itr == _callbacks.end() ) continue;
         itr->second( broadcast_transaction_synchronous_return( {id, block_num, int32_t( trx_num ), false }) );
@@ -669,7 +669,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   auto tx = get_trx( arguments );
 
-  auto txid = tx.id();
+  auto txid = tx.id( _db.get_pack_flags() );
   boost::promise< broadcast_transaction_synchronous_return > p;
   {
     boost::lock_guard< boost::mutex > guard( _mtx );

@@ -711,7 +711,7 @@ class wallet_api
     /**
       *  This method is used to convert a JSON transaction to its transaction ID.
       */
-    transaction_id_type get_transaction_id( const signed_transaction& trx )const { return trx.id(); }
+    transaction_id_type get_transaction_id( const signed_transaction& trx )const;
 
     /** Lists all witnesses registered in the blockchain.
       *

@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE( full_block )
   // Clear optional actions and the last required action and resign.
   block.extensions.erase( *block.extensions.end() );
   block.extensions.begin()->get< required_automated_actions >().pop_back();
-  block.sign( HIVE_INIT_PRIVATE_KEY );
+  block.sign( HIVE_INIT_PRIVATE_KEY, db->get_pack_flags() );
 
   db->push_block( block );
 
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( unexpected_required_action )
   required_automated_actions req_actions;
   req_actions.push_back( req_action );
   block.extensions.insert( req_actions );
-  block.sign( HIVE_INIT_PRIVATE_KEY );
+  block.sign( HIVE_INIT_PRIVATE_KEY, db->get_pack_flags() );
 
   BOOST_REQUIRE_THROW( db->push_block( block ), fc::assert_exception );
 
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( missing_required_action )
   db->pop_block();
 
   block.extensions.clear();
-  block.sign( HIVE_INIT_PRIVATE_KEY );
+  block.sign( HIVE_INIT_PRIVATE_KEY, db->get_pack_flags() );
 
   BOOST_REQUIRE_THROW( db->push_block( block ), fc::assert_exception );
 
@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE( optional_action_expiration )
   db->pop_block();
 
   block.extensions.erase( *block.extensions.rbegin() );
-  block.sign( HIVE_INIT_PRIVATE_KEY );
+  block.sign( HIVE_INIT_PRIVATE_KEY, db->get_pack_flags() );
 
   db->push_block( block );
 
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE( unexpected_optional_action )
   opt_action.account = HIVE_NULL_ACCOUNT;
   optional_automated_actions opt_actions = { opt_action };
   block.extensions.insert( opt_actions );
-  block.sign( HIVE_INIT_PRIVATE_KEY );
+  block.sign( HIVE_INIT_PRIVATE_KEY, db->get_pack_flags() );
 
   db->push_block( block );
 
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( reject_optional_action )
   opt_action.account = "_foobar";
   optional_automated_actions opt_actions = { opt_action };
   block.extensions.insert( opt_actions );
-  block.sign( HIVE_INIT_PRIVATE_KEY );
+  block.sign( HIVE_INIT_PRIVATE_KEY, db->get_pack_flags() );
 
   BOOST_REQUIRE_THROW( db->push_block( block ), fc::assert_exception );
 

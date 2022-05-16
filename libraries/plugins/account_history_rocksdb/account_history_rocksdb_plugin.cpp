@@ -1922,7 +1922,7 @@ void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
     hive::util::supplement_operation( op, _mainDb );
 
     rocksdb_operation_object obj;
-    obj.trx_id = tx.id();
+    obj.trx_id = tx.id( _mainDb.get_pack_flags() );
     obj.block = blockNo;
     obj.trx_in_block = txInBlock;
     obj.op_in_trx = opInTx;

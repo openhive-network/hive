@@ -247,7 +247,7 @@ FC_TODO( "Remove ifdef when optional actions are added" )
 
   _db.pending_transaction_session().reset();
 
-  pending_block.transaction_merkle_root = pending_block.calculate_merkle_root();
+  pending_block.transaction_merkle_root = pending_block.calculate_merkle_root( _db.get_pack_flags() );
 }
 
 } } } // hive::plugins::witness

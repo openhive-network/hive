@@ -39,7 +39,7 @@ namespace hive { namespace protocol {
     return signee( canon_type ) == expected_signee;
   }
 
-  checksum_type signed_block::calculate_merkle_root()const
+  checksum_type signed_block::calculate_merkle_root( const fc::raw::pack_flags& flags )const
   {
     if( transactions.size() == 0 )
       return checksum_type();
@@ -47,7 +47,7 @@ namespace hive { namespace protocol {
     vector<digest_type> ids;
     ids.resize( transactions.size() );
     for( uint32_t i = 0; i < transactions.size(); ++i )
-      ids[i] = transactions[i].merkle_digest();
+      ids[i] = transactions[i].merkle_digest( flags );
 
     vector<digest_type>::size_type current_number_of_hashes = ids.size();
     while( current_number_of_hashes > 1 )

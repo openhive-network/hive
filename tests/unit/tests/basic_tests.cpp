@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   {
     tx.emplace_back();
     tx.back().ref_block_prefix = i;
-    t.push_back( tx.back().merkle_digest() );
+    t.push_back( tx.back().merkle_digest( db->get_pack_flags() ) );
   }
 
   auto c = []( const digest_type& digest ) -> checksum_type
@@ -157,10 +157,10 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   auto d = []( const digest_type& left, const digest_type& right ) -> digest_type
   {   return digest_type::hash( std::make_pair( left, right ) );   };
 
-  BOOST_CHECK( block.calculate_merkle_root() == checksum_type() );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == checksum_type() );
 
   block.transactions.push_back( tx[0] );
-  BOOST_CHECK( block.calculate_merkle_root() ==
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) ==
     c(t[0])
     );
 
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dA = d(t[0], t[1]);
 
   block.transactions.push_back( tx[1] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dA) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dA) );
 
   /*************************
     *                       *
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dI = d(dA, dB);
 
   block.transactions.push_back( tx[2] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dI) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dI) );
 
   /***************************
     *                         *
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dI = d(dA, dB);
 
   block.transactions.push_back( tx[3] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dI) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dI) );
 
   /***************************************
     *                                     *
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dM = d(dI, dJ);
 
   block.transactions.push_back( tx[4] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dM) );
 
   /**************************************
     *                                    *
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dM = d(dI, dJ);
 
   block.transactions.push_back( tx[5] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dM) );
 
   /***********************************************
     *                                             *
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dM = d(dI, dJ);
 
   block.transactions.push_back( tx[6] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dM) );
 
   /*************************************************
     *                                               *
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dM = d(dI, dJ);
 
   block.transactions.push_back( tx[7] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dM) );
 
   /************************************************************************
     *                                                                      *
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dO = d(dM, dN);
 
   block.transactions.push_back( tx[8] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dO) );
 
   /************************************************************************
     *                                                                      *
@@ -330,7 +330,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dO = d(dM, dN);
 
   block.transactions.push_back( tx[9] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
+  BOOST_CHECK( block.calculate_merkle_root( db->get_pack_flags() ) == c(dO) );
 }
 
 BOOST_AUTO_TEST_CASE( adjust_balance_test )

@@ -34,6 +34,7 @@ namespace hive { namespace converter {
   private:
     hp::private_key_type _private_key;
     hp::chain_id_type    chain_id;
+    const fc::raw::pack_flags& flags;
     hp::signed_block*    current_block_ptr = nullptr;
 
     std::map< authority::classification, hp::private_key_type > second_authority;
@@ -66,11 +67,11 @@ namespace hive { namespace converter {
     static const fc::time_point_sec auto_trx_time;
 
     /// All converted blocks will be signed using given private key
-    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1, bool increase_block_size = true );
+    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, const fc::raw::pack_flags& flags, size_t signers_size = 1, bool increase_block_size = true );
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
-    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::raw::pack_flags& flags, const fc::time_point_sec& trx_now_time = auto_trx_time );
+    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& trx_now_time = auto_trx_time );
 
     const hp::block_id_type& get_mainnet_head_block_id()const;
 
@@ -113,6 +114,7 @@ namespace hive { namespace converter {
     const hp::signed_block& get_current_block()const;
 
     bool block_size_increase_enabled()const;
+    const fc::raw::pack_flags& get_pack_flags() const;
   };
 
   class convert_operations_visitor

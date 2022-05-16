@@ -10,25 +10,25 @@
 
 namespace hive { namespace protocol {
 
-digest_type signed_transaction::merkle_digest()const
+digest_type signed_transaction::merkle_digest( const fc::raw::pack_flags& flags )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
+  fc::raw::pack( enc, *this, flags );
   return enc.result();
 }
 
-digest_type transaction::digest()const
+digest_type transaction::digest( const fc::raw::pack_flags& flags )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
+  fc::raw::pack( enc, *this, flags );
   return enc.result();
 }
 
-digest_type transaction::sig_digest( const chain_id_type& chain_id )const
+digest_type transaction::sig_digest( const chain_id_type& chain_id, const fc::raw::pack_flags& flags )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id, fc::raw::pack_flags() );
-  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
+  fc::raw::pack( enc, chain_id, flags );
+  fc::raw::pack( enc, *this, flags );
   return enc.result();
 }
 
@@ -50,26 +50,26 @@ void transaction::validate( const std::function<void( const operation& op, bool 
   }
 }
 
-hive::protocol::transaction_id_type hive::protocol::transaction::id() const
+hive::protocol::transaction_id_type hive::protocol::transaction::id( const fc::raw::pack_flags& flags ) const
 {
-  auto h = digest();
+  auto h = digest( flags );
   transaction_id_type result;
   memcpy(result._hash, h._hash, std::min(sizeof(result), sizeof(h)));
   return result;
 }
 
-const signature_type& hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
+const signature_type& hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type, const fc::raw::pack_flags& flags )
 {
-  digest_type h = sig_digest( chain_id );
+  digest_type h = sig_digest( chain_id, flags );
   signatures.push_back( key.sign_compact( h, canon_type ) );
   return signatures.back();
 }
 
-signature_type hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
+signature_type hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type, const fc::raw::pack_flags& flags )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id, fc::raw::pack_flags() );
-  fc::raw::pack( enc, *this, fc::raw::pack_flags() );
+  fc::raw::pack( enc, chain_id, flags );
+  fc::raw::pack( enc, *this, flags );
   return key.sign_compact( enc.result(), canon_type );
 }
 
@@ -93,9 +93,9 @@ void transaction::get_required_authorities( flat_set< account_name_type >& activ
     operation_get_required_authorities( op, active, owner, posting, other );
 }
 
-flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type )const
+flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, const fc::raw::pack_flags& flags )const
 { try {
-  auto d = sig_digest( chain_id );
+  auto d = sig_digest( chain_id, flags );
   flat_set<public_key_type> result;
   for( const auto&  sig : signatures )
   {
@@ -115,6 +115,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   const authority_getter& get_active,
   const authority_getter& get_owner,
   const authority_getter& get_posting,
+  const fc::raw::pack_flags& flags,
   uint32_t max_recursion_depth,
   uint32_t max_membership,
   uint32_t max_account_auths,
@@ -128,7 +129,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   /** posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    sign_state s( get_signature_keys( chain_id, canon_type ), get_posting,available_keys );
+    sign_state s( get_signature_keys( chain_id, canon_type, flags ), get_posting,available_keys );
     s.max_recursion = max_recursion_depth;
     s.max_membership = max_membership;
     s.max_account_auths = max_account_auths;
@@ -150,7 +151,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
 
-  sign_state s( get_signature_keys( chain_id, canon_type ), get_active, available_keys );
+  sign_state s( get_signature_keys( chain_id, canon_type, flags ), get_active, available_keys );
   s.max_recursion = max_recursion_depth;
   s.max_membership = max_membership;
   s.max_account_auths = max_account_auths;
@@ -179,13 +180,14 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   const authority_getter& get_active,
   const authority_getter& get_owner,
   const authority_getter& get_posting,
+  const fc::raw::pack_flags& flags,
   uint32_t max_recursion,
   uint32_t max_membership,
   uint32_t max_account_auths,
   canonical_signature_type canon_type
   ) const
 {
-  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, max_recursion, max_membership, max_account_auths, canon_type );
+  set< public_key_type > s = get_required_signatures( chain_id, available_keys, get_active, get_owner, get_posting, flags, max_recursion, max_membership, max_account_auths, canon_type );
   flat_set< public_key_type > result( s.begin(), s.end() );
 
   for( const public_key_type& k : s )
@@ -222,6 +224,7 @@ void signed_transaction::verify_authority(
   const authority_getter& get_active,
   const authority_getter& get_owner,
   const authority_getter& get_posting,
+  const fc::raw::pack_flags& flags,
   uint32_t max_recursion,
   uint32_t max_membership,
   uint32_t max_account_auths,
@@ -229,7 +232,7 @@ void signed_transaction::verify_authority(
 { try {
   hive::protocol::verify_authority(
     operations,
-    get_signature_keys( chain_id, canon_type ),
+    get_signature_keys( chain_id, canon_type, flags ),
     get_active,
     get_owner,
     get_posting,

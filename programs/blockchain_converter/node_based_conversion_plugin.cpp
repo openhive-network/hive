@@ -326,7 +326,7 @@ namespace detail {
     catch( const error_response_from_node& error )
     {
       handle_error_response_from_node( error );
-    } FC_CAPTURE_AND_RETHROW( (trx.id().str()) )
+    } FC_CAPTURE_AND_RETHROW( (trx.id( converter.get_pack_flags() ).str()) )
   }
 
   const fc::variants& node_based_conversion_plugin_impl::get_block_buffer()const

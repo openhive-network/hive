@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(transaction_object_test)
   auto& index = db->get_mutable_index<hive::chain::transaction_index>();
 
   const auto& txo = db->create<hive::chain::transaction_object>([&](chain::transaction_object& transaction) {
-    transaction.trx_id = trx.id();
+    transaction.trx_id = trx.id( db->get_pack_flags() );
     transaction.expiration = trx.expiration;
     fc::raw::pack_to_buffer(transaction.packed_trx, trx, db->get_pack_flags());
     ilog("TRX packed into vector having ${s} bytes lentgh", ("s", transaction.packed_trx.size()));
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( serialization_raw_test )
     auto packed = fc::raw::pack_to_vector( trx, db->get_pack_flags() );
     signed_transaction unpacked = fc::raw::unpack_from_vector<signed_transaction>(packed);
     unpacked.validate();
-    BOOST_CHECK( trx.digest() == unpacked.digest() );
+    BOOST_CHECK( trx.digest( db->get_pack_flags() ) == unpacked.digest( db->get_pack_flags() ) );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE( serialization_json_test )
     fc::variant packed(trx);
     signed_transaction unpacked = packed.as<signed_transaction>();
     unpacked.validate();
-    BOOST_CHECK( trx.digest() == unpacked.digest() );
+    BOOST_CHECK( trx.digest( db->get_pack_flags() ) == unpacked.digest( db->get_pack_flags() ) );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -694,7 +694,7 @@ BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
 
   signed_transaction tx2 = signed_transaction( fc::json::from_string( "{\"ref_block_num\":4000,\"ref_block_prefix\":4000000000,\"expiration\":\"2018-01-01T00:00:00\",\"operations\":[[\"vote\",{\"voter\":\"alice\",\"author\":\"bob\",\"permlink\":\"foobar\",\"weight\":10000}]],\"extensions\":[],\"signatures\":[\"\"]}" ).as< legacy_signed_transaction >() );
 
-  BOOST_REQUIRE( tx.id() == tx2.id() );
+  BOOST_REQUIRE( tx.id( db->get_pack_flags() ) == tx2.id( db->get_pack_flags() ) );
 
   BOOST_CHECK_NO_THROW(
    fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" )

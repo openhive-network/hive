@@ -6,7 +6,7 @@ namespace hive { namespace protocol {
 
   struct signed_block : public signed_block_header
   {
-    checksum_type calculate_merkle_root()const;
+    checksum_type calculate_merkle_root( const fc::raw::pack_flags& flags )const;
     vector<signed_transaction> transactions;
   };
 

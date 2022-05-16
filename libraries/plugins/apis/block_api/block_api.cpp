@@ -62,7 +62,7 @@ DEFINE_API_IMPL( block_api_impl, get_block )
   get_block_return result;
   optional<signed_block> block = _db.fetch_block_by_number(args.block_num, fc::seconds(1));
   if (block)
-    result.block = *block;
+    result.block = api_signed_block_object{ *block, _db.get_pack_flags() };
   return result;
 }
 
@@ -80,7 +80,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     vector<signed_block> blocks = _db.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
     result.blocks.reserve(blocks.size());
     for (const signed_block& block : blocks)
-      result.blocks.push_back(block);
+      result.blocks.push_back( { block, _db.get_pack_flags() } );
   }
   return result;
 }

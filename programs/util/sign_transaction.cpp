@@ -41,6 +41,9 @@ FC_REFLECT( error_result, (error) )
 
 int main(int argc, char** argv, char** envp)
 {
+  //TODO : These flags should be set by a command line.
+  fc::raw::pack_flags _flags;
+
   fc::sha256 chainId;
 
   chainId = HIVE_CHAIN_ID;
@@ -117,8 +120,8 @@ int main(int argc, char** argv, char** envp)
 
       tx_signing_result sres;
       sres.tx = sreq.tx;
-      sres.digest = sreq.tx.digest();
-      sres.sig_digest = sreq.tx.sig_digest(chainId);
+      sres.digest = sreq.tx.digest( _flags );
+      sres.sig_digest = sreq.tx.sig_digest(chainId, _flags);
 
       auto priv_key = hive::utilities::wif_to_key( sreq.wif );
 

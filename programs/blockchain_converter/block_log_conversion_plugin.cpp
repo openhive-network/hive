@@ -45,8 +45,8 @@ namespace detail {
   public:
     block_log log_in, log_out;
 
-    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1 )
-      : conversion_plugin_impl( _private_key, chain_id, signers_size, true ) {}
+    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, const fc::raw::pack_flags& flags, size_t signers_size = 1 )
+      : conversion_plugin_impl( _private_key, chain_id, signers_size, flags, true ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
     void open( const fc::path& input, const fc::path& output );
@@ -68,9 +68,6 @@ namespace detail {
 
   void block_log_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
-    //TODO : These flags should be set by a command line.
-    fc::raw::pack_flags _flags;
-
     FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
     FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
@@ -118,7 +115,7 @@ namespace detail {
             converter.touch(*block);
 
             const auto& trx = *block->transactions.begin();
-            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", trx.id())("block_num", block->block_num()));
+            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", trx.id( converter.get_pack_flags() ))("block_num", block->block_num()));
 
             const auto& sig = *block->transactions.begin()->signatures.begin();
             ilog("Previous signature: ${sig}", ("sig", sig));
@@ -153,7 +150,7 @@ namespace detail {
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id, _flags );
+      last_block_id = converter.convert_signed_block( *block, last_block_id );
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
@@ -209,6 +206,9 @@ namespace detail {
 
     const auto& chain_id_str = options["chain-id"].as< std::string >();
 
+    //TODO : These flags should be set by a command line.
+    fc::raw::pack_flags _flags;
+
     try
     {
       _hive_chain_id = hp::chain_id_type( chain_id_str );
@@ -221,7 +221,7 @@ namespace detail {
     const auto private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >() );
+    my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, _flags, options.at( "jobs" ).as< size_t >() );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();

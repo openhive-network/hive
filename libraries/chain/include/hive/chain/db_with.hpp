@@ -65,7 +65,7 @@ struct pending_transactions_restorer
       if( apply_trxs )
       {
         try {
-          if( !_db.is_known_transaction( tx.id() ) ) {
+          if( !_db.is_known_transaction( tx.id( _db.get_pack_flags() ) ) ) {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
             _db._push_transaction( tx );
@@ -88,7 +88,7 @@ struct pending_transactions_restorer
       {
         try
         {
-          if( !_db.is_known_transaction( tx.id() ) ) {
+          if( !_db.is_known_transaction( tx.id( _db.get_pack_flags() ) ) ) {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
             _db._push_transaction( tx );
