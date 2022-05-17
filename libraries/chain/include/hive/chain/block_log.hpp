@@ -64,9 +64,7 @@ namespace hive { namespace chain {
       block_log();
       ~block_log();
 
-      void open( const fc::path& file );
-
-      void rewrite(const fc::path& inputFile, const fc::path& outputFile, uint32_t maxBlockNo);
+      void open( const fc::path& file, bool read_only = false );
 
       void close();
       bool is_open()const;

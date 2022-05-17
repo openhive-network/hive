@@ -203,144 +203,119 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log::open(const fc::path& file)
+  void block_log::open(const fc::path& file, bool read_only /* = false */ )
   {
-    close();
+      close();
 
-    my->block_file = file;
-    my->index_file = fc::path(file.generic_string() + ".index");
+      my->block_file = file;
+      my->index_file = fc::path(file.generic_string() + ".index");
 
-    my->block_log_fd = ::open(my->block_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-    if (my->block_log_fd == -1)
-      FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
-    my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-    if (my->block_index_fd == -1)
-      FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
-    my->block_log_size = get_file_size(my->block_log_fd);
-    const ssize_t log_size = my->block_log_size;
-    ssize_t index_size = get_file_size(my->block_index_fd);
-
-    /* On startup of the block log, there are several states the log file and the index file can be
-      * in relation to eachother.
-      *
-      *                          Block Log
-      *                     Exists       Is New
-      *                 +------------+------------+
-      *          Exists |    Check   |   Delete   |
-      *   Index         |    Head    |    Index   |
-      *    File         +------------+------------+
-      *          Is New |   Replay   |     Do     |
-      *                 |    Log     |   Nothing  |
-      *                 +------------+------------+
-      *
-      * Checking the heads of the files has several conditions as well.
-      *  - If they are the same, do nothing.
-      *  - If the index file head is not in the log file, delete the index and replay.
-      *  - If the index file head is in the log, but not up to date, replay from index head.
-      */
-    if (log_size)
-    {
-      ilog("Log is nonempty");
-      my->head.exchange(boost::make_shared<signed_block>(read_head()));
-
-      if (index_size)
+      int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
+      if (read_only)
+        flags = O_RDONLY | O_CLOEXEC;
+      my->block_log_fd = ::open(my->block_file.generic_string().c_str(), flags, 0644);
+      if (my->block_log_fd == -1)
+        FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
+      my->block_index_fd = ::open(my->index_file.generic_string().c_str(), flags, 0644);
+      if (my->block_index_fd == -1)
       {
-        ilog("Index is nonempty" );
-        FC_ASSERT(index_size % sizeof(uint64_t) == 0, "Corrupt index, file size is not an even multiple of 8");
-        uint32_t head_block_num_according_to_log = my->head.load()->block_num();
-        uint32_t head_block_num_according_to_index = index_size / 8;
-        if (head_block_num_according_to_log > head_block_num_according_to_index)
+        if (errno == ENOENT)
         {
-          ilog("Index is incomplete");
-          // add entries to the block index to make it the same length as the block log
-          // we won't need to do the extra check to ensure the last bytes of the log match
-          // the last bytes of the index since we're regenerating the end of the index from
-          // the log
-          construct_index(true);
+          wlog("Could not find index file in ${path}, index will be created and constructed from block_log.", ("path", my->index_file));
+          my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
+          if (my->block_index_fd == -1)
+            FC_THROW("Error creating block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
         }
-        else // head_block_num_according_to_log <= head_block_num_according_to_index
+        else
+            FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
+      }
+      my->block_log_size = get_file_size(my->block_log_fd);
+      const ssize_t log_size = my->block_log_size;
+      ssize_t index_size = get_file_size(my->block_index_fd);
+
+      /* On startup of the block log, there are several states the log file and the index file can be
+        * in relation to eachother.
+        *
+        *                          Block Log
+        *                     Exists       Is New
+        *                 +------------+------------+
+        *          Exists |    Check   |   Delete   |
+        *   Index         |    Head    |    Index   |
+        *    File         +------------+------------+
+        *          Is New |   Replay   |     Do     |
+        *                 |    Log     |   Nothing  |
+        *                 +------------+------------+
+        *
+        * Checking the heads of the files has several conditions as well.
+        *  - If they are the same, do nothing.
+        *  - If the index file head is not in the log file, delete the index and replay.
+        *  - If the index file head is in the log, but not up to date, replay from index head.
+        */
+      if (log_size)
+      {
+        ilog("Log is nonempty");
+        my->head.exchange(boost::make_shared<signed_block>(read_head()));
+
+        if (index_size)
         {
-          if (head_block_num_according_to_log < head_block_num_according_to_index)
+          ilog("Index is nonempty" );
+          FC_ASSERT(index_size % sizeof(uint64_t) == 0, "Corrupt index, file size is not an even multiple of 8");
+          uint32_t head_block_num_according_to_log = my->head.load()->block_num();
+          uint32_t head_block_num_according_to_index = index_size / 8;
+          if (head_block_num_according_to_log > head_block_num_according_to_index)
           {
-            ilog("Block index contains more entries than there are blocks in the block log");
-            ddump((head_block_num_according_to_log)(head_block_num_according_to_index));
-            my->truncate_block_index_to_head_block();
-            index_size = get_file_size(my->block_index_fd);
+            ilog("Index is incomplete");
+            // add entries to the block index to make it the same length as the block log
+            // we won't need to do the extra check to ensure the last bytes of the log match
+            // the last bytes of the index since we're regenerating the end of the index from
+            // the log
+            construct_index(true);
           }
-
-          // read the last 8 bytes of the block log to get the offset of the beginning of the head 
-          // block
-          uint64_t block_pos_and_flags = 0;
-          auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos_and_flags, sizeof(block_pos_and_flags), 
-                                                                     log_size - sizeof(block_pos_and_flags));
-          FC_ASSERT(bytes_read == sizeof(block_pos_and_flags));
-
-          // read the last 8 bytes of the block index to get the offset of the beginning of the 
-          // head block
-          uint64_t index_pos_and_flags = 0;
-          bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &index_pos_and_flags, sizeof(index_pos_and_flags), 
-                                                                index_size - sizeof(index_pos_and_flags));
-          FC_ASSERT(bytes_read == sizeof(index_pos_and_flags));
-          // uint64_t block_pos = detail::split_block_start_pos_with_flags(block_pos_and_flags).first;
-          // uint64_t index_pos = detail::split_block_start_pos_with_flags(index_pos_and_flags).first;
-
-          if (block_pos_and_flags != index_pos_and_flags)
+          else // head_block_num_according_to_log <= head_block_num_according_to_index
           {
-            ilog("Block log and index mismatch.");
-            construct_index();
+            if (head_block_num_according_to_log < head_block_num_according_to_index)
+            {
+              ilog("Block index contains more entries than there are blocks in the block log");
+              ddump((head_block_num_according_to_log)(head_block_num_according_to_index));
+              my->truncate_block_index_to_head_block();
+              index_size = get_file_size(my->block_index_fd);
+            }
+
+            // read the last 8 bytes of the block log to get the offset of the beginning of the head 
+            // block
+            uint64_t block_pos_and_flags = 0;
+            auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos_and_flags, sizeof(block_pos_and_flags), 
+                                                                      log_size - sizeof(block_pos_and_flags));
+            FC_ASSERT(bytes_read == sizeof(block_pos_and_flags));
+
+            // read the last 8 bytes of the block index to get the offset of the beginning of the 
+            // head block
+            uint64_t index_pos_and_flags = 0;
+            bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &index_pos_and_flags, sizeof(index_pos_and_flags), 
+                                                                  index_size - sizeof(index_pos_and_flags));
+            FC_ASSERT(bytes_read == sizeof(index_pos_and_flags));
+            // uint64_t block_pos = detail::split_block_start_pos_with_flags(block_pos_and_flags).first;
+            // uint64_t index_pos = detail::split_block_start_pos_with_flags(index_pos_and_flags).first;
+
+            if (block_pos_and_flags != index_pos_and_flags)
+            {
+              ilog("Block log and index mismatch.");
+              construct_index();
+            }
           }
+        }
+        else
+        {
+          ilog("Index is empty");
+          construct_index();
         }
       }
-      else
+      else if (index_size)
       {
-        ilog("Index is empty");
-        construct_index();
+        ilog("Block log is empty but the index is not.  Clearing the index");
+        if (ftruncate(my->block_index_fd, 0))
+          FC_THROW("Error truncating block log: ${error}", ("error", strerror(errno)));
       }
-    }
-    else if (index_size)
-    {
-      ilog("Block log is empty but the index is not.  Clearing the index");
-      if (ftruncate(my->block_index_fd, 0))
-        FC_THROW("Error truncating block log: ${error}", ("error", strerror(errno)));
-    }
-  }
-
-  void block_log::rewrite(const fc::path& input_file, const fc::path& output_file, uint32_t max_block_num)
-  {
-    std::ifstream intput_block_stream(input_file.generic_string().c_str(), std::ios::in | std::ios::binary);
-    std::ofstream output_block_stream(output_file.generic_string().c_str(), std::ios::out | std::ios::binary | std::ios::app);
-
-    uint64_t pos = 0;
-    uint64_t end_pos = 0;
-
-    intput_block_stream.seekg(-sizeof(uint64_t), std::ios::end);
-    intput_block_stream.read((char*)&end_pos, sizeof(end_pos));
-
-    intput_block_stream.seekg(pos);
-
-    uint32_t block_num = 0;
-
-    while(pos < end_pos)
-    {
-      signed_block tmp;
-      fc::raw::unpack(intput_block_stream, tmp);
-      intput_block_stream.read((char*)&pos, sizeof(pos));
-
-      uint64_t out_pos = output_block_stream.tellp();
-
-      if(out_pos != pos)
-        ilog("Block position mismatch");
-
-      auto data = fc::raw::pack_to_vector(tmp);
-      output_block_stream.write(data.data(), data.size());
-      output_block_stream.write((char*)&out_pos, sizeof(out_pos));
-
-      if(++block_num >= max_block_num)
-        break;
-
-      if(block_num % 1000 == 0)
-        printf("Rewritten block: %u\r", block_num);
-    }
   }
 
   void block_log::close()

@@ -265,8 +265,9 @@ void fill_pending_queue(const fc::path& block_log)
   {
     ilog("Starting fill_pending_queue");
     hive::chain::block_log log;
-    log.open(block_log);
+    log.open(block_log, true);
     ilog("Opened source block log");
+
     if (!log.head())
     {
       elog("Error: input block log is empty");
@@ -280,7 +281,7 @@ void fill_pending_queue(const fc::path& block_log)
       exit(1);
     }
     
-    uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress -1 : head_block_num;
+    uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress - 1 : head_block_num;
     ilog("Compressing blocks ${starting_block_number} to ${stop_at_block}", (starting_block_number)(stop_at_block));
 
     uint32_t current_block_number = starting_block_number;
@@ -399,6 +400,7 @@ int main(int argc, char** argv)
       output_block_log_path = options_map["output-block-log"].as<std::string>();
     if (options_map.count("dump-raw-blocks"))
       raw_block_output_path = options_map["dump-raw-blocks"].as<std::string>();
+
     std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
     std::shared_ptr<std::thread> drain_queue_thread = std::make_shared<std::thread>([&](){ drain_completed_queue(output_block_log_path / "block_log"); });
     std::vector<std::shared_ptr<std::thread>> compress_blocks_threads;
