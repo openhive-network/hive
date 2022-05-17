@@ -926,11 +926,11 @@ public:
     return it->second;
   }
 
-  void save_transaction_into_file( const std::string& trx ) const
+  void save_transaction_into_file( const std::string& trx, bool is_json_extension ) const
   {
     try
     {
-      std::ofstream _file( _store_transaction );
+      std::ofstream _file( _store_transaction + ( is_json_extension ? ".json" : ".bin" ) );
       _file << trx;
       _file.flush();
       _file.close();
@@ -946,7 +946,7 @@ public:
     fc::variant _v;
     fc::to_variant( serializer_wrapper<annotated_signed_transaction>{ trx, _transaction_serialization }, _v );
 
-    save_transaction_into_file( fc::json::to_string( _v ) );
+    save_transaction_into_file( fc::json::to_string( _v ), true/*is_json_extension*/ );
   }
 
   void dump_transaction( const std::string& trx ) const
@@ -954,7 +954,7 @@ public:
     if( _store_transaction.empty() )
       return;
 
-    save_transaction_into_file( trx );
+    save_transaction_into_file( trx, false/*is_json_extension*/ );
   }
 
   string                                                    _wallet_filename;
