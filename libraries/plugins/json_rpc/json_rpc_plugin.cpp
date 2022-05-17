@@ -19,7 +19,7 @@
 
 namespace hive { namespace plugins { namespace json_rpc {
 
-using hive::protocol::legacy_switcher;
+using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
 
 namespace detail
 {
@@ -356,7 +356,7 @@ namespace detail
                   {
                     if( method_name == "network_broadcast_api.broadcast_transaction" )
                     {
-                      legacy_switcher switcher( hive::protocol::transaction_serialization_type::legacy );
+                      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
                       ilog("Change of serialization( `network_broadcast_api.broadcast_transaction' ) - a legacy format is enabled now" );
                       response.result = (*call)( func_args );
                     }
