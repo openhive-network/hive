@@ -1,0 +1,1 @@
+"\nChecks whether the wallet is locked (is unable to use its private keys).\n\nThis state can be changed by calling 'lock()' or 'unlock()'.\n\nReturns\n    true if the wallet is locked\n"

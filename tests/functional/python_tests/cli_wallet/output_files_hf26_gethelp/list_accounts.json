@@ -1,0 +1,1 @@
+"\nLists all accounts registered in the blockchain.\n\nUse the 'lowerbound' and limit parameters to page through the list. To\nretrieve all accounts, start by setting 'lowerbound' to the empty string\n'\"\"', and then each iteration, pass the last account name returned as the\n'lowerbound' for the next 'list_accounts()' call.\n\nReturns\n    a sorted list of account names\n"

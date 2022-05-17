@@ -1,0 +1,1 @@
+"\nReturns info such as client version, git version of graphene/fc, version of\nboost, openssl.\n\nReturns\n    compile time info and client and dependencies versions\n"

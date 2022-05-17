@@ -1,0 +1,1 @@
+"\nDumps all private keys owned by the wallet.\n\nThe keys are printed in WIF format. You can import these keys into another\nwallet using 'import_key()'\n\nReturns\n    a map containing the private keys, indexed by their public key\n"

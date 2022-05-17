@@ -1,0 +1,1 @@
+"\nReturns transaction of a given ID.\n\nReturns\n    transaction as a JSON object literal\n"

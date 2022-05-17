@@ -1,0 +1,1 @@
+"\nGets the account balance information for all accounts for which this wallet\nhas a private key\n\nReturns\n    table with HIVE, VESTS and HBD balances for all accounts for which this\n\twallet has a private key\n"
