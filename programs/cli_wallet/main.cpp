@@ -105,6 +105,7 @@ int main( int argc, char** argv )
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
       ("output-formatter", bpo::value< std::string >(), "Allows to present a result in different ways. Possible values(none/text/json)" )
       ("transaction-serialization", bpo::value< std::string >()->default_value( "legacy" ), "Allows to generate JSON using legacy/HF26 format. Possible values(legacy/hf26). By default is `legacy`." )
+      ("store-transaction", bpo::value< std::string >(), "Requires a name of file. Allows to save a serialized transaction into the file in a current directory. By default a name of file is empty." )
       ;
     vector<string> allowed_ips;
 
@@ -234,10 +235,12 @@ int main( int argc, char** argv )
     transaction_serialization_type _transaction_serialization;
     from_variant( _v, _transaction_serialization );
 
+    std::string _store_transaction = options.count("store-transaction") ? options["store-transaction"].as<std::string>() : "";
+
     if( wdata.offline )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_output_formatter( options, output_formatter_type::text ), _transaction_serialization );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
     }
     else
     {
@@ -268,7 +271,7 @@ int main( int argc, char** argv )
         output_format = get_output_formatter( options, output_formatter_type::none );
       else
         output_format = get_output_formatter( options, output_formatter_type::text );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), output_format, _transaction_serialization );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), output_format, _transaction_serialization, _store_transaction );
       closed_connection = con->closed.connect([=]{
         cerr << "Server has disconnected us.\n";
         wallet_cli->stop();
