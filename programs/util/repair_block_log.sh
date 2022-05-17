@@ -233,3 +233,55 @@ else
     esac
   done
 fi
+
+# Notes on how to extract a possibly-compressed block.
+#
+# Let's say you want to extract block number 63,000,000:
+# Read the offset of the start of the block from the index:
+# ```
+# $ od -An -l -j $(expr \( 63000000 - 1 \) \* 8) -N6 block_log.index | sed -r 's/\s+//g'
+# 294494568365
+# ```
+# And the start of the next block, so we know when this block ends (corner case: if it's the head block, use the block_log's size instead):
+# ```
+# $ od -An -l -j $(expr 63000000 \* 8) -N6 block_log.index | sed -r 's/\s+//g'
+# 294494582094
+# ```
+# Compute the block length:
+# ```
+# $ expr 294494582094 - 294494568365 - 8
+# 13721
+# ```
+# And extract it to a file
+# ```
+# $ dd if=block_log of=/tmp/block.raw bs=1 skip=294494568365 count=13721
+# 13721+0 records in
+# 13721+0 records out
+# 13721 bytes (14 kB, 13 KiB) copied, 0.0154765 s, 887 kB/s
+# ```
+# Now read the block's flags:
+# ```
+# $ od -An -l -j $(expr \( 63000000 - 1 \) \* 8 + 7) -N1 block_log.index | sed -r 's/\s+//g'
+# 129
+# ```
+# If the high bit is set, the block is compressed with zstd.  If the low bit is set, it uses a custom dictionary.
+# If you read a 0, you're done, /tmp/block.raw is already uncompressed.
+# If you read 128, it's compressed, but without a custom dictionar.  Skip to the last step, and omit the `-D` parameter.
+# In our case, both the high and low bits are set.  To decompress, we need to know which dicitonary was used, so read it:
+# ```
+# $ od -An -l -j $(expr \( 63000000 - 1 \) \* 8 + 6) -N1 block_log.index | sed -r 's/\s+//g'
+# 63
+# ```
+# We store our dictionaries in compressed form in the respository, so decompress the required dictionary:
+# ```
+# $ zstd -d -o /tmp/063M.dict libraries/chain/compression_dictionaries/063M.dict.zst
+# ../../libraries/chain/compression_dictionaries/063M.dict.zst: 225280 bytes
+# ```
+# Now use it to decompress our block:
+# (note: the zstd command-line utility requres the compressed file to start with a magic number.
+#  when we store the blocks in the block log, we omit the magic number to save space, so we must
+#  add it back here)
+# ```
+# $ zstd -d -o /tmp/block -D /tmp/063M.dict <(echo -n -e '\x28\xb5\x2f\xfd'; cat /tmp/block.raw)
+# /dev/fd/63          : 27108 bytes
+# ```
