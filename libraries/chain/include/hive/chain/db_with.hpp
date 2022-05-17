@@ -53,6 +53,7 @@ struct pending_transactions_restorer
 
   ~pending_transactions_restorer()
   {
+    _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
     auto start = fc::time_point::now();
     bool apply_trxs = true;
     uint32_t applied_txs = 0;
