@@ -356,8 +356,8 @@ namespace detail
                   {
                     if( method_name == "network_broadcast_api.broadcast_transaction" )
                     {
-                      legacy_switcher switcher;
-                      ilog("Change of serialization( `network_broadcast_api.broadcast_transaction' ) - ${format} is enabled now", ("format", legacy_switcher::info()) );
+                      legacy_switcher switcher( hive::protocol::transaction_serialization_type::legacy );
+                      ilog("Change of serialization( `network_broadcast_api.broadcast_transaction' ) - a legacy format is enabled now" );
                       response.result = (*call)( func_args );
                     }
                     else

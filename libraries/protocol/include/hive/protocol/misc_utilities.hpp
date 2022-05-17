@@ -31,11 +31,8 @@ struct legacy_switcher
 {
   const transaction_serialization_type old_transaction_serialization = dynamic_serializer::default_transaction_serialization;
 
-  legacy_switcher();
   legacy_switcher( transaction_serialization_type val );
   ~legacy_switcher();
-
-  static std::string info();
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );
