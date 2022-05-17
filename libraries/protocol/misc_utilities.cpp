@@ -4,14 +4,6 @@ namespace hive { namespace protocol {
 
 thread_local transaction_serialization_type dynamic_serializer::transaction_serialization = dynamic_serializer::default_transaction_serialization;
 
-legacy_switcher::legacy_switcher() : old_transaction_serialization( dynamic_serializer::transaction_serialization )
-{
-  if( dynamic_serializer::transaction_serialization == transaction_serialization_type::hf26 )
-    dynamic_serializer::transaction_serialization = transaction_serialization_type::legacy;
-  else
-    dynamic_serializer::transaction_serialization = transaction_serialization_type::hf26;
-}
-
 legacy_switcher::legacy_switcher( transaction_serialization_type val ) : old_transaction_serialization( dynamic_serializer::transaction_serialization )
 {
   dynamic_serializer::transaction_serialization = val;
@@ -20,11 +12,6 @@ legacy_switcher::legacy_switcher( transaction_serialization_type val ) : old_tra
 legacy_switcher::~legacy_switcher()
 {
   dynamic_serializer::transaction_serialization = old_transaction_serialization;
-}
-
-std::string legacy_switcher::info()
-{
-  return dynamic_serializer::transaction_serialization == transaction_serialization_type::legacy ? "legacy format" : "hf26 format";
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )
