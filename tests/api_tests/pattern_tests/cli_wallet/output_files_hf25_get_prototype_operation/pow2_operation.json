@@ -1,0 +1,1 @@
+["pow2", {"work": ["pow2", {"input": {"worker_account": "", "prev_block": "0000000000000000000000000000000000000000", "nonce": 0}, "pow_summary": 0}], "props": {"account_creation_fee": "0.001 HIVE", "maximum_block_size": 131072, "hbd_interest_rate": 1000}}]

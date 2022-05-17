@@ -1,0 +1,1 @@
+"\nReturns detailed help on a single API command.\n\nReturns\n    a multi-line string suitable for displaying on a terminal\n"

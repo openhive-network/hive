@@ -1,0 +1,1 @@
+{"type": "account_created_operation", "value": {"new_account_name": "", "creator": "", "initial_vesting_shares": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "initial_delegation": {"amount": "0", "precision": 3, "nai": "@@000000021"}}}

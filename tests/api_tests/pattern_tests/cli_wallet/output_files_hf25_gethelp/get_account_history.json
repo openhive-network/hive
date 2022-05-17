@@ -1,0 +1,1 @@
+"\nAccount operations have sequence numbers from 0 to N where N is the most\nrecent operation. This method returns operations in the range [from-limit,\nfrom]\n"

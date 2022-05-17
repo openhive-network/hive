@@ -1,0 +1,1 @@
+{"type": "vesting_shares_split_operation", "value": {"owner": "", "vesting_shares_before_split": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "vesting_shares_after_split": {"amount": "0", "precision": 3, "nai": "@@000000021"}}}

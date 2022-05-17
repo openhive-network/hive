@@ -1,0 +1,1 @@
+{"type": "proposal_pay_operation", "value": {"proposal_id": 0, "receiver": "", "payer": "", "payment": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "trx_id": "0000000000000000000000000000000000000000", "op_in_trx": 0}}
