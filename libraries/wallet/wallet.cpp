@@ -974,7 +974,7 @@ public:
   authorities_type                        _authorities_to_use;
   bool                                    _use_automatic_authority = true;
 
-  transaction_serialization_type          _transaction_serialization = dynamic_serializer::default_transaction_serialization;
+  transaction_serialization_type          _transaction_serialization = serialization_mode_controller::default_transaction_serialization;
   std::string                             _store_transaction;
 
 #ifdef __unix__

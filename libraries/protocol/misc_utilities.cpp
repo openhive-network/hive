@@ -2,16 +2,16 @@
 
 namespace hive { namespace protocol {
 
-thread_local transaction_serialization_type dynamic_serializer::transaction_serialization = dynamic_serializer::default_transaction_serialization;
+thread_local transaction_serialization_type serialization_mode_controller::transaction_serialization = serialization_mode_controller::default_transaction_serialization;
 
-legacy_switcher::legacy_switcher( transaction_serialization_type val ) : old_transaction_serialization( dynamic_serializer::transaction_serialization )
+serialization_mode_controller::mode_guard::mode_guard( transaction_serialization_type val ) : old_transaction_serialization( serialization_mode_controller::transaction_serialization )
 {
-  dynamic_serializer::transaction_serialization = val;
+  serialization_mode_controller::transaction_serialization = val;
 }
 
-legacy_switcher::~legacy_switcher()
+serialization_mode_controller::mode_guard::~mode_guard()
 {
-  dynamic_serializer::transaction_serialization = old_transaction_serialization;
+  serialization_mode_controller::transaction_serialization = old_transaction_serialization;
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )

@@ -512,7 +512,7 @@ namespace
   {
     try
     {
-      legacy_switcher switcher( transaction_serialization );
+      serialization_mode_controller::mode_guard guard( transaction_serialization );
       T result = fc::json::from_string( data ).as < T >();
       return result;
     } FC_LOG_AND_RETHROW();
