@@ -1,0 +1,1 @@
+{"type": "hardfork_hive_operation", "value": {"account": "", "treasury": "", "hbd_transferred": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "hive_transferred": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "vests_converted": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "total_hive_from_vests": {"amount": "0", "precision": 3, "nai": "@@000000021"}}}

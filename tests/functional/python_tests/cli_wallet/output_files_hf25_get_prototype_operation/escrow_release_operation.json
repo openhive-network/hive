@@ -1,0 +1,1 @@
+{"type": "escrow_release_operation", "value": {"from": "", "to": "", "agent": "", "who": "", "receiver": "", "escrow_id": 30, "hbd_amount": {"amount": "0", "precision": 3, "nai": "@@000000013"}, "hive_amount": {"amount": "0", "precision": 3, "nai": "@@000000021"}}}

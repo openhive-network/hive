@@ -1,0 +1,1 @@
+{"type": "transfer_to_vesting_completed_operation", "value": {"from_account": "", "to_account": "", "hive_vested": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "vesting_shares_received": {"amount": "0", "precision": 3, "nai": "@@000000021"}}}

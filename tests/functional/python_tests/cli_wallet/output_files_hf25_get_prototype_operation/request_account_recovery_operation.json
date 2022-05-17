@@ -1,0 +1,1 @@
+{"type": "request_account_recovery_operation", "value": {"recovery_account": "", "account_to_recover": "", "new_owner_authority": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "extensions": []}}

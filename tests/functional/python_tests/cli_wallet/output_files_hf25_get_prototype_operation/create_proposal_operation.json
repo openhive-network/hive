@@ -1,0 +1,1 @@
+{"type": "create_proposal_operation", "value": {"creator": "", "receiver": "", "start_date": "1970-01-01T00:00:00", "end_date": "1970-01-01T00:00:00", "daily_pay": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "subject": "", "permlink": "", "extensions": []}}

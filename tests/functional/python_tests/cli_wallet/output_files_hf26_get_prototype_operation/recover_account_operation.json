@@ -1,0 +1,1 @@
+["recover_account", {"account_to_recover": "", "new_owner_authority": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "recent_owner_authority": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "extensions": []}]

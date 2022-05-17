@@ -1,0 +1,1 @@
+{"type": "fill_collateralized_convert_request_operation", "value": {"owner": "", "requestid": 0, "amount_in": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "amount_out": {"amount": "0", "precision": 3, "nai": "@@000000021"}, "excess_collateral": {"amount": "0", "precision": 3, "nai": "@@000000021"}}}
