@@ -53,11 +53,15 @@ struct pending_transactions_restorer
 
   ~pending_transactions_restorer()
   {
+    auto head_block_time = _db.head_block_time();
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
+
     auto start = fc::time_point::now();
     bool apply_trxs = true;
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
+    uint32_t expired_txs = 0;
+
     auto handle_tx = [&]( const signed_transaction& tx )
     {
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
@@ -67,7 +71,11 @@ struct pending_transactions_restorer
       {
         try
         {
-          if( !_db.is_known_transaction( tx.id() ) )
+          if( tx.expiration < head_block_time )
+          {
+            ++expired_txs;
+          }
+          else if( !_db.is_known_transaction( tx.id() ) )
           {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
@@ -106,10 +114,10 @@ struct pending_transactions_restorer
     for( const auto& tx : _pending_transactions )
       handle_tx( tx );
 
-    if( postponed_txs )
+    if( postponed_txs || expired_txs )
     {
-      wlog( "Postponed ${p} pending transactions. ${a} were applied.",
-        ( "p", postponed_txs )( "a", applied_txs ) );
+      wlog( "Postponed ${p} pending transactions. ${a} were applied. ${e} expired.",
+        ( "p", postponed_txs )( "a", applied_txs )( "e", expired_txs ) );
     }
   }
 
