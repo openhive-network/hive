@@ -18,21 +18,33 @@ enum curve_id
 
 enum class transaction_serialization_type : uint8_t { legacy, hf26 };
 
-struct dynamic_serializer
+struct serialization_mode_controller
 {
-  static const transaction_serialization_type default_transaction_serialization = transaction_serialization_type::hf26;
-  /*
-    This switch is used for switching of serialization.
-  */
-  thread_local static transaction_serialization_type transaction_serialization;
-};
+  public:
 
-struct legacy_switcher
-{
-  const transaction_serialization_type old_transaction_serialization = dynamic_serializer::default_transaction_serialization;
+    static const transaction_serialization_type default_transaction_serialization = transaction_serialization_type::hf26;
 
-  legacy_switcher( transaction_serialization_type val );
-  ~legacy_switcher();
+    struct mode_guard
+    {
+      const transaction_serialization_type old_transaction_serialization = serialization_mode_controller::default_transaction_serialization;
+
+      mode_guard( transaction_serialization_type val );
+      ~mode_guard();
+    };
+
+  private:
+    /*
+      This switch is used for switching of serialization.
+    */
+    thread_local static transaction_serialization_type transaction_serialization;
+
+  public:
+
+    static bool legacy_enabled()
+    {
+      return transaction_serialization == hive::protocol::transaction_serialization_type::legacy;
+    }
+
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );
@@ -41,7 +53,7 @@ template<typename T>
 struct serializer_wrapper
 {
   T value;
-  transaction_serialization_type transaction_serialization = dynamic_serializer::default_transaction_serialization;
+  transaction_serialization_type transaction_serialization = serialization_mode_controller::default_transaction_serialization;
 };
 
 } } // hive::protocol
@@ -66,14 +78,14 @@ FC_REFLECT_ENUM(
 
 namespace fc {
 
-  using hive::protocol::legacy_switcher;
+  using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
 
   template<typename T>
   inline void to_variant( const hive::protocol::serializer_wrapper<T>& a, fc::variant& var )
   {
     try
     {
-      legacy_switcher switcher( a.transaction_serialization );
+      mode_guard guard( a.transaction_serialization );
       to_variant( a.value, var );
     } FC_CAPTURE_AND_RETHROW()
   }
@@ -83,7 +95,7 @@ namespace fc {
   {
     try
     {
-      legacy_switcher switcher( hive::protocol::transaction_serialization_type::legacy );
+      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
       from_variant( var, a.value );
     } FC_CAPTURE_AND_RETHROW()
   }

@@ -548,7 +548,7 @@ namespace fc {
 
   void to_variant( const hive::protocol::asset& var, fc::variant& vo )
   {
-    if( hive::protocol::dynamic_serializer::transaction_serialization == hive::protocol::transaction_serialization_type::legacy )
+    if( hive::protocol::serialization_mode_controller::legacy_enabled() )
       to_variant( hive::protocol::legacy_asset( var ), vo );
     else
     {
@@ -571,7 +571,7 @@ namespace fc {
   {
     try
     {
-      if( hive::protocol::dynamic_serializer::transaction_serialization ==  hive::protocol::transaction_serialization_type::legacy )
+      if( hive::protocol::serialization_mode_controller::legacy_enabled() )
       {
         hive::protocol::legacy_asset a;
         from_variant( var, a );

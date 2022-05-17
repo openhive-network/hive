@@ -974,7 +974,7 @@ public:
   authorities_type                        _authorities_to_use;
   bool                                    _use_automatic_authority = true;
 
-  transaction_serialization_type          _transaction_serialization = dynamic_serializer::default_transaction_serialization;
+  transaction_serialization_type          _transaction_serialization = serialization_mode_controller::default_transaction_serialization;
   std::string                             _store_transaction;
 
 #ifdef __unix__
@@ -1119,7 +1119,7 @@ string wallet_api::serialize_transaction( const fc::variant& tx )const
   FC_ASSERT( tx.is_object(), "Signed transaction is required as an argument" );
 
   protocol::signed_transaction _trx;
-  legacy_switcher switcher( my->_transaction_serialization );
+  serialization_mode_controller::mode_guard guard( my->_transaction_serialization );
 
   from_variant( tx, _trx );
 
