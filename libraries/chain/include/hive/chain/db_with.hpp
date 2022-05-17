@@ -62,7 +62,7 @@ struct pending_transactions_restorer
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
 
-    auto handle_tx = [&]( const signed_transaction& tx )
+    auto handle_tx = [&]( signed_transaction& tx )
     {
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
         apply_trxs = false;
@@ -102,16 +102,16 @@ struct pending_transactions_restorer
       }
       else
       {
-        _db._pending_tx.push_back( tx );
+        _db._pending_tx.emplace_back( std::move( tx ) );
         ++postponed_txs;
       }
     };
 
-    for( const auto& tx : _db._popped_tx )
+    for( auto& tx : _db._popped_tx )
       handle_tx( tx );
     _db._popped_tx.clear();
 
-    for( const auto& tx : _pending_transactions )
+    for( auto& tx : _pending_transactions )
       handle_tx( tx );
 
     if( postponed_txs || expired_txs )
