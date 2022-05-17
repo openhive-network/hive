@@ -37,6 +37,24 @@ struct skip_flags_restorer
 };
 
 /**
+  * Set the skip_flags to the given value, call callback,
+  * then reset skip_flags to their previous value after
+  * callback is done.
+  */
+template< typename Lambda >
+void with_skip_flags(
+  database& db,
+  uint32_t skip_flags,
+  Lambda callback )
+{
+  node_property_object& npo = db.node_properties();
+  skip_flags_restorer restorer( npo, npo.skip_flags );
+  npo.skip_flags = skip_flags;
+  callback();
+  return;
+}
+
+/**
   * Class used to help the without_pending_transactions
   * implementation.
   *
@@ -107,12 +125,28 @@ struct pending_transactions_restorer
       }
     };
 
-    for( auto& tx : _db._popped_tx )
-      handle_tx( tx );
-    _db._popped_tx.clear();
+    uint32_t skip = _db.node_properties().skip_flags
+      | database::skip_validate | database::skip_transaction_signatures;
+      //1. operations once validated cannot become invalid;
+      //2. signatures might become invalid if transaction that changes keys happens to arrive in some
+      //block in different order than when pending transaction became pending, however for that super
+      //rare case there is no point in wasting time verifying authority all the time - it will be
+      //verified by witness during block production;
+      //3. there is no point in skipping tapos check - it is cheap and might let us drop transactions
+      //from pending in case of fork (maybe we should not skip it only when _popped_tx is not empty?);
+      //4. while we have duplication check pulled outside, skip_transaction_dupe_check flag also
+      //governs creation of transaction_objects - those contain packed version of transaction that is
+      //used by p2p, so we can't skip that
 
-    for( auto& tx : _pending_transactions )
-      handle_tx( tx );
+    with_skip_flags( _db, skip, [&]()
+    {
+      for( auto& tx : _db._popped_tx )
+        handle_tx( tx );
+      _db._popped_tx.clear();
+
+      for( auto& tx : _pending_transactions )
+        handle_tx( tx );
+    } );
 
     if( postponed_txs || expired_txs )
     {
@@ -124,24 +158,6 @@ struct pending_transactions_restorer
   database& _db;
   std::vector< signed_transaction > _pending_transactions;
 };
-
-/**
-  * Set the skip_flags to the given value, call callback,
-  * then reset skip_flags to their previous value after
-  * callback is done.
-  */
-template< typename Lambda >
-void with_skip_flags(
-  database& db,
-  uint32_t skip_flags,
-  Lambda callback )
-{
-  node_property_object& npo = db.node_properties();
-  skip_flags_restorer restorer( npo, npo.skip_flags );
-  npo.skip_flags = skip_flags;
-  callback();
-  return;
-}
 
 /**
   * Empty pending_transactions, call callback,
