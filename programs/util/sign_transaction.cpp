@@ -118,7 +118,7 @@ int main(int argc, char** argv, char** envp)
       tx_signing_result sres;
       sres.tx = sreq.tx;
       sres.digest = sreq.tx.digest();
-      sres.sig_digest = sreq.tx.sig_digest(chainId);
+      sres.sig_digest = sreq.tx.sig_digest(chainId, hive::protocol::pack_type::legacy);
 
       auto priv_key = hive::utilities::wif_to_key( sreq.wif );
 

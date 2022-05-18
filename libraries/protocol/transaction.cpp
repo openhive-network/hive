@@ -12,6 +12,7 @@ namespace hive { namespace protocol {
 
 digest_type signed_transaction::merkle_digest()const
 {
+  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
   return enc.result();
@@ -19,16 +20,33 @@ digest_type signed_transaction::merkle_digest()const
 
 digest_type transaction::digest()const
 {
+  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
   return enc.result();
 }
 
-digest_type transaction::sig_digest( const chain_id_type& chain_id )const
+digest_type transaction::sig_digest( const chain_id_type& chain_id, fc::optional<hive::protocol::pack_type> current_pack_mode )const
 {
   digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id );
-  fc::raw::pack( enc, *this );
+
+  auto _pack = [&, this]()
+  {
+    fc::raw::pack( enc, chain_id );
+    fc::raw::pack( enc, *this );
+  };
+
+  if( !current_pack_mode.valid() )
+  {//Try to choose another pack.
+    hive::protocol::serialization_mode_controller::pack_guard guard;
+    _pack();
+  }
+  else
+  {
+    hive::protocol::serialization_mode_controller::pack_guard guard( *current_pack_mode );
+    _pack();
+  }
+
   return enc.result();
 }
 
@@ -50,7 +68,7 @@ void transaction::validate( const std::function<void( const operation& op, bool 
   }
 }
 
-hive::protocol::transaction_id_type hive::protocol::transaction::id() const
+transaction_id_type transaction::id() const
 {
   auto h = digest();
   transaction_id_type result;
@@ -58,19 +76,17 @@ hive::protocol::transaction_id_type hive::protocol::transaction::id() const
   return result;
 }
 
-const signature_type& hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
+const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
 {
-  digest_type h = sig_digest( chain_id );
+  digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
   signatures.push_back( key.sign_compact( h, canon_type ) );
   return signatures.back();
 }
 
-signature_type hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
+signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
 {
-  digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id );
-  fc::raw::pack( enc, *this );
-  return key.sign_compact( enc.result(), canon_type );
+  digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
+  return key.sign_compact( h, canon_type );
 }
 
 void transaction::set_expiration( fc::time_point_sec expiration_time )
@@ -93,9 +109,9 @@ void transaction::get_required_authorities( flat_set< account_name_type >& activ
     operation_get_required_authorities( op, active, owner, posting, other );
 }
 
-flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type )const
+flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, fc::optional<hive::protocol::pack_type> current_pack_mode )const
 { try {
-  auto d = sig_digest( chain_id );
+  auto d = sig_digest( chain_id, current_pack_mode );
   flat_set<public_key_type> result;
   for( const auto&  sig : signatures )
   {
@@ -128,7 +144,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   /** posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    sign_state s( get_signature_keys( chain_id, canon_type ), get_posting,available_keys );
+    sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys );
     s.max_recursion = max_recursion_depth;
     s.max_membership = max_membership;
     s.max_account_auths = max_account_auths;
@@ -150,7 +166,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
 
-  sign_state s( get_signature_keys( chain_id, canon_type ), get_active, available_keys );
+  sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::serialization_mode_controller::get_current_pack() ), get_active, available_keys );
   s.max_recursion = max_recursion_depth;
   s.max_membership = max_membership;
   s.max_account_auths = max_account_auths;
@@ -226,20 +242,60 @@ void signed_transaction::verify_authority(
   uint32_t max_membership,
   uint32_t max_account_auths,
   canonical_signature_type canon_type )const
-{ try {
-  hive::protocol::verify_authority(
-    operations,
-    get_signature_keys( chain_id, canon_type ),
-    get_active,
-    get_owner,
-    get_posting,
-    max_recursion,
-    max_membership,
-    max_account_auths,
-    false,
-    flat_set< account_name_type >(),
-    flat_set< account_name_type >(),
-    flat_set< account_name_type >() );
-} FC_CAPTURE_AND_RETHROW( (*this) ) }
+{
+  auto _verify_authority = [&]( fc::optional<hive::protocol::pack_type> current_pack_mode )
+  {
+    hive::protocol::verify_authority(
+      operations,
+      get_signature_keys( chain_id, canon_type, current_pack_mode ),
+      get_active,
+      get_owner,
+      get_posting,
+      max_recursion,
+      max_membership,
+      max_account_auths,
+      false,
+      flat_set< account_name_type >(),
+      flat_set< account_name_type >(),
+      flat_set< account_name_type >() );
+  };
+  
+  try
+  {
+    _verify_authority( hive::protocol::serialization_mode_controller::get_current_pack() );
+  }
+  catch( const tx_irrelevant_sig& e )
+  {
+    throw e;
+  }
+  catch( const tx_missing_posting_auth& e )
+  {
+    try
+    {
+      _verify_authority( fc::optional<pack_type>() );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+  catch( const tx_missing_other_auth& e )
+  {
+    try
+    {
+      _verify_authority( fc::optional<pack_type>() );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+  catch( const tx_missing_active_auth& e )
+  {
+    try
+    {
+      _verify_authority( fc::optional<pack_type>() );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+  catch( const tx_missing_owner_auth& e )
+  {
+    try
+    {
+      _verify_authority( fc::optional<pack_type>() );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }FC_CAPTURE_AND_RETHROW( (*this) )
+}
 
 } } // hive::protocol

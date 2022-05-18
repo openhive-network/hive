@@ -24,7 +24,7 @@ using fc::ecc::canonical_signature_type;
     transaction_id_type id()const;
     void                validate() const;
     void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
-    digest_type         sig_digest( const chain_id_type& chain_id )const;
+    digest_type         sig_digest( const chain_id_type& chain_id, fc::optional<hive::protocol::pack_type> current_pack_mode )const;
 
     void set_expiration( fc::time_point_sec expiration_time );
     void set_reference_block( const block_id_type& reference_block );
@@ -96,7 +96,7 @@ using fc::ecc::canonical_signature_type;
       canonical_signature_type canon_type = fc::ecc::fc_canonical
       ) const;
 
-    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/ )const;
+    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, fc::optional<hive::protocol::pack_type> current_pack_mode )const;
 
     vector<signature_type> signatures;
 
