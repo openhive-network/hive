@@ -926,35 +926,31 @@ public:
     return it->second;
   }
 
-  void save_transaction_into_file( const std::string& trx, bool is_json_extension ) const
-  {
-    try
-    {
-      std::ofstream _file( _store_transaction + ( is_json_extension ? ".json" : ".bin" ) );
-      _file << trx;
-      _file.flush();
-      _file.close();
-    }
-    FC_CAPTURE_AND_LOG(())
-  }
-
   void dump_transaction( const annotated_signed_transaction& trx ) const
   {
     if( _store_transaction.empty() )
       return;
 
-    fc::variant _v;
-    fc::to_variant( serializer_wrapper<annotated_signed_transaction>{ trx, _transaction_serialization }, _v );
+    try
+    {
+      fc::variant _v;
+      fc::to_variant( serializer_wrapper<annotated_signed_transaction>{ trx, _transaction_serialization }, _v );
 
-    save_transaction_into_file( fc::json::to_string( _v ), true/*is_json_extension*/ );
-  }
+      std::ofstream _file_json( _store_transaction + ".json", std::ios_base::out );
+      _file_json << fc::json::to_string( _v );
+      _file_json.flush();
+      _file_json.close();
+    }
+    FC_CAPTURE_AND_LOG(())
 
-  void dump_transaction( const std::string& trx ) const
-  {
-    if( _store_transaction.empty() )
-      return;
-
-    save_transaction_into_file( trx, false/*is_json_extension*/ );
+    try
+    {
+      std::ofstream _file_bin( _store_transaction + ".bin", std::ios_base::out | std::ios_base::binary );
+      fc::raw::pack( _file_bin, trx );
+      _file_bin.flush();
+      _file_bin.close();
+    }
+    FC_CAPTURE_AND_LOG(())
   }
 
   string                                                    _wallet_filename;
