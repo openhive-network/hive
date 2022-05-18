@@ -4,6 +4,8 @@
 #include <fc/variant.hpp>
 #include <fc/exception/exception.hpp>
 
+#include <optional>
+
 namespace hive { namespace protocol {
 
 enum curve_id
@@ -16,13 +18,16 @@ enum curve_id
   convergent_square_root
 };
 
-enum class transaction_serialization_type : uint8_t { legacy, hf26 };
+enum class serialization_type : uint8_t { legacy, hf26 };
+using transaction_serialization_type  = serialization_type;
+using pack_type                       = serialization_type;
 
 struct serialization_mode_controller
 {
   public:
 
     static const transaction_serialization_type default_transaction_serialization = transaction_serialization_type::hf26;
+    static const pack_type default_pack = pack_type::legacy;
 
     struct mode_guard
     {
@@ -32,19 +37,34 @@ struct serialization_mode_controller
       ~mode_guard();
     };
 
+    struct pack_guard
+    {
+      private:
+
+        const pack_type old_pack = serialization_mode_controller::default_pack;
+        fc::optional<pack_type> previous_pack;
+
+      public:
+
+        pack_guard( pack_type new_pack );
+        pack_guard();
+        ~pack_guard();
+    };
+
   private:
     /*
       This switch is used for switching of serialization.
     */
     thread_local static transaction_serialization_type transaction_serialization;
+    static pack_type pack;
+    thread_local static fc::optional<pack_type> current_pack;
 
   public:
 
-    static bool legacy_enabled()
-    {
-      return transaction_serialization == hive::protocol::transaction_serialization_type::legacy;
-    }
-
+    static bool legacy_enabled();
+    static void set_pack( pack_type new_pack );
+    static pack_type get_current_pack();
+    static pack_type get_another_pack();
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );

@@ -6,6 +6,7 @@
 namespace hive { namespace protocol {
   digest_type block_header::digest()const
   {
+    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
     return digest_type::hash(*this);
   }
 
@@ -16,6 +17,7 @@ namespace hive { namespace protocol {
 
   block_id_type signed_block_header::id()const
   {
+    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
     auto tmp = fc::sha224::hash( *this );
     tmp._hash[0] = fc::endian_reverse_u32(block_num()); // store the block num in the ID, 160 bits is plenty for the hash
     static_assert( sizeof(tmp._hash[0]) == 4, "should be 4 bytes" );
@@ -48,6 +50,8 @@ namespace hive { namespace protocol {
     ids.resize( transactions.size() );
     for( uint32_t i = 0; i < transactions.size(); ++i )
       ids[i] = transactions[i].merkle_digest();
+
+    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
 
     vector<digest_type>::size_type current_number_of_hashes = ids.size();
     while( current_number_of_hashes > 1 )
