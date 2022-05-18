@@ -2,6 +2,7 @@
 
 #include <fc/io/raw.hpp>
 #include <hive/protocol/types_fwd.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 #define HIVE_ASSET_SYMBOL_PRECISION_BITS     4
 #define HIVE_ASSET_CONTROL_BITS              1
@@ -150,9 +151,9 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
 {
-  switch( sym.space() )
+  switch( hive::protocol::serialization_mode_controller::get_current_pack() )
   {
-    case hive::protocol::asset_symbol_type::legacy_space:
+    case hive::protocol::pack_type::legacy:
     {
       uint64_t ser = 0;
       switch( sym.asset_num )
@@ -172,7 +173,7 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
       pack( s, ser );
       break;
     }
-    case hive::protocol::asset_symbol_type::smt_nai_space:
+    case hive::protocol::pack_type::hf26:
       pack( s, sym.asset_num );
       break;
     default:
