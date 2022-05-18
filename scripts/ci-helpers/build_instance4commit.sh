@@ -16,9 +16,9 @@ BRANCH="master"
 NETWORK_TYPE_ARG=""
 
 print_help () {
-    echo "Usage: $0 <commit> [<registry_url>] [OPTION[=VALUE]]..."
+    echo "Usage: $0 <commit> <registry_url> [OPTION[=VALUE]]..."
     echo
-    echo "Allows to setup this machine for Hived installation"
+    echo "Allows to build docker image containing Hived installation built from pointed COMMIT"
     echo "OPTIONS:"
     echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
     echo "  --help                    Display this help screen and exit"
@@ -53,16 +53,13 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -z "$REGISTRY" ];
-then
-  echo "Setting default registry value"
-  REGISTRY=registry.gitlab.syncad.com/hive/hive/
-fi
+TST_COMMIT=${COMMIT:?"Missing arg #1 to specify a COMMIT"}
+TST_REGISTRY=${REGISTRY:?"Missing arg #2 to specify target container registry"}
 
 BUILD_IMAGE_TAG=$COMMIT
 
 do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$COMMIT"
 
-"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${REGISTRY}" ${NETWORK_TYPE_ARG}
+"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "./hive-${COMMIT}" "${REGISTRY}" ${NETWORK_TYPE_ARG}
 
 
