@@ -57,10 +57,6 @@ while [ $# -gt 0 ]; do
             exit 3
         esac
         ;;
-    -*)
-        echo "ERROR: '$1' is not a valid option"
-        exit 1
-        ;;
     *)
         if [ -z "$BUILD_IMAGE_TAG" ];
         then
@@ -72,7 +68,7 @@ while [ $# -gt 0 ]; do
         then
           BLOCK_LOG_SUFFIX="${1}"
         else
-          echo "ERROR: '$1' is not a valid positional argument"
+          echo "ERROR: '$1' is not a valid option/positional argument"
           echo
           print_help
           exit 2
