@@ -325,6 +325,176 @@ BOOST_AUTO_TEST_CASE( generate_block_size )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( asset_raw_test )
+{
+  try
+  {
+    uint32_t _allow_hf26 = false;
+
+    auto _content = [&_allow_hf26]( ptr_hardfork_database_fixture& executor )
+    {
+
+      auto _pack_nai_symbol = [](std::vector<char>& v, const asset_symbol_type& sym)
+      {
+        std::string _nai_str = sym.to_nai_string();
+
+        uint32_t _val;
+
+        if( sym == HIVE_SYMBOL )
+        {
+          _val = HIVE_ASSET_NUM_HIVE;
+        }
+        else if( sym == HBD_SYMBOL )
+        {
+          _val = HIVE_ASSET_NUM_HBD;
+        }
+        else if( sym == VESTS_SYMBOL )
+        {
+          _val = HIVE_ASSET_NUM_VESTS;
+        }
+        else
+        {
+          FC_ASSERT( false, "This method cannot serialize this symbol" );
+        }
+
+        std::vector<unsigned int> _bytes = { _val & 0x000000ff, (_val & 0x0000ff00) >> 8, (_val & 0x00ff0000) >> 16, (_val & 0xff000000) >> 24 };
+        BOOST_CHECK_EQUAL( _bytes.size(), sizeof( _val ) );
+
+        std::copy( _bytes.begin(), _bytes.end(), std::back_inserter( v ) );
+      };
+
+      auto _old_pack_symbol = [](std::vector<char>& v, const asset_symbol_type& sym)
+      {
+        if( sym == HIVE_SYMBOL )
+        {
+          v.push_back('\x03'); v.push_back('T' ); v.push_back('E' ); v.push_back('S' );
+          v.push_back('T'   ); v.push_back('S' ); v.push_back('\0'); v.push_back('\0');
+          // 03 54 45 53 54 53 00 00
+        }
+        else if( sym == HBD_SYMBOL )
+        {
+          v.push_back('\x03'); v.push_back('T' ); v.push_back('B' ); v.push_back('D' );
+          v.push_back('\0'  ); v.push_back('\0'); v.push_back('\0'); v.push_back('\0');
+          // 03 54 42 44 00 00 00 00
+        }
+        else if( sym == VESTS_SYMBOL )
+        {
+          v.push_back('\x06'); v.push_back('V' ); v.push_back('E' ); v.push_back('S' );
+          v.push_back('T'   ); v.push_back('S' ); v.push_back('\0'); v.push_back('\0');
+          // 06 56 45 53 54 53 00 00
+        }
+        else
+        {
+          FC_ASSERT( false, "This method cannot serialize this symbol" );
+        }
+        return;
+      };
+
+      auto _old_pack_asset = []( std::vector<char>& v, const asset& a, std::function<void( std::vector<char>& v, const asset_symbol_type& sym )> pack_symbol )
+      {
+        uint64_t x = uint64_t( a.amount.value );
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );   x >>= 8;
+        v.push_back( char( x & 0xFF ) );
+        pack_symbol( v, a.symbol );
+        return;
+      };
+
+      auto _hex_bytes = []( const std::vector<char>& obj ) -> std::string
+      {
+        std::vector<char> data = fc::raw::pack_to_vector( obj );
+        std::ostringstream ss;
+        static const char hexdigits[] = "0123456789abcdef";
+
+        for( char c : data )
+        {
+          ss << hexdigits[((c >> 4) & 0x0F)] << hexdigits[c & 0x0F] << ' ';
+        }
+        return ss.str();
+      };
+
+      try
+      {
+        BOOST_CHECK( HBD_SYMBOL < HIVE_SYMBOL );
+        BOOST_CHECK( HIVE_SYMBOL < VESTS_SYMBOL );
+
+        // get a bunch of random bits
+        fc::sha256 h = fc::sha256::hash("");
+
+        std::vector< share_type > amounts;
+
+        for( int i=0; i<64; i++ )
+        {
+          uint64_t s = (uint64_t(1) << i);
+          uint64_t x = (h._hash[0] & (s-1)) | s;
+          if( x >= HIVE_MAX_SHARE_SUPPLY )
+            break;
+          amounts.push_back( share_type( x ) );
+        }
+        // ilog( "h0:${h0}", ("h0", h._hash[0]) );
+
+        std::vector< asset_symbol_type > symbols;
+
+        symbols.push_back( HIVE_SYMBOL );
+        symbols.push_back( HBD_SYMBOL   );
+        symbols.push_back( VESTS_SYMBOL );
+
+        for( const share_type& amount : amounts )
+        {
+          for( const asset_symbol_type& symbol : symbols )
+          {
+            // check raw::pack() works
+            asset a = asset( amount, symbol );
+            std::vector<char> v_old;
+
+            if( _allow_hf26 )
+              _old_pack_asset( v_old, a, _pack_nai_symbol );
+            else
+              _old_pack_asset( v_old, a, _old_pack_symbol );
+
+            std::vector<char> v_cur = fc::raw::pack_to_vector(a);
+            ilog( "${a} : ${d}", ("a", a)("d", _hex_bytes( v_old )) );
+            ilog( "${a} : ${d}", ("a", a)("d", _hex_bytes( v_cur )) );
+            BOOST_REQUIRE( v_cur == v_old );
+
+            // check raw::unpack() works
+            std::istringstream ss( std::string(v_cur.begin(), v_cur.end()) );
+            asset a2;
+            fc::raw::unpack( ss, a2 );
+            BOOST_REQUIRE( a == a2 );
+
+            // check conversion to JSON works
+            //std::string json_old = old_json_asset(a);
+            //std::string json_cur = fc::json::to_string(a);
+            // ilog( "json_old: ${j}", ("j", json_old) );
+            // ilog( "json_cur: ${j}", ("j", json_cur) );
+            //BOOST_CHECK( json_cur == json_old );
+
+            // check JSON serialization is symmetric
+            std::string json_cur = fc::json::to_string(a);
+            a2 = fc::json::from_string(json_cur).as< asset >();
+            BOOST_REQUIRE( a == a2 );
+          }
+        }
+      }
+      FC_LOG_AND_RETHROW()
+    };
+
+    execute_hardfork<25>( _content );
+
+    _allow_hf26 = true;
+
+    execute_hardfork<26>( _content );
+
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
