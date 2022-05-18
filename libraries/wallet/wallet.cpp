@@ -237,6 +237,7 @@ public:
     : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
   {
     wallet_transaction_serialization::transaction_serialization = transaction_serialization;
+    serialization_mode_controller::set_pack( transaction_serialization );
     init_prototype_ops();
   }
 
