@@ -8,6 +8,8 @@
 
 #include <hive/protocol/asset.hpp>
 
+#include <fc/exception/exception.hpp>
+
 namespace hive { namespace plugins { namespace condenser_api {
 
   template< typename T >
@@ -171,7 +173,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       creator( op.creator ),
       initial_vesting_shares(legacy_asset::from_asset( op.initial_vesting_shares )),
       initial_delegation(legacy_asset::from_asset( op.initial_delegation ))
-    {}
+    {
+      FC_ASSERT(creator.size(), "Every account should have a creator");
+    }
 
     operator account_created_operation()const
     {
