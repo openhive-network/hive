@@ -256,6 +256,75 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
   }
 }
 
+BOOST_AUTO_TEST_CASE( generate_block_size )
+{
+  try
+  {
+    uint32_t _trxs_count = 1;
+
+    auto _content = [&_trxs_count]( ptr_hardfork_database_fixture& executor )
+    {
+      try
+      {
+        executor->db_plugin->debug_update( [=]( database& db )
+        {
+          db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+          {
+            gpo.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT;
+          });
+        });
+        executor->generate_block();
+
+        signed_transaction tx;
+        tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        transfer_operation op;
+        op.from = HIVE_INIT_MINER_NAME;
+        op.to = HIVE_TEMP_ACCOUNT;
+        op.amount = asset( 1000, HIVE_SYMBOL );
+
+        // tx minus op is 79 bytes
+        // op is 33 bytes (32 for op + 1 byte static variant tag)
+        // total is 65254
+        // Original generation logic only allowed 115 bytes for the header
+        // We are targetting a size (minus header) of 65421 which creates a block of "size" 65535
+        // This block will actually be larger because the header estimates is too small
+
+        for( size_t i = 0; i < 1975; i++ )
+        {
+          tx.operations.push_back( op );
+        }
+
+        executor->sign( tx, executor->init_account_priv_key );
+        executor->db->push_transaction( tx, 0 );
+
+        // Second transaction, tx minus op is 78 (one less byte for operation vector size)
+        // We need a 88 byte op. We need a 22 character memo (1 byte for length) 55 = 32 (old op) + 55 + 1
+        op.memo = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123";
+        tx.clear();
+        tx.operations.push_back( op );
+        executor->sign( tx, executor->init_account_priv_key );
+        executor->db->push_transaction( tx, 0 );
+
+        executor->generate_block();
+
+        // The last transfer should have been delayed due to size
+        auto head_block = executor->db->fetch_block_by_number( executor->db->head_block_num() );
+        BOOST_REQUIRE_EQUAL( head_block->transactions.size(), _trxs_count );
+      }
+      FC_LOG_AND_RETHROW()
+    };
+
+    execute_hardfork<25>( _content );
+
+    _trxs_count = 2;
+
+    execute_hardfork<26>( _content );
+
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
