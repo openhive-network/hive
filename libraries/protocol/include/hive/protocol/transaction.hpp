@@ -2,6 +2,7 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/sign_state.hpp>
 #include <hive/protocol/types.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 #include <functional>
 #include <numeric>
@@ -123,3 +124,32 @@ using fc::ecc::canonical_signature_type;
 FC_REFLECT( hive::protocol::transaction, (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions) )
 FC_REFLECT_DERIVED( hive::protocol::signed_transaction, (hive::protocol::transaction), (signatures) )
 FC_REFLECT_DERIVED( hive::protocol::annotated_signed_transaction, (hive::protocol::signed_transaction), (transaction_id)(block_num)(transaction_num) );
+
+namespace fc { namespace raw {
+
+template< typename Stream >
+inline void pack( Stream& s, const hive::protocol::transaction& trx )
+{
+  //hive::protocol::serialization_mode_controller::pack_guard guard;
+
+  pack( s, trx.ref_block_num );
+  pack( s, trx.ref_block_prefix );
+  pack( s, trx.expiration );
+  pack( s, trx.operations );
+  pack( s, trx.extensions );
+}
+
+template< typename Stream >
+inline void unpack( Stream& s, hive::protocol::transaction& trx, uint32_t depth )
+{
+  depth++;
+  FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
+
+  unpack( s, trx.ref_block_num, depth );
+  unpack( s, trx.ref_block_prefix, depth );
+  unpack( s, trx.expiration, depth );
+  unpack( s, trx.operations, depth );
+  unpack( s, trx.extensions, depth );
+}
+
+} } // fc::raw
