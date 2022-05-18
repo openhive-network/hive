@@ -1,5 +1,5 @@
-# Base docker file having defined environment for build and run of HAF instance.
-# docker build --target=ci-base-image -t registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-xxx -f Dockerfile .
+# Base docker file having defined environment for build and run of hived instance.
+# Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
 ARG CI_IMAGE_TAG=:ubuntu20.04-4 
@@ -45,11 +45,6 @@ RUN sudo -n mkdir -p /home/hived/datadir/blockchain && cd /home/hived/datadir/bl
     sudo -n mv block_log.5M block_log && sudo -n chown -Rc hived:hived /home/hived/datadir/
 
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
-ARG BRANCH=master
-ENV BRANCH=${BRANCH:-master}
-
-ARG COMMIT
-ENV COMMIT=${COMMIT:-""}
 
 ARG BUILD_HIVE_TESTNET=OFF
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
@@ -64,9 +59,10 @@ USER hived
 WORKDIR /home/hived
 SHELL ["/bin/bash", "-c"] 
 
-ADD ./scripts/common.sh /home/hived/scripts/common.sh
+# Get everything from cwd as sources to be built.
+COPY --chown=hived:hived . /home/hived/hive
 
-RUN LOG_FILE=build.log source ./scripts/common.sh && do_clone "$BRANCH" ./hive https://gitlab.syncad.com/hive/hive.git "$COMMIT" && \
+RUN \
   ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
@@ -96,7 +92,7 @@ USER hived
 WORKDIR /home/hived
 
 COPY --from=build /home/hived/build/programs/hived/hived /home/hived/build/programs/cli_wallet/cli_wallet /home/hived/build/programs/util/truncate_block_log /home/hived/bin/
-COPY --from=build /home/hived/scripts/common.sh ./scripts/common.sh
+COPY --from=build /home/hived/hive/scripts/common.sh ./scripts/common.sh
 
 ADD ./docker/docker_entrypoint.sh .
 
