@@ -7,7 +7,7 @@
         "op": {
           "type": "account_created_operation",
           "value": {
-            "creator": "",
+            "creator": "leigh",
             "initial_delegation": {
               "amount": "0",
               "nai": "@@000000037",

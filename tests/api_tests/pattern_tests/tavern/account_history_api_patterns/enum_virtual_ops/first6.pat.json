@@ -7,7 +7,7 @@
       "op": {
         "type": "account_created_operation",
         "value": {
-          "creator": "",
+          "creator": "miners",
           "initial_delegation": {
             "amount": "0",
             "nai": "@@000000037",
@@ -33,7 +33,7 @@
       "op": {
         "type": "account_created_operation",
         "value": {
-          "creator": "",
+          "creator": "null",
           "initial_delegation": {
             "amount": "0",
             "nai": "@@000000037",
@@ -59,7 +59,7 @@
       "op": {
         "type": "account_created_operation",
         "value": {
-          "creator": "",
+          "creator": "temp",
           "initial_delegation": {
             "amount": "0",
             "nai": "@@000000037",
@@ -85,7 +85,7 @@
       "op": {
         "type": "account_created_operation",
         "value": {
-          "creator": "",
+          "creator": "initminer",
           "initial_delegation": {
             "amount": "0",
             "nai": "@@000000037",
