@@ -2,18 +2,15 @@
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
-SRCROOTDIR="$SCRIPTSDIR/.."
 
 LOG_FILE=build_instance.log
 source "$SCRIPTSDIR/common.sh"
 
 BUILD_IMAGE_TAG=""
-
 REGISTRY=""
+SRCROOTDIR=""
 
 IMAGE_TAG_PREFIX=""
-
-CI_IMAGE_TAG=:ubuntu20.04-4
 
 BLOCK_LOG_SUFFIX=""
 
@@ -22,9 +19,9 @@ HIVE_CONVERTER_BUILD=OFF
 
 
 print_help () {
-    echo "Usage: $0 <image_tag> [<registry_url>] [<block_log_img_suffix>] [OPTION[=VALUE]]..."
+    echo "Usage: $0 <image_tag> <src_dir> <registry_url> [<block_log_img_suffix>] [OPTION[=VALUE]]..."
     echo
-    echo "Allows to setup this machine for Hived installation"
+    echo "Allows to build docker image containing Hived installation"
     echo "OPTIONS:"
     echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
     echo "  --help                    Display this help screen and exit"
@@ -61,6 +58,9 @@ while [ $# -gt 0 ]; do
         if [ -z "$BUILD_IMAGE_TAG" ];
         then
           BUILD_IMAGE_TAG=:"${1}"
+        elif [ -z "$SRCROOTDIR" ];
+        then
+          SRCROOTDIR="${1}"
         elif [ -z "$REGISTRY" ];
         then
           REGISTRY=${1}
@@ -78,18 +78,18 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -z "$REGISTRY" ];
-then
-  echo "Setting default registry value"
-  REGISTRY=registry.gitlab.syncad.com/hive/hive/
-fi
+TST_IMGTAG=${BUILD_IMAGE_TAG:?"Missing arg #1 to specify built image tag"}
+TST_SRCDIR=${SRCROOTDIR:?"Missing arg #2 to specify source directory"}
+TST_REGISTRY=${REGISTRY:?"Missing arg #3 to specify target container registry"}
+
+echo "Moving into source root directory: ${SRCROOTDIR}"
 
 pushd "$SRCROOTDIR"
 pwd
 
 docker build --target=base_instance \
   --build-arg BLOCK_LOG_SUFFIX="${BLOCK_LOG_SUFFIX}" \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \
+  --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}base_instance${BLOCK_LOG_SUFFIX}${BUILD_IMAGE_TAG} -f Dockerfile .
@@ -97,7 +97,7 @@ docker build --target=base_instance \
 # Build the image containing only binaries and be ready to start running hived instance, operating on mounted volummes pointing instance datadir and shm_dir
 docker build --target=instance \
   --build-arg BLOCK_LOG_SUFFIX="${BLOCK_LOG_SUFFIX}" \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \
+  --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}${BUILD_IMAGE_TAG} -f Dockerfile .

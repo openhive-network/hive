@@ -7,22 +7,14 @@ SRCROOTDIR="$SCRIPTSDIR/.."
 LOG_FILE=build_data4commit.log
 source "$SCRIPTSDIR/common.sh"
 
-COMMIT="$1"
+COMMIT=${1:?"Missing arg 1 to specify COMMIT"}
+REGISTRY=${2:?"Missing arg #2 to specify target container registry"}
 
-REGISTRY=${2:?"Missing arg 2 for REGISTRY"}
+BRANCH="master"
 
-export BLOCK_LOG_SUFFIX="-5m"
+BUILD_IMAGE_TAG=$COMMIT
 
-CI_IMAGE_TAG=:ubuntu20.04-3
-BUILD_IMAGE_TAG=:$COMMIT
+do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$COMMIT"
 
-pushd "$SRCROOTDIR"
-pwd
+"$SCRIPTSDIR/ci-helpers/build_data.sh" "$BUILD_IMAGE_TAG" "./hive-${COMMIT}" "$REGISTRY"
 
-"$SCRIPTSDIR/ci-helpers/build_instance4commit.sh" $COMMIT $REGISTRY
-
-docker build --target=data \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG --build-arg BLOCK_LOG_SUFFIX="-5m" \
-  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}data$BUILD_IMAGE_TAG -f Dockerfile .
-
-popd
