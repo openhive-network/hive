@@ -3,6 +3,7 @@
 #include <hive/protocol/block_header.hpp>
 #include <hive/protocol/asset.hpp>
 
+#include <fc/exception/exception.hpp>
 #include <fc/utf8.hpp>
 
 namespace hive { namespace protocol {
@@ -155,9 +156,12 @@ namespace hive { namespace protocol {
 
   struct account_created_operation : public virtual_operation
   {
-    account_created_operation(){}
+    account_created_operation() {}
     account_created_operation( const string& new_account_name, const string& creator, const asset& initial_vesting_shares, const asset& initial_delegation )
-      :new_account_name(new_account_name), creator(creator), initial_vesting_shares(initial_vesting_shares), initial_delegation(initial_delegation) {}
+      :new_account_name(new_account_name), creator(creator), initial_vesting_shares(initial_vesting_shares), initial_delegation(initial_delegation)
+    {
+      FC_ASSERT(creator.size(), "Every account should have a creator");
+    }
 
     account_name_type new_account_name;
     account_name_type creator;
