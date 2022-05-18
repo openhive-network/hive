@@ -11,13 +11,9 @@ COMMIT=""
 
 REGISTRY=""
 
-IMAGE_TAG_PREFIX=""
+BRANCH="master"
 
-CI_IMAGE_TAG=:ubuntu20.04-3
-
-BUILD_HIVE_TESTNET=OFF
-HIVE_CONVERTER_BUILD=OFF
-
+NETWORK_TYPE_ARG=""
 
 print_help () {
     echo "Usage: $0 <commit> [<registry_url>] [OPTION[=VALUE]]..."
@@ -33,27 +29,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --network-type=*)
         type="${1#*=}"
-
-        case $type in
-          "testnet"*)
-            BUILD_HIVE_TESTNET=ON
-            IMAGE_TAG_PREFIX=testnet-
-            ;;
-          "mirrornet"*)
-            BUILD_HIVE_TESTNET=OFF
-            HIVE_CONVERTER_BUILD=ON
-            IMAGE_TAG_PREFIX=mirror-
-            ;;
-          "mainnet"*)
-            BUILD_HIVE_TESTNET=OFF
-            HIVE_CONVERTER_BUILD=OFF
-            IMAGE_TAG_PREFIX=
-            ;;
-           *)
-            echo "ERROR: '$type' is not a valid network type"
-            echo
-            exit 3
-        esac
+        NETWORK_TYPE_ARG="--network-type=${type}"
         ;;
     -*)
         echo "ERROR: '$1' is not a valid option"
@@ -83,25 +59,10 @@ then
   REGISTRY=registry.gitlab.syncad.com/hive/hive/
 fi
 
-BUILD_IMAGE_TAG=:$COMMIT
+BUILD_IMAGE_TAG=$COMMIT
 
-pushd "$SRCROOTDIR"
-pwd
+do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$COMMIT"
 
-docker build --target=base_instance \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \
-  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BLOCK_LOG_SUFFIX=${BLOCK_LOG_SUFFIX:-""} \
-  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}base_instance${BLOCK_LOG_SUFFIX:-""}$BUILD_IMAGE_TAG -f Dockerfile .
-
-docker build --target=instance \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \
-  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BLOCK_LOG_SUFFIX=${BLOCK_LOG_SUFFIX:-""} \
-  --build-arg COMMIT=$COMMIT --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX:-""}$BUILD_IMAGE_TAG -f Dockerfile .
-
-popd
+"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${REGISTRY}" ${NETWORK_TYPE_ARG}
 
 
