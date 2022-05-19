@@ -188,16 +188,31 @@ void wallet_bridge_api_impl::on_post_apply_block( const protocol::signed_block& 
   { try {
     boost::lock_guard< boost::mutex > guard( _mtx );
     int32_t block_num = int32_t(b.block_num());
+
+    auto _find_trx = [this, block_num]( const protocol::signed_transaction& trx, size_t trx_num )
+    {
+      auto id = trx.id();
+      auto itr = _callbacks.find( id );
+      if( itr != _callbacks.end() )
+      {
+        itr->second( broadcast_transaction_synchronous_return( { id, block_num, int32_t( trx_num ), false }) );
+        _callbacks.erase( itr );
+        return true;
+      }
+      return false;
+    };
+
     if( _callbacks.size() )
     {
       for( size_t trx_num = 0; trx_num < b.transactions.size(); ++trx_num )
       {
         const auto& trx = b.transactions[trx_num];
-        auto id = trx.id();
-        auto itr = _callbacks.find( id );
-        if( itr == _callbacks.end() ) continue;
-        itr->second( broadcast_transaction_synchronous_return( {id, block_num, int32_t( trx_num ), false }) );
-        _callbacks.erase( itr );
+
+        if( !_find_trx( trx, trx_num ) )
+        {
+          protocol::serialization_mode_controller::pack_guard guard;
+          _find_trx( trx, trx_num );
+        }
       }
     }
 

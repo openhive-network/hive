@@ -18,9 +18,7 @@ serialization_mode_controller::mode_guard::~mode_guard()
 
 serialization_mode_controller::pack_guard::pack_guard() : old_pack( serialization_mode_controller::get_current_pack() )
 {
-  previous_pack = serialization_mode_controller::get_previous_pack();
-  if( previous_pack )
-    serialization_mode_controller::current_pack = *previous_pack;
+  serialization_mode_controller::current_pack = serialization_mode_controller::get_another_pack();
 }
 
 serialization_mode_controller::pack_guard::~pack_guard()
@@ -45,13 +43,16 @@ pack_type serialization_mode_controller::get_current_pack()
   return current_pack;
 }
 
-fc::optional<pack_type> serialization_mode_controller::get_previous_pack()
+pack_type serialization_mode_controller::get_another_pack()
 {
-  auto _default_pack = default_pack;
-  if( get_current_pack() == _default_pack )
-    return fc::optional<pack_type>();
-  else
-    return { _default_pack };
+  switch( get_current_pack() )
+  {
+    case pack_type::legacy: return pack_type::hf26;
+    case pack_type::hf26: return pack_type::legacy;
+    default:
+      FC_ASSERT( false, "an incorrect value of pack mode" );
+  }
+  return pack_type::none;
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )
