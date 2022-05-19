@@ -3,7 +3,8 @@
 namespace hive { namespace protocol {
 
 thread_local transaction_serialization_type serialization_mode_controller::transaction_serialization = serialization_mode_controller::default_transaction_serialization;
-thread_local pack_type serialization_mode_controller::pack                                           = serialization_mode_controller::default_pack;
+pack_type serialization_mode_controller::pack                                                        = serialization_mode_controller::default_pack;
+thread_local pack_type serialization_mode_controller::current_pack                                   = pack_type::none;
 
 serialization_mode_controller::mode_guard::mode_guard( transaction_serialization_type val ) : old_transaction_serialization( serialization_mode_controller::transaction_serialization )
 {
@@ -19,7 +20,7 @@ serialization_mode_controller::pack_guard::pack_guard() : old_pack( serializatio
 {
   previous_pack = serialization_mode_controller::get_previous_pack();
   if( previous_pack )
-    serialization_mode_controller::pack = *previous_pack;
+    serialization_mode_controller::current_pack = *previous_pack;
 }
 
 serialization_mode_controller::pack_guard::~pack_guard()
@@ -39,7 +40,9 @@ void serialization_mode_controller::set_hf26_pack()
 
 pack_type serialization_mode_controller::get_current_pack()
 {
-  return pack;
+  if( current_pack == pack_type::none )
+    current_pack = pack;
+  return current_pack;
 }
 
 fc::optional<pack_type> serialization_mode_controller::get_previous_pack()

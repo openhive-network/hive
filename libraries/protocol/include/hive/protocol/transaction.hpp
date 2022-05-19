@@ -130,8 +130,6 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::transaction& trx )
 {
-  //hive::protocol::serialization_mode_controller::pack_guard guard;
-
   pack( s, trx.ref_block_num );
   pack( s, trx.ref_block_prefix );
   pack( s, trx.expiration );
