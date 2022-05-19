@@ -1110,14 +1110,9 @@ brain_key_info wallet_api::suggest_brain_key()const
   return result;
 }
 
-string wallet_api::serialize_transaction( const fc::variant& tx )const
+string wallet_api::serialize_transaction( const serializer_wrapper<signed_transaction>& tx )const
 {
-  protocol::signed_transaction _trx;
-  serialization_mode_controller::mode_guard guard( my->_transaction_serialization );
-
-  from_variant( tx, _trx );
-
-  return fc::to_hex(fc::raw::pack_to_vector(_trx));
+  return fc::to_hex(fc::raw::pack_to_vector(tx));
 }
 
 string wallet_api::get_wallet_filename() const

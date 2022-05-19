@@ -369,7 +369,7 @@ class wallet_api
       *          this returns a raw string that may have null characters embedded
       *          in it
       */
-    string serialize_transaction( const fc::variant& tx) const;
+    string serialize_transaction( const serializer_wrapper<signed_transaction>& tx) const;
 
     /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
       *
