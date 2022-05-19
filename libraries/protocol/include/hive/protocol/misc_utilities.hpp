@@ -18,9 +18,8 @@ enum curve_id
   convergent_square_root
 };
 
-enum class serialization_type : uint8_t { legacy, hf26 };
-using transaction_serialization_type  = serialization_type;
-using pack_type                       = serialization_type;
+enum class transaction_serialization_type : uint8_t { legacy, hf26 };
+enum class pack_type : uint8_t { none, legacy, hf26 };
 
 struct serialization_mode_controller
 {
@@ -55,7 +54,8 @@ struct serialization_mode_controller
       This switch is used for switching of serialization.
     */
     thread_local static transaction_serialization_type transaction_serialization;
-    thread_local static pack_type pack;
+    static pack_type pack;
+    thread_local static pack_type current_pack;
 
   public:
 

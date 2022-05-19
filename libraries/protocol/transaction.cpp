@@ -226,20 +226,37 @@ void signed_transaction::verify_authority(
   uint32_t max_membership,
   uint32_t max_account_auths,
   canonical_signature_type canon_type )const
-{ try {
-  hive::protocol::verify_authority(
-    operations,
-    get_signature_keys( chain_id, canon_type ),
-    get_active,
-    get_owner,
-    get_posting,
-    max_recursion,
-    max_membership,
-    max_account_auths,
-    false,
-    flat_set< account_name_type >(),
-    flat_set< account_name_type >(),
-    flat_set< account_name_type >() );
-} FC_CAPTURE_AND_RETHROW( (*this) ) }
+{
+  auto _verify_authority = [&]()
+  {
+    hive::protocol::verify_authority(
+      operations,
+      get_signature_keys( chain_id, canon_type ),
+      get_active,
+      get_owner,
+      get_posting,
+      max_recursion,
+      max_membership,
+      max_account_auths,
+      false,
+      flat_set< account_name_type >(),
+      flat_set< account_name_type >(),
+      flat_set< account_name_type >() );
+  };
+  
+  try
+  {
+    _verify_authority();
+  }
+  catch( const transaction_exception& e )
+  {
+    try
+    {
+      hive::protocol::serialization_mode_controller::pack_guard guard;
+
+      _verify_authority();
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }FC_CAPTURE_AND_RETHROW( (*this) )
+}
 
 } } // hive::protocol

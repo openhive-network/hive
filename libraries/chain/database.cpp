@@ -258,14 +258,18 @@ void database::load_state_initial_data(const open_args& args)
         ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
         set_chain_id(HIVE_CHAIN_ID);
       }
+    });
+#endif /// IS_TEST_NET
+
+  with_read_lock([&]()
+    {
+      const auto& hardforks = get_hardfork_property_object();
       if(hardforks.last_hardfork >= HIVE_HARDFORK_1_26)
       {
         ilog("New version of packing is enabled");
         serialization_mode_controller::set_hf26_pack();
       }
     });
-#endif /// IS_TEST_NET
-
 
   auto account = find< account_object, by_name >("nijeah");
   if(account != nullptr && account->to_withdraw < 0)
