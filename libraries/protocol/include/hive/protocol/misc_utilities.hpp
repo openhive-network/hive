@@ -63,7 +63,7 @@ struct serialization_mode_controller
 
     static void set_hf26_pack();
     static pack_type get_current_pack();
-    static fc::optional<pack_type> get_previous_pack();
+    static pack_type get_another_pack();
 };
 
 std::string trim_legacy_typename_namespace( const std::string& name );
