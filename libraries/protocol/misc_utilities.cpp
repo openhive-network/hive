@@ -23,7 +23,7 @@ serialization_mode_controller::pack_guard::pack_guard() : old_pack( serializatio
 
 serialization_mode_controller::pack_guard::~pack_guard()
 {
-  serialization_mode_controller::pack = old_pack;
+  serialization_mode_controller::current_pack = old_pack;
 }
 
 bool serialization_mode_controller::legacy_enabled()
@@ -34,6 +34,7 @@ bool serialization_mode_controller::legacy_enabled()
 void serialization_mode_controller::set_hf26_pack()
 {
   pack = pack_type::hf26;
+  current_pack = pack_type::hf26;
 }
 
 pack_type serialization_mode_controller::get_current_pack()

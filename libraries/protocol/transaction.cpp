@@ -248,6 +248,10 @@ void signed_transaction::verify_authority(
   {
     _verify_authority();
   }
+  catch( const tx_irrelevant_sig& e )
+  {
+    throw e;
+  }
   catch( const tx_missing_other_auth& e )
   {
     try
