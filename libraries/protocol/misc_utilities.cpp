@@ -31,10 +31,16 @@ bool serialization_mode_controller::legacy_enabled()
   return transaction_serialization == hive::protocol::transaction_serialization_type::legacy;
 }
 
+void serialization_mode_controller::refresh()
+{
+  pack          = serialization_mode_controller::default_pack;
+  current_pack  = pack_type::none;
+}
+
 void serialization_mode_controller::set_hf26_pack()
 {
-  pack = pack_type::hf26;
-  current_pack = pack_type::hf26;
+  pack          = pack_type::hf26;
+  current_pack  = pack_type::hf26;
 }
 
 pack_type serialization_mode_controller::get_current_pack()

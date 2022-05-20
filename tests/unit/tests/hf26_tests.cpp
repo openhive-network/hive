@@ -315,6 +315,7 @@ BOOST_AUTO_TEST_CASE( generate_block_size )
       FC_LOG_AND_RETHROW()
     };
 
+    hive::protocol::serialization_mode_controller::refresh();
     execute_hardfork<25>( _content );
 
     _trxs_count = 2;
@@ -485,6 +486,7 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
       FC_LOG_AND_RETHROW()
     };
 
+    hive::protocol::serialization_mode_controller::refresh();
     execute_hardfork<25>( _content );
 
     _allow_hf26 = true;
