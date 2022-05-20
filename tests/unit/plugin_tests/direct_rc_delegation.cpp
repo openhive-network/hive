@@ -435,7 +435,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after.delegated_rc == uint64_t(vesting_amount) - 5 );
     BOOST_REQUIRE( alice_rc_after.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_after.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 4989 );
+    /*
+      before HF26:  4989
+      after HF26:   4963 ( During packing an asset_symbol_type contains only 4 bytes(HF26) instead of 8 bytes(before HF26))
+      Explanation: a cost of `history bytes` depends on a size of transaction - the smaller size the smaller costs
+    */
+    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 4963 );
 
     BOOST_REQUIRE( bob_rc_account_after.rc_manabar.current_mana == creation_rc + 5 );
     BOOST_REQUIRE( bob_rc_account_after.last_max_rc == creation_rc + 5 );
@@ -461,7 +466,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after_two.delegated_rc == uint64_t(vesting_amount) - 11 );
     BOOST_REQUIRE( alice_rc_after_two.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_after_two.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - (4989 + 5007) );
+    /*
+      before HF26:  4989 + 5007
+      after HF26:   4963 + 4982 ( During packing an asset_symbol_type contains only 4 bytes(HF26) instead of 8 bytes(before HF26))
+      An explanation is given above.
+    */
+    BOOST_REQUIRE_EQUAL( alice_rc_after_two.rc_manabar.current_mana, creation_rc - (4963 + 4982) );
 
     BOOST_REQUIRE( bob_rc_account_after_two.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( bob_rc_account_after_two.last_max_rc == creation_rc );
