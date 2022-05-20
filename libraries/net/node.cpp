@@ -4550,6 +4550,7 @@ namespace graphene { namespace net {
         potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(remote_endpoint);
         updated_peer_record.last_connection_disposition = last_connection_failed;
         updated_peer_record.number_of_failed_connection_attempts++;
+        updated_peer_record.last_failed_time = fc::time_point::now();
         if (new_peer->connection_closed_error)
           updated_peer_record.last_error = *new_peer->connection_closed_error;
         else
