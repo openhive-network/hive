@@ -280,7 +280,7 @@ void fill_pending_queue(const fc::path& block_log)
       exit(1);
     }
     
-    uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress : head_block_num;
+    uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress -1 : head_block_num;
     ilog("Compressing blocks ${starting_block_number} to ${stop_at_block}", (starting_block_number)(stop_at_block));
 
     uint32_t current_block_number = starting_block_number;
