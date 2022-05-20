@@ -248,12 +248,27 @@ void signed_transaction::verify_authority(
   {
     _verify_authority();
   }
-  catch( const transaction_exception& e )
+  catch( const tx_missing_other_auth& e )
   {
     try
     {
       hive::protocol::serialization_mode_controller::pack_guard guard;
-
+      _verify_authority();
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+  catch( const tx_missing_active_auth& e )
+  {
+    try
+    {
+      hive::protocol::serialization_mode_controller::pack_guard guard;
+      _verify_authority();
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+  catch( const tx_missing_owner_auth& e )
+  {
+    try
+    {
+      hive::protocol::serialization_mode_controller::pack_guard guard;
       _verify_authority();
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }FC_CAPTURE_AND_RETHROW( (*this) )
