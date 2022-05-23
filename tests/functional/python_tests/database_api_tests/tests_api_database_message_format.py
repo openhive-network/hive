@@ -47,19 +47,17 @@ def create_account_recovery_request(wallet, account_name):
 
 def test_find_account_recovery_requests(node, wallet):
     # create new account
-    account_to_recover = "alice"
-    wallet.api.create_account('initminer', account_to_recover, '{}')
+    wallet.api.create_account('initminer', 'alice', '{}')
 
-    create_account_recovery_request(wallet, account_to_recover)
-    requests = node.api.database.find_account_recovery_requests(accounts=[account_to_recover])['requests']
+    create_account_recovery_request(wallet, 'alice')
+    requests = node.api.database.find_account_recovery_requests(accounts=['alice'])['requests']
     # check if there is any requests output
     assert len(requests) != 0
 
 
 def test_find_accounts(node, wallet):
-    account_to_check = 'alice'
-    wallet.api.create_account('initminer', account_to_check, '{}')
-    accounts = node.api.database.find_accounts(account=[account_to_check])['accounts']
+    wallet.api.create_account('initminer', 'alice', '{}')
+    accounts = node.api.database.find_accounts(account=['alice'])['accounts']
     # BUG: method outputs empty list even though 'alice' account exists
     assert len(accounts) != 0
 
@@ -224,14 +222,12 @@ def test_get_transaction_hex(node, wallet):
 def test_is_known_transaction(node, wallet):
     create_account_and_fund_it(wallet, 'alice')
     trx = wallet.api.create_order('alice', 431, Asset.Test(50), Asset.Tbd(5), False, 360)
-    response = node.api.database.is_known_transaction(id=trx['transaction_id'])['is_known']
-    assert response is not False
+    node.api.database.is_known_transaction(id=trx['transaction_id'])
 
 
 def test_list_account_recovery_requests(node, wallet):
-    account_to_recover = "alice"
-    wallet.api.create_account('initminer', account_to_recover, '{}')
-    create_account_recovery_request(wallet, account_to_recover)
+    wallet.api.create_account('initminer', 'alice', '{}')
+    create_account_recovery_request(wallet, 'alice')
     requests = node.api.database.list_account_recovery_requests(start='', limit=100, order='by_account')['requests']
     assert len(requests) != 0
 
@@ -252,7 +248,7 @@ def test_list_change_recovery_account_requests(node, wallet):
 def test_list_collateralized_conversion_requests(node, wallet):
     create_account_and_fund_it(wallet, 'alice')
     wallet.api.convert_hive_with_collateral('alice', Asset.Test(4))
-    requests = node.api.database.list_collateralized_conversion_requests(start=[""], limit=100, order='by_account')['requests']
+    requests = node.api.database.list_collateralized_conversion_requests(start=[''], limit=100, order='by_account')['requests']
     assert len(requests) != 0
 
 
@@ -288,6 +284,8 @@ def test_list_limit_orders(node, wallet):
 
 def test_list_owner_histories(node, wallet):
     create_account_and_fund_it(wallet, 'alice')
+    # to fill authority history, changing of owner key is needed, that's why update_account_auth_key is called with
+    # 'owner' parameter
     update_account_owner_key(wallet, 'alice')
     owner_auths = node.api.database.list_owner_histories(start=['alice', "2022-04-11T10:29:00"], limit=100)['owner_auths']
     assert len(owner_auths) != 0
@@ -330,8 +328,8 @@ def test_list_witness_votes(node, wallet):
     # create new witness
     create_account_and_fund_it(wallet, 'alice')
     create_account_and_fund_it(wallet, 'bob')
-    wallet.api.update_witness('alice', 'http:\\url.html',
-                              'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+    wallet.api.update_witness('alice', 'http://url.html',
+                              Account('alice').public_key,
                               {'account_creation_fee': '2789.030 TESTS', 'maximum_block_size': 131072,
                                'hbd_interest_rate': 1000})
     # vote for alice from bob account
@@ -343,8 +341,8 @@ def test_list_witness_votes(node, wallet):
 def test_list_witnesses(node, wallet):
     # create new witness
     create_account_and_fund_it(wallet, 'alice')
-    wallet.api.update_witness('alice', 'http:\\url.html',
-                              'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+    wallet.api.update_witness('alice', 'http://url.html',
+                              Account('alice').public_key,
                               {'account_creation_fee': '2789.030 TESTS', 'maximum_block_size': 131072,
                                'hbd_interest_rate': 1000})
     witnesses = node.api.database.list_witnesses(start='', limit=100, order='by_name')['witnesses']
@@ -354,8 +352,7 @@ def test_list_witnesses(node, wallet):
 def test_verify_authority(node, wallet):
     create_account_and_fund_it(wallet, 'alice')
     trx = wallet.api.create_order('alice', 431, Asset.Test(50), Asset.Tbd(5), False, 3600)
-    response = node.api.database.verify_authority(trx=trx)['valid']
-    assert response is not False
+    node.api.database.verify_authority(trx=trx)
 
 
 def test_list_proposal_votes(node, wallet):
@@ -371,12 +368,10 @@ def test_list_proposal_votes(node, wallet):
 def test_verify_signatures(node, wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
     trx = wallet.api.transfer('initminer', 'alice', Asset.Test(500), 'test memo')
-    initminer_private_key = Account('initminer').private_key
-    sig_digest = generate_sig_digest(trx, initminer_private_key)
-    response = node.api.database.verify_signatures(hash=sig_digest, signatures=trx['signatures'],
-                                                   required_owner=[], required_active=['initminer'],
-                                                   required_posting=[], required_other=[])['valid']
-    assert response is not False
+    sig_digest = generate_sig_digest(trx, Account('initminer').private_key)
+    node.api.database.verify_signatures(hash=sig_digest, signatures=trx['signatures'],
+                                        required_owner=[], required_active=['initminer'],
+                                        required_posting=[], required_other=[])
 
 
 def test_list_proposals(node, wallet):
@@ -386,5 +381,3 @@ def test_list_proposals(node, wallet):
     proposals = node.api.database.list_proposals(start=["alice"], limit=100, order='by_creator',
                                                  order_direction='ascending', status='all')['proposals']
     assert len(proposals) != 0
-
-

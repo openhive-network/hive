@@ -14,7 +14,6 @@ def create_account_and_fund_it(wallet, name):
 
 def generate_sig_digest(trx: dict, private_key: str):
     # sig_digest is mix of chain_id and transaction data. To get it, it's necessary to run sign_transaction executable file
-    os.environ['SIGN_TRANSACTION_PATH'] = '/home/dev/hive/build/programs/util/sign_transaction'
     output = subprocess.check_output([os.environ['SIGN_TRANSACTION_PATH']],
                                      input=f'{{ "tx": {json.dumps(trx)}, '
                                            f'"wif": "{private_key}" }}'.encode(encoding='utf-8')).decode('utf-8')

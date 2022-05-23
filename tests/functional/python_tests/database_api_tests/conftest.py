@@ -12,4 +12,4 @@ def node(world):
 
 @pytest.fixture
 def wallet(node):
-    return Wallet(attach_to=node)
+    return Wallet(attach_to=node, additional_arguments=['--transaction-serialization=hf26'])
