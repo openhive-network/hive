@@ -30,17 +30,21 @@ digest_type transaction::sig_digest( const chain_id_type& chain_id, bool swap_pa
 {
   digest_type::encoder enc;
 
+  auto _pack = [&, this]()
+  {
+    fc::raw::pack( enc, chain_id );
+    fc::raw::pack( enc, *this );
+  };
+
   if( swap_pack_mode )
   {
     hive::protocol::serialization_mode_controller::pack_guard guard;
-    fc::raw::pack( enc, chain_id );
-    fc::raw::pack( enc, *this );
+    _pack();
   }
   else
   {
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
-    fc::raw::pack( enc, chain_id );
-    fc::raw::pack( enc, *this );
+    _pack();
   }
 
   return enc.result();
@@ -64,7 +68,7 @@ void transaction::validate( const std::function<void( const operation& op, bool 
   }
 }
 
-hive::protocol::transaction_id_type hive::protocol::transaction::id() const
+transaction_id_type transaction::id() const
 {
   auto h = digest();
   transaction_id_type result;
@@ -72,19 +76,17 @@ hive::protocol::transaction_id_type hive::protocol::transaction::id() const
   return result;
 }
 
-const signature_type& hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
+const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
 {
   digest_type h = sig_digest( chain_id, false/*swap_pack_mode*/ );
   signatures.push_back( key.sign_compact( h, canon_type ) );
   return signatures.back();
 }
 
-signature_type hive::protocol::signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
+signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
 {
-  digest_type::encoder enc;
-  fc::raw::pack( enc, chain_id );
-  fc::raw::pack( enc, *this );
-  return key.sign_compact( enc.result(), canon_type );
+  digest_type h = sig_digest( chain_id, false/*swap_pack_mode*/ );
+  return key.sign_compact( h, canon_type );
 }
 
 void transaction::set_expiration( fc::time_point_sec expiration_time )
