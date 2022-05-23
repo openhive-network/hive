@@ -3079,15 +3079,18 @@ namespace graphene { namespace net {
       peer_connection_ptr originating_peer_ptr = originating_peer->shared_from_this();
       _rate_limiter.remove_tcp_socket( &originating_peer->get_socket() );
 
-      // if we closed the connection (due to timeout or handshake failure), we should have recorded an
-      // error message to store in the peer database when we closed the connection
       fc::optional<fc::ip::endpoint> endpoint_for_db = originating_peer->get_endpoint_for_db();
-      if (originating_peer->connection_closed_error && endpoint_for_db)
+      if (endpoint_for_db)
       {
         fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*endpoint_for_db);
         if (updated_peer_record)
         {
-          updated_peer_record->last_error = *originating_peer->connection_closed_error;
+          // if we closed the connection (due to timeout or handshake failure), we should have recorded an
+          // error message to store in the peer database when we closed the connection
+          if (originating_peer->connection_closed_error)
+            updated_peer_record->last_error = *originating_peer->connection_closed_error;
+          else //we didn't close the connection
+            updated_peer_record->last_error = fc::exception(FC_LOG_MESSAGE(info, "lost connection to peer"));
           updated_peer_record->last_failed_time = fc::time_point::now();
           _potential_peer_db.update_entry(*updated_peer_record);
         }
