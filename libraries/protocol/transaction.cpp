@@ -268,6 +268,13 @@ void signed_transaction::verify_authority(
   {
     throw e;
   }
+  catch( const tx_missing_posting_auth& e )
+  {
+    try
+    {
+      _verify_authority( hive::protocol::pack_type::undefined );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
   catch( const tx_missing_other_auth& e )
   {
     try
