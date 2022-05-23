@@ -61,8 +61,6 @@ struct serialization_mode_controller
   public:
 
     static bool legacy_enabled();
-
-    static void refresh();
     static void set_pack( pack_type new_pack );
     static pack_type get_current_pack();
     static pack_type get_another_pack();
