@@ -141,16 +141,9 @@ namespace appbase {
 
       boost::asio::io_service& get_io_service() { return main_io_handler.get_io_service(); }
 
-      void generate_interrupt_request()
-      {
-        hive::notify_hived_status("interrupted");
-        _is_interrupt_request = true;
-      }
+      void generate_interrupt_request();
 
-      bool is_interrupt_request() const
-      {
-        return _is_interrupt_request;
-      }
+      bool is_interrupt_request() const { return _is_interrupt_request; }
 
       std::set< std::string > get_plugins_names() const;
 

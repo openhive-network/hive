@@ -423,7 +423,7 @@ namespace graphene { namespace net
       return _message_connection.get_last_message_received_time();
     }
 
-    fc::optional<fc::ip::endpoint> peer_connection::get_remote_endpoint()
+    fc::optional<fc::ip::endpoint> peer_connection::get_remote_endpoint() const
     {
       VERIFY_CORRECT_THREAD();
       return _remote_endpoint;
@@ -520,6 +520,11 @@ namespace graphene { namespace net
       if (inbound_port)
         return fc::ip::endpoint(inbound_address, inbound_port);
       return fc::optional<fc::ip::endpoint>();
+    }
+
+    fc::optional<fc::ip::endpoint> peer_connection::get_endpoint_for_db() const
+    {
+      return direction == peer_connection_direction::inbound ? get_endpoint_for_connecting() : get_remote_endpoint();
     }
 
 } } // end namespace graphene::net

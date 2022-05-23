@@ -969,7 +969,7 @@ void chain_plugin::report_state_options( const string& plugin_name, const fc::va
 void chain_plugin::connection_count_changed(uint32_t peer_count)
 {
   my->peer_count = peer_count;
-  fc_wlog(fc::logger::get("sync"),"peer_count changed: ${peer_count}",(peer_count));
+  fc_wlog(fc::logger::get("default"),"peer_count changed: ${peer_count}",(peer_count));
 }
 
 bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */  )

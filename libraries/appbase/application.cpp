@@ -77,12 +77,22 @@ void io_handler::close_signal()
     cout<<"Error during cancelling signal: "<< ec.message() << std::endl;
 }
 
+void application::generate_interrupt_request()
+{
+  hive::notify_hived_status("interrupted");
+  _is_interrupt_request = true;
+  ilog("interrupt requested!");
+}
+
 void io_handler::handle_signal( uint32_t _last_signal_code )
 {
   last_signal_code = _last_signal_code;
 
   if(_last_signal_code == SIGINT || _last_signal_code == SIGTERM)
+  {
+    idump((_last_signal_code));
     app.generate_interrupt_request();
+  }
 
   if( allow_close_when_signal_is_received )
     close();
@@ -279,16 +289,6 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       app_dir << '.' << app_name;
 
       data_dir = data_dir / app_dir.str();
-
-      #pragma message( "TODO: Remove this check for Hive release 0.20.1+" )
-      bfs::path old_dir = bfs::current_path() / "witness_node_data_dir";
-      if( bfs::exists( old_dir ) )
-      {
-        std::cerr << "The default data directory is now '" << data_dir.string() << "' instead of '" << old_dir.string() << "'.\n";
-        std::cerr << "Please move your data directory to '" << data_dir.string() << "' or specify '--data-dir=" << old_dir.string() <<
-          "' to continue using the current data directory.\n";
-        exit(1);
-      }
     }
     my->_data_dir = data_dir;
 
