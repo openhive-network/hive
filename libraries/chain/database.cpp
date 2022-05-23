@@ -267,7 +267,7 @@ void database::load_state_initial_data(const open_args& args)
       if(hardforks.last_hardfork >= HIVE_HARDFORK_1_26)
       {
         ilog("New version of packing is enabled");
-        serialization_mode_controller::set_hf26_pack();
+        serialization_mode_controller::set_pack( pack_type::hf26 );
       }
     });
 
@@ -6588,7 +6588,7 @@ void database::apply_hardfork( uint32_t hardfork )
     }
     case HIVE_HARDFORK_1_26:
     {
-      serialization_mode_controller::set_hf26_pack();
+      serialization_mode_controller::set_pack( pack_type::hf26 );
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF26;

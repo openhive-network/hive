@@ -236,6 +236,18 @@ public:
   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization, const std::string& store_transaction )
     : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _transaction_serialization( transaction_serialization ), _store_transaction(store_transaction)
   {
+    switch ( _transaction_serialization )
+    {
+      case transaction_serialization_type::legacy:
+        serialization_mode_controller::set_pack( pack_type::legacy );
+        break;
+      case transaction_serialization_type::hf26:
+        serialization_mode_controller::set_pack( pack_type::hf26 );
+        break;
+      default:
+        FC_ASSERT( false, "Serialization of transaction has an incorrect value" );
+    }
+
     init_prototype_ops();
   }
 

@@ -78,14 +78,14 @@ transaction_id_type transaction::id() const
 
 const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
 {
-  digest_type h = sig_digest( chain_id, hive::protocol::pack_type::legacy );
+  digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
   signatures.push_back( key.sign_compact( h, canon_type ) );
   return signatures.back();
 }
 
 signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
 {
-  digest_type h = sig_digest( chain_id, hive::protocol::pack_type::legacy );
+  digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
   return key.sign_compact( h, canon_type );
 }
 
@@ -144,7 +144,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   /** posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::pack_type::legacy ), get_posting,available_keys );
+    sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::serialization_mode_controller::get_current_pack() ), get_posting,available_keys );
     s.max_recursion = max_recursion_depth;
     s.max_membership = max_membership;
     s.max_account_auths = max_account_auths;
@@ -166,7 +166,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
 
-  sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::pack_type::legacy ), get_active, available_keys );
+  sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::serialization_mode_controller::get_current_pack() ), get_active, available_keys );
   s.max_recursion = max_recursion_depth;
   s.max_membership = max_membership;
   s.max_account_auths = max_account_auths;

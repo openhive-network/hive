@@ -42,10 +42,10 @@ void serialization_mode_controller::refresh()
   current_pack  = pack_type::undefined;
 }
 
-void serialization_mode_controller::set_hf26_pack()
+void serialization_mode_controller::set_pack( pack_type new_pack )
 {
-  pack          = pack_type::hf26;
-  current_pack  = pack_type::hf26;
+  pack          = new_pack;
+  current_pack  = new_pack;
 }
 
 pack_type serialization_mode_controller::get_current_pack()
