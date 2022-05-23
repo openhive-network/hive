@@ -4,7 +4,7 @@ namespace hive { namespace protocol {
 
 thread_local transaction_serialization_type serialization_mode_controller::transaction_serialization = serialization_mode_controller::default_transaction_serialization;
 pack_type serialization_mode_controller::pack                                                        = serialization_mode_controller::default_pack;
-thread_local pack_type serialization_mode_controller::current_pack                                   = pack_type::none;
+thread_local pack_type serialization_mode_controller::current_pack                                   = pack_type::undefined;
 
 serialization_mode_controller::mode_guard::mode_guard( transaction_serialization_type val ) : old_transaction_serialization( serialization_mode_controller::transaction_serialization )
 {
@@ -39,7 +39,7 @@ bool serialization_mode_controller::legacy_enabled()
 void serialization_mode_controller::refresh()
 {
   pack          = serialization_mode_controller::default_pack;
-  current_pack  = pack_type::none;
+  current_pack  = pack_type::undefined;
 }
 
 void serialization_mode_controller::set_hf26_pack()
@@ -50,7 +50,7 @@ void serialization_mode_controller::set_hf26_pack()
 
 pack_type serialization_mode_controller::get_current_pack()
 {
-  if( current_pack == pack_type::none )
+  if( current_pack == pack_type::undefined )
     current_pack = pack;
   return current_pack;
 }
@@ -64,7 +64,7 @@ pack_type serialization_mode_controller::get_another_pack()
     default:
       FC_ASSERT( false, "an incorrect value of pack mode" );
   }
-  return pack_type::none;
+  return pack_type::undefined;
 }
 
 std::string trim_legacy_typename_namespace( const std::string& name )

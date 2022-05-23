@@ -26,7 +26,7 @@ digest_type transaction::digest()const
   return enc.result();
 }
 
-digest_type transaction::sig_digest( const chain_id_type& chain_id, bool swap_pack_mode )const
+digest_type transaction::sig_digest( const chain_id_type& chain_id, hive::protocol::pack_type current_pack_mode )const
 {
   digest_type::encoder enc;
 
@@ -36,14 +36,14 @@ digest_type transaction::sig_digest( const chain_id_type& chain_id, bool swap_pa
     fc::raw::pack( enc, *this );
   };
 
-  if( swap_pack_mode )
-  {
+  if( current_pack_mode == hive::protocol::pack_type::undefined )
+  {//Try to choose another pack.
     hive::protocol::serialization_mode_controller::pack_guard guard;
     _pack();
   }
   else
   {
-    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
+    hive::protocol::serialization_mode_controller::pack_guard guard( current_pack_mode );
     _pack();
   }
 
@@ -78,14 +78,14 @@ transaction_id_type transaction::id() const
 
 const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
 {
-  digest_type h = sig_digest( chain_id, false/*swap_pack_mode*/ );
+  digest_type h = sig_digest( chain_id, hive::protocol::pack_type::legacy );
   signatures.push_back( key.sign_compact( h, canon_type ) );
   return signatures.back();
 }
 
 signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
 {
-  digest_type h = sig_digest( chain_id, false/*swap_pack_mode*/ );
+  digest_type h = sig_digest( chain_id, hive::protocol::pack_type::legacy );
   return key.sign_compact( h, canon_type );
 }
 
@@ -109,9 +109,9 @@ void transaction::get_required_authorities( flat_set< account_name_type >& activ
     operation_get_required_authorities( op, active, owner, posting, other );
 }
 
-flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, bool swap_pack_mode )const
+flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, hive::protocol::pack_type current_pack_mode )const
 { try {
-  auto d = sig_digest( chain_id, swap_pack_mode );
+  auto d = sig_digest( chain_id, current_pack_mode );
   flat_set<public_key_type> result;
   for( const auto&  sig : signatures )
   {
@@ -144,7 +144,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
 
   /** posting authority cannot be mixed with active authority in same transaction */
   if( required_posting.size() ) {
-    sign_state s( get_signature_keys( chain_id, canon_type, false/*swap_pack_mode*/ ), get_posting,available_keys );
+    sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::pack_type::legacy ), get_posting,available_keys );
     s.max_recursion = max_recursion_depth;
     s.max_membership = max_membership;
     s.max_account_auths = max_account_auths;
@@ -166,7 +166,7 @@ set<public_key_type> signed_transaction::get_required_signatures(
   }
 
 
-  sign_state s( get_signature_keys( chain_id, canon_type, false/*swap_pack_mode*/ ), get_active, available_keys );
+  sign_state s( get_signature_keys( chain_id, canon_type, hive::protocol::pack_type::legacy ), get_active, available_keys );
   s.max_recursion = max_recursion_depth;
   s.max_membership = max_membership;
   s.max_account_auths = max_account_auths;
@@ -243,11 +243,11 @@ void signed_transaction::verify_authority(
   uint32_t max_account_auths,
   canonical_signature_type canon_type )const
 {
-  auto _verify_authority = [&]( bool swap_pack_mode )
+  auto _verify_authority = [&]( hive::protocol::pack_type current_pack_mode )
   {
     hive::protocol::verify_authority(
       operations,
-      get_signature_keys( chain_id, canon_type, swap_pack_mode ),
+      get_signature_keys( chain_id, canon_type, current_pack_mode ),
       get_active,
       get_owner,
       get_posting,
@@ -262,7 +262,7 @@ void signed_transaction::verify_authority(
   
   try
   {
-    _verify_authority( false/*swap_pack_mode*/ );
+    _verify_authority( hive::protocol::serialization_mode_controller::get_current_pack() );
   }
   catch( const tx_irrelevant_sig& e )
   {
@@ -272,21 +272,21 @@ void signed_transaction::verify_authority(
   {
     try
     {
-      _verify_authority( true/*swap_pack_mode*/ );
+      _verify_authority( hive::protocol::pack_type::undefined );
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
   catch( const tx_missing_active_auth& e )
   {
     try
     {
-      _verify_authority( true/*swap_pack_mode*/ );
+      _verify_authority( hive::protocol::pack_type::undefined );
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
   catch( const tx_missing_owner_auth& e )
   {
     try
     {
-      _verify_authority( true/*swap_pack_mode*/ );
+      _verify_authority( hive::protocol::pack_type::undefined );
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }FC_CAPTURE_AND_RETHROW( (*this) )
 }

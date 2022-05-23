@@ -19,7 +19,7 @@ enum curve_id
 };
 
 enum class transaction_serialization_type : uint8_t { legacy, hf26 };
-enum class pack_type : uint8_t { none, legacy, hf26 };
+enum class pack_type : uint8_t { undefined, legacy, hf26 };
 
 struct serialization_mode_controller
 {
