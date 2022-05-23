@@ -304,7 +304,7 @@ namespace graphene { namespace net
       fc::time_point get_last_message_sent_time() const;
       fc::time_point get_last_message_received_time() const;
 
-      fc::optional<fc::ip::endpoint> get_remote_endpoint();
+      fc::optional<fc::ip::endpoint> get_remote_endpoint() const;
       fc::ip::endpoint get_local_endpoint();
       void set_remote_endpoint(fc::optional<fc::ip::endpoint> new_remote_endpoint);
 
@@ -319,6 +319,7 @@ namespace graphene { namespace net
       bool is_inventory_advertised_to_us_list_full() const;
       bool performing_firewall_check() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_connecting() const;
+      fc::optional<fc::ip::endpoint> get_endpoint_for_db() const;
     private:
       void send_queued_messages_task();
       void accept_connection_task();
