@@ -192,20 +192,13 @@ def test_get_order_book(node, wallet):
     create_account_and_fund_it(wallet, 'alice')
     create_account_and_fund_it(wallet, 'bob')
     wallet.api.transfer('initminer', 'bob', Asset.Tbd(100), 'test memo')
-    # create 2 orders from 2 different accounts to fill 'bids' in order book. One is for selling test hives, and getting
-    # tbd and second one for selling tbd and getting test hives
-    wallet.api.create_order('alice', 431, Asset.Test(150), Asset.Tbd(15), False, 3600)
-    wallet.api.create_order('bob', 123, Asset.Tbd(50), Asset.Test(500), False, 3600)
-    response = node.api.database.get_order_book(limit=100)
-    assert len(response['bids']) != 0
 
-    # cancel bob's order to clear order book
-    wallet.api.cancel_order('bob', 123)
-    # create new order to check 'asks' in order book
-    wallet.api.transfer('initminer', 'alice', Asset.Test(100), 'test memo')
-    wallet.api.create_order('alice', 868, Asset.Test(100), Asset.Tbd(10), False, 3600)
+    wallet.api.create_order('alice', 0, Asset.Test(100), Asset.Tbd(100), False, 3600)  # Sell 100 HIVE for 100 HBD
+    wallet.api.create_order('bob', 0, Asset.Tbd(50), Asset.Test(100), False, 3600)  # Buy 100 HIVE for 50 HBD
+
     response = node.api.database.get_order_book(limit=100)
     assert len(response['asks']) != 0
+    assert len(response['bids']) != 0
 
 
 def test_get_potential_signatures(node, wallet):
