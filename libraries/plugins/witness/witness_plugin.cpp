@@ -66,7 +66,7 @@ namespace detail {
     void on_pre_apply_operation( const chain::operation_notification& note );
     void on_post_apply_operation( const chain::operation_notification& note );
 
-    void schedule_production_loop();
+    void schedule_production_loop(int64_t sleeptime = BLOCK_PRODUCTION_LOOP_SLEEP_TIME);
     block_production_condition::block_production_condition_enum block_production_loop();
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
 
@@ -295,12 +295,12 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::schedule_production_loop() {
+  void witness_plugin_impl::schedule_production_loop(int64_t sleeptime) {
     // Sleep for 200ms, before checking the block production
     fc::time_point now = fc::time_point::now();
-    int64_t time_to_sleep = BLOCK_PRODUCTION_LOOP_SLEEP_TIME - (now.time_since_epoch().count() % BLOCK_PRODUCTION_LOOP_SLEEP_TIME);
+    int64_t time_to_sleep = sleeptime - (now.time_since_epoch().count() % sleeptime);
     if (time_to_sleep < 50000) // we must sleep for at least 50ms
-        time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
+        time_to_sleep += sleeptime;
 
     _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this ) );
@@ -345,13 +345,17 @@ namespace detail {
         
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+           //ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+           //ilog("Not producing block because it isn't my turn");
+           schedule_production_loop(1000000);
+           return result;
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+           //ilog("Not producing block because slot has not yet arrived");
+           schedule_production_loop(100000);
+           return result;
         break;
       case block_production_condition::no_private_key:
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
@@ -534,7 +538,7 @@ void witness_plugin::plugin_startup()
   ilog("witness plugin:  plugin_startup() begin" );
   chain::database& d = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
-  if( !my->_witnesses.empty() )
+  if( !my->_witnesses.empty() ) 
   {
     ilog( "Launching block production for ${n} witnesses.", ("n", my->_witnesses.size()) );
     appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
