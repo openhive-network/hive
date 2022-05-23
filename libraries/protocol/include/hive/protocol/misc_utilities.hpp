@@ -18,8 +18,9 @@ enum curve_id
   convergent_square_root
 };
 
-enum class transaction_serialization_type : uint8_t { legacy, hf26 };
-enum class pack_type : uint8_t { undefined, legacy, hf26 };
+enum class serialization_type : uint8_t { legacy, hf26 };
+using transaction_serialization_type  = serialization_type;
+using pack_type                       = serialization_type;
 
 struct serialization_mode_controller
 {
@@ -56,7 +57,7 @@ struct serialization_mode_controller
     */
     thread_local static transaction_serialization_type transaction_serialization;
     static pack_type pack;
-    thread_local static pack_type current_pack;
+    thread_local static fc::optional<pack_type> current_pack;
 
   public:
 
