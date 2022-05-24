@@ -1,0 +1,508 @@
+{
+  "history": [
+    [
+      3,
+      {
+        "block": 2797050,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "pfunk",
+            "permlink": "guide-maximize-your-mining-hashrate-in-windows-by-mining-steem-in-a-vm",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-30T19:12:21",
+        "trx_id": "e0cd24f9aba3b668b1443786bee3891f644ff23f",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      5,
+      {
+        "block": 2797188,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "pfunk",
+            "permlink": "security-b-sides-msp-2016-information-security-conference-day-1-opening-keynote-notes-and-recap",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-30T19:19:15",
+        "trx_id": "be93d0b153a5b9a12547180a1d88f2aad1669754",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      7,
+      {
+        "block": 2797362,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "pfunk",
+            "permlink": "lets-discuss-verification-of-user-accounts-posting-previous-work-to-prevent-impersonation",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-30T19:27:57",
+        "trx_id": "c7a8b59428f96adc3245345bd4fd7c587aad3383",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      9,
+      {
+        "block": 2797645,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "zajac",
+            "permlink": "hi-steemit-people-lets-waste-some-time-together-",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-30T19:42:09",
+        "trx_id": "f98b305720148c4b37b19c1c7616ad9057e46c32",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      11,
+      {
+        "block": 2812987,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "cylonmaker2053",
+            "permlink": "steemit-infrastructure-security-scalability-and-points-of-failure",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T08:30:48",
+        "trx_id": "0b42bdd9a3961b740dc5f32857b645b1220e95d7",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      13,
+      {
+        "block": 2813087,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "arhag",
+            "permlink": "analysis-of-curation-reward-difference-between-v0-8-2-and-v0-8-3",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T08:35:54",
+        "trx_id": "6d7e3ecaaab997f1a0624136a8b7eed6e78ee34f",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      15,
+      {
+        "block": 2813732,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "inboundinken",
+            "permlink": "how-seo-is-changing-and-why-communities-like-steem-will-have-an-impact-on-online-search",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T09:08:15",
+        "trx_id": "948748044cb59768e787667faa646cc11ed5bac3",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      17,
+      {
+        "block": 2813782,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "steemitblog",
+            "permlink": "overhaul-of-curation-rewards",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T09:10:45",
+        "trx_id": "e0d90e39c0380bf71d4dde45c3a44aad286de5b1",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      19,
+      {
+        "block": 2819817,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "kingscrown",
+            "permlink": "superb-interview-with-dan-from-blocktrades",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T14:12:30",
+        "trx_id": "c35193ed63aa3b33e29e4f9a7e289eef1c9760ba",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      21,
+      {
+        "block": 2820033,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "dan",
+            "permlink": "draft-steem-constitution",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T14:23:21",
+        "trx_id": "6af66a49af72cde348209ca136dda5171b9b7364",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      23,
+      {
+        "block": 2827089,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "cryptogee",
+            "permlink": "how-to-increase-the-value-of-steem-the-ultimate-july-4th-strategy",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-01T20:16:36",
+        "trx_id": "ceb86a90d5e73e4e45e7711347ecc8bf674a2cbd",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      25,
+      {
+        "block": 2839669,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "blocktrades-supports-buyingselling-dao-coins-without-exchange-risk",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:47:42",
+        "trx_id": "2b79214e07cffd28c8ee026055d92767229d8b45",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      27,
+      {
+        "block": 2839669,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "dao-gateway-on-openledger-is-fully-operational",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:47:42",
+        "trx_id": "c02b46ca3eced3c6bd5cc43df2114143ce6c2105",
+        "trx_in_block": 1,
+        "virtual_op": false
+      }
+    ],
+    [
+      29,
+      {
+        "block": 2839884,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "complexring",
+            "permlink": "cryptography-101-an-interactive-class-an-introduction-to-group-theory--week-1",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T06:58:27",
+        "trx_id": "c6c79616137a833f7d352d4bd8c6e132a9b779a7",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      31,
+      {
+        "block": 2840585,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "blocktrades-now-offering-steem-power-for-cryptocurrency",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:33",
+        "trx_id": "8726774b3c8d53e9dcb870db6b3561a217871d27",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      33,
+      {
+        "block": 2840590,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "i-find-steemit-posts-with-summariesanalysis-of-3rd-party-content-more-compelling",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:48",
+        "trx_id": "e909cd27baf117473ec99ec9b875a6916927c55e",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      35,
+      {
+        "block": 2840591,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:51",
+        "trx_id": "9174e0f692023ecf91d632f9949a94c808302119",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      37,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "88d2f81c37e1288448b334042c3eee02df6395d9",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      39,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "is-vote-changing-an-important-feature-for-steem",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "4fdfc9bcbc84c0b7d798cf3f0c606269043f14ff",
+        "trx_in_block": 1,
+        "virtual_op": false
+      }
+    ],
+    [
+      41,
+      {
+        "block": 2840592,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:33:54",
+        "trx_id": "5179c7745a8a8e729cf8faab0461e97bc1219ba3",
+        "trx_in_block": 2,
+        "virtual_op": false
+      }
+    ],
+    [
+      43,
+      {
+        "block": 2840599,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:34:15",
+        "trx_id": "2bf9b0850282ed3867d9a2470dc8d6af55aa4ea4",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      45,
+      {
+        "block": 2840637,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "complexring",
+            "permlink": "cryptography-101-an-interactive-class-more-introduction-to-groups-week-2",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T07:36:09",
+        "trx_id": "85bb532b9fc5dc4b1d2661a54818958d1e99e08e",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      47,
+      {
+        "block": 2852954,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "garycovington",
+            "permlink": "journey-to-black-belt",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T17:52:30",
+        "trx_id": "3d5e58dbb4517ca64aba4db4d8cc510d9711fd4e",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      49,
+      {
+        "block": 2856501,
+        "op": {
+          "type": "vote_operation",
+          "value": {
+            "author": "darya-zaytseva",
+            "permlink": "greetings-from-between-poland-and-russia-or-the-story-of-scaner",
+            "voter": "gtg",
+            "weight": 10000
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-02T20:50:12",
+        "trx_id": "d88e3a5ab2bd89a069cb625299cc00ab4fd4a708",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ]
+  ]
+}
