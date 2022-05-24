@@ -81,7 +81,8 @@ using fc::ecc::canonical_signature_type;
       uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      canonical_signature_type canon_type = fc::ecc::fc_canonical
+      canonical_signature_type canon_type = fc::ecc::fc_canonical,
+      bool extended_verification = false
       )const;
 
     set<public_key_type> minimize_required_signatures(
