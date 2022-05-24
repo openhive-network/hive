@@ -45,12 +45,12 @@ def write_test(name, new_test, new_method_dir):
   with open(test_path, 'w') as f:
     f.write(new_test)
 
-def change_url(test, method_name):
+def change_url(test, method_url):
   old_url = re.search(regexp_dict["url"], test).group(1).strip()
   if old_url.endswith('/'): sep = ''
   else: sep = '/'
   
-  new_url = sep.join([old_url, method_name])
+  new_url = sep.join([old_url, method_url])
   return test.replace(old_url, new_url)
 
 def change_json(test):
@@ -70,6 +70,22 @@ def change_json(test):
   new_json = f"\n{ident}".join(new_json_list)
   return test.replace(old_json, new_json)
 
+def change_response(test):
+  old_response = re.search(regexp_dict["response"], test).group(0).strip()
+  ident = re.search(regexp_dict["ident"], old_response).group(1)
+  kwargs_ident = f"{''.join([' '] * 2)}{ident}"
+
+  if re.search(regexp_dict["error_response"], old_response) is not None:
+    return test    
+
+  if re.search(regexp_dict["extra_kwargs"], old_response) is not None:
+    new_response = old_response
+  else:
+    new_response = f"{old_response}\n{ident}extra_kwargs:"
+
+  new_response = f"{new_response}\n{kwargs_ident}is_direct_call: True"
+  return test.replace(old_response, new_response)
+
 def create_new_test(name, old_method_dir, new_method_dir, method_name):
   old_test, old_test_path = read_test(name, old_method_dir)
   pattern, pattern_path = copy_pattern(name, old_method_dir, new_method_dir)
@@ -79,8 +95,9 @@ def create_new_test(name, old_method_dir, new_method_dir, method_name):
   elif pattern is False:
     log_text(f"test exists, but pattern is missing: {pattern_path}")
     return False
-  new_test = change_url(old_test, method_name)
-  return change_json(new_test)
+  new_test = change_url(old_test, f"rpc/{method_name}")
+  new_test = change_json(new_test)
+  return change_response(new_test)
 
 def create_hafah_api_tests():
   for test_type in ['negative', 'patterns']:
@@ -115,9 +132,12 @@ if __name__ == '__main__':
     "url": r"url:\s?['\"]([^\"]+)",
     "json": r"jsonrpc:[\s\S]*?(?=\n.*?response)",
     "params": r"params:\s?{([^}]+)",
-    "ident": r"( {2,})id",
+    "ident": r"( {2,})",
     "param_name": r"['\"](.+)['\"]:",
-    "param_value": r":\s?(.+)"
+    "param_value": r":\s?(.+)",
+    "response": r"verify_response_with:[\s\S]*(?=\n*)",
+    "extra_kwargs": r"extra_kwargs:[\s\S]*",
+    "error_response": r"error_response:\s?([TRUE|true]+)"
     }
 
   create_hafah_api_tests()
