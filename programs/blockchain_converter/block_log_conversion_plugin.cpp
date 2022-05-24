@@ -72,6 +72,8 @@ namespace detail {
     FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
+    fc::time_point_sec head_block_time = HIVE_GENESIS_TIME;
+
     // Automatically set start_block_num if not set
     if( log_out.head() )
     {
@@ -81,6 +83,8 @@ namespace detail {
         wlog( "Continue block ${cbn} mismatch with out head block: ${obn} in block log conversion plugin. Make sure you know what you are doing.",
             ("obn",log_out.head()->block_num())("cbn",start_block_num-1)
           );
+
+      head_block_time = log_out.head()->timestamp;
     }
     else if( !start_block_num )
     {
@@ -150,7 +154,7 @@ namespace detail {
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id, block->timestamp );
+      last_block_id = converter.convert_signed_block( *block, last_block_id, head_block_time );
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
@@ -160,6 +164,8 @@ namespace detail {
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", *block));
+
+      head_block_time = block->timestamp;
     }
 
     if( !appbase::app().is_interrupt_request() )

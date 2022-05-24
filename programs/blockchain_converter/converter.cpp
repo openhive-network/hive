@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <string>
 #include <thread>
 #include <mutex>
@@ -299,7 +300,7 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time )
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -310,7 +311,7 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    const fc::microseconds block_offset = now_time - _signed_block.timestamp;
+    const fc::microseconds block_offset{ std::abs( (head_block_time - _signed_block.timestamp).count() ) };
 
     fc::microseconds trx_time_offset = block_offset;
 
@@ -321,9 +322,9 @@ namespace hive { namespace converter {
       // Apply either deduced transaction expiration value or the maximum one
       trx.expiration = std::min(
         // Apply either minimum transaction expiration value or the desired one
-        std::max(_signed_block.timestamp + trx_time_offset - fc::seconds(HIVE_BLOCK_INTERVAL), trx.expiration + trx_time_offset),
+        std::max(_signed_block.timestamp + trx_time_offset, trx.expiration + trx_time_offset),
         // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
-        now_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL) - (trx_time_offset - block_offset)
+        head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION) - (trx_time_offset - block_offset)
       );
     };
 
@@ -331,7 +332,7 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, now_time ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, head_block_time ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
