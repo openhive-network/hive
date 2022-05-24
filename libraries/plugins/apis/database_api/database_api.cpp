@@ -1745,7 +1745,8 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
     HIVE_MAX_SIG_CHECK_DEPTH,
     HIVE_MAX_AUTHORITY_MEMBERSHIP,
     HIVE_MAX_SIG_CHECK_ACCOUNTS,
-    _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+    _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical,
+    _db.has_hardfork( HIVE_HARDFORK_1_26 ) );
   return verify_authority_return( { true } );
 }
 
