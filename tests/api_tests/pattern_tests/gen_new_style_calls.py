@@ -64,7 +64,7 @@ def change_json(test):
     param_name = re.search(regexp_dict["param_name"], param).group(1).strip()
     param_value = re.search(regexp_dict["param_value"], param).group(1).strip()
 
-    param_str = f"_{param_name}: {param_value}"
+    param_str = f"{param_name}: {param_value}"
     new_json_list.append(param_str)
 
   new_json = f"\n{ident}".join(new_json_list)
