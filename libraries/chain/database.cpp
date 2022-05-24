@@ -261,15 +261,6 @@ void database::load_state_initial_data(const open_args& args)
     });
 #endif /// IS_TEST_NET
 
-  with_read_lock([&]()
-    {
-      const auto& hardforks = get_hardfork_property_object();
-      if(hardforks.last_hardfork >= HIVE_HARDFORK_1_26)
-      {
-        ilog("New version of packing is enabled");
-        serialization_mode_controller::set_pack( pack_type::hf26 );
-      }
-    });
 
   auto account = find< account_object, by_name >("nijeah");
   if(account != nullptr && account->to_withdraw < 0)
@@ -4750,7 +4741,8 @@ void database::_apply_transaction(const signed_transaction& trx)
       trx.verify_authority( chain_id, get_active, get_owner, get_posting, HIVE_MAX_SIG_CHECK_DEPTH,
         has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
         has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-        has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+        has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
+        has_hardfork( HIVE_HARDFORK_1_26 ) );
 
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() );
@@ -6599,7 +6591,6 @@ void database::apply_hardfork( uint32_t hardfork )
     }
     case HIVE_HARDFORK_1_26:
     {
-      serialization_mode_controller::set_pack( pack_type::hf26 );
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF26;

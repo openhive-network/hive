@@ -241,7 +241,8 @@ void signed_transaction::verify_authority(
   uint32_t max_recursion,
   uint32_t max_membership,
   uint32_t max_account_auths,
-  canonical_signature_type canon_type )const
+  canonical_signature_type canon_type,
+  bool extended_verification )const
 {
   auto _verify_authority = [&]( fc::optional<hive::protocol::pack_type> current_pack_mode )
   {
@@ -272,28 +273,40 @@ void signed_transaction::verify_authority(
   {
     try
     {
-      _verify_authority( fc::optional<pack_type>() );
+      if( extended_verification )
+        _verify_authority( fc::optional<pack_type>() );
+      else
+        throw e;
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
   catch( const tx_missing_other_auth& e )
   {
     try
     {
-      _verify_authority( fc::optional<pack_type>() );
+      if( extended_verification )
+        _verify_authority( fc::optional<pack_type>() );
+      else
+        throw e;
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
   catch( const tx_missing_active_auth& e )
   {
     try
     {
-      _verify_authority( fc::optional<pack_type>() );
+      if( extended_verification )
+        _verify_authority( fc::optional<pack_type>() );
+      else
+        throw e;
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
   catch( const tx_missing_owner_auth& e )
   {
     try
     {
-      _verify_authority( fc::optional<pack_type>() );
+      if( extended_verification )
+        _verify_authority( fc::optional<pack_type>() );
+      else
+        throw e;
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }FC_CAPTURE_AND_RETHROW( (*this) )
 }
