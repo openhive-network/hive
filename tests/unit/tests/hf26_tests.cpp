@@ -3,6 +3,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
+#include <hive/protocol/misc_utilities.hpp>
+#include <hive/protocol/exceptions.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
@@ -254,6 +256,104 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
     head_block_time = start_time + fc::seconds(7);
     BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::check( hardfork_is_activated, head_block_time, previous_time, last_time ), true );
   }
+}
+
+BOOST_AUTO_TEST_CASE( pack_transaction_basic )
+{
+  try
+  {
+    bool is_hf26 = false;
+
+    auto _content = [&is_hf26]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: transaction's pack before and after HF26" );
+
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice)(bob) );
+      executor->fund( "alice", 1000000 );
+      executor->fund( "bob", 1000000 );
+      executor->generate_block();
+
+      auto _get_trx = []( ptr_hardfork_database_fixture& executor, const std::vector<operation>& ops, const fc::ecc::private_key& private_key, hive::protocol::pack_type pack )
+      {
+        signed_transaction _result;
+
+        for( auto& op : ops )
+        {
+          _result.operations.push_back( op );
+        }
+
+        _result.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        {
+          hive::protocol::serialization_mode_controller::pack_guard guard( pack );
+          executor->sign( _result, private_key );
+        }
+
+        return _result;
+      };
+
+      auto _op_transfer = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
+      {
+        BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization" );
+
+        auto _66 = asset( 66, HIVE_SYMBOL );
+
+        transfer_operation _op;
+        _op.from    = "alice";
+        _op.to      = "bob";
+        _op.amount  = _66;
+
+        {
+          auto _alice_balance_previous  = executor->get_balance( "alice" );
+          auto _bob_balance_previous    = executor->get_balance( "bob" );
+
+          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::legacy );
+          executor->db->push_transaction( _tx, 0 );
+
+          auto _alice_balance_after = executor->get_balance( "alice" );
+          auto _bob_balance_after   = executor->get_balance( "bob" );
+
+          BOOST_REQUIRE_EQUAL( _alice_balance_previous.amount.value, ( _alice_balance_after + _66 ).amount.value );
+          BOOST_REQUIRE_EQUAL( _bob_balance_previous.amount.value, ( _bob_balance_after - _66 ).amount.value );
+
+          executor->generate_block();
+        }
+
+        if( is_hf26 )
+        {
+          auto _alice_balance_previous  = executor->get_balance( "alice" );
+          auto _bob_balance_previous    = executor->get_balance( "bob" );
+
+          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
+          executor->db->push_transaction( _tx, 0 );
+
+          auto _alice_balance_after = executor->get_balance( "alice" );
+          auto _bob_balance_after   = executor->get_balance( "bob" );
+
+          BOOST_REQUIRE_EQUAL( _alice_balance_previous.amount.value, ( _alice_balance_after + _66 ).amount.value );
+          BOOST_REQUIRE_EQUAL( _bob_balance_previous.amount.value, ( _bob_balance_after - _66 ).amount.value );
+
+          executor->generate_block();
+        }
+        else
+        {
+          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
+          HIVE_REQUIRE_THROW( executor->db->push_transaction( _tx, 0 ), tx_missing_active_auth );
+        }
+      };
+
+      _op_transfer( executor, alice_private_key, is_hf26 );
+    };
+
+    execute_hardfork<25>( _content );
+
+    is_hf26 = true;
+
+    execute_hardfork<26>( _content );
+
+  }
+  FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_SUITE_END()
