@@ -168,7 +168,8 @@ void block_producer::apply_pending_transactions(
     }
     catch ( const fc::exception& e )
     {
-      // Do nothing, transaction will not be re-applied
+      // Do nothing, transaction will be re-applied after this block is reapplied (and possibly
+      // after processing further blocks) until it expires or repeats the exception during that time
       //wlog( "Transaction was not processed while generating block due to ${e}", ("e", e) );
       //wlog( "The transaction was ${t}", ("t", tx) );
     }
