@@ -82,8 +82,10 @@ struct pending_transactions_restorer
 
     auto handle_tx = [&]( signed_transaction& tx )
     {
+#ifndef IS_TEST_NET //especially during debugging that limit is highly problematic
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
         apply_trxs = false;
+#endif
 
       if( apply_trxs )
       {
