@@ -4,6 +4,8 @@ import pytest
 
 from test_tools import Asset, logger
 
+from ..local_tools import parse_datetime
+
 
 def test_transaction(wallet):
     wallet.api.create_account('initminer', 'carol', '{}')
@@ -76,7 +78,3 @@ def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcast
 
     eval(way_of_broadcasting)
     assert 'alice' in wallet.list_accounts()
-
-
-def parse_datetime(datetime_: str) -> datetime.datetime:
-    return datetime.datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
