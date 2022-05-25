@@ -1331,7 +1331,7 @@ void database::clear_pending()
 {
   try
   {
-    assert( (_pending_tx.size() == 0) || _pending_tx_session.valid() );
+    assert( _pending_tx.empty() || _pending_tx_session.valid() );
     _pending_tx.clear();
     _pending_tx_session.reset();
   }
