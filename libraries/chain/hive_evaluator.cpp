@@ -1980,6 +1980,7 @@ void custom_evaluator::do_apply( const custom_operation& o )
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
+    FC_TODO( "Check if the following could become part of operation validation (unconditional)" );
     FC_ASSERT( o.required_auths.size() <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
       "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", o.required_auths.size()) );
   }
@@ -1997,6 +1998,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     size_t num_auths = o.required_auths.size() + o.required_posting_auths.size();
+    FC_TODO( "Check if the following could become part of operation validation (unconditional)" );
     FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
       "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths) );
   }
@@ -2034,6 +2036,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
+    FC_TODO( "Check if the following could become part of operation validation (unconditional)" );
     size_t num_auths = o.required_owner_auths.size() + o.required_active_auths.size() + o.required_posting_auths.size();
     for( const auto& auth : o.required_auths )
     {
