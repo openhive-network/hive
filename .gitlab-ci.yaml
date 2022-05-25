@@ -162,6 +162,7 @@ list_proposals_tests:
     HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
+    TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
     - export NUMBER_OF_PROCESSES=$(nproc)
