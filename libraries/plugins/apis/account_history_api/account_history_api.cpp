@@ -117,9 +117,12 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   uint32_t blockNo = 0;
   uint32_t txInBlock = 0;
 
+  hive::protocol::transaction_id_type id(args.id);
+  FC_ASSERT(args.id.size() == id.data_size()*2, "Transaction hash is wrong length");
+
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
 
-  if(_dataSource.find_transaction_info(args.id, include_reversible, &blockNo, &txInBlock))
+  if(_dataSource.find_transaction_info(id, include_reversible, &blockNo, &txInBlock))
     {
     get_transaction_return result;
     _db.with_read_lock([this, blockNo, txInBlock, &result]() {
@@ -135,7 +138,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     }
   else
     {
-    FC_ASSERT(false, "Unknown Transaction ${t}", ("t", args.id));
+    FC_ASSERT(false, "Unknown Transaction ${t}", ("t", id));
     }
 }
 
