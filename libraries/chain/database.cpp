@@ -1181,7 +1181,6 @@ bool database::_push_block(const signed_block& new_block)
         for( auto ritr = branches.first.rbegin(); ritr != branches.first.rend(); ++ritr )
         {
             ilog( "pushing blocks from fork ${n} ${id}", ("n",(*ritr)->data.block_num())("id",(*ritr)->data.id()) );
-            optional<fc::exception> except;
             try
             {
               _fork_db.set_head( *ritr );
@@ -1189,10 +1188,9 @@ bool database::_push_block(const signed_block& new_block)
               apply_block( (*ritr)->data, skip );
               session.push();
             }
-            catch ( const fc::exception& e ) { except = e; }
-            if( except )
+            catch( const fc::exception& e )
             {
-              wlog( "exception thrown while switching forks ${e}", ("e",except->to_detail_string() ) );
+              wlog( "exception thrown while switching forks ${e}", ( "e", e.to_detail_string() ) );
               // remove the rest of branches.first from the fork_db, those blocks are invalid
               while( ritr != branches.first.rend() )
               {
@@ -1213,7 +1211,7 @@ bool database::_push_block(const signed_block& new_block)
                 apply_block( (*ritr)->data, skip );
                 session.push();
               }
-              throw *except;
+              throw;
             }
         }
         hive::notify( "switching forks",
