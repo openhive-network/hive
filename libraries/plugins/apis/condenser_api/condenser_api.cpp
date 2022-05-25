@@ -717,7 +717,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    return hive::protocol::serializer_wrapper<annotated_signed_transaction>{ _account_history_api->get_transaction( { args[0].as< transaction_id_type >() } ), transaction_serialization_type::legacy };
+    return hive::protocol::serializer_wrapper<annotated_signed_transaction>{ _account_history_api->get_transaction( { args[0].as< string >() } ), transaction_serialization_type::legacy };
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_required_signatures )

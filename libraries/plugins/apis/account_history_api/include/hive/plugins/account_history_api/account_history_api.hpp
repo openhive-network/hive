@@ -60,7 +60,7 @@ struct get_ops_in_block_return
 
 struct get_transaction_args
 {
-  hive::protocol::transaction_id_type id;
+  fc::string id;
   /// if set to true transaction from reversible block will be returned if id matches given one.
   fc::optional<bool> include_reversible;
 };

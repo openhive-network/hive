@@ -445,7 +445,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_transaction )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
 
-  const protocol::transaction_id_type id = arguments.get_array()[0].as<protocol::transaction_id_type>();
+  const string id = arguments.get_array()[0].as<string>();
   return _account_history_api->get_transaction( {id} );
 }
 
