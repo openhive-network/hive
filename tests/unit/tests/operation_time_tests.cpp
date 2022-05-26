@@ -3151,15 +3151,13 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     {
       generate_block();
 
-      // The transaction fails in generate_block(), meaning it is removed from the local node's transaction list
+      // The transaction fails to be included in new block (due to witness::schedule not being elected),
+      // but it is successfully reapplied as pending
       BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 0u );
-      BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
-      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
+      BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
+      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
-    db->push_transaction( tx, 0 );
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK( db->_pending_tx.size() == 1 );
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
     BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 1u );
@@ -3188,6 +3186,8 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), n+1 );
     generate_block();
     BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), n );
+    // last transaction exhausted current witness subsidy, so it was not included in block, but remains
+    // as pending for later
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
   }
   FC_LOG_AND_RETHROW()

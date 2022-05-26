@@ -2425,11 +2425,13 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   {
     const auto& gpo = _db.get_dynamic_global_properties();
 
-    // This block is a little weird. We want to enforce that only elected witnesses can include the transaction, but
-    // we do not want to prevent the transaction from propogating on the p2p network. Because we do not know what type of
-    // witness will have produced the including block when the tx is broadcast, we need to disregard this assertion when the tx
-    // is propogating, but require it when applying the block.
-    if( !_db.is_pending_tx() )
+    // since RC is nonconsensus, a rogue witness could easily pass transactions that would drain global
+    // subsidy pool; to prevent that we need to limit such misbehavior to his own share of subsidies;
+    // however if we always did the check, transactions that arrive at the node in time when head block
+    // was signed by witness with exhausted subsidies, would all be dropped and not propagated by p2p;
+    // therefore we only do the check when we can attribute transaction to concrete witness, that it,
+    // when transaction is part of some block (existing or in production)
+    if( _db.is_processing_block() )
     {
       const auto& current_witness = _db.get_witness( gpo.current_witness );
       FC_ASSERT( current_witness.schedule == witness_object::elected, "Subsidized accounts can only be claimed by elected witnesses. current_witness:${w} witness_type:${t}",
