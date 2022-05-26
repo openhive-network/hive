@@ -194,6 +194,8 @@ void drain_completed_queue(const fc::path& block_log)
 {
   try
   {
+    if (!fc::exists(block_log.parent_path()))
+      fc::create_directories(block_log.parent_path());
     hive::chain::block_log log;
     log.open(block_log);
     ilog("Opened output block log");
