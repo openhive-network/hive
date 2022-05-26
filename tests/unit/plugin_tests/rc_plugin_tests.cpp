@@ -1088,22 +1088,31 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     transfer.memo = "First transfer";
     tx1.operations.push_back( transfer );
     sign( tx1, alice_private_key );
-    db->push_transaction( tx1, 0 );
+    db->push_transaction( tx1, 0 ); //t1
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
+    transfer.amount = ASSET( "5.000 TESTS" );
     transfer.memo = "Second transfer";
     tx2.operations.push_back( transfer );
     sign( tx2, alice_private_key );
-    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx2, 0 ), "has_mana", plugin_exception );
-    generate_block();
+    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx2, 0 ), "has_mana", plugin_exception ); //t2
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
+    generate_block(); //t1 becomes part of block
 
     BOOST_TEST_MESSAGE( "Save aside and remove head block" );
     auto block = db->fetch_block_by_number( db->head_block_num() );
     BOOST_REQUIRE( block.valid() );
-    db->pop_block();
+    db->pop_block(); //t1 becomes popped
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "1000.000 TESTS" ) );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Reapply transaction that failed before putting it to pending" );
-    db->push_transaction( tx2, 0 );
+    db->push_transaction( tx2, 0 ); //t2 becomes pending
+    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "995.000 TESTS" ) );
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "5.000 TESTS" ) );
 
-    BOOST_TEST_MESSAGE( "Push previously popped block - pending transaction should fail again" );
+    BOOST_TEST_MESSAGE( "Push previously popped block - pending transaction should run into lack of RC again" );
     //the only way to see if we run into problem is to observe ilog messages
     BOOST_REQUIRE( fc::logger::get( DEFAULT_LOGGER ).is_enabled( fc::log_level::info ) );
     {
@@ -1119,6 +1128,36 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       autoscope auto_reset( [&]() { fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher ); } );
       fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
       db->push_block( *block );
+      //t1 was applied as part of block, then popped version of t1 was skipped as duplicate and t2 was
+      //applied as pending; since lack of RC does not block transaction when it is pending, it remains
+      //as pending; we can check that by looking at balances
+      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
+      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
+
+      generate_block();
+      //testing fix for former 'is_producing() == false' when building new block; now witness actually
+      //'is_in_control()' when producing block, which means pending t2 was not included during block production
+      //however it remains pending
+      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
+      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
+      block = db->fetch_block_by_number( db->head_block_num() );
+      BOOST_REQUIRE( block.valid() );
+      //check that block is indeed empty, without t2 and that tx2 waits as pending
+      BOOST_REQUIRE( block->transactions.empty() && !db->_pending_tx.empty() );
+
+      //transaction is going to wait in pending until alice gains enough RC or transaction expires
+      int i = 0;
+      do
+      {
+        generate_block();
+        ++i;
+      }
+      while( !db->_pending_tx.empty() );
+
+      //check that t2 did not expire but waited couple blocks for RC and finally got accepted
+      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
+      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
+      BOOST_REQUIRE_EQUAL( i, 1 );
     }
 
     validate_database();
