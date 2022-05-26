@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import create_accounts, check_recurrence_transfer, check_recurrence_transfer_data
+from .utilities import create_accounts, check_recurrence_transfer, check_recurrence_transfer_data
 
 def test_recurrent_transfer(wallet):
     create_accounts( wallet, 'initminer', ['alice', 'bob'] )

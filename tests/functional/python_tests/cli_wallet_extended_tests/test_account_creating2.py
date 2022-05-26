@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import check_keys
+from .utilities import check_keys
 
 def test_account_creation_in_different_ways(node, wallet):
     old_accounts_number = len(wallet.api.list_accounts('a', 100))
