@@ -1281,7 +1281,6 @@ void database::push_transaction( const signed_transaction& trx, uint32_t skip )
       FC_ASSERT( trx_size <= trx_size_limit, "Transaction too large - size = ${s}, limit ${l}",
         ( "s", trx_size )( "l", trx_size_limit ) );
       set_producing( true );
-      set_pending_tx( true );
       detail::with_skip_flags( *this, skip,
         [&]()
         {
@@ -1290,12 +1289,10 @@ void database::push_transaction( const signed_transaction& trx, uint32_t skip )
           _push_transaction( trx );
         });
       set_producing( false );
-      set_pending_tx( false );
     }
     catch( ... )
     {
       set_producing( false );
-      set_pending_tx( false );
       throw;
     }
   }
