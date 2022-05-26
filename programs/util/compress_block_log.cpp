@@ -192,71 +192,75 @@ void compress_blocks()
 
 void drain_completed_queue(const fc::path& block_log)
 {
-  hive::chain::block_log log;
-  log.open(block_log);
-  ilog("Opened output block log");
-  if (log.head())
+  try
   {
-    elog("Error: output block log is not empty");
-    exit(1);
-  }
-  while (true)
-  {
-    compressed_block* compressed = nullptr;
+    hive::chain::block_log log;
+    log.open(block_log);
+    ilog("Opened output block log");
+    if (log.head())
     {
-      std::unique_lock<std::mutex> lock(queue_mutex);
-      while (pending_queue.empty() && completed_queue.empty() && !all_blocks_enqueued)
-        queue_condition_variable.wait(lock);
-      if (!completed_queue.empty())
-      {
-        // the next block we want to write out is at the head of the completed queue
-        compressed = completed_queue.front();
-        completed_queue.pop();
-      }
-      else if (pending_queue.empty() && all_blocks_enqueued)
-      {
-        ilog("Done draining writing compressed blocks to disk, exiting writer thread");
-        break;
-      }
-      else
-      {
-        // else the completed queue is empty, but there is still data 
-        // in the pending queue or blocks will be added to the pending queue, 
-        // so we just wait until it appears in the completed queue
-        continue;
-      }
+      elog("Error: output block log is not empty");
+      exit(1);
     }
-
-    // we've dequeued the next block in the blockchain
-    // wait for the compression job to finish
-    dlog("writer thread waiting on block ${block_number}", ("block_number", compressed->block_number));
-    compressed->compression_complete_promise.get_future().get();
-
-    dlog("writer thread writing compressed block ${block_number} to the compressed block log", ("block_number", compressed->block_number));
-
-    // write it out
-    log.append_raw(compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes);
-
-    if (compressed->block_number % 100000 == 0)
+    while (true)
     {
-      float total_compression_ratio = 100.f * (1.f - (float)(total_compressed_size + size_of_start_positions) / (float)(total_uncompressed_size + size_of_start_positions));
-      std::ostringstream total_compression_ratio_string;
-      total_compression_ratio_string << std::fixed << std::setprecision(2) << total_compression_ratio;
+      compressed_block* compressed = nullptr;
+      {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        while (pending_queue.empty() && completed_queue.empty() && !all_blocks_enqueued)
+          queue_condition_variable.wait(lock);
+        if (!completed_queue.empty())
+        {
+          // the next block we want to write out is at the head of the completed queue
+          compressed = completed_queue.front();
+          completed_queue.pop();
+        }
+        else if (pending_queue.empty() && all_blocks_enqueued)
+        {
+          ilog("Done draining writing compressed blocks to disk, exiting writer thread");
+          break;
+        }
+        else
+        {
+          // else the completed queue is empty, but there is still data 
+          // in the pending queue or blocks will be added to the pending queue, 
+          // so we just wait until it appears in the completed queue
+          continue;
+        }
+      }
 
-      ilog("at block ${block_number}: total uncompressed ${input_size} compressed to ${output_size} (${total_compression_ratio}%)", 
-           ("block_number", compressed->block_number)("input_size", total_uncompressed_size + size_of_start_positions)
-           ("output_size", total_compressed_size + size_of_start_positions)
-           ("total_compression_ratio", total_compression_ratio_string.str()));
+      // we've dequeued the next block in the blockchain
+      // wait for the compression job to finish
+      dlog("writer thread waiting on block ${block_number}", ("block_number", compressed->block_number));
+      compressed->compression_complete_promise.get_future().get();
+
+      dlog("writer thread writing compressed block ${block_number} to the compressed block log", ("block_number", compressed->block_number));
+
+      // write it out
+      log.append_raw(compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes);
+
+      if (compressed->block_number % 100000 == 0)
+      {
+        float total_compression_ratio = 100.f * (1.f - (float)(total_compressed_size + size_of_start_positions) / (float)(total_uncompressed_size + size_of_start_positions));
+        std::ostringstream total_compression_ratio_string;
+        total_compression_ratio_string << std::fixed << std::setprecision(2) << total_compression_ratio;
+
+        ilog("at block ${block_number}: total uncompressed ${input_size} compressed to ${output_size} (${total_compression_ratio}%)", 
+             ("block_number", compressed->block_number)("input_size", total_uncompressed_size + size_of_start_positions)
+             ("output_size", total_compressed_size + size_of_start_positions)
+             ("total_compression_ratio", total_compression_ratio_string.str()));
+      }
+
+
+      delete compressed;
     }
+    ilog("Writer thread done writing compressed blocks to ${block_log}, compressed ${input_size} to ${output_size}", 
+         (block_log)("input_size", total_uncompressed_size + size_of_start_positions)
+         ("output_size", total_compressed_size + size_of_start_positions));
 
-
-    delete compressed;
+    log.close();
   }
-  ilog("Writer thread done writing compressed blocks to ${block_log}, compressed ${input_size} to ${output_size}", 
-       (block_log)("input_size", total_uncompressed_size + size_of_start_positions)
-       ("output_size", total_compressed_size + size_of_start_positions));
-
-  log.close();
+  FC_LOG_AND_RETHROW()
 }
 
 void fill_pending_queue(const fc::path& block_log) 
