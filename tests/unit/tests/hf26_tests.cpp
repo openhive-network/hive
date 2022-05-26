@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           executor->generate_block();
         }
 
-        //Prevention against `You may only post once every 5 minutes`
+        //Protection from `You may only post once every 5 minutes`
         executor->generate_blocks( 110 );
 
         //It doesn't matter if it's hf26 or not because a comment_operation hasn't any asset.
@@ -376,6 +376,25 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         const auto& _comment = executor->db->get_comment( "alice", std::string( "avocado" ) );
         BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
         executor->generate_block();
+
+        comment_options_operation _op2;
+
+        _op2.author   = "alice";
+        _op2.permlink = "lemon";
+        _op2.max_accepted_payout = asset( 13456, HBD_SYMBOL );
+
+        if( is_hf26 )
+        {
+          signed_transaction _tx = _get_trx( executor, { _op2 }, private_key, hive::protocol::pack_type::hf26 );
+          executor->db->push_transaction( _tx, 0 );
+          executor->generate_block();
+        }
+        else
+        {
+          signed_transaction _tx = _get_trx( executor, { _op2 }, private_key, hive::protocol::pack_type::hf26 );
+          HIVE_REQUIRE_THROW( executor->db->push_transaction( _tx, 0 ), tx_missing_posting_auth );
+        }
+
       };
 
       _op_transfer( executor, alice_private_key, is_hf26 );
