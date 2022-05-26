@@ -109,6 +109,49 @@ namespace chain {
       database();
       ~database();
 
+      enum transaction_status
+      {
+        TX_STATUS_NONE       = 0x00, //outside any transaction processing
+        TX_STATUS_UNVERIFIED = 0x01, //new transaction from API or P2P
+        TX_STATUS_PENDING    = 0x02, //transaction that was verified by the node and is now pending (or popped)
+        TX_STATUS_BLOCK      = 0x08, //during block processing
+        TX_STATUS_INC_BLOCK  = TX_STATUS_BLOCK | TX_STATUS_UNVERIFIED, //while processing new block from API or P2P
+        TX_STATUS_NEW_BLOCK  = TX_STATUS_BLOCK | TX_STATUS_PENDING //while producing new block
+      };
+
+      // block coming from API or P2P is validated for the first time, also newly produced or even reapplied but after switching fork
+      bool is_validating_block() const { return _current_tx_status == TX_STATUS_INC_BLOCK; }
+      // this node is a block producer and it creates new block out of pending transactions
+      // (note that new block is not actually a block, that is, there are no pre/post block notifications)
+      bool is_producing_block() const { return _current_tx_status == TX_STATUS_NEW_BLOCK; }
+      // replying previously validated block (irreversible)
+      bool is_replaying_block() const { return _current_tx_status == TX_STATUS_BLOCK; }
+      // processing any block ( == is_validating_block() || is_producing_block() || is_replaying_block() )
+      bool is_processing_block() const { return ( _current_tx_status & TX_STATUS_BLOCK ) != 0; }
+
+      // transaction coming from API or P2P is validated for the first time, also as part of block to validate
+      bool is_validating_tx() const { return ( _current_tx_status & TX_STATUS_UNVERIFIED ) != 0; }
+      // transaction coming from API or P2P not as part of block is validated for the first time
+      bool is_validating_one_tx() const { return _current_tx_status == TX_STATUS_UNVERIFIED; }
+      // pending (or popped) transaction is now reapplied (also as part of new block)
+      bool is_reapplying_tx() const { return ( _current_tx_status & TX_STATUS_PENDING ) != 0; }
+      // pending (or popped) transaction is now reapplied not as part of block
+      bool is_reapplying_one_tx() const { return _current_tx_status == TX_STATUS_PENDING; }
+
+      // node has decisive power over what is acceptable (to propagate via P2P or include in new block)
+      bool is_in_control() const { return is_validating_one_tx() || is_producing_block(); }
+
+      transaction_status get_tx_status() const { return _current_tx_status; }
+
+      void set_tx_status( transaction_status s )
+      {
+        FC_TODO( "Change to regular assertion once fully tested" );
+        FC_ASSERT( _current_tx_status == TX_STATUS_NONE, "Nested tx processing", ( "status", (int)_current_tx_status ) );
+        //make sure to unconditionally call clear_tx_status() when processing ends or is broken
+        _current_tx_status = s;
+      }
+      void clear_tx_status() { _current_tx_status = TX_STATUS_NONE; }
+
       bool is_producing()const { return _is_producing; }
       void set_producing( bool p ) { _is_producing = p;  }
 
@@ -807,6 +850,7 @@ namespace chain {
       template< typename MultiIndexType >
       friend void add_plugin_index( database& db );
 
+      transaction_status            _current_tx_status = TX_STATUS_NONE;
       transaction_id_type           _current_trx_id;
       uint32_t                      _current_block_num    = 0;
       int32_t                       _current_trx_in_block = 0;
