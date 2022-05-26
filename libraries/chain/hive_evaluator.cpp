@@ -1972,7 +1972,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
 void custom_evaluator::do_apply( const custom_operation& o )
 {
   FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
   {
     FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
@@ -1989,7 +1989,7 @@ void custom_evaluator::do_apply( const custom_operation& o )
 void custom_json_evaluator::do_apply( const custom_json_operation& o )
 {
   FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
   {
     FC_ASSERT( o.json.length() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation JSON must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
@@ -2013,7 +2013,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
   }
   catch( const fc::exception& e )
   {
-    if( _db.is_producing() )
+    if( _db.is_in_control() )
       throw e;
   }
   catch(...)
@@ -2026,7 +2026,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 {
   FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
-  if( _db.is_producing() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
   {
     FC_ASSERT( false, "custom_binary_operation is deprecated" );
     FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
@@ -2057,7 +2057,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
   }
   catch( const fc::exception& e )
   {
-    if( _db.is_producing() )
+    if( _db.is_in_control() )
       throw e;
   }
   catch(...)

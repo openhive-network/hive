@@ -304,7 +304,7 @@ void follow_plugin_impl::pre_operation( const operation_notification& note )
   }
   catch( const fc::assert_exception& )
   {
-    if( _db.is_producing() ) throw;
+    if( _db.is_in_control() ) throw;
   }
 }
 
@@ -316,7 +316,7 @@ void follow_plugin_impl::post_operation( const operation_notification& note )
   }
   catch( const fc::assert_exception& )
   {
-    if( _db.is_producing() ) throw;
+    if( _db.is_in_control() ) throw;
   }
 }
 

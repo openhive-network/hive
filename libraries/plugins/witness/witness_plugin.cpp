@@ -278,7 +278,7 @@ namespace detail {
 
   void witness_plugin_impl::on_pre_apply_operation( const chain::operation_notification& note )
   {
-    if( _db.is_producing() )
+    if( _db.is_in_control() )
     {
       note.op.visit( operation_visitor( _db ) );
     }
