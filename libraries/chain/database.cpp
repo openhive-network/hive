@@ -4653,9 +4653,6 @@ void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
 
 void database::_apply_transaction(const signed_transaction& trx)
 { try {
-  FC_TODO( "Change to regular assertion once fully tested" );
-  FC_ASSERT( _current_tx_status != TX_STATUS_NONE, "Missing tx processing indicator" );
-
   transaction_notification note(trx);
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;

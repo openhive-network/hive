@@ -145,8 +145,6 @@ namespace chain {
 
       void set_tx_status( transaction_status s )
       {
-        FC_TODO( "Change to regular assertion once fully tested" );
-        FC_ASSERT( _current_tx_status == TX_STATUS_NONE, "Nested tx processing", ( "status", (int)_current_tx_status ) );
         //make sure to unconditionally call clear_tx_status() when processing ends or is broken
         _current_tx_status = s;
       }
