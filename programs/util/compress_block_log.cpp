@@ -65,6 +65,7 @@ fc::microseconds total_zstd_decompression_time;
 std::map<hive::chain::block_log::block_flags, uint32_t> total_count_by_method;
 
 const uint32_t blocks_to_prefetch = 100;
+const uint32_t max_completed_queue_size = 100;
 
 void compress_blocks()
 {
@@ -86,7 +87,10 @@ void compress_blocks()
         dlog("No more blocks to compress, exiting worker thread");
         return;
       }
-
+      // wait until there is room to write to completed queue
+      while (completed_queue.size() >= max_completed_queue_size)
+        queue_condition_variable.wait(lock);
+      
       // remove the block from the pending queue and put a record on the
       // compressed queue where we will put the compressed data
       uncompressed = pending_queue.front();
@@ -214,6 +218,7 @@ void drain_completed_queue(const fc::path& block_log)
           // the next block we want to write out is at the head of the completed queue
           compressed = completed_queue.front();
           completed_queue.pop();
+          queue_condition_variable.notify_all();
         }
         else if (pending_queue.empty() && all_blocks_enqueued)
         {
