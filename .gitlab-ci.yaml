@@ -288,16 +288,17 @@ rc_direct_delegations_tests:
     - public-runner-docker
 
 message_format_tests:
+  variables:
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "true"
   stage: test
   extends: .test_tools_based
   needs:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "true"
   script:
     - cd tests/api_tests/message_format_tests
+    - pip3 install "$CI_PROJECT_DIR/tests/schemas"
     - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   artifacts:
     reports:
