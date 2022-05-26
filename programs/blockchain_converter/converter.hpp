@@ -23,6 +23,8 @@
 
 #include <boost/lockfree/stack.hpp>
 
+#define HIVE_BC_TIME_BUFFER 10
+
 namespace hive { namespace converter {
 
   namespace hp = hive::protocol;

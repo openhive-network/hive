@@ -300,6 +300,8 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
+#define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
+
   hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time )
   {
     touch( _signed_block ); // Update the mainnet head block id
@@ -324,7 +326,7 @@ namespace hive { namespace converter {
         // Apply either minimum transaction expiration value or the desired one
         std::max(_signed_block.timestamp + trx_time_offset, trx.expiration + trx_time_offset),
         // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
-        head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION) - (trx_time_offset - block_offset)
+        head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
       );
     };
 
