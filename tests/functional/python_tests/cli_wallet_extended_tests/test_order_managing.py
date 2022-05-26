@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import check_ask, check_sell_price
+from .utilities import check_ask, check_sell_price
 
 def test_order(wallet):
     wallet.api.create_account('initminer', 'alice', '{}')

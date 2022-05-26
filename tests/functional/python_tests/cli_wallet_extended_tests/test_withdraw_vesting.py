@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import create_accounts
+from .utilities import create_accounts
 
 def test_withdraw_vesting(wallet):
 
