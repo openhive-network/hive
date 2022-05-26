@@ -301,6 +301,9 @@ uint32_t database::reindex_internal( const open_args& args, signed_block& block 
   fc::enable_record_assert_trip = true; //enable detailed backtrace from FC_ASSERT (that should not ever be triggered during replay)
   fc::enable_assert_stacktrace = true;
 
+  BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+  set_tx_status( TX_STATUS_BLOCK );
+
   while( !appbase::app().is_interrupt_request() && block.block_num() != last_block_num )
   {
     uint32_t cur_block_num = block.block_num();
@@ -1184,6 +1187,9 @@ bool database::_push_block(const signed_block& new_block)
           std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
           try
           {
+            BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+            // we have to treat blocks from fork as not validated
+            set_tx_status( database::TX_STATUS_INC_BLOCK );
             _fork_db.set_head( *ritr );
             auto session = start_undo_session();
             apply_block( (*ritr)->data, skip );
@@ -1211,6 +1217,11 @@ bool database::_push_block(const signed_block& new_block)
             // restore all blocks from the good fork
             for( auto ritr = branches.second.rbegin(); ritr != branches.second.rend(); ++ritr )
             {
+              BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+              // even though those blocks were already processed before, it is safer to treat them as completely new,
+              // especially since alternative would be to treat them as replayed blocks, but that would be misleading
+              // since replayed blocks are already irreversible, while these are clearly reversible
+              set_tx_status( database::TX_STATUS_INC_BLOCK );
               _fork_db.set_head( *ritr );
               auto session = start_undo_session();
               apply_block( (*ritr)->data, skip );
@@ -1233,6 +1244,8 @@ bool database::_push_block(const signed_block& new_block)
   //we are either not doing fork checking, or more likely, we are building off our head block
   try
   {
+    BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+    set_tx_status( database::TX_STATUS_INC_BLOCK );
     auto session = start_undo_session();
     apply_block(new_block, skip);
     session.push();
@@ -1272,6 +1285,8 @@ void database::push_transaction( const signed_transaction& trx, uint32_t skip )
       detail::with_skip_flags( *this, skip,
         [&]()
         {
+          BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+          set_tx_status( TX_STATUS_UNVERIFIED );
           _push_transaction( trx );
         });
       set_producing( false );
@@ -4651,6 +4666,9 @@ void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
 
 void database::_apply_transaction(const signed_transaction& trx)
 { try {
+  FC_TODO( "Change to regular assertion once fully tested" );
+  FC_ASSERT( _current_tx_status != TX_STATUS_NONE, "Missing tx processing indicator" );
+
   transaction_notification note(trx);
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;
