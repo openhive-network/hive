@@ -109,7 +109,10 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
 
   remove_from_nai_pool( _db, o.symbol );
 
-  if ( !_db.is_pending_tx() )
+  // replenishing pool after each reapplication of new or pending transaction would be a waste
+  // note that we are not doing it for block in production either, because right after it is produced,
+  // it is undone and reapplied
+  if( _db.is_validating_block() || _db.is_replaying_block() )
     replenish_nai_pool( _db );
 }
 
