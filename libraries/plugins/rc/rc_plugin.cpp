@@ -204,7 +204,7 @@ int64_t use_account_rcs(
 
   if( account_name == account_name_type() )
   {
-    if( db.is_producing() )
+    if( db.is_in_control() )
     {
       HIVE_ASSERT( false, plugin_exception,
         "Tried to execute transaction with no resource user",
@@ -236,7 +236,7 @@ int64_t use_account_rcs(
 
     if( (!skip.skip_reject_not_enough_rc) && db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
-      if( db.is_producing() )
+      if( db.is_in_control() )
       {
         HIVE_ASSERT( has_mana, plugin_exception,
           "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
@@ -252,7 +252,7 @@ int64_t use_account_rcs(
           //when we didn't have is_processing_block as part of condition the messages below would also
           //be produced when pending transactions were reapplied after new block arrived even though
           //they are not part of any block yet;
-          //if we put that part of condition as alternative for db.is_producing() above it would mean
+          //if we put that part of condition as alternative for db.is_in_control() above it would mean
           //the transactions that were validated before but started to lack RC after new block arrived,
           //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
           //he can notice and react to it; however when his transaction is rejected after validation due
