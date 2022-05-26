@@ -299,7 +299,7 @@ namespace detail {
         else
           transmit( block->transactions.at(i), output_urls.at( i % output_urls.size() ) );
 
-      gpo_interval = start_block_num % 10;
+      gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
       if( gpo_interval == 0 )
         update_lib_id();
