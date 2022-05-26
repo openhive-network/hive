@@ -80,16 +80,13 @@ void compress_blocks()
     compressed_block* compressed = nullptr;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
-      while (pending_queue.empty() && !all_blocks_enqueued)
+      while ((pending_queue.empty() && !all_blocks_enqueued) || (completed_queue.size() >= max_completed_queue_size))
         queue_condition_variable.wait(lock);
       if (pending_queue.empty() && all_blocks_enqueued)
       {
         dlog("No more blocks to compress, exiting worker thread");
         return;
       }
-      // wait until there is room to write to completed queue
-      while (completed_queue.size() >= max_completed_queue_size)
-        queue_condition_variable.wait(lock);
       
       // remove the block from the pending queue and put a record on the
       // compressed queue where we will put the compressed data
