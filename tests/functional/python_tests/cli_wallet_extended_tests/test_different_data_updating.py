@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import check_keys
+from .utilities import check_keys
 import json
 
 def test_update(wallet):

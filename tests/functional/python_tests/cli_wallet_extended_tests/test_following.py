@@ -1,7 +1,7 @@
 import json
 
 from test_tools import Asset
-from utilities import create_accounts
+from .utilities import create_accounts
 
 
 def test_following(wallet):

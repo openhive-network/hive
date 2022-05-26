@@ -1,5 +1,5 @@
 from test_tools import Account, logger, World, Asset
-from utilities import get_key
+from .utilities import get_key
 
 def test_recovery(wallet):
 
