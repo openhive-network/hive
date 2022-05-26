@@ -115,8 +115,6 @@ namespace chain {
       bool is_pending_tx()const { return _is_pending_tx; }
       void set_pending_tx( bool p ) { _is_pending_tx = p; }
 
-      bool is_processing_block()const { return _currently_processing_block_id.valid(); }
-
       bool _is_producing = false;
       bool _is_pending_tx = false;
 
