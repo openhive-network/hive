@@ -152,11 +152,6 @@ namespace chain {
       }
       void clear_tx_status() { _current_tx_status = TX_STATUS_NONE; }
 
-      bool is_producing()const { return _is_producing; }
-      void set_producing( bool p ) { _is_producing = p;  }
-
-      bool _is_producing = false;
-
       bool _log_hardforks = true;
 
       enum validation_steps
