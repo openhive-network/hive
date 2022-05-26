@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         }
       };
 
-      auto _op_comment = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
+      auto _op_comment_comment_options = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
       {
         BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization - comment operation" );
 
@@ -362,20 +362,24 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "lemon" ) );
           BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "lemon" ) );
+
           executor->generate_block();
         }
 
         //Protection from `You may only post once every 5 minutes`
         executor->generate_blocks( 110 );
 
-        //It doesn't matter if it's hf26 or not because a comment_operation hasn't any asset.
-        _op.permlink = "avocado";
-        signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
-        executor->db->push_transaction( _tx, 0 );
+        {
+          //It doesn't matter if it's hf26 or not because a `comment_operation` hasn't any asset.
+          _op.permlink = "avocado";
+          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
+          executor->db->push_transaction( _tx, 0 );
 
-        const auto& _comment = executor->db->get_comment( "alice", std::string( "avocado" ) );
-        BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
-        executor->generate_block();
+          const auto& _comment = executor->db->get_comment( "alice", std::string( "avocado" ) );
+          BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
+
+          executor->generate_block();
+        }
 
         comment_options_operation _op2;
 
@@ -387,6 +391,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         {
           signed_transaction _tx = _get_trx( executor, { _op2 }, private_key, hive::protocol::pack_type::hf26 );
           executor->db->push_transaction( _tx, 0 );
+
           executor->generate_block();
         }
         else
@@ -397,8 +402,33 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
       };
 
+      auto _op_decline_voting_rights = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& private_key, bool is_hf26 )
+      {
+        BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization - decline_voting_rights operation" );
+
+        decline_voting_rights_operation _op;
+        _op.account = "alice";
+
+        {
+          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::legacy );
+          executor->db->push_transaction( _tx, 0 );
+
+          executor->generate_block();
+        }
+
+        {
+          //It doesn't matter if it's hf26 or not because a `decline_voting_rights_operation` hasn't any asset.
+          _op.decline = false;
+          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
+          executor->db->push_transaction( _tx, 0 );
+
+          executor->generate_block();
+        }
+      };
+
       _op_transfer( executor, alice_private_key, is_hf26 );
-      _op_comment( executor, alice_private_key, is_hf26 );
+      _op_comment_comment_options( executor, alice_private_key, is_hf26 );
+      _op_decline_voting_rights( executor, alice_private_key, is_hf26 );
     };
 
     BOOST_TEST_MESSAGE( "*****HF-25*****" );
