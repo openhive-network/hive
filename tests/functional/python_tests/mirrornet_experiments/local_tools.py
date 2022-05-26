@@ -33,13 +33,18 @@ class Mirrornet:
 
         return self.__time_offset
 
-    def create_and_run_init_node(self, witnesses: Iterable[str]) -> Node:
+    def create_init_node(self, witnesses: Iterable[str]) -> Node:
         self.init_node = self.world.create_init_node()
+        self.init_node.dump_config()
+
         self.__preconfigure_node(self.init_node)
 
         self.init_node.config.witness = witnesses
         self.init_node.config.private_key = self.skeleton_key
 
+        return self.init_node
+
+    def run_init_node(self) -> Node:
         logger.info(f'Running {self.init_node}...')
         self.init_node.run(
             replay_from=self.block_log_path,
