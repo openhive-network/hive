@@ -4,6 +4,7 @@
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/version.hpp>
 
+#include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/pending_required_action_object.hpp>
@@ -134,6 +135,10 @@ void block_producer::apply_pending_transactions(
             dgp.current_witness = witness_owner;
           });
   }
+
+  BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
+  // the flag also covers time of processing of required and optional actions
+  _db.set_tx_status( chain::database::TX_STATUS_NEW_BLOCK );
 
   uint64_t postponed_tx_count = 0;
   // pop pending state (reset to head block state)

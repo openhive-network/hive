@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
+#include <boost/scope_exit.hpp>
 
 /*
   * This file provides with() functions which modify the database
@@ -142,6 +143,9 @@ struct pending_transactions_restorer
 
     with_skip_flags( _db, skip, [&]()
     {
+      BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
+      _db.set_tx_status( database::TX_STATUS_PENDING );
+
       for( auto& tx : _db._popped_tx )
         handle_tx( tx );
       _db._popped_tx.clear();
