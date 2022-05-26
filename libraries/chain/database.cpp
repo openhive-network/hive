@@ -1180,39 +1180,44 @@ bool database::_push_block(const signed_block& new_block)
         // push all blocks on the new fork
         for( auto ritr = branches.first.rbegin(); ritr != branches.first.rend(); ++ritr )
         {
-            ilog( "pushing blocks from fork ${n} ${id}", ("n",(*ritr)->data.block_num())("id",(*ritr)->data.id()) );
-            try
+          ilog( "pushing blocks from fork ${n} ${id}", ("n",(*ritr)->data.block_num())("id",(*ritr)->data.id()) );
+          std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
+          try
+          {
+            _fork_db.set_head( *ritr );
+            auto session = start_undo_session();
+            apply_block( (*ritr)->data, skip );
+            session.push();
+          }
+          catch( const fc::exception& e )
+          {
+            delayed_exception_to_avoid_yield_in_catch = e.dynamic_copy_exception();
+          }
+          if (delayed_exception_to_avoid_yield_in_catch)
+          {
+            wlog( "exception thrown while switching forks ${e}", ( "e", delayed_exception_to_avoid_yield_in_catch->to_detail_string() ) );
+            // remove the rest of branches.first from the fork_db, those blocks are invalid
+            while( ritr != branches.first.rend() )
+            {
+              _fork_db.remove( (*ritr)->data.id() );
+              ++ritr;
+            }
+
+            // pop all blocks from the bad fork
+            while( head_block_id() != branches.second.back()->data.previous )
+              pop_block();
+            notify_switch_fork( head_block_num() );
+
+            // restore all blocks from the good fork
+            for( auto ritr = branches.second.rbegin(); ritr != branches.second.rend(); ++ritr )
             {
               _fork_db.set_head( *ritr );
               auto session = start_undo_session();
               apply_block( (*ritr)->data, skip );
               session.push();
             }
-            catch( const fc::exception& e )
-            {
-              wlog( "exception thrown while switching forks ${e}", ( "e", e.to_detail_string() ) );
-              // remove the rest of branches.first from the fork_db, those blocks are invalid
-              while( ritr != branches.first.rend() )
-              {
-                _fork_db.remove( (*ritr)->data.id() );
-                ++ritr;
-              }
-
-              // pop all blocks from the bad fork
-              while( head_block_id() != branches.second.back()->data.previous )
-                pop_block();
-              notify_switch_fork( head_block_num() );
-
-              // restore all blocks from the good fork
-              for( auto ritr = branches.second.rbegin(); ritr != branches.second.rend(); ++ritr )
-              {
-                _fork_db.set_head( *ritr );
-                auto session = start_undo_session();
-                apply_block( (*ritr)->data, skip );
-                session.push();
-              }
-              throw;
-            }
+            delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
+          }
         }
         hive::notify( "switching forks",
           "id", new_head->id.str(),
