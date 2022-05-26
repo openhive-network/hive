@@ -155,11 +155,7 @@ namespace chain {
       bool is_producing()const { return _is_producing; }
       void set_producing( bool p ) { _is_producing = p;  }
 
-      bool is_pending_tx()const { return _is_pending_tx; }
-      void set_pending_tx( bool p ) { _is_pending_tx = p; }
-
       bool _is_producing = false;
-      bool _is_pending_tx = false;
 
       bool _log_hardforks = true;
 
