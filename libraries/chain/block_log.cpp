@@ -213,6 +213,7 @@ namespace hive { namespace chain {
       int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
       if (read_only)
         flags = O_RDONLY | O_CLOEXEC;
+      ilog("Opening blocklog ${blocklog_filename}",("blocklog_filename",my->block_file.generic_string().c_str()));
       my->block_log_fd = ::open(my->block_file.generic_string().c_str(), flags, 0644);
       if (my->block_log_fd == -1)
         FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
@@ -230,7 +231,7 @@ namespace hive { namespace chain {
             FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
       }
       my->block_log_size = get_file_size(my->block_log_fd);
-      const ssize_t log_size = my->block_log_size;
+      const ssize_t block_log_size = my->block_log_size;
       ssize_t index_size = get_file_size(my->block_index_fd);
 
       /* On startup of the block log, there are several states the log file and the index file can be
@@ -251,9 +252,9 @@ namespace hive { namespace chain {
         *  - If the index file head is not in the log file, delete the index and replay.
         *  - If the index file head is in the log, but not up to date, replay from index head.
         */
-      if (log_size)
+      if (block_log_size)
       {
-        ilog("Log is nonempty");
+        idump((block_log_size));
         my->head.exchange(boost::make_shared<signed_block>(read_head()));
 
         if (index_size)
@@ -285,7 +286,7 @@ namespace hive { namespace chain {
             // block
             uint64_t block_pos_and_flags = 0;
             auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos_and_flags, sizeof(block_pos_and_flags), 
-                                                                      log_size - sizeof(block_pos_and_flags));
+                                                                      block_log_size - sizeof(block_pos_and_flags));
             FC_ASSERT(bytes_read == sizeof(block_pos_and_flags));
 
             // read the last 8 bytes of the block index to get the offset of the beginning of the 
