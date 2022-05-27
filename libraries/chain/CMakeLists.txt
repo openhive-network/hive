@@ -40,6 +40,8 @@ add_library( hive_chain
 
              generic_custom_operation_interpreter.cpp
 
+             signed_transaction_transporter.cpp
+
              util/rd.cpp
              util/reward.cpp
              util/extractors.cpp
