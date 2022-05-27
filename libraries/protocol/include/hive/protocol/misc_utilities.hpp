@@ -47,7 +47,6 @@ struct serialization_mode_controller
       public:
 
         pack_guard( pack_type new_pack );
-        pack_guard();
         ~pack_guard();
     };
 

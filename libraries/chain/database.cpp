@@ -4738,11 +4738,71 @@ void database::_apply_transaction(const signed_transaction& trx)
         _benchmark_dumper.begin();
 
       const chain_id_type& chain_id = get_chain_id();
-      trx.verify_authority( chain_id, get_active, get_owner, get_posting, HIVE_MAX_SIG_CHECK_DEPTH,
-        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
-        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-        has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
-        has_hardfork( HIVE_HARDFORK_1_26 ) );
+      auto _make_verification = [&, this]( hive::protocol::pack_type pack )
+      {
+        trx.verify_authority( chain_id, get_active, get_owner, get_posting,
+          pack,
+          HIVE_MAX_SIG_CHECK_DEPTH,
+          has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
+          has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
+          has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+      };
+      try
+      {
+        _make_verification( hive::protocol::serialization_mode_controller::get_current_pack() );
+      }
+      catch( const tx_irrelevant_sig& e )
+      {
+        throw e;
+      }
+      catch( const tx_missing_posting_auth& e )
+      {
+        try
+        {
+          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
+          {
+            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
+          }
+          else
+            throw e;
+        } FC_CAPTURE_AND_RETHROW( (trx) )
+      }
+      catch( const tx_missing_other_auth& e )
+      {
+        try
+        {
+          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
+          {
+            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
+          }
+          else
+            throw e;
+        } FC_CAPTURE_AND_RETHROW( (trx) )
+      }
+      catch( const tx_missing_active_auth& e )
+      {
+        try
+        {
+          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
+          {
+            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
+          }
+          else
+            throw e;
+        } FC_CAPTURE_AND_RETHROW( (trx) )
+      }
+      catch( const tx_missing_owner_auth& e )
+      {
+        try
+        {
+          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
+          {
+            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
+          }
+          else
+            throw e;
+        } FC_CAPTURE_AND_RETHROW( (trx) )
+      }FC_CAPTURE_AND_RETHROW( (trx) )
 
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() );
