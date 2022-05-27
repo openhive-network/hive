@@ -21,11 +21,6 @@ serialization_mode_controller::pack_guard::pack_guard( pack_type new_pack ) : ol
   serialization_mode_controller::current_pack = new_pack;
 }
 
-serialization_mode_controller::pack_guard::pack_guard() : old_pack( serialization_mode_controller::get_current_pack() )
-{
-  serialization_mode_controller::current_pack = serialization_mode_controller::get_another_pack();
-}
-
 serialization_mode_controller::pack_guard::~pack_guard()
 {
   serialization_mode_controller::current_pack = old_pack;
