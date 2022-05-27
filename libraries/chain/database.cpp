@@ -4749,58 +4749,18 @@ void database::_apply_transaction(const signed_transaction& trx)
       };
       try
       {
-        _make_verification( hive::protocol::serialization_mode_controller::get_current_pack() );
+        _make_verification( protocol::serialization_mode_controller::get_current_pack() );
       }
-      catch( const tx_irrelevant_sig& e )
-      {
-        throw e;
-      }
-      catch( const tx_missing_posting_auth& e )
+      catch( const protocol::transaction_auth_exception& e )
       {
         try
         {
           if( has_hardfork( HIVE_HARDFORK_1_26 ) )
           {
-            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
+            _make_verification( protocol::serialization_mode_controller::get_another_pack() );
           }
           else
-            throw e;
-        } FC_CAPTURE_AND_RETHROW( (trx) )
-      }
-      catch( const tx_missing_other_auth& e )
-      {
-        try
-        {
-          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
-          {
-            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
-          }
-          else
-            throw e;
-        } FC_CAPTURE_AND_RETHROW( (trx) )
-      }
-      catch( const tx_missing_active_auth& e )
-      {
-        try
-        {
-          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
-          {
-            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
-          }
-          else
-            throw e;
-        } FC_CAPTURE_AND_RETHROW( (trx) )
-      }
-      catch( const tx_missing_owner_auth& e )
-      {
-        try
-        {
-          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
-          {
-            _make_verification( hive::protocol::serialization_mode_controller::get_another_pack() );
-          }
-          else
-            throw e;
+            throw;
         } FC_CAPTURE_AND_RETHROW( (trx) )
       }FC_CAPTURE_AND_RETHROW( (trx) )
 
