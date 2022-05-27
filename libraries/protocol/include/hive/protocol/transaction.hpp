@@ -24,7 +24,7 @@ using fc::ecc::canonical_signature_type;
     transaction_id_type id()const;
     void                validate() const;
     void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
-    digest_type         sig_digest( const chain_id_type& chain_id, fc::optional<hive::protocol::pack_type> current_pack_mode )const;
+    digest_type         sig_digest( const chain_id_type& chain_id, hive::protocol::pack_type pack )const;
 
     void set_expiration( fc::time_point_sec expiration_time );
     void set_reference_block( const block_id_type& reference_block );
@@ -78,11 +78,11 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      hive::protocol::pack_type pack,
       uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
-      canonical_signature_type canon_type = fc::ecc::fc_canonical,
-      bool extended_verification = false
+      canonical_signature_type canon_type = fc::ecc::fc_canonical
       )const;
 
     set<public_key_type> minimize_required_signatures(
@@ -97,7 +97,7 @@ using fc::ecc::canonical_signature_type;
       canonical_signature_type canon_type = fc::ecc::fc_canonical
       ) const;
 
-    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, fc::optional<hive::protocol::pack_type> current_pack_mode )const;
+    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, hive::protocol::pack_type pack )const;
 
     vector<signature_type> signatures;
 
