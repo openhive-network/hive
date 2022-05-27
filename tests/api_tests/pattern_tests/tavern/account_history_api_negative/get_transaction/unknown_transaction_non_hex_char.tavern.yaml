@@ -20,7 +20,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.get_transaction"
-          params: {"id":"10zxzxzxzx"}
+          params: {"id":"cdbzxvd10eec6057466f91d59caecf3ef616d8ae"}
       response:
         status_code: 200
         verify_response_with:
