@@ -4653,6 +4653,12 @@ void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
 
 void database::_apply_transaction(const signed_transaction& trx)
 { try {
+  if( _current_tx_status == TX_STATUS_NONE )
+  {
+    wlog( "Missing tx processing indicator" );
+    // make sure to call set_tx_status() with proper status when your call can lead here
+  }
+
   transaction_notification note(trx);
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;

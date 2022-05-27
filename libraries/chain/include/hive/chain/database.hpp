@@ -145,7 +145,12 @@ namespace chain {
 
       void set_tx_status( transaction_status s )
       {
-        //make sure to unconditionally call clear_tx_status() when processing ends or is broken
+        if( _current_tx_status != TX_STATUS_NONE )
+        {
+          wlog( "Nested tx processing: _current_tx_status==${cs}, incoming ${s}",
+            ( "cs", ( int )_current_tx_status )( "s", ( int )s ) );
+          // make sure to unconditionally call clear_tx_status() when processing ends or is broken
+        }
         _current_tx_status = s;
       }
       void clear_tx_status() { _current_tx_status = TX_STATUS_NONE; }
