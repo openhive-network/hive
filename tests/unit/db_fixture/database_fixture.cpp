@@ -639,6 +639,11 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   db->push_transaction( tx, 0 );
 }
 
+void database_fixture::push_transaction( const signed_transaction& trx, uint32_t skip )
+{
+  db->push_transaction( signed_transaction_transporter( trx, hive::protocol::pack_type::legacy ), skip );
+}
+
 void database_fixture::vest( const string& from, const string& to, const asset& amount )
 {
   try

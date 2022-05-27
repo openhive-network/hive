@@ -63,7 +63,7 @@ void with_skip_flags(
   */
 struct pending_transactions_restorer
 {
-  pending_transactions_restorer( database& db, std::vector<signed_transaction>&& pending_transactions )
+  pending_transactions_restorer( database& db, std::vector<signed_transaction_transporter>&& pending_transactions )
     : _db(db), _pending_transactions( std::move(pending_transactions) )
   {
     _db.clear_pending();
@@ -74,13 +74,16 @@ struct pending_transactions_restorer
     auto head_block_time = _db.head_block_time();
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
 
+#ifndef IS_TEST_NET
     auto start = fc::time_point::now();
+#endif
+
     bool apply_trxs = true;
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
 
-    auto handle_tx = [&]( signed_transaction& tx )
+    auto handle_tx = [&]( signed_transaction_transporter& tx )
     {
 #ifndef IS_TEST_NET //especially during debugging that limit is highly problematic
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
@@ -91,11 +94,11 @@ struct pending_transactions_restorer
       {
         try
         {
-          if( tx.expiration < head_block_time )
+          if( tx.trx.expiration < head_block_time )
           {
             ++expired_txs;
           }
-          else if( !_db.is_known_transaction( tx.id() ) )
+          else if( !_db.is_known_transaction( tx.trx.id() ) )
           {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
@@ -108,7 +111,7 @@ struct pending_transactions_restorer
           dlog( "Pending transaction became invalid after switching to block ${b} ${n} ${t}",
             ( "b", _db.head_block_id() )( "n", _db.head_block_num() )( "t", _db.head_block_time() ) );
           dlog( "The invalid transaction caused exception ${e}", ( "e", e.to_detail_string() ) );
-          dlog( "${t}", ( "t", tx ) );
+          dlog( "${t}", ( "t", tx.trx ) );
         }
         catch( const fc::exception& e )
         {
@@ -158,7 +161,7 @@ struct pending_transactions_restorer
   }
 
   database& _db;
-  std::vector< signed_transaction > _pending_transactions;
+  std::vector< signed_transaction_transporter > _pending_transactions;
 };
 
 /**
@@ -170,7 +173,7 @@ struct pending_transactions_restorer
 template< typename Lambda >
 void without_pending_transactions(
   database& db,
-  std::vector<signed_transaction>&& pending_transactions,
+  std::vector<signed_transaction_transporter>&& pending_transactions,
   Lambda callback )
 {
     pending_transactions_restorer restorer( db, std::move(pending_transactions) );
