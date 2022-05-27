@@ -142,7 +142,7 @@ void block_producer::apply_pending_transactions(
 
   uint64_t postponed_tx_count = 0;
   // pop pending state (reset to head block state)
-  for( const chain::signed_transaction& tx : _db._pending_tx )
+  for( const auto& tx : _db._pending_tx )
   {
     // Only include transactions that have not expired yet for currently generating block,
     // this should clear problem transactions and allow block production to continue
@@ -150,10 +150,10 @@ void block_producer::apply_pending_transactions(
     if( postponed_tx_count > HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT )
       break;
 
-    if( tx.expiration < when )
+    if( tx.trx.expiration < when )
       continue;
 
-    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx );
+    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx.trx );
 
     // postpone transaction if it would make block too big
     if( new_total_size >= maximum_transaction_partition_size )
@@ -169,7 +169,7 @@ void block_producer::apply_pending_transactions(
       temp_session.squash();
 
       total_block_size = new_total_size;
-      pending_block.transactions.push_back( tx );
+      pending_block.transactions.push_back( tx.trx );
     }
     catch ( const fc::exception& e )
     {

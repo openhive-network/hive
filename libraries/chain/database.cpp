@@ -1303,7 +1303,7 @@ void database::_push_transaction( const signed_transaction_transporter& trx )
 
   auto temp_session = start_undo_session();
   _apply_transaction( trx );
-  _pending_tx.push_back( trx.trx );
+  _pending_tx.push_back( trx );
 
   notify_changed_objects();
   // The transaction applied successfully. Merge its changes into the pending block session.
@@ -1328,7 +1328,12 @@ void database::pop_block()
     _fork_db.pop_block();
     undo();
 
-    _popped_tx.insert( _popped_tx.begin(), head_block->transactions.begin(), head_block->transactions.end() );
+    FC_TODO( "TEMPORARY CHANGE!!!!!!! It's necessary to handle it properly" );
+    for( auto& trx : head_block->transactions )
+    {
+      _popped_tx.insert( _popped_tx.begin(), signed_transaction_transporter( trx, hive::protocol::pack_type::hf26 ) );
+    }
+    //_popped_tx.insert( _popped_tx.begin(), head_block->transactions.begin(), head_block->transactions.end() );
 
   }
   FC_CAPTURE_AND_RETHROW()
@@ -4356,7 +4361,8 @@ void database::_apply_block( const signed_block& next_block )
       * for transactions when validating broadcast transactions or
       * when building a block.
       */
-    apply_transaction( trx, skip );
+    FC_TODO( "TEMPORARY CHANGE!!!!!!! It's necessary to handle it properly" );
+    apply_transaction( signed_transaction_transporter( trx, hive::protocol::pack_type::hf26 ), skip );
     ++_current_trx_in_block;
   }
 
@@ -4646,7 +4652,7 @@ try {
   }
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
+void database::apply_transaction(const signed_transaction_transporter& trx, uint32_t skip)
 {
   detail::with_skip_flags( *this, skip, [&]() { _apply_transaction(trx); });
 }

@@ -652,8 +652,8 @@ namespace chain {
 
       /** when popping a block, the transactions that were removed get cached here so they
         * can be reapplied at the proper time */
-      std::deque< signed_transaction >       _popped_tx;
-      vector< signed_transaction >           _pending_tx;
+      std::deque< signed_transaction_transporter >       _popped_tx;
+      vector< signed_transaction_transporter >           _pending_tx;
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
@@ -685,7 +685,7 @@ namespace chain {
       void set_flush_interval( uint32_t flush_blocks );
       void check_free_memory( bool force_print, uint32_t current_block_num );
 
-      void apply_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
+      void apply_transaction( const signed_transaction_transporter& trx, uint32_t skip = skip_nothing );
       void apply_required_action( const required_automated_action& a );
       void apply_optional_action( const optional_automated_action& a );
 

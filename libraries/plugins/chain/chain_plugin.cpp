@@ -217,7 +217,7 @@ struct write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      db->push_transaction( signed_transaction_transporter( *trx ) );
+      db->push_transaction( signed_transaction_transporter( *trx, hive::protocol::pack_type::hf26 ) );
       *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 

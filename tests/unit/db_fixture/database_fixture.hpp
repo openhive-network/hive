@@ -326,6 +326,7 @@ struct database_fixture {
   );
 
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
+  void push_transaction( const signed_transaction& trx, uint32_t skip );
 
   void fund( const string& account_name, const share_type& amount = 500000 );
   void fund( const string& account_name, const asset& amount, bool update_print_rate = true );
