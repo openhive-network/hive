@@ -1,4 +1,5 @@
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/signed_transaction_transporter.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -41,6 +42,7 @@ using hive::chain::block_id_type;
 using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
 using get_indexes_memory_details_type = std::function< void( index_memory_details_cntr_t&, bool ) >;
+using hive::chain::signed_transaction_transporter;
 
 #define NUM_THREADS 1
 
@@ -215,7 +217,7 @@ struct write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      db->push_transaction( *trx );
+      db->push_transaction( signed_transaction_transporter( *trx ) );
       *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 

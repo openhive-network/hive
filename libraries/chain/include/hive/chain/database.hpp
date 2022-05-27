@@ -8,6 +8,7 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/signed_transaction_transporter.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -361,10 +362,10 @@ namespace chain {
       bool                                   before_last_checkpoint()const;
 
       bool push_block( const signed_block& b, uint32_t skip = skip_nothing );
-      void push_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
+      void push_transaction( const signed_transaction_transporter& trx, uint32_t skip = skip_nothing );
       void _maybe_warn_multiple_production( uint32_t height )const;
       bool _push_block( const signed_block& b );
-      void _push_transaction( const signed_transaction& trx );
+      void _push_transaction( const signed_transaction_transporter& trx );
 
       void pop_block();
       void clear_pending();
@@ -722,7 +723,7 @@ namespace chain {
 
       void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
       void _apply_block( const signed_block& next_block );
-      void _apply_transaction( const signed_transaction& trx );
+      void _apply_transaction( const signed_transaction_transporter& trx );
       void apply_operation( const operation& op );
 
       void process_required_actions( const required_automated_actions& actions );

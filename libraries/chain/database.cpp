@@ -1269,11 +1269,11 @@ bool database::_push_block(const signed_block& new_block)
   * queues full as well, it will be kept in the queue to be propagated later when a new block flushes out the pending
   * queues.
   */
-void database::push_transaction( const signed_transaction& trx, uint32_t skip )
+void database::push_transaction( const signed_transaction_transporter& trx, uint32_t skip )
 {
   try
   {
-    auto trx_size = fc::raw::pack_size( trx );
+    auto trx_size = fc::raw::pack_size( trx.trx );
     //ABW: why is that limit related to block size and not HIVE_MAX_TRANSACTION_SIZE?
     auto trx_size_limit = get_dynamic_global_properties().maximum_block_size - 256;
     FC_ASSERT( trx_size <= trx_size_limit, "Transaction too large - size = ${s}, limit ${l}",
@@ -1286,10 +1286,10 @@ void database::push_transaction( const signed_transaction& trx, uint32_t skip )
       _push_transaction( trx );
     } );
   }
-  FC_CAPTURE_AND_RETHROW( (trx) )
+  FC_CAPTURE_AND_RETHROW( (trx.trx) )
 }
 
-void database::_push_transaction( const signed_transaction& trx )
+void database::_push_transaction( const signed_transaction_transporter& trx )
 {
   // If this is the first transaction pushed after applying a block, start a new undo session.
   // This allows us to quickly rewind to the clean state of the head block, in case a new block arrives.
@@ -1303,7 +1303,7 @@ void database::_push_transaction( const signed_transaction& trx )
 
   auto temp_session = start_undo_session();
   _apply_transaction( trx );
-  _pending_tx.push_back( trx );
+  _pending_tx.push_back( trx.trx );
 
   notify_changed_objects();
   // The transaction applied successfully. Merge its changes into the pending block session.
@@ -4651,7 +4651,7 @@ void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
   detail::with_skip_flags( *this, skip, [&]() { _apply_transaction(trx); });
 }
 
-void database::_apply_transaction(const signed_transaction& trx)
+void database::_apply_transaction(const signed_transaction_transporter& trx)
 { try {
   if( _current_tx_status == TX_STATUS_NONE )
   {
@@ -4659,7 +4659,7 @@ void database::_apply_transaction(const signed_transaction& trx)
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
-  transaction_notification note(trx);
+  transaction_notification note(trx.trx);
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;
 
@@ -4678,23 +4678,23 @@ void database::_apply_transaction(const signed_transaction& trx)
   {
     fc::time_point_sec now = head_block_time();
 
-    HIVE_ASSERT( trx.expiration <= now + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ), transaction_expiration_exception,
-      "", ( "trx.expiration", trx.expiration )( "now", now )( "max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+    HIVE_ASSERT( trx.trx.expiration <= now + fc::seconds( HIVE_MAX_TIME_UNTIL_EXPIRATION ), transaction_expiration_exception,
+      "", ( "trx.expiration", trx.trx.expiration )( "now", now )( "max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
     if( has_hardfork( HIVE_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
-      HIVE_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.expiration ) );
+      HIVE_ASSERT( now < trx.trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.trx.expiration ) );
     else
-      HIVE_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.expiration ) );
+      HIVE_ASSERT( now <= trx.trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.trx.expiration ) );
 
     if( !( skip & skip_tapos_check ) )
     {
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.begin();
 
-      block_summary_object::id_type bsid( trx.ref_block_num );
+      block_summary_object::id_type bsid( trx.trx.ref_block_num );
       const auto& tapos_block_summary = get< block_summary_object >( bsid );
       //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
-      HIVE_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[ 1 ], transaction_tapos_exception,
-        "", ( "trx.ref_block_prefix", trx.ref_block_prefix )
+      HIVE_ASSERT( trx.trx.ref_block_prefix == tapos_block_summary.block_id._hash[ 1 ], transaction_tapos_exception,
+        "", ( "trx.ref_block_prefix", trx.trx.ref_block_prefix )
         ( "tapos_block_summary", tapos_block_summary.block_id._hash[ 1 ] ) );
 
       if( _benchmark_dumper.is_enabled() )
@@ -4707,7 +4707,7 @@ void database::_apply_transaction(const signed_transaction& trx)
     if( _benchmark_dumper.is_enabled() )
     {
       std::string name;
-      trx.validate( [&]( const operation& op, bool post )
+      trx.trx.validate( [&]( const operation& op, bool post )
       {
         if( !post )
         {
@@ -4722,7 +4722,7 @@ void database::_apply_transaction(const signed_transaction& trx)
     }
     else
     {
-      trx.validate();
+      trx.trx.validate();
     }
   }
 
@@ -4740,7 +4740,7 @@ void database::_apply_transaction(const signed_transaction& trx)
       const chain_id_type& chain_id = get_chain_id();
       auto _make_verification = [&, this]( hive::protocol::pack_type pack )
       {
-        trx.verify_authority( chain_id, get_active, get_owner, get_posting,
+        trx.trx.verify_authority( chain_id, get_active, get_owner, get_posting,
           pack,
           HIVE_MAX_SIG_CHECK_DEPTH,
           has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
@@ -4765,7 +4765,7 @@ void database::_apply_transaction(const signed_transaction& trx)
       }FC_CAPTURE_AND_RETHROW( (trx) )
 
       if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() );
+        _benchmark_dumper.end( "transaction", "verify_authority", trx.trx.signatures.size() );
     }
     catch( protocol::tx_missing_active_auth& e )
     {
@@ -4782,8 +4782,8 @@ void database::_apply_transaction(const signed_transaction& trx)
 
     create<transaction_object>([&](transaction_object& transaction) {
       transaction.trx_id = trx_id;
-      transaction.expiration = trx.expiration;
-      fc::raw::pack_to_buffer( transaction.packed_trx, trx );
+      transaction.expiration = trx.trx.expiration;
+      fc::raw::pack_to_buffer( transaction.packed_trx, trx.trx );
     });
 
     if( _benchmark_dumper.is_enabled() )
@@ -4794,25 +4794,13 @@ void database::_apply_transaction(const signed_transaction& trx)
 
   //Finally process the operations
   _current_op_in_trx = 0;
-  for( const auto& op : trx.operations )
+  for( const auto& op : trx.trx.operations )
   { try {
     apply_operation(op);
     ++_current_op_in_trx;
-    } FC_CAPTURE_AND_RETHROW( (op) );
-  }
   _current_trx_id = transaction_id_type();
 
-  notify_post_apply_transaction( note );
-
-} FC_CAPTURE_AND_RETHROW( (trx) ) }
-
-
 struct applied_operation_info_controller
-{
-  applied_operation_info_controller(const struct operation_notification** storage, const operation_notification& note) :
-    _storage(storage)
-    {
-    *_storage = &note;
     }
 
   ~applied_operation_info_controller()
