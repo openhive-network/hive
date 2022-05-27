@@ -18,10 +18,12 @@
 namespace hive { namespace protocol {
 
   FC_DECLARE_EXCEPTION( transaction_exception, 3000000, "transaction exception" )
-  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_active_auth,            hive::protocol::transaction_exception, 3010000, "missing required active authority" )
-  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_owner_auth,             hive::protocol::transaction_exception, 3020000, "missing required owner authority" )
-  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_posting_auth,           hive::protocol::transaction_exception, 3030000, "missing required posting authority" )
-  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_other_auth,             hive::protocol::transaction_exception, 3040000, "missing required other authority" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_auth_exception,        hive::protocol::transaction_exception, 3070000, "transaction authorization exception" )
+
+  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_active_auth,            hive::protocol::transaction_auth_exception, 3010000, "missing required active authority" )
+  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_owner_auth,             hive::protocol::transaction_auth_exception, 3020000, "missing required owner authority" )
+  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_posting_auth,           hive::protocol::transaction_auth_exception, 3030000, "missing required posting authority" )
+  FC_DECLARE_DERIVED_EXCEPTION( tx_missing_other_auth,             hive::protocol::transaction_auth_exception, 3040000, "missing required other authority" )
   FC_DECLARE_DERIVED_EXCEPTION( tx_irrelevant_sig,                 hive::protocol::transaction_exception, 3050000, "irrelevant signature included" )
   FC_DECLARE_DERIVED_EXCEPTION( tx_duplicate_sig,                  hive::protocol::transaction_exception, 3060000, "duplicate signature included" )
 
