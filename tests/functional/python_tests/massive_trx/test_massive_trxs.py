@@ -163,6 +163,7 @@ def test_massive_trxs(world_with_witnesses):
             for n in nodes:
                 if n.get_number_of_forks()!=0:
                     logger.info(f'Detected fork')
+                    event.set()
                     break
     except KeyboardInterrupt:
         event.set()
