@@ -1,15 +1,9 @@
 # this test checks implementation of last_id field in list_voter_proposal arguments
-# !/usr/bin/python3
-
-import sys
-
-sys.path.append("../../")
-
 import logging
+import os
 import sys
 
-import hive_utils
-import os
+from ... import hive_utils
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
@@ -19,6 +13,7 @@ if log_dir is not None:
     MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
 else:
     MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
+
 
 MODULE_NAME = "DHF-Tests"
 logger = logging.getLogger(MODULE_NAME)
@@ -192,7 +187,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config-path",
         dest="hived_config_path",
-        default="../../hive_utils/resources/config.ini.in",
+        default="functional/hive_utils/resources/config.ini.in",
         help="Path to source config.ini file",
     )
     parser.add_argument(
