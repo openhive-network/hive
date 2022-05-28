@@ -1,16 +1,12 @@
-import sys
-
-sys.path.append("../../")
-import hive_utils
-
 import logging
+
+from ... import hive_utils
 
 LOG_LEVEL = logging.INFO
 
 MODULE_NAME = "DHF-Tests.DHF-Utils"
 logger = logging.getLogger(MODULE_NAME)
 logger.setLevel(LOG_LEVEL)
-
 
 # create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, accounts):
