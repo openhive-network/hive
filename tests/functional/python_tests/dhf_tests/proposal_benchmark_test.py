@@ -26,13 +26,13 @@
 
 # Time[ms] is saved in `r_advanced_benchmark.json` ( position{"op_name": "sps_processor"} ) in directory where this script is called
 
+import logging
+import os
 import sys
 
-sys.path.append("../../")
-import hive_utils
-
-import logging
 import dateutil.parser
+
+from ... import hive_utils
 
 data_size = 100
 delayed_blocks = 1

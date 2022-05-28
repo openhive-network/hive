@@ -1,14 +1,11 @@
-#!/usr/bin/python3
-import sys
-
-sys.path.append("../../")
-
-from uuid import uuid4
-from time import sleep
 import logging
-import hive_utils
-import threading
 import os
+import sys
+import threading
+from time import sleep
+from uuid import uuid4
+
+from ... import hive_utils
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
@@ -18,6 +15,7 @@ if log_dir is not None:
     MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
 else:
     MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
+
 
 MODULE_NAME = "DHF-Tests"
 logger = logging.getLogger(MODULE_NAME)
@@ -40,7 +38,6 @@ try:
 except Exception as ex:
     logger.error("beem library is not installed.")
     sys.exit(1)
-
 
 # we would like to test ID conflict problem and I'd like to have python scripts
 # which will be producing 2 transactions containing few proposals (having
