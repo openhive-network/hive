@@ -70,7 +70,7 @@ namespace hive { namespace converter {
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
-    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time );
+    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time, bool alter_time_in_visitor = false );
 
     const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;

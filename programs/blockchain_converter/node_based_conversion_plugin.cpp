@@ -287,7 +287,8 @@ namespace detail {
         continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
       converter.convert_signed_block( *block, lib_id,
-        gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */
+        gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
+        true
       );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
