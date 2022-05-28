@@ -302,7 +302,7 @@ namespace hive { namespace converter {
 
 #define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time )
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -334,7 +334,7 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, head_block_time ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, fc::time_point_sec{ alter_time_in_visitor ? uint32_t(block_offset.to_seconds()) : 0 } ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
