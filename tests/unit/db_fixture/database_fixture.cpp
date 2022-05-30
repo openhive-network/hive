@@ -1,6 +1,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/program_options.hpp>
 
+#include <hive/protocol/exceptions.hpp>
+
 #include <hive/utilities/database_configuration.hpp>
 
 #include <hive/chain/hive_objects.hpp>
@@ -641,7 +643,26 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
 
 void database_fixture::push_transaction( const signed_transaction& trx, uint32_t skip )
 {
-  db->push_transaction( signed_transaction_transporter( trx, hive::protocol::pack_type::legacy ), skip );
+  try
+  {
+    db->push_transaction( signed_transaction_transporter( trx, serialization_mode_controller::get_current_pack() ), skip );
+  }
+  catch( const hive::protocol::transaction_auth_exception& e )
+  {
+    try
+    {
+      if( db->has_hardfork( HIVE_HARDFORK_1_26 ) )
+      {
+        db->push_transaction( signed_transaction_transporter( trx, serialization_mode_controller::get_another_pack() ), skip );
+      }
+      else
+        throw;
+    }
+    catch( ... )
+    {
+      throw;
+    }
+  }
 }
 
 void database_fixture::vest( const string& from, const string& to, const asset& amount )
