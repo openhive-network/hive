@@ -1328,12 +1328,8 @@ void database::pop_block()
     _fork_db.pop_block();
     undo();
 
-    FC_TODO( "TEMPORARY CHANGE!!!!!!! It's necessary to handle it properly" );
     for( auto& trx : head_block->transactions )
-    {
-      _popped_tx.insert( _popped_tx.begin(), signed_transaction_transporter( trx, hive::protocol::pack_type::hf26 ) );
-    }
-    //_popped_tx.insert( _popped_tx.begin(), head_block->transactions.begin(), head_block->transactions.end() );
+      _popped_tx.insert( _popped_tx.begin(), signed_transaction_transporter( trx, serialization_mode_controller::get_current_pack() ) );
 
   }
   FC_CAPTURE_AND_RETHROW()
@@ -4361,8 +4357,7 @@ void database::_apply_block( const signed_block& next_block )
       * for transactions when validating broadcast transactions or
       * when building a block.
       */
-    FC_TODO( "TEMPORARY CHANGE!!!!!!! It's necessary to handle it properly" );
-    apply_transaction( signed_transaction_transporter( trx, hive::protocol::pack_type::hf26 ), skip );
+    apply_transaction( signed_transaction_transporter( trx, serialization_mode_controller::get_current_pack() ), skip );
     ++_current_trx_in_block;
   }
 
