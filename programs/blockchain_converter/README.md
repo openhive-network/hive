@@ -33,32 +33,17 @@ As the `input` option value you will have to specify a path to a non-empty input
 `node_based_conversion` plugin relies on the remote nodes.
 As the `input` option value you will have to specify an URL to the original input mainnet node (make sure that given node uses block API and database API) and as the `output` option value you should specify URLs to the nodes with altered chain (make sure that given nodes use condenser API).
 
-In favor of the old `use-now-time` option there is a new feature that calculates transaction expiration times based on the time gap between output node
-head block time and the timestamp of the block that is currently being converted. There is also a transaction expiration check that should perfectly work for the majority of converted transactions (formula):
-```c++
-// Use the deduced transaction expiration value, unless it would be too far in the future to be allowed, then use largest future time
-min(
-  // Try to match relative expiration time of original transaction to including block, unless it would be so short that transaction would likely expire. After more thought, I'm starting to question the logic on this, maybe we would prefer if these transactions don't expire if at all possible (after all, they got into mainnet). But let's leave this as-is for now.
-  max( block_to_convert.timestamp + trx_time_offset, transaction_to_convert.expiration + trx_time_offset),
-  // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
-  now_time + (HIVE_MAX_TIME_UNTIL_EXPIRATION-HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
-)
-```
-
-where:
-* `block_offset` is the mentioned time gap without the safety "nonce"
-* `trx_time_offset` is the mentioned time gap plus the safety "nonce" for the transactions to avoid their ids duplication
-* `HIVE_BLOCK_INTERVAL` is the standard hive block production interval which (in the standard configuration) is 3 seconds
-* `HIVE_MAX_TIME_UNTIL_EXPIRATION` is the maximum time until the transaction expiration which (in the standard configuration) is 1 hour
-* `HIVE_BC_SAFETY_TIME_GAP` is made especially for the `node_based_conversion` plugin in which the head block time is deduced (it in the standard configuration equals 30 seconds)
-
-
 This plugin retrieves blocks from the remote and holds them in the block buffer. You can specify the block buffer size with the `block-buffer-size` option, which defaults to 1000.
 
 Notes:
 * URL should have the format: `http://ip-or-host:port`. If you want to use the default HTTP port use `80`.
 * This conversion tool currently does not support `https` protocol and chunked transfer encoding in API node responses
 * Last irreversible block for the [TaPoS](https://github.com/EOSIO/Documentation/blob/master/TechnicalWhitePaper.md#transaction-as-proof-of-stake-tapos) generation is always taken from the first of the specified output nodes
+
+In favor of the old `use-now-time` option, the transaction expiration time is now calculated by adding the "nonce" value (to avoid transaction id duplication) and the fixed `HIVE_BC_TRANSACTION_SAFE_OFFSET` time, which is half of the `HIVE_MAX_TIME_UNTIL_EXPIRATION` value (1 hour in the standard configuration) to the timestamp of the block that is currently being converted. So, the simplified formula would be:
+```
+tx.expiration = block.timestamp + HIVE_BC_TRANSACTION_SAFE_OFFSET + nonce
+```
 
 ### Multithreading support
 Signing transactions takes a relatively large amount of time, so this tool enables multithreading support.

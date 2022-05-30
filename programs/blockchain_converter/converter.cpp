@@ -300,9 +300,9 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
-#define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
+#define HIVE_BC_TRANSACTION_SAFE_OFFSET (HIVE_MAX_TIME_UNTIL_EXPIRATION / 2)
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
+  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -313,7 +313,7 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    const fc::microseconds block_offset{ std::abs( (head_block_time - _signed_block.timestamp).count() ) };
+    const fc::microseconds block_offset{ std::abs( (now_time - _signed_block.timestamp).count() ) };
 
     fc::microseconds trx_time_offset = block_offset;
 
@@ -321,20 +321,14 @@ namespace hive { namespace converter {
       // Add transactoin time offset to avoid txids duplication
       trx_time_offset += fc::seconds(1);
 
-      // Apply either deduced transaction expiration value or the maximum one
-      trx.expiration = std::min(
-        // Apply either minimum transaction expiration value or the desired one
-        std::max(_signed_block.timestamp + trx_time_offset, trx.expiration + trx_time_offset),
-        // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
-        head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
-      );
+      trx.expiration = _signed_block.timestamp + trx_time_offset + fc::seconds(HIVE_BC_TRANSACTION_SAFE_OFFSET);
     };
 
     std::set<size_t> already_signed_transaction_pos;
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, fc::time_point_sec{ alter_time_in_visitor ? uint32_t(block_offset.to_seconds()) : 0 } ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, fc::time_point_sec{static_cast<uint32_t>(block_offset.to_seconds())} ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 
