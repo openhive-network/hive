@@ -1,8 +1,8 @@
 import json
 
 from collections.abc import Iterable
-from datetime import datetime, timedelta
 
+from ..local_tools import date_from_now
 from test_tools import Account, Asset, logger, Wallet
 
 
@@ -29,11 +29,6 @@ def create_account_and_create_order(wallet, account_name):
     wallet.api.transfer('initminer', account_name, Asset.Test(100), 'memo')
     wallet.api.transfer_to_vesting('initminer', account_name, Asset.Test(100))
     wallet.api.create_order(account_name, 1000, Asset.Test(1), Asset.Tbd(1), False, 1000)
-
-
-def date_from_now(*, weeks):
-    future_data = datetime.now() + timedelta(weeks=weeks)
-    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def create_accounts_with_vests_and_tbd(wallet, accounts):
