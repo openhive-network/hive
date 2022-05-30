@@ -16,11 +16,11 @@ class signed_transaction_transporter
     pack_type     pack = pack_type::hf26;
     t_packed_trx  packed_trx;
 
-    void fill();  
+    void fill();
 
   public:
 
-    signed_transaction& trx;
+    signed_transaction trx;
 
     explicit signed_transaction_transporter( const signed_transaction& trx, pack_type pack );
     explicit signed_transaction_transporter( signed_transaction& trx, pack_type pack );
@@ -28,6 +28,9 @@ class signed_transaction_transporter
     signed_transaction_transporter(const signed_transaction_transporter& obj );
 
     signed_transaction_transporter& operator=( signed_transaction_transporter&& obj );
+
+    pack_type get_pack() const;
+    const t_packed_trx& get_packed_trx() const;
 };
 
 } } // hive::chain

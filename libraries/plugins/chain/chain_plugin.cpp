@@ -213,15 +213,46 @@ struct write_request_visitor
   {
     bool result = false;
 
-    try
+    auto _push_transaction = [this](const signed_transaction* trx, hive::protocol::pack_type pack )
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      db->push_transaction( signed_transaction_transporter( *trx, hive::protocol::pack_type::hf26 ) );
+      db->push_transaction( signed_transaction_transporter( *trx, pack ) );
       *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
+    };
+
+    try
+    {
+      try
+      {
+        _push_transaction( trx, serialization_mode_controller::get_current_pack() );
+      }
+      catch( const protocol::transaction_auth_exception& e )
+      {
+        try
+        {
+          if( db->has_hardfork( HIVE_HARDFORK_1_26 ) )
+          {
+            _push_transaction( trx, serialization_mode_controller::get_another_pack() );
+          }
+          else
+            throw;
+        }
+        catch( const fc::exception& e )
+        {
+          *except = e;
+        }
+        catch( ... )
+        {
+          elog("Unknown exception while pushing transaction.");
+          *except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing transaction." ),
+                                            std::current_exception());
+        }
+      }
 
       result = true;
+
     }
     catch( const fc::exception& e )
     {

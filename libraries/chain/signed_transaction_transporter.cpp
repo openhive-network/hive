@@ -39,4 +39,14 @@ namespace hive { namespace chain {
     return *this;
   }
 
+  pack_type signed_transaction_transporter::get_pack() const
+  {
+    return pack;
+  }
+
+  const signed_transaction_transporter::t_packed_trx& signed_transaction_transporter::get_packed_trx() const
+  {
+    return packed_trx;
+  }
+
 } } // hive::chain

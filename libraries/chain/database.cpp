@@ -4739,31 +4739,12 @@ void database::_apply_transaction(const signed_transaction_transporter& trx)
         _benchmark_dumper.begin();
 
       const chain_id_type& chain_id = get_chain_id();
-      auto _make_verification = [&, this]( hive::protocol::pack_type pack )
-      {
-        trx.trx.verify_authority( chain_id, get_active, get_owner, get_posting,
-          pack,
-          HIVE_MAX_SIG_CHECK_DEPTH,
-          has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
-          has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-          has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
-      };
-      try
-      {
-        _make_verification( protocol::serialization_mode_controller::get_current_pack() );
-      }
-      catch( const protocol::transaction_auth_exception& e )
-      {
-        try
-        {
-          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
-          {
-            _make_verification( protocol::serialization_mode_controller::get_another_pack() );
-          }
-          else
-            throw;
-        } FC_CAPTURE_AND_RETHROW( (trx.trx) )
-      }FC_CAPTURE_AND_RETHROW( (trx.trx) )
+      trx.trx.verify_authority( chain_id, get_active, get_owner, get_posting,
+        trx.get_pack(),
+        HIVE_MAX_SIG_CHECK_DEPTH,
+        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
+        has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
+        has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
 
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.end( "transaction", "verify_authority", trx.trx.signatures.size() );
