@@ -48,25 +48,6 @@ testnet_node_build:
      - hived-for-tests
      - hived
 
-consensus_build:
-  stage: build
-  image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
-  script:
-    # TESTNET=OFF HIVE_LINT=ON
-    - ./ciscripts/build.sh OFF ON
-    - mkdir "$CI_JOB_NAME"
-    - mv build/install-root "$CI_JOB_NAME"
-    - mv contrib/hived.run "$CI_JOB_NAME"
-    - mv contrib/config-for-docker.ini "$CI_JOB_NAME"
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    paths:
-    - "$CI_JOB_NAME"
-    expire_in: 6 hours
-  tags:
-    - public-runner-docker
-    - hived
-
 chain_test:
   stage: test
   needs:
