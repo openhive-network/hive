@@ -29,7 +29,7 @@ namespace hive { namespace chain {
   {
   }
 
-  signed_transaction_transporter& signed_transaction_transporter::operator=( signed_transaction_transporter&& obj )
+  signed_transaction_transporter& signed_transaction_transporter::operator=( signed_transaction_transporter&& obj ) noexcept
   {
     pack = obj.pack;
 

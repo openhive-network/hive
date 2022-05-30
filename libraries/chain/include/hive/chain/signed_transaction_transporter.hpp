@@ -27,7 +27,7 @@ class signed_transaction_transporter
 
     signed_transaction_transporter(const signed_transaction_transporter& obj );
 
-    signed_transaction_transporter& operator=( signed_transaction_transporter&& obj );
+    signed_transaction_transporter& operator=( signed_transaction_transporter&& obj ) noexcept;
 
     pack_type get_pack() const;
     const t_packed_trx& get_packed_trx() const;
