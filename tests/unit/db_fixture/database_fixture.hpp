@@ -196,22 +196,22 @@ TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  db->push_transaction( tx, 0 ); \
+  push_transaction( tx, 0 ); \
 }
 
 #define PUSH_OP_TWICE(OP,KEY) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  db->push_transaction( tx, 0 ); \
-  db->push_transaction( tx, database::skip_transaction_dupe_check ); \
+  push_transaction( tx, 0 ); \
+  push_transaction( tx, database::skip_transaction_dupe_check ); \
 }
 
 #define FAIL_WITH_OP(OP,KEY,EXCEPTION) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), EXCEPTION ); \
+  HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), EXCEPTION ); \
 }
 
 namespace hive { namespace chain {
@@ -326,7 +326,7 @@ struct database_fixture {
   );
 
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
-  void push_transaction( const signed_transaction& trx, uint32_t skip );
+  void push_transaction( const signed_transaction& trx, uint32_t skip = database::skip_nothing );
 
   void fund( const string& account_name, const share_type& amount = 500000 );
   void fund( const string& account_name, const asset& amount, bool update_print_rate = true );

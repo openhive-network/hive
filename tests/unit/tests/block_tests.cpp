@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( tapos )
 
     BOOST_TEST_MESSAGE( "Pushing Pending Transaction" );
     idump((trx));
-    db1.push_transaction(trx);
+    db1.push_transaction( signed_transaction_transporter( trx, hive::protocol::pack_type::legacy ) );
     BOOST_TEST_MESSAGE( "Generating a block" );
     b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
     trx.clear();
@@ -410,7 +410,7 @@ BOOST_AUTO_TEST_CASE( tapos )
     b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
     trx.signatures.clear();
     trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    BOOST_REQUIRE_THROW( db1.push_transaction(trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
+    BOOST_REQUIRE_THROW( db1.push_transaction( signed_transaction_transporter( trx, hive::protocol::pack_type::legacy ), 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -500,7 +500,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   trx.validate();
 
-  db->push_transaction(trx, ~0);
+  push_transaction(trx, ~0);
 
   trx.operations.clear();
   t.from = "bob";
@@ -510,21 +510,21 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.validate();
 
   BOOST_TEST_MESSAGE( "Verify that not-signing causes an exception" );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), fc::exception );
+  HIVE_REQUIRE_THROW( push_transaction(trx, 0), fc::exception );
 
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
   sign( trx, bob_private_key );
   sign( trx, bob_private_key );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), tx_duplicate_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, 0), tx_duplicate_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing with an extra, unused key fails" );
   trx.signatures.pop_back();
   sign( trx, generate_private_key( "bogus" ) );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), tx_irrelevant_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, 0), tx_irrelevant_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing once with the proper key passes" );
   trx.signatures.pop_back();
-  db->push_transaction(trx, 0);
+  push_transaction(trx, 0);
   sign( trx, bob_private_key );
 
 } FC_LOG_AND_RETHROW() }
@@ -891,7 +891,7 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
     }
 
     sign( tx, init_account_priv_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     // Second transaction, tx minus op is 78 (one less byte for operation vector size)
     // We need a 88 byte op. We need a 22 character memo (1 byte for length) 55 = 32 (old op) + 55 + 1
@@ -899,7 +899,7 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
     tx.clear();
     tx.operations.push_back( op );
     sign( tx, init_account_priv_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     generate_block();
 
