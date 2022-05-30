@@ -57,13 +57,13 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
     }
     tx.clear();
 
@@ -75,13 +75,13 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.percent = 50 * HIVE_1_PERCENT;
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.to_account = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
     }
     tx.clear();
 
@@ -93,31 +93,31 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.amount = ASSET( "1.000 TBD" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.to = "alice";
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       BOOST_REQUIRE( get_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
     }
     tx.clear();
@@ -130,13 +130,13 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, 0 ), fc::assert_exception );
     }
     tx.clear();
 
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       comment.body = "Hello world";
       tx.operations.push_back( comment );
       sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     }
     tx.clear();
 
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       op.extensions.insert( b );
       tx.operations.push_back( op );
       sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     }
     tx.clear();
 
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       vote.weight = HIVE_100_PERCENT;
       tx.operations.push_back( vote );
       sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     }
     tx.clear();
 
