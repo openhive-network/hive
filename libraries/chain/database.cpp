@@ -4767,8 +4767,8 @@ void database::_apply_transaction(const signed_transaction_transporter& trx)
           }
           else
             throw;
-        } FC_CAPTURE_AND_RETHROW( (trx) )
-      }FC_CAPTURE_AND_RETHROW( (trx) )
+        } FC_CAPTURE_AND_RETHROW( (trx.trx) )
+      }FC_CAPTURE_AND_RETHROW( (trx.trx) )
 
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.end( "transaction", "verify_authority", trx.trx.signatures.size() );
@@ -4804,9 +4804,21 @@ void database::_apply_transaction(const signed_transaction_transporter& trx)
   { try {
     apply_operation(op);
     ++_current_op_in_trx;
+    } FC_CAPTURE_AND_RETHROW( (op) );
+  }
   _current_trx_id = transaction_id_type();
 
+  notify_post_apply_transaction( note );
+
+} FC_CAPTURE_AND_RETHROW( (trx.trx) ) }
+
+
 struct applied_operation_info_controller
+{
+  applied_operation_info_controller(const struct operation_notification** storage, const operation_notification& note) :
+    _storage(storage)
+    {
+    *_storage = &note;
     }
 
   ~applied_operation_info_controller()
