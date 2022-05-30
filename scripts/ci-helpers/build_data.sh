@@ -18,6 +18,6 @@ pushd "$SRCROOTDIR"
 
 docker build --target=data \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg BLOCK_LOG_SUFFIX="-5m" \
-  --build-arg BUILD_IMAGE_TAG=:$BUILD_IMAGE_TAG -t ${REGISTRY}data:$BUILD_IMAGE_TAG -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}data:data-${BUILD_IMAGE_TAG} -f Dockerfile .
 
 popd
