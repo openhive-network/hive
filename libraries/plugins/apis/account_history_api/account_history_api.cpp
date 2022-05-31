@@ -119,7 +119,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 
   hive::protocol::transaction_id_type id(args.id);
   if(args.id.size() != id.data_size()*2)
-    FC_ASSERT(false, "Transaction hash ${t} has invalid size. Transaction hash should have size of ${s} bits", ("t", args.id)("s", sizeof(id._hash) * 8));
+    FC_ASSERT(false, "Transaction hash '${t}' has invalid size. Transaction hash should have size of ${s} bits", ("t", args.id)("s", sizeof(id._hash) * 8));
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
 
@@ -139,7 +139,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     }
   else
     {
-    FC_ASSERT(false, "Unknown Transaction ${t}", ("t", args.id));
+    FC_ASSERT(false, "Unknown Transaction ${t}", ("t", id));
     }
 }
 
