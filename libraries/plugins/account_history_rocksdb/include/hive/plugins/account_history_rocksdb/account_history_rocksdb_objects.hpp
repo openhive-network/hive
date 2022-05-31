@@ -1,9 +1,9 @@
 #pragma once
 
-#include <hive/chain/buffer_type.hpp>
 #include <hive/chain/hive_object_types.hpp>
 
 #include <hive/protocol/types.hpp>
+#include <hive/protocol/buffer_type_pack.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
 

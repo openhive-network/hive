@@ -1,10 +1,10 @@
-#include <hive/chain/signed_transaction_transporter.hpp>
+#include <hive/protocol/signed_transaction_transporter.hpp>
 
-#include <hive/chain/buffer_type.hpp>
+#include <hive/protocol/buffer_type_pack.hpp>
 
 #include <hive/protocol/misc_utilities.hpp>
 
-namespace hive { namespace chain {
+namespace hive { namespace protocol {
 
   void signed_transaction_transporter::fill()
   {

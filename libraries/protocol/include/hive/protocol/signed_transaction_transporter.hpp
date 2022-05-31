@@ -2,7 +2,7 @@
 
 #include <hive/protocol/transaction.hpp>
 
-namespace hive { namespace chain {
+namespace hive { namespace protocol {
 
 using hive::protocol::pack_type;
 using hive::protocol::signed_transaction;
@@ -33,4 +33,6 @@ class signed_transaction_transporter
     const t_packed_trx& get_packed_trx() const;
 };
 
-} } // hive::chain
+} } // hive::protocol
+
+FC_REFLECT( hive::protocol::signed_transaction_transporter, (trx) )

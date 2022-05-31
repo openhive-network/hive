@@ -8,13 +8,13 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/signed_transaction_transporter.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/signed_transaction_transporter.hpp>
 
 #include <appbase/plugin.hpp>
 
