@@ -1,5 +1,12 @@
+"""
+Injects custom_update_request() function into tavern 'request.py', usually found in
+hive/.tox/tavern/lib/python3.8/site-packages/tavern/_plugins/rest/request.py
+"""
 import os
-import argparse
+
+
+request_f_name = "request.py"
+request_f_pat = "class RestRequest(BaseRequest)"
 
 custom_func = """
 def custom_update_request(request_args):
@@ -19,34 +26,45 @@ custom_func_call_pat = """
             test_block_config,
         )"""
 
-def parse_args():
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--project-root', type=str)
-  return parser.parse_args()
-
 
 def do_inject(target_file):
   with open(target_file, 'r') as f:
     target_data = f.read()
 
-  if "custom_update_request" in target_data: return
+  if "custom_update_request" in target_data:
+    return False
 
   updated_data = target_data.replace(custom_func_pos_pat, f"{custom_func_pos_pat}\n\n{custom_func}")
   updated_data = updated_data.replace(custom_func_call_pat, f"{custom_func_call_pat}\n\n{custom_func_call}")
 
   with open(target_file, 'w') as f:
     f.write(updated_data)
+  return True
 
-
-def prep_inject():
-  if os.getenv("IS_DIRECT_CALL_HAFAH", False) is False:
+def find_request_file():
+  if not os.getenv("IS_DIRECT_CALL_HAFAH", False):
     return None
-  project_root = parse_args().project_root
-  target_file = os.path.join(project_root, ".tox", "tavern", "lib", "python3.8", "site-packages", "tavern", "_plugins", "rest", "request.py")
-  return target_file
 
+  project_root = os.getenv("PROJECT_ROOT", os.getcwd())
+  tox_tavern_dir = os.path.join(project_root, ".tox", "tavern")
+  matches = [os.path.join(root, request_f_name) for root, _, files in os.walk(tox_tavern_dir) if request_f_name in files]
+  for match in matches:
+    with open(match, "r") as f:
+      data = f.read()
+    if request_f_pat in data:
+      return match
+
+  return False
 
 if __name__ == "__main__":
-  target_file = prep_inject()
+  target_file = find_request_file()
+  print(target_file)
+  if not target_file:
+    raise RuntimeWarning("'request.py' not found, tavern code not injected!")
   if target_file is not None:
-    do_inject(target_file)
+    injected = do_inject(target_file)
+
+  if not injected:
+    raise RuntimeWarning("'custom_update_request()' already exists.\nThis should not be possible in gitlab CI!")
+  else:
+    print("inject_request.py: 'custom_update_request()' added to tavern's 'request.py'")
