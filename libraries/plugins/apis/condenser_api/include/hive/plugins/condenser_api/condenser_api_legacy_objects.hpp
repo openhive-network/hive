@@ -113,7 +113,7 @@ struct legacy_signed_block
 
     for( const auto& t : b.transactions )
     {
-      transactions.push_back( legacy_signed_transaction( t.trx ) );
+      transactions.push_back( legacy_signed_transaction( t ) );
     }
 
     transaction_ids.insert( transaction_ids.end(), b.transaction_ids.begin(), b.transaction_ids.end() );
