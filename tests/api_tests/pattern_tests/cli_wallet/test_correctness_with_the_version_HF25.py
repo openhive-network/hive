@@ -27,8 +27,8 @@ NO TESTED METHODS
 def remote_node_wallet():
     # To allow working on CI, change remote node http_endpoint, ws_endpoint and path to mainnet wallet.
     paths_to_executables.set_path_of('cli_wallet',
-                                     '/home/dev/ComparationHF25HF26Mainnet/src/hive_HF26/build/programs/cli_wallet/cli_wallet')
-    remote_node = RemoteNode(http_endpoint='0.0.0.0:18091', ws_endpoint='0.0.0.0:18090')
+                                     '$CI_PROJECT_DIR/build/programs/cli_wallet/cli_wallet')
+    remote_node = RemoteNode(http_endpoint='hived-instance:8090', ws_endpoint='hived-instance:8091')
     return Wallet(attach_to=remote_node)
 
 
