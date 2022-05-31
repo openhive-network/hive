@@ -852,8 +852,8 @@ struct api_signed_block_object : public signed_block
     block_id = id();
     signing_key = signee();
     transaction_ids.reserve( transactions.size() );
-    for( const signed_transaction& tx : transactions )
-      transaction_ids.push_back( tx.id() );
+    for( const auto& tx : transactions )
+      transaction_ids.push_back( tx.trx.id() );
   }
   api_signed_block_object() {}
 

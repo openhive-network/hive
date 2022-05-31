@@ -49,7 +49,7 @@ namespace hive { namespace protocol {
     vector<digest_type> ids;
     ids.resize( transactions.size() );
     for( uint32_t i = 0; i < transactions.size(); ++i )
-      ids[i] = transactions[i].merkle_digest();
+      ids[i] = transactions[i].trx.merkle_digest();
 
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
 

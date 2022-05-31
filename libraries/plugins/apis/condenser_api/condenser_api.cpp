@@ -212,7 +212,7 @@ namespace detail
       uint32_t block_num = block_header::num_from_id( b->block_id );
       for( uint32_t i=0; i<n; i++ )
       {
-        result->transactions[i].transaction_id = b->transactions[i].id();
+        result->transactions[i].transaction_id = b->transactions[i].trx.id();
         result->transactions[i].block_num = block_num;
         result->transactions[i].transaction_num = i;
       }
@@ -1168,7 +1168,7 @@ namespace detail
       for( size_t trx_num = 0; trx_num < b.transactions.size(); ++trx_num )
       {
         const auto& trx = b.transactions[trx_num];
-        auto id = trx.id();
+        auto id = trx.trx.id();
         auto itr = _callbacks.find( id );
         if( itr == _callbacks.end() ) continue;
         itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), false ) );

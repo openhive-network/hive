@@ -226,8 +226,8 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     {
       auto b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
       good_block = b;
-      b.transactions.emplace_back(signed_transaction());
-      b.transactions.back().operations.emplace_back(transfer_operation());
+      b.transactions.emplace_back( signed_transaction_transporter( signed_transaction(), hive::protocol::pack_type::legacy ) );
+      b.transactions.back().trx.operations.emplace_back(transfer_operation());
       b.sign( init_account_priv_key );
       BOOST_CHECK_EQUAL(b.block_num(), 14u);
       HIVE_CHECK_THROW(PUSH_BLOCK( db1, b ), fc::exception);

@@ -39,6 +39,16 @@ namespace hive { namespace chain {
     return *this;
   }
 
+  signed_transaction_transporter& signed_transaction_transporter::operator=( const signed_transaction_transporter& obj )
+  {
+    pack = obj.pack;
+
+    trx = obj.trx;
+    packed_trx = obj.packed_trx;
+
+    return *this;
+  }
+
   pack_type signed_transaction_transporter::get_pack() const
   {
     return pack;

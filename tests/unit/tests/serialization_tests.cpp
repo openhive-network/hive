@@ -820,7 +820,7 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
       tx.ref_block_prefix = 1000000000;
       tx.expiration = fc::time_point_sec( 1514764800 + i );
 
-      b1.transactions.push_back( tx );
+      b1.transactions.push_back( signed_transaction_transporter( tx, hive::protocol::pack_type::legacy ) );
     }
 
     signed_block b2;
@@ -838,7 +838,7 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
       tx.expiration = fc::time_point_sec( 1714764800 + i );
       tx.operations.push_back( op );
 
-      b2.transactions.push_back( tx );
+      b2.transactions.push_back( signed_transaction_transporter( tx, hive::protocol::pack_type::legacy ) );
     }
 
     fc::raw::pack( ss2, b2 );
@@ -853,8 +853,8 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
     BOOST_REQUIRE( b1.transactions.size() == unpacked_block.transactions.size() );
     for ( size_t i = 0; i < unpacked_block.transactions.size(); i++ )
     {
-      signed_transaction tx = unpacked_block.transactions[ i ];
-      BOOST_REQUIRE( unpacked_block.transactions[ i ].operations.size() == b1.transactions[ i ].operations.size() );
+      signed_transaction tx = unpacked_block.transactions[ i ].trx;
+      BOOST_REQUIRE( unpacked_block.transactions[ i ].trx.operations.size() == b1.transactions[ i ].trx.operations.size() );
 
       vote_operation op = tx.operations[ 0 ].get< vote_operation >();
       BOOST_REQUIRE( op.voter == "alice" );
