@@ -845,23 +845,6 @@ struct api_witness_schedule_object
   int64_t                    min_witness_account_subsidy_decay = 0;
 };
 
-struct api_signed_block_object : public signed_block
-{
-  api_signed_block_object( const signed_block& block ) : signed_block( block )
-  {
-    block_id = id();
-    signing_key = signee();
-    transaction_ids.reserve( transactions.size() );
-    for( const auto& tx : transactions )
-      transaction_ids.push_back( tx.trx.id() );
-  }
-  api_signed_block_object() {}
-
-  block_id_type                 block_id;
-  public_key_type               signing_key;
-  vector< transaction_id_type > transaction_ids;
-};
-
 struct api_hardfork_property_object
 {
   api_hardfork_property_object( const hardfork_property_object& h ) :
@@ -1258,12 +1241,6 @@ FC_REFLECT( hive::plugins::database_api::api_witness_schedule_object,
           (account_subsidy_witness_rd)
           (min_witness_account_subsidy_decay)
         )
-
-FC_REFLECT_DERIVED( hive::plugins::database_api::api_signed_block_object, (hive::protocol::signed_block),
-              (block_id)
-              (signing_key)
-              (transaction_ids)
-            )
 
 FC_REFLECT( hive::plugins::database_api::api_hardfork_property_object,
         (id)
