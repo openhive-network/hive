@@ -259,60 +259,84 @@ namespace detail {
 
     uint32_t gpo_interval = 0;
 
+    const auto retry_handler = [&] {
+      fc::usleep(fc::seconds(1));
+      --start_block_num;
+    };
+    bool retry_flag = false;
+
     for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
-      block = receive( start_block_num );
-
-      if( !block.valid() )
+      try
       {
-        wlog("Could not parse the block with number ${block_num} from the host. Propably the block has not been produced yet. Retrying in 1 second...", ("block_num", start_block_num));
-        fc::usleep(fc::seconds(1));
-        --start_block_num;
-        continue;
+        if( retry_flag )
+        {
+          retry_handler();
+          retry_flag = false;
+        }
+
+        block = receive( start_block_num );
+
+        if( !block.valid() )
+        {
+          wlog("Could not parse the block with number ${block_num} from the host. Propably the block has not been produced yet. Retrying in 1 second...", ("block_num", start_block_num));
+          retry_flag = true;
+          continue;
+        }
+
+        if( start_block_num % 1000 == 0 ) // Progress
+        {
+          if( stop_block_num )
+            ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
+              ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
+          else
+            ilog("${block_num} blocks rewritten", ("block_num", start_block_num));
+        }
+
+        if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
+          dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
+
+        if( block->transactions.size() == 0 )
+          continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
+
+        converter.convert_signed_block( *block, lib_id,
+          gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
+          true
+        );
+
+        if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
+          dlog("After conversion: ${block}", ("block", *block));
+
+        for( size_t i = 0; i < block->transactions.size(); ++i )
+          if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
+            break;
+          else
+            transmit( block->transactions.at(i), output_urls.at( i % output_urls.size() ) );
+
+        gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
+
+        if( gpo_interval == 0 )
+        {
+          update_lib_id();
+          converter.on_tapos_change();
+        }
       }
-
-      if( start_block_num % 1000 == 0 ) // Progress
+      catch( fc::exception& er )
       {
-        if( stop_block_num )
-          ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
-            ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-        else
-          ilog("${block_num} blocks rewritten", ("block_num", start_block_num));
+        wlog( "Caught an error during the conversion: \'${strerr}\'. Retrying in 1 second", ("strerr",er.to_string()) );
+        retry_flag = true;
       }
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
-
-      if( block->transactions.size() == 0 )
-        continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
-
-      converter.convert_signed_block( *block, lib_id,
-        gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
-        true
-      );
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("After conversion: ${block}", ("block", *block));
-
-      for( size_t i = 0; i < block->transactions.size(); ++i )
-        if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
-          break;
-        else
-          transmit( block->transactions.at(i), output_urls.at( i % output_urls.size() ) );
-
-      gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
-
-      if( gpo_interval == 0 )
+      catch(...)
       {
-        update_lib_id();
-        converter.on_tapos_change();
+        wlog( "Caught an unknown error during the conversion. Retrying in 1 second" );
+        retry_flag = true;
       }
     }
 
     dlog("In order to resume your live conversion pass the \'-R ${block_num}\' option to the converter next time", ("block_num", start_block_num - 1));
 
     if( error_response_count )
-      wlog("${errors} (${percent})% of total ${total}) node errors detected",
+      wlog("${errors} (${percent}% of total ${total}) node errors detected",
         ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
 
     if( !appbase::app().is_interrupt_request() )
