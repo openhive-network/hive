@@ -42,7 +42,6 @@ struct serialization_mode_controller
       private:
 
         const pack_type old_pack = serialization_mode_controller::default_pack;
-        fc::optional<pack_type> previous_pack;
 
       public:
 
