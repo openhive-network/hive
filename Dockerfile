@@ -67,7 +67,7 @@ RUN \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=ON" \
-  hived cli_wallet truncate_block_log && \
+  && \
   cd ./build && \
   find . -name *.o  -type f -delete && \
   find . -name *.a  -type f -delete
