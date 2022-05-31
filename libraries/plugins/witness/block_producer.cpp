@@ -153,7 +153,7 @@ void block_producer::apply_pending_transactions(
     if( tx.trx.expiration < when )
       continue;
 
-    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx.trx );
+    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx );
 
     // postpone transaction if it would make block too big
     if( new_total_size >= maximum_transaction_partition_size )
@@ -169,7 +169,7 @@ void block_producer::apply_pending_transactions(
       temp_session.squash();
 
       total_block_size = new_total_size;
-      pending_block.transactions.push_back( tx.trx );
+      pending_block.transactions.push_back( tx );
     }
     catch ( const fc::exception& e )
     {

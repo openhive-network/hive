@@ -113,7 +113,7 @@ struct legacy_signed_block
 
     for( const auto& t : b.transactions )
     {
-      transactions.push_back( legacy_signed_transaction( t ) );
+      transactions.push_back( legacy_signed_transaction( t.trx ) );
     }
 
     transaction_ids.insert( transaction_ids.end(), b.transaction_ids.begin(), b.transaction_ids.end() );
@@ -131,7 +131,7 @@ struct legacy_signed_block
 
     for( const auto& t : transactions )
     {
-      b.transactions.push_back( signed_transaction( t ) );
+      b.transactions.push_back( signed_transaction_transporter( signed_transaction( t ), serialization_mode_controller::get_current_pack() ) );
     }
 
     return b;

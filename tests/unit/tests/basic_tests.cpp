@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
 
   BOOST_CHECK( block.calculate_merkle_root() == checksum_type() );
 
-  block.transactions.push_back( tx[0] );
+  block.transactions.push_back( signed_transaction_transporter( tx[0], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() ==
     c(t[0])
     );
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
 
   dA = d(t[0], t[1]);
 
-  block.transactions.push_back( tx[1] );
+  block.transactions.push_back( signed_transaction_transporter( tx[1], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dA) );
 
   /*************************
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dB = t[2];
   dI = d(dA, dB);
 
-  block.transactions.push_back( tx[2] );
+  block.transactions.push_back( signed_transaction_transporter( tx[2], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dI) );
 
   /***************************
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dB = d(t[2], t[3]);
   dI = d(dA, dB);
 
-  block.transactions.push_back( tx[3] );
+  block.transactions.push_back( signed_transaction_transporter( tx[3], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dI) );
 
   /***************************************
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = dC;
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[4] );
+  block.transactions.push_back( signed_transaction_transporter( tx[4], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
 
   /**************************************
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = dC;
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[5] );
+  block.transactions.push_back( signed_transaction_transporter( tx[5], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
 
   /***********************************************
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = d(dC, dD);
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[6] );
+  block.transactions.push_back( signed_transaction_transporter( tx[6], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
 
   /*************************************************
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = d(dC, dD);
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[7] );
+  block.transactions.push_back( signed_transaction_transporter( tx[7], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
 
   /************************************************************************
@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dN = dK;
   dO = d(dM, dN);
 
-  block.transactions.push_back( tx[8] );
+  block.transactions.push_back( signed_transaction_transporter( tx[8], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
 
   /************************************************************************
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dN = dK;
   dO = d(dM, dN);
 
-  block.transactions.push_back( tx[9] );
+  block.transactions.push_back( signed_transaction_transporter( tx[9], hive::protocol::pack_type::legacy ) );
   BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
 }
 

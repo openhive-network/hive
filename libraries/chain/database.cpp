@@ -746,7 +746,7 @@ void database::foreach_tx(std::function<bool(const signed_block_header&, const s
     uint32_t txInBlock = 0;
     for( const auto& trx : block.transactions )
     {
-      if(processor(prevBlockHeader, block, trx, txInBlock) == false)
+      if(processor(prevBlockHeader, block, trx.trx, txInBlock) == false)
         return false;
       ++txInBlock;
     }
@@ -1329,7 +1329,7 @@ void database::pop_block()
     undo();
 
     for( auto& trx : head_block->transactions )
-      _popped_tx.insert( _popped_tx.begin(), signed_transaction_transporter( trx, serialization_mode_controller::get_current_pack() ) );
+      _popped_tx.insert( _popped_tx.begin(), trx );
 
   }
   FC_CAPTURE_AND_RETHROW()
@@ -4357,7 +4357,7 @@ void database::_apply_block( const signed_block& next_block )
       * for transactions when validating broadcast transactions or
       * when building a block.
       */
-    apply_transaction( signed_transaction_transporter( trx, serialization_mode_controller::get_current_pack() ), skip );
+    apply_transaction( trx, skip );
     ++_current_trx_in_block;
   }
 
