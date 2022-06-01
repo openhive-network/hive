@@ -51,8 +51,8 @@ def test_massive_trxs(world_with_witnesses):
     
     tx = dict(
         ref_block_num=105,
-        ref_block_prefix=736409801,
-        expiration='2021-10-20T11:30:00',
+        ref_block_prefix=187644814,
+        expiration='2022-05-30T17:20:00',
         operations=[[
             'account_update',
             dict(
