@@ -74,7 +74,16 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( pending_block );
   ilog( "New block ${b} successfully produced.", ( "b", pending_block.block_num() ) );
 
-  _db.push_block( pending_block, skip );
+  try
+  {
+    _db.push_block( pending_block, skip );
+  }
+  catch( const fc::exception& ex )
+  {
+    elog( "NOTIFYALERT! Failed to apply newly produced block ${b} (${i}) with exception ${e}",
+      ( "b", pending_block.block_num() )( "i", pending_block.id() )( "e", ex ) );
+    throw;
+  }
 
   return pending_block;
 }
