@@ -451,7 +451,7 @@ namespace detail {
       );
     capture("n", block.block_num())("t", block.timestamp)("c", now);
 
-    appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
+    //appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
     return block_production_condition::produced;
   }
 } // detail

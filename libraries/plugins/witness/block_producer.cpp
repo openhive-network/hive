@@ -11,6 +11,8 @@
 #include <hive/chain/pending_optional_action_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 
+#include <hive/plugins/p2p/p2p_plugin.hpp>
+
 #include <fc/macros.hpp>
 
 namespace hive { namespace plugins { namespace witness {
@@ -69,6 +71,7 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   {
     FC_ASSERT( fc::raw::pack_size(pending_block) <= HIVE_MAX_BLOCK_SIZE );
   }
+  appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( pending_block );
   ilog( "New block ${b} successfully produced.", ( "b", pending_block.block_num() ) );
 
   _db.push_block( pending_block, skip );
