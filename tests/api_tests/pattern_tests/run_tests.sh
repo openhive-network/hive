@@ -10,14 +10,13 @@ fi
 export PROJECT_ROOT=$2
 export TAVERN_DIR="$PROJECT_ROOT/tests/api_tests/pattern_tests/"
 
-if [ -z "$3" ]; then
-    TEST_NAMES="not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block)"
+default_testname_pat="not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block)"
+if [[ "$3" == "direct_call_hafah" ]]; then
+    export IS_DIRECT_CALL_HAFAH=TRUE
+    TEST_NAMES="account_history_api_"
 else
     export IS_DIRECT_CALL_HAFAH=FALSE
     TEST_NAMES=$default_testname_pat
 fi
 
 tox -e tavern -- --tb=long -W ignore::pytest.PytestDeprecationWarning --workers 5 --tests-per-worker auto -k "$TEST_NAMES" --junitxml=results.xml
-
-#rm -rf $TAVERN_DIR/tavern/hafah_api_negative
-#rm -rf $TAVERN_DIR/tavern/hafah_api_patterns
