@@ -71,12 +71,15 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   {
     FC_ASSERT( fc::raw::pack_size(pending_block) <= HIVE_MAX_BLOCK_SIZE );
   }
-  appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( pending_block );
+
   ilog( "New block ${b} successfully produced.", ( "b", pending_block.block_num() ) );
 
   try
   {
-    _db.push_block( pending_block, skip );
+    _db.push_block( pending_block, skip, []( const chain::signed_block& b )
+    {
+      appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( b );
+    } );
   }
   catch( const fc::exception& ex )
   {

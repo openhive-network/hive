@@ -1083,7 +1083,7 @@ bool database::before_last_checkpoint()const
   *
   * @return true if we switched forks as a result of this push.
   */
-bool database::push_block(const signed_block& new_block, uint32_t skip)
+bool database::push_block(const signed_block& new_block, uint32_t skip, const std::function<void( const signed_block& b )>& after_fork_db)
 {
   //fc::time_point begin_time = fc::time_point::now();
 
@@ -1117,7 +1117,7 @@ bool database::push_block(const signed_block& new_block, uint32_t skip)
     {
       try
       {
-        result = _push_block(new_block);
+        result = _push_block(new_block, after_fork_db);
         ilog( "Block ${b} successfully applied.", ( "b", new_block.block_num() ) );
       }
       FC_CAPTURE_AND_RETHROW( (new_block) )
@@ -1150,7 +1150,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   return;
 }
 
-bool database::_push_block(const signed_block& new_block)
+bool database::_push_block(const signed_block& new_block, const std::function<void( const signed_block& b )>& after_fork_db)
 { try {
   #ifdef IS_TEST_NET
   FC_ASSERT(new_block.block_num() < TESTNET_BLOCK_LIMIT, "Testnet block limit exceeded");
@@ -1162,6 +1162,7 @@ bool database::_push_block(const signed_block& new_block)
   if( !(skip&skip_fork_db) )
   {
     shared_ptr<fork_item> new_head = _fork_db.push_block(new_block);
+    after_fork_db( new_block );
     _maybe_warn_multiple_production( new_head->num );
 
     //If the head block from the longest chain does not build off of the current head, we need to switch forks.

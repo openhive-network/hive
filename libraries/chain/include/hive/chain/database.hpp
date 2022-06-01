@@ -360,10 +360,10 @@ namespace chain {
       const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
       bool                                   before_last_checkpoint()const;
 
-      bool push_block( const signed_block& b, uint32_t skip = skip_nothing );
+      bool push_block( const signed_block& b, uint32_t skip = skip_nothing, const std::function<void( const signed_block& b )>& after_fork_db = []( const signed_block& b ){} );
       void push_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
       void _maybe_warn_multiple_production( uint32_t height )const;
-      bool _push_block( const signed_block& b );
+      bool _push_block( const signed_block& b, const std::function<void( const signed_block& b )>& after_fork_db );
       void _push_transaction( const signed_transaction& trx );
 
       void pop_block();
