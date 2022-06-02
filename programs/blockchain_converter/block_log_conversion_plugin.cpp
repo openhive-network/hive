@@ -155,6 +155,7 @@ namespace detail {
         dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
 
       last_block_id = converter.convert_signed_block( *block, last_block_id, head_block_time, false );
+      converter.on_tapos_change();
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
