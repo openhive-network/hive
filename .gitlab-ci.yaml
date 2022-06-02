@@ -377,3 +377,45 @@ transaction_serialization_testnet_tests:
       junit: tests/functional/python_tests/transaction_serialization_tests/report.xml
   tags:
     - public-runner-docker
+
+patterns_tests_test_tools_based:
+  extends: .docker_image_builder_job
+  stage: test
+  variables:
+    FF_NETWORK_PER_BUILD: 1
+    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
+    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
+    TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
+  needs:
+    - job: prepare_hived_data_image
+      artifacts: true
+
+  services:
+    - name: $HIVED_IMAGE_NAME
+      alias: hived-instance
+
+  before_script:
+    - echo "HIVED image name $HIVED_IMAGE_NAME"
+    - apk update && apk add bash git ca-certificates curl build-base python3-dev
+    - python3 -m ensurepip
+    - export NUMBER_OF_PROCESSES=$(nproc)
+    - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools"
+
+  script:
+    # run pattern tests
+    - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests_test_tools_based/cli_wallet
+    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    reports:
+      junit: $CI_PROJECT_DIR/tests/api_tests/pattern_tests_test_tools_based/cli_wallet/report.xml
+    paths:
+    - "**/generated_during_*"
+    - "**/generated_by_package_fixtures"
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker
+    - hived-for-tests
