@@ -7,6 +7,7 @@
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/validation.hpp>
 #include <hive/protocol/version.hpp>
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
@@ -1407,6 +1408,8 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_funde
    FC_ASSERT( !is_locked() );
    my->require_online();
 
+   hive::protocol::validate_account_name( new_account_name );
+
    auto creator_account = get_account(creator).value;
    signed_transaction tx;
    if (creator_account.pending_claimed_accounts > 0)
@@ -1481,6 +1484,9 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_accou
   bool broadcast )const
 { try {
   FC_ASSERT( !is_locked() );
+
+   hive::protocol::validate_account_name( new_account_name );
+
   account_create_with_delegation_operation op;
   op.creator = creator;
   op.new_account_name = new_account_name;
