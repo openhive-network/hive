@@ -33,22 +33,22 @@ def remote_node_wallet():
 
 
 METHODS = [
-    # ('gethelp', ('get_block',)),
-    # ('about', ()),
-    # ('help', ()),
+    ('gethelp', ('get_block',)),
+    ('about', ()),
+    ('help', ()),
     ('is_new', ()),
     ('is_locked', ()),
     ('list_keys', ()),
     ('list_accounts', ('hiveio', 10)),
     ('list_witnesses', ('gtg', 10)),
     ('get_witness', ('gtg',)),
-    # ('get_account', ('gtg',)),
+    ('get_account', ('gtg',)),
     ('get_block', (10,)),
-    # ('get_ops_in_block', (10, True)),
+    ('get_ops_in_block', (10, True)),
     ('get_feed_history', ()),
-    # ('get_account_history', ('gtg', -1, 10)),
+    ('get_account_history', ('gtg', -1, 10)),
     ('get_order_book', (100,)),
-    # ('get_prototype_operation', ('account_create_operation',)),
+    ('get_prototype_operation', ('account_create_operation',)),
     ('get_active_witnesses', ()),
     ('get_transaction', ('82d2c772db5312024f572c9dfbe926e45391f8e9',))
 ]
@@ -60,10 +60,10 @@ METHODS = [
     ]
 )
 def test_comparison_of_get_methods(remote_node_wallet, cli_wallet_method, arguments):
-    response_hf25 = read_from_json('output_files_hf25', cli_wallet_method)
-    response_hf26 = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
+    response_hf26 = read_from_json('output_files_hf26', cli_wallet_method)
+    response_from_node = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
 
-    assert response_hf25 == response_hf26
+    assert response_hf26 == response_from_node
 
 
 def read_from_json(folder_name, method_name):
