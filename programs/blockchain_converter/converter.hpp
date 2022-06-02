@@ -43,6 +43,8 @@ namespace hive { namespace converter {
     std::queue< authority > pow_keys;
     std::set< hp::account_name_type > accounts;
 
+    std::set< hp::transaction_id_type > tapos_scope_tx_ids;
+
     void post_convert_transaction( hp::signed_transaction& trx );
 
     std::vector< std::thread > signers; // Transactions signers (defualt number is 1)
@@ -103,6 +105,9 @@ namespace hive { namespace converter {
      */
     void touch( const hp::signed_block_header& _signed_header );
     void touch( const hp::block_id_type& id ); // Function override if you want to directly set your mainnet head block id
+
+    // Should be called every time TaPoS value changes in your plugin
+    void on_tapos_change();
 
     bool has_hardfork( uint32_t hf )const;
     static bool has_hardfork( uint32_t hf, uint32_t block_num );

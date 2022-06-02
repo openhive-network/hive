@@ -303,7 +303,10 @@ namespace detail {
       gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
       if( gpo_interval == 0 )
+      {
         update_lib_id();
+        converter.on_tapos_change();
+      }
     }
 
     dlog("In order to resume your live conversion pass the \'-R ${block_num}\' option to the converter next time", ("block_num", start_block_num - 1));

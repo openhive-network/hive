@@ -318,16 +318,22 @@ namespace hive { namespace converter {
     fc::microseconds trx_time_offset = block_offset;
 
     const auto apply_trx_expiration_offset = [&](hp::transaction& trx) {
-      // Add transactoin time offset to avoid txids duplication
-      trx_time_offset += fc::seconds(1);
+      // Repeat until tx id is different
+      do
+      {
+        // Add transactoin time offset to avoid txids duplication
+        // (reference block numbers are the same, so the expiration time is the only value that we can change to introduce variety in tx ids)
+        trx_time_offset += fc::seconds(1);
 
-      // Apply either deduced transaction expiration value or the maximum one
-      trx.expiration = std::min(
-        // Apply either minimum transaction expiration value or the desired one
-        std::max(_signed_block.timestamp + trx_time_offset, trx.expiration + trx_time_offset),
-        // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
-        head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
-      );
+        // Apply either deduced transaction expiration value or the maximum one
+        trx.expiration = std::min(
+          // Apply either minimum transaction expiration value or the desired one
+          std::max(_signed_block.timestamp + trx_time_offset, trx.expiration + trx_time_offset),
+          // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
+          head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
+        );
+      }
+      while(!tapos_scope_tx_ids.insert( trx.id() ).second);
     };
 
     std::set<size_t> already_signed_transaction_pos;
@@ -513,6 +519,11 @@ namespace hive { namespace converter {
   void blockchain_converter::touch( const hp::block_id_type& id )
   {
     mainnet_head_block_id = id;
+  }
+
+  void blockchain_converter::on_tapos_change()
+  {
+    tapos_scope_tx_ids.clear();
   }
 
   bool blockchain_converter::has_hardfork( uint32_t hf )const
