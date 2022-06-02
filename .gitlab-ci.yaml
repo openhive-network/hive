@@ -361,7 +361,7 @@ patterns_tests_test_tools_based:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev
+    - apk update && apk add bash git ca-certificates curl build-base python3 python3-pip python3-dev
     - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools"
     - python3 -m ensurepip
 
