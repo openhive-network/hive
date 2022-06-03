@@ -3,18 +3,32 @@ import pathlib
 
 import pytest
 
-from test_tools import paths_to_executables, RemoteNode, Wallet
+import test_tools as tt
 
 STORE_PATTERNS = False
 
 
 @pytest.fixture
-def remote_node_wallet():
+def http_endpoint(request):
+    return request.config.getoption("--http-endpoint")
+
+
+@pytest.fixture
+def ws_endpoint(request):
+    return request.config.getoption("--ws-endpoint")
+
+
+@pytest.fixture
+def wallet_path(request):
+    return request.config.getoption("--wallet-path")
+
+
+@pytest.fixture
+def remote_node_wallet(http_endpoint, ws_endpoint, wallet_path):
     # To allow working on CI, change remote node http_endpoint, ws_endpoint and path to mainnet wallet.
-    paths_to_executables.set_path_of('cli_wallet',
-                                     '/home/dev/ComparationHF25HF26Mainnet/src/hive_HF26/build/programs/cli_wallet/cli_wallet')
-    remote_node = RemoteNode(http_endpoint='0.0.0.0:18091', ws_endpoint='0.0.0.0:18090')
-    return Wallet(attach_to=remote_node)
+    tt.paths_to_executables.set_path_of('cli_wallet', wallet_path)
+    remote_node = tt.RemoteNode(http_endpoint=http_endpoint, ws_endpoint=ws_endpoint)
+    return tt.Wallet(attach_to=remote_node)
 
 
 WALLET_API_METHODS = [
