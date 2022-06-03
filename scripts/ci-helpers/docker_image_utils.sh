@@ -7,6 +7,20 @@ function build_image_name() {
   echo "${registry}${image}:${image}-${tag}"
 }
 
+function build_image_registry_path() {
+  local image=$1
+  local tag=$2
+  local registry=${3}
+  echo "${registry}${image}"
+}
+
+function build_image_registry_tag() {
+  local image=$1
+  local tag=$2
+  local registry=${3}
+  echo "${image}-${tag}"
+}
+
 function docker_image_exists() {
   local image=$1
   local tag=$2
