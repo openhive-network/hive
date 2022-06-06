@@ -1089,7 +1089,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     transfer.memo = "First transfer";
     tx1.operations.push_back( transfer );
     sign( tx1, alice_private_key );
-    db->push_transaction( tx1, 0 ); //t1
+    push_transaction( tx1, 0 ); //t1
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     transfer.amount = ASSET( "5.000 TESTS" );
