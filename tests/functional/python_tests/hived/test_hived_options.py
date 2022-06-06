@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Final
 
 import pytest
 
@@ -78,3 +79,12 @@ def test_stop_after_replay_in_load_from_snapshot(way_to_stop, world: World, bloc
     Path(node.directory / 'blockchain' / 'shared_memory.bin').unlink()
     node.run(load_snapshot_from=snap, **way_to_stop)
     assert not node.is_running()
+
+
+def test_stop_replay_at_given_block(world: World, block_log: Path, block_log_length: int):
+    final_block: Final[int] = block_log_length // 2
+
+    node = world.create_api_node()
+    node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
+
+    assert node.get_last_block_number() == final_block
