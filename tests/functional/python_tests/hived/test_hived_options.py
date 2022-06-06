@@ -1,4 +1,5 @@
 from pathlib import Path
+import time
 from typing import Final
 
 import pytest
@@ -88,3 +89,24 @@ def test_stop_replay_at_given_block(world: World, block_log: Path, block_log_len
     node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
 
     assert node.get_last_block_number() == final_block
+
+
+def test_stop_replay_at_given_block_with_enabled_witness_plugin(world: World, block_log: Path, block_log_length: int):
+    # In the past there was a problem with witness node stopped at given block. This issue was caused by communication
+    # of witness plugin with p2p plugin. When node is stopped at given block, p2p plugin is not enabled, so witness
+    # plugin was unable to get information from it and program used to crash.
+    #
+    # This test closes issue: https://gitlab.syncad.com/hive/hive/-/issues/249.
+
+    final_block: Final[int] = block_log_length // 2
+
+    node = world.create_witness_node(witnesses=['alice'])
+    node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
+
+    assert node.get_last_block_number() == final_block
+
+    # Wait some time to increase a chance of p2p and witness plugins communication.
+    time.sleep(10)
+
+    assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
+    assert node.is_running()  # Make sure, that node didn't crash.
