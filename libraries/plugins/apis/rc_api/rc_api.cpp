@@ -153,10 +153,10 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   auto itr = idx.lower_bound( boost::make_tuple( delegator->get_id(), delegatee_id));
   auto end = idx.end();
 
-  while( result.rc_direct_delegations.size() < args.limit && itr != end )
+  while( result.rc_direct_delegations.size() < args.limit && itr != end && itr->from == delegator->get_id())
   {
     const rc_direct_delegation_object& rcdd = *itr;
-    const account_object& to_account = _db.get< account_object, by_id >( rcdd.to );
+    const account_object &to_account = _db.get<account_object, by_id>(rcdd.to);
     result.rc_direct_delegations.emplace_back(*itr, delegator->name, to_account.name);
     ++itr;
   }
