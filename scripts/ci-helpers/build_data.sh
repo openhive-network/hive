@@ -10,6 +10,9 @@ BUILD_IMAGE_TAG=${1:?"Missing arg #1 to specify built image tag"}
 SRCROOTDIR=${2:?Missing arg #2 to specify source directory}
 REGISTRY=${3:?"Missing arg #3 to specify target container registry"}
 
+# Supplement a registry path by trailing slash (if needed)
+[[ "${REGISTRY}" != */ ]] && REGISTRY="${REGISTRY}/"
+
 BLOCK_LOG_SUFFIX="-5m"
 
 "$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${SRCROOTDIR}" "${REGISTRY}" "${BLOCK_LOG_SUFFIX}"
