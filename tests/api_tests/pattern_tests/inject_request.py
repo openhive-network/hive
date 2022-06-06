@@ -58,13 +58,12 @@ def find_request_file():
 
 if __name__ == "__main__":
   target_file = find_request_file()
-  print(target_file)
   if not target_file:
-    raise RuntimeWarning("'request.py' not found, tavern code not injected!")
+    print("inject_request.py: Warning: 'request.py' not found, tavern code not injected!")
   if target_file is not None:
     injected = do_inject(target_file)
 
   if not injected:
-    raise RuntimeWarning("'custom_update_request()' already exists.\nThis should not be possible in gitlab CI!")
+    print("inject_request.py: Warning: 'custom_update_request()' already injected to 'request.py'")
   else:
     print("inject_request.py: 'custom_update_request()' added to tavern's 'request.py'")
