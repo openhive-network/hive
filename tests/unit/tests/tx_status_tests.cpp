@@ -449,7 +449,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
         //normal database_fixture::push_transaction() does not set tapos - they all point to genesis
       tx.operations.push_back( op );
       sign( tx, key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     };
 
     transfer_operation transfer;
