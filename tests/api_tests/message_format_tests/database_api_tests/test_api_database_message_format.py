@@ -5,7 +5,6 @@ from ..local_tools import date_from_now
 from .local_tools import create_account_and_fund_it, create_and_cancel_vesting_delegation, create_proposal,\
     generate_sig_digest, prepare_escrow, request_account_recovery, transfer_and_withdraw_from_savings
 
-
 def test_find_account_recovery_requests(node, wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
     request_account_recovery(wallet, 'alice')
