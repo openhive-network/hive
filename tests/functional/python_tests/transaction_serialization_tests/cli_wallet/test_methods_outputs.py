@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 
 import pytest
 
@@ -84,7 +85,8 @@ def test_or_dump_methods_outputs(remote_node_wallet, cli_wallet_method, argument
 
 
 def read_from_json(folder_name, method_name):
-    with open(f'{folder_name}/{method_name}.pat.json', 'r') as json_file:
+    path_to_folder = pathlib.Path(__file__).parent.absolute() / folder_name
+    with open(f'{path_to_folder}/{method_name}.pat.json', 'r') as json_file:
         return json.load(json_file)
 
 
@@ -92,5 +94,6 @@ def write_to_json(folder_name, method_name, json_response):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-    with open(f'{folder_name}/{method_name}.pat.json', 'w') as json_file:
+    path_to_folder = pathlib.Path(__file__).parent.absolute() / folder_name
+    with open(f'{path_to_folder}/{method_name}.pat.json', 'w') as json_file:
         json.dump(json_response, json_file)
