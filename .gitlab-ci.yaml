@@ -331,7 +331,7 @@ patterns_tests:
     - hived-for-tests
 
 
-patterns_tests_test_tools_based:
+transaction_serialization_tests:
   extends: .docker_image_builder_job
   stage: test
   variables:
@@ -358,12 +358,13 @@ patterns_tests_test_tools_based:
 
   script:
     # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests_test_tools_based/cli_wallet
-    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+    - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet
+    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml" --http-endpoint='hived-instance:8090' --ws-endpoint='hived-instance:8091' --wallet-path='$CI_PROJECT_DIR/build/programs/cli_wallet/cli_wallet'
+
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
-      junit: $CI_PROJECT_DIR/tests/api_tests/pattern_tests_test_tools_based/cli_wallet/report.xml
+      junit: $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet/report.xml
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
