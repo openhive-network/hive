@@ -54,6 +54,10 @@ while [ $# -gt 0 ]; do
             exit 3
         esac
         ;;
+    --help)
+        print_help
+        exit 0
+        ;;
     *)
         if [ -z "$BUILD_IMAGE_TAG" ];
         then
@@ -81,6 +85,9 @@ done
 TST_IMGTAG=${BUILD_IMAGE_TAG:?"Missing arg #1 to specify built image tag"}
 TST_SRCDIR=${SRCROOTDIR:?"Missing arg #2 to specify source directory"}
 TST_REGISTRY=${REGISTRY:?"Missing arg #3 to specify target container registry"}
+
+# Supplement a registry path by trailing slash (if needed)
+[[ "${REGISTRY}" != */ ]] && REGISTRY="${REGISTRY}/"
 
 echo "Moving into source root directory: ${SRCROOTDIR}"
 
