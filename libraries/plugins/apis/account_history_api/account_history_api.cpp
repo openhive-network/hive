@@ -127,7 +127,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     {
     get_transaction_return result;
     _db.with_read_lock([this, blockNo, txInBlock, &result]() {
-      auto blk = _db.fetch_block_by_number(blockNo);//iplicitly locked because of chainbase read lock
+      auto blk = _db.fetch_block_by_number(blockNo); // implicitly locked because of chainbase read lock
       FC_ASSERT(blk.valid());
       FC_ASSERT(blk->transactions.size() > txInBlock);
       result = blk->transactions[txInBlock];
