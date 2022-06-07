@@ -45,11 +45,9 @@ def test_list_rc_direct_delegations(node, wallet, from_, to, expected_delegation
         assert delegation == expected_delegation
 
 
-# @pytest.mark.skip(reason="Tests check for an unresolved problem. Run the tests after fixing the problems.")
 @pytest.mark.parametrize(
     'from_, to', [
         ('alice', 'carol'),
-        ('alice', 'initminer'),
         ('bob', 'carol'),
         ('bob', 'initminer'),
         ('carol', 'initminer'),
@@ -62,6 +60,7 @@ def test_list_rc_direct_delegations(node, wallet, from_, to, expected_delegation
     ]
 )
 def test_list_rc_direct_delegations_with_expected_empty_output(node, wallet, from_, to):
+    # 'to' parameter is name of account, but accounts are listing by id involved with account, NOT alphabetically
     with wallet.in_single_transaction():
         wallet.api.create_account('initminer', 'alice', '{}')
         wallet.api.create_account('initminer', 'bob', '{}')
@@ -78,10 +77,12 @@ def test_list_rc_direct_delegations_with_expected_empty_output(node, wallet, fro
 @pytest.mark.parametrize(
     'from_, to', [
         ('alice', 'bob'),
-        ('alice', 'andrew'),
+        ('alice', 'alice'),
+        ('alice', 'initminer'),
     ]
 )
 def test_list_rc_direct_delegations_with_expected_non_empty_output(node, wallet, from_, to):
+    # 'to' parameter is name of account, but accounts are listing by id involved with account, NOT alphabetically
     with wallet.in_single_transaction():
         wallet.api.create_account('initminer', 'alice', '{}')
         wallet.api.create_account('initminer', 'bob', '{}')
