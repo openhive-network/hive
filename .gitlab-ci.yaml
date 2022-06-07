@@ -244,6 +244,7 @@ fork_tests:
   script:
     - cd tests/functional/python_tests/fork_tests
     - pytest --junitxml="./report.xml"
+  timeout: 15min
   artifacts:
     reports:
       junit: tests/functional/python_tests/fork_tests/report.xml
