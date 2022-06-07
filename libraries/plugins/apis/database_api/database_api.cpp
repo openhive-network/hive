@@ -1737,15 +1737,12 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
 
 DEFINE_API_IMPL( database_api_impl, verify_authority )
 {
-  FC_TODO( "Here should be an additional argument with a pack value." )
-  hive::protocol::pack_type pack = hive::protocol::pack_type::legacy;
-
   args.trx.verify_authority(
     _db.get_chain_id(),
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-    pack,
+    args.pack,
     HIVE_MAX_SIG_CHECK_DEPTH,
     HIVE_MAX_AUTHORITY_MEMBERSHIP,
     HIVE_MAX_SIG_CHECK_ACCOUNTS,
