@@ -577,6 +577,7 @@ typedef get_required_signatures_return get_potential_signatures_return;
 struct verify_authority_args
 {
   signed_transaction trx;
+  hive::protocol::pack_type pack = hive::protocol::pack_type::legacy;
 };
 
 struct verify_authority_return
@@ -911,7 +912,7 @@ FC_REFLECT( hive::plugins::database_api::get_potential_signatures_args,
   (trx) )
 
 FC_REFLECT( hive::plugins::database_api::verify_authority_args,
-  (trx) )
+  (trx)(pack) )
 
 FC_REFLECT( hive::plugins::database_api::verify_authority_return,
   (valid) )
