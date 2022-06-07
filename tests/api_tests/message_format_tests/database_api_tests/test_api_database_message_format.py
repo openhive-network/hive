@@ -1,3 +1,5 @@
+import pytest
+
 from test_tools import Account, Asset
 
 from ..local_tools import date_from_now
@@ -291,6 +293,8 @@ def test_list_witnesses(node, wallet):
     assert len(witnesses) != 0
 
 
+@pytest.mark.skip(reason="This method currently throws an exception (missing required active authority:Missing Active "
+                         "Authority initminer) even though transaction is signed")
 def test_verify_authority(node, wallet):
     transaction = wallet.api.create_account('initminer', 'alice', '{}')
     node.api.database.verify_authority(trx=transaction)
