@@ -21,6 +21,13 @@ from test_tools import Asset
                 ]
         ),
         (
+                'alice', 'initminer',
+                [
+                    {'from': 'alice', 'to': 'bob', 'delegated_rc': 5},
+                    {'from': 'alice', 'to': 'carol', 'delegated_rc': 10}
+                ]
+        ),
+        (
                 'alice', 'carol',
                 [{'from': 'alice', 'to': 'carol', 'delegated_rc': 10}]
         ),
@@ -47,41 +54,19 @@ def test_list_rc_direct_delegations(node, wallet, from_, to, expected_delegation
 
 @pytest.mark.parametrize(
     'from_, to', [
-        ('alice', 'carol'),
-        ('bob', 'carol'),
+        ('alice', 'andrew'),
+        ('bob', 'andrew'),
         ('bob', 'initminer'),
-        ('carol', 'initminer'),
+        ('andrew', 'initminer'),
         ('bob', 'alice'),
-        ('carol', 'alice'),
+        ('andrew', 'alice'),
         ('initminer', 'alice'),
-        ('carol', 'bob'),
+        ('andrew', 'bob'),
         ('initminer', 'bob'),
-        ('initminer', 'carol'),
+        ('initminer', 'andrew'),
     ]
 )
 def test_list_rc_direct_delegations_with_expected_empty_output(node, wallet, from_, to):
-    # 'to' parameter is name of account, but accounts are listing by id involved with account, NOT alphabetically
-    with wallet.in_single_transaction():
-        wallet.api.create_account('initminer', 'alice', '{}')
-        wallet.api.create_account('initminer', 'bob', '{}')
-        wallet.api.create_account('initminer', 'carol', '{}')
-
-    wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(0.1))
-    wallet.api.delegate_rc('alice', ['bob'], 5)
-    delegations = node.api.wallet_bridge.list_rc_direct_delegations([from_, to], 100)
-
-    assert len(delegations) == 0
-
-
-# @pytest.mark.skip(reason="Tests check for an unresolved problem. Run the tests after fixing the problems.")
-@pytest.mark.parametrize(
-    'from_, to', [
-        ('alice', 'bob'),
-        ('alice', 'alice'),
-        ('alice', 'initminer'),
-    ]
-)
-def test_list_rc_direct_delegations_with_expected_non_empty_output(node, wallet, from_, to):
     # 'to' parameter is name of account, but accounts are listing by id involved with account, NOT alphabetically
     with wallet.in_single_transaction():
         wallet.api.create_account('initminer', 'alice', '{}')
@@ -92,4 +77,4 @@ def test_list_rc_direct_delegations_with_expected_non_empty_output(node, wallet,
     wallet.api.delegate_rc('alice', ['bob'], 5)
     delegations = node.api.wallet_bridge.list_rc_direct_delegations([from_, to], 100)
 
-    assert len(delegations) != 0
+    assert len(delegations) == 0
