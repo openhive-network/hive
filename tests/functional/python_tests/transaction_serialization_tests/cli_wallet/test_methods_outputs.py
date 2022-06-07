@@ -75,13 +75,13 @@ WALLET_API_METHODS = [
 def test_or_dump_methods_outputs(remote_node_wallet, cli_wallet_method, arguments):
     folder_name = 'hf26_response_dumps'
     response_from_dump = read_from_json(folder_name, cli_wallet_method)
-    response_from_node = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
+    response = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
 
-    assert response_from_dump == response_from_node
+    assert response_from_dump == response
 
     # To generate patterns again comment assert and read_from_json and uncomment code below
 
-    # write_to_json(folder_name, cli_wallet_method, response_from_node)
+    # write_to_json(folder_name, cli_wallet_method, response)
 
 
 def read_from_json(folder_name, method_name):
