@@ -1,5 +1,4 @@
 import json
-import os
 import pathlib
 
 import pytest
@@ -91,9 +90,7 @@ def read_from_json(folder_name, method_name):
 
 
 def write_to_json(folder_name, method_name, json_response):
-    if not os.path.exists(folder_name):
-        os.makedirs(folder_name)
-
     path_to_folder = pathlib.Path(__file__).parent.absolute() / folder_name
+    path_to_folder.mkdir(parents=True, exist_ok=True)
     with open(f'{path_to_folder}/{method_name}.pat.json', 'w') as json_file:
         json.dump(json_response, json_file)
