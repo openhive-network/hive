@@ -76,7 +76,7 @@ def test_or_dump_methods_outputs(remote_node_wallet, cli_wallet_method, argument
     response_from_dump = read_from_json(folder_name, cli_wallet_method)
     response = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
 
-    assert response_from_dump == response
+    assert response == response_from_dump
 
     # To generate patterns again comment assert and read_from_json and uncomment code below
 
