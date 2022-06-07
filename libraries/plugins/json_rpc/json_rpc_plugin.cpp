@@ -354,10 +354,12 @@ namespace detail
                   }
                   catch( fc::bad_cast_exception& e )
                   {
-                    if( method_name == "network_broadcast_api.broadcast_transaction" )
+                    if( method_name == "network_broadcast_api.broadcast_transaction" ||
+                        method_name == "database_api.verify_authority"
+                      )
                     {
                       mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
-                      ilog("Change of serialization( `network_broadcast_api.broadcast_transaction' ) - a legacy format is enabled now" );
+                      ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", method_name) );
                       response.result = (*call)( func_args );
                     }
                     else
