@@ -9,20 +9,24 @@
 
 #include <chainbase/chainbase.hpp>
 
+#include <hive/chain/signed_block_transporter.hpp>
+
 namespace hive { namespace chain {
 
   using hive::protocol::signed_block;
   using hive::protocol::block_id_type;
+
+  using hive::chain::signed_block_transporter;
 
   struct fork_item
   {
     private:
       fork_item(){}
     public:
-      fork_item( signed_block d )
-      :num(d.block_num()),id(d.id()),data( std::move(d) ){}
+      fork_item( signed_block_transporter d )
+      :num(d.block_header.block_num()),id(d.block_header.id()),data( std::move(d) ){}
 
-      block_id_type previous_id()const { return data.previous; }
+      block_id_type previous_id()const { return data.block_header.previous; }
 
       weak_ptr< fork_item > prev;
       uint32_t              num;    // initialized in ctor
@@ -32,7 +36,7 @@ namespace hive { namespace chain {
         */
       bool                  invalid = false;
       block_id_type         id;
-      signed_block          data;
+      signed_block_transporter data;
   };
   typedef shared_ptr<fork_item> item_ptr;
 
@@ -64,7 +68,7 @@ namespace hive { namespace chain {
       fork_database();
       void reset();
 
-      void                             start_block(signed_block b);
+      void                             start_block(signed_block_transporter b);
       void                             remove(block_id_type b);
       void                             set_head(shared_ptr<fork_item> h);
       bool                             is_known_block(const block_id_type& id)const;
@@ -88,7 +92,7 @@ namespace hive { namespace chain {
       /**
         *  @return the new head block ( the longest fork )
         */
-      shared_ptr<fork_item>            push_block(const signed_block& b);
+      shared_ptr<fork_item>            push_block(const signed_block_transporter& b);
       shared_ptr<fork_item>            head()const;
       shared_ptr<fork_item>            head_unlocked()const;
       uint32_t                         get_oldest_block_num_unlocked()const;

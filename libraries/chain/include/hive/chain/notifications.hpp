@@ -2,21 +2,23 @@
 
 #include <hive/protocol/block.hpp>
 
+#include <hive/chain/signed_block_transporter.hpp>
+
 namespace hive { namespace chain {
 
 struct block_notification
 {
-  block_notification( const hive::protocol::signed_block& b ) : block(b)
+  block_notification( const hive::chain::signed_block_transporter& b ) : block(b)
   {
-    block_id = b.id();
-    prev_block_id = b.previous;
+    block_id = b.block_header.id();
+    prev_block_id = b.block_header.previous;
     block_num = hive::protocol::block_header::num_from_id( block_id );
   }
 
   hive::protocol::block_id_type          block_id;
   hive::protocol::block_id_type          prev_block_id;
   uint32_t                               block_num = 0;
-  const hive::protocol::signed_block&    block;
+  const hive::chain::signed_block_transporter& block;
 };
 
 struct transaction_notification

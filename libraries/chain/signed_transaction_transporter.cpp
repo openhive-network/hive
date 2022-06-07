@@ -59,4 +59,9 @@ namespace hive { namespace chain {
     return packed_trx;
   }
 
+  protocol::digest_type signed_transaction_transporter::merkle_digest() const
+  {
+    return trx.merkle_digest();
+  }
+
 } } // hive::chain

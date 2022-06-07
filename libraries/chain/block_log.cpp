@@ -42,7 +42,7 @@ namespace hive { namespace chain {
   namespace detail {
     class block_log_impl {
       public:
-        boost::atomic_shared_ptr<signed_block> head;
+        boost::atomic_shared_ptr<signed_block_transporter> head;
 
         // these don't change after opening, don't need locking
         int block_log_fd;
@@ -64,7 +64,7 @@ namespace hive { namespace chain {
         // dictionaries are optimized for level 15
         int zstd_level = 15; 
 
-        signed_block read_block_from_offset_and_size(uint64_t offset, uint64_t size);
+        signed_block_transporter read_block_from_offset_and_size(uint64_t offset, uint64_t size);
         signed_block_header read_block_header_from_offset_and_size(uint64_t offset, uint64_t size);
         void truncate_block_index_to_head_block();
     };
@@ -123,14 +123,14 @@ namespace hive { namespace chain {
       return total_read;
     }
 
-    signed_block block_log_impl::read_block_from_offset_and_size(uint64_t offset, uint64_t size)
+    signed_block_transporter block_log_impl::read_block_from_offset_and_size(uint64_t offset, uint64_t size)
     {
       std::unique_ptr<char[]> serialized_data(new char[size]);
       auto total_read = pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
 
       FC_ASSERT(total_read == size);
 
-      signed_block block;
+      signed_block_transporter block;
       fc::raw::unpack_from_char_array(serialized_data.get(), size, block);
 
       return block;
@@ -152,7 +152,7 @@ namespace hive { namespace chain {
     void block_log_impl::truncate_block_index_to_head_block()
     {
       // the caller has already loaded the head block
-      uint32_t head_block_num = head.load()->block_num();
+      uint32_t head_block_num = head.load()->block_header.block_num();
       ilog("Truncating the block index to the last block in the block log, #${head_block_num}", (head_block_num));
 
       if (ftruncate(block_index_fd, head_block_num * sizeof(uint64_t)) == -1)
@@ -255,13 +255,13 @@ namespace hive { namespace chain {
       if (block_log_size)
       {
         idump((block_log_size));
-        my->head.exchange(boost::make_shared<signed_block>(read_head()));
+        my->head.exchange(boost::make_shared<signed_block_transporter>(read_head()));
 
         if (index_size)
         {
           ilog("Index is nonempty" );
           FC_ASSERT(index_size % sizeof(uint64_t) == 0, "Corrupt index, file size is not an even multiple of 8");
-          uint32_t head_block_num_according_to_log = my->head.load()->block_num();
+          uint32_t head_block_num_according_to_log = my->head.load()->block_header.block_num();
           uint32_t head_block_num_according_to_index = index_size / 8;
           if (head_block_num_according_to_log > head_block_num_according_to_index)
           {
@@ -329,7 +329,7 @@ namespace hive { namespace chain {
       ::close(my->block_index_fd);
       my->block_log_fd = -1;
     }
-    my->head.store(boost::shared_ptr<signed_block>());
+    my->head.store(boost::shared_ptr<signed_block_transporter>());
   }
 
   bool block_log::is_open()const
@@ -391,7 +391,7 @@ namespace hive { namespace chain {
   //   are reading the block log.
   // There is no real use-case for multiple writers so it's not worth
   // adding a lock to allow it.
-  uint64_t block_log::append( const signed_block& b )
+  uint64_t block_log::append( const signed_block_transporter& b )
   {
     try
     {
@@ -404,7 +404,7 @@ namespace hive { namespace chain {
         {
           block_attributes_t attributes;
           attributes.flags = block_flags::zstd;
-          attributes.dictionary_number = get_best_available_zstd_compression_dictionary_number_for_block(b.block_num());
+          attributes.dictionary_number = get_best_available_zstd_compression_dictionary_number_for_block(b.block_header.block_num());
           std::tuple<std::unique_ptr<char[]>, size_t> zstd_compressed_block = compress_block_zstd(serialized_block.data(), serialized_block.size(), attributes.dictionary_number, my->zstd_level);
           block_start_pos = append_raw(std::get<0>(zstd_compressed_block).get(), std::get<1>(zstd_compressed_block), attributes);
         }
@@ -418,7 +418,7 @@ namespace hive { namespace chain {
         block_start_pos = append_raw(serialized_block.data(), serialized_block.size(), {block_flags::uncompressed});
 
       // update our cached head block
-      boost::shared_ptr<signed_block> new_head = boost::make_shared<signed_block>(b);
+      boost::shared_ptr<signed_block_transporter> new_head = boost::make_shared<signed_block_transporter>(b);
       my->head.exchange(new_head);
 
       return block_start_pos;
@@ -471,24 +471,24 @@ namespace hive { namespace chain {
     return decompress_raw_block(raw_block_data.get(), raw_block_size, attributes);
   }
 
-  optional< signed_block > block_log::read_block_by_num( uint32_t block_num )const
+  optional< signed_block_transporter > block_log::read_block_by_num( uint32_t block_num )const
   {
     try
     {
       // first, check if it's the current head block; if so, we can just return it.  If the
       // block number is less than than the current head, it's guaranteed to have been fully
       // written to the log+index
-      boost::shared_ptr<signed_block> head_block = my->head.load();
+      boost::shared_ptr<signed_block_transporter> head_block = my->head.load();
       /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
-      if (block_num == 0 || !head_block || block_num > head_block->block_num())
-        return optional<signed_block>();
-      if (block_num == head_block->block_num())
+      if (block_num == 0 || !head_block || block_num > head_block->block_header.block_num())
+        return optional<signed_block_transporter>();
+      if (block_num == head_block->block_header.block_num())
         return *head_block;
 
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
       std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(read_raw_block_data_by_num(block_num));
-      signed_block block;
+      signed_block_transporter block;
       fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block);
       return block;
     }
@@ -502,12 +502,12 @@ namespace hive { namespace chain {
       // first, check if it's the current head block; if so, we can just return it.  If the
       // block number is less than than the current head, it's guaranteed to have been fully
       // written to the log+index
-      boost::shared_ptr<signed_block> head_block = my->head.load();
+      boost::shared_ptr<signed_block_transporter> head_block = my->head.load();
       /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
-      if (block_num == 0 || !head_block || block_num > head_block->block_num())
-        return optional<signed_block>();
-      if (block_num == head_block->block_num())
-        return *head_block;
+      if (block_num == 0 || !head_block || block_num > head_block->block_header.block_num())
+        return optional<signed_block_header>();
+      if (block_num == head_block->block_header.block_num())
+        return head_block->block_header;
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
 
@@ -520,23 +520,23 @@ namespace hive { namespace chain {
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
 
-  vector<signed_block> block_log::read_block_range_by_num( uint32_t first_block_num, uint32_t count )const
+  vector<signed_block_transporter> block_log::read_block_range_by_num( uint32_t first_block_num, uint32_t count )const
   {
     try
     {
-      vector<signed_block> result;
+      vector<signed_block_transporter> result;
 
       uint32_t last_block_num = first_block_num + count - 1;
 
       // first, check if the last block we want is the current head block; if so, we can 
       // will use it and then load the previous blocks from the block log
-      boost::shared_ptr<signed_block> head_block = my->head.load();
-      if (!head_block || first_block_num > head_block->block_num())
+      boost::shared_ptr<signed_block_transporter> head_block = my->head.load();
+      if (!head_block || first_block_num > head_block->block_header.block_num())
         return result; // the caller is asking for blocks after the head block, we don't have them
 
       // if that head block will be our last block, we want it at the end of our vector,
       // so we'll tack it on at the bottom of this function
-      bool last_block_is_head_block = last_block_num == head_block->block_num();
+      bool last_block_is_head_block = last_block_num == head_block->block_header.block_num();
       uint32_t last_block_num_from_disk = last_block_is_head_block ? last_block_num - 1 : last_block_num;
 
       if (first_block_num <= last_block_num_from_disk)
@@ -568,7 +568,7 @@ namespace hive { namespace chain {
 
           std::tuple<std::unique_ptr<char[]>, size_t> decompressed_raw_block = decompress_raw_block(block_data.get() + offset_in_memory, size, attributes[i]);
 
-          signed_block block;
+          signed_block_transporter block;
           fc::raw::unpack_from_char_array(std::get<0>(decompressed_raw_block).get(), std::get<1>(decompressed_raw_block), block);
           result.push_back(std::move(block));
         }
@@ -605,20 +605,20 @@ namespace hive { namespace chain {
   }
 
   // not thread safe, but it's only called when opening the block log, we can assume we're the only thread accessing it
-  signed_block block_log::read_head()const
+  signed_block_transporter block_log::read_head()const
   {
     try
     {
       std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(read_raw_head_block());
 
-      signed_block block;
+      signed_block_transporter block;
       fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block);
       return block;
     }
     FC_LOG_AND_RETHROW()
   }
 
-  const boost::shared_ptr<signed_block> block_log::head()const
+  const boost::shared_ptr<signed_block_transporter> block_log::head()const
   {
     return my->head.load();
   }
@@ -628,9 +628,9 @@ namespace hive { namespace chain {
     try
     {
       // the caller has already loaded the head block
-      boost::shared_ptr<signed_block> head_block = my->head.load();
+      boost::shared_ptr<signed_block_transporter> head_block = my->head.load();
       FC_ASSERT(head_block);
-      const uint32_t head_block_num = head_block->block_num();
+      const uint32_t head_block_num = head_block->block_header.block_num();
       idump((head_block_num));
 
       // Note: the old implementation recreated the block index by reading the log

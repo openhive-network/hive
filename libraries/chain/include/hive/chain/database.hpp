@@ -9,6 +9,7 @@
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/signed_transaction_transporter.hpp>
+#include <hive/chain/signed_block_transporter.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -189,7 +190,7 @@ namespace chain {
 
     private:
 
-      uint32_t reindex_internal( const open_args& args, signed_block& block );
+      uint32_t reindex_internal( const open_args& args, signed_block_transporter& block );
       void remove_expired_governance_votes();
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
@@ -251,11 +252,11 @@ namespace chain {
       block_id_type              find_block_id_for_num( uint32_t block_num )const;
     public:
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
-      optional<signed_block>     fetch_block_by_id( const block_id_type& id )const;
+      optional<signed_block_transporter> fetch_block_by_id( const block_id_type& id )const;
       optional<signed_block_header> fetch_block_header_by_id( const block_id_type& id )const;
       optional<signed_block_header> fetch_block_header_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      optional<signed_block>     fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      std::vector<signed_block>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
+      optional<signed_block_transporter>     fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      std::vector<signed_block_transporter>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
       const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
@@ -274,14 +275,14 @@ namespace chain {
         * const signed_block_header& - header of previous block
         * const signed_block& - block to be processed currently
       */
-      void foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const;
+      void foreach_block(const std::function<bool(const signed_block_header&, const signed_block_transporter&)>& processor) const;
 
       /// Allows to process all blocks visit all transactions held there until processor returns true.
-      void foreach_tx(std::function<bool(const signed_block_header&, const signed_block&,
-        const signed_transaction&, uint32_t)> processor) const;
+      void foreach_tx(std::function<bool(const signed_block_header&, const signed_block_transporter&,
+        const signed_transaction_transporter&, uint32_t)> processor) const;
       /// Allows to process all operations held in blocks and transactions until processor returns true.
-      void foreach_operation(std::function<bool(const signed_block_header&, const signed_block&,
-        const signed_transaction&, uint32_t, const operation&, uint16_t)> processor) const;
+      void foreach_operation(std::function<bool(const signed_block_header&, const signed_block_transporter&,
+        const signed_transaction_transporter&, uint32_t, const operation&, uint16_t)> processor) const;
 
       const witness_object&  get_witness(  const account_name_type& name )const;
       const witness_object*  find_witness( const account_name_type& name )const;
@@ -361,10 +362,10 @@ namespace chain {
       const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
       bool                                   before_last_checkpoint()const;
 
-      bool push_block( const signed_block& b, uint32_t skip = skip_nothing );
+      bool push_block( const signed_block_transporter& b, uint32_t skip = skip_nothing );
       void push_transaction( const signed_transaction_transporter& trx, uint32_t skip = skip_nothing );
       void _maybe_warn_multiple_production( uint32_t height )const;
-      bool _push_block( const signed_block& b );
+      bool _push_block( const signed_block_transporter& b );
       void _push_transaction( const signed_transaction_transporter& trx );
 
       void pop_block();
@@ -721,8 +722,8 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-      void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
-      void _apply_block( const signed_block& next_block );
+      void apply_block( const signed_block_transporter& next_block, uint32_t skip = skip_nothing );
+      void _apply_block( const signed_block_transporter& next_block );
       void _apply_transaction( const signed_transaction_transporter& trx );
       void apply_operation( const operation& op );
 
@@ -732,8 +733,8 @@ namespace chain {
       ///Steps involved in applying a new block
       ///@{
 
-      const witness_object& validate_block_header( uint32_t skip, const signed_block& next_block )const;
-      void create_block_summary(const signed_block& next_block);
+      const witness_object& validate_block_header( uint32_t skip, const signed_block_transporter& next_block )const;
+      void create_block_summary(const signed_block_transporter& next_block);
 
       //calculates sum of all balances stored on given account, returns true if any is nonzero
       bool collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,
@@ -752,14 +753,14 @@ namespace chain {
 
       void process_recurrent_transfers();
 
-      void update_global_dynamic_data( const signed_block& b );
-      void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
+      void update_global_dynamic_data( const signed_block_transporter& b );
+      void update_signing_witness(const witness_object& signing_witness, const signed_block_transporter& new_block);
       uint32_t update_last_irreversible_block();
       void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
-      void process_header_extensions( const signed_block& next_block, required_automated_actions& req_actions, optional_automated_actions& opt_actions );
+      void process_header_extensions( const signed_block_transporter& next_block, required_automated_actions& req_actions, optional_automated_actions& opt_actions );
       void process_genesis_accounts();
 
       void generate_required_actions();

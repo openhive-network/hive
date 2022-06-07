@@ -1,6 +1,8 @@
 #pragma once
 
+#include <hive/protocol/types.hpp>
 #include <hive/protocol/transaction.hpp>
+
 #include <fc/io/raw.hpp>
 
 namespace hive { namespace chain {
@@ -34,21 +36,25 @@ class signed_transaction_transporter
 
     pack_type get_pack() const;
     const t_packed_trx& get_packed_trx() const;
+
+    protocol::digest_type merkle_digest()const;
 };
 
 } } // hive::chain
 
+FC_REFLECT( hive::chain::signed_transaction_transporter, (trx) )
+
 namespace fc { namespace raw {
   
 template< typename Stream >
-inline void pack( Stream& s, const hive::protocol::signed_transaction_transporter& sym )
+inline void pack( Stream& s, const hive::chain::signed_transaction_transporter& sym )
 {
   hive::protocol::serialization_mode_controller::pack_guard guard( sym.get_pack() );
   pack( s, sym.trx );
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::signed_transaction_transporter& value, uint32_t )
+inline void unpack( Stream& s, hive::chain::signed_transaction_transporter& value, uint32_t )
 {
   unpack( s, value.trx );
 }

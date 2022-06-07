@@ -27,7 +27,7 @@ void fork_database::pop_block()
   });
 }
 
-void fork_database::start_block(signed_block b)
+void fork_database::start_block(signed_block_transporter b)
 {
   auto item = std::make_shared<fork_item>(std::move(b));
   with_write_lock( [&]() {
@@ -40,7 +40,7 @@ void fork_database::start_block(signed_block b)
   * Pushes the block into the fork database and caches it if it doesn't link
   *
   */
-shared_ptr<fork_item> fork_database::push_block(const signed_block& b)
+shared_ptr<fork_item> fork_database::push_block(const signed_block_transporter& b)
 {
   auto item = std::make_shared<fork_item>(b);
   return with_write_lock( [&]() {
@@ -49,8 +49,8 @@ shared_ptr<fork_item> fork_database::push_block(const signed_block& b)
     }
     catch ( const unlinkable_block_exception& e )
     {
-      wlog( "Pushing block to fork database that failed to link: ${id}, ${num}", ("id",b.id())("num",b.block_num()) );
-      wlog( "Head: ${num}, ${id}", ("num",_head->data.block_num())("id",_head->data.id()) );
+      wlog( "Pushing block to fork database that failed to link: ${id}, ${num}", ("id",b.block_header.id())("num",b.block_header.block_num()) );
+      wlog( "Head: ${num}, ${id}", ("num",_head->data.block_header.block_num())("id",_head->data.block_header.id()) );
       _unlinked_index.insert( item );
       throw;
     }
@@ -226,7 +226,7 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
-    return _head ? _head->data.timestamp : time_point_sec();
+    return _head ? _head->data.block_header.timestamp : time_point_sec();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
@@ -260,19 +260,19 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
     auto second_branch = *second_branch_itr;
   
   
-    while( first_branch->data.block_num() > second_branch->data.block_num() )
+    while( first_branch->data.block_header.block_num() > second_branch->data.block_header.block_num() )
     {
       result.first.push_back(first_branch);
       first_branch = first_branch->prev.lock();
       FC_ASSERT(first_branch);
     }
-    while( second_branch->data.block_num() > first_branch->data.block_num() )
+    while( second_branch->data.block_header.block_num() > first_branch->data.block_header.block_num() )
     {
       result.second.push_back( second_branch );
       second_branch = second_branch->prev.lock();
       FC_ASSERT(second_branch);
     }
-    while( first_branch->data.previous != second_branch->data.previous )
+    while( first_branch->data.block_header.previous != second_branch->data.block_header.previous )
     {
       result.first.push_back(first_branch);
       result.second.push_back(second_branch);

@@ -1,6 +1,7 @@
 #pragma once
 #include <fc/filesystem.hpp>
 #include <hive/protocol/block.hpp>
+#include <hive/chain/signed_block_transporter.hpp>
 
 extern "C"
 {
@@ -69,20 +70,20 @@ namespace hive { namespace chain {
       void close();
       bool is_open()const;
 
-      uint64_t append(const signed_block& b);
+      uint64_t append(const signed_block_transporter& b);
       uint64_t append_raw(const char* raw_block_data, size_t raw_block_size, block_attributes_t flags);
 
       void flush();
       std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_block_data_by_num(uint32_t block_num) const;
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t>&& raw_block_data_tuple);
 
-      optional<signed_block> read_block_by_num( uint32_t block_num )const;
+      optional<signed_block_transporter> read_block_by_num( uint32_t block_num )const;
       optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
-      vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
+      vector<signed_block_transporter> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
-      signed_block read_head()const;
-      const boost::shared_ptr<signed_block> head() const;
+      signed_block_transporter read_head()const;
+      const boost::shared_ptr<signed_block_transporter> head() const;
       void set_compression(bool enabled);
       void set_compression_level(int level);
 
