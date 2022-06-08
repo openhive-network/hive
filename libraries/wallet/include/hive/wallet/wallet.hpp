@@ -1442,10 +1442,19 @@ class wallet_api
           uint32_t limit);
 
     /**
-     *  List direct RC delegations.
+     *  Lists direct RC delegations from specified delegator to its delegatees.
      *
-     *  @param start    Starting value for querying results,
-     *  @param limit   The limit of returned results
+     *  Results are ordered ascending by delegatee' ids. Note, that results are not ordered
+     *  alphabetically, like in other API methods starting with list_ prefix.
+     *
+     *  Delegations are listed starting from specified delegatee or, if there is no delegations
+     *  to specified delegatee, from first delegatee whose id is higher.
+     *
+     *  To list delegations from the beginning, delegatee can be specified as empty string.
+     *
+     *  @param start Specifies delegator and first delegatee to list. It is array with two strings,
+     *               where 0-th element is delegator name and 1-st element is first delegatee name.
+     *  @param limit Maximum number of returned delegations.
      */
     wallet_serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> list_rc_direct_delegations(
           fc::variant start,

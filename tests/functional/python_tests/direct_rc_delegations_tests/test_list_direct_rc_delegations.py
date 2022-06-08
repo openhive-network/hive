@@ -52,8 +52,8 @@ from test_tools import Asset
         ('bob', 'dan', []),
         ('bob', 'initminer', []),
         ('carol', 'alice', []),
-        ('initminer', 'alice', []),
         ('dan', 'alice', []),
+        ('initminer', 'alice', []),
     ]
 )
 def test_list_rc_direct_delegations(node, wallet, from_, to, expected_delegations):
