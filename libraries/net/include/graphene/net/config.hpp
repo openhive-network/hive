@@ -36,7 +36,7 @@
 /**
  * 2MiB
  */
-#define MAX_MESSAGE_SIZE                                     1024*1024*2
+#define MAX_MESSAGE_SIZE                                     (1024*1024*2 + 20) //20 for block_type_id size
 #define GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME      30 // seconds
 
 /**
