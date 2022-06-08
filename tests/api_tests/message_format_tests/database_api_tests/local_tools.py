@@ -4,8 +4,7 @@ import subprocess
 
 import test_tools as tt
 
-from ....local_tools import create_account_and_fund_it
-from ..local_tools import date_from_now
+from ....local_tools import create_account_and_fund_it, date_from_now
 
 
 def create_and_cancel_vesting_delegation(wallet, delegator, delegatee):
