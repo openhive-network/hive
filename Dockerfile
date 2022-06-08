@@ -52,7 +52,7 @@ ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
 ARG HIVE_CONVERTER_BUILD=OFF
 ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
 
-ARG HIVE_LINT=ON
+ARG HIVE_LINT=OFF
 ENV HIVE_LINT=${HIVE_LINT}
 
 USER hived
@@ -66,7 +66,7 @@ RUN \
   ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
-  --cmake-arg="-DHIVE_LINT=ON" \
+  --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
   && \
   cd ./build && \
   find . -name *.o  -type f -delete && \
