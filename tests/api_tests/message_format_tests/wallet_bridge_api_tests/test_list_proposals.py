@@ -2,7 +2,7 @@ import pytest
 
 import test_tools.exceptions
 
-from ..local_tools import date_from_now
+from local_tools import date_from_now
 from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
 
 

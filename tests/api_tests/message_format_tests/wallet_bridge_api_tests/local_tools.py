@@ -2,7 +2,7 @@ import json
 
 from collections.abc import Iterable
 
-from ..local_tools import date_from_now
+from local_tools import date_from_now
 from test_tools import Account, Asset, logger, Wallet
 
 

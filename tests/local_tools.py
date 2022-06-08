@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 from test_tools import Asset
@@ -18,3 +19,8 @@ def create_account_and_fund_it(wallet, name: str, tests: Optional[Asset.Test] = 
 
         if tbds is not None:
             wallet.api.transfer('initminer', name, tbds, 'memo')
+
+
+def date_from_now(*, weeks):
+    future_data = datetime.now() + timedelta(weeks=weeks)
+    return future_data.strftime('%Y-%m-%dT%H:%M:%S')

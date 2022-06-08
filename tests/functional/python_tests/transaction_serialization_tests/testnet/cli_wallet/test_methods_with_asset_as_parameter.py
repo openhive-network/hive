@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from local_tools import create_account_and_fund_it
+from local_tools import create_account_and_fund_it, date_from_now
 from .local_tools import test_asset_serialization, Mismatched
 
 @test_asset_serialization(_100_tests=tt.Asset.Test(100), _100_tbd=tt.Asset.Tbd(100))
@@ -50,7 +50,7 @@ def test_escrow_transfer_matched(prepared_wallet, _1_tbd, _2_tests):
         prepared_wallet.api.create_account('initminer', 'bob', '{}')
 
     prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _1_tbd,
-                                        '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
 @test_asset_serialization(_1_tbd=Mismatched(tt.Asset.Tbd(1)), _2_tests=Mismatched(tt.Asset.Test(2)))
@@ -61,7 +61,7 @@ def test_escrow_transfer_mixed(prepared_wallet, _1_tbd, _2_tests):
 
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _1_tbd,
-                                            '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                            date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
 @test_asset_serialization(_1_tbd=tt.Asset.Tbd(1), _2_tests=tt.Asset.Test(2), _50_tests=tt.Asset.Test(50))
@@ -71,7 +71,7 @@ def test_escrow_release_matched(prepared_wallet, _1_tbd, _2_tests, _50_tests):
     create_account_and_fund_it(prepared_wallet, 'bob', vests=_50_tests)
 
     prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _1_tbd,
-                                        '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
     prepared_wallet.api.escrow_approve('initminer', 'alice', 'bob', 'bob', 99, True)
 
@@ -92,7 +92,7 @@ def test_escrow_release_mixed(prepared_wallet, _1_tbd_mismatched, _2_tests_misma
     create_account_and_fund_it(prepared_wallet, 'bob', vests=_50_tests)
 
     prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _1_tbd,
-                                        '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
     with prepared_wallet.in_single_transaction():
         prepared_wallet.api.escrow_approve('initminer', 'alice', 'bob', 'bob', 99, True)
@@ -398,7 +398,7 @@ def test_create_proposal_matched(prepared_wallet, _1000000_tests, _1000000_tbd):
 
     prepared_wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
-    prepared_wallet.api.create_proposal('alice', 'alice', '2031-01-01T00:00:00', '2031-06-01T00:00:00', _1000000_tbd,
+    prepared_wallet.api.create_proposal('alice', 'alice', date_from_now(weeks=16), date_from_now(weeks=20), _1000000_tbd,
                                         'subject-1', 'permlink')
 
 
@@ -410,7 +410,7 @@ def test_create_proposal_mixed(prepared_wallet, _1000000_tests, _1000000_tbd, _1
     prepared_wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_wallet.api.create_proposal('alice', 'alice', '2031-01-01T00:00:00', '2031-06-01T00:00:00', _10_tbd,
+        prepared_wallet.api.create_proposal('alice', 'alice', date_from_now(weeks=16), date_from_now(weeks=20), _10_tbd,
                                             'subject-1', 'permlink')
 
 
@@ -421,10 +421,10 @@ def test_update_proposal_matched(prepared_wallet, _1000000_tests, _1000000_tbd, 
 
     prepared_wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
-    prepared_wallet.api.create_proposal('alice', 'alice', '2031-01-01T00:00:00', '2031-06-01T00:00:00', _1000000_tbd,
+    prepared_wallet.api.create_proposal('alice', 'alice', date_from_now(weeks=16), date_from_now(weeks=20), _1000000_tbd,
                                         'subject-1', 'permlink')
 
-    prepared_wallet.api.update_proposal(0, 'alice', _10_tbd, 'subject-1', 'permlink', '2031-06-01T00:00:00')
+    prepared_wallet.api.update_proposal(0, 'alice', _10_tbd, 'subject-1', 'permlink', date_from_now(weeks=19))
 
 
 @test_asset_serialization(_1000000_tests=tt.Asset.Test(1000000), _1000000_tbd=tt.Asset.Tbd(1000000),
@@ -434,11 +434,11 @@ def test_update_proposal_mixed(prepared_wallet, _1000000_tests, _1000000_tbd, _1
 
     prepared_wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
-    prepared_wallet.api.create_proposal('alice', 'alice', '2031-01-01T00:00:00', '2031-06-01T00:00:00', _1000000_tbd,
+    prepared_wallet.api.create_proposal('alice', 'alice', date_from_now(weeks=16), date_from_now(weeks=20), _1000000_tbd,
                                         'subject-1', 'permlink')
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_wallet.api.update_proposal(0, 'alice', _10_tbd, 'subject-1', 'permlink', '2031-06-01T00:00:00')
+        prepared_wallet.api.update_proposal(0, 'alice', _10_tbd, 'subject-1', 'permlink', date_from_now(weeks=19))
 
 
 @test_asset_serialization(_1000000_tests=tt.Asset.Test(1000000))
@@ -466,7 +466,7 @@ def test_escrow_transfer_mixed_hive_amount_parameter(prepared_wallet, _1_tbd, _2
 
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _1_tbd,
-                                            '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                            date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
 @test_asset_serialization(_1_tbd=Mismatched(tt.Asset.Tbd(1)), _2_tests=tt.Asset.Test(2), _10_tbd=tt.Asset.Tbd(10))
@@ -477,7 +477,7 @@ def test_escrow_transfer_mixed_hbd_amount_parameter(prepared_wallet, _1_tbd, _2_
 
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _10_tbd,
-                                        '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
 @test_asset_serialization(_1_tbd=tt.Asset.Tbd(1), _2_tests=tt.Asset.Test(2), _10_tbd=Mismatched(tt.Asset.Tbd(10)))
@@ -488,4 +488,4 @@ def test_escrow_transfer_mixed_fee_parameter(prepared_wallet, _1_tbd, _2_tests, 
 
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, _1_tbd, _2_tests, _10_tbd,
-                                        '2029-06-02T00:00:00', '2029-06-02T01:01:01', '{}')
+                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
