@@ -1,2 +1,4 @@
 build
 .vs
+Dockerfile
+*.log
