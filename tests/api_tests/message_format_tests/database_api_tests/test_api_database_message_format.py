@@ -1,6 +1,5 @@
-import pytest
-
 import test_tools as tt
+
 
 from ..local_tools import date_from_now
 from .local_tools import create_account_and_fund_it, create_and_cancel_vesting_delegation, create_proposal,\
@@ -297,11 +296,9 @@ def test_list_witnesses(node, wallet):
     assert len(witnesses) != 0
 
 
-@pytest.mark.skip(reason="This method currently throws an exception (missing required active authority:Missing Active "
-                         "Authority initminer) even though transaction is signed")
 def test_verify_authority(node, wallet):
     transaction = wallet.api.create_account('initminer', 'alice', '{}')
-    node.api.database.verify_authority(trx=transaction)
+    node.api.database.verify_authority(trx=transaction, pack='hf26')
 
 
 def test_list_proposal_votes(node, wallet):
