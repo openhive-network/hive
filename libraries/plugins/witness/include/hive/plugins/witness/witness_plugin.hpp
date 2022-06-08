@@ -58,6 +58,8 @@ public:
   virtual void plugin_startup() override;
   virtual void plugin_shutdown() override;
 
+  void enable_production();
+
 private:
   std::unique_ptr< detail::witness_plugin_impl > my;
 };

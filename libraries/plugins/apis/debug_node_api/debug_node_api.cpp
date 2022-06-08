@@ -1,5 +1,6 @@
 #include <hive/plugins/debug_node_api/debug_node_api_plugin.hpp>
 #include <hive/plugins/debug_node_api/debug_node_api.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <fc/filesystem.hpp>
 #include <fc/optional.hpp>
@@ -33,6 +34,7 @@ class debug_node_api_impl
       (debug_set_hardfork)
       (debug_has_hardfork)
       (debug_get_json_schema)
+      (debug_enable_block_production)
     )
 
     chain::database& _db;
@@ -143,6 +145,12 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_json_schema )
   return { _db.get_json_schema() };
 }
 
+DEFINE_API_IMPL( debug_node_api_impl, debug_enable_block_production )
+{
+  appbase::app().get_plugin< hive::plugins::witness::witness_plugin >().enable_production();
+  return {};
+}
+
 } // detail
 
 debug_node_api::debug_node_api(): my( new detail::debug_node_api_impl() )
@@ -162,6 +170,7 @@ DEFINE_LOCKLESS_APIS( debug_node_api,
   (debug_set_hardfork)
   (debug_has_hardfork)
   (debug_get_json_schema)
+  (debug_enable_block_production)
 )
 
 } } } // hive::plugins::debug_node

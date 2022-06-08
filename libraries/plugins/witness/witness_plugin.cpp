@@ -73,6 +73,7 @@ namespace detail {
     bool     _is_p2p_enabled                  = false;
     uint32_t _required_witness_participation  = DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT;
     uint32_t _production_skip_flags           = chain::database::skip_nothing;
+    bool     _schedule_production_at_startup  = true;
 
     std::map< hive::protocol::public_key_type, fc::ecc::private_key > _private_keys;
     std::set< hive::protocol::account_name_type >                     _witnesses;
@@ -471,6 +472,7 @@ void witness_plugin::set_program_options(
         ("name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
       ("private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
       ("witness-skip-enforce-bandwidth", bpo::value<bool>()->default_value( true ), "Skip enforcing bandwidth restrictions. Default is true in favor of rc_plugin." )
+      ("schedule-production-at-startup", bpo::value<bool>()->default_value( true ), "Start producing blocks as soon as possible.")
       ;
   cli.add_options()
       ("enable-stale-production", bpo::bool_switch()->default_value( false ), "Enable block production, even if the chain is stale.")
@@ -502,6 +504,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   if (my->_production_enabled)
     wlog("warning: stale production is enabled, make sure you know what you are doing.");
 
+  my->_schedule_production_at_startup = options.at( "schedule-production-at-startup" ).as< bool >();
+
   if( my->_witnesses.size() > 0 )
   {
     // It is safe to access rc plugin here because of APPBASE_REQUIRES_PLUGIN
@@ -529,6 +533,13 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
 } FC_LOG_AND_RETHROW() }
 
+void witness_plugin::enable_production()
+{
+  my->_timer.cancel();
+  my->_production_enabled = true;
+  my->schedule_production_loop();
+}
+
 void witness_plugin::plugin_startup()
 { try {
   ilog("witness plugin:  plugin_startup() begin" );
@@ -552,7 +563,8 @@ void witness_plugin::plugin_startup()
         new_chain_banner( d );
       my->_production_skip_flags |= chain::database::skip_undo_history_check;
     }
-    my->schedule_production_loop();
+    if( my->_schedule_production_at_startup )
+      my->schedule_production_loop();
   } else
     elog("No witnesses configured! Please add witness IDs and private keys to configuration.");
   ilog("witness plugin:  plugin_startup() end");
