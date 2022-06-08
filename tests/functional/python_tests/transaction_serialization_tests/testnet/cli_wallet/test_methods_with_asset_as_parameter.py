@@ -356,7 +356,7 @@ def test_estimate_hive_collateral_mixed(prepared_wallet, _100_tests):
 
 
 @test_asset_serialization(_100_tests=tt.Asset.Test(100), _100_tbd=tt.Asset.Tbd(100), _100_vest=tt.Asset.Vest(100))
-def test_estimate_hive_collateral_matched(prepared_wallet, _100_tests, _100_tbd, _100_vest):
+def test_claim_reward_balance_matched(prepared_wallet, _100_tests, _100_tbd, _100_vest):
 
     # Workaround, ignoring message is necessary, because run this method correctly in testnet easy way is impossible.
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
@@ -367,7 +367,7 @@ def test_estimate_hive_collateral_matched(prepared_wallet, _100_tests, _100_tbd,
 
 
 @test_asset_serialization(_100_tests=Mismatched(tt.Asset.Test(100)), _100_tbd=Mismatched(tt.Asset.Tbd(100)), _100_vest=Mismatched(tt.Asset.Vest(100)))
-def test_estimate_hive_collateral_mixed(prepared_wallet, _100_tests, _100_tbd, _100_vest):
+def test_claim_reward_balance_mixed(prepared_wallet, _100_tests, _100_tbd, _100_vest):
     # Workaround, ignoring message is necessary, because run this method correctly in testnet easy way is impossible.
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         prepared_wallet.api.claim_reward_balance('initminer', _100_tests, _100_tbd, _100_vest)
