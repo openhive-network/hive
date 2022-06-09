@@ -4,8 +4,8 @@ import test_tools.exceptions
 
 from test_tools import logger, Wallet, World
 
-def prepare_wallets(world : World):
-    api_node      = world.network('Alpha').node('ApiNode0')
+def prepare_wallets(network_number : int, world : World):
+    api_node      = world.network(f'alpha-{network_number}').node('ApiNode0')
 
     wallet_legacy = Wallet(attach_to=api_node, additional_arguments=['--transaction-serialization=legacy'])
     wallet_hf26   = Wallet(attach_to=api_node, additional_arguments=['--transaction-serialization=hf26'])
@@ -13,7 +13,11 @@ def prepare_wallets(world : World):
 
 def test_before_hf26(world_before_hf26):
     logger.info( "Attaching legacy/hf26 wallets..." )
-    wallet_legacy, wallet_hf26 = prepare_wallets(world_before_hf26)
+
+    #for debug purposes
+    network_number = 0
+
+    wallet_legacy, wallet_hf26 = prepare_wallets(network_number, world_before_hf26)
 
     logger.info( "Creating `legacy` operations..." )
     result = wallet_legacy.api.create_account('initminer', 'alice', '{}')
@@ -27,7 +31,11 @@ def test_before_hf26(world_before_hf26):
 
 def test_after_hf26(world_after_hf26):
     logger.info( "Attaching legacy/hf26 wallets..." )
-    wallet_legacy, wallet_hf26 = prepare_wallets(world_after_hf26)
+
+    #for debug purposes
+    network_number = 1
+
+    wallet_legacy, wallet_hf26 = prepare_wallets(network_number, world_after_hf26)
 
     logger.info( "Creating `legacy` operations..." )
     result = wallet_legacy.api.create_account('initminer', 'alice', '{}')
