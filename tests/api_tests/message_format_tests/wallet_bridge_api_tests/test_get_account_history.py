@@ -4,8 +4,8 @@ import test_tools as tt
 
 from .local_tools import as_string
 
+from .block_log.generate_block_log import ACCOUNTS
 
-ACCOUNTS = [f'account-{i}' for i in range(10)]
 
 UINT64_MAX = 2**64 - 1
 
