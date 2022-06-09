@@ -16,7 +16,28 @@ inline bool is_asset_type( asset asset, asset_symbol_type symbol )
 
 inline void validate_account_name( const string& name )
 {
-  FC_ASSERT( is_valid_account_name( name ), "Account name ${n} is invalid", ("n", name) );
+  validate_account_name_error_codes ec;
+  is_valid_account_name( name, ec );
+
+  switch( ec )
+  {
+    case validate_account_name_error_codes::too_short:
+      FC_ASSERT( false, "Account name '${name}' is too short. Use at least ${min} characters.",
+        ("name", name)("min", HIVE_MIN_ACCOUNT_NAME_LENGTH) );
+      break;
+
+    case validate_account_name_error_codes::too_long:
+      FC_ASSERT( false, "Account name '${name}' is too long. Use maximum of ${max} characters.",
+        ("name", name)("max", HIVE_MAX_ACCOUNT_NAME_LENGTH) );
+      break;
+
+    case validate_account_name_error_codes::invalid_sequence:
+      FC_ASSERT( false, "Account name '${name}' is not valid. Please follow the RFC 1035 rules.", ("name", name) );
+      break;
+
+    default:
+      break;
+  };
 }
 
 inline void validate_permlink( const string& permlink )
