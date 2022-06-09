@@ -25,6 +25,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], ACCOUNTS[1], True),  # bool is treated like numeric (0:1)
     ]
 )
+@pytest.mark.testnet
 def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, limit):
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
@@ -47,6 +48,7 @@ def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, 
         (ACCOUNTS[0], '', 1001),
     ]
 )
+@pytest.mark.testnet
 def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to, limit):
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
@@ -76,6 +78,7 @@ def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to
 
     ]
 )
+@pytest.mark.testnet
 def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, wallet, from_, to, limit):
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 

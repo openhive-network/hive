@@ -23,6 +23,7 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ]
 )
+@pytest.mark.testnet
 def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
     wallet.create_accounts(len(ACCOUNTS))
     node.api.wallet_bridge.find_rc_accounts(rc_accounts)
@@ -37,6 +38,7 @@ def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
         'incorrect_string_argument',
     ]
 )
+@pytest.mark.testnet
 def test_find_rc_accounts_with_incorrect_type_of_argument(node, rc_accounts):
     with pytest.raises(exceptions.CommunicationError):
         node.api.wallet_bridge.find_rc_accounts(rc_accounts)

@@ -32,6 +32,7 @@ CORRECT_VALUES = [
         (WITNESSES_NAMES[0], True),  # bool is treated like numeric (0:1)
     ]
 )
+@pytest.mark.testnet
 def test_list_witnesses_with_correct_value(world, witness_account, limit):
     node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
     node.api.wallet_bridge.list_witnesses(witness_account, limit)
@@ -44,6 +45,7 @@ def test_list_witnesses_with_correct_value(world, witness_account, limit):
         (WITNESSES_NAMES[0], 1001),
     ]
 )
+@pytest.mark.testnet
 def test_list_witnesses_with_incorrect_value(world, witness_account, limit):
     node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
     with pytest.raises(exceptions.CommunicationError):
@@ -60,6 +62,7 @@ def test_list_witnesses_with_incorrect_value(world, witness_account, limit):
         (WITNESSES_NAMES[0], 'true'),
     ]
 )
+@pytest.mark.testnet
 def test_list_witnesses_with_incorrect_type_of_arguments(world, witness_account, limit):
     node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
     with pytest.raises(exceptions.CommunicationError):

@@ -30,6 +30,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], True),  # bool is treated like numeric (0:1)
     ]
 )
+@pytest.mark.testnet
 def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
     node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
@@ -42,6 +43,7 @@ def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
         (ACCOUNTS[0], 1001),
     ]
 )
+@pytest.mark.testnet
 def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
 
@@ -60,6 +62,7 @@ def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit)
         (ACCOUNTS[0], 'true'),
     ]
 )
+@pytest.mark.testnet
 def test_list_rc_accounts_with_incorrect_type_of_arguments(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
     with pytest.raises(exceptions.CommunicationError):

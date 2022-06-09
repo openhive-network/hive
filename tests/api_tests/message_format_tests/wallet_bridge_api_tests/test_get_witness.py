@@ -23,6 +23,7 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
+@pytest.mark.testnet
 def test_get_witness_with_correct_value(world, witness_account):
     node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
     node.api.wallet_bridge.get_witness(witness_account)
@@ -34,6 +35,7 @@ def test_get_witness_with_correct_value(world, witness_account):
         ['example-array']
     ]
 )
+@pytest.mark.testnet
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
     with pytest.raises(exceptions.CommunicationError):
         node.api.wallet_bridge.get_witness(witness_account)

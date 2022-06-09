@@ -5,6 +5,7 @@ from test_tools import exceptions
 from .local_tools import as_string
 
 
+@pytest.mark.testnet
 def test_get_reward_fund_with_correct_value(node):
     # Testing is only 'post' because it is the only reward fund in HF26
     node.api.wallet_bridge.get_reward_fund('post')
@@ -27,6 +28,7 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
+@pytest.mark.testnet
 def test_get_reward_fund_with_incorrect_value(node, reward_fund_name):
     with pytest.raises(exceptions.CommunicationError):
         node.api.wallet_bridge.get_reward_fund(reward_fund_name)
@@ -37,6 +39,7 @@ def test_get_reward_fund_with_incorrect_value(node, reward_fund_name):
         ['post']
     ]
 )
+@pytest.mark.testnet
 def test_get_reward_fund_with_incorrect_type_of_argument(node, reward_fund_name):
     with pytest.raises(exceptions.CommunicationError):
         node.api.wallet_bridge.get_reward_fund(reward_fund_name)
