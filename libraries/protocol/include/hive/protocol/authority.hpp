@@ -64,6 +64,14 @@ void add_authority_accounts(
     result.insert( item.first );
 }
 
+enum class validate_account_name_error_codes
+{
+  valid,
+  too_short,
+  too_long,
+  invalid_sequence
+};
+
 /**
   * Names must comply with the following grammar (RFC 1035):
   * <domain> ::= <subdomain> | " "
@@ -95,6 +103,7 @@ void add_authority_accounts(
   * - Length is between (inclusive) HIVE_MIN_ACCOUNT_NAME_LENGTH and HIVE_MAX_ACCOUNT_NAME_LENGTH
   */
 bool is_valid_account_name( const string& name );
+bool is_valid_account_name( const string& name, validate_account_name_error_codes& ec );
 
 bool operator == ( const authority& a, const authority& b );
 
