@@ -30,6 +30,8 @@
     - echo "Attempting to cleanup an image $IMAGE_PATH using tag $IMAGE_TAG from $REGISTRY"
     - "$SCRIPTS_PATH/ci-helpers/delete-image.sh"
 
+  when: always
+
 .prepare_hived_data_5m_image:
   extends: .docker_image_builder_job
 
