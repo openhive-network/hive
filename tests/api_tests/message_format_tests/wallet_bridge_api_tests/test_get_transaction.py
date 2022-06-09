@@ -2,11 +2,15 @@ import pytest
 
 import test_tools as tt
 
+from .local_tools import run_for
 
-def test_get_transaction_with_correct_value(node, wallet):
+
+@run_for('testnet')
+def test_get_transaction_with_correct_value(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     transaction_id = wallet.api.create_account('initminer', 'alice', '{}')['transaction_id']
-    node.wait_number_of_blocks(21)   # waiting 21 blocks for the block with the transaction to become irreversible
-    node.api.wallet_bridge.get_transaction(transaction_id)
+    prepared_node.wait_number_of_blocks(21)   # waiting 21 blocks for the block with the transaction to become irreversible
+    prepared_node.api.wallet_bridge.get_transaction(transaction_id)
 
 
 @pytest.mark.parametrize(
@@ -16,9 +20,10 @@ def test_get_transaction_with_correct_value(node, wallet):
         '100',
     ]
 )
-def test_get_transaction_with_incorrect_value(node, transaction_id):
+@run_for('testnet')
+def test_get_transaction_with_incorrect_value(prepared_node, transaction_id):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_transaction(transaction_id)
+        prepared_node.api.wallet_bridge.get_transaction(transaction_id)
 
 
 @pytest.mark.parametrize(
@@ -28,13 +33,16 @@ def test_get_transaction_with_incorrect_value(node, transaction_id):
         True,
     ]
 )
-def test_get_transaction_with_incorrect_type_of_argument(node, transaction_id):
+@run_for('testnet')
+def test_get_transaction_with_incorrect_type_of_argument(prepared_node, transaction_id):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_transaction(transaction_id)
+        prepared_node.api.wallet_bridge.get_transaction(transaction_id)
 
 
-def test_get_transaction_with_additional_argument(node, wallet):
+@run_for('testnet')
+def test_get_transaction_with_additional_argument(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     transaction_id = wallet.api.create_account('initminer', 'alice', '{}')['transaction_id']
-    node.wait_number_of_blocks(21)   # waiting 21 blocks for the block with the transaction to become irreversible
+    prepared_node.wait_number_of_blocks(21)   # waiting 21 blocks for the block with the transaction to become irreversible
 
-    node.api.wallet_bridge.get_transaction(transaction_id, 'additional_argument')
+    prepared_node.api.wallet_bridge.get_transaction(transaction_id, 'additional_argument')

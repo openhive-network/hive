@@ -2,10 +2,14 @@ import pytest
 
 import test_tools as tt
 
+from .local_tools import run_for
 
-def test_is_know_transaction_with_correct_value_and_existing_transaction(node, wallet):
+
+@run_for('testnet')
+def test_is_know_transaction_with_correct_value_and_existing_transaction_in_testnet(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     transaction_id = wallet.api.create_account('initminer', 'alice', '{}')['transaction_id']
-    node.api.wallet_bridge.is_known_transaction(transaction_id)
+    prepared_node.api.wallet_bridge.is_known_transaction(transaction_id)
 
 
 @pytest.mark.parametrize(
@@ -19,8 +23,9 @@ def test_is_know_transaction_with_correct_value_and_existing_transaction(node, w
         100,
     ]
 )
-def test_is_know_transaction_with_correct_value_and_non_existing_transaction(node, transaction_id):
-    node.api.wallet_bridge.is_known_transaction(transaction_id)
+@run_for('testnet')
+def test_is_know_transaction_with_correct_value_and_non_existing_transaction(prepared_node, transaction_id):
+    prepared_node.api.wallet_bridge.is_known_transaction(transaction_id)
 
 
 @pytest.mark.parametrize(
@@ -32,6 +37,7 @@ def test_is_know_transaction_with_correct_value_and_non_existing_transaction(nod
         'true',
     ]
 )
-def test_is_know_transaction_with_incorrect_type_of_argument(node, transaction_id):
+@run_for('testnet')
+def test_is_know_transaction_with_incorrect_type_of_argument(prepared_node, transaction_id):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.is_known_transaction(transaction_id)
+        prepared_node.api.wallet_bridge.is_known_transaction(transaction_id)

@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from .local_tools import as_string, run_for
 
 
 INCORRECT_VALUES = [
@@ -13,10 +13,12 @@ INCORRECT_VALUES = [
 ]
 
 
-def test_get_collateralized_conversion_requests_with_correct_value(node, wallet):
+@run_for('testnet')
+def test_get_collateralized_conversion_requests_with_correct_value(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_account_and_collateralize_conversion_request(wallet, account_name='alice')
 
-    node.api.wallet_bridge.get_collateralized_conversion_requests('alice')
+    prepared_node.api.wallet_bridge.get_collateralized_conversion_requests('alice')
 
 
 @pytest.mark.parametrize(
@@ -25,9 +27,10 @@ def test_get_collateralized_conversion_requests_with_correct_value(node, wallet)
         *as_string(INCORRECT_VALUES),
     ]
 )
-def test_get_collateralized_conversion_requests_with_incorrect_value(node, account_name):
+@run_for('testnet')
+def test_get_collateralized_conversion_requests_with_incorrect_value(prepared_node, account_name):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_conversion_requests(account_name)
+        prepared_node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
 @pytest.mark.parametrize(
@@ -35,15 +38,18 @@ def test_get_collateralized_conversion_requests_with_incorrect_value(node, accou
         ['alice']
     ]
 )
-def test_get_collateralized_conversion_requests_with_incorrect_type_of_argument(node, account_name):
+@run_for('testnet')
+def test_get_collateralized_conversion_requests_with_incorrect_type_of_argument(prepared_node, account_name):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_collateralized_conversion_requests(account_name)
+        prepared_node.api.wallet_bridge.get_collateralized_conversion_requests(account_name)
 
 
-def test_get_collateralized_conversion_requests_additional_argument(node, wallet):
+@run_for('testnet')
+def test_get_collateralized_conversion_requests_additional_argument(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_account_and_collateralize_conversion_request(wallet, account_name='alice')
 
-    node.api.wallet_bridge.get_collateralized_conversion_requests('alice', 'additional_argument')
+    prepared_node.api.wallet_bridge.get_collateralized_conversion_requests('alice', 'additional_argument')
 
 
 def create_account_and_collateralize_conversion_request(wallet, account_name):

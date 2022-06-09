@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
+from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals, run_for
 
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -21,11 +21,13 @@ CORRECT_VALUES = [
         [True],
     ]
 )
-def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
+@run_for('testnet')
+def test_find_proposals_with_correct_values(prepared_node, proposal_ids):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
 
-    node.api.wallet_bridge.find_proposals(proposal_ids)
+    prepared_node.api.wallet_bridge.find_proposals(proposal_ids)
 
 
 @pytest.mark.parametrize(
@@ -34,12 +36,14 @@ def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
         ['true'],
     ]
 )
-def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
+@run_for('testnet')
+def test_find_proposals_with_incorrect_values(prepared_node, proposal_id):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.find_proposals(proposal_id)
+        prepared_node.api.wallet_bridge.find_proposals(proposal_id)
 
 
 @pytest.mark.parametrize(
@@ -48,6 +52,7 @@ def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
         "[1,2,3,4,5]",
     ]
 )
-def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):
+@run_for('testnet')
+def test_find_proposals_with_incorrect_type_of_argument(prepared_node, proposal_id):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.find_proposals(proposal_id)
+        prepared_node.api.wallet_bridge.find_proposals(proposal_id)
