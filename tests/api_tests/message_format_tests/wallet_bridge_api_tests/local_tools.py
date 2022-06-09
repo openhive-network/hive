@@ -93,4 +93,4 @@ def prepare_node_with_witnesses(witnesses_names):
     tt.logger.info('Waiting for next witness schedule...')
     node.wait_for_block_with_number(22)
 
-    return node
+    return node, wallet

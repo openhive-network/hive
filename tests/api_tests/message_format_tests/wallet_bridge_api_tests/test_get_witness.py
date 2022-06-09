@@ -4,8 +4,8 @@ import test_tools as tt
 
 from .local_tools import as_string, prepare_node_with_witnesses
 
+from .block_log.generate_block_log import WITNESSES_NAMES
 
-WITNESSES_NAMES = [f'witness-{i}' for i in range(20)]  # 21-st is initminer
 
 CORRECT_VALUES = [
     WITNESSES_NAMES[0],
