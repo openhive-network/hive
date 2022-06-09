@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 
 ACCOUNTS = [f'account-{i}' for i in range(10)]
 
@@ -12,7 +12,9 @@ ACCOUNTS = [f'account-{i}' for i in range(10)]
         ACCOUNTS,
     ]
 )
-def test_list_my_accounts_with_correct_value(node, wallet, accounts):
+@run_for("testnet")
+def test_list_my_accounts_with_correct_value_in_testnet(node, accounts):
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_accounts(len(ACCOUNTS))
     memo_keys = []
     for account in accounts:
@@ -30,7 +32,9 @@ def test_list_my_accounts_with_correct_value(node, wallet, accounts):
         'true',
     ]
 )
-def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
+@run_for("testnet")
+def test_list_my_accounts_with_incorrect_values(node, account_key):
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_accounts(len(ACCOUNTS))
 
     with pytest.raises(tt.exceptions.CommunicationError):
@@ -45,12 +49,15 @@ def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
         'incorrect_string_argument'
     ]
 )
+@run_for("testnet")
 def test_list_my_accounts_with_incorrect_type_of_argument(node, account_key):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
-def test_list_my_accounts_with_additional_argument(node, wallet):
+@run_for("testnet")
+def test_list_my_accounts_with_additional_argument(node):
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_accounts(len(ACCOUNTS))
     memo_keys = []
     for account in ACCOUNTS:
@@ -59,6 +66,7 @@ def test_list_my_accounts_with_additional_argument(node, wallet):
     node.api.wallet_bridge.list_my_accounts(memo_keys, 'additional_argument')
 
 
+@run_for("testnet")
 def test_list_my_accounts_with_missing_argument(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts()

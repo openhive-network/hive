@@ -1,9 +1,8 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
-
 from .block_log.generate_block_log import WITNESSES_NAMES
 
 
@@ -33,6 +32,7 @@ def test_get_witness_with_correct_value(replayed_node, witness_account):
         ['example-array']
     ]
 )
+@run_for("testnet")
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_witness(witness_account)

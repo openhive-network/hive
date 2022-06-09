@@ -1,8 +1,8 @@
 import pytest
 
 import test_tools as tt
-
 from .block_log.generate_block_log import ACCOUNTS
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 
@@ -54,6 +54,7 @@ def test_get_account_history_with_correct_value(replayed_node, account, from_, l
         (ACCOUNTS[5], -1, 1001),
     ]
 )
+@run_for("testnet")
 def test_get_account_history_with_incorrect_value(node, account, from_, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
@@ -74,7 +75,9 @@ def test_get_account_history_with_incorrect_value(node, account, from_, limit):
         (ACCOUNTS[5], -1, [1000]),
     ]
 )
-def test_get_account_history_with_incorrect_type_of_argument(node, wallet, account, from_, limit):
+@run_for("testnet")
+def test_get_account_history_with_incorrect_type_of_argument(node, account, from_, limit):
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_accounts(len(ACCOUNTS))
 
     with pytest.raises(tt.exceptions.CommunicationError):

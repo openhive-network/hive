@@ -2,8 +2,12 @@ import pytest
 
 import test_tools as tt
 
+from hive_local_tools import run_for
 
-def test_broadcast_transaction_synchronous_with_correct_value(node, wallet):
+
+@run_for("testnet")
+def test_broadcast_transaction_synchronous_with_correct_value(node):
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
     node.api.wallet_bridge.broadcast_transaction_synchronous(transaction)
 
@@ -16,12 +20,14 @@ def test_broadcast_transaction_synchronous_with_correct_value(node, wallet):
         True
     ]
 )
+@run_for("testnet")
 def test_broadcast_transaction_synchronous_with_incorrect_type_of_argument(node, transaction_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.broadcast_transaction_synchronous(transaction_name)
 
 
-def test_broadcast_transaction_synchronous_with_additional_argument(node, wallet):
+@run_for("testnet")
+def test_broadcast_transaction_synchronous_with_additional_argument(node):
+    wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
-
     node.api.wallet_bridge.broadcast_transaction_synchronous(transaction, 'additional_argument')

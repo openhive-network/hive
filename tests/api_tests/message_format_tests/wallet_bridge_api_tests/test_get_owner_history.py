@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 CORRECT_VALUES = [
@@ -19,7 +19,9 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ]
 )
-def test_get_owner_history_with_correct_value(node, wallet, account_name):
+@run_for("testnet")
+def test_get_owner_history_with_correct_value(node, account_name):
+    wallet = tt.Wallet(attach_to=node)
     create_and_update_account(wallet, account_name='alice')
     node.api.wallet_bridge.get_owner_history(account_name)
 
@@ -29,7 +31,9 @@ def test_get_owner_history_with_correct_value(node, wallet, account_name):
         ['alice']
     ]
 )
-def test_get_owner_history_with_incorrect_type_of_argument(node, wallet, account_name):
+@run_for("testnet")
+def test_get_owner_history_with_incorrect_type_of_argument(node, account_name):
+    wallet = tt.Wallet(attach_to=node)
     create_and_update_account(wallet, account_name='alice')
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_owner_history(account_name)
