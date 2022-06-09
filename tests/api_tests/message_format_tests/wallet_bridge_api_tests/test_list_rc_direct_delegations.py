@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 ACCOUNTS = [f'account-{i}' for i in range(3)]
@@ -24,7 +24,9 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], ACCOUNTS[1], True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, limit):
+@run_for("testnet")
+def test_list_rc_direct_delegations_with_correct_value_in_testnet(node, from_, to, limit):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
     node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
@@ -47,7 +49,9 @@ def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, 
         (ACCOUNTS[0], '', 1001),
     ]
 )
-def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to, limit):
+@run_for("testnet")
+def test_list_rc_direct_delegations_with_incorrect_value(node, from_, to, limit):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
@@ -76,7 +80,9 @@ def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to
 
     ]
 )
-def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, wallet, from_, to, limit):
+@run_for("testnet")
+def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, from_, to, limit):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):

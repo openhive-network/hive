@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 ACCOUNTS = [f'account-{i}' for i in range(10)]
@@ -28,7 +28,9 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_list_accounts_with_correct_values(node, wallet, lowerbound_account, limit):
+@run_for("testnet")
+def test_list_accounts_with_correct_values_in_testnet(node, lowerbound_account, limit):
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_accounts(len(ACCOUNTS))
 
     node.api.wallet_bridge.list_accounts(lowerbound_account, limit)
@@ -40,7 +42,9 @@ def test_list_accounts_with_correct_values(node, wallet, lowerbound_account, lim
         (ACCOUNTS[0], 1001),
     ]
 )
-def test_list_accounts_with_incorrect_values(node, wallet, lowerbound_account, limit):
+@run_for("testnet")
+def test_list_accounts_with_incorrect_values(node, lowerbound_account, limit):
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_accounts(len(ACCOUNTS))
 
     with pytest.raises(tt.exceptions.CommunicationError):
@@ -57,6 +61,7 @@ def test_list_accounts_with_incorrect_values(node, wallet, lowerbound_account, l
         (ACCOUNTS[0], [100]),
     ]
 )
+@run_for("testnet")
 def test_list_accounts_with_incorrect_type_of_argument(node, lowerbound_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_accounts(lowerbound_account, limit)

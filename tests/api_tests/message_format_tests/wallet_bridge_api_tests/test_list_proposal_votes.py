@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api import create_accounts_with_vests_and_tbd, prepare_proposals
 
@@ -83,7 +83,9 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], True),
     ]
 )
-def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
+@run_for("testnet")
+def test_list_proposal_votes_with_correct_values_in_testnet(node, start, limit, order_by, order_direction, status):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
@@ -120,7 +122,9 @@ def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, ord
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], 'true'),
     ],
 )
-def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
+@run_for("testnet")
+def test_list_proposal_votes_with_incorrect_values(node, start, limit, order_by, order_direction, status):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
@@ -165,6 +169,7 @@ def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, o
         ([""], 100, 33, 0, 'invalid-argument'),
     ]
 )
+@run_for("testnet")
 def test_list_proposal_votes_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)

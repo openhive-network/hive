@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 INCORRECT_VALUES = [
@@ -12,7 +12,9 @@ INCORRECT_VALUES = [
 ]
 
 
-def test_get_collateralized_conversion_requests_with_correct_value(node, wallet):
+@run_for("testnet")
+def test_get_collateralized_conversion_requests_with_correct_value(node):
+    wallet = tt.Wallet(attach_to=node)
     create_account_and_collateralize_conversion_request(wallet, account_name='alice')
 
     node.api.wallet_bridge.get_collateralized_conversion_requests('alice')
@@ -24,6 +26,7 @@ def test_get_collateralized_conversion_requests_with_correct_value(node, wallet)
         *as_string(INCORRECT_VALUES),
     ]
 )
+@run_for("testnet")
 def test_get_collateralized_conversion_requests_with_incorrect_value(node, account_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_conversion_requests(account_name)
@@ -34,12 +37,15 @@ def test_get_collateralized_conversion_requests_with_incorrect_value(node, accou
         ['alice']
     ]
 )
+@run_for("testnet")
 def test_get_collateralized_conversion_requests_with_incorrect_type_of_argument(node, account_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_collateralized_conversion_requests(account_name)
 
 
-def test_get_collateralized_conversion_requests_additional_argument(node, wallet):
+@run_for("testnet")
+def test_get_collateralized_conversion_requests_additional_argument(node):
+    wallet = tt.Wallet(attach_to=node)
     create_account_and_collateralize_conversion_request(wallet, account_name='alice')
 
     node.api.wallet_bridge.get_collateralized_conversion_requests('alice', 'additional_argument')

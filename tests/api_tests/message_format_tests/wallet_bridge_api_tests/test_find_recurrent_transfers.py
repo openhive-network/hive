@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 
@@ -11,7 +11,9 @@ from hive_local_tools.api.message_format import as_string
         'bob',
     ]
 )
-def test_find_recurrent_transfers_with_correct_value(node, wallet, reward_fund_name):
+@run_for("testnet")
+def test_find_recurrent_transfers_with_correct_value(node, reward_fund_name):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
@@ -31,6 +33,7 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
+@run_for("testnet")
 def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
@@ -41,14 +44,18 @@ def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
         ['alice']
     ]
 )
-def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, wallet, reward_fund_name):
+@run_for("testnet")
+def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, reward_fund_name):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
-def test_find_recurrent_transfers_with_additional_argument(node, wallet):
+@run_for("testnet")
+def test_find_recurrent_transfers_with_additional_argument(node):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     node.api.wallet_bridge.find_recurrent_transfers('alice', 'additional_argument')
