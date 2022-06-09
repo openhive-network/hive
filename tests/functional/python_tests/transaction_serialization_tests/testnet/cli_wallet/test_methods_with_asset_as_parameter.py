@@ -355,20 +355,24 @@ def test_estimate_hive_collateral_mixed(prepared_wallet, _100_tests):
         prepared_wallet.api.estimate_hive_collateral(_100_tests)
 
 
-@test_asset_serialization(_100_tests=tt.Asset.Test(100), _100_tbd=tt.Asset.Tbd(100), _100_vest=tt.Asset.Vest(100))
+@test_asset_serialization(_100_tests=tt.Asset.Test(0), _100_tbd=tt.Asset.Tbd(0), _100_vest=tt.Asset.Vest(0))
 def test_claim_reward_balance_matched(prepared_wallet, _100_tests, _100_tbd, _100_vest):
-
-    # Workaround, ignoring message is necessary, because run this method correctly in testnet easy way is impossible.
+    # Workaround, It is not possible to call this method correctly in the testnet.
+    # Exception "Cannot claim that much HIVE." is thrown after the exception associated with serialization of assets.
+    # Therefore, it is possible to test the method by checking the content of exception.
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         prepared_wallet.api.claim_reward_balance('initminer', _100_tests, _100_tbd, _100_vest)
 
     exception_message = exception.value.response['error']['message']
-    assert 'Cannot claim that much VESTS' not in exception_message
+    assert 'Invalid cast from object_type to string' not in exception_message and 'Asset has to be treated as object' not in exception_message
 
 
-@test_asset_serialization(_100_tests=Mismatched(tt.Asset.Test(100)), _100_tbd=Mismatched(tt.Asset.Tbd(100)), _100_vest=Mismatched(tt.Asset.Vest(100)))
+@test_asset_serialization(_100_tests=Mismatched(tt.Asset.Test(0)), _100_tbd=Mismatched(tt.Asset.Tbd(0)),
+                          _100_vest=Mismatched(tt.Asset.Vest(0)))
 def test_claim_reward_balance_mixed(prepared_wallet, _100_tests, _100_tbd, _100_vest):
-    # Workaround, ignoring message is necessary, because run this method correctly in testnet easy way is impossible.
+    # Workaround, It is not possible to call this method correctly in the testnet.
+    # Exception "Cannot claim that much HIVE." is thrown after the exception associated with serialization of assets.
+    # Therefore, it is possible to test the method by checking the content of exception.
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         prepared_wallet.api.claim_reward_balance('initminer', _100_tests, _100_tbd, _100_vest)
 
