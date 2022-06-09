@@ -90,14 +90,34 @@ def prepare_world(world : World, network_number :int, environment_variables: Opt
 
     prepare_witnesses(init_node, api_node, all_witness_names)
 
-@pytest.fixture(scope="package")
-def world_before_hf26():
-    """
-    Fixture consists of world with 1 init node, 4 witness nodes and 1 api node.
-    After fixture creation there are 21 active witnesses, and last irreversible block
-    is behind head block like in real network.
-    """
+def prepare_world_with_2_sub_networks(world : World, network_number_alpha :int, network_number_beta :int, environment_variables_alpha: Optional[Dict] = None, environment_variables_beta: Optional[Dict] = None):
+    #Because HIVE_HARDFORK_REQUIRED_WITNESSES = 17 // 17 of the 21 dpos witnesses (20 elected and 1 virtual time) required for hardfork
+    witnesses_number        = 12
+    allow_create_init_node  = True
+    allow_create_api_node   = True
+    witness_names_alpha, alpha_net, init_node, api_node = prepare_network(world, f'alpha-{network_number_alpha}', witnesses_number, allow_create_init_node, allow_create_api_node)
 
+    witnesses_number        = 8
+    allow_create_init_node  = False
+    allow_create_api_node   = False
+    witness_names_beta, beta_net, init_node2, api_node2 = prepare_network(world, f'beta-{network_number_beta}', witnesses_number, allow_create_init_node, allow_create_api_node)
+
+    all_witness_names = witness_names_alpha + witness_names_beta
+
+    # Run
+    logger.info('Running networks, waiting for live...')
+    wait_for_live=True
+
+    alpha_net.connect_with(beta_net)
+
+    logger.info('Running networks, waiting for live...')
+    alpha_net.run(wait_for_live, environment_variables_alpha)
+    beta_net.run(wait_for_live, environment_variables_beta)
+
+    prepare_witnesses(init_node, api_node, all_witness_names)
+
+@pytest.fixture(scope="package")
+def world_during_hf25():
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
         #for debug purposes
@@ -108,13 +128,7 @@ def world_before_hf26():
         yield world
 
 @pytest.fixture(scope="package")
-def world_after_hf26():
-    """
-    Fixture consists of world with 1 init node, 4 witness nodes and 1 api node.
-    After fixture creation there are 21 active witnesses, and last irreversible block
-    is behind head block like in real network.
-    """
-
+def world_during_hf26():
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
         #for debug purposes
@@ -122,4 +136,18 @@ def world_after_hf26():
 
         #June 1, 2022 7:41:41 AM
         prepare_world(world, network_number, environment_variables={"HIVE_HF26_TIME": "1654069301"})
+        yield world
+
+@pytest.fixture(scope="package")
+def world_during_hf26_without_majority():
+    logger.info('Preparing fixture world_with_witnesses')
+    with World(directory=context.get_current_directory()) as world:
+        world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+
+        #for debug purposes
+        network_number_alpha    = 2
+        network_number_beta     = 0
+
+        #June 1, 2022 7:41:41 AM
+        prepare_world_with_2_sub_networks(world, network_number_alpha, network_number_beta, environment_variables_alpha={"HIVE_HF26_TIME": "1654069301"}, environment_variables_beta={"HIVE_HF26_TIME": "1699429300"})
         yield world
