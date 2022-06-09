@@ -1,7 +1,7 @@
 import pytest
 
 import test_tools as tt
-
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
 CORRECT_VALUES = [
@@ -29,7 +29,9 @@ CORRECT_VALUES = [
         ('alice', True),
     ]
 )
-def test_get_withdraw_routes_with_correct_value(node, wallet, account_name, withdraw_route_type):
+@run_for("testnet")
+def test_get_withdraw_routes_with_correct_value_in_testnet(node, account_name, withdraw_route_type):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
     node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
@@ -45,7 +47,9 @@ def test_get_withdraw_routes_with_correct_value(node, wallet, account_name, with
         ('alice', '3'),
     ]
 )
-def test_get_withdraw_routes_with_incorrect_value(node, wallet, account_name, withdraw_route_type):
+@run_for("testnet")
+def test_get_withdraw_routes_with_incorrect_value(node, account_name, withdraw_route_type):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
@@ -62,20 +66,26 @@ def test_get_withdraw_routes_with_incorrect_value(node, wallet, account_name, wi
         ('alice', 100),
     ]
 )
-def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, wallet, account_name, withdraw_route_type):
+@run_for("testnet")
+def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, account_name, withdraw_route_type):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
-def test_get_withdraw_routes_with_additional_argument(node, wallet):
+@run_for("testnet")
+def test_get_withdraw_routes_with_additional_argument(node):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     node.api.wallet_bridge.get_withdraw_routes('alice', 'all', 'additional_argument')
 
 
-def test_get_withdraw_routes_with_missing_argument(node, wallet):
+@run_for("testnet")
+def test_get_withdraw_routes_with_missing_argument(node):
+    wallet = tt.Wallet(attach_to=node)
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
