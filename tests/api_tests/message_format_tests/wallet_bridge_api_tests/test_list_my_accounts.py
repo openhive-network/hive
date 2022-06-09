@@ -12,6 +12,7 @@ ACCOUNTS = [f'account-{i}' for i in range(10)]
         ACCOUNTS,
     ]
 )
+@pytest.mark.testnet
 def test_list_my_accounts_with_correct_value(node, wallet, accounts):
     wallet.create_accounts(len(ACCOUNTS))
     memo_keys = []
@@ -30,6 +31,7 @@ def test_list_my_accounts_with_correct_value(node, wallet, accounts):
         'true',
     ]
 )
+@pytest.mark.testnet
 def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
     wallet.create_accounts(len(ACCOUNTS))
 
@@ -45,11 +47,13 @@ def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
         'incorrect_string_argument'
     ]
 )
+@pytest.mark.testnet
 def test_list_my_accounts_with_incorrect_type_of_argument(node, account_key):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
+@pytest.mark.testnet
 def test_list_my_accounts_with_additional_argument(node, wallet):
     wallet.create_accounts(len(ACCOUNTS))
     memo_keys = []
@@ -59,6 +63,7 @@ def test_list_my_accounts_with_additional_argument(node, wallet):
     node.api.wallet_bridge.list_my_accounts(memo_keys, 'additional_argument')
 
 
+@pytest.mark.testnet
 def test_list_my_accounts_with_missing_argument(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts()

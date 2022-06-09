@@ -21,6 +21,7 @@ CORRECT_VALUES = [
         [True],
     ]
 )
+@pytest.mark.testnet
 def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
@@ -34,6 +35,7 @@ def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
         ['true'],
     ]
 )
+@pytest.mark.testnet
 def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
@@ -48,6 +50,7 @@ def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
         "[1,2,3,4,5]",
     ]
 )
+@pytest.mark.testnet
 def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_proposals(proposal_id)

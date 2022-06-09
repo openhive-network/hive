@@ -11,6 +11,7 @@ from .local_tools import as_string
         'bob',
     ]
 )
+@pytest.mark.testnet
 def test_find_recurrent_transfers_with_correct_value(node, wallet, reward_fund_name):
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
@@ -31,6 +32,7 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
+@pytest.mark.testnet
 def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
@@ -41,6 +43,7 @@ def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
         ['alice']
     ]
 )
+@pytest.mark.testnet
 def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, wallet, reward_fund_name):
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
@@ -48,12 +51,14 @@ def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, wallet, 
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
+@pytest.mark.testnet
 def test_find_recurrent_transfers_with_additional_argument(node, wallet):
     create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     node.api.wallet_bridge.find_recurrent_transfers('alice', 'additional_argument')
 
 
+@pytest.mark.testnet
 def create_accounts_and_make_recurrent_transfer(wallet, from_account, to_account):
     with wallet.in_single_transaction():
         wallet.api.create_account('initminer', from_account, '{}')

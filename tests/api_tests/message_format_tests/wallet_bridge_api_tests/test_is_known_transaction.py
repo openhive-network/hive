@@ -3,6 +3,7 @@ import pytest
 import test_tools as tt
 
 
+@pytest.mark.testnet
 def test_is_know_transaction_with_correct_value_and_existing_transaction(node, wallet):
     transaction_id = wallet.api.create_account('initminer', 'alice', '{}')['transaction_id']
     node.api.wallet_bridge.is_known_transaction(transaction_id)
@@ -19,6 +20,7 @@ def test_is_know_transaction_with_correct_value_and_existing_transaction(node, w
         100,
     ]
 )
+@pytest.mark.testnet
 def test_is_know_transaction_with_correct_value_and_non_existing_transaction(node, transaction_id):
     node.api.wallet_bridge.is_known_transaction(transaction_id)
 
@@ -32,6 +34,7 @@ def test_is_know_transaction_with_correct_value_and_non_existing_transaction(nod
         'true',
     ]
 )
+@pytest.mark.testnet
 def test_is_know_transaction_with_incorrect_type_of_argument(node, transaction_id):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.is_known_transaction(transaction_id)

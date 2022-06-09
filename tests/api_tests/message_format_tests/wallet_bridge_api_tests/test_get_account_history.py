@@ -38,6 +38,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], -1, True),  # bool is treated like numeric (0:1)
     ]
 )
+@pytest.mark.testnet
 def test_get_account_history_with_correct_value(node, wallet, account, from_, limit):
     wallet.create_accounts(len(ACCOUNTS))
 
@@ -56,6 +57,7 @@ def test_get_account_history_with_correct_value(node, wallet, account, from_, li
         (ACCOUNTS[5], -1, 1001),
     ]
 )
+@pytest.mark.testnet
 def test_get_account_history_with_incorrect_value(node, account, from_, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
@@ -76,6 +78,7 @@ def test_get_account_history_with_incorrect_value(node, account, from_, limit):
         (ACCOUNTS[5], -1, [1000]),
     ]
 )
+@pytest.mark.testnet
 def test_get_account_history_with_incorrect_type_of_argument(node, wallet, account, from_, limit):
     wallet.create_accounts(len(ACCOUNTS))
 

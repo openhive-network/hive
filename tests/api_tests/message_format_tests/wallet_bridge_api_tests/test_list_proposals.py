@@ -91,6 +91,7 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], True),
     ]
 )
+@pytest.mark.testnet
 def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
@@ -143,6 +144,7 @@ def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], 'true'),
     ],
 )
+@pytest.mark.testnet
 def test_list_proposals_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
@@ -173,6 +175,7 @@ def test_list_proposals_with_incorrect_values(node, wallet, start, limit, order_
         ([""], 100, 29, 0, 'invalid-argument'),
     ]
 )
+@pytest.mark.testnet
 def tests_list_proposals_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)

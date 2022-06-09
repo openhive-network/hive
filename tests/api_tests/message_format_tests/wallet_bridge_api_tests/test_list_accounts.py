@@ -29,6 +29,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], True),  # bool is treated like numeric (0:1)
     ]
 )
+@pytest.mark.testnet
 def test_list_accounts_with_correct_values(node, wallet, lowerbound_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
 
@@ -41,6 +42,7 @@ def test_list_accounts_with_correct_values(node, wallet, lowerbound_account, lim
         (ACCOUNTS[0], 1001),
     ]
 )
+@pytest.mark.testnet
 def test_list_accounts_with_incorrect_values(node, wallet, lowerbound_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
 
@@ -58,6 +60,7 @@ def test_list_accounts_with_incorrect_values(node, wallet, lowerbound_account, l
         (ACCOUNTS[0], [100]),
     ]
 )
+@pytest.mark.testnet
 def test_list_accounts_with_incorrect_type_of_argument(node, lowerbound_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_accounts(lowerbound_account, limit)

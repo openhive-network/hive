@@ -22,6 +22,7 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ]
 )
+@pytest.mark.testnet
 def test_get_account_correct_value(node, wallet, account):
     wallet.create_accounts(len(ACCOUNTS))
     node.api.wallet_bridge.get_account(account)
@@ -32,6 +33,7 @@ def test_get_account_correct_value(node, wallet, account):
         ['example_array']
     ]
 )
+@pytest.mark.testnet
 def test_get_account_incorrect_type_of_argument(node, account):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account(account)

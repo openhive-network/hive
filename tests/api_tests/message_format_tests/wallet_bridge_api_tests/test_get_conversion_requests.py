@@ -13,6 +13,7 @@ INCORRECT_VALUES = [
 ]
 
 
+@pytest.mark.testnet
 def test_get_conversion_requests_with_correct_value(node, wallet):
     create_account_with_converted_hbd(wallet, account_name='alice')
 
@@ -25,6 +26,7 @@ def test_get_conversion_requests_with_correct_value(node, wallet):
         *as_string(INCORRECT_VALUES),
     ]
 )
+@pytest.mark.testnet
 def test_get_conversion_requests_with_incorrect_value(node, account_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_conversion_requests(account_name)
@@ -35,6 +37,7 @@ def test_get_conversion_requests_with_incorrect_value(node, account_name):
         ['alice']
     ]
 )
+@pytest.mark.testnet
 def test_get_conversion_requests_with_incorrect_type_of_argument(node, wallet, account_name):
     create_account_with_converted_hbd(wallet, account_name='alice')
 
@@ -42,6 +45,7 @@ def test_get_conversion_requests_with_incorrect_type_of_argument(node, wallet, a
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
+@pytest.mark.testnet
 def test_get_conversion_requests_with_additional_argument(node, wallet):
     create_account_with_converted_hbd(wallet, account_name='alice')
 

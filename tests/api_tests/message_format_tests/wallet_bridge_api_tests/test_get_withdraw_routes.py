@@ -30,6 +30,7 @@ CORRECT_VALUES = [
         ('alice', True),
     ]
 )
+@pytest.mark.testnet
 def test_get_withdraw_routes_with_correct_value(node, wallet, account_name, withdraw_route_type):
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
     node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
@@ -46,6 +47,7 @@ def test_get_withdraw_routes_with_correct_value(node, wallet, account_name, with
         ('alice', '3'),
     ]
 )
+@pytest.mark.testnet
 def test_get_withdraw_routes_with_incorrect_value(node, wallet, account_name, withdraw_route_type):
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
@@ -63,6 +65,7 @@ def test_get_withdraw_routes_with_incorrect_value(node, wallet, account_name, wi
         ('alice', 100),
     ]
 )
+@pytest.mark.testnet
 def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, wallet, account_name, withdraw_route_type):
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
@@ -70,12 +73,14 @@ def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, wallet, acco
         node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
+@pytest.mark.testnet
 def test_get_withdraw_routes_with_additional_argument(node, wallet):
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     node.api.wallet_bridge.get_withdraw_routes('alice', 'all', 'additional_argument')
 
 
+@pytest.mark.testnet
 def test_get_withdraw_routes_with_missing_argument(node, wallet):
     create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
