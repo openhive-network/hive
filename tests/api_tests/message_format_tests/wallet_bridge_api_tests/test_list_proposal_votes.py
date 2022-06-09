@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
+from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals, run_for
 
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -83,14 +83,16 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], True),
     ]
 )
-def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, order_by, order_direction, status):
+@run_for('testnet')
+def test_list_proposal_votes_with_correct_values_in_testnet(prepared_node, start, limit, order_by, order_direction, status):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
         for account in ACCOUNTS:
             wallet.api.update_proposal_votes(account, [3], 1)
 
-    node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
+    prepared_node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
 @pytest.mark.parametrize(
@@ -120,7 +122,9 @@ def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, ord
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], 'true'),
     ],
 )
-def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, order_by, order_direction, status):
+@run_for('testnet')
+def test_list_proposal_votes_with_incorrect_values(prepared_node, start, limit, order_by, order_direction, status):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
     prepare_proposals(wallet, ACCOUNTS)
     with wallet.in_single_transaction():
@@ -128,7 +132,7 @@ def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, o
             wallet.api.update_proposal_votes(account, [3], 1)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
+        prepared_node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
 @pytest.mark.parametrize(
@@ -165,6 +169,7 @@ def test_list_proposal_votes_with_incorrect_values(node, wallet, start, limit, o
         ([""], 100, 33, 0, 'invalid-argument'),
     ]
 )
-def test_list_proposal_votes_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
+@run_for('testnet')
+def test_list_proposal_votes_with_incorrect_type_of_argument(prepared_node, start, limit, order_by, order_direction, status):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
+        prepared_node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)

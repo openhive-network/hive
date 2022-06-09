@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from .local_tools import as_string, run_for
 
 
 ACCOUNTS = [f'account-{i}' for i in range(3)]
@@ -25,10 +25,12 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], ACCOUNTS[1], True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, limit):
+@run_for('testnet')
+def test_list_rc_direct_delegations_with_correct_value_in_testnet(prepared_node, from_, to, limit):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
-    node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+    prepared_node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
 @pytest.mark.parametrize(
@@ -47,11 +49,13 @@ def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, 
         (ACCOUNTS[0], '', 1001),
     ]
 )
-def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to, limit):
+@run_for('testnet')
+def test_list_rc_direct_delegations_with_incorrect_value(prepared_node, from_, to, limit):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+        prepared_node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
 @pytest.mark.parametrize(
@@ -76,11 +80,13 @@ def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to
 
     ]
 )
-def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, wallet, from_, to, limit):
+@run_for('testnet')
+def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(prepared_node, from_, to, limit):
+    wallet = tt.Wallet(attach_to=prepared_node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+        prepared_node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
 def create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts):

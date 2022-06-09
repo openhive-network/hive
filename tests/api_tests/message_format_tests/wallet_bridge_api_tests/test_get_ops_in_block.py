@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from .local_tools import as_string, run_for
 
 
 UINT64_MAX = 2 ** 64 - 1
@@ -24,9 +24,10 @@ CORRECT_VALUES = [
         (UINT64_MAX, 2)  # numeric is converted to bool
     ]
 )
-def test_get_ops_in_block_with_correct_value(node, block_number, virtual_operation):
-    node.wait_for_block_with_number(22)  # Waiting for next witness schedule
-    node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
+@run_for('testnet')
+def test_get_ops_in_block_with_correct_value(prepared_node, block_number, virtual_operation):
+    prepared_node.wait_for_block_with_number(22)  # Waiting for next witness schedule
+    prepared_node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
 
 
 @pytest.mark.parametrize(
@@ -35,9 +36,10 @@ def test_get_ops_in_block_with_correct_value(node, block_number, virtual_operati
         (UINT64_MAX + 1, True),
     ]
 )
-def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_operation):
+@run_for('testnet')
+def test_get_ops_in_block_with_incorrect_value(prepared_node, block_number, virtual_operation):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
+        prepared_node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
 
 
 @pytest.mark.parametrize(
@@ -51,7 +53,7 @@ def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_opera
         (0, [True]),
     ]
 )
-def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_number, virtual_operation):
+@run_for('testnet')
+def test_get_ops_in_block_with_incorrect_type_of_arguments(prepared_node, block_number, virtual_operation):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
-
+        prepared_node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)

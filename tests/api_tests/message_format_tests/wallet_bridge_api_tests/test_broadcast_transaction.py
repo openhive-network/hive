@@ -2,10 +2,14 @@ import pytest
 
 import test_tools as tt
 
+from .local_tools import run_for
 
-def test_broadcast_transaction_with_correct_value(node, wallet):
+
+@run_for('testnet')
+def test_broadcast_transaction_with_correct_value(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
-    node.api.wallet_bridge.broadcast_transaction(transaction)
+    prepared_node.api.wallet_bridge.broadcast_transaction(transaction)
 
 
 @pytest.mark.parametrize(
@@ -16,12 +20,15 @@ def test_broadcast_transaction_with_correct_value(node, wallet):
         True
     ]
 )
-def test_broadcast_transaction_with_incorrect_type_of_argument(node, transaction_name):
+@run_for('testnet')
+def test_broadcast_transaction_with_incorrect_type_of_argument(prepared_node, transaction_name):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.broadcast_transaction(transaction_name)
+        prepared_node.api.wallet_bridge.broadcast_transaction(transaction_name)
 
 
-def test_broadcast_transaction_with_additional_argument(node, wallet):
+@run_for('testnet')
+def test_broadcast_transaction_with_additional_argument(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
 
-    node.api.wallet_bridge.broadcast_transaction(transaction, 'additional_argument')
+    prepared_node.api.wallet_bridge.broadcast_transaction(transaction, 'additional_argument')
