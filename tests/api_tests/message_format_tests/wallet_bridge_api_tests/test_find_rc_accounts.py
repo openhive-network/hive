@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from .local_tools import as_string, run_for
 
 
 ACCOUNTS = [f'account-{i}' for i in range(3)]
@@ -23,9 +23,11 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ]
 )
-def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
+@run_for('testnet')
+def test_find_rc_accounts_with_correct_value(prepared_node, rc_accounts):
+    wallet = tt.Wallet(attach_to=prepared_node)
     wallet.create_accounts(len(ACCOUNTS))
-    node.api.wallet_bridge.find_rc_accounts(rc_accounts)
+    prepared_node.api.wallet_bridge.find_rc_accounts(rc_accounts)
 
 
 @pytest.mark.parametrize(
@@ -37,6 +39,7 @@ def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
         'incorrect_string_argument',
     ]
 )
-def test_find_rc_accounts_with_incorrect_type_of_argument(node, rc_accounts):
+@run_for('testnet')
+def test_find_rc_accounts_with_incorrect_type_of_argument(prepared_node, rc_accounts):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.find_rc_accounts(rc_accounts)
+        prepared_node.api.wallet_bridge.find_rc_accounts(rc_accounts)

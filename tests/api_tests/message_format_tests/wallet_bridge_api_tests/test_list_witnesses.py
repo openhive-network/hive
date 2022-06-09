@@ -2,9 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
-
 from .block_log.generate_block_log import WITNESSES_NAMES
+from .local_tools import as_string
 
 
 CORRECT_VALUES = [
@@ -60,3 +59,4 @@ def test_list_witnesses_with_incorrect_value(replayed_node, witness_account, lim
 def test_list_witnesses_with_incorrect_type_of_arguments(replayed_node, witness_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+

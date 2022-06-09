@@ -2,6 +2,7 @@ import pytest
 
 import test_tools as tt
 
+from .local_tools import run_for
 
 ACCOUNTS = [f'account-{i}' for i in range(10)]
 
@@ -12,13 +13,15 @@ ACCOUNTS = [f'account-{i}' for i in range(10)]
         ACCOUNTS,
     ]
 )
-def test_list_my_accounts_with_correct_value(node, wallet, accounts):
+@run_for('testnet')
+def test_list_my_accounts_with_correct_value_in_testnet(prepared_node, accounts):
+    wallet = tt.Wallet(attach_to=prepared_node)
     wallet.create_accounts(len(ACCOUNTS))
     memo_keys = []
     for account in accounts:
         memo_keys.append(wallet.api.get_account(account)['memo_key'])
 
-    node.api.wallet_bridge.list_my_accounts(memo_keys)
+    prepared_node.api.wallet_bridge.list_my_accounts(memo_keys)
 
 
 @pytest.mark.parametrize(
@@ -30,11 +33,13 @@ def test_list_my_accounts_with_correct_value(node, wallet, accounts):
         'true',
     ]
 )
-def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
+@run_for('testnet')
+def test_list_my_accounts_with_incorrect_values(prepared_node, account_key):
+    wallet = tt.Wallet(attach_to=prepared_node)
     wallet.create_accounts(len(ACCOUNTS))
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_my_accounts([account_key])
+        prepared_node.api.wallet_bridge.list_my_accounts([account_key])
 
 
 @pytest.mark.parametrize(
@@ -45,20 +50,24 @@ def test_list_my_accounts_with_incorrect_values(node, wallet, account_key):
         'incorrect_string_argument'
     ]
 )
-def test_list_my_accounts_with_incorrect_type_of_argument(node, account_key):
+@run_for('testnet')
+def test_list_my_accounts_with_incorrect_type_of_argument(prepared_node, account_key):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_my_accounts([account_key])
+        prepared_node.api.wallet_bridge.list_my_accounts([account_key])
 
 
-def test_list_my_accounts_with_additional_argument(node, wallet):
+@run_for('testnet')
+def test_list_my_accounts_with_additional_argument(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
     wallet.create_accounts(len(ACCOUNTS))
     memo_keys = []
     for account in ACCOUNTS:
         memo_keys.append(wallet.api.get_account(account)['memo_key'])
 
-    node.api.wallet_bridge.list_my_accounts(memo_keys, 'additional_argument')
+    prepared_node.api.wallet_bridge.list_my_accounts(memo_keys, 'additional_argument')
 
 
-def test_list_my_accounts_with_missing_argument(node):
+@run_for('testnet')
+def test_list_my_accounts_with_missing_argument(prepared_node):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.list_my_accounts()
+        prepared_node.api.wallet_bridge.list_my_accounts()

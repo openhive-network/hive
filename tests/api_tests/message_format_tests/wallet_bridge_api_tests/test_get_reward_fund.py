@@ -2,12 +2,13 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from .local_tools import as_string, run_for
 
 
-def test_get_reward_fund_with_correct_value(node):
+@run_for('testnet')
+def test_get_reward_fund_with_correct_value(prepared_node):
     # Testing is only 'post' because it is the only reward fund in HF26
-    node.api.wallet_bridge.get_reward_fund('post')
+    prepared_node.api.wallet_bridge.get_reward_fund('post')
 
 
 INCORRECT_VALUES = [
@@ -27,9 +28,10 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
-def test_get_reward_fund_with_incorrect_value(node, reward_fund_name):
+@run_for('testnet')
+def test_get_reward_fund_with_incorrect_value(prepared_node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_reward_fund(reward_fund_name)
+        prepared_node.api.wallet_bridge.get_reward_fund(reward_fund_name)
 
 
 @pytest.mark.parametrize(
@@ -37,6 +39,7 @@ def test_get_reward_fund_with_incorrect_value(node, reward_fund_name):
         ['post']
     ]
 )
-def test_get_reward_fund_with_incorrect_type_of_argument(node, reward_fund_name):
+@run_for('testnet')
+def test_get_reward_fund_with_incorrect_type_of_argument(prepared_node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_reward_fund(reward_fund_name)
+        prepared_node.api.wallet_bridge.get_reward_fund(reward_fund_name)
