@@ -56,19 +56,32 @@ def prepare_witnesses( init_node, api_node: Node, all_witness_names : List[str] 
 
     assert irreversible + 10 < head
 
-def prepare_world(world : World, environment_variables: Optional[Dict] = None):
+def prepare_network(world : World, name : str, number: int, allow_create_init_node : bool, allow_create_api_node : bool):
+    logger.info(f'Running {name} network, waiting for live...')
+
+    witness_names = [f'wit{i}-{name}' for i in range(number)]
+
+    network = world.create_network(name)
+
+    init_node = None
+    if allow_create_init_node:
+        init_node = network.create_init_node()
+
+    network.create_witness_node(witnesses = witness_names)
+
+    api_node = None
+    if allow_create_api_node:
+        api_node = network.create_api_node()
+
+    return witness_names, network, init_node, api_node
+
+def prepare_world(world : World, network_number :int, environment_variables: Optional[Dict] = None):
     world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
-    all_witness_names = [f'witness{i}-alpha' for i in range(20)]
-
-    # Create first network
-    alpha_net = world.create_network('Alpha')
-    init_node = alpha_net.create_init_node()
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(0, 6)])
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(6, 11)])
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(11, 15)])
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(15, 20)])
-    api_node = alpha_net.create_api_node()
+    witnesses_number        = 20
+    allow_create_init_node  = True
+    allow_create_api_node   = True
+    all_witness_names, alpha_net, init_node, api_node = prepare_network(world, f'alpha-{network_number}', witnesses_number, allow_create_init_node, allow_create_api_node)
 
     # Run
     logger.info('Running networks, waiting for live...')
@@ -87,8 +100,11 @@ def world_before_hf26():
 
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
+        #for debug purposes
+        network_number = 0
+
         #November 8, 2023 7:41:40 AM
-        prepare_world(world, environment_variables={"HIVE_HF26_TIME": "1699429300"})
+        prepare_world(world, network_number, environment_variables={"HIVE_HF26_TIME": "1699429300"})
         yield world
 
 @pytest.fixture(scope="package")
@@ -101,6 +117,9 @@ def world_after_hf26():
 
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
+        #for debug purposes
+        network_number = 1
+
         #June 1, 2022 7:41:41 AM
-        prepare_world(world, environment_variables={"HIVE_HF26_TIME": "1654069301"})
+        prepare_world(world, network_number, environment_variables={"HIVE_HF26_TIME": "1654069301"})
         yield world
