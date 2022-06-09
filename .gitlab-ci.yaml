@@ -363,7 +363,7 @@ patterns_tests:
     - public-runner-docker
     - hived-for-tests
 
-transaction_serialization_testsnet_tests:
+transaction_serialization_testnet_tests:
   stage: test
   extends: .test_tools_based
   needs:
