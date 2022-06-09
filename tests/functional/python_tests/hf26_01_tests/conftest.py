@@ -1,28 +1,12 @@
 import pytest
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from test_tools import Account, Asset, constants, logger, Wallet, World
 from test_tools.private.scope import context
+from test_tools.private.node import Node
 
-def prepare_world(world : World, environment_variables: Optional[Dict] = None):
-    world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
-
-    all_witness_names = [f'witness{i}-alpha' for i in range(20)]
-
-    # Create first network
-    alpha_net = world.create_network('Alpha')
-    init_node = alpha_net.create_init_node()
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(0, 6)])
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(6, 11)])
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(11, 15)])
-    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(15, 20)])
-    api_node = alpha_net.create_api_node()
-
-    # Run
-    logger.info('Running networks, waiting for live...')
-    wait_for_live=True
-    alpha_net.run(wait_for_live, environment_variables)
+def prepare_witnesses( init_node, api_node: Node, all_witness_names : List[str] ):
 
     logger.info('Attaching wallets...')
     wallet = Wallet(attach_to=api_node)
@@ -72,6 +56,27 @@ def prepare_world(world : World, environment_variables: Optional[Dict] = None):
 
     assert irreversible + 10 < head
 
+def prepare_world(world : World, environment_variables: Optional[Dict] = None):
+    world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+
+    all_witness_names = [f'witness{i}-alpha' for i in range(20)]
+
+    # Create first network
+    alpha_net = world.create_network('Alpha')
+    init_node = alpha_net.create_init_node()
+    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(0, 6)])
+    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(6, 11)])
+    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(11, 15)])
+    alpha_net.create_witness_node(witnesses=[f'witness{i}-alpha' for i in range(15, 20)])
+    api_node = alpha_net.create_api_node()
+
+    # Run
+    logger.info('Running networks, waiting for live...')
+    wait_for_live=True
+    alpha_net.run(wait_for_live, environment_variables)
+
+    prepare_witnesses(init_node, api_node, all_witness_names)
+
 @pytest.fixture(scope="package")
 def world_before_hf26():
     """
@@ -82,8 +87,8 @@ def world_before_hf26():
 
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
-        #November 8, 2023 7:42:03 AM
-        prepare_world(world, environment_variables={"HIVE_HF26_TIME": "1699429323"})
+        #November 8, 2023 7:41:40 AM
+        prepare_world(world, environment_variables={"HIVE_HF26_TIME": "1699429300"})
         yield world
 
 @pytest.fixture(scope="package")
@@ -96,6 +101,6 @@ def world_after_hf26():
 
     logger.info('Preparing fixture world_with_witnesses')
     with World(directory=context.get_current_directory()) as world:
-        #June 1, 2022 7:42:03 AM
-        prepare_world(world, environment_variables={"HIVE_HF26_TIME": "1654069323"})
+        #June 1, 2022 7:41:41 AM
+        prepare_world(world, environment_variables={"HIVE_HF26_TIME": "1654069301"})
         yield world
