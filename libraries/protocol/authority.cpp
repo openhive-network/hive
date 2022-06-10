@@ -43,8 +43,8 @@ void authority::validate()const
   }
 }
 
-
-bool is_valid_account_name( const string& name, validate_account_name_error_codes& ec )
+namespace detail {
+account_name_validity check_account_name( const string& name )
 {
 #if HIVE_MIN_ACCOUNT_NAME_LENGTH < 3
 #error This is_valid_account_name implementation implicitly enforces minimum name length of 3.
@@ -52,16 +52,10 @@ bool is_valid_account_name( const string& name, validate_account_name_error_code
 
   const size_t len = name.size();
   if( len < HIVE_MIN_ACCOUNT_NAME_LENGTH )
-  {
-    ec = validate_account_name_error_codes::too_short;
-    return false;
-  }
+    return account_name_validity::too_short;
 
   if( len > HIVE_MAX_ACCOUNT_NAME_LENGTH )
-  {
-    ec = validate_account_name_error_codes::too_long;
-    return false;
-  }
+    return account_name_validity::too_long;
 
   size_t begin = 0;
   while( true )
@@ -70,10 +64,7 @@ bool is_valid_account_name( const string& name, validate_account_name_error_code
     if( end == std::string::npos )
       end = len;
     if( end - begin < 3 )
-    {
-      ec = validate_account_name_error_codes::invalid_sequence;
-      return false;
-    }
+      return account_name_validity::invalid_sequence;
     switch( name[begin] )
     {
       case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h':
@@ -82,8 +73,7 @@ bool is_valid_account_name( const string& name, validate_account_name_error_code
       case 'y': case 'z':
         break;
       default:
-        ec = validate_account_name_error_codes::invalid_sequence;
-        return false;
+        return account_name_validity::invalid_sequence;
     }
     switch( name[end-1] )
     {
@@ -95,8 +85,7 @@ bool is_valid_account_name( const string& name, validate_account_name_error_code
       case '8': case '9':
         break;
       default:
-        ec = validate_account_name_error_codes::invalid_sequence;
-        return false;
+        return account_name_validity::invalid_sequence;
     }
     for( size_t i=begin+1; i<end-1; i++ )
     {
@@ -111,23 +100,20 @@ bool is_valid_account_name( const string& name, validate_account_name_error_code
         case '-':
           break;
         default:
-          ec = validate_account_name_error_codes::invalid_sequence;
-          return false;
+          return account_name_validity::invalid_sequence;
       }
     }
     if( end == len )
       break;
     begin = end+1;
   }
-  ec = validate_account_name_error_codes::valid;
-  return true;
+  return account_name_validity::valid;
 }
+} // namespace detail
 
 bool is_valid_account_name( const string& name )
 {
-  validate_account_name_error_codes _t_ec;
-
-  return is_valid_account_name( name, _t_ec ); // do not throw due to the backward compatibility
+  return detail::check_account_name( name ) == account_name_validity::valid;
 }
 
 bool operator == ( const authority& a, const authority& b )
