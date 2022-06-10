@@ -7,8 +7,8 @@
 
 namespace hive { namespace utilities { namespace notifications {
 
-namespace{
-  const char* get_flag()
+namespace flags{
+  const char* notifications_endpoint()
   {
     return "notifications-endpoint";
   }
@@ -16,13 +16,12 @@ namespace{
 
 bool check_is_flag_set(const boost::program_options::variables_map &args)
 {
-  return args.count( get_flag() ) > 0;
+  return args.count( flags::notifications_endpoint() ) > 0;
 }
 
 void add_program_options(boost::program_options::options_description& options)
 {
-  options.add_options()(
-    get_flag(),
+    flags::notifications_endpoint(),
     boost::program_options::value< std::vector<fc::string> >()->multitoken(),
     "list of addresses, that will receive notification about in-chain events"
   );
@@ -31,17 +30,17 @@ void add_program_options(boost::program_options::options_description& options)
 std::vector<fc::string> setup_notifications(const boost::program_options::variables_map &args)
 {
   if( !hive::utilities::notifications::check_is_flag_set(args) ) return {};
-  return args[ hive::utilities::notifications::get_flag() ].as<std::vector<fc::string>>();
+  return args[ flags::notifications_endpoint() ].as<std::vector<fc::string>>();
 }
 
 namespace detail
 {
 bool error_handler(const std::function<void ()> &foo)
 {
-  bool is_exception_occured = false;
-  auto handle_exception = [&is_exception_occured](const fc::string &ex)
+  bool is_exception_occurred = false;
+  auto handle_exception = [&is_exception_occurred](const fc::string &ex)
   {
-    is_exception_occured = true;
+    is_exception_occurred = true;
     wlog("caught exception! details:\n${details}", ("details", ex));
   };
 
@@ -50,7 +49,7 @@ bool error_handler(const std::function<void ()> &foo)
   catch(const fc::exception& ex){ handle_exception(ex.to_string()); }
   catch(const std::exception& ex){ handle_exception(ex.what()); }
   catch(...){ handle_exception("unknown exception"); }
-  return !is_exception_occured;
+  return !is_exception_occurred;
 }
 
 void notification_handler::setup(const std::vector<std::string> &address_pool)
