@@ -21,8 +21,8 @@ class notification_t
 {
 public:
 
-  using key_t = fc::string;
-  using value_t = fc::variant;
+  using key_t =   ::fc::string;
+  using value_t = ::fc::variant;
 
   fc::time_point_sec time;
   fc::string name;
@@ -111,6 +111,18 @@ private:
   bool is_broadcasting_active() const;
 };
 
+struct scope_guarded_timer
+{
+  fc::string timer_name;
+  fc::time_point start = fc::time_point::now();
+
+  void reset();
+  ~scope_guarded_timer();
+
+private:
+  void send_notif();
+};
+
 } // detail
 
 detail::notification_handler &get_notification_handler_instance();
@@ -133,6 +145,7 @@ inline void notify(
 
 void notify_hived_status(const fc::string &current_status) noexcept;
 void notify_hived_error(const fc::string &error_message) noexcept;
+hive::utilities::notifications::detail::scope_guarded_timer notify_hived_timer(const fc::string &timer_name) noexcept;
 
 } // hive
 

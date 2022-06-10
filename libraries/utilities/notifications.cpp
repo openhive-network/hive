@@ -108,6 +108,29 @@ void notification_handler::network_broadcaster::broadcast(const notification_t &
     else address.second = 0;
   }
 }
+
+void scope_guarded_timer::send_notif()
+{
+  hive::notify("timer",
+//{
+    "name",     this->timer_name,
+    "unit",     "ms",
+    "duration", (fc::time_point::now() - this->start).count() / 1000 // ms
+//}
+  );
+}
+
+void scope_guarded_timer::reset()
+{
+  send_notif();
+  this->start = fc::time_point::now();
+}
+
+scope_guarded_timer::~scope_guarded_timer()
+{
+  send_notif();
+}
+
 } // detail
 
 detail::notification_handler &get_notification_handler_instance() { return detail::instance(); }
@@ -123,6 +146,11 @@ void notify_hived_status(const fc::string& current_status) noexcept
 void notify_hived_error(const fc::string& error_message) noexcept
 {
   notify("error", "message", error_message);
+}
+
+utilities::notifications::detail::scope_guarded_timer notify_hived_timer(const fc::string &timer_name) noexcept
+{
+  return utilities::notifications::detail::scope_guarded_timer{ timer_name };
 }
 
 } // hive
