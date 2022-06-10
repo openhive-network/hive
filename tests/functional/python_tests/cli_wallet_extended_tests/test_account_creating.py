@@ -17,7 +17,7 @@ def test_creation_of_account_with_too_long_name(wallet):
 
 
 def test_creation_of_account_with_too_short_name(wallet):
-    with pytest.raises(CommunicationError) as exception:
+    with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.create_account('initminer', 'to', '{}')
 
     error_message = exception.value.response['error']['message']
@@ -25,7 +25,7 @@ def test_creation_of_account_with_too_short_name(wallet):
 
 
 def test_creation_of_account_with_invalid_sequence(wallet):
-    with pytest.raises(CommunicationError) as exception:
+    with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.create_account('initminer', '...', '{}')
 
     error_message = exception.value.response['error']['message']

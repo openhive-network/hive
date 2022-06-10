@@ -127,7 +127,7 @@ bool is_valid_account_name( const string& name )
 {
   validate_account_name_error_codes _t_ec;
 
-  is_valid_account_name( name, _t_ec ); // do not throw due to the backward compatibility
+  return is_valid_account_name( name, _t_ec ); // do not throw due to the backward compatibility
 }
 
 bool operator == ( const authority& a, const authority& b )
