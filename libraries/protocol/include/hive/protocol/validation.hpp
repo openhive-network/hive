@@ -21,6 +21,9 @@ inline void validate_account_name( const string& name )
 
   switch( ec )
   {
+    case validate_account_name_error_codes::valid:
+      break;
+
     case validate_account_name_error_codes::too_short:
       FC_ASSERT( false, "Account name '${name}' is too short. Use at least ${min} characters.",
         ("name", name)("min", HIVE_MIN_ACCOUNT_NAME_LENGTH) );
@@ -33,9 +36,6 @@ inline void validate_account_name( const string& name )
 
     case validate_account_name_error_codes::invalid_sequence:
       FC_ASSERT( false, "Account name '${name}' is not valid. Please follow the RFC 1035 rules.", ("name", name) );
-      break;
-
-    default:
       break;
   };
 }
