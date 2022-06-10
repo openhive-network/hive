@@ -7,8 +7,8 @@
 
 namespace hive { namespace utilities { namespace notifications {
 
-namespace{
-  const char* get_flag()
+namespace flags{
+  const char* notifiations_endpoint()
   {
     return "notifications-endpoint";
   }
@@ -16,13 +16,12 @@ namespace{
 
 bool check_is_flag_set(const boost::program_options::variables_map &args)
 {
-  return args.count( get_flag() ) > 0;
+  return args.count( flags::notifiations_endpoint() ) > 0;
 }
 
 void add_program_options(boost::program_options::options_description& options)
 {
-  options.add_options()(
-    get_flag(),
+    flags::notifiations_endpoint(),
     boost::program_options::value< std::vector<fc::string> >()->multitoken(),
     "list of addresses, that will receive notification about in-chain events"
   );
@@ -31,7 +30,7 @@ void add_program_options(boost::program_options::options_description& options)
 void setup_notifications(const boost::program_options::variables_map &args)
 {
   if( !check_is_flag_set(args) ) return;
-  const auto& address_pool = args[ get_flag() ].as<std::vector<fc::string>>();
+  const auto& address_pool = args[ flags::notifiations_endpoint() ].as<std::vector<fc::string>>();
 
   std::vector<fc::ip::endpoint> epool;
   epool.reserve(address_pool.size());
