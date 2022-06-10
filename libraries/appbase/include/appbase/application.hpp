@@ -21,7 +21,19 @@ namespace appbase {
 
   class application;
 
-  class initialization_result 
+  struct scope_guarded_timer
+  {
+  fc::string timer_name;
+  fc::time_point start = fc::time_point::now();
+
+  void reset();
+  ~scope_guarded_timer();
+
+  private:
+  void send_notif();
+  };
+
+  class initialization_result
   {
     public:
       enum result {
@@ -107,7 +119,7 @@ namespace appbase {
         * @return true if the application and plugins were initialized, false or exception on error
         */
       template< typename... Plugin >
-      initialization_result initialize( int argc, char** argv, 
+      initialization_result initialize( int argc, char** argv,
         const bpo::variables_map& arg_overrides = bpo::variables_map() )
       {
         return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... }, arg_overrides );
@@ -193,7 +205,7 @@ namespace appbase {
       template< typename Impl >
       friend class plugin;
 
-      initialization_result initialize_impl( int argc, char** argv, 
+      initialization_result initialize_impl( int argc, char** argv,
         vector< abstract_plugin* > autostart_plugins, const bpo::variables_map& arg_overrides );
 
       abstract_plugin* find_plugin( const string& name )const;
@@ -243,6 +255,8 @@ namespace appbase {
 
       void notify_status(const fc::string& current_status) const noexcept;
       void notify_error(const fc::string& error_message) const noexcept;
+      appbase::scope_guarded_timer notify_hived_timer(const fc::string &timer_name) noexcept;
+
       void setup_notifications(const boost::program_options::variables_map &args) const;
 
       template <typename... KeyValuesTypes>
@@ -277,6 +291,18 @@ namespace appbase {
       {
         hive::utilities::notifications::error_handler([&]{
           handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+          );
+        });
+      }
+
+      template <typename... KeyValuesTypes>
+      inline void dynamic_notify(
+          const fc::string &name,
+          KeyValuesTypes &&...key_value_pairs) const noexcept
+      {
+        hive::utilities::notifications::error_handler([&]{
+          this->notification_handler.broadcast(
             hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
           );
         });

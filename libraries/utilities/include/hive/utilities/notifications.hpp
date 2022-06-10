@@ -136,7 +136,6 @@ private:
   bool is_broadcasting_active() const;
   std::vector<fc::ip::endpoint> create_endpoints( const std::vector<std::string>& address_pool );
 };
-
 } // detail
 
 class notification_handler_wrapper
@@ -156,7 +155,7 @@ class notification_handler_wrapper
     {
       handler.setup( address_pool );
     }
-    
+
     void register_endpoints( const std::vector<std::string>& pool )
     {
       handler.register_endpoints( pool );
