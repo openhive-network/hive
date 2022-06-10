@@ -14,7 +14,7 @@ namespace flags{
   }
 }
 
-bool check_is_flag_set(const boost::program_options::variables_map &args)
+bool check_is_notifications_enabled(const boost::program_options::variables_map &args)
 {
   return args.count( flags::notifiations_endpoint() ) > 0;
 }
@@ -29,7 +29,7 @@ void add_program_options(boost::program_options::options_description& options)
 
 void setup_notifications(const boost::program_options::variables_map &args)
 {
-  if( !check_is_flag_set(args) ) return;
+  if( !check_is_notifications_enabled(args) ) return;
   const auto& address_pool = args[ flags::notifiations_endpoint() ].as<std::vector<fc::string>>();
 
   std::vector<fc::ip::endpoint> epool;
