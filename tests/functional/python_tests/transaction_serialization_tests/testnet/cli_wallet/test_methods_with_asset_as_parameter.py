@@ -1,27 +1,21 @@
-import pytest
-
 import test_tools as tt
 
 from local_tools import create_account_and_fund_it, date_from_now
-from .local_tools import test_asset_serialization, Mismatched
+from .local_tools import run_for_all_cases
 
-@test_asset_serialization(_100_tests=tt.Asset.Test(100), _100_tbd=tt.Asset.Tbd(100))
-def test_transfer_matched(prepared_wallet, _100_tests, _100_tbd):
+
+@run_for_all_cases(transfer_amount=tt.Asset.Test(100))
+def test_transfer_of_hives(prepared_wallet, transfer_amount):
     prepared_wallet.api.create_account('initminer', 'alice', '{}')
 
-    prepared_wallet.api.transfer('initminer', 'alice', _100_tests, 'memo')
-    prepared_wallet.api.transfer('initminer', 'alice', _100_tbd, 'memo')
+    prepared_wallet.api.transfer('initminer', 'alice', transfer_amount, 'memo')
 
 
-@test_asset_serialization(_100_tests=Mismatched(tt.Asset.Test(100)), _100_tbd=Mismatched(tt.Asset.Tbd(100)))
-def test_transfer_mixed(prepared_wallet, _100_tests, _100_tbd):
+@run_for_all_cases(transfer_amount=tt.Asset.Tbd(100))
+def test_transfer_of_hbds(prepared_wallet, transfer_amount):
     prepared_wallet.api.create_account('initminer', 'alice', '{}')
 
-    with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_wallet.api.transfer('initminer', 'alice', _100_tests, 'memo')
-
-    with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_wallet.api.transfer('initminer', 'alice', _100_tbd, 'memo')
+    prepared_wallet.api.transfer('initminer', 'alice', transfer_amount, 'memo')
 
 
 @test_asset_serialization(_100_tests=tt.Asset.Test(100), _100_tbd=tt.Asset.Tbd(100))
