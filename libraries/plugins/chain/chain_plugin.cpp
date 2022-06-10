@@ -923,7 +923,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
           ("cm", measure.current_mem)
           ("pm", measure.peak_mem) );
 
-        hive::notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+        hive::notify("benchmark", "multiindex_stats", measure);
       }
     }, *this, 0);
   }
