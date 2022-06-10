@@ -37,7 +37,7 @@ public:
   }
 
   template <typename... Values>
-  void assign_values(key_t key, value_t value, Values &&...values)
+  void assign_values(key_t key, const value_t& value, Values &&...values)
   {
     auto it = this->value.emplace(key, value);
     FC_ASSERT( it.second, "Duplicated key in map" );
@@ -45,8 +45,13 @@ public:
     assign_values(values...);
   }
 
-private:
+  template <typename any_value_t, typename... Values>
+  void assign_values(key_t key, const any_value_t& value, Values &&...values)
+  {
+    assign_values(key, value_t{value}, values...);
+  }
 
+private:
   // Specialization for end recursion
   void assign_values()
   {
@@ -119,12 +124,15 @@ class notification_handler
   };
 
 public:
-  void broadcast(const notification_t &notification)
+  template <typename... KeyValuesTypes>
+  void broadcast(
+      const fc::string &name,
+      KeyValuesTypes &&...key_value_pairs) noexcept
   {
     if (!is_broadcasting_active())
       return;
 
-    on_send(notification);
+    on_send(notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...));
   }
   void setup(const std::vector<std::string> &address_pool);
   void register_endpoints( const std::vector<std::string> &pool );
