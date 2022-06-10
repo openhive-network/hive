@@ -53,7 +53,7 @@
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
-          content-type: application/json
+          Content-Type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
@@ -63,5 +63,5 @@
         status_code: 200
         verify_response_with:
           function: validate_response:has_valid_response
-          
+
 

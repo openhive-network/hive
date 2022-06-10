@@ -13,7 +13,7 @@
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
-          content-type: application/json
+          Content-Type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
@@ -24,4 +24,4 @@
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
-           ignore_tags: ["HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2", "HIVE_BLOCKCHAIN_VERSION", "HIVE_BLOCKCHAIN_HARDFORK_VERSION"]        
+           ignore_tags: ["HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2", "HIVE_BLOCKCHAIN_VERSION", "HIVE_BLOCKCHAIN_HARDFORK_VERSION"]

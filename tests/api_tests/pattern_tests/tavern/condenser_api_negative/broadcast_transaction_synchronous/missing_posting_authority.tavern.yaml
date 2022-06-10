@@ -13,7 +13,7 @@
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
-          content-type: application/json
+          Content-Type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
@@ -35,7 +35,7 @@
       response:
         status_code: 200
         verify_response_with:
-          function: validate_response:compare_response_with_pattern        
+          function: validate_response:compare_response_with_pattern
           extra_kwargs:
             error_response: true
             ignore_tags: ['timestamp']

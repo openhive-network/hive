@@ -14,7 +14,7 @@
         url: "{service.proto:s}://{service.server:s}:{service.port}/"
         method: POST
         headers:
-          content-type: application/json
+          Content-Type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
@@ -25,4 +25,4 @@
         verify_response_with:
           function: validate_response:has_valid_response
           extra_kwargs:
-            ignore_tags: ['total_votes']         
+            ignore_tags: ['total_votes']
