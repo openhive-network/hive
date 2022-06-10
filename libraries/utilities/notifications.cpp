@@ -12,6 +12,11 @@ namespace flags{
   {
     return "notifications-endpoint";
   }
+
+  const char* notifiations_filter()
+  {
+    return "notifications-filter";
+  }
 }
 
 bool check_is_notifications_enabled(const boost::program_options::variables_map &args)
@@ -21,9 +26,16 @@ bool check_is_notifications_enabled(const boost::program_options::variables_map 
 
 void add_program_options(boost::program_options::options_description& options)
 {
+  options.add_options()
+  (
     flags::notifiations_endpoint(),
     boost::program_options::value< std::vector<fc::string> >()->multitoken(),
     "list of addresses, that will receive notification about in-chain events"
+  )
+  (
+    flags::notifiations_filter(),
+    boost::program_options::value< fc::string >()->default_value(""),
+    "notification is accepted if name matches given regular expression, if not specified all notifications are accepted"
   );
 }
 
@@ -38,7 +50,9 @@ void setup_notifications(const boost::program_options::variables_map &args)
   for(const fc::string& x : address_pool)
     epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
 
-  hive::utilities::notifications::get_notification_handler_instance().setup(epool);
+  hive::utilities::notifications::get_notification_handler_instance().setup(
+    epool, args[ flags::notifiations_filter() ].as<fc::string>()
+  );
 }
 
 namespace detail
@@ -66,7 +80,7 @@ notification_handler &instance()
   return instance;
 }
 
-void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_pool)
+void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_pool, const fc::string& regex)
 {
   if (address_pool.empty()) network.reset();
   else
@@ -75,6 +89,9 @@ void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_po
     ilog("setting up notification handler for ${count} address${fix}", ("count", ap_size)( "fix", (ap_size > 1 ? "es" : "") ));
 
     network = std::make_unique<network_broadcaster>(address_pool, on_send);
+
+    if (!regex.empty())
+      this->name_filter = std::regex(regex);
   }
 }
 

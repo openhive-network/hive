@@ -14,6 +14,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include <regex>
 
 namespace hive { namespace utilities { namespace notifications {
 
@@ -60,7 +61,7 @@ private:
   }
 };
 
-bool check_is_flag_set(const boost::program_options::variables_map &args);
+bool check_is_notifications_enabled(const boost::program_options::variables_map &args);
 void add_program_options(boost::program_options::options_description &options);
 void setup_notifications(const boost::program_options::variables_map &args);
 
@@ -109,13 +110,18 @@ public:
     if (!is_broadcasting_active())
       return;
 
+    if(this->name_filter.valid() && !std::regex_match(name, *this->name_filter) )
+      return;
+
     on_send(notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...));
   }
-  void setup(const std::vector<fc::ip::endpoint> &address_pool);
+  void setup(const std::vector<fc::ip::endpoint> &address_pool, const fc::string& regex);
 
 private:
+
   signal_t on_send;
   std::unique_ptr<network_broadcaster> network;
+  fc::optional<std::regex> name_filter;
 
   bool is_broadcasting_active() const;
 };
