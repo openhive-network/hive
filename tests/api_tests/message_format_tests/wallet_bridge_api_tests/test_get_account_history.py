@@ -38,11 +38,10 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], -1, True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_get_account_history_with_correct_value(node, wallet, account, from_, limit):
-    wallet.create_accounts(len(ACCOUNTS))
-
-    node.wait_number_of_blocks(21)  # wait until the transactions will be visible for `get_account_history`
-    node.api.wallet_bridge.get_account_history(account, from_, limit)
+def test_get_account_history_with_correct_value(replayed_node, account, from_, limit):
+    # A replayed node was used. Because of this, there is no need to wait for transactions
+    # to become visible in `get_account_history`
+    replayed_node.api.wallet_bridge.get_account_history(account, from_, limit)
 
 
 @pytest.mark.parametrize(
