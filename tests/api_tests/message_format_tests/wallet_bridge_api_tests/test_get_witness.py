@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, prepare_node_with_witnesses
+from .local_tools import as_string
 
 from .block_log.generate_block_log import WITNESSES_NAMES
 
@@ -23,9 +23,8 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-def test_get_witness_with_correct_value(witness_account):
-    node = prepare_node_with_witnesses(WITNESSES_NAMES)
-    node.api.wallet_bridge.get_witness(witness_account)
+def test_get_witness_with_correct_value(replayed_node, witness_account):
+    replayed_node.api.wallet_bridge.get_witness(witness_account)
 
 
 @pytest.mark.parametrize(
