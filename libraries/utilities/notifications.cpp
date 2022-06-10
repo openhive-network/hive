@@ -14,7 +14,7 @@ namespace flags{
   }
 }
 
-bool check_is_flag_set(const boost::program_options::variables_map &args)
+bool check_is_notifications_enabled(const boost::program_options::variables_map &args)
 {
   return args.count( flags::notifications_endpoint() ) > 0;
 }
