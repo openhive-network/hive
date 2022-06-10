@@ -265,9 +265,7 @@ namespace appbase {
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
         hive::utilities::notifications::error_handler([&]{
-          notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-          );
+          notification_handler.broadcast(name, std::forward<KeyValuesTypes>(key_value_pairs)...);
         });
       }
 

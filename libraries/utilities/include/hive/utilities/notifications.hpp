@@ -14,6 +14,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include <regex>
 
 namespace hive { namespace utilities { namespace notifications {
 
@@ -81,9 +82,10 @@ public:
   }
 };
 
-bool check_is_flag_set(const boost::program_options::variables_map &args);
+bool check_is_notifications_enabled(const boost::program_options::variables_map &args);
+bool check_is_notification_filter_provided(const boost::program_options::variables_map &args);
 void add_program_options(boost::program_options::options_description &options);
-std::vector<fc::string> setup_notifications(const boost::program_options::variables_map &args);
+std::tuple<std::vector<fc::string>, fc::string> setup_notifications(const boost::program_options::variables_map &args);
 
 namespace detail {
 
@@ -132,14 +134,19 @@ public:
     if (!is_broadcasting_active())
       return;
 
+    if(this->name_filter.valid() && !std::regex_match(name, *this->name_filter) )
+      return;
+
     on_send(notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...));
   }
-  void setup(const std::vector<std::string> &address_pool);
+  void setup(const std::vector<std::string> &address_pool, const fc::string& regex);
   void register_endpoints( const std::vector<std::string> &pool );
 
 private:
+
   signal_t on_send;
   std::unique_ptr<network_broadcaster> network;
+  fc::optional<std::regex> name_filter;
 
   bool is_broadcasting_active() const;
   std::vector<fc::ip::endpoint> create_endpoints( const std::vector<std::string>& address_pool );
@@ -154,14 +161,17 @@ class notification_handler_wrapper
 
   public:
 
-    void broadcast( const notification_t& ev ) noexcept
-    {
-      handler.broadcast( ev );
-    }
+  template <typename... KeyValuesTypes>
+  void broadcast(
+      const fc::string &name,
+      KeyValuesTypes &&...key_value_pairs) noexcept
+  {
+    handler.broadcast(name, key_value_pairs...);
+  }
 
-    void setup( const std::vector<std::string>& address_pool )
+    void setup( const std::vector<std::string>& address_pool, const fc::string& regex )
     {
-      handler.setup( address_pool );
+      handler.setup( address_pool, regex );
     }
 
     void register_endpoints( const std::vector<std::string>& pool )

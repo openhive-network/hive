@@ -1,9 +1,12 @@
+#include "fc/string.hpp"
+#include <boost/program_options/variables_map.hpp>
 #include <hive/utilities/notifications.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/network/http/connection.hpp>
 #include <fc/network/resolve.hpp>
+#include <vector>
 
 namespace hive { namespace utilities { namespace notifications {
 
@@ -12,6 +15,11 @@ namespace flags{
   {
     return "notifications-endpoint";
   }
+
+  const char* notifications_filter()
+  {
+    return "notifications-filter";
+  }
 }
 
 bool check_is_notifications_enabled(const boost::program_options::variables_map &args)
@@ -19,18 +27,37 @@ bool check_is_notifications_enabled(const boost::program_options::variables_map 
   return args.count( flags::notifications_endpoint() ) > 0;
 }
 
+bool check_is_notification_filter_provided(const boost::program_options::variables_map &args)
+{
+  return args.count( flags::notifications_filter() ) > 0;
+}
+
 void add_program_options(boost::program_options::options_description& options)
 {
+  options.add_options()
+  (
     flags::notifications_endpoint(),
     boost::program_options::value< std::vector<fc::string> >()->multitoken(),
     "list of addresses, that will receive notification about in-chain events"
+  )
+  (
+    flags::notifications_filter(),
+    boost::program_options::value< fc::string >()->default_value(""),
+    "notification is accepted if name matches given regular expression, if not specified all notifications are accepted"
   );
 }
 
-std::vector<fc::string> setup_notifications(const boost::program_options::variables_map &args)
+std::tuple<std::vector<fc::string>, fc::string> setup_notifications(const boost::program_options::variables_map &args)
 {
-  if( !hive::utilities::notifications::check_is_flag_set(args) ) return {};
-  return args[ flags::notifications_endpoint() ].as<std::vector<fc::string>>();
+  std::vector<fc::string> endpoints{};
+  fc::string filter = "";
+  if( hive::utilities::notifications::check_is_flag_set(args))
+  {
+    endpoints = args[ flags::notifications_endpoint() ].as<std::vector<fc::string>>();
+    if(hive::utilities::notifications::check_is_notification_filter_provided(args))
+      filter = args[ flags::notifications_filter() ].as<fc::string>();
+  }
+  return {endpoints, filter};
 }
 
 namespace detail
@@ -52,7 +79,7 @@ bool error_handler(const std::function<void ()> &foo)
   return !is_exception_occurred;
 }
 
-void notification_handler::setup(const std::vector<std::string> &address_pool)
+void notification_handler::setup(const std::vector<std::string> &address_pool, const fc::string& regex)
 {
   const std::vector<fc::ip::endpoint> _address_pool = create_endpoints(address_pool);
 
@@ -63,6 +90,8 @@ void notification_handler::setup(const std::vector<std::string> &address_pool)
     ilog("setting up notification handler for ${count} address${fix}", ("count", ap_size)( "fix", (ap_size > 1 ? "es" : "") ));
 
     network = std::make_unique<network_broadcaster>(_address_pool, on_send);
+    if (!regex.empty())
+      this->name_filter = std::regex(regex);
   }
 }
 
