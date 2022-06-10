@@ -14,7 +14,7 @@
         method: POST
         timeout: !int "{heavy_timeout:d}"
         headers:
-          content-type: application/json
+          Content-Type: application/json
         json:
           jsonrpc: "2.0"
           id: 1

@@ -3,7 +3,7 @@
 
   marks:
     - patterntest # virtual
-    
+
   includes:
     - !include ../../common.yaml
 
@@ -14,7 +14,7 @@
         method: POST
         timeout: !int "{timeout:d}"
         headers:
-          content-type: application/json
+          Content-Type: application/json
         json:
           jsonrpc: "2.0"
           id: 1
@@ -24,4 +24,4 @@
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-          
+
