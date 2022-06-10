@@ -1,45 +1,62 @@
-from typing import Dict
+import functools
+import inspect
+from typing import Callable, Dict, Iterable
 
 import pytest
 
+import test_tools as tt
+# Radek, jak się będziesz rebase'ował i aktualizaował sobie TestToolsy, to usuń poniższą linijkę z importem exceptions
+# i użyj w kodzie niżej tt.exceptions.CommunicationError zamiast test_tools.exceptions.CommunicationError.
+import test_tools.exceptions
 
-class Mismatched:
+
+def __serialize_legacy(assets: Iterable) -> Iterable[str]:
+    return (str(asset) for asset in assets)
+
+
+def __serialize_modern(assets: Iterable) -> Iterable[Dict]:
+    return (asset.as_nai() for asset in assets)
+
+
+def run_for_all_cases(**assets):
     """
-    Marks asset to be in different format, then handled by wallet.
-    E.g. if wallet uses modern format, then asset will be in legacy format.
+    Runs decorated test four times:
+    - asserts that wallet with matching assets doesn't raise any exception:
+        1. with wallet using legacy serialization and assets in legacy format,
+        2. with wallet using modern serialization and assets in modern (nai) format,
+    - asserts that wallet with mismatched assets raises exception:
+        3. with wallet using legacy serialization and assets in modern (nai) format,
+        4. with wallet using modern serialization and assets in legacy format.
     """
-    def __init__(self, asset):
-        self.asset = asset
+    def __decorator(test: Callable):
+        old_test_signature = inspect.signature(test)
+        test.__signature__ = old_test_signature.replace(
+            parameters=[
+                inspect.Parameter('description', inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
+                inspect.Parameter('formats_matches', inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=bool),
+                *old_test_signature.parameters.values(),
+            ],
+        )
 
+        @pytest.mark.parametrize(
+            f'description, formats_matches, prepared_wallet{"".join([f", {key}" for key in assets.keys()])}',
+            [
+                ('legacy wallet and legacy assets (matched)', True, 'legacy', *__serialize_legacy(assets.values())),
+                ('modern wallet and modern assets (matched)', True, 'modern', *__serialize_modern(assets.values())),
+                ('legacy wallet and modern assets (mismatched)', False, 'legacy', *__serialize_modern(assets.values())),
+                ('modern wallet and legacy assets (mismatched)', False, 'modern', *__serialize_legacy(assets.values())),
+            ],
+            indirect=['prepared_wallet'],
+        )
+        @functools.wraps(test)
+        def __decorated_test(description, formats_matches, **kwargs):
+            tt.logger.info(f'Running {test.__name__} -- {description}')
+            if formats_matches:
+                return test(**kwargs)
 
-def __serialize_asset(asset, *, serialization: str):
-    def __serialize_as_legacy(asset_) -> str:
-        return str(asset_)
+            with pytest.raises(test_tools.exceptions.CommunicationError):
+                test(**kwargs)
 
-    def __serialize_as_modern(asset_) -> Dict:
-        return asset_.as_nai()
+        return __decorated_test
 
-    if serialization == 'modern':
-        return __serialize_as_modern(asset) if not isinstance(asset, Mismatched) else __serialize_as_legacy(asset.asset)
-    elif serialization == 'legacy':
-        return __serialize_as_legacy(asset) if not isinstance(asset, Mismatched) else __serialize_as_modern(asset.asset)
-    else:
-        raise RuntimeError(f'Unsupported argument value "{serialization}", should be "modern" or "legacy"')
-
-
-def test_asset_serialization(**assets):
-    """
-    Run decorated test two times:
-    - with wallet using legacy serialization and assets in legacy format,
-    - with wallet using modern serialization and assets in modern (nai) format.
-
-    If you need mismatched assets, e.g. legacy asset for modern wallet, use `Mismatched` wrapper.
-    """
-    return pytest.mark.parametrize(
-        f'prepared_wallet{"".join([f", {key}" for key in assets.keys()])}',
-        [
-            ('legacy', *[__serialize_asset(asset, serialization='legacy') for asset in assets.values()]),
-            ('modern', *[__serialize_asset(asset, serialization='modern') for asset in assets.values()]),
-        ],
-        indirect=['prepared_wallet'],
-    )
+    return __decorator
