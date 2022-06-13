@@ -156,13 +156,13 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
           "chain pushing sync block #${block_num} ${block_hash}, head is ${head}",
-          ("block_num", blk_msg.block.block_num())
-          ("block_hash", blk_msg.block_id)
+          ("block_num", blk_msg.full_block->get_block_num())
+          ("block_hash", blk_msg.full_block->get_block_id())
           ("head", head_block_num));
     else
       fc_ilog(fc::logger::get("sync"),
           "chain pushing block #${block_num} ${block_hash}, head is ${head}",
-          ("block_num", blk_msg.block.block_num())
+          ("block_num", blk_msg.full_block->get_block_num())
           ("block_hash", blk_msg.block_id)
           ("head", head_block_num));
 
@@ -171,16 +171,16 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
-      bool result = chain.accept_block(blk_msg.block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
+      bool result = chain.accept_block(blk_msg.full_block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
 
       if( !sync_mode )
       {
-        fc::microseconds offset = fc::time_point::now() - blk_msg.block.timestamp;
+        fc::microseconds offset = fc::time_point::now() - blk_msg.full_block->get_block().timestamp;
         STATSD_TIMER( "p2p", "offset", "block_arrival", offset, 1.0f )
         ilog( "Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms",
-          ("t", blk_msg.block.transactions.size())
-          ("b", blk_msg.block.block_num())
-          ("w", blk_msg.block.witness)
+          ("t", blk_msg.full_block->get_block().transactions.size())
+          ("b", blk_msg.full_block->get_block_num())
+          ("w", blk_msg.full_block->get_block().witness)
           ("l", offset.count() / 1000) );
       }
 
@@ -209,19 +209,19 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
     FC_THROW_EXCEPTION(graphene::net::p2p_node_shutting_down_exception, "Preventing further processing of ignored block...");
   }
   return false;
-} FC_CAPTURE_AND_RETHROW( (blk_msg)(sync_mode) ) }
+} FC_CAPTURE_AND_RETHROW( (sync_mode) ) }
 
-void p2p_plugin_impl::handle_transaction( const graphene::net::trx_message& trx_msg )
+void p2p_plugin_impl::handle_transaction(const graphene::net::trx_message& trx_msg)
 {
-  if( shutdown_helper.get_running().load() )
+  if (shutdown_helper.get_running().load())
   {
     try
     {
-      action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_TRANSACTION_HANDLER ) );
+      action_catcher ac(shutdown_helper.get_running(), shutdown_helper.get_state(HIVE_P2P_TRANSACTION_HANDLER));
 
-      chain.accept_transaction(trx_msg.trx, chain::chain_plugin::lock_type::fc);
+      chain.accept_transaction(trx_msg.full_transaction, chain::chain_plugin::lock_type::fc);
 
-    } FC_CAPTURE_AND_RETHROW( (trx_msg) )
+    } FC_CAPTURE_AND_RETHROW((trx_msg.full_transaction->get_transaction()))
   }
   else
   {
@@ -255,13 +255,13 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
   if (id.item_type == graphene::net::block_message_type)
   {
     fc_dlog(fc::logger::get("chainlock"),"get_item getting a block will get forkdb read lock");
-    auto opt_block = chain.db().fetch_block_by_id(id.item_hash);
-    if (!opt_block)
+    auto maybe_block = chain.db().fetch_block_by_id(id.item_hash);
+    if (!maybe_block)
       elog("Couldn't find block ${id} -- corresponding ID in our chain is ${id2}",
            ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
-    FC_ASSERT(opt_block.valid());
-    fc_dlog(fc::logger::get("chainlock"),"Serving up block #${num}", ("num", opt_block->block_num()));
-    return block_message(*opt_block);
+    FC_ASSERT(maybe_block);
+    fc_dlog(fc::logger::get("chainlock"), "Serving up block #${num}", ("num", maybe_block->get_block_num()));
+    return block_message(maybe_block);
   }
   else
     FC_THROW_EXCEPTION(fc::key_not_found_exception, "item not found");   
@@ -307,8 +307,8 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    optional<chain::signed_block_header> opt_block_header = chain.db().fetch_block_header_by_id(block_id);
-    return opt_block_header ? opt_block_header->timestamp : fc::time_point_sec::min();
+    std::shared_ptr<hive::chain::full_block_type> block = chain.db().fetch_block_by_id(block_id);
+    return block ? block->get_block_header().timestamp : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
 }
 
@@ -557,16 +557,18 @@ void p2p_plugin::plugin_shutdown()
   //Nothing to do. Everything is closed/finished during `pre_shutdown` stage,
 }
 
-void p2p_plugin::broadcast_block( const hive::protocol::signed_block& block )
+void p2p_plugin::broadcast_block(const std::shared_ptr<hive::chain::full_block_type>& full_block)
 {
-  ulog("Broadcasting block #${n} with ${t} transactions", ("n", block.block_num()) ("t", block.transactions.size()));
-  my->node->broadcast( graphene::net::block_message( block ) );
+  uint32_t block_num = full_block->get_block_num();
+  size_t transction_count = full_block->get_full_transactions().size();
+  ulog("Broadcasting block #${block_num} with ${transction_count} transactions", (block_num)(transction_count));
+  my->node->broadcast(graphene::net::block_message(full_block));
 }
 
-void p2p_plugin::broadcast_transaction( const hive::protocol::signed_transaction& tx )
+void p2p_plugin::broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
 {
-  ulog("Broadcasting tx #${id}", ("id", tx.id()));
-  my->node->broadcast( graphene::net::trx_message( tx ) );
+  ulog("Broadcasting tx #${id}", ("id", full_transaction->get_transaction_id()));
+  my->node->broadcast(graphene::net::trx_message(full_transaction));
 }
 
 void p2p_plugin::set_block_production( bool producing_blocks )

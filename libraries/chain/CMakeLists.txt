@@ -20,6 +20,20 @@ add_library( hive_chain
              # As database takes the longest to compile, start it first
              database.cpp
              index.cpp
+             index-01.cpp
+             index-02.cpp
+             index-03.cpp
+             index-04.cpp
+             index-05.cpp
+             index-06.cpp
+             index-07.cpp
+             index-08.cpp
+             index-09.cpp
+             index-10.cpp
+             index-11.cpp
+
+             full_block.cpp
+             full_transaction.cpp
 
              smt_evaluator.cpp
              sps_evaluator.cpp

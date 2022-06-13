@@ -2,6 +2,7 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 
 #include <boost/thread/future.hpp>
@@ -279,7 +280,7 @@ void fill_pending_queue(const fc::path& block_log)
       elog("Error: input block log is empty");
       exit(1);
     }
-    uint32_t head_block_num = log.head()->block_num();
+    uint32_t head_block_num = log.head()->get_block_num();
     idump((head_block_num));
     if (blocks_to_compress && *blocks_to_compress > head_block_num)
     {

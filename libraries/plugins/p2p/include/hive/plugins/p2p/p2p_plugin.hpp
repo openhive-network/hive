@@ -46,8 +46,8 @@ public:
   virtual void plugin_pre_shutdown() override;
   virtual void plugin_shutdown() override;
 
-  void broadcast_block( const hive::protocol::signed_block& block );
-  void broadcast_transaction( const hive::protocol::signed_transaction& tx );
+  void broadcast_block(const std::shared_ptr<hive::chain::full_block_type>& full_block);
+  void broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction);
   void set_block_production( bool producing_blocks );
   fc::variant_object get_info();
   void add_node(const fc::ip::endpoint& endpoint);

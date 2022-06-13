@@ -14,6 +14,8 @@ namespace hive { namespace chain {
 
   using namespace hive::protocol;
 
+  class full_block_type;
+
   namespace detail { class block_log_impl; }
 
   /* The block log is an external append only log of the blocks. Blocks should only be written
@@ -69,20 +71,20 @@ namespace hive { namespace chain {
       void close();
       bool is_open()const;
 
-      uint64_t append(const signed_block& b);
+      uint64_t append(const std::shared_ptr<full_block_type>& full_block);
       uint64_t append_raw(const char* raw_block_data, size_t raw_block_size, block_attributes_t flags);
 
       void flush();
       std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_block_data_by_num(uint32_t block_num) const;
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t>&& raw_block_data_tuple);
 
-      optional<signed_block> read_block_by_num( uint32_t block_num )const;
+      std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num )const;
       optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
-      vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
+      std::vector<std::shared_ptr<full_block_type>> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
-      signed_block read_head()const;
-      const boost::shared_ptr<signed_block> head() const;
+      std::shared_ptr<full_block_type> read_head()const;
+      std::shared_ptr<full_block_type> head() const;
       void set_compression(bool enabled);
       void set_compression_level(int level);
 
@@ -92,10 +94,10 @@ namespace hive { namespace chain {
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size, 
                                                                                fc::optional<uint8_t> dictionary_number = fc::optional<int>(), 
                                                                                fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
-    private:
-      void construct_index(bool resume = false);
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
 
+    private:
+      void construct_index(bool resume = false);
       std::unique_ptr<detail::block_log_impl> my;
   };
 
