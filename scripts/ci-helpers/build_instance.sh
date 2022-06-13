@@ -24,9 +24,12 @@ print_help () {
     echo "Allows to build docker image containing Hived installation"
     echo "OPTIONS:"
     echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
+    echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
     echo "  --help                    Display this help screen and exit"
     echo
 }
+
+EXPORT_PATH=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -53,6 +56,10 @@ while [ $# -gt 0 ]; do
             echo
             exit 3
         esac
+        ;;
+    --export-binaries=*)
+        arg="${1#*=}"
+        EXPORT_PATH="$arg"
         ;;
     --help)
         print_help
@@ -94,6 +101,8 @@ echo "Moving into source root directory: ${SRCROOTDIR}"
 pushd "$SRCROOTDIR"
 pwd
 
+export DOCKER_BUILDKIT=1
+
 docker build --target=base_instance \
   --build-arg BLOCK_LOG_SUFFIX="${BLOCK_LOG_SUFFIX}" \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
@@ -109,6 +118,16 @@ docker build --target=instance \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} -f Dockerfile .
 
+
 popd
 
+if [ ! -z "${EXPORT_PATH}" ];
+then
+  echo Attempting to export built binaries into directory: "${EXPORT_PATH}"
+  docker build -o "${EXPORT_PATH}" - << EOF
+    FROM scratch
+    COPY --from=${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} /home/hived/bin/ /
+EOF
+
+fi
 
