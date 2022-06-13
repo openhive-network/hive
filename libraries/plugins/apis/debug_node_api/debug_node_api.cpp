@@ -79,7 +79,9 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
 
       try
       {
-        _db.push_block( *block, skip_flags );
+        // we should have all the data taken directly from block log; for now let's just ignore block size
+        chain::old_block_data block_buf( boost::make_shared< chain::signed_block >( *block ), 0 );
+        _db.push_block( &block_buf, skip_flags );
       }
       catch( const fc::exception& e )
       {

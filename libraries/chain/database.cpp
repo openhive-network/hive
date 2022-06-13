@@ -1083,16 +1083,17 @@ bool database::before_last_checkpoint()const
   *
   * @return true if we switched forks as a result of this push.
   */
-bool database::push_block(const signed_block& new_block, uint32_t skip, const std::function<void( const signed_block& b )>& after_fork_db)
+bool database::push_block( block_data* block_buf, uint32_t skip )
 {
   //fc::time_point begin_time = fc::time_point::now();
 
-  auto block_num = new_block.block_num();
+  auto& block = block_buf->get_block();
+  auto block_num = block.block_num();
   if( _checkpoints.size() && _checkpoints.rbegin()->second != block_id_type() )
   {
     auto itr = _checkpoints.find( block_num );
     if( itr != _checkpoints.end() )
-      FC_ASSERT( new_block.id() == itr->second, "Block did not match checkpoint", ("checkpoint",*itr)("block_id",new_block.id()) );
+      FC_ASSERT( block.id() == itr->second, "Block did not match checkpoint", ("checkpoint",*itr)("block_id",block.id()) );
 
     if( _checkpoints.rbegin()->first >= block_num )
       skip = skip_witness_signature
@@ -1113,16 +1114,16 @@ bool database::push_block(const signed_block& new_block, uint32_t skip, const st
   bool result;
   detail::with_skip_flags( *this, skip, [&]()
   {
-    detail::without_pending_transactions( *this, std::move(_pending_tx), [&]()
+    detail::without_pending_transactions( *this, block_buf, std::move( _pending_tx ), [&]()
     {
       try
       {
-        result = _push_block(new_block, after_fork_db);
-        ilog( "Block ${b} successfully applied.", ( "b", new_block.block_num() ) );
+        result = _push_block( block_buf );
+        block_buf->on_end_of_apply_block();
       }
-      FC_CAPTURE_AND_RETHROW( (new_block) )
+      FC_CAPTURE_AND_RETHROW( (block) )
 
-      check_free_memory( false, new_block.block_num() );
+      check_free_memory( false, block.block_num() );
     });
   });
 
@@ -1150,10 +1151,12 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   return;
 }
 
-bool database::_push_block(const signed_block& new_block, const std::function<void( const signed_block& b )>& after_fork_db)
+bool database::_push_block( block_data* block_buf )
 { try {
+  auto& block = block_buf->get_block();
+
   #ifdef IS_TEST_NET
-  FC_ASSERT(new_block.block_num() < TESTNET_BLOCK_LIMIT, "Testnet block limit exceeded");
+  FC_ASSERT(block.block_num() < TESTNET_BLOCK_LIMIT, "Testnet block limit exceeded");
   #endif /// IS_TEST_NET
 
   uint32_t skip = get_node_properties().skip_flags;
@@ -1161,8 +1164,8 @@ bool database::_push_block(const signed_block& new_block, const std::function<vo
 
   if( !(skip&skip_fork_db) )
   {
-    shared_ptr<fork_item> new_head = _fork_db.push_block(new_block);
-    after_fork_db( new_block );
+    shared_ptr<fork_item> new_head = _fork_db.push_block( block ); // here we should use block_buf->get_block_ptr() in final version
+    block_buf->on_fork_db_insert();
     _maybe_warn_multiple_production( new_head->num );
 
     //If the head block from the longest chain does not build off of the current head, we need to switch forks.
@@ -1174,6 +1177,7 @@ bool database::_push_block(const signed_block& new_block, const std::function<vo
       if( new_head->data.block_num() > head_block_num() )
       {
         wlog( "Switching to fork: ${id}", ("id",new_head->data.id()) );
+        block_buf->on_fork_apply();
         auto branches = _fork_db.fetch_branch_from(new_head->data.id(), head_block_id());
 
         // pop blocks until we hit the common ancestor block
@@ -1239,7 +1243,10 @@ bool database::_push_block(const signed_block& new_block, const std::function<vo
         return true;
       }
       else //the new block is on a fork but lower than our head block, so don't validate it
+      {
+        block_buf->on_fork_ignore();
         return false;
+      }
     } //if not building off current head block
   } //if fork checking enabled
 
@@ -1249,13 +1256,14 @@ bool database::_push_block(const signed_block& new_block, const std::function<vo
     BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
     set_tx_status( database::TX_STATUS_INC_BLOCK );
     auto session = start_undo_session();
-    apply_block(new_block, skip);
+    block_buf->on_fork_normal();
+    apply_block( block, skip );
     session.push();
   }
   catch( const fc::exception& e )
   {
     elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
-    _fork_db.remove(new_block.id());
+    _fork_db.remove( block.id() );
     throw;
   }
 

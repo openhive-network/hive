@@ -1651,7 +1651,7 @@ void json_rpc_database_fixture::make_positive_request( std::string& request )
 
 namespace test {
 
-bool _push_block( database& db, const signed_block& b, uint32_t skip_flags /* = 0 */ )
+bool _push_block( database& db, block_data* b, uint32_t skip_flags /* = 0 */ )
 {
   return db.push_block( b, skip_flags);
 }

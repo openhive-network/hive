@@ -127,7 +127,8 @@ BOOST_AUTO_TEST_CASE( full_block )
   block.extensions.begin()->get< required_automated_actions >().pop_back();
   block.sign( HIVE_INIT_PRIVATE_KEY );
 
-  db->push_block( block );
+  old_block_data block_buf( boost::make_shared< signed_block >( block ), 0 );
+  db->push_block( &block_buf );
 
   {
     const auto& pending_req_index = db->get_index< pending_required_action_index, by_execution >();
@@ -212,7 +213,8 @@ BOOST_AUTO_TEST_CASE( unexpected_required_action )
   block.extensions.insert( req_actions );
   block.sign( HIVE_INIT_PRIVATE_KEY );
 
-  BOOST_REQUIRE_THROW( db->push_block( block ), fc::assert_exception );
+  old_block_data block_buf( boost::make_shared< signed_block >( block ), 0 );
+  BOOST_REQUIRE_THROW( db->push_block( &block_buf ), fc::assert_exception );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -242,7 +244,8 @@ BOOST_AUTO_TEST_CASE( missing_required_action )
   block.extensions.clear();
   block.sign( HIVE_INIT_PRIVATE_KEY );
 
-  BOOST_REQUIRE_THROW( db->push_block( block ), fc::assert_exception );
+  old_block_data block_buf( boost::make_shared< signed_block >( block ), 0 );
+  BOOST_REQUIRE_THROW( db->push_block( &block_buf ), fc::assert_exception );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -278,7 +281,8 @@ BOOST_AUTO_TEST_CASE( optional_action_expiration )
   block.extensions.erase( *block.extensions.rbegin() );
   block.sign( HIVE_INIT_PRIVATE_KEY );
 
-  db->push_block( block );
+  old_block_data block_buf( boost::make_shared< signed_block >( block ), 0 );
+  db->push_block( &block_buf );
 
   const auto& opt_action_idx = db->get_index< pending_optional_action_index, by_execution >();
   auto opt_itr = opt_action_idx.begin();
@@ -305,7 +309,8 @@ BOOST_AUTO_TEST_CASE( unexpected_optional_action )
   block.extensions.insert( opt_actions );
   block.sign( HIVE_INIT_PRIVATE_KEY );
 
-  db->push_block( block );
+  old_block_data block_buf( boost::make_shared< signed_block >( block ), 0 );
+  db->push_block( &block_buf );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -331,7 +336,8 @@ BOOST_AUTO_TEST_CASE( reject_optional_action )
   block.extensions.insert( opt_actions );
   block.sign( HIVE_INIT_PRIVATE_KEY );
 
-  BOOST_REQUIRE_THROW( db->push_block( block ), fc::assert_exception );
+  old_block_data block_buf( boost::make_shared< signed_block >( block ), 0 );
+  BOOST_REQUIRE_THROW( db->push_block( &block_buf ), fc::assert_exception );
 
 } FC_LOG_AND_RETHROW() }
 

@@ -44,31 +44,22 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 
 #define NUM_THREADS 1
 
-struct generate_block_request
-{
-  generate_block_request( const fc::time_point_sec w, const account_name_type& wo, const fc::ecc::private_key& priv_key, uint32_t s ) :
-    when( w ),
-    witness_owner( wo ),
-    block_signing_private_key( priv_key ),
-    skip( s ) {}
+typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
-  const fc::time_point_sec when;
-  const account_name_type& witness_owner;
-  const fc::ecc::private_key& block_signing_private_key;
-  uint32_t skip;
-  signed_block block;
+struct tx_data
+{
+  tx_data( const signed_transaction& _tx ) : tx( _tx ) {}
+
+  const signed_transaction&     tx;
+  promise_ptr                   prom_ptr;
+  fc::optional< fc::exception > except;
 };
 
-typedef fc::static_variant< const signed_block*, const signed_transaction*, generate_block_request* > write_request_ptr;
-typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
+typedef fc::static_variant< std::shared_ptr< inc_block_data >, tx_data*, std::shared_ptr< new_block_data > > write_request_ptr;
 
 struct write_context
 {
   write_request_ptr             req_ptr;
-  uint32_t                      skip = 0;
-  bool                          success = true;
-  fc::optional< fc::exception > except;
-  promise_ptr                   prom_ptr;
   fc::time_point                timestamp;
   uint32_t                      congestion = 0;
 };
@@ -168,148 +159,13 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
 
+    class request_promise_visitor;
     class write_request_visitor;
 };
 
-struct chain_plugin_impl::write_request_visitor
+struct chain_plugin_impl::request_promise_visitor
 {
-  write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
-
-  //cumulative data on transactions since last block
-  fc::microseconds total_time_tx_spent_in_queue;
-  uint64_t         total_tx_congestion = 0;
-  uint32_t         max_tx_congestion = 0;
-  uint32_t         count_tx_processed = 0;
-  uint32_t         count_tx_accepted = 0;
-
-  chain_plugin_impl& cp;
-  write_context* cxt = nullptr;
-
-  typedef bool result_type;
-
-  void on_block( const fc::time_point& now, uint32_t block_num, bool is_new )
-  {
-    if( count_tx_processed > 0 )
-    {
-      ilog( "Processed ${c} txs since last block (${a} accepted), avg queue wait ${t}µs, avg/max congestion ${ac}/${mc}",
-        ( "c", count_tx_processed )
-        ( "a", count_tx_accepted )
-        ( "t", total_time_tx_spent_in_queue.count() / count_tx_processed )
-        ( "ac", total_tx_congestion / count_tx_processed )
-        ( "mc", max_tx_congestion )
-      );
-      count_tx_processed = 0;
-      count_tx_accepted = 0;
-      max_tx_congestion = 0;
-      total_tx_congestion = 0;
-      total_time_tx_spent_in_queue = fc::microseconds();
-    }
-    ilog( "Queue wait for ${f}block #${b}: ${t}µs, ${c} congestion",
-      ( "f", is_new?"new ":"" )
-      ( "b", block_num )
-      ( "t", ( now - cxt->timestamp ).count() )
-      ( "c", cxt->congestion )
-    );
-  }
-
-  bool operator()( const signed_block* block )
-  {
-    bool result = false;
-
-    try
-    {
-      STATSD_START_TIMER( "chain", "write_time", "push_block", 1.0f )
-      fc::time_point time_before_pushing_block = fc::time_point::now();
-      on_block( time_before_pushing_block, block->block_num(), false );
-      result = cp.db.push_block( *block, cxt->skip );
-      cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
-      STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
-    }
-    catch( const fc::exception& e )
-    {
-      cxt->except = e;
-    }
-    catch( ... )
-    {
-      cxt->except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
-                                            std::current_exception());
-    }
-
-    return result;
-  }
-
-  bool operator()( const signed_transaction* trx )
-  {
-    bool result = false;
-
-    try
-    {
-      STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
-      fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      ++count_tx_processed;
-      total_time_tx_spent_in_queue += time_before_pushing_transaction - cxt->timestamp;
-      total_tx_congestion += cxt->congestion;
-      if( max_tx_congestion < cxt->congestion )
-        max_tx_congestion = cxt->congestion;
-      cp.db.push_transaction( *trx );
-      cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
-      STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
-
-      result = true;
-      ++count_tx_accepted;
-    }
-    catch( const fc::exception& e )
-    {
-      cxt->except = e;
-    }
-    catch( ... )
-    {
-      elog("Unknown exception while pushing transaction.");
-      cxt->except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing transaction." ),
-                                            std::current_exception());
-    }
-
-    return result;
-  }
-
-  bool operator()( generate_block_request* req )
-  {
-    bool result = false;
-
-    try
-    {
-      if( !cp.block_generator )
-        FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
-
-      STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      on_block( fc::time_point::now(), cp.db.head_block_num() + 1, true );
-      req->block = cp.block_generator->generate_block(
-        req->when,
-        req->witness_owner,
-        req->block_signing_private_key,
-        req->skip
-        );
-      STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
-
-      result = true;
-    }
-    catch( const fc::exception& e )
-    {
-      cxt->except = e;
-    }
-    catch( ... )
-    {
-      cxt->except = fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
-                                             std::current_exception() );
-    }
-
-    return result;
-  }
-};
-
-struct request_promise_visitor
-{
-  request_promise_visitor(){}
+  request_promise_visitor() {}
 
   typedef void result_type;
 
@@ -322,10 +178,103 @@ struct request_promise_visitor
   {
     t->set_value();
   }
-  
+
   void operator()( std::shared_ptr<boost::promise<void>> t )
   {
     t->set_value();
+  }
+};
+
+struct chain_plugin_impl::write_request_visitor
+{
+  write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
+
+  //cumulative data on transactions since last block
+  uint32_t         count_tx_processed = 0;
+  uint32_t         count_tx_accepted = 0;
+
+  chain_plugin_impl& cp;
+  write_context* cxt = nullptr;
+
+  typedef void result_type;
+
+  void on_block( block_data* block )
+  {
+    block->on_worker_queue_pop( count_tx_processed, count_tx_accepted );
+    count_tx_processed = 0;
+    count_tx_accepted = 0;
+  }
+
+  void operator()( std::shared_ptr< chain::inc_block_data > block_buf )
+  {
+    try
+    {
+      STATSD_START_TIMER( "chain", "write_time", "push_block", 1.0f )
+      on_block( block_buf.get() );
+      cp.db.push_block( block_buf.get(), block_buf->get_skip_flags() );
+      STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
+    }
+    catch( const fc::exception& e )
+    {
+      block_buf->on_failure( e );
+    }
+    catch( ... )
+    {
+      block_buf->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+        "Unexpected exception while pushing block." ), std::current_exception() ) );
+    }
+    block_buf->on_worker_done();
+  }
+
+  void operator()( tx_data* tx_buf )
+  {
+    try
+    {
+      STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
+      fc::time_point time_before_pushing_transaction = fc::time_point::now();
+      ++count_tx_processed;
+      cp.db.push_transaction( tx_buf->tx );
+      cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
+      STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
+
+      ++count_tx_accepted;
+    }
+    catch( const fc::exception& e )
+    {
+      tx_buf->except = e;
+    }
+    catch( ... )
+    {
+      elog("Unknown exception while pushing transaction.");
+      tx_buf->except = fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+        "Unexpected exception while pushing transaction." ), std::current_exception() );
+    }
+    request_promise_visitor vtor;
+    tx_buf->prom_ptr.visit( vtor );
+  }
+
+  void operator()( std::shared_ptr< new_block_data > block_req )
+  {
+    try
+    {
+      if( !cp.block_generator )
+        FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
+
+      STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
+      on_block( block_req.get() );
+      cp.block_generator->generate_block( block_req.get() );
+      STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
+    }
+    catch( const fc::exception& e )
+    {
+      block_req->on_failure( e );
+    }
+    catch( ... )
+    {
+      block_req->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+        "Unexpected exception while producing block." ), std::current_exception() ) );
+    }
+    block_req->on_worker_done();
   }
 };
 
@@ -344,7 +293,6 @@ void chain_plugin_impl::start_write_processing()
       const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);
       bool is_syncing = true;
       write_request_visitor req_visitor( *this );
-      request_promise_visitor prom_visitor;
 
       /* This loop monitors the write request queue and performs writes to the database. These
         * can be blocks or pending transactions. Because the caller needs to know the success of
@@ -423,8 +371,7 @@ void chain_plugin_impl::start_write_processing()
           while (true)
           {
             req_visitor.cxt = cxt;
-            cxt->success = cxt->req_ptr.visit( req_visitor );
-            cxt->prom_ptr.visit( prom_visitor );
+            cxt->req_ptr.visit( req_visitor );
 
             ++write_queue_items_processed;
 
@@ -1016,19 +963,21 @@ inline void supplement_write_context( write_context& cxt, size_t queue_size, boo
   cxt.congestion = static_cast< decltype( cxt.congestion ) >( queue_size );
 }
 
-bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */  )
+bool chain_plugin::accept_block( std::shared_ptr< chain::inc_block_data > block_buf, bool currently_syncing )
 {
+  auto& block = block_buf->get_block();
   if (currently_syncing && block.block_num() % 10000 == 0)
+  {
     ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
          ("t", block.timestamp)
          ("n", block.block_num())
          ("p", block.witness) );
+  }
 
   check_time_in_block( block );
 
   write_context cxt;
-  cxt.req_ptr = &block;
-  cxt.skip = skip;
+  cxt.req_ptr = block_buf;
   supplement_write_context( cxt, my->write_queue_size, currently_syncing );
   static int call_count = 0;
   call_count++;
@@ -1037,29 +986,11 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     fc_dlog(fc::logger::get("chainlock"), "<-- accept_block_calls_in_progress: ${call_count}", (call_count));
   } BOOST_SCOPE_EXIT_END
 
-  if (lock == lock_type::boost)
-  {
-    fc_dlog(fc::logger::get("chainlock"), "--> boost accept_block_calls_in_progress: ${call_count}", (call_count));
-    std::shared_ptr<boost::promise<void>> accept_block_promise = std::make_shared<boost::promise<void>>();
-    // note: whether boost's futures are named `future` or `unique_future` depends on the BOOST_THREAD_VERSION,
-    //       if this doesn't compile, see:
-    //       https://www.boost.org/doc/libs/1_78_0/doc/html/thread/build.html#thread.build.configuration.future
-    boost::unique_future<void> accept_block_future(accept_block_promise->get_future());
-    cxt.prom_ptr = accept_block_promise;
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-      ++( my->write_queue_size );
-    }
-    my->queue_condition_variable.notify_one();
-    accept_block_future.get();
-  }
-  else
   {
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
     fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
     fc::future<void> accept_block_future(accept_block_promise);
-    cxt.prom_ptr = accept_block_promise;
+    block_buf->attach_promise( accept_block_promise );
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1069,16 +1000,16 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
     accept_block_future.wait();
   }
 
-  if (cxt.except)
-    throw *(cxt.except);
+  block_buf->rethrow_if_exception();
 
-  return cxt.success;
+  return block_buf->forked();
 }
 
 void chain_plugin::accept_transaction( const hive::chain::signed_transaction& trx, const lock_type lock /* = lock_type::boost */  )
 {
+  tx_data tx_buf( trx );
   write_context cxt;
-  cxt.req_ptr = &trx;
+  cxt.req_ptr = &tx_buf;
   supplement_write_context( cxt, my->write_queue_size );
   static int call_count = 0;
   call_count++;
@@ -1092,7 +1023,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
-    cxt.prom_ptr = accept_transaction_promise;
+    tx_buf.prom_ptr = accept_transaction_promise;
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1106,7 +1037,7 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count));
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
-    cxt.prom_ptr = accept_transaction_promise;
+    tx_buf.prom_ptr = accept_transaction_promise;
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1116,24 +1047,19 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     accept_transaction_future.wait();
   }
 
-  if (cxt.except) 
-    throw *(cxt.except);
+  if (tx_buf.except)
+    throw *(tx_buf.except);
 }
 
-hive::chain::signed_block chain_plugin::generate_block(
-  const fc::time_point_sec when,
-  const account_name_type& witness_owner,
-  const fc::ecc::private_key& block_signing_private_key,
-  uint32_t skip )
+void chain_plugin::generate_block( std::shared_ptr< chain::new_block_data > new_block_buf )
 {
-  generate_block_request req( when, witness_owner, block_signing_private_key, skip );
   write_context cxt;
-  cxt.req_ptr = &req;
+  cxt.req_ptr = new_block_buf;
   supplement_write_context( cxt, my->write_queue_size );
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
-  cxt.prom_ptr = generate_block_promise;
+  new_block_buf->attach_promise( generate_block_promise );
 
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
@@ -1144,12 +1070,7 @@ hive::chain::signed_block chain_plugin::generate_block(
 
   generate_block_future.get();
 
-  if (cxt.except)
-    throw *(cxt.except);
-
-  FC_ASSERT( cxt.success, "Block could not be generated" );
-
-  return req.block;
+  new_block_buf->rethrow_if_exception();
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )

@@ -249,7 +249,8 @@ void debug_node_plugin::debug_generate_blocks(
         break;
     }
 
-    bp.generate_block( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    chain::new_block_data request( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    bp.generate_block( &request );
     ++produced;
     slot = new_slot;
   }

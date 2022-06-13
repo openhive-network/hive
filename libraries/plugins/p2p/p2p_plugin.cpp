@@ -171,7 +171,10 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
-      bool result = chain.accept_block(blk_msg.block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
+      auto inc_block_buf = std::make_shared< chain::inc_block_data >(
+        boost::make_shared< signed_block >( blk_msg.block ), fc::raw::pack_size( blk_msg.block ),
+        ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures );
+      bool result = chain.accept_block( inc_block_buf, sync_mode );
 
       if( !sync_mode )
       {

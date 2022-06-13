@@ -407,7 +407,8 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::inc_block( expectation::POST_TX ) );
     check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
     //popped transactions are dropped silently as duplicates of those that came with block
-    db->push_block( *block );
+    old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+    db->push_block( &block_buf );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating empty block - no popped/pending transactions remain" );
@@ -564,7 +565,8 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     for( int i = 0; i < 9; ++i )
     {
       auto block = reality1[i];
-      db->push_block( *block );
+      old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+      db->push_block( &block_buf );
     }
     //then all blocks from fork are applied one by one
     check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
@@ -603,7 +605,8 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
     {
       auto block = reality1[9];
-      db->push_block( *block );
+      old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+      db->push_block( &block_buf );
     }
     check.check_empty();
 
@@ -691,7 +694,8 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     //new reality contains one block, so we need to push two to make it longer
     {
       auto block = reality1[0];
-      db->push_block( *block );
+      old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+      db->push_block( &block_buf );
     }
     //fork will be switched now - let's force failure during reapplication of block 1
     check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
@@ -714,16 +718,18 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     {
       auto block = reality1[1];
-      BOOST_REQUIRE_THROW( db->push_block( *block ), plugin_exception );
+      old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+      BOOST_REQUIRE_THROW( db->push_block( &block_buf ), plugin_exception );
         //unfortunately fc::last_assert_expression is overwritten by exception from failed popped
-        //transaction, so we can't use HIVE_REQUIRE_EXCEPTION( db->push_block( *block ), "_hard_", plugin_exception );
+        //transaction, so we can't use HIVE_REQUIRE_EXCEPTION( db->push_block( &block_buf ), "_hard_", plugin_exception );
     }
     check.check_empty();
     //pushing last block from fork is irrelevant as it will be dropped immediately
     //since fork it linked to was also dropped
     {
       auto block = reality1[2];
-      HIVE_REQUIRE_EXCEPTION( db->push_block( *block ), "itr != index.end()", unlinkable_block_exception );
+      old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+      HIVE_REQUIRE_EXCEPTION( db->push_block( &block_buf ), "itr != index.end()", unlinkable_block_exception );
     }
 
     //generate one more block to verify that we have no pending transactions

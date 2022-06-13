@@ -86,6 +86,19 @@ namespace detail {
     std::shared_ptr< witness::block_producer >                         _block_producer;
   };
 
+  class witness_new_block_data final : public new_block_data
+  {
+  public:
+    using new_block_data::new_block_data;
+    virtual ~witness_new_block_data() = default;
+
+    virtual void on_fork_db_insert() override
+    {
+      appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( *block );
+      new_block_data::on_fork_db_insert();
+    }
+  };
+
   struct comment_options_extension_visitor
   {
     comment_options_extension_visitor( const comment_object& c, const database& db ) : _c( c ), _db( db ) {}
@@ -443,15 +456,14 @@ namespace detail {
       return block_production_condition::lag;
     }
 
-    auto block = _chain_plugin.generate_block(
-      scheduled_time,
-      scheduled_witness,
-      private_key_itr->second,
-      _production_skip_flags
-      );
-    capture("n", block.block_num())("t", block.timestamp)("c", now);
+    auto new_block_buf = std::make_shared< witness_new_block_data >( scheduled_time,
+      scheduled_witness, private_key_itr->second, _production_skip_flags );
+    _chain_plugin.generate_block( new_block_buf );
+    capture("n", new_block_buf->get_block().block_num())("t", new_block_buf->get_block().timestamp)("c", now);
 
-    //appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
+    //appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( new_block_buf->get_block() );
+    // above is executed by new_block_buf after block is inserted to fork-db, but the thread is kept waiting
+    // until block is reapplied, or the same block would try to be produced again
     return block_production_condition::produced;
   }
 } // detail

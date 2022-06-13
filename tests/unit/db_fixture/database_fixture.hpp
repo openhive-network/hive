@@ -605,7 +605,7 @@ struct json_rpc_database_fixture : public database_fixture
 
 namespace test
 {
-  bool _push_block( database& db, const signed_block& b, uint32_t skip_flags = 0 );
+  bool _push_block( database& db, block_data* b, uint32_t skip_flags = 0 );
   void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags = 0 );
 }
 

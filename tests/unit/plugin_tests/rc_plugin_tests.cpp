@@ -1128,7 +1128,8 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       auto catcher = fc::shared_ptr<tcatcher>( new tcatcher() );
       autoscope auto_reset( [&]() { fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher ); } );
       fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
-      db->push_block( *block );
+      old_block_data block_buf( boost::make_shared< signed_block >( *block ), 0 );
+      db->push_block( &block_buf );
       //t1 was applied as part of block, then popped version of t1 was skipped as duplicate and t2 was
       //applied as pending; since lack of RC does not block transaction when it is pending, it remains
       //as pending; we can check that by looking at balances

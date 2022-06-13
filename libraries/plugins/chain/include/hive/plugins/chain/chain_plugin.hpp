@@ -45,14 +45,9 @@ public:
 
   void connection_count_changed(uint32_t peer_count);
   enum class lock_type { boost, fc };
-  bool accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock = lock_type::boost );
+  bool accept_block( std::shared_ptr< chain::inc_block_data > block_buf, bool currently_syncing );
   void accept_transaction( const hive::chain::signed_transaction& trx, const lock_type lock = lock_type::boost );
-  hive::chain::signed_block generate_block(
-    const fc::time_point_sec when,
-    const account_name_type& witness_owner,
-    const fc::ecc::private_key& block_signing_private_key,
-    uint32_t skip = database::skip_nothing
-    );
+  void generate_block( std::shared_ptr< chain::new_block_data > new_block_buf );
 
   /**
     * Set a class to be called for block generation.

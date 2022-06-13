@@ -64,8 +64,8 @@ void with_skip_flags(
   */
 struct pending_transactions_restorer
 {
-  pending_transactions_restorer( database& db, std::vector<signed_transaction>&& pending_transactions )
-    : _db(db), _pending_transactions( std::move(pending_transactions) )
+  pending_transactions_restorer( database& db, block_data* buf, std::vector<signed_transaction>&& pending_transactions )
+    : _db(db), _block_data( buf ), _pending_transactions( std::move(pending_transactions) )
   {
     _db.clear_pending();
   }
@@ -80,6 +80,7 @@ struct pending_transactions_restorer
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
+    uint32_t failed_txs = 0;
 
     auto handle_tx = [&]( signed_transaction& tx )
     {
@@ -110,6 +111,7 @@ struct pending_transactions_restorer
             ( "b", _db.head_block_id() )( "n", _db.head_block_num() )( "t", _db.head_block_time() ) );
           dlog( "The invalid transaction caused exception ${e}", ( "e", e.to_detail_string() ) );
           dlog( "${t}", ( "t", tx ) );
+          ++failed_txs;
         }
         catch( const fc::exception& e )
         {
@@ -119,6 +121,7 @@ struct pending_transactions_restorer
           dlog( "The invalid pending transaction caused exception ${e}", ("e", e.to_detail_string() ) );
           dlog( "${t}", ("t", tx) );
           */
+          ++failed_txs;
         }
       }
       else
@@ -154,6 +157,7 @@ struct pending_transactions_restorer
         handle_tx( tx );
     } );
 
+    _block_data->on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs );
     if( postponed_txs || expired_txs )
     {
       wlog( "Postponed ${p} pending transactions. ${a} were applied. ${e} expired.",
@@ -162,6 +166,7 @@ struct pending_transactions_restorer
   }
 
   database& _db;
+  block_data* _block_data;
   std::vector< signed_transaction > _pending_transactions;
 };
 
@@ -174,10 +179,11 @@ struct pending_transactions_restorer
 template< typename Lambda >
 void without_pending_transactions(
   database& db,
+  block_data* buf,
   std::vector<signed_transaction>&& pending_transactions,
   Lambda callback )
 {
-    pending_transactions_restorer restorer( db, std::move(pending_transactions) );
+    pending_transactions_restorer restorer( db, buf, std::move(pending_transactions) );
     callback();
     return;
 }

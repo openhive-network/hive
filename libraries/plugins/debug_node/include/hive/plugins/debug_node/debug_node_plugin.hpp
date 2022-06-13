@@ -74,7 +74,9 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
       // What the last block does has been changed by adding to node_property_object, so we have to re-apply it
       db.pop_block();
-      db.push_block( *head_block, skip );
+      // we should have all the data taken directly from popped block; for now let's just ignore block size
+      chain::old_block_data block_buf( boost::make_shared< chain::signed_block >( *head_block ), 0 );
+      db.push_block( &block_buf, skip );
     }
 
     void debug_generate_blocks(

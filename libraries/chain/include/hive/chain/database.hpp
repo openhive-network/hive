@@ -2,6 +2,7 @@
   * Copyright (c) 2015 Cryptonomex, Inc., and contributors.
   */
 #pragma once
+#include <hive/chain/block_data.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/global_property_object.hpp>
@@ -360,10 +361,10 @@ namespace chain {
       const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
       bool                                   before_last_checkpoint()const;
 
-      bool push_block( const signed_block& b, uint32_t skip = skip_nothing, const std::function<void( const signed_block& b )>& after_fork_db = []( const signed_block& b ){} );
+      bool push_block( block_data* block_buf, uint32_t skip = skip_nothing );
       void push_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
       void _maybe_warn_multiple_production( uint32_t height )const;
-      bool _push_block( const signed_block& b, const std::function<void( const signed_block& b )>& after_fork_db );
+      bool _push_block( block_data* block_buf );
       void _push_transaction( const signed_transaction& trx );
 
       void pop_block();
