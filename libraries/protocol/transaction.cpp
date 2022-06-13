@@ -220,30 +220,28 @@ set<public_key_type> signed_transaction::minimize_required_signatures(
   return set<public_key_type>( result.begin(), result.end() );
 }
 
-void signed_transaction::verify_authority(
-  const chain_id_type& chain_id,
-  const authority_getter& get_active,
-  const authority_getter& get_owner,
-  const authority_getter& get_posting,
-  hive::protocol::pack_type pack,
-  uint32_t max_recursion,
-  uint32_t max_membership,
-  uint32_t max_account_auths,
-  canonical_signature_type canon_type )const
+void signed_transaction::verify_authority(const chain_id_type& chain_id,
+                                          const authority_getter& get_active,
+                                          const authority_getter& get_owner,
+                                          const authority_getter& get_posting,
+                                          hive::protocol::pack_type pack,
+                                          uint32_t max_recursion,
+                                          uint32_t max_membership,
+                                          uint32_t max_account_auths,
+                                          canonical_signature_type canon_type) const
 { try {
-  hive::protocol::verify_authority(
-    operations,
-    get_signature_keys( chain_id, canon_type, pack ),
-    get_active,
-    get_owner,
-    get_posting,
-    max_recursion,
-    max_membership,
-    max_account_auths,
-    false,
-    flat_set< account_name_type >(),
-    flat_set< account_name_type >(),
-    flat_set< account_name_type >() );
-} FC_CAPTURE_AND_RETHROW( (*this) ) }
+  hive::protocol::verify_authority(operations,
+                                   get_signature_keys(chain_id, canon_type, pack),
+                                   get_active,
+                                   get_owner,
+                                   get_posting,
+                                   max_recursion,
+                                   max_membership,
+                                   max_account_auths,
+                                   false,
+                                   flat_set<account_name_type>(),
+                                   flat_set<account_name_type>(),
+                                   flat_set<account_name_type>());
+} FC_CAPTURE_AND_RETHROW((*this)) }
 
 } } // hive::protocol

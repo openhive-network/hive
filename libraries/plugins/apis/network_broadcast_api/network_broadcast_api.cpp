@@ -30,16 +30,21 @@ namespace detail
   DEFINE_API_IMPL( network_broadcast_api_impl, broadcast_transaction )
   {
     FC_ASSERT( !check_max_block_age( args.max_block_age ) );
-    _chain.accept_transaction( args.trx );
-    _p2p.broadcast_transaction( args.trx );
+
+    std::shared_ptr<hive::chain::full_transaction_type> full_transaction = _chain.determine_encoding_and_accept_transaction(args.trx);
+    _p2p.broadcast_transaction(full_transaction);
 
     return broadcast_transaction_return();
   }
 
   DEFINE_API_IMPL( network_broadcast_api_impl, broadcast_block )
   {
-    _chain.accept_block( args.block, /*currently syncing*/ false, /*skip*/ chain::database::skip_nothing );
-    _p2p.broadcast_block( args.block );
+    // TODO: analyze this API -- will it be a problem accepting JSON transactions where the serialization
+    // is not known?  methinks it will
+    std::shared_ptr<hive::chain::full_block_type> full_block = hive::chain::full_block_type::create_from_signed_block(args.block);
+
+    _chain.accept_block(full_block, /*currently syncing*/ false, /*skip*/ chain::database::skip_nothing);
+    _p2p.broadcast_block(full_block);
     return broadcast_block_return();
   }
 

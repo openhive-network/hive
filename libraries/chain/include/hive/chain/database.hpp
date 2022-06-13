@@ -188,7 +188,7 @@ namespace chain {
 
     private:
 
-      uint32_t reindex_internal( const open_args& args, signed_block& block );
+      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
       void remove_expired_governance_votes();
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
@@ -250,11 +250,10 @@ namespace chain {
       block_id_type              find_block_id_for_num( uint32_t block_num )const;
     public:
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
-      optional<signed_block>     fetch_block_by_id( const block_id_type& id )const;
-      optional<signed_block_header> fetch_block_header_by_id( const block_id_type& id )const;
-      optional<signed_block_header> fetch_block_header_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      optional<signed_block>     fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      std::vector<signed_block>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
+      std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
+      std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
+                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() );
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
@@ -359,11 +358,11 @@ namespace chain {
       const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
       bool                                   before_last_checkpoint()const;
 
-      bool push_block( const signed_block& b, uint32_t skip = skip_nothing );
-      void push_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
+      bool push_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
+      void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
       void _maybe_warn_multiple_production( uint32_t height )const;
-      bool _push_block( const signed_block& b );
-      void _push_transaction( const signed_transaction& trx );
+      bool _push_block(const std::shared_ptr<full_block_type>& full_block);
+      void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
       void clear_pending();
@@ -642,16 +641,10 @@ namespace chain {
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
 
-      /**
-        *  This method validates transactions without adding it to the pending state.
-        *  @throw if an error occurs
-        */
-      //void validate_transaction( const signed_transaction& trx );
-
       /** when popping a block, the transactions that were removed get cached here so they
         * can be reapplied at the proper time */
-      std::deque< signed_transaction >       _popped_tx;
-      vector< signed_transaction >           _pending_tx;
+      std::deque<std::shared_ptr<full_transaction_type>>       _popped_tx;
+      vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
@@ -683,7 +676,7 @@ namespace chain {
       void set_flush_interval( uint32_t flush_blocks );
       void check_free_memory( bool force_print, uint32_t current_block_num );
 
-      void apply_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
+      void apply_transaction( const std::shared_ptr<full_transaction_type>& trx, uint32_t skip = skip_nothing );
       void apply_required_action( const required_automated_action& a );
       void apply_optional_action( const optional_automated_action& a );
 
@@ -719,9 +712,9 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-      void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
-      void _apply_block( const signed_block& next_block );
-      void _apply_transaction( const signed_transaction& trx );
+      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
+      void _apply_block(const std::shared_ptr<full_block_type>& full_block);
+      void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
 
       void process_required_actions( const required_automated_actions& actions );
@@ -730,8 +723,8 @@ namespace chain {
       ///Steps involved in applying a new block
       ///@{
 
-      const witness_object& validate_block_header( uint32_t skip, const signed_block& next_block )const;
-      void create_block_summary(const signed_block& next_block);
+      const witness_object& validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const;
+      void create_block_summary(const std::shared_ptr<full_block_type>& full_block);
 
       //calculates sum of all balances stored on given account, returns true if any is nonzero
       bool collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,

@@ -118,29 +118,28 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   uint32_t txInBlock = 0;
 
   hive::protocol::transaction_id_type id(args.id);
-  if(args.id.size() != id.data_size()*2)
+  if (args.id.size() != id.data_size() * 2)
     FC_ASSERT(false, "Transaction hash '${t}' has invalid size. Transaction hash should have size of ${s} bits", ("t", args.id)("s", sizeof(id._hash) * 8));
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
 
   if(_dataSource.find_transaction_info(id, include_reversible, &blockNo, &txInBlock))
-    {
+  {
     get_transaction_return result;
-    _db.with_read_lock([this, blockNo, txInBlock, &result]() {
-      auto blk = _db.fetch_block_by_number(blockNo); // implicitly locked because of chainbase read lock
-      FC_ASSERT(blk.valid());
-      FC_ASSERT(blk->transactions.size() > txInBlock);
-      result = blk->transactions[txInBlock];
-      result.block_num = blockNo;
-      result.transaction_num = txInBlock;
-    }, fc::seconds(1));
+
+    std::shared_ptr<hive::chain::full_block_type> blk = _db.fetch_block_by_number(blockNo, fc::seconds(1));
+    FC_ASSERT(blk);
+    FC_ASSERT(blk->get_block().transactions.size() > txInBlock);
+    result = blk->get_block().transactions[txInBlock];
+    result.block_num = blockNo;
+    result.transaction_num = txInBlock;
 
     return result;
-    }
+  }
   else
-    {
-    FC_ASSERT(false, "Unknown Transaction ${t}", ("t", id));
-    }
+  {
+    FC_ASSERT(false, "Unknown Transaction ${id}", (id));
+  }
 }
 
 #define CHECK_OPERATION( r, data, CLASS_NAME ) \

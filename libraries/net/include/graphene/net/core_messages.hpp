@@ -25,6 +25,8 @@
 
 #include <graphene/net/config.hpp>
 #include <hive/protocol/block.hpp>
+#include <hive/chain/full_block.hpp>
+#include <hive/chain/full_transaction.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/crypto/elliptic.hpp>
@@ -43,6 +45,7 @@ namespace graphene { namespace net {
   using hive::protocol::block_id_type;
   using hive::protocol::transaction_id_type;
   using hive::protocol::signed_block;
+  using hive::chain::full_block_type;
 
   typedef fc::ecc::public_key_data node_id_t;
   typedef fc::ripemd160 item_hash_t;
@@ -94,10 +97,10 @@ namespace graphene { namespace net {
    {
       static const core_message_type_enum type;
 
-      signed_transaction trx;
+      std::shared_ptr<hive::chain::full_transaction_type> full_transaction;
       trx_message() {}
-      trx_message(signed_transaction transaction) :
-        trx(std::move(transaction))
+      trx_message(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction) :
+        full_transaction(full_transaction)
       {}
    };
 
@@ -106,12 +109,16 @@ namespace graphene { namespace net {
       static const core_message_type_enum type;
 
       block_message(){}
-      block_message(const signed_block& blk )
-      :block(blk),block_id(blk.id()){}
+      block_message(const std::shared_ptr<full_block_type>& full_block) :
+        full_block(full_block)
+      {
+        assert(full_block); // doesn't make sense to call this with a nullptr
+        if (full_block)
+          block_id = full_block->get_block_id();
+      }
 
-      signed_block    block;
-      block_id_type   block_id;
-
+      std::shared_ptr<full_block_type> full_block;
+      block_id_type block_id; // TODO: probably ditch this, just call full_bock->get_block_id() on demand
    };
 
   struct item_ids_inventory_message
@@ -422,8 +429,8 @@ FC_REFLECT_ENUM( graphene::net::core_message_type_enum,
                  (get_current_connections_reply_message_type)
                  (core_message_type_last) )
 
-FC_REFLECT( graphene::net::trx_message, (trx) )
-FC_REFLECT( graphene::net::block_message, (block)(block_id) )
+//FC_REFLECT( graphene::net::trx_message, (full_transaction) )
+//FC_REFLECT( graphene::net::block_message, (full_block)(block_id) )
 
 FC_REFLECT( graphene::net::item_id, (item_type)
                                (item_hash) )

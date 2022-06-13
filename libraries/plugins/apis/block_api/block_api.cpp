@@ -51,18 +51,18 @@ block_api_impl::~block_api_impl() {}
 DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
-  optional<signed_block_header> header = _db.fetch_block_header_by_number(args.block_num, fc::seconds(1) );
-  if (header)
-    result.header = *header;
+  std::shared_ptr<full_block_type> block = _db.fetch_block_by_number(args.block_num, fc::seconds(1) );
+  if (block)
+    result.header = block->get_block_header();
   return result;
 }
 
 DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
-  optional<signed_block> block = _db.fetch_block_by_number(args.block_num, fc::seconds(1));
-  if (block)
-    result.block = *block;
+  std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(args.block_num, fc::seconds(1));
+  if (full_block)
+    result.block = full_block;
   return result;
 }
 
@@ -77,10 +77,10 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
-    vector<signed_block> blocks = _db.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
-    result.blocks.reserve(blocks.size());
-    for (const signed_block& block : blocks)
-      result.blocks.push_back(block);
+    std::vector<std::shared_ptr<full_block_type>> full_blocks = _db.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
+    result.blocks.reserve(full_blocks.size());
+    for (const std::shared_ptr<full_block_type>& full_block : full_blocks)
+      result.blocks.push_back(full_block);
   }
   return result;
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <hive/protocol/block.hpp>
+#include <hive/chain/full_block.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -16,23 +17,25 @@ namespace hive { namespace chain {
 
   struct fork_item
   {
-    private:
-      fork_item(){}
     public:
-      fork_item( signed_block d )
-      :num(d.block_num()),id(d.id()),data( std::move(d) ){}
-
-      block_id_type previous_id()const { return data.previous; }
-
-      weak_ptr< fork_item > prev;
-      uint32_t              num;    // initialized in ctor
+      weak_ptr<fork_item>   prev;
       /**
         * Used to flag a block as invalid and prevent other blocks from
         * building on top of it.
         */
       bool                  invalid = false;
-      block_id_type         id;
-      signed_block          data;
+      std::shared_ptr<full_block_type> full_block;
+
+    private:
+      fork_item(){}
+    public:
+      fork_item(const std::shared_ptr<full_block_type>& full_block) : full_block(full_block) {}
+
+      const signed_block& get_block() { return full_block->get_block(); }
+      const signed_block_header& get_block_header() { return full_block->get_block_header(); }
+      const block_id_type& previous_id() { return get_block_header().previous; }
+      const block_id_type& get_block_id() { return full_block->get_block_id(); }
+      uint32_t get_block_num() { return full_block->get_block_num(); }
   };
   typedef shared_ptr<fork_item> item_ptr;
 
@@ -64,7 +67,7 @@ namespace hive { namespace chain {
       fork_database();
       void reset();
 
-      void                             start_block(signed_block b);
+      void                             start_block(const std::shared_ptr<full_block_type>& full_block);
       void                             remove(block_id_type b);
       void                             set_head(shared_ptr<fork_item> h);
       bool                             is_known_block(const block_id_type& id)const;
@@ -88,7 +91,7 @@ namespace hive { namespace chain {
       /**
         *  @return the new head block ( the longest fork )
         */
-      shared_ptr<fork_item>            push_block(const signed_block& b);
+      shared_ptr<fork_item>            push_block(const std::shared_ptr<full_block_type>& full_block);
       shared_ptr<fork_item>            head()const;
       shared_ptr<fork_item>            head_unlocked()const;
       uint32_t                         get_oldest_block_num_unlocked()const;
@@ -112,9 +115,9 @@ namespace hive { namespace chain {
       typedef boost::multi_index_container<
         item_ptr,
         boost::multi_index::indexed_by<
-          boost::multi_index::hashed_unique<boost::multi_index::tag<block_id>, boost::multi_index::member<fork_item, block_id_type, &fork_item::id>, std::hash<fc::ripemd160>>,
-          boost::multi_index::hashed_non_unique<boost::multi_index::tag<by_previous>, boost::multi_index::const_mem_fun<fork_item, block_id_type, &fork_item::previous_id>, std::hash<fc::ripemd160>>,
-          boost::multi_index::ordered_non_unique<boost::multi_index::tag<block_num>, boost::multi_index::member<fork_item,uint32_t,&fork_item::num>>
+          boost::multi_index::hashed_unique<boost::multi_index::tag<block_id>, boost::multi_index::mem_fun<fork_item, const block_id_type&, &fork_item::get_block_id>, std::hash<fc::ripemd160>>,
+          boost::multi_index::hashed_non_unique<boost::multi_index::tag<by_previous>, boost::multi_index::mem_fun<fork_item, const block_id_type&, &fork_item::previous_id>, std::hash<fc::ripemd160>>,
+          boost::multi_index::ordered_non_unique<boost::multi_index::tag<block_num>, boost::multi_index::mem_fun<fork_item, uint32_t, &fork_item::get_block_num>>
         >
       > fork_multi_index_type;
 

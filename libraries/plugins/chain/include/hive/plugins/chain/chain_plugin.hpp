@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/full_block.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 
 #include <boost/signals2.hpp>
@@ -45,14 +46,13 @@ public:
 
   void connection_count_changed(uint32_t peer_count);
   enum class lock_type { boost, fc };
-  bool accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock = lock_type::boost );
-  void accept_transaction( const hive::chain::signed_transaction& trx, const lock_type lock = lock_type::boost );
-  hive::chain::signed_block generate_block(
-    const fc::time_point_sec when,
-    const account_name_type& witness_owner,
-    const fc::ecc::private_key& block_signing_private_key,
-    uint32_t skip = database::skip_nothing
-    );
+  bool accept_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool currently_syncing, uint32_t skip, const lock_type lock = lock_type::boost);
+  void accept_transaction( const std::shared_ptr<full_transaction_type>& trx, const lock_type lock = lock_type::boost );
+  std::shared_ptr<full_transaction_type> determine_encoding_and_accept_transaction( const hive::protocol::signed_transaction& trx, const lock_type lock = lock_type::boost );
+  std::shared_ptr<full_block_type> generate_block(const fc::time_point_sec when,
+                                                  const account_name_type& witness_owner,
+                                                  const fc::ecc::private_key& block_signing_private_key,
+                                                  uint32_t skip = database::skip_nothing);
 
   /**
     * Set a class to be called for block generation.

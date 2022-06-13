@@ -100,7 +100,6 @@ using fc::ecc::canonical_signature_type;
     flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, hive::protocol::pack_type pack )const;
 
     vector<signature_type> signatures;
-
     digest_type merkle_digest()const;
 
     void clear() { operations.clear(); signatures.clear(); }
@@ -108,8 +107,11 @@ using fc::ecc::canonical_signature_type;
 
   struct annotated_signed_transaction : public signed_transaction {
     annotated_signed_transaction(){}
-    annotated_signed_transaction( const signed_transaction& trx )
-    :signed_transaction(trx),transaction_id(trx.id()){}
+    annotated_signed_transaction( const signed_transaction& trx ) : signed_transaction(trx), transaction_id(trx.id()) {}
+    // annotated_signed_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) :
+    //   signed_transaction(full_transaction->get_transaction()),
+    //   transaction_id(full_transaction->get_transaction_id())
+    // {}
 
     transaction_id_type transaction_id;
     uint32_t            block_num = 0;

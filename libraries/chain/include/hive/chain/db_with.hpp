@@ -64,7 +64,7 @@ void with_skip_flags(
   */
 struct pending_transactions_restorer
 {
-  pending_transactions_restorer( database& db, std::vector<signed_transaction>&& pending_transactions )
+  pending_transactions_restorer( database& db, std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions )
     : _db(db), _pending_transactions( std::move(pending_transactions) )
   {
     _db.clear_pending();
@@ -81,7 +81,7 @@ struct pending_transactions_restorer
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
 
-    auto handle_tx = [&]( signed_transaction& tx )
+    auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction)
     {
 #if !defined IS_TEST_NET || defined NDEBUG //during debugging that limit is highly problematic
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
@@ -90,26 +90,27 @@ struct pending_transactions_restorer
 
       if( apply_trxs )
       {
+        const signed_transaction& tx = full_transaction->get_transaction();
         try
         {
           if( tx.expiration < head_block_time )
           {
             ++expired_txs;
           }
-          else if( !_db.is_known_transaction( tx.id() ) )
+          else if (!_db.is_known_transaction(full_transaction->get_transaction_id()))
           {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
-            _db._push_transaction( tx );
+            _db._push_transaction(full_transaction);
             ++applied_txs;
           }
         }
         catch( const transaction_exception& e )
         {
-          dlog( "Pending transaction became invalid after switching to block ${b} ${n} ${t}",
-            ( "b", _db.head_block_id() )( "n", _db.head_block_num() )( "t", _db.head_block_time() ) );
-          dlog( "The invalid transaction caused exception ${e}", ( "e", e.to_detail_string() ) );
-          dlog( "${t}", ( "t", tx ) );
+          dlog("Pending transaction became invalid after switching to block ${b} ${n} ${t}",
+               ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()));
+          dlog("The invalid transaction caused exception ${e}", ("e", e.to_detail_string()));
+          dlog("${tx}", (tx));
         }
         catch( const fc::exception& e )
         {
@@ -123,7 +124,7 @@ struct pending_transactions_restorer
       }
       else
       {
-        _db._pending_tx.emplace_back( std::move( tx ) );
+        _db._pending_tx.emplace_back(full_transaction);
         ++postponed_txs;
       }
     };
@@ -150,19 +151,17 @@ struct pending_transactions_restorer
         handle_tx( tx );
       _db._popped_tx.clear();
 
-      for( auto& tx : _pending_transactions )
-        handle_tx( tx );
+      for (auto& tx : _pending_transactions)
+        handle_tx(tx);
     } );
 
-    if( postponed_txs || expired_txs )
-    {
-      wlog( "Postponed ${p} pending transactions. ${a} were applied. ${e} expired.",
-        ( "p", postponed_txs )( "a", applied_txs )( "e", expired_txs ) );
-    }
+    if (postponed_txs || expired_txs)
+      wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
+           (postponed_txs)(applied_txs)(expired_txs));
   }
 
   database& _db;
-  std::vector< signed_transaction > _pending_transactions;
+  std::vector<std::shared_ptr<full_transaction_type>> _pending_transactions;
 };
 
 /**
@@ -171,11 +170,10 @@ struct pending_transactions_restorer
   *
   * Pending transactions which no longer validate will be culled.
   */
-template< typename Lambda >
-void without_pending_transactions(
-  database& db,
-  std::vector<signed_transaction>&& pending_transactions,
-  Lambda callback )
+template<typename Lambda>
+void without_pending_transactions(database& db,
+                                  std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions,
+                                  Lambda callback)
 {
     pending_transactions_restorer restorer( db, std::move(pending_transactions) );
     callback();

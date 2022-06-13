@@ -273,10 +273,10 @@ namespace graphene { namespace net {
          *  Add message to outgoing inventory list, notify peers that
          *  I have a message ready.
          */
-        virtual void  broadcast( const message& item_to_broadcast );
-        virtual void  broadcast_transaction( const signed_transaction& trx )
+        virtual void  broadcast(const message& item_to_broadcast);
+        virtual void  broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
         {
-           broadcast( trx_message(trx) );
+           broadcast(trx_message(full_transaction));
         }
 
         /**

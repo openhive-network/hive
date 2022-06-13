@@ -442,15 +442,13 @@ namespace detail {
       return block_production_condition::lag;
     }
 
-    auto block = _chain_plugin.generate_block(
-      scheduled_time,
-      scheduled_witness,
-      private_key_itr->second,
-      _production_skip_flags
-      );
-    capture("n", block.block_num())("t", block.timestamp)("c", now);
+    std::shared_ptr<full_block_type> full_block = _chain_plugin.generate_block(scheduled_time,
+                                                                               scheduled_witness,
+                                                                               private_key_itr->second,
+                                                                               _production_skip_flags);
+    capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 
-    appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( block );
+    appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     return block_production_condition::produced;
   }
 } // detail

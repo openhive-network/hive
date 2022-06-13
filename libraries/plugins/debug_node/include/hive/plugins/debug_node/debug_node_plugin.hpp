@@ -2,6 +2,7 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/chain/full_block.hpp>
 
 #include <fc/variant_object.hpp>
 
@@ -69,12 +70,12 @@ class debug_node_plugin : public plugin< debug_node_plugin >
         it = _debug_updates.emplace( head_id, std::vector< std::function< void( chain::database& ) > >() ).first;
       it->second.emplace_back( callback );
 
-      fc::optional<chain::signed_block> head_block = db.fetch_block_by_id( head_id );
-      FC_ASSERT( head_block.valid() );
+      std::shared_ptr<hive::chain::full_block_type> head_block = db.fetch_block_by_id(head_id);
+      FC_ASSERT(head_block);
 
       // What the last block does has been changed by adding to node_property_object, so we have to re-apply it
       db.pop_block();
-      db.push_block( *head_block, skip );
+      db.push_block(head_block, skip);
     }
 
     void debug_generate_blocks(

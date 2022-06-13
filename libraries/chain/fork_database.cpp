@@ -27,10 +27,10 @@ void fork_database::pop_block()
   });
 }
 
-void fork_database::start_block(signed_block b)
+void fork_database::start_block(const std::shared_ptr<full_block_type>& full_block)
 {
-  auto item = std::make_shared<fork_item>(std::move(b));
-  with_write_lock( [&]() {
+  auto item = std::make_shared<fork_item>(full_block);
+  with_write_lock([&]() {
     _index.insert(item);
     _head = item;
   });
@@ -38,20 +38,20 @@ void fork_database::start_block(signed_block b)
 
 /**
   * Pushes the block into the fork database and caches it if it doesn't link
-  *
   */
-shared_ptr<fork_item> fork_database::push_block(const signed_block& b)
+shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block_type>& full_block)
 {
-  auto item = std::make_shared<fork_item>(b);
-  return with_write_lock( [&]() {
-    try {
+  auto item = std::make_shared<fork_item>(full_block);
+  return with_write_lock([&]() {
+    try 
+    {
       _push_block(item);
     }
-    catch ( const unlinkable_block_exception& e )
+    catch (const unlinkable_block_exception&)
     {
-      wlog( "Pushing block to fork database that failed to link: ${id}, ${num}", ("id",b.id())("num",b.block_num()) );
-      wlog( "Head: ${num}, ${id}", ("num",_head->data.block_num())("id",_head->data.id()) );
-      _unlinked_index.insert( item );
+      wlog("Pushing block to fork database that failed to link: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
+      wlog("Head: ${num}, ${id}", ("num", _head->get_block_num())("id", _head->get_block_id()));
+      _unlinked_index.insert(item);
       throw;
     }
     return _head;
@@ -60,15 +60,15 @@ shared_ptr<fork_item> fork_database::push_block(const signed_block& b)
 
 void  fork_database::_push_block(const item_ptr& item)
 {
-  if( _head ) // make sure the block is within the range that we are caching
+  if (_head) // make sure the block is within the range that we are caching
   {
-    FC_ASSERT( item->num > std::max<int64_t>( 0, int64_t(_head->num) - (_max_size) ),
-            "attempting to push a block that is too old",
-            ("item->num",item->num)("head",_head->num)("max_size",_max_size));
+    FC_ASSERT(item->get_block_num() > std::max<int64_t>(0, int64_t(_head->get_block_num()) - _max_size),
+              "attempting to push a block that is too old",
+              ("item->num", item->get_block_num())("head", _head->get_block_num())("max_size", _max_size));
   }
   //if we can't link the new item all the way back to genesis block,
   // throw an unlinkable block exception
-  if( _head && item->previous_id() != block_id_type() )
+  if (_head && item->previous_id() != block_id_type())
   {
     auto& index = _index.get<block_id>();
     auto itr = index.find(item->previous_id());
@@ -80,7 +80,7 @@ void  fork_database::_push_block(const item_ptr& item)
   _index.insert(item);
   // if we don't have a head block or this is the next block or on a longer fork than our head block
   //   make this the new head block
-  if( !_head || item->num > _head->num ) _head = item;
+  if( !_head || item->get_block_num() > _head->get_block_num() ) _head = item;
 
   _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
 }
@@ -98,7 +98,7 @@ shared_ptr<fork_item> fork_database::head_unlocked()const
 uint32_t fork_database::get_oldest_block_num_unlocked()const
 {
   auto const& block_num_idx = _index.get<block_num>();
-  return (*block_num_idx.begin())->num;
+  return (*block_num_idx.begin())->get_block_num();
 }
 
 /**
@@ -111,7 +111,7 @@ void fork_database::_push_next( const item_ptr& new_item )
 {
     auto& prev_idx = _unlinked_index.get<by_previous>();
 
-    auto itr = prev_idx.find( new_item->id );
+    auto itr = prev_idx.find( new_item->get_block_id() );
     while( itr != prev_idx.end() )
     {
       auto tmp = *itr;
@@ -126,7 +126,7 @@ void fork_database::_push_next( const item_ptr& new_item )
         wdump((e.to_detail_string()));
       }
 
-      itr = prev_idx.find( new_item->id );
+      itr = prev_idx.find( new_item->get_block_id() );
     }
 }
 
@@ -142,7 +142,7 @@ void fork_database::set_max_size( uint32_t s )
       auto itr = by_num_idx.begin();
       while( itr != by_num_idx.end() )
       {
-        if( (*itr)->num <= std::max(int64_t(0),int64_t(_head->num) - _max_size) )
+        if( (*itr)->get_block_num() <= std::max(int64_t(0),int64_t(_head->get_block_num()) - _max_size) )
           by_num_idx.erase(itr);
         else
           break;
@@ -154,7 +154,7 @@ void fork_database::set_max_size( uint32_t s )
       auto itr = by_num_idx.begin();
       while( itr != by_num_idx.end() )
       {
-        if( (*itr)->num <= std::max(int64_t(0),int64_t(_head->num) - _max_size) )
+        if( (*itr)->get_block_num() <= std::max(int64_t(0),int64_t(_head->get_block_num()) - _max_size) )
           by_num_idx.erase(itr);
         else
           break;
@@ -202,7 +202,7 @@ vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)cons
     vector<item_ptr> result;
     auto const& block_num_idx = _index.get<block_num>();
     auto itr = block_num_idx.lower_bound(num);
-    while( itr != block_num_idx.end() && itr->get()->num == num )
+    while( itr != block_num_idx.end() && itr->get()->get_block_num() == num )
     {
       result.push_back( *itr );
       ++itr;
@@ -226,21 +226,21 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
-    return _head ? _head->data.timestamp : time_point_sec();
+    return _head ? _head->get_block().timestamp : time_point_sec();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
 uint32_t fork_database::head_block_num(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
-    return _head ? _head->num : 0;
+    return _head ? _head->get_block_num() : 0;
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
 block_id_type fork_database::head_block_id(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
-    return _head ? _head->id : block_id_type();
+    return _head ? _head->get_block_id() : block_id_type();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
@@ -260,19 +260,19 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
     auto second_branch = *second_branch_itr;
   
   
-    while( first_branch->data.block_num() > second_branch->data.block_num() )
+    while( first_branch->get_block_num() > second_branch->get_block_num() )
     {
       result.first.push_back(first_branch);
       first_branch = first_branch->prev.lock();
       FC_ASSERT(first_branch);
     }
-    while( second_branch->data.block_num() > first_branch->data.block_num() )
+    while( second_branch->get_block_num() > first_branch->get_block_num() )
     {
       result.second.push_back( second_branch );
       second_branch = second_branch->prev.lock();
       FC_ASSERT(second_branch);
     }
-    while( first_branch->data.previous != second_branch->data.previous )
+    while( first_branch->previous_id() != second_branch->previous_id() )
     {
       result.first.push_back(first_branch);
       result.second.push_back(second_branch);
@@ -293,10 +293,10 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
 shared_ptr<fork_item> fork_database::walk_main_branch_to_num_unlocked( uint32_t block_num )const
 {
   shared_ptr<fork_item> next = _head; //don't call head(), we already have a read lock
-  if( block_num > next->num )
+  if( block_num > next->get_block_num() )
     return shared_ptr<fork_item>();
 
-  while( next.get() != nullptr && next->num > block_num )
+  while( next.get() != nullptr && next->get_block_num() > block_num )
     next = next->prev.lock();
   return next;
 }
@@ -317,7 +317,7 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint3
 
 shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number_unlocked( uint32_t block_num )const
 {
-  if (!_head || block_num > _head->num)
+  if (!_head || block_num > _head->get_block_num())
     return shared_ptr<fork_item>();
   vector<item_ptr> blocks = fetch_block_by_number_unlocked(block_num);
   if( blocks.size() == 1 )
@@ -333,14 +333,14 @@ vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( con
     vector<fork_item> results;
 
     if (!_head ||
-        _head->num < first_block_num)
+        _head->get_block_num() < first_block_num)
       return results;
   
     // the caller is asking for blocks from first_block_num ... last_desired_block_num
     const uint32_t last_desired_block_num = first_block_num + count - 1;
   
     // but if the head block isn't to last_desired_block_num yet, the latest we can have is the head block
-    const uint32_t last_block_num = std::min(last_desired_block_num, _head->num);
+    const uint32_t last_block_num = std::min(last_desired_block_num, _head->get_block_num());
   
     // look up that last block and see if we have it
     const auto& block_num_idx = _index.get<block_num>();
@@ -357,7 +357,7 @@ vector<fork_item> fork_database::fetch_block_range_on_main_branch_by_number( con
     else
       item = walk_main_branch_to_num_unlocked(last_block_num);
   
-    for (; item && item->num >= first_block_num; item = item->prev.lock())
+    for (; item && item->get_block_num() >= first_block_num; item = item->prev.lock())
       results.push_back(*item);
   
     // we collected the blocks in descending order, reverse that order
@@ -377,7 +377,7 @@ void fork_database::set_head(shared_ptr<fork_item> h)
 void fork_database::remove(block_id_type id)
 {
   with_write_lock( [&]() {
-    if (_head && _head->id == id)
+    if (_head && _head->get_block_id() == id)
       _head = _head->prev.lock();
     _index.get<block_id>().erase(id);
   });
@@ -399,7 +399,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
 
     const auto& block_num_idx = _index.get<block_num>();
     // The oldest block in the fork database is always the last irreversible block
-    uint32_t last_irreversible_block_num = (*block_num_idx.begin())->num;
+    uint32_t last_irreversible_block_num = (*block_num_idx.begin())->get_block_num();
 
 
     // there are several cases: 
@@ -419,7 +419,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     // if no reference point specified, summarize the main chain from the last_irreversible_block up to the head_block
     // (same behavior as if the reference point was our head block)
     if (reference_point == block_id_type())
-      reference_point = _head->id;
+      reference_point = _head->get_block_id();
 
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
     //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num));
@@ -459,7 +459,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     item_ptr next = *reference_point_iter;
     while (next.get())
     {
-      block_ids_on_this_fork.push_back(next->id);
+      block_ids_on_this_fork.push_back(next->get_block_id());
       next = next->prev.lock();
     }
 

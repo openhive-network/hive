@@ -56,10 +56,10 @@ struct generate_block_request
   const account_name_type& witness_owner;
   const fc::ecc::private_key& block_signing_private_key;
   uint32_t skip;
-  signed_block block;
+  std::shared_ptr<hive::chain::full_block_type> full_block;
 };
 
-typedef fc::static_variant< const signed_block*, const signed_transaction*, generate_block_request* > write_request_ptr;
+typedef fc::static_variant<std::shared_ptr<hive::chain::full_block_type>, std::shared_ptr<full_transaction_type>, generate_block_request*> write_request_ptr;
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
 struct write_context
@@ -67,7 +67,7 @@ struct write_context
   write_request_ptr             req_ptr;
   uint32_t                      skip = 0;
   bool                          success = true;
-  fc::optional< fc::exception > except;
+  fc::optional<fc::exception>   except;
   promise_ptr                   prom_ptr;
 };
 
@@ -182,32 +182,32 @@ struct write_request_visitor
 
   typedef bool result_type;
 
-  bool operator()( const signed_block* block )
+  bool operator()(const std::shared_ptr<hive::chain::full_block_type>& full_block)
   {
     bool result = false;
 
     try
     {
-      STATSD_START_TIMER( "chain", "write_time", "push_block", 1.0f )
+      STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      result = db->push_block( *block, skip );
+      result = db->push_block(full_block, skip);
       *cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
-      STATSD_STOP_TIMER( "chain", "write_time", "push_block" )
+      STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
-    catch( const fc::exception& e )
+    catch (const fc::exception& e)
     {
       *except = e;
     }
-    catch( ... )
+    catch (...)
     {
-      *except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
+      *except = fc::unhandled_exception(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing block."),
                                         std::current_exception());
     }
 
     return result;
   }
 
-  bool operator()( const signed_transaction* trx )
+  bool operator()( const std::shared_ptr<full_transaction_type>& full_transaction )
   {
     bool result = false;
 
@@ -215,7 +215,7 @@ struct write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      db->push_transaction( *trx );
+      db->push_transaction( full_transaction );
       *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
@@ -245,12 +245,10 @@ struct write_request_visitor
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      req->block = block_generator->generate_block(
-        req->when,
-        req->witness_owner,
-        req->block_signing_private_key,
-        req->skip
-        );
+      req->full_block = block_generator->generate_block(req->when,
+                                                        req->witness_owner,
+                                                        req->block_signing_private_key,
+                                                        req->skip);
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
 
       result = true;
@@ -972,18 +970,19 @@ void chain_plugin::connection_count_changed(uint32_t peer_count)
   fc_wlog(fc::logger::get("default"),"peer_count changed: ${peer_count}",(peer_count));
 }
 
-bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */  )
+bool chain_plugin::accept_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */)
 {
+  const signed_block& block = full_block->get_block();
   if (currently_syncing && block.block_num() % 10000 == 0)
     ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
          ("t", block.timestamp)
          ("n", block.block_num())
          ("p", block.witness) );
 
-  check_time_in_block( block );
+  check_time_in_block(block);
 
   write_context cxt;
-  cxt.req_ptr = &block;
+  cxt.req_ptr = full_block;
   cxt.skip = skip;
   static int call_count = 0;
   call_count++;
@@ -1028,10 +1027,10 @@ bool chain_plugin::accept_block( const hive::chain::signed_block& block, bool cu
   return cxt.success;
 }
 
-void chain_plugin::accept_transaction( const hive::chain::signed_transaction& trx, const lock_type lock /* = lock_type::boost */  )
+void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, const lock_type lock /* = lock_type::boost */  )
 {
   write_context cxt;
-  cxt.req_ptr = &trx;
+  cxt.req_ptr = full_transaction;
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1070,11 +1069,34 @@ void chain_plugin::accept_transaction( const hive::chain::signed_transaction& tr
     throw *(cxt.except);
 }
 
-hive::chain::signed_block chain_plugin::generate_block(
-  const fc::time_point_sec when,
-  const account_name_type& witness_owner,
-  const fc::ecc::private_key& block_signing_private_key,
-  uint32_t skip )
+std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx, 
+                                                                                               const lock_type lock /* = lock_type::boost */)
+{
+  std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26);
+  try
+  {
+    accept_transaction(full_transaction, lock);
+  }
+  catch (const hive::protocol::transaction_exception&)
+  {
+    full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy);
+    try
+    {
+      accept_transaction(full_transaction, lock);
+    }
+    catch (hive::protocol::transaction_exception& legacy_e)
+    {
+      FC_RETHROW_EXCEPTION(legacy_e, error, "Transaction failed to validate using both new (hf26) and legacy serialization");
+    }
+  }
+  return full_transaction;
+}
+
+
+std::shared_ptr<hive::chain::full_block_type> chain_plugin::generate_block(const fc::time_point_sec when,
+                                                                           const account_name_type& witness_owner,
+                                                                           const fc::ecc::private_key& block_signing_private_key,
+                                                                           uint32_t skip)
 {
   generate_block_request req( when, witness_owner, block_signing_private_key, skip );
   write_context cxt;
@@ -1097,7 +1119,7 @@ hive::chain::signed_block chain_plugin::generate_block(
 
   FC_ASSERT( cxt.success, "Block could not be generated" );
 
-  return req.block;
+  return req.full_block;
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
@@ -1120,13 +1142,10 @@ bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type&
   return db().get_block_id_for_num( hive::chain::block_header::num_from_id( block_id ) ) == block_id;
 }
 
-void chain_plugin::check_time_in_block( const hive::chain::signed_block& block )
+void chain_plugin::check_time_in_block(const hive::chain::signed_block& block)
 {
-  time_point_sec now = fc::time_point::now();
-
-  uint64_t max_accept_time = now.sec_since_epoch();
-  max_accept_time += my->allow_future_time;
-  FC_ASSERT( block.timestamp.sec_since_epoch() <= max_accept_time );
+  const fc::time_point_sec max_accept_time = fc::time_point_sec(fc::time_point::now()) + my->allow_future_time;
+  FC_ASSERT(block.timestamp <= max_accept_time, "Refusing to accept block that's too far in the future (> ${max_accept_time})", (max_accept_time));
 }
 
 void chain_plugin::register_block_generator( const std::string& plugin_name, std::shared_ptr< abstract_block_producer > block_producer )

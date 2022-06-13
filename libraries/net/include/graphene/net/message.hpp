@@ -45,6 +45,9 @@ namespace graphene { namespace net {
 
   typedef fc::uint160_t message_hash_type;
 
+  struct block_message;
+  struct trx_message;
+
   /**
    *  Abstracts the process of packing/unpacking a message for a 
    *  particular channel.
@@ -71,6 +74,9 @@ namespace graphene { namespace net {
         data     = fc::raw::pack_to_vector(m);
         size     = (uint32_t)data.size();
      }
+
+     message(const block_message& msg);
+     message(const trx_message& msg);
 
      fc::uint160_t id()const
      {
@@ -106,6 +112,9 @@ namespace graphene { namespace net {
               ("msg_type", msg_type)
               );
      }
+     
+     block_message as_block_message()const;
+     trx_message as_trx_message()const;
   };
 
 
