@@ -429,8 +429,8 @@ namespace graphene { namespace net {
 
       active_sync_requests_map              _active_sync_requests; /// list of sync blocks we've asked for from peers but have not yet received
 
-       typedef boost::multi_index_container<graphene::net::block_message,
-                                             boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::member<graphene::net::block_message, item_hash_t, &graphene::net::block_message::block_id> > > > received_sync_items_by_id;
+      typedef boost::multi_index_container<graphene::net::block_message,
+                                           boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::member<graphene::net::block_message, item_hash_t, &graphene::net::block_message::block_id>>>> received_sync_items_by_id;
 
       std::set<item_hash_t>  _already_received_sync_item_ids; //set for fast lookup of already received sync items
       std::list<graphene::net::block_message> _new_received_sync_items; /// list of sync blocks we've just received but haven't yet tried to process
@@ -546,7 +546,7 @@ namespace graphene { namespace net {
 
       std::atomic_bool _node_is_shutting_down; // set to true when we begin our destructor, used to prevent us from starting new tasks while we're shutting down
 
-      std::list<fc::future<void> > _handle_message_calls_in_progress;
+      std::list<fc::future<void>> _handle_message_calls_in_progress;
       std::set<message_hash_type> _message_ids_currently_being_processed;
 
       std::atomic_int        _activeCalls;
@@ -2907,7 +2907,7 @@ namespace graphene { namespace net {
       // if we sent them a block, update our record of the last block they've seen accordingly
       if (last_block_message_sent)
       {
-        graphene::net::block_message block = last_block_message_sent->as<graphene::net::block_message>();
+        graphene::net::block_message block = last_block_message_sent->as_block_message();
         originating_peer->last_block_delegate_has_seen = block.block_id;
         originating_peer->last_block_time_delegate_has_seen = _delegate->get_block_time(block.block_id);
       }
@@ -2915,7 +2915,7 @@ namespace graphene { namespace net {
       for (const message& reply : reply_messages)
       {
         if (reply.msg_type == block_message_type)
-          originating_peer->send_item(item_id(block_message_type, reply.as<graphene::net::block_message>().block_id));
+          originating_peer->send_item(item_id(block_message_type, reply.as_block_message().block_id));
         else
           originating_peer->send_message(reply);
       }
@@ -3175,7 +3175,7 @@ namespace graphene { namespace net {
 
       bool client_accepted_block = false;
       bool discontinue_fetching_blocks_from_peer = false;
-      const uint32_t block_number = block_message_to_send.block.block_num();
+      const uint32_t block_number = block_message_to_send.full_block->get_block_num();
       const auto& block_id = block_message_to_send.block_id;
 
       fc::oexception handle_message_exception;
@@ -3283,7 +3283,7 @@ namespace graphene { namespace net {
               if (items_being_processed_iter != peer->ids_of_items_being_processed.end())
               {
                 peer->last_block_delegate_has_seen = block_id;
-                peer->last_block_time_delegate_has_seen = block_message_to_send.block.timestamp;
+                peer->last_block_time_delegate_has_seen = block_message_to_send.full_block->get_block().timestamp;
 
                 peer->ids_of_items_being_processed.erase(items_being_processed_iter);
                 if (peer->idle())
@@ -3440,12 +3440,14 @@ namespace graphene { namespace net {
               if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(),
                             received_block_iter->block_id) == _most_recent_blocks_accepted.end())
               { //normal case, schedule this block to be sent to blockchain
-                _handle_message_calls_in_progress.emplace_back(async_task([this, block_message_to_process = *received_block_iter](){
+                _already_received_sync_item_ids.erase(received_block_iter->block_id);
+
+                _handle_message_calls_in_progress.push_back(async_task([this, block_message_to_process = *received_block_iter](){
                   send_sync_block_to_node_delegate(block_message_to_process);
                 }, "send_sync_block_to_node_delegate"));
                 
-                _already_received_sync_item_ids.erase(received_block_iter->block_id);
                 _received_sync_items.erase(received_block_iter);
+
                 ++blocks_processed;
                 block_processed_this_iteration = true;
               }
@@ -3554,7 +3556,7 @@ namespace graphene { namespace net {
           _message_ids_currently_being_processed.insert(message_hash);
           fc_ilog(fc::logger::get("sync"),
                   "p2p pushing block #${block_num} ${block_hash} from ${peer} (message_id was ${id})",
-                  ("block_num", block_message_to_process.block.block_num())
+                  ("block_num", block_message_to_process.full_block->get_block_num())
                   ("block_hash", block_message_to_process.block_id)
                   ("peer", originating_peer->get_remote_endpoint())("id", message_hash));
 
@@ -3562,7 +3564,7 @@ namespace graphene { namespace net {
           _message_ids_currently_being_processed.erase(message_hash);
           message_validated_time = fc::time_point::now();
           ilog("Successfully pushed block ${num} (id:${id})",
-               ("num", block_message_to_process.block.block_num())
+               ("num", block_message_to_process.full_block->get_block_num())
                ("id", block_message_to_process.block_id));
           _most_recent_blocks_accepted.push_back(block_message_to_process.block_id);
 
@@ -3588,7 +3590,7 @@ namespace graphene { namespace net {
         {
           fc_ilog(fc::logger::get("sync"),
                   "p2p NOT pushing block #${block_num} ${block_hash} from ${peer} because we recently pushed it",
-                  ("block_num", block_message_to_process.block.block_num())
+                  ("block_num", block_message_to_process.full_block->get_block_num())
                   ("block_hash", block_message_to_process.block_id)
                   ("peer", originating_peer->get_remote_endpoint())("id", message_hash));
           dlog( "Already received and accepted this block (presumably through sync mechanism), treating it as accepted" );
@@ -3597,8 +3599,8 @@ namespace graphene { namespace net {
         dlog( "client validated the block, advertising it to other peers" );
 
         item_id block_message_item_id(core_message_type_enum::block_message_type, message_hash);
-        uint32_t block_number = block_message_to_process.block.block_num();
-        fc::time_point_sec block_time = block_message_to_process.block.timestamp;
+        uint32_t block_number = block_message_to_process.full_block->get_block_num();
+        fc::time_point_sec block_time = block_message_to_process.full_block->get_block().timestamp;
 
         for (const peer_connection_ptr& peer : _active_connections)
         {
@@ -3661,7 +3663,7 @@ namespace graphene { namespace net {
       {
         // client rejected the block.  Disconnect the client and any other clients that offered us this block
         wlog("Failed to push block ${num} (id:${id}), client rejected block sent by peer",
-             ("num", block_message_to_process.block.block_num())
+             ("num", block_message_to_process.full_block->get_block_num())
              ("id", block_message_to_process.block_id));
 
         disconnect_exception = e;
@@ -3701,7 +3703,7 @@ namespace graphene { namespace net {
       // (it's possible that we request an item during normal operation and then get kicked into sync
       // mode before we receive and process the item.  In that case, we should process the item as a normal
       // item to avoid confusing the sync code)
-      graphene::net::block_message block_message_to_process(message_to_process.as<graphene::net::block_message>());
+      graphene::net::block_message block_message_to_process(message_to_process.as_block_message());
       auto item_iter = originating_peer->items_requested_from_peer.find(item_id(graphene::net::block_message_type, message_hash));
       if (item_iter != originating_peer->items_requested_from_peer.end())
       {
@@ -4065,8 +4067,8 @@ namespace graphene { namespace net {
         {
           if (message_to_process.msg_type == trx_message_type)
           {
-            trx_message transaction_message_to_process = message_to_process.as<trx_message>();
-            dlog("passing message containing transaction ${trx} to client", ("trx", transaction_message_to_process.trx.id()));
+            trx_message transaction_message_to_process = message_to_process.as_trx_message();
+            dlog("passing message containing transaction ${trx} to client", ("trx", transaction_message_to_process.full_transaction->get_transaction_id()));
             _delegate->handle_transaction(transaction_message_to_process);
           }
           else
@@ -5382,15 +5384,15 @@ namespace graphene { namespace net {
       fc::uint160_t hash_of_message_contents;
       if( item_to_broadcast.msg_type == graphene::net::block_message_type )
       {
-        graphene::net::block_message block_message_to_broadcast = item_to_broadcast.as<graphene::net::block_message>();
+        graphene::net::block_message block_message_to_broadcast = item_to_broadcast.as_block_message();
         hash_of_message_contents = block_message_to_broadcast.block_id; // for debugging
         _most_recent_blocks_accepted.push_back( block_message_to_broadcast.block_id );
       }
       else if( item_to_broadcast.msg_type == graphene::net::trx_message_type )
       {
-        graphene::net::trx_message transaction_message_to_broadcast = item_to_broadcast.as<graphene::net::trx_message>();
-        hash_of_message_contents = transaction_message_to_broadcast.trx.id(); // for debugging
-        dlog( "broadcasting trx: ${trx}", ("trx", transaction_message_to_broadcast) );
+        graphene::net::trx_message transaction_message_to_broadcast = item_to_broadcast.as_trx_message();
+        hash_of_message_contents = transaction_message_to_broadcast.full_transaction->get_transaction_id(); // for debugging
+        dlog("broadcasting trx: ${trx}", ("trx", transaction_message_to_broadcast.full_transaction->get_transaction()));
       }
       message_hash_type hash_of_item_to_broadcast = item_to_broadcast.id();
 
@@ -5779,11 +5781,11 @@ namespace graphene { namespace net {
       {
         const message& message_to_deliver = destination_node->messages_to_deliver.front();
         if (message_to_deliver.msg_type == trx_message_type)
-          destination_node->delegate->handle_transaction(message_to_deliver.as<trx_message>());
+          destination_node->delegate->handle_transaction(message_to_deliver.as_trx_message());
         else if (message_to_deliver.msg_type == block_message_type)
         {
           std::vector<fc::uint160_t> contained_transaction_message_ids;
-          destination_node->delegate->handle_block(message_to_deliver.as<block_message>(), false, contained_transaction_message_ids);
+          destination_node->delegate->handle_block(message_to_deliver.as_block_message(), false, contained_transaction_message_ids);
         }
         else
           destination_node->delegate->handle_message(message_to_deliver);

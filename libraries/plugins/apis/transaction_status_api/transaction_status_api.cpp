@@ -59,8 +59,8 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
       const auto& expiration = *args.expiration;
 
       // Check if the expiration is before our earliest tracked block plus maximum transaction expiration
-      auto earliest_tracked_block = _db.fetch_block_by_number( earliest_tracked_block_num );
-      if ( expiration < earliest_tracked_block->timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION )
+      std::shared_ptr<hive::chain::full_block_type> earliest_tracked_block = _db.fetch_block_by_number( earliest_tracked_block_num );
+      if (expiration < earliest_tracked_block->get_block().timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION)
         return {
           .status = transaction_status::too_old
         };
@@ -68,8 +68,8 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
       // If the expiration is on or before our last irreversible block
       if ( last_irreversible_block_num > 0 )
       {
-        auto last_irreversible_block = _db.fetch_block_by_number( last_irreversible_block_num );
-        if ( expiration <= last_irreversible_block->timestamp )
+        std::shared_ptr<hive::chain::full_block_type> last_irreversible_block = _db.fetch_block_by_number( last_irreversible_block_num );
+        if (expiration <= last_irreversible_block->get_block().timestamp)
           return {
             .status = transaction_status::expired_irreversible
           };

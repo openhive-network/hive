@@ -39,8 +39,8 @@ void serialization_mode_controller::set_pack( pack_type new_pack )
 
 pack_type serialization_mode_controller::get_current_pack()
 {
-  if( !current_pack.valid() )
-    current_pack = { pack };
+  if (!current_pack)
+    current_pack = pack;
   return *current_pack;
 }
 

@@ -1,5 +1,5 @@
 file(GLOB HEADERS "include/hive/protocol/*.hpp")
-file(GLOB HF_PARTS "hardfork.d/*.hpp")
+file(GLOB HF_PARTS "hardfork.d/*.hf")
 
 if( MSVC )
    set( hardfork_hpp_file "${CMAKE_CURRENT_SOURCE_DIR}/include/hive/protocol/hardfork.hpp" )
@@ -19,7 +19,7 @@ else( MSVC )
 endif( MSVC )
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/get_config.d/generate_get_config.cmake")
-generate_get_config( 
+generate_get_config(
   "${CMAKE_CURRENT_SOURCE_DIR}/include/hive/protocol/config.hpp"  # path to config.hpp
   "${CMAKE_CURRENT_SOURCE_DIR}/get_config.d/get_config.cpp.in"    # path to get_config template file
   "${CMAKE_CURRENT_BINARY_DIR}/get_config.cpp"                    # output path
@@ -39,6 +39,7 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    operations.cpp
    sign_state.cpp
    transaction.cpp
+   transaction_util.cpp
    block.cpp
    asset.cpp
    version.cpp
