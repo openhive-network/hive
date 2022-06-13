@@ -22,6 +22,18 @@ def test_list_my_accounts_with_correct_value(node, wallet, accounts):
     node.api.wallet_bridge.list_my_accounts(memo_keys)
 
 
+@pytest.mark.remote_node_5m
+def test_list_my_accounts_with_correct_value_5m(node5m):
+    memo_key = node5m.api.wallet_bridge.get_account('gtg')['memo_key']
+    node5m.api.wallet_bridge.list_my_accounts([memo_key])
+
+
+@pytest.mark.remote_node_64m
+def test_list_my_accounts_with_correct_value_64m(node64m):
+    memo_key = node64m.api.wallet_bridge.get_account('gtg')['memo_key']
+    node64m.api.wallet_bridge.list_my_accounts([memo_key])
+
+
 @pytest.mark.parametrize(
     'account_key', [
         'TST6jTCfK3P5xYFJQvavAwz5M8KR6EW3TcmSesArj9LJVGAq85qor',  # non exist key with correct format

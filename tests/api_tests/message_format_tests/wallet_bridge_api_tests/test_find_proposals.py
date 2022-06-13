@@ -3,6 +3,7 @@ import pytest
 import test_tools as tt
 
 from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
+from ..local_tools import run_for
 
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
@@ -27,6 +28,19 @@ def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
     prepare_proposals(wallet, ACCOUNTS)
 
     node.api.wallet_bridge.find_proposals(proposal_ids)
+
+
+#TODO SPRAWDZIĆ
+@pytest.mark.remote_node_5m
+def test_find_proposals_with_correct_values_5m(node5m):
+    r = node5m.api.wallet_bridge.find_proposals([0])
+    print()
+
+
+#TODO SPRAWDZIĆ
+@pytest.mark.remote_node_64m
+def test_find_proposals_with_correct_values_64(node64m):
+    node64m.api.wallet_bridge.find_proposals([0])
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
-import pytest
+from ..local_tools import run_for
 
 
-@pytest.mark.testnet
-def test_get_version(node):
-    node.api.wallet_bridge.get_version()
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_get_version(prepared_node):
+    prepared_node.api.wallet_bridge.get_version()

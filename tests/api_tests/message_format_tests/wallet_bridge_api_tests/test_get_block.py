@@ -31,6 +31,16 @@ def test_get_block_with_correct_value(node, block_number):
     node.api.wallet_bridge.get_block(block_number)
 
 
+@pytest.mark.remote_node_5m
+def test_get_block_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_block(1000)
+
+
+@pytest.mark.remote_node_64m
+def test_get_block_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_block(1000)
+
+
 @pytest.mark.parametrize(
     'block_number', [
         UINT64_MAX+1,

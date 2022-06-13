@@ -26,6 +26,16 @@ def test_get_owner_history_with_correct_value(node, wallet, account_name):
     node.api.wallet_bridge.get_owner_history(account_name)
 
 
+@pytest.mark.remote_node_5m
+def test_get_owner_history_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_owner_history('gtg')
+
+
+@pytest.mark.remote_node_64m
+def test_get_owner_history_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_owner_history('gtg')
+
+
 @pytest.mark.parametrize(
     'account_name', [
         ['alice']

@@ -29,6 +29,17 @@ def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
     node.api.wallet_bridge.find_rc_accounts(rc_accounts)
 
 
+@pytest.mark.remote_node_5m
+def test_find_rc_accounts_with_correct_value_5m(node5m):
+    r = node5m.api.wallet_bridge.find_rc_accounts(['gtg'])
+    assert r == []
+
+
+@pytest.mark.remote_node_64m
+def test_find_rc_accounts_with_correct_value_64m(node64m):
+    r = node64m.api.wallet_bridge.find_rc_accounts(['gtg'])
+
+
 @pytest.mark.parametrize(
     'rc_accounts', [
         "['non-exist-acc']",

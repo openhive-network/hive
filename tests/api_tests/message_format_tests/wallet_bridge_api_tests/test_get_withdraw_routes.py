@@ -36,6 +36,16 @@ def test_get_withdraw_routes_with_correct_value(node, wallet, account_name, with
     node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
+@pytest.mark.remote_node_5m
+def test_get_withdraw_routes_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_withdraw_routes('blocktrades', 'all')
+
+
+@pytest.mark.remote_node_64m
+def test_get_withdraw_routes_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_withdraw_routes('blocktrades', 'all')
+
+
 @pytest.mark.parametrize(
     'account_name, withdraw_route_type', [
         #  WITHDRAW ROUTE TYPE

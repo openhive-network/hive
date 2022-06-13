@@ -38,6 +38,17 @@ def test_list_witnesses_with_correct_value(witness_account, limit):
     node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
+@pytest.mark.remote_node_5m
+def test_list_witnesses_with_correct_value_5m(node5m):
+    # 'hbd_exchange_rate': Price(AssetHive(), AssetHive()),
+    node5m.api.wallet_bridge.list_witnesses('', 100)
+
+
+@pytest.mark.remote_node_64m
+def test_list_witnesses_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.list_witnesses('', 100)
+
+
 @pytest.mark.parametrize(
     'witness_account, limit', [
         # LIMIT

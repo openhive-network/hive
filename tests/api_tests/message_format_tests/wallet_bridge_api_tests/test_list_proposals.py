@@ -99,6 +99,18 @@ def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by
     node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
 
+@pytest.mark.remote_node_5m
+def test_list_proposals_with_correct_values_5m(node5m):
+    r = node5m.api.wallet_bridge.list_proposals([''], 10, 'by_creator', 'ascending', 'all')
+    print()
+
+
+@pytest.mark.remote_node_64m
+def test_list_proposals_with_correct_values_64m(node64m):
+    r = node64m.api.wallet_bridge.list_proposals([''], 10, 'by_creator', 'ascending', 'all')
+    print()
+
+
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', [
         #START

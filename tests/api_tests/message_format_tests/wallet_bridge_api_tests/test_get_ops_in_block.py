@@ -30,6 +30,16 @@ def test_get_ops_in_block_with_correct_value(node, block_number, virtual_operati
     node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
 
 
+@pytest.mark.reamote_node_5m
+def test_get_ops_in_block_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_ops_in_block(1, False)
+
+
+@pytest.mark.reamote_node_64m
+def test_get_ops_in_block_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_ops_in_block(1, False)
+
+
 @pytest.mark.parametrize(
     'block_number, virtual_operation', [
         #  BLOCK NUMBER
@@ -57,4 +67,3 @@ def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_opera
 def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_number, virtual_operation):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
-

@@ -46,6 +46,16 @@ def test_get_account_history_with_correct_value(node, wallet, account, from_, li
     node.api.wallet_bridge.get_account_history(account, from_, limit)
 
 
+@pytest.mark.remote_node_5m
+def test_get_account_history_with_correct_value_5(node5m):
+    node5m.api.wallet_bridge.get_account_history('gtg', 1000, 1000)
+
+
+@pytest.mark.remote_node_64m
+def test_get_account_history_with_correct_value_64(node64m):
+    node64m.api.wallet_bridge.get_account_history('gtg', 1000, 1000)
+
+
 @pytest.mark.parametrize(
     'account, from_, limit', [
         # FROM
