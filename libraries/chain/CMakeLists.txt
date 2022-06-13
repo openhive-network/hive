@@ -35,6 +35,7 @@ add_library( hive_chain
              fork_database.cpp
 
              shared_authority.cpp
+             block_data.cpp
              block_log.cpp
              block_compression_dictionaries.cpp
 
