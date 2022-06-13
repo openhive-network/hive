@@ -18,3 +18,13 @@ def prepared_wallet(node, request):
         yield tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=legacy'])
     else:
         raise RuntimeError(f'Unsupported argument value "{request.param}", should be "modern" or "legacy"')
+
+
+@pytest.fixture
+def wallet_with_legacy_serialization(node):
+    return tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=legacy'])
+
+
+@pytest.fixture
+def wallet_with_nai_serialization(node):
+    return tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=hf26'])
