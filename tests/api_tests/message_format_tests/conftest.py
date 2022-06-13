@@ -42,5 +42,26 @@ def prepared_node(request):
 
 @pytest.fixture
 def should_prepare(prepared_node) -> bool:
-    """TODO: Doc"""
+    """
+    When tests are run on mainnet or mirrornet node, where block log contains operations and blockchain state reflects
+    real world blockchain, there is no need to perform any additional preparation for most of test cases. Tests usually
+    just send request to node and validate response.
+
+    However, when tests are run in testnet, there are no operations in blockchain. Tests each time work on new, empty
+    network. So before each test, blockchain has to be prepared, to make validation possible.
+
+    This is a purpose of `should_prepare` flag. It is set for networks, which are not ready for tests and need to be
+    prepared before. It allows to reuse one test for different nodes, because test can include optional preparation.
+    It is useful when `run_for` decorator is used.
+
+    Example use case:
+    ```
+    @run_for('testnet', 'mainnet_5m')
+    def test_some_method(prepared_node, should_prepare):
+        if should_prepare:
+            perform_additional_preparation(prepared_node)  # Optional preparation only executed in testnet
+
+        prepared_node.api.some_api.some_method()  # Common part
+    ```
+    """
     return not isinstance(prepared_node, tt.RemoteNode)
