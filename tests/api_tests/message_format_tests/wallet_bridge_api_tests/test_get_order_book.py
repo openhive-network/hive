@@ -20,9 +20,20 @@ CORRECT_VALUES = [
     ]
 )
 @pytest.mark.testnet
-def test_get_order_book_with_correct_value(node, wallet, orders_limit):
+def test_get_order_book_with_correct_value(node,node5m, wallet, orders_limit):
     create_account_and_create_order(wallet, account_name='alice')
     node.api.wallet_bridge.get_order_book(orders_limit)
+
+
+#TODO  Price(AssetHive(), AssetHbd()), problem -> get_order_book['bids'][order_price] -> Price(AssetHbd(), AssetHive())
+@pytest.mark.remote_node_5m
+def test_get_order_book_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_order_book(1)
+
+
+@pytest.mark.remote_node_64m
+def test_get_order_book_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_order_book(1)
 
 
 @pytest.mark.parametrize(

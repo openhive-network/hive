@@ -26,11 +26,14 @@ def wallet(node):
 
 @pytest.fixture
 def node5m():
-    return RemoteNode(http_endpoint='http://hive-3.pl.syncad.com:18092')
+    return RemoteNode(http_endpoint='http://0.0.0.0:18091')
+    # FIXME uncomment after update build on hive-3 to develop
+    # return RemoteNode(http_endpoint='http://hive-3.pl.syncad.com:18092')
 
 
 @pytest.fixture
 def node64m():
-    return RemoteNode(http_endpoint='https://api.hive.blog:443')
+    # return RemoteNode(http_endpoint='http://0.0.0.0:18091')
     # FIXME uncomment after repair 64m consensus node
+    return RemoteNode(http_endpoint='http://hive-6.pl.syncad.com:8092')
     # return RemoteNode(http_endpoint='http://hive-staging.pl.syncad.com:8090')

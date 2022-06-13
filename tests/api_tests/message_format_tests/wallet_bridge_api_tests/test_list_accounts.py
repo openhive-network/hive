@@ -35,6 +35,17 @@ def test_list_accounts_with_correct_values(node, wallet, lowerbound_account, lim
 
     node.api.wallet_bridge.list_accounts(lowerbound_account, limit)
 
+
+@pytest.mark.remote_node_5m
+def test_list_accounts_with_correct_values_5m(node5m):
+    node5m.api.wallet_bridge.list_accounts('gtg', 1000)
+
+
+@pytest.mark.remote_node_64m
+def test_list_accounts_with_correct_values_64m(node64m):
+    node64m.api.wallet_bridge.list_accounts('gtg', 1000)
+
+
 @pytest.mark.parametrize(
     'lowerbound_account, limit', [
         # LIMIT

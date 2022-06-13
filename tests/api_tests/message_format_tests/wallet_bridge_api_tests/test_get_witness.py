@@ -29,6 +29,22 @@ def test_get_witness_with_correct_value(world, witness_account):
     node.api.wallet_bridge.get_witness(witness_account)
 
 
+@pytest.mark.remote_node_5m
+def test_get_witness_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_witness('gtg')
+
+
+@pytest.mark.remote_node_64m
+def test_get_witness_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_witness('gtg')
+
+
+@pytest.mark.testnet
+def test_get_witness_with_correct_value(world, witness_account):
+    node = prepare_node_with_witnesses(world, WITNESSES_NAMES)
+    node.api.wallet_bridge.get_witness(witness_account)
+
+
 @pytest.mark.parametrize(
     'witness_account', [
 

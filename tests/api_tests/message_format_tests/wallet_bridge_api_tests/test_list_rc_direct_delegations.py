@@ -29,7 +29,14 @@ CORRECT_VALUES = [
 def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, limit):
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
-    node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+    r = node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+    print()
+
+
+@pytest.mark.rmeote_node_5m
+def test_list_rc_direct_delegations_with_correct_value_5m(node5m):
+    r = node5m.api.wallet_bridge.list_rc_direct_delegations(['gtg', ''], 10)
+    print()
 
 
 @pytest.mark.parametrize(

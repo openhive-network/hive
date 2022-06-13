@@ -8,7 +8,7 @@ from .local_tools import as_string
 @pytest.mark.testnet
 def test_get_reward_fund_with_correct_value(node):
     # Testing is only 'post' because it is the only reward fund in HF26
-    node.api.wallet_bridge.get_reward_fund('post')
+    r = node.api.wallet_bridge.get_reward_fund('post')
 
 
 INCORRECT_VALUES = [

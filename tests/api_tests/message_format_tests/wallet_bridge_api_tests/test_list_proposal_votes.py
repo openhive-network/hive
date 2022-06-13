@@ -94,6 +94,16 @@ def test_list_proposal_votes_with_correct_values(node, wallet, start, limit, ord
     node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
 
+@pytest.mark.remote_node_5m
+def test_list_proposal_votes_with_correct_values_5m(node5m):
+    node5m.api.wallet_bridge.list_proposal_votes(['gtg'], 10, 'by_voter_proposal', 'ascending', 'active')
+
+
+@pytest.mark.remote_node_64m
+def test_list_proposal_votes_with_correct_values_64m(node64m):
+    node64m.api.wallet_bridge.list_proposal_votes(['gtg'], 10, 'by_voter_proposal', 'ascending', 'active')
+
+
 @pytest.mark.parametrize(
     'start, limit, order_by, order_direction, status', [
         # START

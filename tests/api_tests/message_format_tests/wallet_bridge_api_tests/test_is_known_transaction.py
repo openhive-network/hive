@@ -9,6 +9,20 @@ def test_is_know_transaction_with_correct_value_and_existing_transaction(node, w
     node.api.wallet_bridge.is_known_transaction(transaction_id)
 
 
+@pytest.mark.remote_node_5m
+def test_is_know_transaction_with_correct_value_and_existing_transaction_5m(node5m):
+    # Transaction id of the 5 million block
+    transaction_id = node5m.api.wallet_bridge.get_block(5000000)['block']['transaction_ids'][0]
+    node5m.api.wallet_bridge.is_known_transaction(transaction_id)
+
+
+@pytest.mark.remote_node_64m
+def test_is_know_transaction_with_correct_value_and_existing_transaction_64m(node64m):
+    # Transaction id of the 64 million block
+    transaction_id = node64m.api.wallet_bridge.get_block(64000000)['block']['transaction_ids'][0]
+    node64m.api.wallet_bridge.is_known_transaction(transaction_id)
+
+
 @pytest.mark.parametrize(
     'transaction_id', [
         # transaction id should be HEX

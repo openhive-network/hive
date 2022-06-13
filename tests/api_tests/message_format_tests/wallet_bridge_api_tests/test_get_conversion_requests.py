@@ -20,6 +20,17 @@ def test_get_conversion_requests_with_correct_value(node, wallet):
     node.api.wallet_bridge.get_conversion_requests('alice')
 
 
+@pytest.mark.remote_node_5m
+def test_get_conversion_requests_with_correct_value_5m(node5m):
+    conversion_requests = node5m.api.wallet_bridge.get_conversion_requests('gtg')
+    assert len(conversion_requests) == 0
+
+
+@pytest.mark.remote_node_64m
+def test_get_conversion_requests_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_conversion_requests('gtg')
+
+
 @pytest.mark.parametrize(
     'account_name', [
         *INCORRECT_VALUES,

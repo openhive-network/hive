@@ -26,7 +26,7 @@ def wallet(node):
 
 @pytest.fixture
 def node5m():
-    return RemoteNode(http_endpoint='http://hive-3.pl.syncad.com:18092')
+    return RemoteNode(http_endpoint='http://hive-4.pl.syncad.com:18092')
 
 
 @pytest.fixture

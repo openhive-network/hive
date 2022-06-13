@@ -10,9 +10,17 @@ def test_get_transaction_response_testnet(node, wallet):
 
 @pytest.mark.remote_node_5m
 def test_get_transaction_response_5m(node5m):
-    response = node5m.api.account_history.get_transaction(id="9f4639be729f8ca436ac5bd01b5684cbc126d44d", include_reversible=True)
+    # Transaction id of the 5 millionth block
+    # transaction_id = node5m.api.wallet_bridge.get_block(5 * 1000**2)['block']['transaction_ids'][0]
+
+    # response = node5m.api.account_history.get_transaction(id=transaction_id, include_reversible=True)
+    response = node5m.api.account_history.get_transaction(id='6707feb450da66dc223ab5cb3e259937b2fef6bf', include_reversible=True)
 
 
 @pytest.mark.remote_node_64m
 def test_get_transaction_response_64m(node64m):
-    response = node64m.api.account_history.get_transaction(id="9f4639be729f8ca436ac5bd01b5684cbc126d44d", include_reversible=True)
+    # Transaction id of the 5 millionth block
+    # transaction_id = node64m.api.wallet_bridge.get_block(64 * 1000**2)['block']['transaction_ids'][0]
+
+    response = node64m.api.account_history.get_transaction(id='ab22a1a151da577566a38acecbfb4551de08c338', include_reversible=True)
+    # response = node64m.api.account_history.get_transaction(id=transaction_id, include_reversible=True)

@@ -33,7 +33,14 @@ CORRECT_VALUES = [
 @pytest.mark.testnet
 def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
     wallet.create_accounts(len(ACCOUNTS))
-    node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
+    r = node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
+    print()
+
+
+@pytest.mark.remote_node_5m
+def test_list_rc_accounts_with_correct_values_5m(node5m):
+    r = node5m.api.wallet_bridge.list_rc_accounts('gtg', 10)
+    print()
 
 
 @pytest.mark.parametrize(

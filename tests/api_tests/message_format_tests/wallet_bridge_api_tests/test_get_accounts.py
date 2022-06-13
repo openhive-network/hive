@@ -30,6 +30,16 @@ def test_get_accounts_with_correct_value(node, wallet, account):
     node.api.wallet_bridge.get_accounts(account)
 
 
+@pytest.mark.remote_node_5m
+def test_get_accounts_with_correct_value_5m(node5m):
+    node5m.api.wallet_bridge.get_accounts(['gtg'])
+
+
+@pytest.mark.remote_node_64m
+def test_get_accounts_with_correct_value_64m(node64m):
+    node64m.api.wallet_bridge.get_accounts(['gtg'])
+
+
 @pytest.mark.parametrize(
     'account_key', [
         [['array-as-argument']],
