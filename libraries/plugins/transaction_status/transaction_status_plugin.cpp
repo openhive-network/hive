@@ -125,10 +125,11 @@ fc::optional< transaction_id_type > transaction_status_impl::get_earliest_transa
 {
   for (uint32_t block_num = first_block_num; block_num <= last_block_num; block_num++)
   {
-    const auto block = _db.fetch_block_by_number(block_num);
-    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
-    if ( block->transactions.size() > 0 )
-      return block->transactions.front().id();
+    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
+    const signed_block& block = full_block->get_block();
+    if (!block.transactions.empty())
+      return block.transactions.front().id();
   }
   return {};
 }
@@ -144,10 +145,11 @@ fc::optional< transaction_id_type > transaction_status_impl::get_latest_transact
 {
   for (uint32_t block_num = last_block_num; block_num >= first_block_num; block_num--)
   {
-    const auto block = _db.fetch_block_by_number(block_num);
-    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
-    if ( block->transactions.size() > 0 )
-      return block->transactions.back().id();
+    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
+    const signed_block& block = full_block->get_block();
+    if (!block.transactions.empty())
+      return block.transactions.back().id();
   }
   return {};
 }
@@ -204,12 +206,12 @@ void transaction_status_impl::rebuild_state()
   uint32_t earliest_tracked_block_num = get_earliest_tracked_block_num();
   for (uint32_t block_num = earliest_tracked_block_num; block_num <= head_block_num; block_num++)
   {
-    const auto block = _db.fetch_block_by_number(block_num);
-    FC_ASSERT(block.valid(), "Could not read block ${block_num}", (block_num));
-    for (const auto& e : block->transactions)
+    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
+    for (const auto& transaction : full_block->get_block().transactions)
       _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
       {
-        obj.transaction_id = e.id();
+        obj.transaction_id = transaction.id();
         obj.block_num = block_num;
       } );
   }

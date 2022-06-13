@@ -693,8 +693,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
      * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
      * thread for the lock.
      */
-    _chain.accept_transaction( tx );
-    _p2p->broadcast_transaction( tx );
+    std::shared_ptr<hive::chain::full_transaction_type> full_transaction = _chain.determine_encoding_and_accept_transaction(tx);
+    _p2p->broadcast_transaction(full_transaction);
   }
   catch( fc::exception& e )
   {
