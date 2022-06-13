@@ -862,7 +862,6 @@ DEFINE_API_ARGS( get_replies_by_last_update,             vector< variant >,   no
 DEFINE_API_ARGS( get_discussions_by_author_before_date,  vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_account_history,                    vector< variant >,   get_account_history_return_type )
 DEFINE_API_ARGS( broadcast_transaction,                  vector< variant >,   json_rpc::void_type )
-DEFINE_API_ARGS( broadcast_block,                        vector< variant >,   json_rpc::void_type )
 DEFINE_API_ARGS( get_followers,                          vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_following,                          vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_follow_count,                       vector< variant >,   no_return ) // see Hivemind - placeholder
@@ -965,7 +964,6 @@ public:
     (get_account_history)
     (broadcast_transaction)
     (broadcast_transaction_synchronous)
-    (broadcast_block)
     (get_followers)
     (get_following)
     (get_follow_count)
