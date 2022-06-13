@@ -935,8 +935,8 @@ namespace detail
         * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
         * thread for the lock.
         */
-      _chain.accept_transaction( trx );
-      _p2p->broadcast_transaction( trx );
+      std::shared_ptr<full_transaction_type> full_transaction = _chain.determine_encoding_and_accept_transaction(trx);
+      _p2p->broadcast_transaction(full_transaction);
     }
     catch( fc::exception& e )
     {

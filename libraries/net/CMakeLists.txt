@@ -12,7 +12,7 @@ add_library( graphene_net ${SOURCES} ${HEADERS} )
 target_link_libraries( graphene_net
   PUBLIC hive_protocol statsd_plugin fc )
 target_include_directories( graphene_net
-  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include"
+  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../chain/include"
 )
 
 if(MSVC)

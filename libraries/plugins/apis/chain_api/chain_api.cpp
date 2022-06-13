@@ -26,7 +26,10 @@ DEFINE_API_IMPL( chain_api_impl, push_block )
 
   try
   {
-    _chain.accept_block(args.block, args.currently_syncing, chain::database::skip_nothing);
+    // TODO: analyze this API -- will it be a problem accepting JSON transactions where the serialization
+    // is not known?  methinks it will
+    std::shared_ptr<hive::chain::full_block_type> full_block = full_block_type::create_from_signed_block(args.block);
+    _chain.accept_block(full_block, args.currently_syncing, chain::database::skip_nothing);
     result.success = true;
   }
   catch (const fc::exception& e)
@@ -53,7 +56,7 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
   try
   {
-    _chain.accept_transaction(args);
+    _chain.determine_encoding_and_accept_transaction(args);
     result.success = true;
   }
   catch (const fc::exception& e)

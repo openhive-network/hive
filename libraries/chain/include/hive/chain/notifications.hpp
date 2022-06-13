@@ -1,16 +1,18 @@
 #pragma once
 
 #include <hive/protocol/block.hpp>
+#include <hive/chain/full_block.hpp>
 
 namespace hive { namespace chain {
 
 struct block_notification
 {
-  block_notification( const hive::protocol::signed_block& b ) : block(b)
+  block_notification( const std::shared_ptr<full_block_type>& full_block ) :
+    block_id(full_block->get_block_id()),
+    prev_block_id(full_block->get_block_header().previous),
+    block_num(full_block->get_block_num()),
+    block(full_block->get_block())
   {
-    block_id = b.id();
-    prev_block_id = b.previous;
-    block_num = hive::protocol::block_header::num_from_id( block_id );
   }
 
   hive::protocol::block_id_type          block_id;
@@ -21,10 +23,10 @@ struct block_notification
 
 struct transaction_notification
 {
-  transaction_notification( const hive::protocol::signed_transaction& tx ) : transaction(tx)
-  {
-    transaction_id = tx.id();
-  }
+  transaction_notification(const hive::protocol::signed_transaction& transaction, const hive::protocol::transaction_id_type& transaction_id) :
+    transaction_id(transaction_id),
+    transaction(transaction)
+  {}
 
   hive::protocol::transaction_id_type          transaction_id;
   const hive::protocol::signed_transaction&    transaction;
