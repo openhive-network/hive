@@ -11,15 +11,17 @@ IMGNAME=data
 source "$SCRIPTPATH/docker_image_utils.sh"
 
 submodule_path=${1:?"Missing arg 1 for submodule path variable"}
-
-REGISTRY=${2:?"Missing arg 2 for REGISTRY variable"}
-
-DOTENV_VAR_NAME=${3:?"Missing name of dot-env variable"}
-
-REGISTRY_USER=${4:?"Missing arg 4 for REGISTRY_USER variable"}
-REGISTRY_PASSWORD=${5:?"Missing arg 5 for REGISTRY_PASSWORD variable"}
-
-DO_PULL=${6:-0}
+shift
+REGISTRY=${1:?"Missing arg 2 for REGISTRY variable"}
+shift
+DOTENV_VAR_NAME=${1:?"Missing name of dot-env variable"}
+shift
+REGISTRY_USER=${1:?"Missing arg 4 for REGISTRY_USER variable"}
+shift
+REGISTRY_PASSWORD=${1:?"Missing arg 5 for REGISTRY_PASSWORD variable"}
+shift
+BINARY_CACHE_PATH=${1:?"Missing arg 6 specific to binary cache path"}
+shift
 
 retrieve_submodule_commit () {
   local p="${1}"
@@ -48,17 +50,19 @@ docker_image_exists $IMGNAME $commit $REGISTRY image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
-  if [ ${DO_PULL} -eq 0 ];
-  then
-    echo "${img} image exists. Pull skipped..."
-  else
-    echo "${img} image exists. Pulling..."
-    docker pull "$img"
-  fi
+  # Todo otherwise image must be pulled, what can be timeconsuming
+  echo "Image already exists - binaries shall be available in cache"
+
+  echo Attempting to export built binaries into directory: "${BINARY_CACHE_PATH}"
+  docker build -o "${BINARY_CACHE_PATH}" - << EOF
+    FROM scratch
+    COPY --from=${img} /home/hived/bin/ /
+EOF
+
 else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
-  "$SCRIPTPATH/build_data4commit.sh" $commit $REGISTRY
+  "$SCRIPTPATH/build_data4commit.sh" $commit $REGISTRY --export-binaries="${BINARY_CACHE_PATH}"
   docker push $img
 fi
 
