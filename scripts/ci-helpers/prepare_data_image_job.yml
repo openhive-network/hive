@@ -42,9 +42,13 @@
 
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
   script:
-    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS"
+    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS" "hived-mainnet-binaries"
+    - ls -la ./hived-mainnet-binaries/*
 
   artifacts:
     reports:
       dotenv: docker_image_name.env
+    paths:
+      - ./hived-mainnet-binaries/*
     expire_in: 6 hours
+
