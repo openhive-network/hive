@@ -123,7 +123,7 @@ popd
 
 if [ ! -z "${EXPORT_PATH}" ];
 then
-  echo Attempting to export built binaries into directory: "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-binaries.sh" ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} "${EXPORT_PATH}"
   docker build -o "${EXPORT_PATH}" - << EOF
     FROM scratch
     COPY --from=${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} /home/hived/bin/ /
