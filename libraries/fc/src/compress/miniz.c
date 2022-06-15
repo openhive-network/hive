@@ -1912,8 +1912,8 @@ static void tdefl_optimize_huffman_table(tdefl_compressor *d, int table_num, int
   while (d->m_bits_in >= 8) { \
     if (d->m_pOutput_buf < d->m_pOutput_buf_end) \
       *d->m_pOutput_buf++ = (mz_uint8)(d->m_bit_buffer); \
-      d->m_bit_buffer >>= 8; \
-      d->m_bits_in -= 8; \
+    d->m_bit_buffer >>= 8; \
+    d->m_bits_in -= 8; \
   } \
 } MZ_MACRO_END
 

@@ -184,7 +184,7 @@ class wallet_api
 
     /** Returns information about the given accounts.
       *
-      * @param account_name the names of the accounts to provide information about
+      * @param account_names the names of the accounts to provide information about
       * @returns the public account data stored in the blockchain
       */
     wallet_serializer_wrapper<vector<database_api::api_account_object>> get_accounts( fc::variant account_names ) const;
@@ -464,14 +464,14 @@ class wallet_api
       * adds a \c transfer operation to the transaction after the create.
       *
       * @param creator The account creating the new account
-      * @param newname The name of the new account
+      * @param new_account_name The name of the new account
       * @param initial_amount The amount transferred to the account
       * @param memo A memo to send with the transfer
       * @param json_meta JSON Metadata associated with the new account
-      * @param owner public owner key of the new account
-      * @param active public active key of the new account
-      * @param posting public posting key of the new account
-      * @param memo public memo key of the new account
+      * @param owner_key public owner key of the new account
+      * @param active_key public active key of the new account
+      * @param posting_key public posting key of the new account
+      * @param memo_key public memo key of the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
   wallet_serializer_wrapper<annotated_signed_transaction> create_funded_account_with_keys( const string& creator,
@@ -1054,7 +1054,7 @@ class wallet_api
       *  amount is returned after actual conversion takes place. This method depends upon there being a valid price feed.
       *
       *  @param from The account requesting conversion of its HIVE i.e. "2.000 HIVE"
-      *  @param amount The amount of HIVE collateral
+      *  @param collateral_amount The amount of HIVE collateral
       *  @param broadcast true if you wish to broadcast the transaction
       */
     wallet_serializer_wrapper<annotated_signed_transaction> convert_hive_with_collateral(
@@ -1301,6 +1301,7 @@ class wallet_api
       * @param daily_pay  - the amount of HBD that is being requested to be paid out daily,
       * @param subject    - briefly description of proposal of its title,
       * @param permlink   - permlink of the post for the proposal.
+      * @param broadcast  - true if you wish to broadcast the transaction
       */
     wallet_serializer_wrapper<annotated_signed_transaction> create_proposal( const account_name_type& creator,
                   const account_name_type& receiver,
@@ -1318,6 +1319,7 @@ class wallet_api
       * @param subject     - new description of the proposal,
       * @param permlink    - new permlink of the post for the proposal.
       * @param end_date    - new end_date of the proposal.
+      * @param broadcast   - true if you wish to broadcast the transaction
       */
     wallet_serializer_wrapper<annotated_signed_transaction> update_proposal(
                   int64_t proposal_id,
@@ -1332,6 +1334,7 @@ class wallet_api
       * @param voter     - the account that votes,
       * @param proposals - array with proposal ids,
       * @param approve   - set if proposal(s) should be approved or not.
+      * @param broadcast - true if you wish to broadcast the transaction
       */
     wallet_serializer_wrapper<annotated_signed_transaction> update_proposal_votes(const account_name_type& voter,
                                               const flat_set< int64_t >& proposals,
@@ -1353,7 +1356,7 @@ class wallet_api
 
     /**
       * Find proposal with given id
-      * @param _ids - array with ids of wanted proposals to be founded.
+      * @param proposal_ids - array with ids of wanted proposals to be founded.
       */
     wallet_serializer_wrapper<vector< database_api::api_proposal_object >> find_proposals( fc::variant proposal_ids );
 
@@ -1375,6 +1378,7 @@ class wallet_api
       * Remove given proposal
       * @param deleter   - authorized account,
       * @param ids       - proposal ids to be removed.
+      * @param broadcast - true if you wish to broadcast the transaction
       */
     wallet_serializer_wrapper<annotated_signed_transaction> remove_proposal( const account_name_type& deleter,
                                             const flat_set< int64_t >& ids,
@@ -1435,7 +1439,6 @@ class wallet_api
      *
      *  @param account The starting account
      *  @param limit   The limit of returned results
-     *  @param order   The sort order
      */
     wallet_serializer_wrapper<vector< rc::rc_account_api_object >> list_rc_accounts(
           const string& account,
