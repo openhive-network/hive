@@ -5,10 +5,10 @@ import test_tools as tt
 from .local_tools import as_string, run_for
 
 
-ACCOUNTS = [f'account-{i}' for i in range(10)]
+ACCOUNT = 'initminer'
 
 CORRECT_VALUES = [
-    ACCOUNTS[0],
+    ACCOUNT,
     'non-exist-acc',
     '',
     100,
@@ -22,10 +22,8 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ]
 )
-@run_for('testnet')
-def test_get_account_correct_value_testnet(prepared_node, account):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    wallet.create_accounts(len(ACCOUNTS))
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_get_account_correct_value(prepared_node, should_prepare, account):
     prepared_node.api.wallet_bridge.get_account(account)
 
 
@@ -34,7 +32,7 @@ def test_get_account_correct_value_testnet(prepared_node, account):
         ['example_array']
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_get_account_incorrect_type_of_argument(prepared_node, account):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_account(account)
