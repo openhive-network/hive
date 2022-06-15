@@ -50,15 +50,8 @@ docker_image_exists $IMGNAME $commit $REGISTRY image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
-  # Todo otherwise image must be pulled, what can be timeconsuming
-  echo "Image already exists - binaries shall be available in cache"
-
-  echo Attempting to export built binaries into directory: "${BINARY_CACHE_PATH}"
-  docker build -o "${BINARY_CACHE_PATH}" - << EOF
-    FROM scratch
-    COPY --from=${img} /home/hived/bin/ /
-EOF
-
+  echo "Image already exists..."
+  "$SCRIPTPATH/export-binaries.sh" ${img} "${BINARY_CACHE_PATH}"
 else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
