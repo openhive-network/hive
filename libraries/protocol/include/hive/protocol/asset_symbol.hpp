@@ -151,29 +151,30 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
 {
-  switch( hive::protocol::serialization_mode_controller::get_current_pack() )
+  switch( sym.space() )
   {
-    case hive::protocol::pack_type::legacy:
-    {
-      uint64_t ser = 0;
-      switch( sym.asset_num )
+    case hive::protocol::asset_symbol_type::legacy_space:
+      if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
       {
-        case HIVE_ASSET_NUM_HIVE:
-          ser = OBSOLETE_SYMBOL_SER;
-          break;
-        case HIVE_ASSET_NUM_HBD:
-          ser = OBD_SYMBOL_SER;
-          break;
-        case HIVE_ASSET_NUM_VESTS:
-          ser = VESTS_SYMBOL_SER;
-          break;
-        default:
-          FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
+        uint64_t ser = 0;
+        switch( sym.asset_num )
+        {
+          case HIVE_ASSET_NUM_HIVE:
+            ser = OBSOLETE_SYMBOL_SER;
+            break;
+          case HIVE_ASSET_NUM_HBD:
+            ser = OBD_SYMBOL_SER;
+            break;
+          case HIVE_ASSET_NUM_VESTS:
+            ser = VESTS_SYMBOL_SER;
+            break;
+          default:
+            FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
+        }
+        pack( s, ser );
+        break;
       }
-      pack( s, ser );
-      break;
-    }
-    case hive::protocol::pack_type::hf26:
+    case hive::protocol::asset_symbol_type::smt_nai_space:
       pack( s, sym.asset_num );
       break;
     default:
