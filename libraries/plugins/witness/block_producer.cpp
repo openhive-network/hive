@@ -149,7 +149,8 @@ void block_producer::apply_pending_transactions(
   // the flag also covers time of processing of required and optional actions
   _db.set_tx_status( chain::database::TX_STATUS_NEW_BLOCK );
 
-  uint64_t postponed_tx_count = 0;
+  uint32_t postponed_tx_count = 0;
+  uint32_t failed_tx_count = 0;
   // pop pending state (reset to head block state)
   for( const chain::signed_transaction& tx : _db._pending_tx )
   {
@@ -160,14 +161,17 @@ void block_producer::apply_pending_transactions(
       break;
 
     if( tx.expiration < when )
+    {
+      ++failed_tx_count;
       continue;
+    }
 
     uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx );
 
     // postpone transaction if it would make block too big
     if( new_total_size >= maximum_transaction_partition_size )
     {
-      postponed_tx_count++;
+      ++postponed_tx_count;
       continue;
     }
 
@@ -182,15 +186,17 @@ void block_producer::apply_pending_transactions(
     }
     catch ( const fc::exception& e )
     {
+      ++failed_tx_count;
       // Do nothing, transaction will be re-applied after this block is reapplied (and possibly
       // after processing further blocks) until it expires or repeats the exception during that time
       //wlog( "Transaction was not processed while generating block due to ${e}", ("e", e) );
       //wlog( "The transaction was ${t}", ("t", tx) );
     }
   }
-  if( postponed_tx_count > 0 )
+  if( postponed_tx_count > 0 || failed_tx_count > 0 )
   {
-    wlog( "Postponed ${n} transactions due to block size limit", ("n", _db._pending_tx.size() - pending_block.transactions.size()) );
+    wlog( "Postponed ${n} transactions during block production (${f} failed/expired)",
+      ("n", _db._pending_tx.size() - pending_block.transactions.size() )( "f", failed_tx_count ) );
   }
 
   const auto& pending_required_action_idx = _db.get_index< chain::pending_required_action_index, chain::by_execution >();
