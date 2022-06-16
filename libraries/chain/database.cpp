@@ -4660,6 +4660,8 @@ void database::_apply_transaction(const signed_transaction& trx)
   }
 
   transaction_notification note(trx);
+
+  BOOST_SCOPE_EXIT( this_ ) { this_->_current_trx_id = transaction_id_type(); } BOOST_SCOPE_EXIT_END
   _current_trx_id = note.transaction_id;
   const transaction_id_type& trx_id = note.transaction_id;
 
@@ -4800,7 +4802,6 @@ void database::_apply_transaction(const signed_transaction& trx)
     ++_current_op_in_trx;
     } FC_CAPTURE_AND_RETHROW( (op) );
   }
-  _current_trx_id = transaction_id_type();
 
   notify_post_apply_transaction( note );
 
