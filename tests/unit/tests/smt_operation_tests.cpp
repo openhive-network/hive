@@ -36,6 +36,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     BOOST_TEST_MESSAGE( "Testing: smt_limit_order_create_authorities" );
 
     ACTORS( (alice)(bob) )
+    generate_block();
 
     limit_order_create_operation op;
 
@@ -55,26 +56,27 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test success with account signature" );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, database::skip_transaction_dupe_check );
+    db->push_transaction( tx, 0 );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
+    db->clear_pending(); //drop transaction from pending or transaction_invariants mechanism would prevent recalculation of signatures
     sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
     sign( tx, alice_private_key );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     tx.signatures.clear();
     sign( tx, alice_post_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
 
     validate_database();
   }
@@ -88,6 +90,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     BOOST_TEST_MESSAGE( "Testing: smt_limit_order_create2_authorities" );
 
     ACTORS( (alice)(bob) )
+    generate_block();
 
     limit_order_create2_operation op;
 
@@ -107,26 +110,27 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test success with account signature" );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, database::skip_transaction_dupe_check );
+    db->push_transaction( tx, 0 );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
+    db->clear_pending(); //drop transaction from pending or transaction_invariants mechanism would prevent recalculation of signatures
     sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
     sign( tx, alice_private_key );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     tx.signatures.clear();
     sign( tx, alice_post_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
 
     validate_database();
   }
@@ -486,6 +490,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     BOOST_TEST_MESSAGE( "Testing: smt_limit_order_cancel_authorities" );
 
     ACTORS( (alice)(bob) )
+    generate_block();
 
     //Create SMT and give some SMT to creator.
     signed_transaction tx;
@@ -517,26 +522,27 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     tx.operations.push_back( op );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test success with account signature" );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, database::skip_transaction_dupe_check );
+    db->push_transaction( tx, 0 );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
+    db->clear_pending(); //drop transaction from pending or transaction_invariants mechanism would prevent recalculation of signatures
     sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
     sign( tx, alice_private_key );
     sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     tx.signatures.clear();
     sign( tx, alice_post_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), tx_missing_active_auth );
 
     validate_database();
   }

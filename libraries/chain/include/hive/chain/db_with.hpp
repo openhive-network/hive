@@ -67,7 +67,7 @@ struct pending_transactions_restorer
   pending_transactions_restorer( database& db, std::vector<signed_transaction>&& pending_transactions )
     : _db(db), _pending_transactions( std::move(pending_transactions) )
   {
-    _db.clear_pending();
+    _db.clear_pending( false );
   }
 
   ~pending_transactions_restorer()
@@ -90,18 +90,21 @@ struct pending_transactions_restorer
 
       if( apply_trxs )
       {
+        auto id = tx.id();
+        bool remove_invariants = true;
         try
         {
           if( tx.expiration < head_block_time )
           {
             ++expired_txs;
           }
-          else if( !_db.is_known_transaction( tx.id() ) )
+          else if( !_db.is_known_transaction( id ) )
           {
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
             _db._push_transaction( tx );
             ++applied_txs;
+            remove_invariants = false;
           }
         }
         catch( const transaction_exception& e )
@@ -120,6 +123,8 @@ struct pending_transactions_restorer
           dlog( "${t}", ("t", tx) );
           */
         }
+        if( remove_invariants )
+          _db.remove_invariants( id );
       }
       else
       {
@@ -159,6 +164,7 @@ struct pending_transactions_restorer
       wlog( "Postponed ${p} pending transactions. ${a} were applied. ${e} expired.",
         ( "p", postponed_txs )( "a", applied_txs )( "e", expired_txs ) );
     }
+    _db.check_invariants_count();
   }
 
   database& _db;
