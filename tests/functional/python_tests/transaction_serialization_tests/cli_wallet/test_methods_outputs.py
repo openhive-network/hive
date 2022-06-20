@@ -3,7 +3,7 @@ import pathlib
 
 import pytest
 
-from test_tools import paths_to_executables, RemoteNode, Wallet
+import test_tools as tt
 
 
 @pytest.fixture
@@ -24,9 +24,9 @@ def wallet_path(request):
 @pytest.fixture
 def remote_node_wallet(http_endpoint, ws_endpoint, wallet_path):
     # To allow working on CI, change remote node http_endpoint, ws_endpoint and path to mainnet wallet.
-    paths_to_executables.set_path_of('cli_wallet', wallet_path)
-    remote_node = RemoteNode(http_endpoint=http_endpoint, ws_endpoint=ws_endpoint)
-    return Wallet(attach_to=remote_node)
+    tt.paths_to_executables.set_path_of('cli_wallet', wallet_path)
+    remote_node = tt.RemoteNode(http_endpoint=http_endpoint, ws_endpoint=ws_endpoint)
+    return tt.Wallet(attach_to=remote_node)
 
 
 WALLET_API_METHODS = [
