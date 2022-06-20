@@ -225,6 +225,23 @@ fork_tests:
   tags:
     - public-runner-docker
 
+hf26_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - cd tests/functional/python_tests/hf26_tests
+    - pytest --junitxml="./report.xml"
+  timeout: 15min
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/hf26_tests/report.xml
+  tags:
+    - public-runner-docker
+
 synchronization_tests:
   stage: test
   extends: .test_tools_based
