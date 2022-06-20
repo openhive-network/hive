@@ -121,9 +121,11 @@ def prepare_world_with_2_sub_networks(world : World, network_number_alpha :int, 
     prepare_witnesses(init_node, api_node, all_witness_names)
 
 @pytest.fixture(scope="package")
-def world_during_hf25():
-    logger.info('Preparing fixture world_with_witnesses')
+def world_before_hf26():
+    logger.info('Preparing fixture world_before_hf26')
     with World(directory=context.get_current_directory()) as world:
+        world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+
         #for debug purposes
         network_number = 0
 
@@ -132,9 +134,11 @@ def world_during_hf25():
         yield world
 
 @pytest.fixture(scope="package")
-def world_during_hf26():
-    logger.info('Preparing fixture world_with_witnesses')
+def world_after_hf26():
+    logger.info('Preparing fixture world_after_hf26')
     with World(directory=context.get_current_directory()) as world:
+        world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
+
         #for debug purposes
         network_number = 1
 
@@ -143,8 +147,8 @@ def world_during_hf26():
         yield world
 
 @pytest.fixture(scope="package")
-def world_during_hf26_without_majority():
-    logger.info('Preparing fixture world_with_witnesses')
+def world_after_hf26_without_majority():
+    logger.info('Preparing fixture world_after_hf26_without_majority')
     with World(directory=context.get_current_directory()) as world:
         world.set_clean_up_policy(constants.WorldCleanUpPolicy.REMOVE_ONLY_UNNEEDED_FILES)
 
