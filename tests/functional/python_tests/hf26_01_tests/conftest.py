@@ -92,12 +92,12 @@ def prepare_world(world : World, network_number :int, environment_variables: Opt
 
 def prepare_world_with_2_sub_networks(world : World, network_number_alpha :int, network_number_beta :int, environment_variables_alpha: Optional[Dict] = None, environment_variables_beta: Optional[Dict] = None):
     #Because HIVE_HARDFORK_REQUIRED_WITNESSES = 17 // 17 of the 21 dpos witnesses (20 elected and 1 virtual time) required for hardfork
-    witnesses_number        = 12
+    witnesses_number        = 8
     allow_create_init_node  = True
     allow_create_api_node   = True
     witness_names_alpha, alpha_net, init_node, api_node = prepare_network(world, f'alpha-{network_number_alpha}', witnesses_number, allow_create_init_node, allow_create_api_node)
 
-    witnesses_number        = 8
+    witnesses_number        = 12
     allow_create_init_node  = False
     allow_create_api_node   = False
     witness_names_beta, beta_net, init_node2, api_node2 = prepare_network(world, f'beta-{network_number_beta}', witnesses_number, allow_create_init_node, allow_create_api_node)
@@ -111,7 +111,11 @@ def prepare_world_with_2_sub_networks(world : World, network_number_alpha :int, 
     alpha_net.connect_with(beta_net)
 
     logger.info('Running networks, waiting for live...')
+
+    #June 20, 2032 9:45:38 AM
     alpha_net.run(wait_for_live, environment_variables_alpha)
+
+    #1654069301 = June 1, 2022 7:41:41 AM
     beta_net.run(wait_for_live, environment_variables_beta)
 
     prepare_witnesses(init_node, api_node, all_witness_names)
@@ -148,6 +152,7 @@ def world_during_hf26_without_majority():
         network_number_alpha    = 2
         network_number_beta     = 0
 
-        #June 1, 2022 7:41:41 AM
-        prepare_world_with_2_sub_networks(world, network_number_alpha, network_number_beta, environment_variables_alpha={"HIVE_HF26_TIME": "1654069301"}, environment_variables_beta={"HIVE_HF26_TIME": "1699429300"})
+        #1971337538 = June 20, 2032 9:45:38 AM
+        #1654069301 = June 1, 2022 7:41:41 AM
+        prepare_world_with_2_sub_networks(world, network_number_alpha, network_number_beta, environment_variables_alpha={"HIVE_HF26_TIME": "1971337538"}, environment_variables_beta={"HIVE_HF26_TIME": "1654069301"})
         yield world
