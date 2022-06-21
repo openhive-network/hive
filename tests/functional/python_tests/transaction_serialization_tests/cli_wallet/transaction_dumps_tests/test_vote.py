@@ -1,0 +1,9 @@
+import test_tools as tt
+
+from ....local_tools import create_account_and_fund_it
+
+
+def test_post_comment(wallet):
+    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    wallet.api.post_comment('alice', 'test-permlink', '', 'someone', 'test-title', 'this is a body', '{}')
+    wallet.api.vote('initminer', 'alice', 'test-permlink', 10)
