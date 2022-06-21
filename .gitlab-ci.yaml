@@ -343,7 +343,7 @@ transaction_serialization_tests:
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: prepare_hived_data_image
-      artifacts: true
+      dependencies: true
 
   services:
     - name: $HIVED_IMAGE_NAME
