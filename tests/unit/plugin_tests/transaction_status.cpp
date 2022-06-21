@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     tx0.operations.push_back( op0 );
     tx0.set_expiration( tx0_expiration );
     sign( tx0, alice_private_key );
-    db->push_transaction( tx0, 0 );
+    push_transaction( tx0, 0 );
 
     // Tracking should not be enabled until we have reached TRANSCATION_STATUS_TRACK_AFTER_BLOCK - ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) blocks
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     tx1.operations.push_back( op1 );
     tx1.set_expiration( tx1_expiration );
     sign( tx1, alice_private_key );
-    db->push_transaction( tx1, 0 );
+    push_transaction( tx1, 0 );
 
     // Transaction 1 exists in the mem pool
     tso = db->find< transaction_status_object, by_trx_id >( tx1.id() );
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     tx2.operations.push_back( op2 );
     tx2.set_expiration( tx2_expiration );
     sign( tx2, alice_private_key );
-    db->push_transaction( tx2, 0 );
+    push_transaction( tx2, 0 );
 
     // Create transaction 3
     signed_transaction tx3;
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     tx3.operations.push_back( op3 );
     tx3.set_expiration( tx3_expiration );
     sign( tx3, bob_private_key );
-    db->push_transaction( tx3, 0 );
+    push_transaction( tx3, 0 );
 
     // Transaction 1 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx1.id() );
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_TEST_MESSAGE( " -- transaction status expiration test" );
 
     // The time of our last irreversible block
-    auto lib_time = db->fetch_block_by_number( db->get_last_irreversible_block_num() )->timestamp;
+    auto lib_time = db->fetch_block_by_number( db->get_last_irreversible_block_num() )->get_block_header().timestamp;
     api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), .expiration = lib_time } );
     BOOST_REQUIRE( api_return.status == expired_irreversible );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
@@ -398,7 +398,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     BOOST_REQUIRE( api_return.block_num.valid() == false );
 
     // One second before our block depth
-    auto old_time = db->fetch_block_by_number( db->head_block_num() - TRANSACTION_STATUS_TEST_BLOCK_DEPTH + 1 )->timestamp - fc::seconds(1);
+    auto old_time = db->fetch_block_by_number( db->head_block_num() - TRANSACTION_STATUS_TEST_BLOCK_DEPTH + 1 )->get_block_header().timestamp - fc::seconds(1);
     api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), old_time } );
     BOOST_REQUIRE( api_return.status == too_old );
     BOOST_REQUIRE( api_return.block_num.valid() == false );
@@ -422,7 +422,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     tx4.operations.push_back( op4 );
     tx4.set_expiration( tx4_expiration );
     sign( tx4, alice_private_key );
-    db->push_transaction( tx4, 0 );
+    push_transaction( tx4, 0 );
 
     generate_block();
 
@@ -450,7 +450,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     tx5.operations.push_back( op5 );
     tx5.set_expiration( tx5_expiration );
     sign( tx5, alice_private_key );
-    db->push_transaction( tx5, 0 );
+    push_transaction( tx5, 0 );
 
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) - 1 );
 
