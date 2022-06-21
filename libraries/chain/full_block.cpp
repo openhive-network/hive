@@ -171,10 +171,7 @@ void full_block_type::decode()
   fc::unsigned_int number_of_transactions(full_transactions.size());
   size_t total_transaction_size = fc::raw::pack_size(number_of_transactions);
   for (const std::shared_ptr<full_transaction_type>& full_transaction : full_transactions)
-  {
-    const serialized_transaction_data& serialized_transaction = full_transaction->get_serialized_transaction();
-    total_transaction_size += serialized_transaction.signed_transaction_end - serialized_transaction.begin;
-  }
+    total_transaction_size += full_transaction->get_transaction_size();
 
   // add to that the size of the header to get the size of the block as a whole
   size_t signed_header_size = fc::raw::pack_size((signed_block_header)new_block);
