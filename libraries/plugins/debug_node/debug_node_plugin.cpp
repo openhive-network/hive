@@ -174,12 +174,7 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 }
 */
 
-uint32_t debug_node_plugin::debug_generate_blocks(
-  const std::string& debug_key,
-  uint32_t count,
-  uint32_t skip,
-  uint32_t miss_blocks
-)
+uint32_t debug_node_plugin::debug_generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip, uint32_t miss_blocks)
 {
   debug_generate_blocks_args args;
   debug_generate_blocks_return ret;
@@ -192,9 +187,7 @@ uint32_t debug_node_plugin::debug_generate_blocks(
   return ret.blocks;
 }
 
-void debug_node_plugin::debug_generate_blocks(
-  debug_generate_blocks_return& ret,
-  const debug_generate_blocks_args& args )
+void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret, const debug_generate_blocks_args& args)
 {
   if( args.count == 0 )
   {

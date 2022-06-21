@@ -419,7 +419,7 @@ const account_object& database_fixture::account_create(
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( trx, creator_key );
     trx.validate();
-    db->push_transaction( trx, 0 );
+    push_transaction( trx, 0 );
     trx.clear();
 
     if( fee_remainder > 0 )
@@ -501,7 +501,7 @@ const witness_object& database_fixture::witness_create(
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( trx, owner_key );
     trx.validate();
-    db->push_transaction( trx, 0 );
+    push_transaction( trx, 0 );
     trx.clear();
 
     return db->get_witness( owner );
@@ -625,7 +625,7 @@ void database_fixture::transfer(
       sign( trx, init_account_priv_key );
     }
 
-    db->push_transaction( trx, ~0 );
+    push_transaction( trx, ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
@@ -636,7 +636,22 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
   sign( tx, key );
-  db->push_transaction( tx, 0 );
+  push_transaction(tx, 0);
+}
+
+void database_fixture::push_transaction( const signed_transaction& tx, uint32_t skip_flags /* = 0 */ )
+{
+  test::_push_transaction(*db, tx, skip_flags);
+}
+
+bool database_fixture::push_block( const signed_block& b, uint32_t skip_flags /* = 0 */ )
+{
+  return test::_push_block(*db, b, skip_flags);
+}
+
+bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
+{
+  return test::_push_block(*db, b, skip_flags);
 }
 
 void database_fixture::vest( const string& from, const string& to, const asset& amount )
@@ -661,7 +676,7 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
       sign( trx, init_account_priv_key );
     }
 
-    db->push_transaction( trx, ~0 );
+    push_transaction( trx, ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
@@ -684,7 +699,7 @@ void database_fixture::vest( const string& from, const share_type& amount )
       sign( trx, init_account_priv_key );
     }
 
-    db->push_transaction( trx, ~0 );
+    push_transaction( trx, ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(amount) )
 }
@@ -710,7 +725,7 @@ void database_fixture::proxy( const string& account, const string& proxy )
     op.proxy = proxy;
     trx.operations.push_back( op );
     trx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-    db->push_transaction( trx, ~0 );
+    push_transaction( trx, ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (account)(proxy) )
 }
@@ -726,7 +741,7 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
 
     trx.operations.push_back( op );
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    db->push_transaction( trx, ~0 );
+    push_transaction( trx, ~0 );
     trx.clear();
   }
 
@@ -756,7 +771,7 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
 
     trx.operations.push_back( op );
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    db->push_transaction( trx, ~0 );
+    push_transaction( trx, ~0 );
     trx.clear();
   }
 
@@ -837,7 +852,7 @@ void database_fixture::post_comment_internal( const std::string& _author, const 
   trx.operations.push_back( comment );
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( trx, _key );
-  db->push_transaction( trx, 0 );
+  push_transaction( trx, 0 );
   trx.signatures.clear();
   trx.operations.clear();
 }
@@ -867,7 +882,7 @@ void database_fixture::vote( std::string _author, std::string _permlink, std::st
   trx.operations.push_back( vote );
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( trx, _key );
-  db->push_transaction( trx, 0 );
+  push_transaction( trx, 0 );
   trx.signatures.clear();
   trx.operations.clear();
 }
@@ -929,7 +944,7 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062 );
 
-    this->db->push_transaction( tx, 0 );
+    this->push_transaction( tx, 0 );
 
     this->generate_block();
   }
@@ -997,7 +1012,7 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     tx.operations.push_back( op2 );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062 );
-    this->db->push_transaction( tx, 0 );
+    this->push_transaction( tx, 0 );
 
     this->generate_block();
 
@@ -1021,7 +1036,7 @@ void push_invalid_operation(const operation& invalid_op, const fc::ecc::private_
   tx.operations.push_back( invalid_op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.sign( key, db->get_chain_id(), fc::ecc::bip_0062 );
-  HIVE_REQUIRE_THROW( db->push_transaction( tx, database::skip_transaction_dupe_check ), fc::assert_exception );
+  HIVE_REQUIRE_THROW( push_transaction( tx, database::skip_transaction_dupe_check ), fc::assert_exception );
 }
 
 template< typename T >
@@ -1155,7 +1170,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( tx, key );
-  db->push_transaction( tx, 0 );
+  push_transaction( tx, 0 );
   tx.signatures.clear();
   tx.operations.clear();
 
@@ -1191,7 +1206,7 @@ void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::s
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( tx, key );
-  db->push_transaction( tx, 0 );
+  push_transaction( tx, 0 );
   tx.signatures.clear();
   tx.operations.clear();
 }
@@ -1208,7 +1223,7 @@ void sps_proposal_database_fixture::vote_proposal( std::string voter, const std:
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
   sign( tx, key );
-  db->push_transaction( tx, 0 );
+  push_transaction( tx, 0 );
 }
 
 bool sps_proposal_database_fixture::exist_proposal( int64_t id )
@@ -1238,7 +1253,7 @@ void sps_proposal_database_fixture::remove_proposal(account_name_type _deleter, 
   trx.operations.push_back( rp );
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( trx, _key );
-  db->push_transaction( trx, 0 );
+  push_transaction( trx, 0 );
   trx.signatures.clear();
   trx.operations.clear();
 }
@@ -1285,7 +1300,7 @@ void sps_proposal_database_fixture::witness_vote( account_name_type _voter, acco
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
   sign( tx, _key );
-  db->push_transaction( tx, 0 );
+  push_transaction( tx, 0 );
 }
 
 void sps_proposal_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
@@ -1298,7 +1313,7 @@ void sps_proposal_database_fixture::proxy( account_name_type _account, account_n
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( tx, _key );
-  db->push_transaction( tx, 0 );
+  push_transaction( tx, 0 );
 }
 
 void hf23_database_fixture::delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key )
@@ -1653,12 +1668,17 @@ namespace test {
 
 bool _push_block( database& db, const signed_block& b, uint32_t skip_flags /* = 0 */ )
 {
+  return db.push_block( hive::chain::full_block_type::create_from_signed_block(b), skip_flags);
+}
+
+bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
+{
   return db.push_block( b, skip_flags);
 }
 
 void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags /* = 0 */ )
 { try {
-  db.push_transaction( tx, skip_flags );
+  db.push_transaction(hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy), skip_flags );
 } FC_CAPTURE_AND_RETHROW((tx)) }
 
 } // hive::chain::test
