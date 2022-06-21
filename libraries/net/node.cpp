@@ -3283,7 +3283,7 @@ namespace graphene { namespace net {
               if (items_being_processed_iter != peer->ids_of_items_being_processed.end())
               {
                 peer->last_block_delegate_has_seen = block_id;
-                peer->last_block_time_delegate_has_seen = block_message_to_send.full_block->get_block().timestamp;
+                peer->last_block_time_delegate_has_seen = block_message_to_send.full_block->get_block_header().timestamp;
 
                 peer->ids_of_items_being_processed.erase(items_being_processed_iter);
                 if (peer->idle())
@@ -3600,7 +3600,7 @@ namespace graphene { namespace net {
 
         item_id block_message_item_id(core_message_type_enum::block_message_type, message_hash);
         uint32_t block_number = block_message_to_process.full_block->get_block_num();
-        fc::time_point_sec block_time = block_message_to_process.full_block->get_block().timestamp;
+        fc::time_point_sec block_time = block_message_to_process.full_block->get_block_header().timestamp;
 
         for (const peer_connection_ptr& peer : _active_connections)
         {

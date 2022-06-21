@@ -226,7 +226,7 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
-    return _head ? _head->get_block().timestamp : time_point_sec();
+    return _head ? _head->get_block_header().timestamp : time_point_sec();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 
