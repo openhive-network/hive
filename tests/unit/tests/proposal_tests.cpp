@@ -687,7 +687,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       sign( tx, dwr_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       generate_block();
       time_point_sec dwr_vote_expiration_ts = db->get_account( "dwr" ).get_governance_vote_expiration_ts();
       //it takes only 60 seconds in testnet to finish declining, but it is not finished yet
@@ -1789,7 +1789,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.operations.clear();
     tx.signatures.clear();
 
@@ -1879,7 +1879,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_free_increase )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.operations.clear();
     tx.signatures.clear();
 
@@ -1953,7 +1953,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -1972,7 +1972,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2029,7 +2029,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2059,7 +2059,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_02_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2083,7 +2083,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_02_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2107,7 +2107,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2131,7 +2131,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2157,7 +2157,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_02_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2181,7 +2181,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2204,7 +2204,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      HIVE_REQUIRE_THROW(db->push_transaction( tx, 0 ), fc::exception);
+      HIVE_REQUIRE_THROW(push_transaction( tx, 0 ), fc::exception);
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2227,7 +2227,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       sign( tx, voter_01_key );
-      HIVE_REQUIRE_THROW(db->push_transaction( tx, 0 ), fc::exception);
+      HIVE_REQUIRE_THROW(push_transaction( tx, 0 ), fc::exception);
       tx.operations.clear();
       tx.signatures.clear();
 
@@ -2357,7 +2357,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_005 )
     tx.operations.push_back( cpo );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW(db->push_transaction( tx, 0 ), fc::exception);
+    HIVE_REQUIRE_THROW(push_transaction( tx, 0 ), fc::exception);
     tx.operations.clear();
     tx.signatures.clear();
     validate_database();
@@ -2386,7 +2386,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_006 )
     tx.operations.push_back( cpo );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW(db->push_transaction( tx, 0 ), fc::exception);
+    HIVE_REQUIRE_THROW(push_transaction( tx, 0 ), fc::exception);
     tx.operations.clear();
     tx.signatures.clear();
     validate_database();
@@ -3977,7 +3977,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
 
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.operations.clear();
     tx.signatures.clear();
 
@@ -4062,7 +4062,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -4110,7 +4110,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -4160,7 +4160,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -4213,7 +4213,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -4267,7 +4267,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -4323,7 +4323,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();

@@ -160,7 +160,7 @@ void full_block_type::decode()
 
   decoded_block_storage->block = signed_block();
   signed_block& new_block = *decoded_block_storage->block; // alias to keep things shorter
-  (block_header)new_block = header;
+  (block_header&)new_block = header;
   full_block->merkle_root = compute_merkle_root(full_transactions);
   new_block.transaction_merkle_root = *full_block->merkle_root;
 

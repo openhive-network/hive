@@ -2456,7 +2456,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( tx, alice_private_key );
-  db->push_transaction( tx, 0 );
+  push_transaction( tx, 0 );
   validate_database();
 
   // set alice.bp as witness of alice choice

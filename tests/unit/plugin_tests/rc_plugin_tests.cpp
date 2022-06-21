@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.operations.push_back( op );
       tx.operations.push_back( comment );
       sign( tx, init_account_priv_key ); //cannot be steem_private_key
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     }
     generate_block();
 
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.operations.push_back( op );
       tx.operations.push_back( comment );
       sign( tx, init_account_priv_key ); //cannot be alice_private_key
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     }
     generate_block();
     
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.operations.push_back( transfer );
       sign( tx, init_account_priv_key );
       sign( tx, bob_private_key ); //still needed as "other"
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     }
     generate_block();
 
@@ -583,7 +583,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     tx.operations.push_back( recover );
     sign( tx, victim_private_key );
     sign( tx, victim_new_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.clear();
     //RC cost covered by the network - no RC spent on any account (it would fail if victim was charged like it used to be)
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
@@ -625,7 +625,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     sign( tx, victim_new_private_key );
     sign( tx, victim_testA_private_key ); //that key is needed for claim account
     sign( tx, victim_testB_private_key );
-    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
@@ -636,7 +636,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     sign( tx, victim_new_private_key );
     sign( tx, victim_testA_private_key );
     sign( tx, victim_testB_private_key );
-    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     sign( tx, victim_new_private_key );
     sign( tx, victim_testA_private_key );
     sign( tx, victim_testB_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.clear();
     //RC consumed from victim - recovery is not free if mixed with other operations
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
@@ -775,7 +775,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     sign( tx, victim3_private_key );
     sign( tx, victim3_new_private_key );
     //oops! recovery failed when combined with transfer because it's not free then
-    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim2_rc.rc_manabar.current_mana );
@@ -796,7 +796,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     //rc_multisig_recover_account test showed the dangers of such approach, therefore it was blocked
     //now there can be only one subsidized operation in tx and with no more than allowed limit of
     //signatures (2 in this case) for the tx to be free
-    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
@@ -813,7 +813,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     tx.operations.push_back( recover );
     sign( tx, victim1_private_key );
     sign( tx, victim1_new_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover.account_to_recover = "victim2";
@@ -822,7 +822,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     tx.operations.push_back( recover );
     sign( tx, victim2_private_key );
     sign( tx, victim2_new_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover.account_to_recover = "victim3";
@@ -831,7 +831,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     tx.operations.push_back( recover );
     sign( tx, victim3_private_key );
     sign( tx, victim3_new_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
@@ -1011,7 +1011,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
         key_signers[k].sign( tx, this );
       for( int k = 0; k < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
         mixed_signers[k].sign( tx, this );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       tx.clear();
       generate_block();
 
@@ -1037,7 +1037,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
         mixed_signers[k].sign( tx, this );
       uint64_t start_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
       uint64_t stop_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
       time += stop_time - start_time;
@@ -1088,27 +1088,27 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     transfer.memo = "First transfer";
     tx1.operations.push_back( transfer );
     sign( tx1, alice_private_key );
-    db->push_transaction( tx1, 0 ); //t1
+    push_transaction( tx1, 0 ); //t1
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     transfer.amount = ASSET( "5.000 TESTS" );
     transfer.memo = "Second transfer";
     tx2.operations.push_back( transfer );
     sign( tx2, alice_private_key );
-    HIVE_REQUIRE_EXCEPTION( db->push_transaction( tx2, 0 ), "has_mana", plugin_exception ); //t2
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx2, 0 ), "has_mana", plugin_exception ); //t2
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     generate_block(); //t1 becomes part of block
 
     BOOST_TEST_MESSAGE( "Save aside and remove head block" );
     auto block = db->fetch_block_by_number( db->head_block_num() );
-    BOOST_REQUIRE( block.valid() );
+    BOOST_REQUIRE( block );
     db->pop_block(); //t1 becomes popped
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "1000.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Reapply transaction that failed before putting it to pending" );
-    db->push_transaction( tx2, 0 ); //t2 becomes pending
+    push_transaction( tx2, 0 ); //t2 becomes pending
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "995.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "5.000 TESTS" ) );
 
@@ -1127,7 +1127,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       auto catcher = fc::shared_ptr<tcatcher>( new tcatcher() );
       autoscope auto_reset( [&]() { fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher ); } );
       fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
-      db->push_block( *block );
+      db->push_block( block );
       //t1 was applied as part of block, then popped version of t1 was skipped as duplicate and t2 was
       //applied as pending; since lack of RC does not block transaction when it is pending, it remains
       //as pending; we can check that by looking at balances
@@ -1141,9 +1141,9 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
       BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
       block = db->fetch_block_by_number( db->head_block_num() );
-      BOOST_REQUIRE( block.valid() );
+      BOOST_REQUIRE( block );
       //check that block is indeed empty, without t2 and that tx2 waits as pending
-      BOOST_REQUIRE( block->transactions.empty() && !db->_pending_tx.empty() );
+      BOOST_REQUIRE( block->get_block().transactions.empty() && !db->_pending_tx.empty() );
 
       //transaction is going to wait in pending until alice gains enough RC or transaction expires
       int i = 0;

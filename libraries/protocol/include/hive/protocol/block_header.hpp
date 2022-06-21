@@ -46,6 +46,8 @@ namespace hive { namespace protocol {
     block_id_type              legacy_id()const; // was: id(), use instead full_block_type::get_block_id()
     static fc::ecc::public_key signee(const signature_type& witness_signature, const digest_type& digest, fc::ecc::canonical_signature_type canon_type);
     fc::ecc::public_key        legacy_signee( fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 )const;// was: signee(), use instead full_block_type::get_signing_key()
+    void                       legacy_sign( const fc::ecc::private_key& signer, fc::ecc::canonical_signature_type canon_type = fc::ecc::bip_0062 );
+
     bool                       validate_signee( const fc::ecc::public_key& expected_signee, const digest_type& digest, fc::ecc::canonical_signature_type canon_type )const;
 
     signature_type             witness_signature;
