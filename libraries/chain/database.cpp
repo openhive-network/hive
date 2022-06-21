@@ -1240,8 +1240,7 @@ void database::push_transaction( const std::shared_ptr<full_transaction_type>& f
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
   {
-    const serialized_transaction_data& serialized_transaction = full_transaction->get_serialized_transaction();
-    auto trx_size = serialized_transaction.signed_transaction_end - serialized_transaction.begin;
+    size_t trx_size = full_transaction->get_transaction_size();
     //ABW: why is that limit related to block size and not HIVE_MAX_TRANSACTION_SIZE?
     //DLN: the block size is dynamically voted by witnesses, so this code ensures that the transaction
     //can fit into the currently voted block size.
