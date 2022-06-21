@@ -326,6 +326,10 @@ struct database_fixture {
   );
 
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
+  void push_transaction( const signed_transaction& tx, uint32_t skip_flags = 0 );
+
+  bool push_block( const signed_block& b, uint32_t skip_flags = 0 );
+  bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
   void fund( const string& account_name, const share_type& amount = 500000 );
   void fund( const string& account_name, const asset& amount, bool update_print_rate = true );
@@ -606,6 +610,7 @@ struct json_rpc_database_fixture : public database_fixture
 namespace test
 {
   bool _push_block( database& db, const signed_block& b, uint32_t skip_flags = 0 );
+  bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
   void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags = 0 );
 }
 

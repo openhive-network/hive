@@ -67,11 +67,11 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
   try {
     fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    signed_block b;
+    std::shared_ptr<full_block_type> b;
 
     // TODO:  Don't generate this here
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
-    signed_block cutoff_block;
+    std::shared_ptr<full_block_type> cutoff_block;
     {
       database db;
       witness::block_producer bp( db );
@@ -83,18 +83,18 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       // n.b. we generate HIVE_MIN_UNDO_HISTORY+1 extra blocks which will be discarded on save
       for( uint32_t i = 1; ; ++i )
       {
-        BOOST_CHECK( db.head_block_id() == b.id() );
+        BOOST_CHECK( db.head_block_id() == b->get_block_id() );
         //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
         //BOOST_CHECK( cur_witness != prev_witness );
         b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
-        BOOST_CHECK( b.witness == cur_witness );
+        BOOST_CHECK( b->get_block_header().witness == cur_witness );
         uint32_t cutoff_height = db.get_last_irreversible_block_num();
         if( cutoff_height >= 200 )
         {
           auto block = db.fetch_block_by_number( cutoff_height );
-          BOOST_REQUIRE( block.valid() );
-          cutoff_block = *block;
+          BOOST_REQUIRE( block );
+          cutoff_block = block;
           break;
         }
       }
@@ -106,19 +106,19 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
 
-      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num() );
+      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num() );
 
       b = cutoff_block;
       for( uint32_t i = 0; i < 200; ++i )
       {
-        BOOST_CHECK( db.head_block_id() == b.id() );
+        BOOST_CHECK( db.head_block_id() == b->get_block_id() );
 
         //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
         //BOOST_CHECK( cur_witness != prev_witness );
         b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
       }
-      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num()+200 );
+      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num()+200 );
     }
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
@@ -215,22 +215,23 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       // only db2 should switch to the new fork, db1 should not
       PUSH_BLOCK( db1, b );
       BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
-      BOOST_CHECK_EQUAL(db2.head_block_id().str(), b.id().str());
+      BOOST_CHECK_EQUAL(db2.head_block_id().str(), b->get_block_id().str());
     }
 
     //The two databases are on distinct forks now, but at the same height. Make a block on db2, make it invalid, then
     //pass it to db1 and assert that db1 doesn't switch to the new fork.
-    signed_block good_block;
+    std::shared_ptr<full_block_type> good_block;
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db2.head_block_num(), 13u);
     {
       auto b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
       good_block = b;
-      b.transactions.emplace_back(signed_transaction());
-      b.transactions.back().operations.emplace_back(transfer_operation());
-      b.sign( init_account_priv_key );
-      BOOST_CHECK_EQUAL(b.block_num(), 14u);
-      HIVE_CHECK_THROW(PUSH_BLOCK( db1, b ), fc::exception);
+      signed_block bad_block = b->get_block();
+      bad_block.transactions.emplace_back(signed_transaction());
+      bad_block.transactions.back().operations.emplace_back(transfer_operation());
+      bad_block.legacy_sign( init_account_priv_key );
+      BOOST_CHECK_EQUAL(bad_block.block_num(), 14u);
+      HIVE_CHECK_THROW(PUSH_BLOCK( db1, bad_block ), fc::exception);
     }
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
@@ -392,7 +393,7 @@ BOOST_AUTO_TEST_CASE( tapos )
 
     BOOST_TEST_MESSAGE( "Pushing Pending Transaction" );
     idump((trx));
-    db1.push_transaction(trx);
+    PUSH_TX(db1, trx);
     BOOST_TEST_MESSAGE( "Generating a block" );
     b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
     trx.clear();
@@ -406,11 +407,11 @@ BOOST_AUTO_TEST_CASE( tapos )
     trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
     idump((trx)(db1.head_block_time()));
     b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    idump((b));
+    idump((b->get_block()));
     b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
     trx.signatures.clear();
     trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    BOOST_REQUIRE_THROW( db1.push_transaction(trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
+    BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -500,7 +501,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   trx.validate();
 
-  db->push_transaction(trx, ~0);
+  push_transaction(trx, ~0);
 
   trx.operations.clear();
   t.from = "bob";
@@ -510,21 +511,21 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.validate();
 
   BOOST_TEST_MESSAGE( "Verify that not-signing causes an exception" );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), fc::exception );
+  HIVE_REQUIRE_THROW( push_transaction(trx, 0), fc::exception );
 
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
   sign( trx, bob_private_key );
   sign( trx, bob_private_key );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), tx_duplicate_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, 0), tx_duplicate_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing with an extra, unused key fails" );
   trx.signatures.pop_back();
   sign( trx, generate_private_key( "bogus" ) );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), tx_irrelevant_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, 0), tx_irrelevant_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing once with the proper key passes" );
   trx.signatures.pop_back();
-  db->push_transaction(trx, 0);
+  push_transaction(trx, 0);
   sign( trx, bob_private_key );
 
 } FC_LOG_AND_RETHROW() }
@@ -891,7 +892,7 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
     }
 
     sign( tx, init_account_priv_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     // Second transaction, tx minus op is 78 (one less byte for operation vector size)
     // We need a 88 byte op. We need a 22 character memo (1 byte for length) 55 = 32 (old op) + 55 + 1
@@ -899,13 +900,13 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
     tx.clear();
     tx.operations.push_back( op );
     sign( tx, init_account_priv_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, 0 );
 
     generate_block();
 
     // The last transfer should have been delayed due to size
     auto head_block = db->fetch_block_by_number( db->head_block_num() );
-    BOOST_REQUIRE( head_block->transactions.size() == 1 );
+    BOOST_REQUIRE( head_block->get_block().transactions.size() == 1 );
   }
   FC_LOG_AND_RETHROW()
 }

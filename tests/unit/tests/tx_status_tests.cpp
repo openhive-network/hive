@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
 
     BOOST_TEST_MESSAGE( "Popping generated block one more time" );
     auto block = db->fetch_block_by_number( db->head_block_num() );
-    BOOST_REQUIRE( block.valid() );
+    BOOST_REQUIRE(block);
     db->pop_block();
 
     BOOST_TEST_MESSAGE( "Pushing block as if it came from P2P/API" );
@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::inc_block( expectation::POST_TX ) );
     check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
     //popped transactions are dropped silently as duplicates of those that came with block
-    db->push_block( *block );
+    db->push_block(block);
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating empty block - no popped/pending transactions remain" );
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     const auto& dgpo = db->get_dynamic_global_properties();
 
     BOOST_TEST_MESSAGE( "Build first fork" );
-    std::vector< fc::optional< signed_block > > reality1;
+    std::vector< std::shared_ptr<full_block_type> > reality1;
 
     auto push = [&]( const operation& op, const fc::ecc::private_key& key )
     {
@@ -449,7 +449,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
         //normal database_fixture::push_transaction() does not set tapos - they all point to genesis
       tx.operations.push_back( op );
       sign( tx, key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, 0 );
     };
 
     transfer_operation transfer;
@@ -564,7 +564,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     for( int i = 0; i < 9; ++i )
     {
       auto block = reality1[i];
-      db->push_block( *block );
+      db->push_block(block);
     }
     //then all blocks from fork are applied one by one
     check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
@@ -603,7 +603,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
     {
       auto block = reality1[9];
-      db->push_block( *block );
+      push_block(block);
     }
     check.check_empty();
 
@@ -634,7 +634,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     generate_block();
 
     BOOST_TEST_MESSAGE( "Build fork" );
-    std::vector< fc::optional< signed_block > > reality1;
+    std::vector< std::shared_ptr<full_block_type> > reality1;
 
     transfer_operation transfer;
     transfer.from = "alice";
@@ -691,7 +691,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     //new reality contains one block, so we need to push two to make it longer
     {
       auto block = reality1[0];
-      db->push_block( *block );
+      push_block( block );
     }
     //fork will be switched now - let's force failure during reapplication of block 1
     check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
@@ -714,7 +714,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     {
       auto block = reality1[1];
-      BOOST_REQUIRE_THROW( db->push_block( *block ), plugin_exception );
+      BOOST_REQUIRE_THROW( push_block( block ), plugin_exception );
         //unfortunately fc::last_assert_expression is overwritten by exception from failed popped
         //transaction, so we can't use HIVE_REQUIRE_EXCEPTION( db->push_block( *block ), "_hard_", plugin_exception );
     }
@@ -723,7 +723,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     //since fork it linked to was also dropped
     {
       auto block = reality1[2];
-      HIVE_REQUIRE_EXCEPTION( db->push_block( *block ), "itr != index.end()", unlinkable_block_exception );
+      HIVE_REQUIRE_EXCEPTION( push_block( block ), "itr != index.end()", unlinkable_block_exception );
     }
 
     //generate one more block to verify that we have no pending transactions
