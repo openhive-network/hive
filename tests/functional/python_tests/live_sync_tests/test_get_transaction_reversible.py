@@ -1,19 +1,19 @@
-from test_tools import logger, Wallet, Asset
+import test_tools as tt
 
 
-def test_get_transaction_reversible(world):
-    net = world.create_network()
-    init_node = net.create_init_node()
-    api_node = net.create_api_node()
+def test_get_transaction_reversible():
+    net = tt.Network()
+    init_node = tt.InitNode(network=net)
+    api_node = tt.ApiNode(network=net)
 
-    logger.info('Running network, waiting for live sync...')
+    tt.logger.info('Running network, waiting for live sync...')
 
     # PREREQUISITES
     net.run()
-    wallet = Wallet(attach_to=init_node)
+    wallet = tt.Wallet(attach_to=init_node)
 
     # TRIGGER
-    trx = wallet.api.transfer_to_vesting('initminer', 'initminer', Asset.Test(0.001))
+    trx = wallet.api.transfer_to_vesting('initminer', 'initminer', tt.Asset.Test(0.001))
     api_node.wait_number_of_blocks(1)
     irreversible = api_node.api.database.get_dynamic_global_properties()["last_irreversible_block_num"]
 
