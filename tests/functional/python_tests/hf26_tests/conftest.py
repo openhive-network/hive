@@ -82,8 +82,7 @@ def prepare_environment(environment_variables: Optional[Dict] = None):
 
     # Run
     tt.logger.info('Running networks, waiting for live...')
-    wait_for_live=True
-    alpha_net.run(wait_for_live, environment_variables)
+    alpha_net.run(environment_variables)
 
     prepare_witnesses(init_node, api_node, all_witness_names)
 
@@ -105,17 +104,16 @@ def prepare_environment_with_2_sub_networks(environment_variables_alpha: Optiona
 
     # Run
     tt.logger.info('Running networks, waiting for live...')
-    wait_for_live=True
 
     alpha_net.connect_with(beta_net)
 
     tt.logger.info('Running networks, waiting for live...')
 
     #June 20, 2032 9:45:38 AM
-    alpha_net.run(wait_for_live, environment_variables_alpha)
+    alpha_net.run(environment_variables_alpha)
 
     #1654069301 = June 1, 2022 7:41:41 AM
-    beta_net.run(wait_for_live, environment_variables_beta)
+    beta_net.run(environment_variables_beta)
 
     prepare_witnesses(init_node, api_node, all_witness_names)
 
