@@ -103,8 +103,6 @@ def prepare_environment_with_2_sub_networks(environment_variables_alpha: Optiona
     all_witness_names = witness_names_alpha + witness_names_beta
 
     # Run
-    tt.logger.info('Running networks, waiting for live...')
-
     alpha_net.connect_with(beta_net)
 
     tt.logger.info('Running networks, waiting for live...')
