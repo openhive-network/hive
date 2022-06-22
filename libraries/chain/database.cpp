@@ -4633,10 +4633,10 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
     HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
                 "", ("trx.expiration", trx.expiration)("now", now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
-    if( has_hardfork( HIVE_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
-      HIVE_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.expiration ) );
+    if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
+      HIVE_ASSERT(now < trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
     else
-      HIVE_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ( "now", now )( "trx.exp", trx.expiration ) );
+      HIVE_ASSERT(now <= trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
 
     if( !( skip & skip_tapos_check ) )
     {
@@ -4677,6 +4677,9 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     {
       full_transaction->validate();
     }
+
+    if (!has_hardfork(HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION))
+      HIVE_ASSERT(full_transaction->is_legacy_pack(), transaction_serialization_exception, "legacy serialization must be used until hardfork 26");
   }
 
   if( !(skip & (skip_transaction_signatures | skip_authority_check) ) )
