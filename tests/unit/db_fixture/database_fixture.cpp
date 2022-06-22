@@ -639,9 +639,10 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   push_transaction(tx, 0);
 }
 
-void database_fixture::push_transaction( const signed_transaction& tx, uint32_t skip_flags /* = 0 */ )
+void database_fixture::push_transaction( const signed_transaction& tx, uint32_t skip_flags /* = 0 */, 
+                                         hive::protocol::pack_type pack_type /* = hive::protocol::pack_type::legacy */)
 {
-  test::_push_transaction(*db, tx, skip_flags);
+  test::_push_transaction(*db, tx, skip_flags, pack_type);
 }
 
 bool database_fixture::push_block( const signed_block& b, uint32_t skip_flags /* = 0 */ )
@@ -1676,9 +1677,9 @@ bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint3
   return db.push_block( b, skip_flags);
 }
 
-void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags /* = 0 */ )
+void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags /* = 0 */, hive::protocol::pack_type pack_type /* = hive::protocol::pack_type::legacy */ )
 { try {
-  db.push_transaction(hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy), skip_flags );
+  db.push_transaction(hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type), skip_flags );
 } FC_CAPTURE_AND_RETHROW((tx)) }
 
 } // hive::chain::test
