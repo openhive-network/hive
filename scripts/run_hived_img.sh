@@ -21,6 +21,7 @@ print_help () {
     echo "  --data-dir=DIRECTORY_PATH             Allows to specify given directory as hived data directory. This directory should contain a config.ini file to be used by hived"
     echo "  --shared-file-dir=DIRECTORY_PATH      Allows to specify dedicated location for shared_memory_file.bin"
     echo "  --name=CONTAINER_NAME                 Allows to specify a dedicated name to the spawned container instance"
+    echo "  --docker-option=OPTION                Allows to specify additional docker option, to be passed to underlying docker run spawn."
     echo "  --help                                Display this help screen and exit"
     echo
 }
@@ -72,6 +73,10 @@ while [ $# -gt 0 ]; do
         CONTAINER_NAME="${1#*=}"
         echo "Container name is: $CONTAINER_NAME"
         ;;
+    --docker-option=*)
+        option="${o#*=}"
+        add_docker_arg "$option"
+        ;; 
     --help)
         print_help
         exit 0
