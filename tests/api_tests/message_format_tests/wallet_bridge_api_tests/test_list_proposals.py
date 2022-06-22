@@ -90,11 +90,13 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], True),
     ]
 )
-@run_for("testnet")
-def test_list_proposals_with_correct_values_in_testnet(node, start, limit, order_by, order_direction, status):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    prepare_proposals(wallet, ACCOUNTS)
+# proposals system was introduced after the 5 millionth block, it is only tested on live node and testnet node
+@run_for("testnet", "live_mainnet")
+def test_list_proposals_with_correct_values(node, should_prepare, start, limit, order_by, order_direction, status):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+        prepare_proposals(wallet, ACCOUNTS)
 
     node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
 
@@ -144,11 +146,12 @@ def test_list_proposals_with_correct_values_in_testnet(node, start, limit, order
         ([''], 100, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], 'true'),
     ],
 )
-@run_for("testnet")
-def test_list_proposals_with_incorrect_values(node, start, limit, order_by, order_direction, status):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    prepare_proposals(wallet, ACCOUNTS)
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_list_proposals_with_incorrect_values(node, should_prepare, start, limit, order_by, order_direction, status):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+        prepare_proposals(wallet, ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
@@ -176,7 +179,7 @@ def test_list_proposals_with_incorrect_values(node, start, limit, order_by, orde
         ([""], 100, 29, 0, 'invalid-argument'),
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def tests_list_proposals_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
