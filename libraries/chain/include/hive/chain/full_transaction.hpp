@@ -29,6 +29,7 @@ struct full_transaction_type
     mutable fc::optional<hive::protocol::transaction_id_type> transaction_id; // transaction id itself (truncated digest)
     mutable bool validation_attempted = false; // true if validate() has been called & cached
     mutable fc::exception_ptr validation_exception; // if validate() threw, this is what it threw 
+    mutable fc::optional<bool> is_packed_in_legacy_format;
 
     struct signature_info_type
     {
@@ -70,10 +71,11 @@ struct full_transaction_type
     const hive::protocol::transaction_id_type& get_transaction_id() const;
     const flat_set<hive::protocol::public_key_type>& get_signature_keys() const;
     const hive::protocol::required_authorities_type& get_required_authorities() const;
+    bool is_legacy_pack() const;
     void validate(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
 
     const serialized_transaction_data& get_serialized_transaction() const;
-    size_t get_transaction_size() { return serialized_transaction.signed_transaction_end - serialized_transaction.begin; }
+    size_t get_transaction_size() const;
 
     static std::shared_ptr<full_transaction_type> create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage,
                                                                     uint32_t index_in_block, 

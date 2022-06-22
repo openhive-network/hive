@@ -67,7 +67,7 @@ struct write_context
   write_request_ptr             req_ptr;
   uint32_t                      skip = 0;
   bool                          success = true;
-  fc::optional<fc::exception>   except;
+  fc::exception_ptr             except;
   promise_ptr                   prom_ptr;
 };
 
@@ -172,7 +172,7 @@ struct write_request_visitor
 
   database* db;
   uint32_t  skip = 0;
-  fc::optional< fc::exception >* except;
+  fc::exception_ptr* except;
   std::shared_ptr< abstract_block_producer > block_generator;
 
   uint32_t pushed_transaction_counter = 0;
@@ -196,12 +196,11 @@ struct write_request_visitor
     }
     catch (const fc::exception& e)
     {
-      *except = e;
+      *except = e.dynamic_copy_exception();
     }
     catch (...)
     {
-      *except = fc::unhandled_exception(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing block."),
-                                        std::current_exception());
+      *except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing block."), std::current_exception());
     }
 
     return result;
@@ -223,13 +222,12 @@ struct write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      *except = e;
+      *except = e.dynamic_copy_exception();
     }
     catch( ... )
     {
       elog("Unknown exception while pushing transaction.");
-      *except = fc::unhandled_exception(FC_LOG_MESSAGE( warn, "Unexpected exception while pushing transaction." ),
-                                        std::current_exception());
+      *except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing transaction."), std::current_exception());
     }
 
     return result;
@@ -255,12 +253,11 @@ struct write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      *except = e;
+      *except = e.dynamic_copy_exception();
     }
     catch( ... )
     {
-      *except = fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unexpected exception while pushing block." ),
-                              std::current_exception() );
+      *except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while generating block."), std::current_exception());
     }
 
     return result;
@@ -387,7 +384,7 @@ void chain_plugin_impl::start_write_processing()
           while (true)
           {
             req_visitor.skip = cxt->skip;
-            req_visitor.except = &(cxt->except);
+            req_visitor.except = &cxt->except;
             cxt->success = cxt->req_ptr.visit( req_visitor );
             cxt->prom_ptr.visit( prom_visitor );
 
@@ -1022,7 +1019,7 @@ bool chain_plugin::accept_block(const std::shared_ptr<hive::chain::full_block_ty
   }
 
   if (cxt.except)
-    throw *(cxt.except);
+    cxt.except->dynamic_rethrow_exception();
 
   return cxt.success;
 }
@@ -1066,31 +1063,31 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   }
 
   if (cxt.except) 
-    throw *(cxt.except);
+    cxt.except->dynamic_rethrow_exception();
 }
 
 std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx, 
                                                                                                const lock_type lock /* = lock_type::boost */)
-{
+{ try {
   std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26);
   try
   {
     accept_transaction(full_transaction, lock);
   }
-  catch (const hive::protocol::transaction_exception&)
+  catch (const hive::protocol::transaction_auth_exception&)
   {
     full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy);
     try
     {
       accept_transaction(full_transaction, lock);
     }
-    catch (hive::protocol::transaction_exception& legacy_e)
+    catch (hive::protocol::transaction_auth_exception& legacy_e)
     {
       FC_RETHROW_EXCEPTION(legacy_e, error, "Transaction failed to validate using both new (hf26) and legacy serialization");
     }
   }
   return full_transaction;
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 
 std::shared_ptr<hive::chain::full_block_type> chain_plugin::generate_block(const fc::time_point_sec when,
@@ -1115,7 +1112,7 @@ std::shared_ptr<hive::chain::full_block_type> chain_plugin::generate_block(const
   generate_block_future.get();
 
   if (cxt.except)
-    throw *(cxt.except);
+    cxt.except->dynamic_rethrow_exception();
 
   FC_ASSERT( cxt.success, "Block could not be generated" );
 

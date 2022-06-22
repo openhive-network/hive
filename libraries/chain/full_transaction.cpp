@@ -118,6 +118,31 @@ const hive::protocol::required_authorities_type& full_transaction_type::get_requ
   return *required_authorities;
 }
 
+bool full_transaction_type::is_legacy_pack() const
+{
+  if (!is_packed_in_legacy_format)
+  {
+    hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
+    const hive::protocol::signed_transaction& transaction = get_transaction();
+    size_t packed_size = fc::raw::pack_size(transaction);
+    if (packed_size != get_transaction_size())
+      is_packed_in_legacy_format = false;
+    else
+    {
+      std::unique_ptr<char[]> packed_bytes(new char[packed_size]);
+      fc::datastream<char*> stream(packed_bytes.get(), packed_size);
+      fc::raw::pack(stream, transaction);
+      is_packed_in_legacy_format = memcmp(packed_bytes.get(), serialized_transaction.begin, packed_size) == 0;
+    }
+  }
+  return *is_packed_in_legacy_format;
+}
+
+size_t full_transaction_type::get_transaction_size() const
+{ 
+  return serialized_transaction.signed_transaction_end - serialized_transaction.begin;
+}
+
 const serialized_transaction_data& full_transaction_type::get_serialized_transaction() const
 {
   return serialized_transaction;

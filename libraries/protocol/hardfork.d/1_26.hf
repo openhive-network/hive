@@ -21,5 +21,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_26_AUTH_UPDATE (HIVE_HARDFORK_1_26)
 //some checks that were soft-forked for couple hardforks already (f.e. disabling custom binary) become hardforked
 #define HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS (HIVE_HARDFORK_1_26)
+//new serialization for assets is allowed
+#define HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION (HIVE_HARDFORK_1_26)
 
 #endif
