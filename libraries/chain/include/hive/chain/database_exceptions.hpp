@@ -89,6 +89,7 @@ namespace hive { namespace chain {
 
   FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_exception, 4030100, "transaction expiration exception" )
   FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_exception, 4030200, "transaction tapos exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_serialization_exception, hive::chain::transaction_exception, 4030300, "transaction serialization exception" )
 
   FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   hive::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
 
