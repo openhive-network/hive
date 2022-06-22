@@ -1,26 +1,25 @@
-from test_tools import logger, Wallet, Asset
-import json
+import test_tools as tt
 
 
-def test_get_account_history_reversible(world):
-    net = world.create_network()
-    init_node = net.create_init_node()
-    api_node = net.create_api_node()
+def test_get_account_history_reversible():
+    net = tt.Network()
+    init_node = tt.InitNode(network=net)
+    api_node = tt.ApiNode(network=net)
 
-    logger.info('Running network, waiting for live sync...')
+    tt.logger.info('Running network, waiting for live sync...')
 
     # PREREQUISITES
     net.run()
-    wallet = Wallet(attach_to=init_node)
-    logger.info('wallet started...')
+    wallet = tt.Wallet(attach_to=init_node)
+    tt.logger.info('wallet started...')
 
     # TRIGGER
     wallet.api.create_account('initminer', 'alice', '{}')
-    trx = wallet.api.transfer_to_vesting('initminer', 'alice', Asset.Test(0.001))
+    trx = wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(0.001))
 
     api_node.wait_number_of_blocks(1)
     irreversible = api_node.api.database.get_dynamic_global_properties()["last_irreversible_block_num"]
-    logger.info(f'irreversible {irreversible}')
+    tt.logger.info(f'irreversible {irreversible}')
 
     # VERIFY
     assert irreversible < trx["block_num"]
