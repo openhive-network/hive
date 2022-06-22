@@ -83,14 +83,16 @@ CORRECT_VALUES = [
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], True),
     ]
 )
-@run_for('testnet')
-def test_list_proposal_votes_with_correct_values_in_testnet(prepared_node, start, limit, order_by, order_direction, status):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    prepare_proposals(wallet, ACCOUNTS)
-    with wallet.in_single_transaction():
-        for account in ACCOUNTS:
-            wallet.api.update_proposal_votes(account, [3], 1)
+# proposals system was introduced after the 5 millionth block, it is only tested on node 64m
+@run_for('testnet', 'mainnet_64m')
+def test_list_proposal_votes_with_correct_values_in_testnet(prepared_node, should_prepare, start, limit, order_by, order_direction, status):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+        prepare_proposals(wallet, ACCOUNTS)
+        with wallet.in_single_transaction():
+            for account in ACCOUNTS:
+                wallet.api.update_proposal_votes(account, [3], 1)
 
     prepared_node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
 
@@ -122,14 +124,15 @@ def test_list_proposal_votes_with_correct_values_in_testnet(prepared_node, start
         ([''], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], 'true'),
     ],
 )
-@run_for('testnet')
-def test_list_proposal_votes_with_incorrect_values(prepared_node, start, limit, order_by, order_direction, status):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
-    prepare_proposals(wallet, ACCOUNTS)
-    with wallet.in_single_transaction():
-        for account in ACCOUNTS:
-            wallet.api.update_proposal_votes(account, [3], 1)
+@run_for('testnet',  'mainnet_5m', 'mainnet_64m')
+def test_list_proposal_votes_with_incorrect_values(prepared_node, should_prepare, start, limit, order_by, order_direction, status):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
+        prepare_proposals(wallet, ACCOUNTS)
+        with wallet.in_single_transaction():
+            for account in ACCOUNTS:
+                wallet.api.update_proposal_votes(account, [3], 1)
 
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
@@ -169,7 +172,7 @@ def test_list_proposal_votes_with_incorrect_values(prepared_node, start, limit, 
         ([""], 100, 33, 0, 'invalid-argument'),
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_list_proposal_votes_with_incorrect_type_of_argument(prepared_node, start, limit, order_by, order_direction, status):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.list_proposal_votes(start, limit, order_by, order_direction, status)
