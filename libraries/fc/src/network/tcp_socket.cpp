@@ -241,7 +241,7 @@ namespace fc {
     //read and log old receive_buffer_size
     boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
     my->_sock.get_option(old_receive_buffer_reading);
-    wdump((old_receive_buffer_reading.value()));
+    ddump((old_receive_buffer_reading.value()));
 
     boost::asio::socket_base::receive_buffer_size option(new_receive_buffer_size);
     my->_sock.set_option(option);
@@ -249,7 +249,7 @@ namespace fc {
     //read new value and log receive_buffer_size
     boost::asio::socket_base::receive_buffer_size new_receive_buffer_reading;
     my->_sock.get_option(new_receive_buffer_reading);
-    wdump((new_receive_buffer_reading.value()));
+    ddump((new_receive_buffer_reading.value()));
     return new_receive_buffer_reading.value();
   }
 
@@ -258,7 +258,7 @@ namespace fc {
     //read and log old send_buffer_size
     boost::asio::socket_base::send_buffer_size old_send_buffer_reading;
     my->_sock.get_option(old_send_buffer_reading);
-    wdump((old_send_buffer_reading.value()));
+    ddump((old_send_buffer_reading.value()));
 
     boost::asio::socket_base::send_buffer_size option(new_send_buffer_size);
     my->_sock.set_option(option);
@@ -266,7 +266,7 @@ namespace fc {
     //read new value and log send_buffer_size
     boost::asio::socket_base::send_buffer_size new_send_buffer_reading;
     my->_sock.get_option(new_send_buffer_reading);
-    wdump((new_send_buffer_reading.value()));
+    ddump((new_send_buffer_reading.value()));
     return new_send_buffer_reading.value();
   }
 
@@ -356,7 +356,7 @@ namespace fc {
     //read and log old receive_buffer_size
     boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
     my->_accept.get_option(old_receive_buffer_reading);
-    wdump((old_receive_buffer_reading.value()));
+    ddump((old_receive_buffer_reading.value()));
 
     boost::asio::socket_base::receive_buffer_size option(new_receive_buffer_size);
     my->_accept.set_option(option);
@@ -364,7 +364,7 @@ namespace fc {
     //read and log new receive_buffer_size
     boost::asio::socket_base::receive_buffer_size new_receive_buffer_reading;
     my->_accept.get_option(new_receive_buffer_reading);
-    wdump((new_receive_buffer_reading.value()));
+    ddump((new_receive_buffer_reading.value()));
 
     return new_receive_buffer_reading.value();
   }
@@ -376,7 +376,7 @@ namespace fc {
     //read and log old send_buffer_size
     boost::asio::socket_base::send_buffer_size old_send_buffer_reading;
     my->_accept.get_option(old_send_buffer_reading);
-    wdump((old_send_buffer_reading.value()));
+    ddump((old_send_buffer_reading.value()));
 
     boost::asio::socket_base::send_buffer_size option(new_send_buffer_size);
     my->_accept.set_option(option);
@@ -384,7 +384,7 @@ namespace fc {
     //read and log new send_buffer_size
     boost::asio::socket_base::send_buffer_size new_send_buffer_reading;
     my->_accept.get_option(new_send_buffer_reading);
-    wdump((new_send_buffer_reading.value()));
+    ddump((new_send_buffer_reading.value()));
 
     return new_send_buffer_reading.value();
   }
