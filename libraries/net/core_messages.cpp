@@ -93,9 +93,9 @@ namespace graphene { namespace net {
     FC_ASSERT(msg.full_transaction, "Can't send a transaction_message when we don't have the full_transaction");
     msg_type = trx_message::type;
     const hive::chain::serialized_transaction_data& serialized_tranaction = msg.full_transaction->get_serialized_transaction();
-    size_t serialized_transaction_size = serialized_tranaction.signed_transaction_end - serialized_tranaction.begin;
-    data.resize(serialized_transaction_size);
-    memcpy(data.data(), serialized_tranaction.begin, serialized_transaction_size);
+    size = serialized_tranaction.signed_transaction_end - serialized_tranaction.begin;
+    data.resize(size);
+    memcpy(data.data(), serialized_tranaction.begin, size);
   }
 
   trx_message message::as_trx_message() const
