@@ -234,7 +234,7 @@ hf26_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/hf26_tests
-    - pytest --junitxml="./report.xml"
+    - pytest -n auto --junitxml="./report.xml"
   timeout: 15min
   artifacts:
     reports:
