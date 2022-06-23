@@ -5,6 +5,7 @@ import test_tools as tt
 from .....local_tools import date_from_now
 
 
+@pytest.mark.testnet
 def test_hbd_amount_in_legacy_serialization_with_nai_wallet(wallet_with_nai_serialization):
     with wallet_with_nai_serialization.in_single_transaction():
         wallet_with_nai_serialization.api.create_account('initminer', 'alice', '{}')
@@ -15,6 +16,7 @@ def test_hbd_amount_in_legacy_serialization_with_nai_wallet(wallet_with_nai_seri
                                                       date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
+@pytest.mark.testnet
 def test_hbd_amount_in_nai_serialization_with_legacy_wallet(wallet_with_legacy_serialization):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}')
@@ -26,6 +28,7 @@ def test_hbd_amount_in_nai_serialization_with_legacy_wallet(wallet_with_legacy_s
                                                              date_from_now(weeks=20), '{}')
 
 
+@pytest.mark.testnet
 def test_hive_amount_in_legacy_serialization_with_nai_wallet(wallet_with_nai_serialization):
     with wallet_with_nai_serialization.in_single_transaction():
         wallet_with_nai_serialization.api.create_account('initminer', 'alice', '{}')
@@ -36,6 +39,7 @@ def test_hive_amount_in_legacy_serialization_with_nai_wallet(wallet_with_nai_ser
                                                       date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
+@pytest.mark.testnet
 def test_hive_amount_in_nai_serialization_with_legacy_wallet(wallet_with_legacy_serialization):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}')
@@ -47,6 +51,7 @@ def test_hive_amount_in_nai_serialization_with_legacy_wallet(wallet_with_legacy_
                                                              date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
+@pytest.mark.testnet
 def test_fee_in_legacy_serialization_with_nai_wallet(wallet_with_nai_serialization):
     with wallet_with_nai_serialization.in_single_transaction():
         wallet_with_nai_serialization.api.create_account('initminer', 'alice', '{}')
@@ -57,6 +62,7 @@ def test_fee_in_legacy_serialization_with_nai_wallet(wallet_with_nai_serializati
                                                       date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
+@pytest.mark.testnet
 def test_fee_in_nai_serialization_with_legacy_wallet(wallet_with_legacy_serialization):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}')
