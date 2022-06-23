@@ -230,7 +230,6 @@ FC_TODO( "Remove ifdef when required actions are added" )
 #ifdef IS_TEST_NET
   if( required_actions.size() )
   {
-    // warning: this could push the block size above `maximum_block_size`
     pending_block_header.extensions.insert( required_actions );
   }
 #endif
@@ -262,7 +261,6 @@ FC_TODO( "Remove ifdef when optional actions are added" )
 #ifdef IS_TEST_NET
   if( optional_actions.size() )
   {
-    // warning: this could push the block size above `maximum_block_size`
     pending_block_header.extensions.insert( optional_actions );
   }
 #endif
