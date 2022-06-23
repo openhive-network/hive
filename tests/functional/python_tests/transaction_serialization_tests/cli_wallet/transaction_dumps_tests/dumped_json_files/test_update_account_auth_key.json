@@ -1,0 +1,36 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 3847024014,
+  "expiration": "2022-06-23T09:29:54",
+  "operations": [
+    [
+      "account_update",
+      {
+        "account": "alice",
+        "owner": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5iZMbNEmy33uEhFC6bVu8cYwKEycntoRHbv8LXuTtjg6E8Sq2Z",
+              1
+            ],
+            [
+              "TST6et66uDp7e1jQRM9ZbfUGXmvNPe6QDPPfR68zJi11nCPYuLYxh",
+              1
+            ]
+          ]
+        },
+        "memo_key": "TST6jAoWaP6vkY6xTQMUyhj9kigpPXUJhuDkHQtsUjVkFSP3WX9ox",
+        "json_metadata": "{}"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f4cee5d1235099a0ec3b5a11cfbf93ee23bb7fdc17eaca9ada65720bf73836b5e180e41ab379705060b3d597568dd88a479f76f638b031fb56fff08a7f2dc72be"
+  ],
+  "transaction_id": "a1c86b25da80e3b54a4f40c56bf0d5f7df5e312b",
+  "block_num": 4,
+  "transaction_num": 0
+}

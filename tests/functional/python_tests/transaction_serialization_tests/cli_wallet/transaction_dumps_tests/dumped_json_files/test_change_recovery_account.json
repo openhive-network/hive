@@ -1,0 +1,22 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 2054659341,
+  "expiration": "2022-06-23T09:29:27",
+  "operations": [
+    [
+      "change_recovery_account",
+      {
+        "account_to_recover": "alice",
+        "new_recovery_account": "bob",
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "201b8f7df4a4797a8e25036cf62fcea60b3ee786e7696c576691112161ec4e00ca4b3cfb7a7969a4e90026e115553ac17a5aa27adf244ed371b06d919dd0b143a8"
+  ],
+  "transaction_id": "f3928cbb3026de44947b01f091b151e2ffa1fae3",
+  "block_num": 5,
+  "transaction_num": 0
+}

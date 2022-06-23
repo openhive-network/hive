@@ -1,0 +1,21 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 1765338830,
+  "expiration": "2022-06-23T09:29:27",
+  "operations": [
+    [
+      "limit_order_cancel",
+      {
+        "owner": "alice",
+        "orderid": 1000
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f0c6b3fd8a996369a2c2f0346ef37a5818c7cb92f8a77f67bd45508d0f6a360211406a66ca85eb62ed9d8d2f5ace89026d56e1ce86e8adcb61184313e8f7c9566"
+  ],
+  "transaction_id": "e9c1faf80adba27ad926254f768cb512ce3991eb",
+  "block_num": 5,
+  "transaction_num": 0
+}

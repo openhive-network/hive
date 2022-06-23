@@ -1,0 +1,24 @@
+{
+  "ref_block_num": 6,
+  "ref_block_prefix": 1993101122,
+  "expiration": "2022-06-23T09:29:51",
+  "operations": [
+    [
+      "transfer_from_savings",
+      {
+        "from": "alice",
+        "request_id": 1000,
+        "to": "bob",
+        "amount": "1.000 TESTS",
+        "memo": "memo"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "200aacd6fe16ad6130e8ecb7131d213b870ca0b76577e4ae3dda5139e235f6599d21885b43a33a00b7a9f823f13bf23d8ceacad14b19479ae9ef547ae26640c609"
+  ],
+  "transaction_id": "e1992d1eaef7f65bbe70c30d713a6cec0e68e118",
+  "block_num": 7,
+  "transaction_num": 0
+}

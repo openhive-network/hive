@@ -1,0 +1,23 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 53363480,
+  "expiration": "2022-06-23T09:30:00",
+  "operations": [
+    [
+      "vote",
+      {
+        "voter": "initminer",
+        "author": "alice",
+        "permlink": "test-permlink",
+        "weight": 1000
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "204a6af095477207653b66eab7126b19e6c870ee01f835f96e1c9939a38f9775054707d845cfabbe0752dc58dc31f97cc62f5b2bf24c12ec11dc14fb398eb9a9e6"
+  ],
+  "transaction_id": "7d3e0f5eeb3dd1a290be8e4e0916810565a12e6a",
+  "block_num": 5,
+  "transaction_num": 0
+}

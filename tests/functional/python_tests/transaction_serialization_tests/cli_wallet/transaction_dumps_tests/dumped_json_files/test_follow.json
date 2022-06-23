@@ -1,0 +1,25 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 3822247224,
+  "expiration": "2022-06-23T09:29:33",
+  "operations": [
+    [
+      "custom_json",
+      {
+        "required_auths": [],
+        "required_posting_auths": [
+          "alice"
+        ],
+        "id": "follow",
+        "json": "{\"type\":\"follow_operation\",\"value\":{\"follower\":\"alice\",\"following\":\"@bob\",\"what\":[\"blog\"]}}"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "203114ead0206b97af442777cd5db2670da085a6bff359da5334c2f2a755e1d654744001a627aabc9fcb2b55b1fcf4c998d0b28af8cf5d7209c37ab02e0a6984de"
+  ],
+  "transaction_id": "9f6c4b0c055ad8fb246914f9eacfef1009ff9227",
+  "block_num": 5,
+  "transaction_num": 0
+}

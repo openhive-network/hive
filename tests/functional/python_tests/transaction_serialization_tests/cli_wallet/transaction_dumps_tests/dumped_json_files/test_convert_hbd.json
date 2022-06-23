@@ -1,0 +1,22 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 237454767,
+  "expiration": "2022-06-23T09:29:24",
+  "operations": [
+    [
+      "convert",
+      {
+        "owner": "alice",
+        "requestid": 1655976533,
+        "amount": "1.000 TBD"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f36b94c3978b5c1a3347b57097bca42778537170ecedb02ec9da5b44d03b0f9180ffdc02194dec332a589e27f8cb83bb967f923e491431af8e34aed73441b24d5"
+  ],
+  "transaction_id": "b997d827763cfc91017753895baf4897bdb51e48",
+  "block_num": 4,
+  "transaction_num": 0
+}

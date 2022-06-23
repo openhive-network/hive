@@ -1,0 +1,22 @@
+{
+  "ref_block_num": 19,
+  "ref_block_prefix": 1652186003,
+  "expiration": "2022-06-23T09:30:12",
+  "operations": [
+    [
+      "claim_account",
+      {
+        "creator": "initminer",
+        "fee": "0.000 TESTS",
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f4f1b008e13e8491ac779e5511020f5c686577f90bb4a00905e6bce02aa26d477050f24693a076527fc80513e15380596be0ee3922e7a5206acbbea5435b75bba"
+  ],
+  "transaction_id": "f3960cfa458f5f30c2bada8f5704b49adcd30996",
+  "block_num": 30,
+  "transaction_num": 4294967295
+}

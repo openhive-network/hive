@@ -1,0 +1,25 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 18608429,
+  "expiration": "2022-06-23T09:29:27",
+  "operations": [
+    [
+      "custom_json",
+      {
+        "required_auths": [],
+        "required_posting_auths": [
+          "alice"
+        ],
+        "id": "rc",
+        "json": "{\"type\":\"delegate_rc_operation\",\"value\":{\"from\":\"alice\",\"delegatees\":[\"bob\"],\"max_rc\":10,\"extensions\":[]}}"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "20114a96abe16bf8e430cd35b9bc8a8eb3ce58cbe6e5aef399aefd1b53619a81026cd207ce01f885eb1913e3817fafd895808491bc96d423a4f001ce86b062e3a3"
+  ],
+  "transaction_id": "6f8dc869848a025bb6f947619d05542fa8543850",
+  "block_num": 5,
+  "transaction_num": 0
+}

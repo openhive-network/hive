@@ -1,0 +1,27 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 3722929028,
+  "expiration": "2022-06-23T09:29:27",
+  "operations": [
+    [
+      "create_proposal",
+      {
+        "creator": "alice",
+        "receiver": "alice",
+        "start_date": "2022-10-13T11:28:56",
+        "end_date": "2022-11-10T11:28:56",
+        "daily_pay": "1000.000 TBD",
+        "subject": "subject-1",
+        "permlink": "permlink",
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f25390868566ff1c6f53d6d6bef5a9c539cb274d56cc0ec83c4de05d7e6560f703ccde012787bd9e96d09c94a0555cf438c1d3228f5234cbf6e9522191c0f05a1"
+  ],
+  "transaction_id": "2c401cfe5f3d47c145e853690cd7356cbebc023e",
+  "block_num": 5,
+  "transaction_num": 0
+}

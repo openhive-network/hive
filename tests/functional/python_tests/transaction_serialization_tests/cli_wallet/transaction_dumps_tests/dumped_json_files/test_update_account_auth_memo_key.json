@@ -1,0 +1,22 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 1868174190,
+  "expiration": "2022-06-23T09:30:03",
+  "operations": [
+    [
+      "account_update",
+      {
+        "account": "alice",
+        "memo_key": "TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ",
+        "json_metadata": "{}"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f145f2aeaa8df121d369239c39d3b48d082e123aea18ad6788cc51e41cb12ea3c683f7b5d51b14665ddc6a085594746f61b792ad8f4fb011182138d1dcbd938dc"
+  ],
+  "transaction_id": "e723ea13755836f962ff3479364a31f837801ef3",
+  "block_num": 4,
+  "transaction_num": 0
+}

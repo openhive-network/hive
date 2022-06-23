@@ -1,0 +1,24 @@
+{
+  "ref_block_num": 6,
+  "ref_block_prefix": 1337681962,
+  "expiration": "2022-06-23T09:29:54",
+  "operations": [
+    [
+      "remove_proposal",
+      {
+        "proposal_owner": "initminer",
+        "proposal_ids": [
+          6
+        ],
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f18822a642c2ebb3674a6b54baa306c681001308222cdd5e9f164ae7477fe43275ec0f70fdce51567a30a87d1e233776f516b79fed649446d9c46ab9714c0cf4d"
+  ],
+  "transaction_id": "23f2bc3cd8e28151d35ea042d9daffa4ec2388fa",
+  "block_num": 7,
+  "transaction_num": 0
+}

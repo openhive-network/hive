@@ -1,0 +1,21 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 341137370,
+  "expiration": "2022-06-23T09:29:24",
+  "operations": [
+    [
+      "decline_voting_rights",
+      {
+        "account": "alice",
+        "decline": true
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "207bd2573b92ed377667924a085f90e0c81bd70baf05f3d09f723478ecb5ce796d03390aba450529972595a4399da42f630b43e190d9eecd04b342a629e7104055"
+  ],
+  "transaction_id": "3203dd4bea1c5b14585442b505b3fe9e93e0d737",
+  "block_num": 4,
+  "transaction_num": 0
+}

@@ -1,0 +1,31 @@
+{
+  "ref_block_num": 5,
+  "ref_block_prefix": 1733824353,
+  "expiration": "2022-06-23T09:29:51",
+  "operations": [
+    [
+      "delegate_vesting_shares",
+      {
+        "delegator": "alice",
+        "delegatee": "bob",
+        "vesting_shares": "1.000000 VESTS"
+      }
+    ],
+    [
+      "transfer",
+      {
+        "from": "alice",
+        "to": "bob",
+        "amount": "6.000 TBD",
+        "memo": "memo"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "205685f8132018f86a85792a820ca0a5264d67d1dc0f20d0d295b5f925843b16d8097c237fa1ba8a9b774eb88f3246f269fc6fc0376a08084c302832dffce3bb43"
+  ],
+  "transaction_id": "32d6a2465959e5f543db9d995bdd9e32f2416b59",
+  "block_num": 0,
+  "transaction_num": 0
+}

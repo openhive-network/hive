@@ -1,0 +1,27 @@
+{
+  "ref_block_num": 10,
+  "ref_block_prefix": 1581036186,
+  "expiration": "2022-06-23T09:30:00",
+  "operations": [
+    [
+      "escrow_release",
+      {
+        "from": "initminer",
+        "to": "alice",
+        "agent": "bob",
+        "who": "bob",
+        "receiver": "alice",
+        "escrow_id": 99,
+        "hbd_amount": "10.000 TBD",
+        "hive_amount": "10.000 TESTS"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f5c7f16e62c894a6732814501fb9129e8ddcc6e22b3ddacd158aa517455552e4a5da3e3e058c74091a44d2af5d6d40d3650702c53eff0a5c8d194e8e2d1437af1"
+  ],
+  "transaction_id": "3a93db630c3a8ab54d6d60e9890f75a81b03a4e9",
+  "block_num": 11,
+  "transaction_num": 0
+}

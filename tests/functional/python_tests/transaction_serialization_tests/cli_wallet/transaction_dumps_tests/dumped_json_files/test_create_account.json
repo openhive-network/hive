@@ -1,0 +1,54 @@
+{
+  "ref_block_num": 1,
+  "ref_block_prefix": 2725865457,
+  "expiration": "2022-06-23T09:29:15",
+  "operations": [
+    [
+      "account_create",
+      {
+        "fee": "0.000 TESTS",
+        "creator": "initminer",
+        "new_account_name": "alice",
+        "owner": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5uwsw5ovv1YuiMpvdZ2L4hYwS8ZJe47KNVahFH5dmp7R7YGB1m",
+              1
+            ]
+          ]
+        },
+        "active": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST8WSwGgLnbw3oV1MVWpFDY6YLSzdczwNYi5gYQsRSaVGhuZFVAq",
+              1
+            ]
+          ]
+        },
+        "posting": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST8cmQhSUrV2PjwvdNrsZtb1x1hFi46VJm31jV7hVcwp5qaMDhSL",
+              1
+            ]
+          ]
+        },
+        "memo_key": "TST6B1zBCDv6HckTmSjwPzW1N5C5WACHMXQz9t2YT2ai9std84Xte",
+        "json_metadata": "{}"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "204d5c85df57626fed123b322404d2f310456b453ba8a01224427cd5d750962a9b5a0ddeea44541259874c1a2a18ed11100ac103595200d67d09e5a860c538081e"
+  ],
+  "transaction_id": "8d6e7ae3ba805ea055bb7cc51ba6d0f8f34a7930",
+  "block_num": 2,
+  "transaction_num": 0
+}

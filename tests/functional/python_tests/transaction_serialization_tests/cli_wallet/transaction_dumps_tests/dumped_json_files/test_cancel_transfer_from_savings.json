@@ -1,0 +1,21 @@
+{
+  "ref_block_num": 6,
+  "ref_block_prefix": 3815708459,
+  "expiration": "2022-06-23T09:29:33",
+  "operations": [
+    [
+      "cancel_transfer_from_savings",
+      {
+        "from": "alice",
+        "request_id": 1000
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "203dc1c51cdf3064981af9b72fc9793b5c15f86975a5ead03008813845e11aabac4e4b9a316ba27c7552a8202483c42b32ebd613a718dd8f4f9cd984437c56186c"
+  ],
+  "transaction_id": "d7cd3f5d3df98a4bd1d7a98c1c5075623c69ee32",
+  "block_num": 7,
+  "transaction_num": 0
+}

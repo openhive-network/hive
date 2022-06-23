@@ -1,0 +1,24 @@
+{
+  "ref_block_num": 8,
+  "ref_block_prefix": 2373112271,
+  "expiration": "2022-06-23T09:31:09",
+  "operations": [
+    [
+      "escrow_dispute",
+      {
+        "from": "initminer",
+        "to": "alice",
+        "agent": "bob",
+        "who": "initminer",
+        "escrow_id": 99
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f70906e2efbb4dde8cc1fe7b1fe264b1aef462a59fa9849b37745b45eb1276121505bb796415a44d247940a6850755b431c5789a1f10f039de82386c6c33b935e"
+  ],
+  "transaction_id": "3a4c8ba8b4fb8c999e9abf1f72c12b095fde79ba",
+  "block_num": 9,
+  "transaction_num": 0
+}

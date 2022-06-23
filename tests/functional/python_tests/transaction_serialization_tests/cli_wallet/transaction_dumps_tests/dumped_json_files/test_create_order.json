@@ -1,0 +1,25 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 1420212365,
+  "expiration": "2022-06-23T09:29:24",
+  "operations": [
+    [
+      "limit_order_create",
+      {
+        "owner": "alice",
+        "orderid": 1000,
+        "amount_to_sell": "1.000 TESTS",
+        "min_to_receive": "1.000 TBD",
+        "fill_or_kill": false,
+        "expiration": "2022-06-23T09:45:33"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "202c51eee0373e2f3cfe97676cd8870bccb997e4c5be361c5d09fcfae93dbf38dd5e69cb7bba41b361f9460bed7390ecccfaaa157cb7854b718c8e04e111ecbc48"
+  ],
+  "transaction_id": "fbc16297a971d65fde57314b0c1a7673638e2d01",
+  "block_num": 4,
+  "transaction_num": 0
+}

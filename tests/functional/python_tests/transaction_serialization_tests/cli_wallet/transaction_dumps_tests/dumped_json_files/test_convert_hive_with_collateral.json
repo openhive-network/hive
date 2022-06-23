@@ -1,0 +1,22 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 2132392428,
+  "expiration": "2022-06-23T09:29:27",
+  "operations": [
+    [
+      "collateralized_convert",
+      {
+        "owner": "alice",
+        "requestid": 1655976536,
+        "amount": "10.000 TESTS"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f46a1b3ea441fe4bcd2b0090655a9e3a8917469fa42f78a6df61c7212bf8d1959296eeead5bbfb9ff41e35947d7531e17fc7b7919afd1b7c1972af4ce4cc9596d"
+  ],
+  "transaction_id": "8017135f9e7e27a004e8b4857a53bfd2832da219",
+  "block_num": 5,
+  "transaction_num": 0
+}

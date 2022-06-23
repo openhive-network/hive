@@ -1,0 +1,26 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 2545592543,
+  "expiration": "2022-06-23T09:29:39",
+  "operations": [
+    [
+      "recurrent_transfer",
+      {
+        "from": "alice",
+        "to": "bob",
+        "amount": "5.000 TESTS",
+        "memo": "memo",
+        "recurrence": 720,
+        "executions": 12,
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f3e58ce7322f68aa48bd402ab601c4689cfa6a96fa000cf0dece36763b62e204c1f399e091a2237dee4ba963118448856a90b3e3b0066d5942b6ae57415ea9a0c"
+  ],
+  "transaction_id": "b49e8e502fee8b71eec197f78bf94d7321ce4049",
+  "block_num": 5,
+  "transaction_num": 0
+}

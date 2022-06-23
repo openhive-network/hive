@@ -1,0 +1,32 @@
+{
+  "ref_block_num": 5,
+  "ref_block_prefix": 96278440,
+  "expiration": "2022-06-23T09:29:51",
+  "operations": [
+    [
+      "request_account_recovery",
+      {
+        "recovery_account": "alice",
+        "account_to_recover": "bob",
+        "new_owner_authority": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST8mBadgpCyEx7PLyFv3tfQJa13DcqY5hvfHKn2j6ggbCoYCfjb5",
+              1
+            ]
+          ]
+        },
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f3ef7aaebbcb0dc4fea0e4739cc3119609d085c8e0e940c7fac314dd1496499171459381bd2d72bc9484aaed1af4df7337002659923c734ed5d412d149d0144e8"
+  ],
+  "transaction_id": "3c1a6a94ef2bd071f38fb6a86bcdb30fb8e82dd8",
+  "block_num": 6,
+  "transaction_num": 0
+}

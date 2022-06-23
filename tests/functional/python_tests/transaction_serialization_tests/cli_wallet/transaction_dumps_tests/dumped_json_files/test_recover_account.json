@@ -1,0 +1,42 @@
+{
+  "ref_block_num": 7,
+  "ref_block_prefix": 1728653106,
+  "expiration": "2022-06-23T09:29:54",
+  "operations": [
+    [
+      "recover_account",
+      {
+        "account_to_recover": "bob",
+        "new_owner_authority": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST6fNx6wjSVNo1R4Lo6ggwSjV3N4L8EkNcPcMKCt761LkGzy5oXa",
+              1
+            ]
+          ]
+        },
+        "recent_owner_authority": {
+          "weight_threshold": 1,
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST8GjJALVPnrTHEvHgbqXRdrBGEVxbW7nVrrJnKe36T4fMW3FyTF",
+              1
+            ]
+          ]
+        },
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f32174fa082edd3a52ad6865eb3eff96c069d78bc2585a208a49d62d50e9d835f505f24454ee0e0cbaaea11ab51bef5998062e01706eed4b914f0ed19043bb5d7",
+    "201cfd9761f8399a83aae6f7e986bfe398453ed011dad6052adf8688ef02703c561bd709c1eb5746c307bb33662d37f0f5fa0f325ff7b88dc6f8c5a30c59068da5"
+  ],
+  "transaction_id": "c7eae511c985b6486c78863f1f94ed4d7392f1b6",
+  "block_num": 8,
+  "transaction_num": 0
+}

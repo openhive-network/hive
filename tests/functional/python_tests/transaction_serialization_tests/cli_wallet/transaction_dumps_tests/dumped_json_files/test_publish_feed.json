@@ -1,0 +1,24 @@
+{
+  "ref_block_num": 2,
+  "ref_block_prefix": 485850127,
+  "expiration": "2022-06-23T09:29:36",
+  "operations": [
+    [
+      "feed_publish",
+      {
+        "publisher": "initminer",
+        "exchange_rate": {
+          "base": "1.000 TBD",
+          "quote": "2.000 TESTS"
+        }
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f78389bdc220c75455a324089405336bb2b27c9a8f6d52239831e1d48ee36d24e6cb8422e903168e25f67c747dc03364c076613e97c3f7d475da65f95bb27f57b"
+  ],
+  "transaction_id": "649dbae0109254b3790b388464945ac61d8ec8c0",
+  "block_num": 3,
+  "transaction_num": 0
+}

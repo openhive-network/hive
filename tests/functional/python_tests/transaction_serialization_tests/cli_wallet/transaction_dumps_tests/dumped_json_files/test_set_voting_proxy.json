@@ -1,0 +1,21 @@
+{
+  "ref_block_num": 2,
+  "ref_block_prefix": 2306077668,
+  "expiration": "2022-06-23T09:29:45",
+  "operations": [
+    [
+      "account_witness_proxy",
+      {
+        "account": "initminer",
+        "proxy": "alice"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f30ca437d3625cce8e2e2beaaf06d984e94a437889f9c728400afc5741302663169196fb03461332d1883718e2da3790299045e7d906eb459209ab87ae6b6b89d"
+  ],
+  "transaction_id": "b1c05b4b5572112e0052370f179a7d55ed2ab380",
+  "block_num": 3,
+  "transaction_num": 0
+}

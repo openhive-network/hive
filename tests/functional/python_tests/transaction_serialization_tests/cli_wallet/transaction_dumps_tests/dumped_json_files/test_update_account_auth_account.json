@@ -1,0 +1,37 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 429527740,
+  "expiration": "2022-06-23T09:30:06",
+  "operations": [
+    [
+      "account_update",
+      {
+        "account": "alice",
+        "posting": {
+          "weight_threshold": 1,
+          "account_auths": [
+            [
+              "initminer",
+              2
+            ]
+          ],
+          "key_auths": [
+            [
+              "TST7zoRAsQkLBY2NQTQ4DobXR5pCoj5nTT58KzX12zyCKMKgm71gy",
+              1
+            ]
+          ]
+        },
+        "memo_key": "TST8SXiqkLL4oRAPBb6vdVbB9tdj88AMJobkKKSr78meHs2rVhXch",
+        "json_metadata": "{}"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "2059f452215b35cd25a660b2b952e78d1ec500aa34137162802eb3122fc65663a9185ebfa1012e525889daab734838f59dcba0dcf8af1f73295d094bfa1e5b5a06"
+  ],
+  "transaction_id": "ba92e172c1ae7bc86b60c2b90e0a0af8c1761a63",
+  "block_num": 4,
+  "transaction_num": 0
+}

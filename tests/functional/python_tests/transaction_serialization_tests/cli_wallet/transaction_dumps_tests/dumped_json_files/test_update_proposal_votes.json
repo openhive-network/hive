@@ -1,0 +1,25 @@
+{
+  "ref_block_num": 5,
+  "ref_block_prefix": 385488209,
+  "expiration": "2022-06-23T09:30:06",
+  "operations": [
+    [
+      "update_proposal_votes",
+      {
+        "voter": "alice",
+        "proposal_ids": [
+          0
+        ],
+        "approve": true,
+        "extensions": []
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "201663528ec96aaa7a8fd7c70d07ee2f5cfb8ce6e5c01dabeed488f7dfff13ba732272551ec02745c120e7caf0fcaf4d480227d3e8089ee57f0e9f3a8b133dc0a0"
+  ],
+  "transaction_id": "bb33ff64bc63c862efcfe568abe29a34c0426c2c",
+  "block_num": 6,
+  "transaction_num": 0
+}

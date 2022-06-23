@@ -1,0 +1,28 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 3827626732,
+  "expiration": "2022-06-23T09:29:57",
+  "operations": [
+    [
+      "witness_update",
+      {
+        "owner": "alice",
+        "url": "http://url.html",
+        "block_signing_key": "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+        "props": {
+          "account_creation_fee": "10.000 TESTS",
+          "maximum_block_size": 131072,
+          "hbd_interest_rate": 1000
+        },
+        "fee": "0.000 TESTS"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "2066d1a0348785175ff1bd42b29d8272008cd7b1c920198e1810f75ada40b1e8467db1d508e96e5611b7fa64e648bdd6e9352dca1bfe6c07fbb9efbcca22e853ae"
+  ],
+  "transaction_id": "9dfa739fae86641c371ad6720e14f11b899e2591",
+  "block_num": 4,
+  "transaction_num": 0
+}

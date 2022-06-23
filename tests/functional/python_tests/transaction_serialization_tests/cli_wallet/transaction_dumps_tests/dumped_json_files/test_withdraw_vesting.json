@@ -1,0 +1,21 @@
+{
+  "ref_block_num": 3,
+  "ref_block_prefix": 2309685098,
+  "expiration": "2022-06-23T09:29:54",
+  "operations": [
+    [
+      "withdraw_vesting",
+      {
+        "account": "alice",
+        "vesting_shares": "10.000000 VESTS"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "1f0be8326b65b27348a66bc30b2c6a148e92a4d81c79d39a9c255d364484449a043eefeccba0a24d6ce3e7c9927383fb83b88c21f856099cfff6c61e9cae7eb6ca"
+  ],
+  "transaction_id": "665b5a9a2c8f7781adf5f0863f5b30d32a02d623",
+  "block_num": 4,
+  "transaction_num": 0
+}

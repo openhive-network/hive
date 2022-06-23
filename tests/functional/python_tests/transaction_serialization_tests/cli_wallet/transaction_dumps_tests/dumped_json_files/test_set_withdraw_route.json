@@ -1,0 +1,23 @@
+{
+  "ref_block_num": 4,
+  "ref_block_prefix": 4019821324,
+  "expiration": "2022-06-23T09:29:48",
+  "operations": [
+    [
+      "set_withdraw_vesting_route",
+      {
+        "from_account": "alice",
+        "to_account": "bob",
+        "percent": 30,
+        "auto_vest": true
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "204ec9f25513c5c51e6d4cb2a36a1daa3864290a6aaa9fb1b85ad1a2f52bbb234b4e117d9c7d5fa5bf23ada0ba5a559d15cfd23c99799f2eff0fb304935a9389b6"
+  ],
+  "transaction_id": "9d52203ffe6de42987d9d78a637a128ac538c0f5",
+  "block_num": 5,
+  "transaction_num": 0
+}

@@ -1,0 +1,23 @@
+{
+  "ref_block_num": 2,
+  "ref_block_prefix": 3374067127,
+  "expiration": "2022-06-23T09:29:45",
+  "operations": [
+    [
+      "transfer_to_savings",
+      {
+        "from": "initminer",
+        "to": "alice",
+        "amount": "100.000 TESTS",
+        "memo": "memo"
+      }
+    ]
+  ],
+  "extensions": [],
+  "signatures": [
+    "200c9be6ff5f038ae224d6d22dbc6fdc84840898cc5f138205cd19c6d8e4f6aab603a52800f3565a6f9134caaa58c3fe849e4cadd732655060f11a40f5fa6942a2"
+  ],
+  "transaction_id": "207e9b9bfb7e18780fa67655f22263c6fa617145",
+  "block_num": 3,
+  "transaction_num": 0
+}
