@@ -35,7 +35,7 @@ retrieve_submodule_commit () {
 
 echo "Attempting to get commit for: $submodule_path"
 
-commit=$( retrieve_submodule_commit ${submodule_path} )
+commit=c463e63932108d726513a76aef633a5a9bbb9895 #$( retrieve_submodule_commit ${submodule_path} )
 
 img=$( build_image_name $IMGNAME $commit $REGISTRY )
 img_path=$( build_image_registry_path $IMGNAME $commit $REGISTRY )
