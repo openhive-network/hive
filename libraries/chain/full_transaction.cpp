@@ -2,8 +2,29 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
+#include <boost/scope_exit.hpp>
+#include <mutex>
 
+namespace fc {
+  void to_variant(std::chrono::nanoseconds duration, fc::variant& var)
+  {
+    var = std::to_string(duration.count());
+  }
+}
 namespace hive { namespace chain {
+
+std::atomic<uint32_t> cached_validate_calls = {0};
+std::atomic<uint32_t> non_cached_validate_calls = {0};
+std::atomic<uint32_t> cached_get_signature_keys_calls = {0};
+std::atomic<uint32_t> non_cached_get_signature_keys_calls = {0};
+std::atomic<uint32_t> cached_get_required_authorities_calls = {0};
+std::atomic<uint32_t> non_cached_get_required_authorities_calls = {0};
+
+full_transaction_type::~full_transaction_type()
+{
+  full_transaction_cache::get_instance().remove_from_cache(get_merkle_digest());
+}
+
 
 const signed_transaction& full_transaction_type::get_transaction() const
 { 
@@ -47,6 +68,8 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
 {
   if (!signature_info)
   {
+    ++non_cached_get_signature_keys_calls;
+    fc::time_point computation_start = fc::time_point::now();
     // look up the chain_id and signature type required to validate this transaction.  If this transaction was part
     // of a block, validate based on the rules effective at the block's timestamp.  If it's a standalone transaction,
     // use the present-day rules.
@@ -79,7 +102,13 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
     {
       new_signature_info.signature_keys_exception = e.dynamic_copy_exception();
     }
+    new_signature_info.computation_time = fc::time_point::now() - computation_start;
     signature_info = std::move(new_signature_info);
+  }
+  else
+  {
+    ++cached_get_signature_keys_calls;
+    ilog("get_signature_keys cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", ("saved", signature_info->computation_time)("cached", cached_get_signature_keys_calls.load())("not", non_cached_get_signature_keys_calls.load()));
   }
   if (signature_info->signature_keys_exception)
     signature_info->signature_keys_exception->dynamic_rethrow_exception();
@@ -90,6 +119,8 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
 {
   if (!validation_attempted)
   {
+    ++non_cached_validate_calls;
+    fc::time_point computation_start = fc::time_point::now();
     try
     {
       try
@@ -105,7 +136,15 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
     {
       validation_exception = e.dynamic_copy_exception();
     }
+    validation_computation_time = fc::time_point::now() - computation_start;
     validation_attempted = true;
+    ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
+    idump((get_transaction()));
+  }
+  else
+  {
+    ++cached_validate_calls;
+    ilog("validate cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", ("saved", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
   }
   if (validation_exception)
     validation_exception->dynamic_rethrow_exception();
@@ -114,7 +153,19 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
 const hive::protocol::required_authorities_type& full_transaction_type::get_required_authorities() const
 {
   if (!required_authorities)
+  {
+    ++non_cached_get_required_authorities_calls;
+    auto computation_start = std::chrono::high_resolution_clock::now();
     required_authorities = hive::protocol::get_required_authorities(get_transaction().operations);
+    required_authorities_computation_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - computation_start);
+  }
+  else
+  {
+    ++cached_get_required_authorities_calls;
+    ilog("get_required_authorities cache hit.  saved ${saved}ns, totals: ${cached} cached, ${not} not cached", 
+         ("saved", required_authorities_computation_time)
+         ("cached", cached_get_required_authorities_calls.load())("not", non_cached_get_required_authorities_calls.load()));
+  }
   return *required_authorities;
 }
 
@@ -166,7 +217,9 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
   full_transaction->storage = contained_in_block_info{block_storage, index_in_block};
   full_transaction->serialized_transaction = serialized_transaction;
-  return full_transaction;
+
+  return full_transaction_cache::get_instance().add_to_cache(full_transaction);
+  //return full_transaction;
 }
 
 /* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
@@ -187,7 +240,8 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   full_transaction->serialized_transaction.transaction_end = full_transaction->serialized_transaction.begin + stream.tellp();
   fc::raw::pack(stream, transaction.signatures);
   full_transaction->serialized_transaction.signed_transaction_end = full_transaction->serialized_transaction.begin + stream.tellp();
-  return full_transaction;
+  return full_transaction_cache::get_instance().add_to_cache(full_transaction);
+  //return full_transaction;
 }
 
 /* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_serialized_transaction(const char* raw_data, size_t size)
@@ -209,7 +263,8 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   fc::raw::unpack(datastream, transaction_info.transaction.signatures);
   full_transaction->serialized_transaction.signed_transaction_end = transaction_info.serialization_buffer.raw_bytes.get() + datastream.tellp();
 
-  return full_transaction;
+  return full_transaction_cache::get_instance().add_to_cache(full_transaction);
+  //return full_transaction;
 }
 
 // tl;dr Over the lifetime of the hive blockchain, we have had three different rules for how to validate
@@ -272,7 +327,113 @@ const transaction_signature_validation_rules_type& get_signature_validation_for_
 #endif
 }
 
+struct full_transaction_cache::impl
+{
+  std::mutex cache_mutex;
+  typedef std::map<hive::protocol::digest_type, std::weak_ptr<full_transaction_type>> full_transaction_map_type;
+  full_transaction_map_type cache;
+  std::atomic<uint32_t> total_lock_count = {0};
+  std::atomic<uint32_t> contended_lock_count = {0};
+};
 
+full_transaction_cache::full_transaction_cache() : my(new impl) {}
 
+std::shared_ptr<full_transaction_type> full_transaction_cache::get_by_merkle_digest(const hive::protocol::digest_type& merkle_digest)
+{
+  fc::optional<fc::microseconds> wait_duration;
+  BOOST_SCOPE_EXIT(&my, &wait_duration) {
+    ++my->total_lock_count;
+    if (wait_duration)
+    {
+      ++my->contended_lock_count;
+      wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
+           ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
+
+    }
+  } BOOST_SCOPE_EXIT_END
+
+  std::unique_lock<std::mutex> lock(my->cache_mutex, std::try_to_lock_t());
+  if (!lock)
+  {
+    fc::time_point wait_start_time = fc::time_point::now();
+    lock.lock();
+    wait_duration = fc::time_point::now() - wait_start_time;
+  }
+  try
+  {
+    return my->cache.at(merkle_digest).lock();
+  }
+  catch (const std::out_of_range&)
+  {
+    return std::shared_ptr<full_transaction_type>();
+  }
+}
+
+std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(const std::shared_ptr<full_transaction_type>& transaction)
+{
+  fc::optional<fc::microseconds> wait_duration;
+  BOOST_SCOPE_EXIT(&my, &wait_duration) {
+    ++my->total_lock_count;
+    if (wait_duration)
+    {
+      ++my->contended_lock_count;
+      wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
+           ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
+
+    }
+  } BOOST_SCOPE_EXIT_END
+
+  std::unique_lock<std::mutex> lock(my->cache_mutex, std::try_to_lock_t());
+  if (!lock)
+  {
+    fc::time_point wait_start_time = fc::time_point::now();
+    lock.lock();
+    wait_duration = fc::time_point::now() - wait_start_time;
+  }
+
+  auto result = my->cache.insert(std::make_pair(transaction->get_merkle_digest(), transaction));
+  if (result.second) // insert succeeded
+    return transaction;
+  // else there was already an entry, see if it's still valid
+  std::shared_ptr<full_transaction_type> existing_transaction = result.first->second.lock();
+  if (existing_transaction)
+    return existing_transaction;
+  result.first->second = transaction;
+  return transaction;
+}
+
+void full_transaction_cache::remove_from_cache(const hive::protocol::digest_type& merkle_digest)
+{
+  fc::optional<fc::microseconds> wait_duration;
+  BOOST_SCOPE_EXIT(&my, &wait_duration) {
+    ++my->total_lock_count;
+    if (wait_duration)
+    {
+      ++my->contended_lock_count;
+      wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
+           ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
+
+    }
+  } BOOST_SCOPE_EXIT_END
+
+  std::unique_lock<std::mutex> lock(my->cache_mutex, std::try_to_lock_t());
+  if (!lock)
+  {
+    fc::time_point wait_start_time = fc::time_point::now();
+    lock.lock();
+    wait_duration = fc::time_point::now() - wait_start_time;
+  }
+
+  auto iter = my->cache.find(merkle_digest);
+  if (iter != my->cache.end() && 
+      iter->second.expired())
+    my->cache.erase(iter);
+}
+
+/* static */ full_transaction_cache& full_transaction_cache::get_instance()
+{
+  static full_transaction_cache the_cache;
+  return the_cache;
+}
 
 } } // end namespace hive::chain
