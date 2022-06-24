@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, prepare_node_with_witnesses, run_for
+from .local_tools import as_string, run_for
 
 
 WITNESSES_NAMES = [f'witness-{i}' for i in range(20)]  # 21-st is initminer
@@ -32,9 +32,9 @@ CORRECT_VALUES = [
         (WITNESSES_NAMES[0], True),  # bool is treated like numeric (0:1)
     ]
 )
-@run_for('testnet')
-def test_list_witnesses_with_correct_value_in_testnet(prepared_node, witness_account, limit):
-    prepared_node = prepare_node_with_witnesses(WITNESSES_NAMES)
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@pytest.mark.prepare_witnesses_in_node_config(WITNESSES_NAMES)
+def test_list_witnesses_with_correct_value(prepared_node, witness_account, limit):
     prepared_node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
@@ -45,9 +45,9 @@ def test_list_witnesses_with_correct_value_in_testnet(prepared_node, witness_acc
         (WITNESSES_NAMES[0], 1001),
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@pytest.mark.prepare_witnesses_in_node_config(WITNESSES_NAMES)
 def test_list_witnesses_with_incorrect_value(prepared_node, witness_account, limit):
-    prepared_node = prepare_node_with_witnesses(WITNESSES_NAMES)
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
@@ -62,8 +62,8 @@ def test_list_witnesses_with_incorrect_value(prepared_node, witness_account, lim
         (WITNESSES_NAMES[0], 'true'),
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@pytest.mark.prepare_witnesses_in_node_config(WITNESSES_NAMES)
 def test_list_witnesses_with_incorrect_type_of_arguments(prepared_node, witness_account, limit):
-    prepared_node = prepare_node_with_witnesses(WITNESSES_NAMES)
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.list_witnesses(witness_account, limit)

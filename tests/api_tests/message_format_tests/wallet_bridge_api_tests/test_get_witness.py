@@ -2,10 +2,10 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, prepare_node_with_witnesses, run_for
+from .local_tools import as_string, run_for
 
 
-WITNESSES_NAMES = [f'witness-{i}' for i in range(20)]  # 21-st is initminer
+WITNESSES_NAMES = ['blocktrades', 'gtg']
 
 CORRECT_VALUES = [
     WITNESSES_NAMES[0],
@@ -23,10 +23,12 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-@run_for('testnet')
-def test_get_witness_with_correct_value_in_testnet(prepared_node, witness_account):
-    node = prepare_node_with_witnesses(WITNESSES_NAMES)
-    node.api.wallet_bridge.get_witness(witness_account)
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@pytest.mark.prepare_witnesses_in_node_config(WITNESSES_NAMES)
+def test_get_witness_with_correct_value(prepared_node, witness_account):
+    witness = prepared_node.api.wallet_bridge.get_witness(witness_account)
+    if witness is not None:
+        assert len(witness) == 21
 
 
 @pytest.mark.parametrize(
@@ -35,7 +37,8 @@ def test_get_witness_with_correct_value_in_testnet(prepared_node, witness_accoun
         ['example-array']
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@pytest.mark.prepare_witnesses_in_node_config(WITNESSES_NAMES)
 def test_get_witness_with_incorrect_type_of_argument(prepared_node, witness_account):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_witness(witness_account)
