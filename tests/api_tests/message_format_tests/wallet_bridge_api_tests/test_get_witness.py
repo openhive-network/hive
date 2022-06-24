@@ -2,10 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, run_for
-
 from .block_log.generate_block_log import WITNESSES_NAMES
-
+from .local_tools import as_string, run_for
 
 CORRECT_VALUES = [
     WITNESSES_NAMES[0],
@@ -23,7 +21,7 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-@run_for('testnet_replayed')
+@run_for('testnet_replayed', 'mainnet_5m', 'mainnet_64m')
 def test_get_witness_with_correct_value(prepared_node, witness_account):
     prepared_node.api.wallet_bridge.get_witness(witness_account)
 
@@ -34,7 +32,7 @@ def test_get_witness_with_correct_value(prepared_node, witness_account):
         ['example-array']
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_get_witness_with_incorrect_type_of_argument(prepared_node, witness_account):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_witness(witness_account)

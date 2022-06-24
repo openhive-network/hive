@@ -30,7 +30,7 @@ CORRECT_VALUES = [
         (WITNESSES_NAMES[0], True),  # bool is treated like numeric (0:1)
     ]
 )
-@run_for('testnet_replayed')
+@run_for('testnet_replayed', 'mainnet_5m', 'mainnet_64m')
 def test_list_witnesses_with_correct_value(witness_account, limit, prepared_node):
     prepared_node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
@@ -42,7 +42,7 @@ def test_list_witnesses_with_correct_value(witness_account, limit, prepared_node
         (WITNESSES_NAMES[0], 1001),
     ]
 )
-@run_for('testnet_replayed')
+@run_for('testnet_replayed', 'mainnet_5m', 'mainnet_64m')
 def test_list_witnesses_with_incorrect_value(prepared_node, witness_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.list_witnesses(witness_account, limit)
@@ -58,8 +58,7 @@ def test_list_witnesses_with_incorrect_value(prepared_node, witness_account, lim
         (WITNESSES_NAMES[0], 'true'),
     ]
 )
-@run_for('testnet_replayed')
+@run_for('testnet_replayed', 'mainnet_5m', 'mainnet_64m')
 def test_list_witnesses_with_incorrect_type_of_arguments(prepared_node, witness_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.list_witnesses(witness_account, limit)
-
