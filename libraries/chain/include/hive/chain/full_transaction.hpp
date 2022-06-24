@@ -2,6 +2,7 @@
 #include <hive/protocol/transaction.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <hive/protocol/transaction_util.hpp>
+#include <chrono>
 
 namespace hive { namespace chain {
 
@@ -29,18 +30,21 @@ struct full_transaction_type
     mutable fc::optional<hive::protocol::transaction_id_type> transaction_id; // transaction id itself (truncated digest)
     mutable bool validation_attempted = false; // true if validate() has been called & cached
     mutable fc::exception_ptr validation_exception; // if validate() threw, this is what it threw 
+    mutable fc::microseconds validation_computation_time;
     mutable fc::optional<bool> is_packed_in_legacy_format;
+    mutable bool is_in_cache = false;
 
     struct signature_info_type
     {
       hive::protocol::digest_type sig_digest;
       flat_set<hive::protocol::public_key_type> signature_keys;
       std::shared_ptr<fc::exception> signature_keys_exception;
+      fc::microseconds computation_time;
     };
     mutable fc::optional<signature_info_type> signature_info; // if we've computed the public keys that signed the transaction, it's stored here
 
     mutable fc::optional<hive::protocol::required_authorities_type> required_authorities; // if we've figured out who is supposed to sign this tranaction, it's here
-
+    mutable std::chrono::nanoseconds required_authorities_computation_time;
 
     // if this full_transaction was created while deserializing a block, we store
     // containing_block_info, and our signed_transaction and serialized data point
@@ -65,6 +69,8 @@ struct full_transaction_type
 
     hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
   public:
+    ~full_transaction_type();
+
     const hive::protocol::signed_transaction& get_transaction() const;
     const hive::protocol::digest_type& get_merkle_digest() const;
     const hive::protocol::digest_type& get_digest() const;
@@ -83,6 +89,19 @@ struct full_transaction_type
     static std::shared_ptr<full_transaction_type> create_from_signed_transaction(const hive::protocol::signed_transaction& transaction, 
                                                                                  hive::protocol::pack_type serialization_type);
     static std::shared_ptr<full_transaction_type> create_from_serialized_transaction(const char* raw_data, size_t size);
+};
+
+class full_transaction_cache
+{
+  struct impl;
+  std::unique_ptr<impl> my;
+  full_transaction_cache();
+public:
+  std::shared_ptr<full_transaction_type> get_by_merkle_digest(const hive::protocol::digest_type& merkle_digest);
+  std::shared_ptr<full_transaction_type> add_to_cache(const std::shared_ptr<full_transaction_type>& transaction);
+  void remove_from_cache(const hive::protocol::digest_type& merkle_digest);
+
+  static full_transaction_cache& get_instance();
 };
 
 // utility functions to get the transaction signature validation rules for a given block
