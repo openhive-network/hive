@@ -3,6 +3,7 @@
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <boost/scope_exit.hpp>
+#include <boost/lockfree/queue.hpp>
 #include <mutex>
 
 namespace fc {
@@ -138,8 +139,8 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
     }
     validation_computation_time = fc::time_point::now() - computation_start;
     validation_attempted = true;
-    ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
-    idump((get_transaction()));
+    // ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
+    // idump((get_transaction()));
   }
   else
   {
@@ -332,6 +333,13 @@ struct full_transaction_cache::impl
   std::mutex cache_mutex;
   typedef std::map<hive::protocol::digest_type, std::weak_ptr<full_transaction_type>> full_transaction_map_type;
   full_transaction_map_type cache;
+
+  // in the expected use cases, the transactions will be created by the p2p thread, api thread, or other
+  // helper thread.  transactions will usually be deleted by the blockchain worker thread.  instead of locking
+  // to delete, we'll just queue up deletions to happen the next time a transaction is added.  that should move
+  // any contention out of the blockchain worker thread
+  boost::lockfree::queue<hive::protocol::digest_type> digests_to_delete{1000};
+
   std::atomic<uint32_t> total_lock_count = {0};
   std::atomic<uint32_t> contended_lock_count = {0};
 };
@@ -342,10 +350,10 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::get_by_merkle_dig
 {
   fc::optional<fc::microseconds> wait_duration;
   BOOST_SCOPE_EXIT(&my, &wait_duration) {
-    ++my->total_lock_count;
+    my->total_lock_count.fetch_add(1, std::memory_order_relaxed);
     if (wait_duration)
     {
-      ++my->contended_lock_count;
+      my->contended_lock_count.fetch_add(1, std::memory_order_relaxed);
       wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
            ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
 
@@ -373,10 +381,10 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(cons
 {
   fc::optional<fc::microseconds> wait_duration;
   BOOST_SCOPE_EXIT(&my, &wait_duration) {
-    ++my->total_lock_count;
+    my->total_lock_count.fetch_add(1, std::memory_order_relaxed);
     if (wait_duration)
     {
-      ++my->contended_lock_count;
+      my->contended_lock_count.fetch_add(1, std::memory_order_relaxed);
       wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
            ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
 
@@ -390,6 +398,12 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(cons
     lock.lock();
     wait_duration = fc::time_point::now() - wait_start_time;
   }
+
+  my->digests_to_delete.consume_all([&](const hive::protocol::digest_type& digest_to_delete) {
+    auto iter = my->cache.find(digest_to_delete);
+    if (iter != my->cache.end() && iter->second.expired())
+      my->cache.erase(iter);
+  });
 
   auto result = my->cache.insert(std::make_pair(transaction->get_merkle_digest(), transaction));
   if (result.second) // insert succeeded
@@ -404,30 +418,7 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(cons
 
 void full_transaction_cache::remove_from_cache(const hive::protocol::digest_type& merkle_digest)
 {
-  fc::optional<fc::microseconds> wait_duration;
-  BOOST_SCOPE_EXIT(&my, &wait_duration) {
-    ++my->total_lock_count;
-    if (wait_duration)
-    {
-      ++my->contended_lock_count;
-      wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
-           ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
-
-    }
-  } BOOST_SCOPE_EXIT_END
-
-  std::unique_lock<std::mutex> lock(my->cache_mutex, std::try_to_lock_t());
-  if (!lock)
-  {
-    fc::time_point wait_start_time = fc::time_point::now();
-    lock.lock();
-    wait_duration = fc::time_point::now() - wait_start_time;
-  }
-
-  auto iter = my->cache.find(merkle_digest);
-  if (iter != my->cache.end() && 
-      iter->second.expired())
-    my->cache.erase(iter);
+  my->digests_to_delete.push(merkle_digest);
 }
 
 /* static */ full_transaction_cache& full_transaction_cache::get_instance()
