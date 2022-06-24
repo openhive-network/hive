@@ -2,6 +2,8 @@
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <fc/bitutil.hpp>
 
+#include <fc/io/json.hpp>
+
 namespace hive { namespace chain {
 
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_created = {0};
@@ -9,7 +11,7 @@ namespace hive { namespace chain {
 
 full_block_type::full_block_type()
 {
-  ++number_of_instances_created;
+  number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
   if (number_of_instances_created.load() % 10000 == 0)
     ilog("Currently ${count} full_blocks in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
@@ -18,14 +20,14 @@ full_block_type::full_block_type(full_block_type&& rhs) :
   compressed_block(std::move(rhs.compressed_block)),
   decoded_block_storage(std::move(rhs.decoded_block_storage))
 {
-  ++number_of_instances_created;
+  number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
   if (number_of_instances_created.load() % 10000 == 0)
     ilog("Currently ${count} full_blocks in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
 
 full_block_type::~full_block_type()
 {
-  ++number_of_instances_destroyed;
+  number_of_instances_destroyed.fetch_add(1, std::memory_order_relaxed);
 }
 
 void full_block_type::decode()
@@ -118,18 +120,18 @@ void full_block_type::decode()
 }
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_uncompressed_block_data(std::unique_ptr<char[]>&& raw_bytes, size_t raw_size)
-{
+{ try {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
 
   full_block->decoded_block_storage = std::make_shared<decoded_block_storage_type>();
   full_block->decoded_block_storage->uncompressed_block = uncompressed_block_data{std::move(raw_bytes), raw_size};
   full_block->decode();
   return full_block;
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 // temporary helper to construct a full_block from a signed_block, to be deleted 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_signed_block(const signed_block& block)
-{
+{ try {
   // allocate enough storage to hold the block in its packed form
   std::shared_ptr<decoded_block_storage_type> decoded_block_storage = std::make_shared<decoded_block_storage_type>();
   decoded_block_storage->uncompressed_block.raw_size = fc::raw::pack_size(block);
@@ -145,12 +147,12 @@ void full_block_type::decode()
   full_block->decode();
 
   return full_block;
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_block_header_and_transactions(const block_header& header, 
                                                                                                          const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
                                                                                                          const fc::ecc::private_key* signer)
-{
+{ try {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
 
   // start constructing the full block.  The header should be completely filled out, except
@@ -217,7 +219,7 @@ void full_block_type::decode()
   // later, this should be done lazily
   full_block->get_block_id();
   return full_block;
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 const uncompressed_block_data& full_block_type::get_uncompressed_block() const
 {
@@ -350,10 +352,38 @@ uint32_t full_block_type::get_uncompressed_block_size() const
 }
 
 const checksum_type& full_block_type::get_merkle_root() const
-{
+{ try {
   if (!merkle_root)
+  {
     merkle_root = compute_merkle_root(full_transactions);
+    hive::protocol::checksum_type legacy_merkle_root = get_block().legacy_calculate_merkle_root();
+    if (merkle_root != legacy_merkle_root)
+    {
+      wlog("Merkle root mismatch: ${merkle_root} != legacy ${legacy_merkle_root}", (merkle_root)(legacy_merkle_root));
+      wlog("Transaction count in full_transactions: ${full_count}, legacy transactions: ${legacy_count}",
+           ("full_count", full_transactions.size())("legacy_count", get_block().transactions.size()));
+      if (full_transactions.size() == get_block().transactions.size())
+      {
+        for (unsigned i = 0; i < full_transactions.size(); ++i)
+        {
+          digest_type full_merkle_digest = full_transactions[i]->get_merkle_digest();
+          digest_type legacy_merkle_digest = get_block().transactions[i].merkle_digest();
+          wlog("[${i}]: ${match} ${full_merkle_digest} legacy ${legacy_merkle_digest}",
+               (i)("match", full_merkle_digest == legacy_merkle_digest ? "good" : "BAD ")(full_merkle_digest)(legacy_merkle_digest));
+          if (full_merkle_digest != legacy_merkle_digest)
+          {
+            wdump((full_transactions[i]->get_transaction_id())(get_block().transactions[i].id()));
+            wdump((full_transactions[i]->get_transaction())(get_block().transactions[i]));
+          }
+        }
+      }
+      
+    }
+    try {
+      FC_ASSERT(merkle_root == legacy_merkle_root);
+    } FC_CAPTURE_LOG_AND_RETHROW((merkle_root)(legacy_merkle_root))
+  }
   return *merkle_root;
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 } } // end namespace hive::chain
