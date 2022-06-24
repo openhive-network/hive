@@ -32,7 +32,6 @@ def test_get_witness_with_correct_value(node, witness_account, should_prepare):
 
 @pytest.mark.parametrize(
     'witness_account', [
-
         ['example-array']
     ]
 )
