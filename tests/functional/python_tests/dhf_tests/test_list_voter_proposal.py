@@ -8,7 +8,7 @@ from beembase.operations import Update_proposal_votes
 import dateutil.parser
 import test_tools as tt
 
-from .conftest import CREATOR
+from .conftest import CREATOR, NodeClientMaker
 from .test_utils import get_permlink
 from ... import hive_utils
 
@@ -121,7 +121,7 @@ def list_voter_proposals(node, account, limit=1000, last_id=None):
     return ids
 
 
-def test_list_voter_proposal(node):
+def test_list_voter_proposal(node_client: NodeClientMaker):
     # account = {"name" : "tester001", "private_key" : "", "public_key" : ""}
     account = {
         "name": "tester001",
@@ -129,11 +129,7 @@ def test_list_voter_proposal(node):
         "public_key": "TST8VfiahQsfS1TLcnBfp4NNfdw67uWweYbbUXymbNiDXVDrzUs7J",
     }
 
-    wif = tt.Account("initminer").private_key
-    node_url = f"http://{node.http_endpoint}"
-    keys = [wif, account["private_key"]]
-
-    node_client = Hive(node=node_url, no_broadcast=False, keys=keys)
+    node_client = node_client(accounts=[account])
 
     # create accounts
     create_accounts(node_client, CREATOR, account)

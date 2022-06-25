@@ -5,7 +5,7 @@ from beem.account import Account
 from beembase.operations import Create_proposal
 import test_tools as tt
 
-from .conftest import CREATOR, TREASURY
+from .conftest import CREATOR, NodeClientMaker, TREASURY
 from ... import hive_utils
 
 START_END_SUBJECTS = [
@@ -289,12 +289,8 @@ def list_proposals_test(node_client, creator):
     assert len(proposals) == len(START_END_SUBJECTS)
 
 
-def test_list_proposals(node):
-    wif = tt.Account("initminer").private_key
-    node_url = f"http://{node.http_endpoint}"
-    keys = [wif]
-
-    node_client = Hive(node=node_url, no_broadcast=False, keys=keys)
+def test_list_proposals(node_client: NodeClientMaker):
+    node_client = node_client()
 
     create_proposals(node_client, CREATOR, TREASURY)
     list_proposals_test(node_client, CREATOR)

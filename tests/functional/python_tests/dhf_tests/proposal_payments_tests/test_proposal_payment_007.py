@@ -5,7 +5,7 @@ import test_tools as tt
 from beembase.operations import Update_proposal_votes
 
 from .. import test_utils
-from ..conftest import CREATOR, TREASURY
+from ..conftest import CREATOR, NodeClientMaker, TREASURY
 from .... import hive_utils
 
 
@@ -31,7 +31,7 @@ def unvote_proposals(node, accounts, wif):
 # 4. Unvote one of the proposal duting payment phase
 # 4. verify (using account history and by checking regular account balance) that given accounts have been correctly paid
 # Expected result: all got paid.
-def test_proposal_payment_007(node):
+def test_proposal_payment_007(node_client: NodeClientMaker):
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {
@@ -57,12 +57,7 @@ def test_proposal_payment_007(node):
     ]
 
     wif = tt.Account("initminer").private_key
-    node_url = f"http://{node.http_endpoint}"
-    keys = [wif]
-    for account in accounts:
-        keys.append(account["private_key"])
-
-    node_client = Hive(node=node_url, no_broadcast=False, keys=keys)
+    node_client = node_client(accounts=accounts)
 
     test_utils.create_accounts(node_client, CREATOR, accounts)
     test_utils.transfer_to_vesting(node_client, CREATOR, accounts, "300.000", "TESTS")
