@@ -12,13 +12,13 @@ import dateutil.parser
 import test_tools as tt
 
 from . import test_utils
-from .conftest import CREATOR, TREASURY
+from .conftest import CREATOR, NodeClientMaker, TREASURY
 from ... import hive_utils
 
 
 def create_proposal(node, creator_account, receiver_account, wif, subject):
     tt.logger.info("Testing: create_proposal")
-    s = Hive(node=node, no_broadcast=False, keys=[wif])
+    s = node
 
     now = datetime.datetime.now()
 
@@ -73,7 +73,7 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
 
 def list_proposals(node, account, wif, subject):
     tt.logger.info("Testing: list_proposals")
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
     # list inactive proposals, our proposal shoud be here
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
     found = None
@@ -105,7 +105,7 @@ def list_proposals(node, account, wif, subject):
 
 def find_proposals(node, account, wif, subject):
     tt.logger.info("Testing: find_proposals")
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
     # first we will find our special proposal and get its proposal_id
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
@@ -123,7 +123,7 @@ def find_proposals(node, account, wif, subject):
 
 def vote_proposal(node, account, wif, subject):
     tt.logger.info("Testing: vote_proposal")
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
     # first we will find our special proposal and get its proposal_id
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
@@ -154,7 +154,7 @@ def vote_proposal(node, account, wif, subject):
 
 def list_voter_proposals(node, account, wif, subject):
     tt.logger.info("Testing: list_voter_proposals")
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
     voter_proposals = s.rpc.list_proposal_votes([account], 1000, "by_voter_proposal", "ascending", "inactive")
 
     found = None
@@ -167,7 +167,7 @@ def list_voter_proposals(node, account, wif, subject):
 
 def remove_proposal(node, account, wif, subject):
     tt.logger.info("Testing: remove_proposal")
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
     # first we will find our special proposal and get its proposal_id
     proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
@@ -210,7 +210,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
     #   in real life scenatio pagination scheme with limit set to value lower than "k" will be showing
     #   the same results and will hang
     # 4 then we will use newly introduced last_id field, we should see diferent set of proposals
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
 
     try:
         creator = Account(creator_account, hive_instance=s)
@@ -248,7 +248,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
         except Exception as ex:
             tt.logger.exception(f"Exception: {ex}")
             raise ex
-    hive_utils.common.wait_n_blocks(node, 5)
+    hive_utils.common.wait_n_blocks(s.rpc.url, 5)
 
     start_date = test_utils.date_to_iso(now + datetime.timedelta(days=5))
 
@@ -306,11 +306,11 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
             except Exception as ex:
                 tt.logger.exception(f"Exception: {ex}")
                 raise ex
-            hive_utils.common.wait_n_blocks(node, 3)
+            hive_utils.common.wait_n_blocks(s.rpc.url, 3)
 
 
 def update_proposal(node, creator, wif):
-    s = Hive(node=[node], no_broadcast=False, keys=[wif])
+    s = node
 
     tt.logger.info("Testing: update_proposal without updating the end date")
     proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
@@ -331,7 +331,7 @@ def update_proposal(node, creator, wif):
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
-    hive_utils.common.wait_n_blocks(node, 3)
+    hive_utils.common.wait_n_blocks(s.rpc.url, 3)
 
     proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
@@ -357,31 +357,31 @@ def update_proposal(node, creator, wif):
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
-    hive_utils.common.wait_n_blocks(node, 3)
+    hive_utils.common.wait_n_blocks(s.rpc.url, 3)
 
     proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
     assert proposals[0]["end_date"] == end_date, "End date doesn't match"
 
 
-def test_beem_dhf(node):
+def test_beem_dhf(node_client: NodeClientMaker):
     no_erase_proposal = True
 
     wif = tt.Account("initminer").private_key
-    node_url = f"http://{node.http_endpoint}"
+    node_client = node_client()
 
     subject = str(uuid4())
     tt.logger.info(f"Subject of testing proposal is set to: {subject}")
 
-    create_proposal(node_url, CREATOR, TREASURY, wif, subject)
-    hive_utils.common.wait_n_blocks(node_url, 3)
-    list_proposals(node_url, CREATOR, wif, subject)
-    find_proposals(node_url, CREATOR, wif, subject)
-    vote_proposal(node_url, CREATOR, wif, subject)
-    list_voter_proposals(node_url, CREATOR, wif, subject)
-    hive_utils.common.wait_n_blocks(node_url, 3)
+    create_proposal(node_client, CREATOR, TREASURY, wif, subject)
+    hive_utils.common.wait_n_blocks(node_client.rpc.url, 3)
+    list_proposals(node_client, CREATOR, wif, subject)
+    find_proposals(node_client, CREATOR, wif, subject)
+    vote_proposal(node_client, CREATOR, wif, subject)
+    list_voter_proposals(node_client, CREATOR, wif, subject)
+    hive_utils.common.wait_n_blocks(node_client.rpc.url, 3)
     if not no_erase_proposal:
-        remove_proposal(node_url, CREATOR, wif, subject)
-    iterate_results_test(node_url, CREATOR, TREASURY, wif, str(uuid4()), no_erase_proposal)
-    hive_utils.common.wait_n_blocks(node_url, 3)
-    update_proposal(node_url, CREATOR, wif)
+        remove_proposal(node_client, CREATOR, wif, subject)
+    iterate_results_test(node_client, CREATOR, TREASURY, wif, str(uuid4()), no_erase_proposal)
+    hive_utils.common.wait_n_blocks(node_client.rpc.url, 3)
+    update_proposal(node_client, CREATOR, wif)

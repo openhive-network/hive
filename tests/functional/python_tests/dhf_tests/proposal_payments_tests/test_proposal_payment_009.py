@@ -6,7 +6,7 @@ import test_tools as tt
 
 from .conftest import vote_proposals
 from .. import test_utils
-from ..conftest import CREATOR, TREASURY
+from ..conftest import CREATOR, NodeClientMaker, TREASURY
 from .... import hive_utils
 
 
@@ -15,7 +15,7 @@ from .... import hive_utils
 # 2. vote on them to show differences in asset distribution, one voter sets the other as the proxy
 # 3. wait for proposal payment phase
 # 4. verify (using account history and by checking regular account balance) that given accounts have been correctly paid
-def test_proposal_payment_009(node):
+def test_proposal_payment_009(node_client: NodeClientMaker):
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {
@@ -41,12 +41,7 @@ def test_proposal_payment_009(node):
     ]
 
     wif = tt.Account("initminer").private_key
-    node_url = f"http://{node.http_endpoint}"
-    keys = [wif]
-    for account in accounts:
-        keys.append(account["private_key"])
-
-    node_client = Hive(node=node_url, no_broadcast=False, keys=keys)
+    node_client = node_client(accounts=accounts)
 
     # create accounts
     test_utils.create_accounts(node_client, CREATOR, accounts)

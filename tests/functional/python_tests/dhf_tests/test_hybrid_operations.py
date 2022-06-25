@@ -6,7 +6,7 @@ from beembase import operations
 import pytest
 import test_tools as tt
 
-from .conftest import CREATOR
+from .conftest import CREATOR, node_client, NodeClientMaker
 from ... import hive_utils
 
 
@@ -31,7 +31,7 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
-def test_hybrid_operations(node):
+def test_hybrid_operations(node_client: NodeClientMaker):
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {
@@ -41,14 +41,7 @@ def test_hybrid_operations(node):
         },
     ]
 
-    wif = tt.Account("initminer").private_key
-    node_url = f"http://{node.http_endpoint}"
-    keys = [wif]
-
-    for account in accounts:
-        keys.append(account["private_key"])
-
-    node_client = Hive(node=[node_url], no_broadcast=False, keys=keys)
+    node_client = node_client(accounts=accounts)
 
     tt.logger.info("Chain prefix is: {}".format(node_client.prefix))
     tt.logger.info("Chain ID is: {}".format(node_client.get_config()["HIVE_CHAIN_ID"]))
