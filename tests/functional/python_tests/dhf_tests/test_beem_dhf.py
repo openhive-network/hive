@@ -18,25 +18,23 @@ from ... import hive_utils
 
 def create_proposal(node, creator_account, receiver_account, wif, subject):
     tt.logger.info("Testing: create_proposal")
-    s = node
-
     now = datetime.datetime.now()
 
     start_date, end_date = test_utils.get_start_and_end_date(now, 10, 2)
 
     try:
-        creator = Account(creator_account, hive_instance=s)
+        creator = Account(creator_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {creator_account} not found. {ex}")
         raise ex
 
     try:
-        receiver = Account(receiver_account, hive_instance=s)
+        receiver = Account(receiver_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {receiver_account} not found. {ex}")
         raise ex
 
-    ret = s.post(
+    ret = node.post(
         "Hivepy proposal title",
         "Hivepy proposal body",
         creator["name"],
@@ -57,7 +55,7 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
     )
     ret = None
     try:
-        ret = s.finalizeOp(op, creator["name"], "active")
+        ret = node.finalizeOp(op, creator["name"], "active")
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
@@ -73,9 +71,8 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
 
 def list_proposals(node, account, wif, subject):
     tt.logger.info("Testing: list_proposals")
-    s = node
     # list inactive proposals, our proposal shoud be here
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
     found = None
     for proposal in proposals:
         if proposal["subject"] == subject:
@@ -84,7 +81,7 @@ def list_proposals(node, account, wif, subject):
     assert found is not None
 
     # list active proposals, our proposal shouldnt be here
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "active")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "active")
     found = None
     for proposal in proposals:
         if proposal["subject"] == subject:
@@ -93,7 +90,7 @@ def list_proposals(node, account, wif, subject):
     assert found is None
 
     # list all proposals, our proposal should be here
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "all")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "all")
 
     found = None
     for proposal in proposals:
@@ -105,9 +102,8 @@ def list_proposals(node, account, wif, subject):
 
 def find_proposals(node, account, wif, subject):
     tt.logger.info("Testing: find_proposals")
-    s = node
     # first we will find our special proposal and get its proposal_id
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
@@ -117,15 +113,14 @@ def find_proposals(node, account, wif, subject):
     assert found is not None
     proposal_id = int(found["proposal_id"])
 
-    ret = s.rpc.find_proposals([proposal_id])
+    ret = node.rpc.find_proposals([proposal_id])
     assert ret[0]["subject"] == found["subject"]
 
 
 def vote_proposal(node, account, wif, subject):
     tt.logger.info("Testing: vote_proposal")
-    s = node
     # first we will find our special proposal and get its proposal_id
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
@@ -141,7 +136,7 @@ def vote_proposal(node, account, wif, subject):
 
     ret = None
     try:
-        ret = s.finalizeOp(op, account, "active")
+        ret = node.finalizeOp(op, account, "active")
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
@@ -149,13 +144,12 @@ def vote_proposal(node, account, wif, subject):
     assert ret["operations"][0][1]["voter"] == account
     assert ret["operations"][0][1]["proposal_ids"][0] == proposal_id
     assert ret["operations"][0][1]["approve"] == True
-    hive_utils.common.wait_n_blocks(s.rpc.url, 2)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 2)
 
 
 def list_voter_proposals(node, account, wif, subject):
     tt.logger.info("Testing: list_voter_proposals")
-    s = node
-    voter_proposals = s.rpc.list_proposal_votes([account], 1000, "by_voter_proposal", "ascending", "inactive")
+    voter_proposals = node.rpc.list_proposal_votes([account], 1000, "by_voter_proposal", "ascending", "inactive")
 
     found = None
     for proposals in voter_proposals:
@@ -167,9 +161,8 @@ def list_voter_proposals(node, account, wif, subject):
 
 def remove_proposal(node, account, wif, subject):
     tt.logger.info("Testing: remove_proposal")
-    s = node
     # first we will find our special proposal and get its proposal_id
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
@@ -185,13 +178,13 @@ def remove_proposal(node, account, wif, subject):
     op = Remove_proposal(**{"voter": account, "proposal_owner": account, "proposal_ids": [proposal_id]})
 
     try:
-        s.finalizeOp(op, account, "active")
+        node.finalizeOp(op, account, "active")
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
 
     # try to find our special proposal
-    proposals = s.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
+    proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
 
     found = None
     for proposal in proposals:
@@ -210,16 +203,14 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
     #   in real life scenatio pagination scheme with limit set to value lower than "k" will be showing
     #   the same results and will hang
     # 4 then we will use newly introduced last_id field, we should see diferent set of proposals
-    s = node
-
     try:
-        creator = Account(creator_account, hive_instance=s)
+        creator = Account(creator_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {creator_account} not found. {ex}")
         raise ex
 
     try:
-        receiver = Account(receiver_account, hive_instance=s)
+        receiver = Account(receiver_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {receiver_account} not found. {ex}")
         raise ex
@@ -244,16 +235,16 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
             }
         )
         try:
-            s.finalizeOp(op, creator["name"], "active")
+            node.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
             tt.logger.exception(f"Exception: {ex}")
             raise ex
-    hive_utils.common.wait_n_blocks(s.rpc.url, 5)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
     start_date = test_utils.date_to_iso(now + datetime.timedelta(days=5))
 
     # 2 then we will list proposals starting from kth proposal with limit set to m < k
-    proposals = s.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all")
+    proposals = node.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all")
     assert len(proposals) == 3, f"Expected {3} elements got {len(proposals)}"
     ids = []
     for proposal in proposals:
@@ -264,7 +255,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
     assert len(ids) == 3, f"Expected {3} elements got {len(ids)}"
 
     # 3 we list proposals again with the same conditiona as in 2, we should get the same set of results
-    proposals = s.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all")
+    proposals = node.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all")
     assert len(proposals) == 3, f"Expected {3} elements got {len(proposals)}"
     oids = []
     for proposal in proposals:
@@ -279,7 +270,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
         assert id in oids, f"Id not found in expected results array {id}"
 
     # 4 then we will use newly introduced last_id field, we should see diferent set of proposals
-    proposals = s.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all", oids[-1])
+    proposals = node.rpc.list_proposals([start_date], 3, "by_start_date", "descending", "all", oids[-1])
 
     start_date, end_date = test_utils.get_start_and_end_date(now, 5, 4)
 
@@ -295,25 +286,23 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
     if not remove:
         start_date = test_utils.date_to_iso(now + datetime.timedelta(days=6))
         for _ in range(0, 2):
-            proposals = s.list_proposals([start_date], 5, "by_start_date", "descending", "all")
+            proposals = node.list_proposals([start_date], 5, "by_start_date", "descending", "all")
             ids = []
             for proposal in proposals:
                 ids.append(int(proposal["proposal_id"]))
 
             op = Remove_proposal(**{"voter": creator["name"], "proposal_ids": ids})
             try:
-                s.finalizeOp(op, creator["name"], "active")
+                node.finalizeOp(op, creator["name"], "active")
             except Exception as ex:
                 tt.logger.exception(f"Exception: {ex}")
                 raise ex
-            hive_utils.common.wait_n_blocks(s.rpc.url, 3)
+            hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
 
 def update_proposal(node, creator, wif):
-    s = node
-
     tt.logger.info("Testing: update_proposal without updating the end date")
-    proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
+    proposals = node.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
     new_subject = "Some new proposal subject"
     new_daily_pay = "15.000 TBD"
@@ -327,13 +316,13 @@ def update_proposal(node, creator, wif):
         }
     )
     try:
-        s.finalizeOp(op, creator, "active")
+        node.finalizeOp(op, creator, "active")
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
-    hive_utils.common.wait_n_blocks(s.rpc.url, 3)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
-    proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
+    proposals = node.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
     assert proposals[0]["subject"] == new_subject, "Subjects dont match"
     assert proposals[0]["daily_pay"] == new_daily_pay, "daily pay dont match"
@@ -353,13 +342,13 @@ def update_proposal(node, creator, wif):
         }
     )
     try:
-        s.finalizeOp(op, creator, "active")
+        node.finalizeOp(op, creator, "active")
     except Exception as ex:
         tt.logger.exception(f"Exception: {ex}")
         raise ex
-    hive_utils.common.wait_n_blocks(s.rpc.url, 3)
+    hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
-    proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
+    proposals = node.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     print(proposals[0])
     assert proposals[0]["end_date"] == end_date, "End date doesn't match"
 
