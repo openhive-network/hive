@@ -1,5 +1,6 @@
-from typing import Final
+from typing import Final, List, Protocol
 
+from beem import Hive
 from beembase.operations import Create_proposal
 import pytest
 import test_tools as tt
@@ -48,3 +49,25 @@ def node():
     init_node = tt.InitNode()
     init_node.run()
     return init_node
+
+
+class NodeClientMaker(Protocol):
+    def __call__(self, accounts: List[dict] = None) -> Hive:
+        pass
+
+
+@pytest.fixture
+def node_client(node, worker_id) -> NodeClientMaker:
+    def _node_client(accounts: List[dict] = None) -> Hive:
+        accounts = accounts or []
+
+        wif = tt.Account("initminer").private_key
+        keys = [wif]
+
+        for account in accounts:
+            keys.append(account["private_key"])
+
+        node_url = f"http://{node.http_endpoint}"
+        return Hive(node=node_url, no_broadcast=False, keys=keys, profile=worker_id)
+
+    return _node_client
