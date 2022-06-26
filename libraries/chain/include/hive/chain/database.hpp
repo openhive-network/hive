@@ -256,7 +256,6 @@ namespace chain {
       optional<signed_block_header> fetch_block_header_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       optional<signed_block>     fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<signed_block>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
-      const signed_transaction   get_recent_transaction( const transaction_id_type& trx_id )const;
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.

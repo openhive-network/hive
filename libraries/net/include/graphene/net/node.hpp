@@ -59,6 +59,7 @@ namespace graphene { namespace net {
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
     */
+   #define  DEFAULT_MAX_BLOCK_IDS_TO_FETCH 50000
    class node_delegate
    {
       public:
@@ -122,7 +123,7 @@ namespace graphene { namespace net {
           */
          virtual std::vector<item_hash_t> get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
                                                         uint32_t& remaining_item_count,
-                                                        uint32_t limit = 2000) = 0;
+                                                        uint32_t limit = DEFAULT_MAX_BLOCK_IDS_TO_FETCH) = 0;
 
          /**
           *  Given the hash of the requested data, fetch the body.
