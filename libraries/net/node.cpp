@@ -364,7 +364,7 @@ namespace graphene { namespace net {
       void handle_transaction( const graphene::net::trx_message& transaction_message ) override;
       std::vector<item_hash_t> get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
                                              uint32_t& remaining_item_count,
-                                             uint32_t limit = 2000) override;
+                                             uint32_t limit = DEFAULT_MAX_BLOCK_IDS_TO_FETCH) override;
       message get_item( const item_id& id ) override;
       std::vector<item_hash_t> get_blockchain_synopsis(const item_hash_t& reference_point,
                                                        uint32_t number_of_blocks_after_reference_point) override;
@@ -2880,10 +2880,12 @@ namespace graphene { namespace net {
         {
            // it wasn't in our local cache, that's ok ask the client
         }
-
+        
         item_id item_to_fetch(fetch_items_message_received.item_type, item_hash);
         try
         {
+          if (fetch_items_message_received.item_type != block_message_type)
+            FC_THROW_EXCEPTION(fc::key_not_found_exception, "transaction not found in p2p cache");
           message requested_message = _delegate->get_item(item_to_fetch);
           dlog("received item request from peer ${endpoint}, returning the item from delegate with id ${id} size ${size}",
                ("id", requested_message.id())

@@ -248,6 +248,8 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
   }
 } FC_CAPTURE_AND_RETHROW((blockchain_synopsis)(remaining_item_count)(limit)) }
 
+//This function can only build block messages, otherwise it will throw key not found exception. Eventually
+//this and associated code should stop trying to be partially item_type agnostic.
 graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& id )
 { try {
   if (id.item_type == graphene::net::block_message_type)
@@ -261,11 +263,8 @@ graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& 
     fc_dlog(fc::logger::get("chainlock"),"Serving up block #${num}", ("num", opt_block->block_num()));
     return block_message(*opt_block);
   }
-  fc_dlog(fc::logger::get("chainlock"),"get_item getting a transaction will get a db read lock");
-  return chain.db().with_read_lock( [&]()
-  {
-    return trx_message( chain.db().get_recent_transaction( id.item_hash ) );
-  });
+  else
+    FC_THROW_EXCEPTION(fc::key_not_found_exception, "item not found");   
 } FC_CAPTURE_AND_RETHROW( (id) ) }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
