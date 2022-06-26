@@ -715,6 +715,16 @@ namespace hive { namespace chain {
 
         --block_index;
         block_log_offset_of_block_pos = block_pos - sizeof(uint64_t);
+
+        // Arbitrary number, logging once every 100k doesn't affect performance in a meaningful way and provides granular enough info
+        if (block_index % 100000 == 0) {
+          auto val = 100-(float)(block_index - reindex_through_block_number) / head_block_num * 100.0;
+          // Needed to have a clean two decimal number displayed
+          char index_progress_value[40];
+          sprintf(index_progress_value, "%.2f", val);
+          ilog("Indexed block: ${idx}, progress: ${percent} %", ("idx", block_index)("percent", index_progress_value));
+        }
+
       } //while writing block index
       if (appbase::app().is_interrupt_request())
       {
