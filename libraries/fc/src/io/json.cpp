@@ -10,6 +10,9 @@
 #include <fstream>
 #include <sstream>
 
+//#define SIMDJSON_DEVELOPMENT_CHECKS 1
+#include <simdjson.h>
+
 #include <boost/filesystem/fstream.hpp>
 
 namespace fc
@@ -935,4 +938,179 @@ namespace fc
       return false;
    }
 
+   namespace
+   {
+      variant parse_element(simdjson::ondemand::value element) {
+         switch (element.type()) {
+            case simdjson::ondemand::json_type::array:
+               {
+                  variants arr;
+                  arr.reserve(element.count_elements());
+                  auto array = element.get_array();
+                  std::transform(array.begin(), array.end(), std::back_inserter(arr), parse_element);
+                  return arr;
+               }
+            case simdjson::ondemand::json_type::object:
+               {
+                  mutable_variant_object obj;
+                  auto object = element.get_object();
+                  std::for_each(object.begin(), object.end(), [&obj](simdjson::ondemand::field field) {
+                     variant value = parse_element(field.value());
+                     obj(std::string((std::string_view)field.unescaped_key()), std::move(value));
+                  });
+                  return obj;
+               }
+            case simdjson::ondemand::json_type::number:
+               switch (element.get_number_type()) {
+                  case simdjson::ondemand::number_type::signed_integer:
+                     return variant((int64_t)element.get_int64());
+                  case simdjson::ondemand::number_type::unsigned_integer:
+                     return variant((uint64_t)element.get_uint64());
+                  case simdjson::ondemand::number_type::floating_point_number:
+                  default:
+                     return variant((double)element.get_double());
+               }
+            case simdjson::ondemand::json_type::string:
+               return variant(std::string((std::string_view)element.get_string()));
+            case simdjson::ondemand::json_type::boolean:
+               return variant((bool)element.get_bool());
+            case simdjson::ondemand::json_type::null:
+               return variant(nullptr);
+            default:
+               FC_THROW("Encountered an unknown type during json parsing");
+         }
+      }
+      variant parse_document(simdjson::ondemand::document& doc) {
+         switch (doc.type()) {
+            case simdjson::ondemand::json_type::number:
+               switch (doc.get_number_type()) {
+                  case simdjson::ondemand::number_type::signed_integer:
+                     return variant((int64_t)doc.get_int64());
+                  case simdjson::ondemand::number_type::unsigned_integer:
+                     return variant((uint64_t)doc.get_uint64());
+                  case simdjson::ondemand::number_type::floating_point_number:
+                  default:
+                     return variant((double)doc.get_double());
+               }
+            case simdjson::ondemand::json_type::string:
+               {
+                  std::string_view string_value = doc.get_string();
+                  return variant(std::string(string_value));
+               }
+            case simdjson::ondemand::json_type::boolean:
+               {
+                  bool bool_value = doc.get_bool();
+                  return variant(bool_value);
+               }
+            case simdjson::ondemand::json_type::null:
+               return variant(nullptr);
+            default:
+               return parse_element(doc);
+         }
+      }
+   } // end anonymous namespace
+
+   variant json::fast_from_string(const std::string& string_to_parse)
+   { try {
+     assert(string_to_parse.capacity() - string_to_parse.size() >= simdjson::SIMDJSON_PADDING);
+     FC_ASSERT(string_to_parse.capacity() - string_to_parse.size() >= simdjson::SIMDJSON_PADDING, 
+               "this function requires the input to have ${bytes} bytes of extra padding", 
+               ("bytes", simdjson::SIMDJSON_PADDING));
+     thread_local simdjson::ondemand::parser parser;
+     simdjson::ondemand::document doc = parser.iterate(string_to_parse);
+     return parse_document(doc);
+   } FC_CAPTURE_AND_RETHROW((string_to_parse)) }
+
+   namespace
+   {
+      void validate_element(simdjson::ondemand::value element) {
+         switch (element.type()) {
+            case simdjson::ondemand::json_type::array:
+               {
+                  auto array = element.get_array();
+                  std::for_each(array.begin(), array.end(), validate_element);
+                  break;
+               }
+            case simdjson::ondemand::json_type::object:
+               {
+                  auto object = element.get_object();
+                  std::for_each(object.begin(), object.end(), [](simdjson::ondemand::field field) {
+                     (void)field.unescaped_key().value();
+                     validate_element(field.value());
+                  });
+                  break;
+               }
+            case simdjson::ondemand::json_type::number:
+               switch (element.get_number_type()) {
+                 case simdjson::ondemand::number_type::signed_integer:
+                   (void)element.get_int64().value();
+                   break;
+                 case simdjson::ondemand::number_type::unsigned_integer:
+                   (void)element.get_uint64().value();
+                   break;
+                 case simdjson::ondemand::number_type::floating_point_number:
+                 default:
+                   (void)element.get_double().value();
+               }
+               break;
+            case simdjson::ondemand::json_type::string:
+               (void)element.get_string().value();
+               break;
+            case simdjson::ondemand::json_type::boolean:
+               (void)element.get_bool().value();
+               break;
+            case simdjson::ondemand::json_type::null:
+               (void)element.get_string().value();
+               break;
+            default:
+               FC_THROW("Encountered an unknown type during json parsing");
+         }
+      }
+      void validate_document(simdjson::ondemand::document& doc) {
+         switch (doc.type()) {
+            case simdjson::ondemand::json_type::number:
+               switch (doc.get_number_type()) {
+                 case simdjson::ondemand::number_type::signed_integer:
+                   (void)doc.get_int64().value();
+                   break;
+                 case simdjson::ondemand::number_type::unsigned_integer:
+                   (void)doc.get_uint64().value();
+                   break;
+                 case simdjson::ondemand::number_type::floating_point_number:
+                 default:
+                   (void)doc.get_double().value();
+               }
+               break;
+            case simdjson::ondemand::json_type::string:
+               (void)doc.get_string().value();
+               break;
+            case simdjson::ondemand::json_type::boolean:
+               (void)doc.get_bool().value();
+               break;
+            case simdjson::ondemand::json_type::null:
+               (void)doc.get_string().value();
+               break;
+            default:
+               return validate_element(doc);
+         }
+      }
+   } // end anonymous namespace
+   bool json::fast_is_valid(const std::string& string_to_validate)
+   {
+     assert(string_to_validate.capacity() - string_to_validate.size() >= simdjson::SIMDJSON_PADDING);
+     FC_ASSERT(string_to_validate.capacity() - string_to_validate.size() >= simdjson::SIMDJSON_PADDING, 
+               "this function requires the input to have ${bytes} bytes of extra padding", 
+               ("bytes", simdjson::SIMDJSON_PADDING));
+     thread_local simdjson::ondemand::parser parser;
+     try
+     {
+        simdjson::ondemand::document doc = parser.iterate(string_to_validate);
+        validate_document(doc);
+        return true;
+     }
+     catch (...)
+     {
+        return false;
+     }
+   }
 } // fc

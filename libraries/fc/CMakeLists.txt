@@ -255,6 +255,7 @@ set( fc_sources
      src/reflect/typename.cpp
      vendor/cyoencode-1.0.2/src/CyoDecode.c
      vendor/cyoencode-1.0.2/src/CyoEncode.c
+     vendor/simdjson/simdjson.cpp
      )
 
 file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
@@ -381,6 +382,7 @@ SET( public_includes
 SET( private_includes
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src

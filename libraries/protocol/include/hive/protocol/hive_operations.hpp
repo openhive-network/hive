@@ -4,11 +4,11 @@
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/validation.hpp>
 #include <hive/protocol/legacy_asset.hpp>
+#include <hive/protocol/json_string.hpp>
 
 #include <fc/crypto/equihash.hpp>
 
 namespace hive { namespace protocol {
-
   void validate_auth_size( const authority& a );
 
   struct account_create_operation : public base_operation
@@ -20,7 +20,7 @@ namespace hive { namespace protocol {
     authority         active;
     authority         posting;
     public_key_type   memo_key;
-    string            json_metadata;
+    json_string       json_metadata;
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(creator); }
@@ -37,7 +37,7 @@ namespace hive { namespace protocol {
     authority         active;
     authority         posting;
     public_key_type   memo_key;
-    string            json_metadata;
+    json_string       json_metadata;
 
     extensions_type   extensions;
 
@@ -53,7 +53,7 @@ namespace hive { namespace protocol {
     optional< authority >         active;
     optional< authority >         posting;
     public_key_type               memo_key;
-    string                        json_metadata;
+    json_string                   json_metadata;
 
     void validate()const;
 
@@ -71,8 +71,8 @@ namespace hive { namespace protocol {
     optional< authority >         active;
     optional< authority >         posting;
     optional< public_key_type >   memo_key;
-    string                        json_metadata;
-    string                        posting_json_metadata;
+    json_string                   json_metadata;
+    json_string                   posting_json_metadata;
 
     extensions_type               extensions;
 
@@ -98,7 +98,7 @@ namespace hive { namespace protocol {
 
     string            title;
     string            body;
-    string            json_metadata;
+    json_string       json_metadata;
 
     void validate()const;
     void get_required_posting_authorities( flat_set<account_name_type>& a )const{ a.insert(author); }
@@ -245,7 +245,7 @@ namespace hive { namespace protocol {
     authority         active;
     authority         posting;
     public_key_type   memo_key;
-    string            json_metadata;
+    json_string       json_metadata;
     extensions_type   extensions;
 
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( creator ); }
@@ -328,7 +328,7 @@ namespace hive { namespace protocol {
     time_point_sec    ratification_deadline;
     time_point_sec    escrow_expiration;
 
-    string            json_meta;
+    json_string       json_meta;
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
@@ -586,7 +586,6 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_auths ) a.insert(i); }
   };
 
-
   /** serves the same purpose as custom_operation but also supports required posting authorities. Unlike custom_operation,
     * this operation is designed to be human readable/developer friendly.
     **/
@@ -595,7 +594,7 @@ namespace hive { namespace protocol {
     flat_set< account_name_type > required_auths;
     flat_set< account_name_type > required_posting_auths;
     custom_id_type                id; ///< must be less than 32 characters long
-    string                        json; ///< must be proper utf8 / JSON string.
+    json_string                   json; ///< must be proper utf8 / JSON string.
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_auths ) a.insert(i); }
