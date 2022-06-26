@@ -46,56 +46,6 @@ using namespace hive::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( serialization_tests, clean_database_fixture )
 
-BOOST_AUTO_TEST_CASE(transaction_object_test)
-{
-  ACTORS((alice)(bob))
-  transfer_operation op;
-  op.from = "alice";
-  op.to = "bob";
-  op.amount = asset(100, HIVE_SYMBOL);
-
-  trx.operations.push_back(op);
-
-  auto& index = db->get_mutable_index<hive::chain::transaction_index>();
-
-  const auto& txo = db->create<hive::chain::transaction_object>([&](chain::transaction_object& transaction) {
-    transaction.trx_id = trx.id();
-    transaction.expiration = trx.expiration;
-    fc::raw::pack_to_buffer(transaction.packed_trx, trx);
-    ilog("TRX packed into vector having ${s} bytes lentgh", ("s", transaction.packed_trx.size()));
-  });
-
-  std::vector<char> packed_trx_copy(txo.packed_trx.cbegin(), txo.packed_trx.cend());
-
-  auto packed = fc::raw::pack_to_vector(txo);
-
-  ilog("Generated vector size: ${s}", ("s", packed.size()));
-
-  std::string s = fc::json::to_pretty_string(txo);
-  ilog("transaction_object dump: ${o}", ("o", s));
-
-  index.modify(txo, [](chain::transaction_object& transaction)
-    {
-      transaction.packed_trx.clear();
-    }
-  );
-
-  s = fc::json::to_pretty_string(txo);
-  ilog("transaction_object dump: ${o}", ("o", s));
-
-  index.modify(txo, [&packed](chain::transaction_object& transaction)
-    {
-      fc::raw::unpack_from_buffer(packed, transaction);
-    });
-
-  s = fc::json::to_pretty_string(txo);
-  ilog("transaction_object dump: ${o}", ("o", s));
-
-  BOOST_CHECK(packed_trx_copy.size() == txo.packed_trx.size());
-  BOOST_CHECK(std::equal(packed_trx_copy.cbegin(), packed_trx_copy.cend(), txo.packed_trx.cbegin()));
-}
-
-
 BOOST_AUTO_TEST_CASE( serialization_raw_test )
 {
   try {
