@@ -59,7 +59,7 @@ namespace graphene { namespace net {
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
     */
-   #define  DEFAULT_MAX_BLOCK_IDS_TO_FETCH 50000
+   #define  DEFAULT_MAX_BLOCK_IDS_TO_FETCH 10000
    class node_delegate
    {
       public:
