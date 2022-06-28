@@ -24,6 +24,7 @@
 #include <graphene/net/core_messages.hpp>
 #include <graphene/net/message.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 
 namespace graphene { namespace net {
@@ -83,7 +84,11 @@ namespace graphene { namespace net {
       // out of the block data itself, so we can just ignore it instead of unpacking it
       // memcpy(&message.block_id, data.data() + uncompressed_block.raw_size, sizeof(block_id_type));
 
-      return block_message(full_block_type::create_from_uncompressed_block_data(std::move(uncompressed_block.raw_bytes), uncompressed_block.raw_size));
+      // begin processing the block in the worker threads
+      std::shared_ptr<full_block_type> full_block = full_block_type::create_from_uncompressed_block_data(std::move(uncompressed_block.raw_bytes), uncompressed_block.raw_size);
+      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_received_from_p2p);
+
+      return block_message(full_block);
     } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a block_message");
   }
 
@@ -102,7 +107,12 @@ namespace graphene { namespace net {
   {
     try {
       FC_ASSERT(msg_type == trx_message::type);
-      return trx_message(hive::chain::full_transaction_type::create_from_serialized_transaction(data.data(), data.size()));
+
+      std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_serialized_transaction(data.data(), data.size(), 
+                                                                                                                                                    true /* cache this transaction */);
+      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, hive::chain::blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p);
+
+      return trx_message(full_transaction);
     } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a trx_message");
   }
 
