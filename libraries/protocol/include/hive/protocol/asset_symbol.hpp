@@ -174,6 +174,8 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
         pack( s, ser );
         break;
       }
+      //else
+      //  continue to next case
     case hive::protocol::asset_symbol_type::smt_nai_space:
       pack( s, sym.asset_num );
       break;
