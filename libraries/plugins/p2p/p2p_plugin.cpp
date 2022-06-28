@@ -40,7 +40,6 @@ using graphene::net::block_message;
 using graphene::net::trx_message;
 
 using hive::protocol::block_header;
-using hive::protocol::signed_block;
 using hive::protocol::block_id_type;
 
 namespace detail {

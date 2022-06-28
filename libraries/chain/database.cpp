@@ -638,7 +638,7 @@ std::shared_ptr<full_transaction_type> database::get_recent_transaction(const tr
   const auto& index = get_index<transaction_index>().indices().get<by_trx_id>();
   auto itr = index.find(trx_id);
   FC_ASSERT(itr != index.end());
-  std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_serialized_transaction(itr->packed_trx.data(), itr->packed_trx.size());
+  std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_serialized_transaction(itr->packed_trx.data(), itr->packed_trx.size(), false);
   return full_transaction;
 } FC_CAPTURE_AND_RETHROW() }
 
