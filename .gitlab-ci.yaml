@@ -362,7 +362,10 @@ transaction_serialization_testnet_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
-    - cd tests/functional/python_tests/transaction_serialization_tests/
+    - git clone --depth 1 --branch master https://github.com/wolfcw/libfaketime.git
+    - cd libfaketime && make
+    - export LIBFAKETIME_PATH=`pwd`/src/libfaketime.so.1
+    - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests
     - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml" -m testnet
   artifacts:
     reports:
