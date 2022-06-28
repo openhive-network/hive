@@ -6,6 +6,8 @@ import pytest
 
 import test_tools as tt
 
+from .....local_tools import create_account_and_fund_it
+
 
 def __serialize_legacy(assets: Iterable) -> Iterable[str]:
     return (str(asset) for asset in assets)
@@ -57,3 +59,24 @@ def run_for_all_cases(**assets):
         return __decorated_test
 
     return __decorator
+
+
+def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
+    # Transfer to vest huge amount of test to give power to accounts.
+    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100000),
+                               tbds=tt.Asset.Tbd(100))
+    create_account_and_fund_it(wallet, 'bob', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100000))
+
+    # Post comment and vote allow to get reward on accounts alice and bob.
+    wallet.api.post_comment('alice', 'permlink', '', 'paremt-permlink', 'title', 'body', '{}')
+
+    wallet.api.vote('bob', 'alice', 'permlink', 100)
+
+    # Waiting to become post and vote transactions irreversible
+    node.wait_number_of_blocks(21)
+
+    # Rerun node with time offset allow to change time in 'node' one hour forward and stimulate node to block producing.
+    wallet.close()
+    node.close()
+    node.run(time_offset='+1h')
+    wallet.run(timeout=10)

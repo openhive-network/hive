@@ -3,7 +3,7 @@ import pytest
 import test_tools as tt
 
 from .....local_tools import create_account_and_fund_it, date_from_now
-from .local_tools import run_for_all_cases
+from .local_tools import run_for_all_cases, create_alice_and_bob_accounts_with_received_rewards
 
 
 @pytest.mark.testnet
@@ -260,3 +260,19 @@ def test_recurrent_transfer_matched(prepared_wallet, transfer_test_amount):
     prepared_wallet.api.create_account('initminer', 'bob', '{}')
 
     prepared_wallet.api.recurrent_transfer('alice', 'bob', transfer_test_amount, 'memo', 100, 10)
+
+
+"""
+Claim_reward_balance allows you to transfer funds from your reward balance to your regular balance. In order to have
+funds in the reward balance, you must receive a reward. This takes 1 hour on the test network. Because of this,
+'faketime' was used and the time in 'node' was changed one hour forward.
+"""
+
+
+@pytest.mark.testnet
+@run_for_all_cases(claim_test_amount=tt.Asset.Test(0), claim_tbd_amount=tt.Asset.Tbd(0.01),
+                   claim_vest_amount=tt.Asset.Vest(0.01))
+def test_claim_reward_balance_matched(node, prepared_wallet, claim_test_amount, claim_tbd_amount, claim_vest_amount):
+    create_alice_and_bob_accounts_with_received_rewards(node, prepared_wallet)
+
+    prepared_wallet.api.claim_reward_balance('alice', claim_test_amount, claim_tbd_amount, claim_vest_amount)
