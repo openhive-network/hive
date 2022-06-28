@@ -109,7 +109,10 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
   else
   {
     ++cached_get_signature_keys_calls;
-    ilog("get_signature_keys cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", ("saved", signature_info->computation_time)("cached", cached_get_signature_keys_calls.load())("not", non_cached_get_signature_keys_calls.load()));
+    // ilog("get_signature_keys cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
+    //      ("saved", signature_info->computation_time)
+    //      ("cached", cached_get_signature_keys_calls.load())
+    //      ("not", non_cached_get_signature_keys_calls.load()));
   }
   if (signature_info->signature_keys_exception)
     signature_info->signature_keys_exception->dynamic_rethrow_exception();
@@ -139,13 +142,15 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
     }
     validation_computation_time = fc::time_point::now() - computation_start;
     validation_attempted = true;
-    // ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
+    // ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", 
+    //      ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
     // idump((get_transaction()));
   }
   else
   {
     ++cached_validate_calls;
-    ilog("validate cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", ("saved", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
+    // ilog("validate cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
+    //      ("saved", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
   }
   if (validation_exception)
     validation_exception->dynamic_rethrow_exception();
@@ -163,9 +168,9 @@ const hive::protocol::required_authorities_type& full_transaction_type::get_requ
   else
   {
     ++cached_get_required_authorities_calls;
-    ilog("get_required_authorities cache hit.  saved ${saved}ns, totals: ${cached} cached, ${not} not cached", 
-         ("saved", required_authorities_computation_time)
-         ("cached", cached_get_required_authorities_calls.load())("not", non_cached_get_required_authorities_calls.load()));
+    // ilog("get_required_authorities cache hit.  saved ${saved}ns, totals: ${cached} cached, ${not} not cached", 
+    //      ("saved", required_authorities_computation_time)
+    //      ("cached", cached_get_required_authorities_calls.load())("not", non_cached_get_required_authorities_calls.load()));
   }
   return *required_authorities;
 }
@@ -213,18 +218,19 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
 
 /* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 
                                                                                              uint32_t index_in_block, 
-                                                                                             const serialized_transaction_data& serialized_transaction)
+                                                                                             const serialized_transaction_data& serialized_transaction,
+                                                                                             bool use_transaction_cache)
 {
   std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
   full_transaction->storage = contained_in_block_info{block_storage, index_in_block};
   full_transaction->serialized_transaction = serialized_transaction;
 
-  return full_transaction_cache::get_instance().add_to_cache(full_transaction);
-  //return full_transaction;
+  return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
 /* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
-                                                                                                          hive::protocol::pack_type serialization_type)
+                                                                                                          hive::protocol::pack_type serialization_type,
+                                                                                                          bool use_transaction_cache)
 {
   std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
 
@@ -241,11 +247,10 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   full_transaction->serialized_transaction.transaction_end = full_transaction->serialized_transaction.begin + stream.tellp();
   fc::raw::pack(stream, transaction.signatures);
   full_transaction->serialized_transaction.signed_transaction_end = full_transaction->serialized_transaction.begin + stream.tellp();
-  return full_transaction_cache::get_instance().add_to_cache(full_transaction);
-  //return full_transaction;
+  return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
-/* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_serialized_transaction(const char* raw_data, size_t size)
+/* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache)
 {
   std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
   full_transaction->storage.set_which(storage_type::tag<standalone_transaction_info>::value);
@@ -264,8 +269,7 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   fc::raw::unpack(datastream, transaction_info.transaction.signatures);
   full_transaction->serialized_transaction.signed_transaction_end = transaction_info.serialization_buffer.raw_bytes.get() + datastream.tellp();
 
-  return full_transaction_cache::get_instance().add_to_cache(full_transaction);
-  //return full_transaction;
+  return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
 // tl;dr Over the lifetime of the hive blockchain, we have had three different rules for how to validate

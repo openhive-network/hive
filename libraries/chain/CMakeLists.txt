@@ -34,6 +34,7 @@ add_library( hive_chain
 
              full_block.cpp
              full_transaction.cpp
+             blockchain_worker_thread_pool.cpp
 
              smt_evaluator.cpp
              sps_evaluator.cpp
