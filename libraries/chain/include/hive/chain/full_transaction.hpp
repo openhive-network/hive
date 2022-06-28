@@ -85,10 +85,13 @@ struct full_transaction_type
 
     static std::shared_ptr<full_transaction_type> create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage,
                                                                     uint32_t index_in_block, 
-                                                                    const serialized_transaction_data& serialized_transaction);
+                                                                    const serialized_transaction_data& serialized_transaction,
+                                                                    bool use_transaction_cache);
     static std::shared_ptr<full_transaction_type> create_from_signed_transaction(const hive::protocol::signed_transaction& transaction, 
-                                                                                 hive::protocol::pack_type serialization_type);
-    static std::shared_ptr<full_transaction_type> create_from_serialized_transaction(const char* raw_data, size_t size);
+                                                                                 hive::protocol::pack_type serialization_type,
+                                                                                 bool use_transaction_cache);
+    static std::shared_ptr<full_transaction_type> create_from_serialized_transaction(const char* raw_data, size_t size,
+                                                                                 bool use_transaction_cache);
 };
 
 class full_transaction_cache

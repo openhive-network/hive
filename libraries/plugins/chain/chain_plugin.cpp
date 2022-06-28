@@ -1,4 +1,5 @@
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -164,6 +165,8 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_blocks;
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
+
+    fc::optional<fc::time_point> last_myriad_time; // for sync progress
 };
 
 struct write_request_visitor
@@ -771,6 +774,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
 #endif
+      ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
       ;
 }
 
@@ -870,6 +874,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   }
 #endif
+  uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
+  blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
 
   if(my->benchmark_interval > 0)
   {
@@ -944,6 +950,7 @@ void chain_plugin::plugin_startup()
 void chain_plugin::plugin_shutdown()
 {
   ilog("closing chain database");
+  blockchain_worker_thread_pool::get_instance().shutdown();
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
@@ -971,10 +978,26 @@ bool chain_plugin::accept_block(const std::shared_ptr<hive::chain::full_block_ty
 {
   const signed_block& block = full_block->get_block();
   if (currently_syncing && block.block_num() % 10000 == 0)
-    ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
-         ("t", block.timestamp)
-         ("n", block.block_num())
-         ("p", block.witness) );
+  {
+    fc::time_point now = fc::time_point::now();
+    if (my->last_myriad_time)
+    {
+      fc::microseconds duration = now - *my->last_myriad_time;
+      float microseconds_per_block = (float)duration.count() / 10000.f;
+      std::ostringstream microseconds_per_block_stream;
+      microseconds_per_block_stream << std::setprecision(2) << std::fixed << microseconds_per_block;
+      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}µs/block",
+           ("t", block.timestamp)("n", block.block_num())("p", block.witness)
+           ("microseconds_per_block", microseconds_per_block_stream.str()));
+    }
+    else
+      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
+           ("t", block.timestamp)("n", block.block_num())("p", block.witness));
+#define DISPLAY_SYNC_SPEED
+#ifdef DISPLAY_SYNC_SPEED
+    my->last_myriad_time = now;
+#endif
+  }
 
   check_time_in_block(block);
 
@@ -1069,14 +1092,18 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
 std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx, 
                                                                                                const lock_type lock /* = lock_type::boost */)
 { try {
-  std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26);
+  std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26, 
+                                                                                                                                            true /* cache this transaction */);
+  // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
+  blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
   try
   {
     accept_transaction(full_transaction, lock);
   }
   catch (const hive::protocol::transaction_auth_exception&)
   {
-    full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy);
+    full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
+    blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
       accept_transaction(full_transaction, lock);

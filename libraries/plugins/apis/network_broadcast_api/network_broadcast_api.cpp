@@ -1,4 +1,3 @@
-
 #include <hive/plugins/network_broadcast_api/network_broadcast_api.hpp>
 #include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
 
@@ -32,6 +31,7 @@ namespace detail
     FC_ASSERT( !check_max_block_age( args.max_block_age ) );
 
     std::shared_ptr<hive::chain::full_transaction_type> full_transaction = _chain.determine_encoding_and_accept_transaction(args.trx);
+
     _p2p.broadcast_transaction(full_transaction);
 
     return broadcast_transaction_return();

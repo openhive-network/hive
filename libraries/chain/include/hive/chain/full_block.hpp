@@ -3,6 +3,7 @@
 #include <hive/chain/full_transaction.hpp>
 #include <hive/protocol/block.hpp>
 #include <atomic>
+#include <mutex>
 
 namespace hive { namespace chain {
 
@@ -33,23 +34,37 @@ struct decoded_block_storage_type
 class full_block_type
 {
   private:
-    mutable fc::optional<compressed_block_data> compressed_block;
+    // compressed version of the block
+    mutable std::atomic<bool> has_compressed_block = { false };
+    mutable std::mutex compressed_block_mutex;
+    mutable compressed_block_data compressed_block;
+    mutable fc::microseconds compression_time;
+
+    // uncompressed version of the block
+    mutable std::atomic<bool> has_uncompressed_block = { false };
+    mutable std::mutex uncompressed_block_mutex;
     mutable std::shared_ptr<decoded_block_storage_type> decoded_block_storage;
+    mutable fc::microseconds uncompression_time;
 
-    mutable size_t block_header_size; // only valid when block is non-null
-    mutable size_t signed_block_header_size; // only valid when block is non-null
+    mutable std::atomic<bool> has_unpacked_block_header = { false };
+    mutable std::mutex unpacked_block_header_mutex;
+    mutable size_t block_header_size; // only valid when has_unpacked_block_header
+    mutable size_t signed_block_header_size; // only valid when has_unpacked_block_header
+    mutable fc::optional<block_id_type> block_id; // only valid when has_unpacked_block_header
+    mutable fc::optional<digest_type> digest; // only valid when has_unpacked_block_header
 
-    mutable fc::optional<block_id_type> block_id;
-    mutable fc::optional<digest_type> digest;
+    mutable std::atomic<bool> has_unpacked_block = { false };
+    mutable std::mutex unpacked_block_mutex;
+    mutable std::vector<std::shared_ptr<full_transaction_type>> full_transactions;
+
+    mutable std::mutex block_signing_key_merkle_root_mutex;
+    mutable fc::optional<fc::ecc::public_key> block_signing_key;
     mutable fc::optional<checksum_type> merkle_root;
-
-    std::vector<std::shared_ptr<full_transaction_type>> full_transactions;
 
     static std::atomic<uint32_t> number_of_instances_created;
     static std::atomic<uint32_t> number_of_instances_destroyed;
   public:
     full_block_type();
-    full_block_type(full_block_type&& rhs);
     ~full_block_type();
 
     static std::shared_ptr<full_block_type> create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
@@ -62,14 +77,12 @@ class full_block_type
                                                                                       const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
                                                                                       const fc::ecc::private_key* signer);
 
-    void decode();
-
     const signed_block& get_block() const;
     const signed_block_header& get_block_header() const;
     const block_id_type& get_block_id() const;
     uint32_t get_block_num() const;
     const digest_type& get_digest() const;
-    fc::ecc::public_key get_signing_key() const;
+    const fc::ecc::public_key& get_signing_key() const;
     const uncompressed_block_data& get_uncompressed_block() const;
     const compressed_block_data& get_compressed_block() const;
     uint32_t get_uncompressed_block_size() const;
