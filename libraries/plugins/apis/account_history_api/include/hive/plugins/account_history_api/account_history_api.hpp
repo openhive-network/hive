@@ -1,7 +1,11 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
 
+#include <hive/protocol/operations.hpp>
+#include <hive/protocol/transaction.hpp>
 #include <hive/protocol/types.hpp>
+
+#include <hive/chain/buffer_type.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
