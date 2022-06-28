@@ -1075,24 +1075,24 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 {
   FC_ASSERT(*blockRangeBegin < *blockRangeEnd, "Wrong block range");
 
-  if(_currently_persisted_irreversible_block >= *blockRangeBegin && _currently_persisted_irreversible_block <= *blockRangeEnd)
+  unsigned int cpib = _currently_persisted_irreversible_block;
+  if( cpib > 0 && cpib >= *blockRangeBegin && cpib <= *blockRangeEnd )
   {
-    ilog("Awaiting for the end of save current irreversible block ${b} block, requested by call: [${rb}, ${re}]",
-      ("b", _currently_persisted_irreversible_block.operator unsigned int())("rb", *blockRangeBegin)("re", *blockRangeEnd));
+    ilog( "Awaiting for the end of save current irreversible block ${b} block, requested by call: [${rb}, ${re})",
+      ( "b", cpib )( "rb", *blockRangeBegin )( "re", *blockRangeEnd ) );
 
     /** Api requests data of currently saved irreversible block, so it must wait for the end of storage and cleanup of
     *   volatile ops container.
     */
     std::unique_lock<std::mutex> lk(_currently_persisted_irreversible_mtx);
 
-    _currently_persisted_irreversible_cv.wait(lk,
-      [this, blockRangeBegin, blockRangeEnd]() -> bool
-      {
-        return _currently_persisted_irreversible_block < *blockRangeBegin || _currently_persisted_irreversible_block > * blockRangeEnd;
-      }
-    );
+    _currently_persisted_irreversible_cv.wait( lk, [this, blockRangeBegin, blockRangeEnd]() -> bool
+    {
+      unsigned int cpib = _currently_persisted_irreversible_block;
+      return cpib < *blockRangeBegin || cpib > *blockRangeEnd;
+    } );
 
-    ilog("Resumed evaluation a range containing currently just written irreversible block, requested by call: [${rb}, ${re}]",
+    ilog("Resumed evaluation a range containing currently just written irreversible block, requested by call: [${rb}, ${re})",
       ("rb", *blockRangeBegin)("re", *blockRangeEnd));
   }
 
@@ -1107,23 +1107,23 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
   if( *blockRangeEnd < *collectedIrreversibleBlock )
     return std::vector<rocksdb_operation_object>();
 
-  if(_currently_processed_block >= *blockRangeBegin && _currently_processed_block <= *blockRangeEnd)
+  unsigned int cpb = _currently_processed_block;
+  if( cpb > 0 && cpb >= *blockRangeBegin && cpb <= *blockRangeEnd )
   {
-    ilog("Awaiting for the end of evaluation of ${b} block, requested by call: [${rb}, ${re}]",
-      ("b", _currently_processed_block.operator unsigned int())("rb", *blockRangeBegin)("re", *blockRangeEnd));
+    ilog( "Awaiting for the end of evaluation of ${b} block, requested by call: [${rb}, ${re})",
+      ( "b", cpb )( "rb", *blockRangeBegin )( "re", *blockRangeEnd ) );
     /** Api requests data of currently processed (evaluated) block, so it must wait for the end of evaluation
     *   to collect all contained operations.
     */
     std::unique_lock<std::mutex> lk(_currently_processed_block_mtx);
 
-    _currently_processed_block_cv.wait(lk,
-      [this, blockRangeBegin, blockRangeEnd]() -> bool
-        {
-          return _currently_processed_block < *blockRangeBegin || _currently_processed_block > *blockRangeEnd;
-        }
-    );
+    _currently_processed_block_cv.wait( lk, [this, blockRangeBegin, blockRangeEnd]() -> bool
+    {
+      unsigned int cpb = _currently_processed_block;
+      return cpb < *blockRangeBegin || cpb > *blockRangeEnd;
+    } );
 
-    ilog("Resumed evaluation a range containing currently processed block, requested by call: [${rb}, ${re}]",
+    ilog("Resumed evaluation a range containing currently processed block, requested by call: [${rb}, ${re})",
       ("rb", *blockRangeBegin)("re", *blockRangeEnd));
   }
 
@@ -2105,8 +2105,11 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notifi
   if(_reindexing) return;
 
   _currently_processed_block.store(bn.block_num);
-  is_processed_block_mtx_locked.store(true);
-  _currently_processed_block_mtx.lock();
+  if( !is_processed_block_mtx_locked )
+  {
+    is_processed_block_mtx_locked.store( true );
+    _currently_processed_block_mtx.lock();
+  }
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
