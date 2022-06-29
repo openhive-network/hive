@@ -68,9 +68,14 @@ struct full_transaction_type
     serialized_transaction_data serialized_transaction; // pointers to the beginning, middle, and end of the transaction in the storage
 
     hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
+
+    static std::atomic<uint32_t> number_of_instances_created;
+    static std::atomic<uint32_t> number_of_instances_destroyed;
   public:
+    full_transaction_type();
     ~full_transaction_type();
 
+    void  set_is_in_cache() { is_in_cache = true; }
     const hive::protocol::signed_transaction& get_transaction() const;
     const hive::protocol::digest_type& get_merkle_digest() const;
     const hive::protocol::digest_type& get_digest() const;
