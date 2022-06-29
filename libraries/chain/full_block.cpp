@@ -9,6 +9,21 @@ namespace hive { namespace chain {
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_created = {0};
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_destroyed = {0};
 
+/* static */ std::atomic<uint32_t> decoded_block_storage_type::number_of_instances_created = {0};
+/* static */ std::atomic<uint32_t> decoded_block_storage_type::number_of_instances_destroyed = {0};
+
+decoded_block_storage_type::decoded_block_storage_type()
+{
+  number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
+  // if (number_of_instances_created.load() % 10000 == 0)
+  //   ilog("Currently ${count} decoded_block_storage_types in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
+}
+
+decoded_block_storage_type::~decoded_block_storage_type()
+{
+  number_of_instances_destroyed.fetch_add(1, std::memory_order_relaxed);
+}
+
 full_block_type::full_block_type()
 {
   number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
