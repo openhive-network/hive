@@ -21,11 +21,22 @@ std::atomic<uint32_t> non_cached_get_signature_keys_calls = {0};
 std::atomic<uint32_t> cached_get_required_authorities_calls = {0};
 std::atomic<uint32_t> non_cached_get_required_authorities_calls = {0};
 
-full_transaction_type::~full_transaction_type()
+/* static */ std::atomic<uint32_t> full_transaction_type::number_of_instances_created = {0};
+/* static */ std::atomic<uint32_t> full_transaction_type::number_of_instances_destroyed = {0};
+
+full_transaction_type::full_transaction_type()
 {
-  full_transaction_cache::get_instance().remove_from_cache(get_merkle_digest());
+  number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
+  // if (number_of_instances_created.load() % 100000 == 0)
+  //   ilog("Currently ${count} full_transactions in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
 
+full_transaction_type::~full_transaction_type()
+{
+  if (is_in_cache)
+    full_transaction_cache::get_instance().remove_from_cache(get_merkle_digest());
+  number_of_instances_destroyed.fetch_add(1, std::memory_order_relaxed);
+}
 
 const signed_transaction& full_transaction_type::get_transaction() const
 { 
@@ -268,7 +279,6 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   full_transaction->serialized_transaction.transaction_end = transaction_info.serialization_buffer.raw_bytes.get() + datastream.tellp();
   fc::raw::unpack(datastream, transaction_info.transaction.signatures);
   full_transaction->serialized_transaction.signed_transaction_end = transaction_info.serialization_buffer.raw_bytes.get() + datastream.tellp();
-
   return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
@@ -411,7 +421,10 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(cons
 
   auto result = my->cache.insert(std::make_pair(transaction->get_merkle_digest(), transaction));
   if (result.second) // insert succeeded
+  {
+    transaction->set_is_in_cache();
     return transaction;
+  }
   // else there was already an entry, see if it's still valid
   std::shared_ptr<full_transaction_type> existing_transaction = result.first->second.lock();
   if (existing_transaction)
