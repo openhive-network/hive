@@ -29,6 +29,11 @@ struct decoded_block_storage_type
 {
   uncompressed_block_data uncompressed_block;
   fc::optional<signed_block> block;
+
+  decoded_block_storage_type();
+  ~decoded_block_storage_type();
+  static std::atomic<uint32_t> number_of_instances_created;
+  static std::atomic<uint32_t> number_of_instances_destroyed;
 };
 
 class full_block_type
