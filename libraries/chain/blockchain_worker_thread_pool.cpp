@@ -38,6 +38,8 @@ struct blockchain_worker_thread_pool::impl
   
   std::vector<std::thread> threads;
 
+  bool p2p_force_validate = false;
+
   bool dequeue_work(work_request_type*& work_request_ptr);
 
   void perform_work(const std::weak_ptr<full_block_type>& full_block, data_source_type data_source);
@@ -143,9 +145,13 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       catch (...)
       {
       }
+
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
-      //(void)full_transaction->get_signature_keys();
-      //(void)full_transaction->get_required_authorities();
+      if (p2p_force_validate)
+      {
+        (void)full_transaction->get_signature_keys();
+        (void)full_transaction->get_required_authorities();
+      }
       break;
     case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p:
     case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api:
@@ -245,6 +251,11 @@ void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_p
     });
   }
   my->work_queue_condition_variable.notify_all();
+}
+
+void blockchain_worker_thread_pool::set_p2p_force_validate()
+{
+  my->p2p_force_validate = true;
 }
 
 void blockchain_worker_thread_pool::shutdown()
