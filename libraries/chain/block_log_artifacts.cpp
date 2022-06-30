@@ -2,12 +2,21 @@
 
 #include <hive/utilities/git_revision.hpp>
 
+#include <fcntl.h>
+
 namespace hive { namespace chain {
 
 namespace { /// anonymous
 
 const uint16_t FORMAT_MAJOR = 1;
-const uint16_t FORMAT_MINOR = 1;
+const uint16_t FORMAT_MINOR = 0;
+
+#define HANDLE_IO(stmt, msg) \
+{ \
+  if(stmt == -1) { \
+    wlog("Stmt: ${msg} failed with error: ${error}", ("error")(strerror(errno))); \
+  } \
+}
 
 struct artifact_file_header
 {
@@ -15,6 +24,7 @@ struct artifact_file_header
   uint16_t format_major_version = FORMAT_MAJOR; /// version info of storage format (to allow potential upgrades in the future)
   uint16_t format_minor_version = FORMAT_MINOR;
   uint32_t head_block_num = 0; /// number of newest (head) block the file holds informations for
+  bool dirty_close = true;
 };
 
 } /// anonymous
@@ -23,11 +33,11 @@ struct artifact_file_header
 class block_log_artifacts::impl final
 {
 public:
-  void try_to_open(const fc::path& block_log_file_path, bool read_only);
+  void try_to_open(const fc::path& block_log_file_path, bool read_only, const block_log& source_block_provider, uint32_t head_block_num);
 
   uint32_t read_head_block_num() const
   {
-    return _head_block_num;
+    return _header.head_block_num;
   }
 
   artifacts_t read_block_artifacts(uint32_t block_num) const;
@@ -51,27 +61,118 @@ public:
 
   void close()
   {
-    ilog("Closing a block log artifact file: ${1} file...", (_artifact_file_name.generic_string()));
+    ilog("Closing a block log artifact file: ${f} file...", ("f", _artifact_file_name.generic_string()));
 
-    ::close(_storage_fd);
+    HANDLE_IO((::close(_storage_fd)), "Closing the artifact file");
+
     _storage_fd = -1;
 
     ilog("Block log artifact file closed.");
   }
 
 private:
+  bool load_header();
+  void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
+  void truncate_file(uint32_t last_block);
+
+private:
   fc::path _artifact_file_name;
   int _storage_fd = -1; /// file descriptor to the opened file.
-  uint32_t _head_block_num = 0;
+  artifact_file_header _header;
   bool _is_writable = false;
 };
 
-void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path, bool read_only)
+void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path, bool read_only,
+  const block_log& source_block_provider, uint32_t head_block_num)
 {
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
   _is_writable = read_only == false;
 
+  int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
+  if(read_only)
+    flags = O_RDONLY | O_CLOEXEC;
 
+  _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), flags, 0644);
+
+  if(_storage_fd == -1)
+  {
+    if(errno == ENOENT)
+    {
+      if(read_only)
+      {
+        FC_THROW("Block artifacts file ${filename} is missing, but its creation is disallowed by enforced read-only access.",
+          ("filename", _artifact_file_name));
+      }
+      else
+      {
+        wlog("Could not find artifacts file in ${path}, it will be created and generated from block_log.", ("path", _artifact_file_name));
+        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
+        if(_storage_fd == -1)
+          FC_THROW("Error creating block artifacts file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
+
+        generate_file(source_block_provider, 1, head_block_num);
+      }
+    }
+    else
+    {
+      FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
+    }
+  }
+  else
+  {
+    /// The file exists. Lets verify if it can be used immediately or rather shall be regenerated.
+    if(load_header())
+    {
+      if(head_block_num < _header.head_block_num)
+      {
+        /// Artifact file is too big. Let's try to truncate it
+        truncate_file(head_block_num);
+      }
+      else
+      if(head_block_num > _header.head_block_num)
+      {
+        /// Artifact file is too short - we need to resume its generation
+        generate_file(source_block_provider, _header.head_block_num+1, head_block_num);
+      }
+    }
+    else
+    {
+      wlog("Block artifacts file ${filename} exists, but its header validation failed.", ("filename", _artifact_file_name));
+
+      if(read_only)
+      {
+        FC_THROW("Generation of Block artifacts file ${filename} is disallowed by enforced read-only access.", ("filename", _artifact_file_name));
+      }
+      else
+      {
+        ilog("Attempting to overwrite existing artifacts file ${filename} exists...", ("filename", _artifact_file_name));
+
+        HANDLE_IO((::close(_storage_fd)), "Closing the artifact file (before truncation)");
+
+        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), flags|O_TRUNC, 0644);
+        if(_storage_fd == -1)
+          FC_THROW("Error creating block artifacts file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
+
+        generate_file(source_block_provider, 1, head_block_num);
+      }
+    }
+  }
+}
+
+bool block_log_artifacts::impl::load_header()
+{
+  return false;
+}
+
+void block_log_artifacts::impl::generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block)
+{
+  ilog("Attempting to generate a block artifact file...");
+
+  ilog("Block artifact file generation finished...");
+}
+
+void block_log_artifacts::impl::truncate_file(uint32_t last_block)
+{
 
 }
 
@@ -99,12 +200,12 @@ block_log_artifacts::~block_log_artifacts()
 }
 
 block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path,
-  bool read_only)
+  bool read_only, const block_log& source_block_provider, uint32_t head_block_num)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts(),
     [](block_log_artifacts* bla) { impl::on_destroy(bla); });
 
-  block_artifacts->_impl->try_to_open(block_log_file_path, read_only);
+  block_artifacts->_impl->try_to_open(block_log_file_path, read_only, source_block_provider, head_block_num);
 
   return block_artifacts;
 }
@@ -127,5 +228,5 @@ void block_log_artifacts::store_block_artifacts(uint32_t block_num, const block_
 
 }}
 
-FC_REFLECT(hive::chain::artifact_file_header, (git_version)(format_major_version)(format_minor_version)(head_block_num));
+FC_REFLECT(hive::chain::artifact_file_header, (git_version)(format_major_version)(format_minor_version)(head_block_num)(dirty_close));
 
