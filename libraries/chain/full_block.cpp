@@ -116,17 +116,19 @@ full_block_type::~full_block_type()
   fc::datastream<char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(), total_serialized_size);
   fc::raw::pack(datastream, (block_header)new_block);
   full_block->block_header_size = datastream.tellp();
+  full_block->digest = digest_type::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), full_block->block_header_size);
 
   // now that we've serialized the data used in computing the digest, use that to sign the block
   if (signer)
   {
     const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(header.timestamp);
-    new_block.witness_signature = signer->sign_compact(full_block->get_digest(), validation_rules.signature_type);
+    new_block.witness_signature = signer->sign_compact(*full_block->digest, validation_rules.signature_type);
     full_block->block_signing_key = signer->get_public_key();
   }
   // and serialize the signature
   fc::raw::pack(datastream, new_block.witness_signature);
   full_block->signed_block_header_size = datastream.tellp();
+  full_block->block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), full_block->signed_block_header_size, header.block_num());
 
   // then serialize the vector of transactions
   fc::raw::pack(datastream, number_of_transactions);
@@ -203,6 +205,19 @@ const compressed_block_data& full_block_type::get_compressed_block() const
   return compressed_block;
 }
 
+/* static */ block_id_type full_block_type::construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num)
+{
+  // to get the block id, we start by taking the hash of the header
+  fc::sha224 block_hash = fc::sha224::hash(signed_block_header_begin, signed_block_header_size);
+  // then overwrite the first four bytes of the hash with the block num
+  block_hash._hash[0] = fc::endian_reverse_u32(block_num);
+
+  // our block_id is the first 20 bytes of that result (discarding the last 8 bytes of the hash)
+  block_id_type block_id;
+  memcpy(block_id._hash, block_hash._hash, std::min(sizeof(block_id_type), sizeof(block_hash)));
+  return block_id;
+}
+
 const signed_block_header& full_block_type::get_block_header() const
 {
   if (!has_unpacked_block_header.load(std::memory_order_consume))
@@ -241,15 +256,7 @@ const signed_block_header& full_block_type::get_block_header() const
 
       // construct the block id (not always needed, but we assume it's cheap enough that it's not worth doing lazily)
       if (!block_id)
-      {
-        // to get the block id, we start by taking the hash of the header
-        fc::sha224 block_hash = fc::sha224::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size);
-        // then overwrite the first four bytes of the hash with the block num
-        block_hash._hash[0] = fc::endian_reverse_u32(decoded_block_storage->block->block_num());
-        block_id = block_id_type();
-        // our block_id is the first 20 bytes of that result (discarding the last 8 bytes of the hash)
-        memcpy(block_id->_hash, block_hash._hash, std::min(sizeof(block_id_type), sizeof(block_hash)));
-      }
+        block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
 
       // construct the block digest (also not always needed, but we assume it's cheap enough that it's not worth doing lazily)
       if (!digest)
