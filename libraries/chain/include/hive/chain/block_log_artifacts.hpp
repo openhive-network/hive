@@ -11,6 +11,8 @@
 
 namespace hive { namespace chain {
 
+class block_log;
+
 /** This class is responsible for managing (migration, reading, writing) additional data to block_log file itself like:
 * - block_log fileoffset for given block number (useful to quickly access block by number)
 * - block storage flags, determining if block is stored as compressed etc
@@ -59,12 +61,14 @@ public:
   /** Allows to open a block log aartifacts file located in the same directory as specified block_log file itself.
   *   \param block_log_file_path location of source block_log file
   *   \param read_only - if set, already existing artifacts file must match to pointed block log.
-  * 
+  *   \param source_block_provider - provides a block data to generate artifact file.
+  *   \param head_block_num - max block number (head block) contained by given block_log.
   *   Built instance of `block_log_artifacts` will be automaticaly closed before destruction.
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, bool read_only);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, bool read_only,
+    const block_log& source_block_provider, uint32_t head_block_num);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;
