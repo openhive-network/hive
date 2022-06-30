@@ -68,6 +68,8 @@ class full_block_type
 
     static std::atomic<uint32_t> number_of_instances_created;
     static std::atomic<uint32_t> number_of_instances_destroyed;
+
+    static block_id_type construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num);
   public:
     full_block_type();
     ~full_block_type();
