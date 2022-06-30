@@ -41,7 +41,6 @@ img=$( build_image_name $IMGNAME $commit $REGISTRY )
 img_path=$( build_image_registry_path $IMGNAME $commit $REGISTRY )
 img_tag=$( build_image_registry_tag $IMGNAME $commit $REGISTRY )
 
-
 echo $REGISTRY_PASSWORD | docker login -u $REGISTRY_USER $REGISTRY --password-stdin
 
 image_exists=0
@@ -56,7 +55,7 @@ else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
   "$SCRIPTPATH/build_data4commit.sh" $commit $REGISTRY --export-binaries="${BINARY_CACHE_PATH}"
-  docker push $img
+  time docker push $img
 fi
 
 echo "$DOTENV_VAR_NAME=$img" > docker_image_name.env
