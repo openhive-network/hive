@@ -5,9 +5,9 @@ import test_tools as tt
 from .local_tools import as_string, run_for
 
 
-@run_for('testnet')
+# Testing is only 'post' because it is the only reward fund in HF17
+@run_for('testnet', 'mainnet_64m')
 def test_get_reward_fund_with_correct_value(prepared_node):
-    # Testing is only 'post' because it is the only reward fund in HF26
     prepared_node.api.wallet_bridge.get_reward_fund('post')
 
 
@@ -28,7 +28,7 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_get_reward_fund_with_incorrect_value(prepared_node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_reward_fund(reward_fund_name)
@@ -39,7 +39,7 @@ def test_get_reward_fund_with_incorrect_value(prepared_node, reward_fund_name):
         ['post']
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_get_reward_fund_with_incorrect_type_of_argument(prepared_node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_reward_fund(reward_fund_name)

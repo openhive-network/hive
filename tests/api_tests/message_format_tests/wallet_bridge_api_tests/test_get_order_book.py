@@ -4,6 +4,7 @@ import test_tools as tt
 
 from .local_tools import as_string, create_account_and_create_order, run_for
 
+ACCOUNT_NAME = 'alice'
 
 CORRECT_VALUES = [
         0,
@@ -19,10 +20,11 @@ CORRECT_VALUES = [
         True,  # bool is treated like numeric (0:1)
     ]
 )
-@run_for('testnet')
-def test_get_order_book_with_correct_value_testnet(prepared_node, orders_limit):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_account_and_create_order(wallet, account_name='alice')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_get_order_book_with_correct_value(prepared_node, should_prepare, orders_limit):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_account_and_create_order(wallet, account_name=ACCOUNT_NAME)
     prepared_node.api.wallet_bridge.get_order_book(orders_limit)
 
 
@@ -32,10 +34,10 @@ def test_get_order_book_with_correct_value_testnet(prepared_node, orders_limit):
         501,
     ]
 )
-@pytest.mark.testnet
-def test_get_order_book_with_incorrect_value(node, orders_limit):
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_get_order_book_with_incorrect_value(prepared_node, orders_limit):
     with pytest.raises(tt.exceptions.CommunicationError):
-        node.api.wallet_bridge.get_order_book(orders_limit)
+        prepared_node.api.wallet_bridge.get_order_book(orders_limit)
 
 
 @pytest.mark.parametrize(
@@ -45,7 +47,7 @@ def test_get_order_book_with_incorrect_value(node, orders_limit):
         'true'
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_get_order_book_with_incorrect_type_of_argument(prepared_node, orders_limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_order_book(orders_limit)

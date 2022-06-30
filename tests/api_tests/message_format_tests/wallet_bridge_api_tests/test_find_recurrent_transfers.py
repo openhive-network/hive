@@ -4,26 +4,23 @@ import test_tools as tt
 
 from .local_tools import as_string, run_for
 
+# 'arcange' is an existing on mainnet account with recurring transfers enabled
+ACCOUNT_NAMES = ['arcange', 'bob']
 
-@pytest.mark.parametrize(
-    'reward_fund_name', [
-        'alice',
-        'bob',
-    ]
-)
-@run_for('testnet')
-def test_find_recurrent_transfers_with_correct_value(prepared_node, reward_fund_name):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
-    prepared_node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
+# Method find recurrent transfer its available since HF25, test on 5m node gives empty result
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_find_recurrent_transfers_with_correct_value(prepared_node, should_prepare):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_accounts_and_make_recurrent_transfer(wallet, from_account=ACCOUNT_NAMES[0], to_account=ACCOUNT_NAMES[1])
+    prepared_node.api.wallet_bridge.find_recurrent_transfers(ACCOUNT_NAMES[0])
 
 
 INCORRECT_VALUES = [
     'non-exist-acc',
     '',
     100,
-    True,
 ]
 
 
@@ -33,7 +30,7 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
-@run_for('testnet')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_find_recurrent_transfers_with_incorrect_value(prepared_node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
@@ -41,24 +38,26 @@ def test_find_recurrent_transfers_with_incorrect_value(prepared_node, reward_fun
 
 @pytest.mark.parametrize(
     'reward_fund_name', [
-        ['alice']
+        [ACCOUNT_NAMES[0]]
     ]
 )
-@run_for('testnet')
-def test_find_recurrent_transfers_with_incorrect_type_of_argument(prepared_node, reward_fund_name):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_find_recurrent_transfers_with_incorrect_type_of_argument(prepared_node, should_prepare, reward_fund_name):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_accounts_and_make_recurrent_transfer(wallet, from_account=ACCOUNT_NAMES[0], to_account=ACCOUNT_NAMES[1])
 
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
-@run_for('testnet')
-def test_find_recurrent_transfers_with_additional_argument(prepared_node):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_find_recurrent_transfers_with_additional_argument(prepared_node, should_prepare):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_accounts_and_make_recurrent_transfer(wallet, from_account=ACCOUNT_NAMES[0], to_account=ACCOUNT_NAMES[1])
 
-    prepared_node.api.wallet_bridge.find_recurrent_transfers('alice', 'additional_argument')
+    prepared_node.api.wallet_bridge.find_recurrent_transfers(ACCOUNT_NAMES[0], 'additional_argument')
 
 
 def create_accounts_and_make_recurrent_transfer(wallet, from_account, to_account):
