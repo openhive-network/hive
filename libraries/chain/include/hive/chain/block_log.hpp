@@ -2,6 +2,8 @@
 #include <fc/filesystem.hpp>
 #include <hive/protocol/block.hpp>
 
+#include <hive/chain/block_log_artifacts.hpp>
+
 extern "C"
 {
   struct ZSTD_CCtx_s;
@@ -43,23 +45,8 @@ namespace hive { namespace chain {
 
   class block_log {
     public:
-      // in the block log (and index), the positions are stored as 64-bit integers.  We'll use the lower 
-      // 48-bits as the actual position, and the upper 16 as flags that tell us how the block is stored
-      // hi    lo|hi    lo|hi      |        |        |        |        |      lo|
-      // c......d|<-dict->|<--------------------- position -------------------->|
-      // c    = block_flags, one bit specifying the compression method, or uncompressed
-      //        (this was briefly two bits when we were testing other compression methods)
-      // d    = one bit, if 1 the block uses a custom compression dictionary
-      // dict = the number specifying the dictionary used to compress the block, if d = 1, otherwise undefined
-      // .    = unused
-      enum class block_flags {
-        uncompressed = 0,
-        zstd = 1 
-      };
-      struct block_attributes_t {
-        block_flags flags = block_flags::uncompressed;
-        fc::optional<uint8_t> dictionary_number;
-      };
+      using block_flags=block_log_artifacts::block_flags;
+      using block_attributes_t=block_log_artifacts::block_attributes_t;
 
       block_log();
       ~block_log();
@@ -80,7 +67,7 @@ namespace hive { namespace chain {
       optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
-      std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
+      std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
       signed_block read_head()const;
       const boost::shared_ptr<signed_block> head() const;
       void set_compression(bool enabled);
@@ -100,5 +87,4 @@ namespace hive { namespace chain {
   };
 
 } }
-FC_REFLECT_ENUM(hive::chain::block_log::block_flags, (uncompressed)(zstd))
-FC_REFLECT(hive::chain::block_log::block_attributes_t, (flags)(dictionary_number))
+

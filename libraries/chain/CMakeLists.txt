@@ -36,6 +36,7 @@ add_library( hive_chain
 
              shared_authority.cpp
              block_log.cpp
+             block_log_artifacts.cpp
              block_compression_dictionaries.cpp
 
              generic_custom_operation_interpreter.cpp
