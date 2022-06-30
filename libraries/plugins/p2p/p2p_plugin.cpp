@@ -6,6 +6,7 @@
 #include <graphene/net/exceptions.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <appbase/shutdown_mgr.hpp>
 
@@ -112,6 +113,8 @@ public:
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
   virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
+
+  void request_precomputing_transaction_signatures_if_useful();
 
   fc::optional<fc::ip::endpoint> endpoint;
   vector<fc::ip::endpoint> seeds;
@@ -331,6 +334,12 @@ std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_i
   return chain.db().find_first_item_not_in_blockchain(item_hashes_received);
 }
 
+void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
+{
+  if (force_validate || block_producer)
+    chain::blockchain_worker_thread_pool::get_instance().set_p2p_force_validate();
+}
+
 fc::time_point_sec p2p_plugin_impl::get_blockchain_now()
 { try {
   return fc::time_point::now();
@@ -442,6 +451,7 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
     wlog( "Option force-validate is deprecated in favor of p2p-force-validate" );
     my->force_validate = true;
   }
+  my->request_precomputing_transaction_signatures_if_useful();
 
   if( options.count("p2p-parameters") )
   {
@@ -573,6 +583,7 @@ void p2p_plugin::broadcast_transaction(const std::shared_ptr<hive::chain::full_t
 void p2p_plugin::set_block_production( bool producing_blocks )
 {
   my->block_producer = producing_blocks;
+  my->request_precomputing_transaction_signatures_if_useful();
 }
 
 fc::variant_object p2p_plugin::get_info()
