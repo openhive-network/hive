@@ -4,11 +4,12 @@ import test_tools as tt
 
 from .local_tools import as_string, run_for
 
+ACCOUNT_NAMES = ['alice', 'aliks', 'artjoboy']  # accounts with owner history on testnet and mainnet
 
 CORRECT_VALUES = [
     '',
     'non-exist-acc',
-    'alice',
+    *ACCOUNT_NAMES,
     100,
     True,
 ]
@@ -20,22 +21,26 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ]
 )
-@run_for('testnet')
-def test_get_owner_history_with_correct_value(prepared_node, account_name):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_and_update_account(wallet, account_name='alice')
-    prepared_node.api.wallet_bridge.get_owner_history(account_name)
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_get_owner_history_with_correct_value(prepared_node, should_prepare, account_name):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_and_update_account(wallet, account_name=ACCOUNT_NAMES[0])
+    results = prepared_node.api.wallet_bridge.get_owner_history(account_name)
+    if len(results['owner_auths']) != 0:
+        assert len(results['owner_auths']) > 0
 
 
 @pytest.mark.parametrize(
     'account_name', [
-        ['alice']
+        [*ACCOUNT_NAMES]  # account name provided in array
     ]
 )
-@run_for('testnet')
-def test_get_owner_history_with_incorrect_type_of_argument(prepared_node, account_name):
-    wallet = tt.Wallet(attach_to=prepared_node)
-    create_and_update_account(wallet, account_name='alice')
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_get_owner_history_with_incorrect_type_of_argument(prepared_node, should_prepare, account_name):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=prepared_node)
+        create_and_update_account(wallet, account_name=ACCOUNT_NAMES[0])
     with pytest.raises(tt.exceptions.CommunicationError):
         prepared_node.api.wallet_bridge.get_owner_history(account_name)
 
