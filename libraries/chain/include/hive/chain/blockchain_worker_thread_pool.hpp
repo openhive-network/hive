@@ -45,6 +45,9 @@ public:
   void enqueue_work(const std::shared_ptr<full_block_type>& full_block, data_source_type data_source);
   void enqueue_work(const std::shared_ptr<full_transaction_type>& full_transaction, data_source_type data_source);
   void enqueue_work(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source);
+
+  void set_p2p_force_validate();
+
   void shutdown();
   static void set_thread_pool_size(uint32_t thread_pool_size);
   static blockchain_worker_thread_pool& get_instance();
