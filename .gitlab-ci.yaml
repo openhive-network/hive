@@ -77,10 +77,12 @@ chain_test:
   variables:
     GIT_STRATEGY: none
   script:
-    - ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > /dev/null 2>&1
+    - ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
   artifacts:
     reports:
       junit: chain_test_results.xml
+    paths:
+      - chain_test.log
     when: always
     expire_in: 6 months
   tags:
@@ -96,10 +98,12 @@ plugin_test:
     GIT_STRATEGY: none
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > /dev/null 2>&1
+    - ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
   artifacts:
     reports:
       junit: plugin_test_results.xml
+    paths:
+      - plugin_test.log 
     when: always
     expire_in: 6 months
   tags:
