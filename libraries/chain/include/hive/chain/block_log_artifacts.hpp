@@ -1,0 +1,96 @@
+#pragma once
+
+#include <hive/protocol/types.hpp>
+
+#include <fc/optional.hpp>
+#include <fc/filesystem.hpp>
+
+#include <functional>
+#include <memory>
+#include <utility>
+
+namespace hive { namespace chain {
+
+/** This class is responsible for managing (migration, reading, writing) additional data to block_log file itself like:
+* - block_log fileoffset for given block number (useful to quickly access block by number)
+* - block storage flags, determining if block is stored as compressed etc
+* - holding a block hash what can eliminate often hash calculation
+*   
+*   Notes related to storage format:
+* 
+*   Artifact file starts with header holding few additional properties useful to perform satity checks etc.
+*   Any file having no valid header will be considered as broken one and regenerated if possible. 
+* 
+   To store block_attributes we are using a fact that in the block log (and artifact file), the positions are stored as 64-bit integers.
+   We'll use the lower 48-bits as the actual position, and the upper 16 as flags that tell us how the block is stored
+   hi    lo|hi    lo|hi      |        |        |        |        |      lo|
+   c......d|<-dict->|<--------------------- position -------------------->|
+   c    = block_flags, one bit specifying the compression method, or uncompressed
+          (this was briefly two bits when we were testing other compression methods)
+   d    = one bit, if 1 the block uses a custom compression dictionary
+   dict = the number specifying the dictionary used to compress the block, if d = 1, otherwise undefined
+   .    = unused
+*
+*/
+class block_log_artifacts final
+{
+public:
+  typedef std::unique_ptr<block_log_artifacts, std::function<void(block_log_artifacts*)> > block_log_artifacts_ptr_t;
+
+  using block_digest_t= hive::protocol::digest_type;
+  using block_id_t    = hive::protocol::block_id_type;
+
+  enum class block_flags {
+    uncompressed = 0,
+    zstd = 1
+  };
+  struct block_attributes_t {
+    block_flags flags = block_flags::uncompressed;
+    fc::optional<uint8_t> dictionary_number;
+  };
+
+  struct artifacts_t
+  {
+    block_attributes_t attributes;
+    block_id_t block_id;
+    uint64_t   block_log_file_pos;
+  };
+
+  /** Allows to open a block log aartifacts file located in the same directory as specified block_log file itself.
+  *   \param block_log_file_path location of source block_log file
+  *   \param read_only - if set, already existing artifacts file must match to pointed block log.
+  * 
+  *   Built instance of `block_log_artifacts` will be automaticaly closed before destruction.
+  * 
+  *   Function throws on any error f.e. related to IO.
+  */
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, bool read_only);
+
+  /// Allows to read a number of last block the artifacts are stored for.
+  uint32_t read_head_block_num() const;
+
+  artifacts_t read_block_artifacts(uint32_t block_num) const;
+
+  void store_block_artifacts(uint32_t block_num, const block_attributes_t& block_attributes, const block_id_t& block_id);
+
+private:
+  class impl;
+
+  block_log_artifacts();
+  ~block_log_artifacts();
+
+  block_log_artifacts(const block_log_artifacts&) = delete;
+  block_log_artifacts(block_log_artifacts&&) = delete;
+  block_log_artifacts& operator=(const block_log_artifacts&) = delete;
+  block_log_artifacts& operator=(block_log_artifacts&&) = delete;
+
+/// Class attributes:
+private:
+  std::unique_ptr<impl> _impl;
+};
+
+} }
+
+FC_REFLECT_ENUM(hive::chain::block_log_artifacts::block_flags, (uncompressed)(zstd))
+FC_REFLECT(hive::chain::block_log_artifacts::block_attributes_t, (flags)(dictionary_number))
+
