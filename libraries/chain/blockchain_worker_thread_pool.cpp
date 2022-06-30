@@ -108,8 +108,8 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
                                                            blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p);
       // precompute some stuff we'll need for validating the block
-      //(void)full_block->get_signing_key();
-      //(void)full_block->get_merkle_root();
+      (void)full_block->get_signing_key();
+      (void)full_block->get_merkle_root();
 
       // finally, compress it if it didn't start out that way (needed for writing to the block log)
       (void)full_block->get_compressed_block();
@@ -144,8 +144,8 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       {
       }
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
-      (void)full_transaction->get_signature_keys();
-      (void)full_transaction->get_required_authorities();
+      //(void)full_transaction->get_signature_keys();
+      //(void)full_transaction->get_required_authorities();
       break;
     case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p:
     case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api:
