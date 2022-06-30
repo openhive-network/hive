@@ -755,6 +755,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
         "flush shared memory changes to disk every N blocks")
       ("enable-block-log-compression", boost::program_options::value<bool>()->default_value(true), "Compress blocks using zstd as they're added to the block log" )
       ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
+      ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -774,7 +775,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
 #endif
-      ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
       ;
 }
 
