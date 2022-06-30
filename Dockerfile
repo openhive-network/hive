@@ -63,8 +63,10 @@ SHELL ["/bin/bash", "-c"]
 COPY --chown=hived:hived . /home/hived/hive
 
 RUN \
-  ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
+  mkdir -p ./build/tests/unit/ \
+  && ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
+  --cmake-arg="-DENABLE_SMT_SUPPORT=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
   && \
@@ -91,7 +93,11 @@ SHELL ["/bin/bash", "-c"]
 USER hived
 WORKDIR /home/hived
 
-COPY --from=build /home/hived/build/programs/hived/hived /home/hived/build/programs/cli_wallet/cli_wallet /home/hived/build/programs/util/truncate_block_log /home/hived/bin/
+COPY --from=build /home/hived/build/programs/hived/hived /home/hived/build/programs/cli_wallet/cli_wallet \
+  /home/hived/build/programs/util/compress_block_log \
+  /home/hived/build/programs/util/truncate_block_log \
+  /home/hived/build/tests/unit/* /home/hived/bin/
+
 COPY --from=build /home/hived/hive/scripts/common.sh ./scripts/common.sh
 
 ADD ./docker/docker_entrypoint.sh .
