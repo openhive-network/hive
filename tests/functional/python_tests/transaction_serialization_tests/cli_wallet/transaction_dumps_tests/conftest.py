@@ -57,16 +57,18 @@ def wallet(node, request):
             request.fspath.dirname) / f'dumped_{file_extension}_files_{request.param}_wallet' / f'{request.fspath.purebasename}.{file_extension}'
 
 
-    # # Compare actual transaction with stored transaction
-    #     stored_transaction = read_from_file(target_path_file)
-    #     actual_transaction = read_from_file(source_path_file)
-    #     assert stored_transaction == actual_transaction
+    # Compare actual transaction with stored transaction
+        stored_transaction = read_bin_from_file(target_path_file)
+        actual_transaction = read_bin_from_file(source_path_file)
+        assert stored_transaction == actual_transaction
 
     # Store transaction dumps in folder
-        shutil.move(source_path_file, target_path_file)
+    #     shutil.move(source_path_file, target_path_file)
 
 
-def read_from_file(path):
+def read_bin_from_file(path):
     with open(path, 'r') as file:
-        return json.load(file)
+        if 'bin' in str(path):
+            file_content = file.readlines()
+            return file_content
 
