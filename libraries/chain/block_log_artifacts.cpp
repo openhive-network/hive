@@ -337,13 +337,14 @@ void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 
 block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts(uint32_t block_num) const
 {
-  artifacts_t artifacts;
-
   auto chunk_position = calculate_offset(block_num);
 
   artifact_file_chunk data_chunk;
 
+  read_data(&data_chunk, chunk_position, "Reading an artifact data chunk");
 
+  artifacts_t artifacts;
+  artifacts = data_chunk.unpack_data(block_num);
 
   return artifacts;
 }
