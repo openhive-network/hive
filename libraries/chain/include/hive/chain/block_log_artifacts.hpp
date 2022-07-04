@@ -23,16 +23,6 @@ class block_log;
 * 
 *   Artifact file starts with header holding few additional properties useful to perform satity checks etc.
 *   Any file having no valid header will be considered as broken one and regenerated if possible. 
-* 
-   To store block_attributes we are using a fact that in the block log (and artifact file), the positions are stored as 64-bit integers.
-   We'll use the lower 48-bits as the actual position, and the upper 16 as flags that tell us how the block is stored
-   hi    lo|hi    lo|hi      |        |        |        |        |      lo|
-   c......d|<-dict->|<--------------------- position -------------------->|
-   c    = block_flags, one bit specifying the compression method, or uncompressed
-          (this was briefly two bits when we were testing other compression methods)
-   d    = one bit, if 1 the block uses a custom compression dictionary
-   dict = the number specifying the dictionary used to compress the block, if d = 1, otherwise undefined
-   .    = unused
 *
 */
 class block_log_artifacts final
