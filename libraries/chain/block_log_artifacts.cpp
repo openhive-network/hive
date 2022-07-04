@@ -327,7 +327,12 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 {
+  auto last_chunk_position = calculate_offset(last_block);
+  /// File truncate should be done just after last data chunk stored.
+  auto truncate_position = last_chunk_position + artifact_chunk_size;
 
+  if(ftruncate(_storage_fd, truncate_position) == -1)
+    FC_THROW("Error truncating block artifact file: ${error}", ("error", strerror(errno)));
 }
 
 block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts(uint32_t block_num) const
