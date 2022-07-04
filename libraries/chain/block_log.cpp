@@ -1,7 +1,11 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/protocol/config.hpp>
+
+#include <hive/chain/block_log_artifacts.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/detail/block_attributes.hpp>
+
 #include <fstream>
 #include <fc/io/raw.hpp>
 
@@ -156,23 +160,6 @@ namespace hive { namespace chain {
 
       if (ftruncate(block_index_fd, head_block_num * sizeof(uint64_t)) == -1)
         FC_THROW("Error truncating block index file: ${error}", ("error", strerror(errno)));
-    }
-
-    std::pair<uint64_t, block_log::block_attributes_t> split_block_start_pos_with_flags(uint64_t block_start_pos_with_flags)
-    {
-      block_log::block_attributes_t attributes;
-      attributes.flags = (block_log::block_flags)(block_start_pos_with_flags >> 63);
-      if (block_start_pos_with_flags & 0x0100000000000000ull)
-        attributes.dictionary_number = (uint8_t)((block_start_pos_with_flags >> 48) & 0xff);
-      return std::make_pair(block_start_pos_with_flags & 0x0000ffffffffffffull, attributes);
-    }
-
-    uint64_t combine_block_start_pos_with_flags(uint64_t block_start_pos, block_log::block_attributes_t attributes)
-    {
-      return ((uint64_t)attributes.flags << 63) |
-        (attributes.dictionary_number ? 0x0100000000000000ull : 0) |
-        ((uint64_t)attributes.dictionary_number.value_or(0) << 48) |
-        block_start_pos;
     }
 
   } // end namespace detail

@@ -2,7 +2,7 @@
 #include <fc/filesystem.hpp>
 #include <hive/protocol/block.hpp>
 
-#include <hive/chain/block_log_artifacts.hpp>
+#include <hive/chain/detail/block_attributes.hpp>
 
 extern "C"
 {
@@ -47,8 +47,8 @@ namespace hive { namespace chain {
 
   class block_log {
     public:
-      using block_flags=block_log_artifacts::block_flags;
-      using block_attributes_t=block_log_artifacts::block_attributes_t;
+      using block_flags=detail::block_flags;
+      using block_attributes_t=detail::block_attributes_t;
 
       block_log();
       ~block_log();
