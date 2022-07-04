@@ -2,7 +2,8 @@
 
 #include <hive/protocol/types.hpp>
 
-#include <fc/optional.hpp>
+#include <hive/chain/detail/block_attributes.hpp>
+
 #include <fc/filesystem.hpp>
 
 #include <functional>
@@ -42,14 +43,7 @@ public:
   using block_digest_t= hive::protocol::digest_type;
   using block_id_t    = hive::protocol::block_id_type;
 
-  enum class block_flags {
-    uncompressed = 0,
-    zstd = 1
-  };
-  struct block_attributes_t {
-    block_flags flags = block_flags::uncompressed;
-    fc::optional<uint8_t> dictionary_number;
-  };
+  using block_attributes_t = hive::chain::detail::block_attributes_t;
 
   struct artifacts_t
   {
@@ -95,6 +89,4 @@ private:
 
 } }
 
-FC_REFLECT_ENUM(hive::chain::block_log_artifacts::block_flags, (uncompressed)(zstd))
-FC_REFLECT(hive::chain::block_log_artifacts::block_attributes_t, (flags)(dictionary_number))
 
