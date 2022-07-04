@@ -38,6 +38,11 @@ public:
 
   struct artifacts_t
   {
+    artifacts_t(const block_attributes_t& attrs, uint64_t file_pos) : attributes(attrs), block_log_file_pos(file_pos) {}
+    artifacts_t() = default;
+    artifacts_t(artifacts_t&&) = default;
+    artifacts_t& operator=(artifacts_t&&) = default;
+
     block_attributes_t attributes;
     block_id_t block_id;
     uint64_t   block_log_file_pos;
