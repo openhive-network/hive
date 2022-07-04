@@ -79,7 +79,7 @@ namespace hive { namespace chain {
         ssize_t bytes_written = write(fd, buf, nbyte);
         if (bytes_written == -1)
           FC_THROW("Error writing ${nbytes} to file: ${error}", 
-                   ("nbyte", nbyte)("error", strerror(errno)));
+                   ("nbytes", nbyte)("error", strerror(errno)));
         if (bytes_written == (ssize_t)nbyte)
           return;
         buf = ((const char*)buf) + bytes_written;
@@ -94,7 +94,7 @@ namespace hive { namespace chain {
         ssize_t bytes_written = pwrite(fd, buf, nbyte, offset);
         if (bytes_written == -1)
           FC_THROW("Error writing ${nbytes} to file at offset ${offset}: ${error}", 
-                   ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
+                   ("nbytes", nbyte)("offset", offset)("error", strerror(errno)));
         if (bytes_written == (ssize_t)nbyte)
           return;
         buf = ((const char*)buf) + bytes_written;
