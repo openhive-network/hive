@@ -3,11 +3,17 @@
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/io_primitives.hpp>
 
+#include <fc/io/raw.hpp>
+#include <fc/bitutil.hpp>
+
 #include <fcntl.h>
 
 namespace hive { namespace chain {
 
 namespace { /// anonymous
+
+using detail::block_flags;
+using detail::block_attributes_t;
 
 const uint16_t FORMAT_MAJOR = 1;
 const uint16_t FORMAT_MINOR = 0;
@@ -26,6 +32,84 @@ struct artifact_file_header
   uint16_t format_minor_version = FORMAT_MINOR;
   uint32_t head_block_num = 0; /// number of newest (head) block the file holds informations for
   bool dirty_close = true;
+};
+
+/**
+ To store block_attributes we are using a fact that in the block log(and artifact file), the positions are stored as 64 - bit integers.
+ We'll use the lower 48-bits as the actual position, and the upper 16 as flags that tell us how the block is stored
+ hi    lo | hi     lo | hi      |        |        |        |        |      lo |
+ c......d | < -dict-> | <-------------------- - position--------------------> |
+  c = block_flags, one bit specifying the compression method, or uncompressed
+  (this was briefly two bits when we were testing other compression methods)
+  d = one bit, if 1 the block uses a custom compression dictionary
+  dict = the number specifying the dictionary used to compress the block, if d = 1, otherwise undefined
+  . = unused
+*/
+struct artifact_file_chunk
+{
+  union 
+  {
+    struct
+    {
+      uint64_t is_compressed : 1;
+      uint64_t custom_dict_used : 1;
+      uint64_t dictionary_no : 14;
+      uint64_t block_log_offset : 48;
+    };
+    uint64_t combined_pos_and_attrs;
+  };
+
+  /// Block id stripped by block_num (which is known at query time, so it can be supplemented to build full block_id)
+  uint64_t stripped_block_id[2];
+
+  block_log_artifacts::artifacts_t unpack_data(uint32_t block_num) const
+  {
+    auto unpacked_data = detail::split_block_start_pos_with_flags(combined_pos_and_attrs);
+
+    FC_ASSERT(is_compressed == (unpacked_data.second.flags == block_flags::zstd));
+    FC_ASSERT(custom_dict_used == unpacked_data.second.dictionary_number.valid());
+    FC_ASSERT(custom_dict_used == 0 || (dictionary_no == *unpacked_data.second.dictionary_number));
+    FC_ASSERT(block_log_offset == unpacked_data.first);
+
+    block_log_artifacts::artifacts_t artifacts;
+  
+    artifacts.attributes = unpacked_data.second;
+    artifacts.block_log_file_pos = unpacked_data.first;
+    artifacts.block_id = unpack_block_id(block_num);
+
+    return artifacts;
+  }
+
+  void pack_data(uint64_t block_start_pos, block_attributes_t attributes)
+  {
+    combined_pos_and_attrs = detail::combine_block_start_pos_with_flags(block_start_pos, attributes);
+    FC_ASSERT(is_compressed == (attributes.flags == block_flags::zstd));
+    FC_ASSERT(custom_dict_used == attributes.dictionary_number.valid());
+    FC_ASSERT(custom_dict_used == 0 || (dictionary_no == *attributes.dictionary_number));
+    FC_ASSERT(block_start_pos == block_log_offset);
+  }
+
+  block_log_artifacts::block_id_t unpack_block_id(uint32_t block_num) const
+  {
+    block_log_artifacts::block_id_t block_id;
+    
+    static_assert(sizeof(block_id._hash) - sizeof(uint32_t) == sizeof(stripped_block_id));
+
+    memcpy(block_id._hash + 1, &stripped_block_id, sizeof(stripped_block_id));
+
+    block_id._hash[0] = fc::endian_reverse_u32(block_num); // store the block num in the ID, 160 bits is plenty for the hash
+
+    return block_id;
+  }
+
+  void pack_block_id(uint32_t block_num, block_log_artifacts::block_id_t block_id)
+  {
+    static_assert(sizeof(block_id._hash) - sizeof(uint32_t) == sizeof(stripped_block_id));
+    FC_ASSERT(block_id._hash[0] == fc::endian_reverse_u32(block_num), "Malformed id: ${id} for block: ${b}", ("id", block_id)("b", block_num));
+
+    memcpy(&stripped_block_id, block_id._hash + 1, sizeof(stripped_block_id));
+  }
+
 };
 
 } /// anonymous
@@ -124,6 +208,7 @@ private:
   int _storage_fd = -1; /// file descriptor to the opened file.
   artifact_file_header _header;
   const size_t header_pack_size = fc::raw::pack_size(_header);
+  const size_t artifact_chunk_size = sizeof(artifact_file_chunk);
   bool _is_writable = false;
 };
 
