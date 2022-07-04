@@ -1,6 +1,7 @@
 #include <hive/chain/block_log_artifacts.hpp>
 
 #include <hive/utilities/git_revision.hpp>
+#include <hive/utilities/io_primitives.hpp>
 
 #include <fcntl.h>
 
@@ -63,6 +64,10 @@ public:
   {
     ilog("Closing a block log artifact file: ${f} file...", ("f", _artifact_file_name.generic_string()));
 
+    _header.dirty_close = false;
+
+    flush_header();
+
     HANDLE_IO((::close(_storage_fd)), "Closing the artifact file");
 
     _storage_fd = -1;
@@ -72,13 +77,53 @@ public:
 
 private:
   bool load_header();
+  void flush_header();
+
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
   void truncate_file(uint32_t last_block);
+
+  void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description)
+  {
+    hive::utilities::perform_write(_storage_fd, buffer.data(), buffer.size(), offset, description);
+  }
+
+  template <class Data, unsigned int N=1>
+  void write_data(const Data& buffer, off_t offset, const std::string& description)
+  {
+    hive::utilities::perform_write(_storage_fd, reinterpret_cast<const char*>(&buffer), N*sizeof(Data), offset, description);
+  }
+
+  std::vector<char> read_data(size_t to_read, off_t offset, const std::string& description) const
+  {
+    std::vector<char> buffer;
+    buffer.resize(to_read);
+
+    auto total_read = hive::utilities::perform_read(_storage_fd, buffer.data(), to_read, offset, description);
+
+    FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
+
+    return buffer;
+  }
+
+  template <class Data, unsigned int N=1>
+  void read_data(Data* buffer, off_t offset, const std::string& description) const
+  {
+    const auto to_read = N*sizeof(Data);
+    auto total_read = hive::utilities::perform_read(_storage_fd, reinterpret_cast<char*>(buffer), to_read, offset, description);
+
+    FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
+  }
+
+  size_t calculate_offset(uint32_t block_num) const
+  {
+    return header_pack_size + artifact_chunk_size*(block_num - 1);
+  }
 
 private:
   fc::path _artifact_file_name;
   int _storage_fd = -1; /// file descriptor to the opened file.
   artifact_file_header _header;
+  const size_t header_pack_size = fc::raw::pack_size(_header);
   bool _is_writable = false;
 };
 
@@ -161,7 +206,31 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
 
 bool block_log_artifacts::impl::load_header()
 {
-  return false;
+  try
+  {
+    std::vector<char> buffer = read_data(header_pack_size, 0, "Reading the artifact file header");
+    FC_ASSERT(buffer.size() == header_pack_size);
+
+    fc::raw::unpack_from_vector(buffer, _header);
+
+    return true;
+  }
+  catch(const fc::exception& e)
+  {
+    elog("Loading the artifact file header failed: ${e}", ("e", e.to_detail_string()));
+    return false;
+  }
+}
+
+void block_log_artifacts::impl::flush_header()
+{
+  std::vector<char> buffer;
+
+  buffer = fc::raw::pack_to_vector(_header);
+
+  FC_ASSERT(buffer.size() == header_pack_size);
+
+  write_data(buffer, 0, "Flushing a file header");
 }
 
 void block_log_artifacts::impl::generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block)
@@ -179,6 +248,12 @@ void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts(uint32_t block_num) const
 {
   artifacts_t artifacts;
+
+  auto chunk_position = calculate_offset(block_num);
+
+  artifact_file_chunk data_chunk;
+
+
 
   return artifacts;
 }
