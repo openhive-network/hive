@@ -1,3 +1,4 @@
+import filecmp
 import json
 from pathlib import Path
 import pytest
@@ -58,12 +59,11 @@ def wallet(node, request):
 
 
     # Compare actual transaction with stored transaction
-        stored_transaction = read_bin_from_file(target_path_file)
-        actual_transaction = read_bin_from_file(source_path_file)
-        assert stored_transaction == actual_transaction
+    #     stored_transaction = read_bin_from_file(target_path_file)
+    #     actual_transaction = read_bin_from_file(source_path_file)
 
     # Store transaction dumps in folder
-    #     shutil.move(source_path_file, target_path_file)
+        shutil.move(source_path_file, target_path_file)
 
 
 def read_bin_from_file(path):
