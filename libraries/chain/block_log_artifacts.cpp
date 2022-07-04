@@ -1,5 +1,7 @@
 #include <hive/chain/block_log_artifacts.hpp>
 
+#include <hive/chain/block_log.hpp>
+
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/io_primitives.hpp>
 
@@ -7,6 +9,12 @@
 #include <fc/bitutil.hpp>
 
 #include <fcntl.h>
+
+#include <chrono>
+#include <future>
+#include <map>
+#include <thread>
+#include <vector>
 
 namespace hive { namespace chain {
 
@@ -173,6 +181,13 @@ private:
   void flush_header();
 
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
+  
+  void flush_data_chunks(uint32_t min_block_num, const artifacts_t& data);
+
+  typedef std::pair<uint32_t, artifacts_t> worker_thread_result;
+
+  static void woker_thread_body(uint32_t min_block_num, std::vector<artifacts_t> data, std::promise<worker_thread_result>);
+
   void truncate_file(uint32_t last_block);
 
   void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description)
@@ -326,9 +341,100 @@ void block_log_artifacts::impl::flush_header()
 
 void block_log_artifacts::impl::generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block)
 {
-  ilog("Attempting to generate a block artifact file...");
+  ilog("Attempting to generate a block artifact file for block range: ${fb}...${lb}", ("fb", first_block)("lb", "last_block"));
 
-  ilog("Block artifact file generation finished...");
+  uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+  FC_ASSERT(first_block <= last_block);
+
+  uint32_t block_count = last_block - first_block + 1;
+
+  const uint32_t min_blocks_per_thread = 1000;
+  const uint32_t thread_count = block_count > min_blocks_per_thread ? 4 : 1;
+
+  const uint32_t blocks_per_thread = block_count / thread_count;
+  
+  uint32_t rest = block_count - blocks_per_thread*thread_count;
+
+  std::vector<artifacts_t> artifacts_to_collect;
+  artifacts_to_collect.reserve(blocks_per_thread);
+
+  typedef std::pair<std::thread, std::future<worker_thread_result>> thread_data_t;
+
+  std::map<uint32_t, thread_data_t> spawned_threads;
+
+  source_block_provider.for_each_block_position(
+    [this, first_block, last_block, blocks_per_thread, &artifacts_to_collect, &spawned_threads, &rest]
+    (uint32_t block_num, uint64_t block_pos, const block_attributes_t& block_attrs) -> bool
+    {
+      /// Since here is backward processing direction lets ignore and stop for all blocks excluded from requested range
+      if(block_num < first_block)
+        return false;
+
+      if(block_num > last_block)
+        return true;
+
+      artifacts_to_collect.emplace_back(block_attrs, block_pos);
+
+      /// First spawned thread will also include number of 'rest' blocks.
+      if(artifacts_to_collect.size() == blocks_per_thread + rest)
+      {
+        rest = 0; /// clear rest to give further threads estimated amount of blocks.
+        size_t block_info_count = artifacts_to_collect.size();
+
+        ilog("Collected amount of block data sufficient to start a worker thread...");
+
+        std::promise<worker_thread_result> work_promise;
+        auto worker_thread_future = work_promise.get_future();
+
+        spawned_threads.emplace(block_num, std::make_pair(
+          std::thread(woker_thread_body, block_num, std::move(artifacts_to_collect), std::move(work_promise)), std::move(worker_thread_future)));
+
+        ilog("Spawned worker thread #{tc} covering block range:<${fb}:${lb}>", ("tc", spawned_threads.size())("fb", block_num)
+          ("lb", block_num + block_info_count - 1));
+      }
+
+      return true;
+    }
+    );
+
+  ilog("${tc} threads spawned - waiting for their work finish...", ("tc", spawned_threads.size()));
+
+  uint32_t thread_no = 1;
+
+  for(auto& thread_info : spawned_threads)
+  {
+    try
+    {
+      ilog("Waiting for #{t} thread finish...", ("t", thread_no));
+
+      thread_data_t& thread_data = thread_info.second;
+      worker_thread_result result = thread_data.second.get();
+
+      ilog("Thread #{t} finished...", ("t", thread_no));
+
+      flush_data_chunks(result.first, result.second);
+
+      ++thread_no;
+    }
+    catch(const fc::exception& e)
+    {
+      ilog("Thread #{t} failed with exception...", ("t", thread_no));
+      throw;
+    }
+    catch(const std::exception& e)
+    {
+      ilog("Thread #{t} failed with exception...", ("t", thread_no));
+      throw;
+    }
+  }
+
+  ilog("All threads finished...");
+
+  uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  auto elapsed_time = time_end - time_begin;
+
+  ilog("Block artifact file generation finished. ${bc} processed in time: ${t}", ("bc", block_count)("t", elapsed_time));
 }
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
