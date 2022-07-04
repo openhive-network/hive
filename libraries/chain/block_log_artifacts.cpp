@@ -126,7 +126,7 @@ public:
   }
 
   artifacts_t read_block_artifacts(uint32_t block_num) const;
-  void store_block_artifacts(uint32_t block_num, const block_attributes_t& block_attributes, const block_id_t& block_id);
+  void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes, const block_id_t& block_id);
 
   bool is_open() const
   {
@@ -348,10 +348,17 @@ block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts
   return artifacts;
 }
 
-void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, const block_attributes_t& block_attrs,
-  const block_id_t& block_id)
+void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos,
+  const block_attributes_t& block_attrs, const block_id_t& block_id)
 {
+  artifact_file_chunk data_chunk;
 
+  data_chunk.pack_data(block_log_file_pos, block_attrs);
+  data_chunk.pack_block_id(block_num, block_id);
+
+  auto write_position = calculate_offset(block_num);
+
+  write_data(data_chunk, write_position, "Wrting the artifact file datachunk");
 }
 
 
@@ -386,9 +393,10 @@ block_log_artifacts::artifacts_t block_log_artifacts::read_block_artifacts(uint3
   return _impl->read_block_artifacts(block_num);
 }
 
-void block_log_artifacts::store_block_artifacts(uint32_t block_num, const block_attributes_t& block_attributes, const block_id_t& block_id)
+void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
+  const block_id_t& block_id)
 {
-  _impl->store_block_artifacts(block_num, block_attributes, block_id);
+  _impl->store_block_artifacts(block_num, block_log_file_pos, block_attributes, block_id);
 }
 
 }}

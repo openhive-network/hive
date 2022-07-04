@@ -59,7 +59,8 @@ public:
 
   artifacts_t read_block_artifacts(uint32_t block_num) const;
 
-  void store_block_artifacts(uint32_t block_num, const block_attributes_t& block_attributes, const block_id_t& block_id);
+  void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
+    const block_id_t& block_id);
 
 private:
   class impl;
