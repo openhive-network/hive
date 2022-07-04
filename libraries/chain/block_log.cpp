@@ -11,6 +11,8 @@
 
 #include <appbase/application.hpp>
 
+#include <hive/utilities/io_primitives.hpp>
+
 #include <boost/thread/mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/lock_options.hpp>
@@ -89,41 +91,12 @@ namespace hive { namespace chain {
 
     void block_log_impl::pwrite_with_retry(int fd, const void* buf, size_t nbyte, off_t offset)
     {
-      for (;;)
-      {
-        ssize_t bytes_written = pwrite(fd, buf, nbyte, offset);
-        if (bytes_written == -1)
-          FC_THROW("Error writing ${nbytes} to file at offset ${offset}: ${error}", 
-                   ("nbytes", nbyte)("offset", offset)("error", strerror(errno)));
-        if (bytes_written == (ssize_t)nbyte)
-          return;
-        buf = ((const char*)buf) + bytes_written;
-        offset += bytes_written;
-        nbyte -= bytes_written;
-      }
+      hive::utilities::perform_write(fd, reinterpret_cast<const char*>(buf), nbyte, offset, "saving block log data");
     }
 
     size_t block_log_impl::pread_with_retry(int fd, void* buf, size_t nbyte, off_t offset)
     {
-      size_t total_read = 0;
-      for (;;)
-      {
-        ssize_t bytes_read = pread(fd, buf, nbyte, offset);
-        if (bytes_read == -1)
-          FC_THROW("Error reading ${nbytes} from file at offset ${offset}: ${error}", 
-                   ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
-
-        total_read += bytes_read;
-
-        if (bytes_read == 0 || bytes_read == (ssize_t)nbyte)
-          break;
-
-        buf = ((char*)buf) + bytes_read;
-        offset += bytes_read;
-        nbyte -= bytes_read;
-      }
-
-      return total_read;
+      return hive::utilities::perform_read(fd, reinterpret_cast<char*>(buf), nbyte, offset, "loading block log data");
     }
 
     signed_block block_log_impl::read_block_from_offset_and_size(uint64_t offset, uint64_t size)
