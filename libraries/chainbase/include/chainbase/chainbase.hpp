@@ -101,7 +101,6 @@ namespace helpers
     size_t pureNodeSize = sizeof(typename IndexType::MULTIINDEX_NODE_TYPE) -
       sizeof(typename IndexType::value_type);
     info->_additional_container_allocation = info->_item_count*pureNodeSize;
-#undef MULTIINDEX_NODE_TYPE
   }
 
   template <class IndexType>
