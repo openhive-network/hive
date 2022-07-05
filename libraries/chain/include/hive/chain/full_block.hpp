@@ -57,6 +57,7 @@ class full_block_type
     mutable size_t signed_block_header_size; // only valid when has_unpacked_block_header
     mutable fc::optional<block_id_type> block_id; // only valid when has_unpacked_block_header
     mutable fc::optional<digest_type> digest; // only valid when has_unpacked_block_header
+    mutable fc::ripemd160 legacy_block_message_hash; // only valid when has_unpacked_block_header
 
     mutable std::atomic<bool> has_unpacked_block = { false };
     mutable std::mutex unpacked_block_mutex;
@@ -89,8 +90,10 @@ class full_block_type
     const block_id_type& get_block_id() const;
     uint32_t get_block_num() const;
     const digest_type& get_digest() const;
+    const fc::ripemd160& get_legacy_block_message_hash() const;
     const fc::ecc::public_key& get_signing_key() const;
     const uncompressed_block_data& get_uncompressed_block() const;
+    bool has_compressed_block_data() const;
     const compressed_block_data& get_compressed_block() const;
     uint32_t get_uncompressed_block_size() const;
     const std::vector<std::shared_ptr<full_transaction_type>>& get_full_transactions() const;

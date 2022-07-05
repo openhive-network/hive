@@ -31,6 +31,7 @@ namespace graphene { namespace net {
 
   const core_message_type_enum trx_message::type                             = core_message_type_enum::trx_message_type;
   const core_message_type_enum block_message::type                           = core_message_type_enum::block_message_type;
+  const core_message_type_enum compressed_block_message::type                = core_message_type_enum::compressed_block_message_type;
   const core_message_type_enum item_ids_inventory_message::type              = core_message_type_enum::item_ids_inventory_message_type;
   const core_message_type_enum blockchain_item_ids_inventory_message::type   = core_message_type_enum::blockchain_item_ids_inventory_message_type;
   const core_message_type_enum fetch_blockchain_item_ids_message::type       = core_message_type_enum::fetch_blockchain_item_ids_message_type;
@@ -90,6 +91,64 @@ namespace graphene { namespace net {
 
       return block_message(full_block);
     } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a block_message");
+  }
+
+  namespace
+  {
+    constexpr size_t COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE = 2;
+  }
+  message::message(const compressed_block_message& msg)
+  {
+    assert(msg.full_block);
+    FC_ASSERT(msg.full_block, "Can't send a block_message when we don't have the full_block");
+    msg_type = compressed_block_message::type;
+
+    const hive::chain::compressed_block_data& compressed_data = msg.full_block->get_compressed_block();
+
+    // we need two extra bytes to specify whether the block is compressed, and if it is, what dictionary
+    // to use to decompress it (same data as is stored in the block_log's index)
+    data.resize(COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE + compressed_data.compressed_size);
+    if (compressed_data.compression_attributes.flags == hive::chain::block_log::block_flags::zstd)
+      data[0] |= 0x80;
+    if (compressed_data.compression_attributes.dictionary_number)
+    {
+      data[0] |= 0x40;
+      data[1] = *compressed_data.compression_attributes.dictionary_number;
+    }
+
+    memcpy(&data[COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE], compressed_data.compressed_bytes.get(), compressed_data.compressed_size);
+    size = data.size();
+  }
+
+  compressed_block_message message::as_compressed_block_message() const
+  {
+    try {
+      FC_ASSERT(msg_type == compressed_block_message::type);
+
+      // a compressed_block_message is serialized as two bytes of compression flags,
+      // followed by the raw block of compressed data
+
+      FC_ASSERT(data.size() > COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE);
+
+      // decode the block attributes in the first two bytes
+      hive::chain::block_log::block_attributes_t block_attributes;
+      block_attributes.flags = (data[0] & 0x80) ? hive::chain::block_log::block_flags::zstd : hive::chain::block_log::block_flags::uncompressed;
+      if (data[0] & 0x40)
+        block_attributes.dictionary_number = data[1];
+
+      // now decode the size of the data
+      const size_t compressed_data_size = data.size() - COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE;
+      std::unique_ptr<char[]> compressed_data_bytes(new char[compressed_data_size]);
+      memcpy(compressed_data_bytes.get(), &data[COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE], compressed_data_size);
+
+      // begin processing the block in the worker threads
+      std::shared_ptr<full_block_type> full_block = full_block_type::create_from_compressed_block_data(std::move(compressed_data_bytes), 
+                                                                                                       compressed_data_size, 
+                                                                                                       block_attributes);
+      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_received_from_p2p);
+
+      return compressed_block_message(full_block);
+    } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a compressed_block_message");
   }
 
   message::message(const trx_message& msg)

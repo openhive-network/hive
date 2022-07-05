@@ -23,7 +23,9 @@
  */
 #pragma once
 
-#define GRAPHENE_NET_PROTOCOL_VERSION                        106
+#define GRAPHENE_NET_PROTOCOL_VERSION                        107
+#define GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION      107 // support for compressed blocks added in 107
+#define GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION         106 // support for the firewall check was added in 106
 
 /**
  * Define this to enable debugging code in the p2p network interface.

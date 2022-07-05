@@ -139,6 +139,14 @@ full_block_type::~full_block_type()
   }
   FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after encoding block");
 
+  // compute the legacy_block_message_hash.  This is the hash you would get if you packed this block into a
+  // block_message and asked for its message_id.  On the p2p net, we'll always use the legacy_message_hash, even
+  // when we're sending blocks in their compressed form.
+  fc::ripemd160::encoder legacy_message_hash_encoder;
+  legacy_message_hash_encoder.write(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
+  legacy_message_hash_encoder.write(full_block->block_id->data(), full_block->block_id->data_size());
+  full_block->legacy_block_message_hash = legacy_message_hash_encoder.result();
+
   // serialization done.  Fill out the decoded version of the block with the transactions
   new_block.transactions.reserve(full_transactions.size());
   for (const std::shared_ptr<full_transaction_type>& full_transaction : full_transactions)
@@ -177,6 +185,11 @@ const uncompressed_block_data& full_block_type::get_uncompressed_block() const
     }
   }
   return decoded_block_storage->uncompressed_block;
+}
+
+bool full_block_type::has_compressed_block_data() const
+{
+  return has_compressed_block.load(std::memory_order_relaxed); 
 }
 
 const compressed_block_data& full_block_type::get_compressed_block() const
@@ -265,6 +278,14 @@ const signed_block_header& full_block_type::get_block_header() const
         digest = digest_type::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), block_header_size);
       }
 
+      // compute the legacy_block_message_hash.  This is the hash you would get if you packed this block into a
+      // block_message and asked for its message_id.  On the p2p net, we'll always use the legacy_message_hash, even
+      // when we're sending blocks in their compressed form.
+      fc::ripemd160::encoder legacy_message_hash_encoder;
+      legacy_message_hash_encoder.write(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
+      legacy_message_hash_encoder.write(block_id->data(), block_id->data_size());
+      legacy_block_message_hash = legacy_message_hash_encoder.result();
+
       has_unpacked_block_header.store(true, std::memory_order_release);
     }
   }
@@ -328,7 +349,7 @@ const signed_block& full_block_type::get_block() const
 
 const block_id_type& full_block_type::get_block_id() const 
 {
-  get_block_header();
+  (void)get_block_header();
   return *block_id;
 }
 
@@ -339,8 +360,14 @@ uint32_t full_block_type::get_block_num() const
 
 const digest_type& full_block_type::get_digest() const 
 {
-  get_block_header();
+  (void)get_block_header();
   return *digest;
+}
+
+const fc::ripemd160& full_block_type::get_legacy_block_message_hash() const
+{
+  (void)get_block_header();
+  return legacy_block_message_hash;
 }
 
 const fc::ecc::public_key& full_block_type::get_signing_key() const
