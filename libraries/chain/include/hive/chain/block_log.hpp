@@ -65,6 +65,9 @@ namespace hive { namespace chain {
 
       optional<signed_block> read_block_by_num( uint32_t block_num )const;
       optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
+
+      signed_block_header read_block_header_by_offset(uint64_t file_position, uint32_t block_serialized_data_size, const block_attributes_t& attrs) const;
+
       vector<signed_block> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
 
       std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_head_block() const;
@@ -79,6 +82,13 @@ namespace hive { namespace chain {
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size, 
                                                                                fc::optional<uint8_t> dictionary_number = fc::optional<int>(), 
                                                                                fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
+
+      /// Functor takes: block_num, serialized_block_data_size, block_log_file_offset, block_attributes. 
+      /// It should return true to continue processing, false to stop iteration.
+      typedef std::function<bool(uint32_t, uint32_t, uint64_t, const block_attributes_t&)> block_info_processor_t;
+      /// Allows to process blocks in REVERSE order.
+      void for_each_block_position(block_info_processor_t processor) const;
+
     private:
       void construct_index(bool resume = false);
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
