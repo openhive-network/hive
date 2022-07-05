@@ -87,15 +87,21 @@ namespace helpers
   template <class IndexType>
   void gather_index_static_data(const IndexType& index, index_statistic_info* info)
   {
-    static_assert( sizeof( typename IndexType::final_node_type ) >= sizeof( typename IndexType::value_type ) );
+#if BOOST_VERSION >= 107400
+#define MULTIINDEX_NODE_TYPE final_node_type
+#else
+#define MULTIINDEX_NODE_TYPE node_type
+#endif
+    static_assert( sizeof( typename IndexType::MULTIINDEX_NODE_TYPE ) >= sizeof( typename IndexType::value_type ) );
 
     info->_value_type_name = boost::core::demangle(typeid(typename IndexType::value_type).name());
     info->_item_count = index.size();
     info->_item_sizeof = sizeof(typename IndexType::value_type);
     info->_item_additional_allocation = 0;
-    size_t pureNodeSize = sizeof(typename IndexType::final_node_type) -
+    size_t pureNodeSize = sizeof(typename IndexType::MULTIINDEX_NODE_TYPE) -
       sizeof(typename IndexType::value_type);
     info->_additional_container_allocation = info->_item_count*pureNodeSize;
+#undef MULTIINDEX_NODE_TYPE
   }
 
   template <class IndexType>
