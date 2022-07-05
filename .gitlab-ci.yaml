@@ -279,7 +279,9 @@ message_format_tests:
   script:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
-    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+    - pip3 install pytest-timestamper
+    - timeout 20m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 25min
   artifacts:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
