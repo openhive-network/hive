@@ -14,6 +14,12 @@ def node():
     return init_node
 
 
+@pytest.fixture
+def replayed_node():
+    api_node = tt.InitNode()
+    api_node.run(replay_from=Path(__file__).parent.joinpath('block_log/block_log'), wait_for_live=False)
+    return api_node
+
 # @pytest.fixture
 # def legacy_wallet(node, request):
 #     wallet = tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
@@ -27,17 +33,17 @@ def node():
 #         shutil.move(source_path_json_file, target_path_json_file)
 #
 #
-# @pytest.fixture
-# def nai_wallet(node, request):
-#     wallet = tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
-#                                                              '--transaction-serialization=hf26'])
-#     yield wallet
-#
-#     for file_extension in ['json', 'bin']:
-#         source_path_json_file = wallet.directory / f'{request.fspath.purebasename}.{file_extension}'
-#         target_path_json_file = Path(
-#             request.fspath.dirname) / f'dumped_{file_extension}_files_nai_wallet' / f'{request.fspath.purebasename}.json'
-#         shutil.move(source_path_json_file, target_path_json_file)
+@pytest.fixture
+def nai_wallet(replayed_node, request):
+    wallet = tt.Wallet(attach_to=replayed_node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
+                                                             '--transaction-serialization=hf26'])
+    yield wallet
+
+    for file_extension in ['json', 'bin']:
+        source_path_json_file = wallet.directory / f'{request.fspath.purebasename}.{file_extension}'
+        target_path_json_file = Path(
+            request.fspath.dirname) / f'dumped_{file_extension}_files_hf26_wallet' / f'{request.fspath.purebasename}.{file_extension}'
+        shutil.move(source_path_json_file, target_path_json_file)
 #
 #
 # @pytest.fixture(params=['legacy_wallet', 'nai_wallet'])
@@ -45,7 +51,7 @@ def node():
 #     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture(params=['legacy', 'hf26'])
+@pytest.fixture(params=['hf26'])
 def wallet(node, request):
     wallet = tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
                                                              f'--transaction-serialization={request.param}'])
