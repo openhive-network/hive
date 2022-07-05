@@ -382,7 +382,7 @@ namespace hive { namespace chain {
     // writes to file descriptors are flushed automatically
   }
 
-  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_log::block_attributes_t attributes)
+  /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes)
   {
     try
     {
@@ -471,7 +471,7 @@ namespace hive { namespace chain {
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
 
-  std::vector<std::shared_ptr<full_block_type>> block_log::read_block_range_by_num( uint32_t first_block_num, uint32_t count )const
+  std::vector<std::shared_ptr<full_block_type>> block_log::read_block_range_by_num(uint32_t first_block_num, uint32_t count) const
   {
     try
     {
@@ -829,5 +829,68 @@ namespace hive { namespace chain {
                                         decompression_context);
 
   }
+
+  void block_log::for_each_block_position(block_info_processor_t processor) const
+  {
+    FC_ASSERT(is_open(), "Open block log first !");
+
+    if (my->block_log_size == 0)
+      return; /// Nothing to do for empty block log.
+
+    uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    boost::shared_ptr<signed_block> head_block = my->head.load();
+
+    FC_ASSERT(head_block != nullptr);
+
+    uint32_t head_block_num = head_block->block_num();
+
+    //memory map for block log
+    char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
+    if (block_log_ptr == (char*)-1)
+      FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
+    if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
+      wlog("madvise failed: ${error}", ("error", strerror(errno)));
+
+    // now walk backwards through the block log reading the starting positions of the blocks
+    uint64_t block_pos = my->block_log_size - sizeof(uint64_t);
+    
+    ilog("Attempting to walk over block position list starting from block: ${b}...", ("b", head_block_num));
+
+    for (uint32_t block_num = head_block_num; block_num >= 1; --block_num)
+    {
+      // read the file offset of the start of the block from the block log
+      uint64_t higher_block_pos = block_pos;
+      //read next block pos offset from the block log
+      uint64_t block_pos_with_flags = 0;
+      memcpy(&block_pos_with_flags, block_log_ptr + block_pos, sizeof(block_pos_with_flags));
+
+      auto block_pos_info = detail::split_block_start_pos_with_flags(block_pos_with_flags);
+      block_pos = block_pos_info.first;
+      if (higher_block_pos <= block_pos) //this is a sanity check on index values stored in the block log
+        FC_THROW("bad block offset at block ${block_num} because higher block pos: ${higher_block_pos} <= lower block pos: ${block_pos}",
+          ("block_num", block_num)("higher_block_pos", higher_block_pos)("block_pos", block_pos));
+
+      uint32_t block_serialized_data_size = higher_block_pos - block_pos;
+
+      if (processor(block_num, block_serialized_data_size, block_pos, block_pos_info.second) == false)
+      {
+        ilog("Stopping block position list walk on caller request... Last processed block: ${b}", ("b", block_num));
+        break;
+      }
+
+      /// Move to the offset of previous block
+      block_pos -= sizeof(uint64_t);
+    }
+
+    if (munmap(block_log_ptr, my->block_log_size) == -1)
+      elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
+
+    uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    auto elapsed_time = time_end - time_begin;
+
+    ilog("Block position list walk finished in time: ${et} ms.", ("et", elapsed_time/1000));
+  }
+
 
 } } // hive::chain
