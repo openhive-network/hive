@@ -794,7 +794,7 @@ struct post_apply_operation_visitor
 
     if( delegation_overflow > 0 )
     {
-      const auto& rc_del_idx = _db.get_index<rc_direct_delegation_object_index, by_from_to>();
+      const auto& rc_del_idx = _db.get_index<rc_direct_delegation_index, by_from_to>();
       // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
       // start_id just means we iterate over all the rc delegations
       auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( from_account.get_id(), account_id_type::start_id() ) );
@@ -1247,7 +1247,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pending_data_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_object_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_usage_bucket_index);
 
     fc::mutable_variant_object state_opts;

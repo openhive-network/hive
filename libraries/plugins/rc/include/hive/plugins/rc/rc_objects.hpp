@@ -313,7 +313,7 @@ typedef multi_index_container<
     >
   >,
   allocator< rc_direct_delegation_object >
-> rc_direct_delegation_object_index;
+> rc_direct_delegation_index;
 
 struct by_timestamp;
 
@@ -368,7 +368,7 @@ FC_REFLECT( hive::plugins::rc::rc_direct_delegation_object,
   (to)
   (delegated_rc)
   )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_direct_delegation_object, hive::plugins::rc::rc_direct_delegation_object_index )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_direct_delegation_object, hive::plugins::rc::rc_direct_delegation_index )
 
 FC_REFLECT( hive::plugins::rc::rc_usage_bucket_object,
   (id)
