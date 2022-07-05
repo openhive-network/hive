@@ -98,7 +98,23 @@ void from_variant( const fc::variant& var, hive::plugins::condenser_api::legacy_
     }
     vo.set_which( itr->second );
   }
-  vo.visit( fc::to_static_variant( ar[1] ) );
+
+  try
+  {
+    vo.visit( fc::to_static_variant( ar[1] ) );
+  }
+  catch( fc::bad_cast_exception& e )
+  {
+    /*
+      Sometimes an operation has an extension( it's a static variant ) which is given in `legacy` format.
+      For example: `comment_options` has `legacy_comment_options_extensions`.
+      Therefore forcing a legacy mode is needed, because a static variant is incorrectly processed( haf26 is set by default ).
+    */
+    mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+    ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", ar[0]) );
+
+    vo.visit( fc::to_static_variant( ar[1] ) );
+  }
 }
 
 } // fc
