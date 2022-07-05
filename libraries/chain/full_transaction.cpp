@@ -61,6 +61,13 @@ const hive::protocol::digest_type& full_transaction_type::get_merkle_digest() co
   return *merkle_digest;
 }
 
+const fc::ripemd160& full_transaction_type::get_legacy_transaction_message_hash() const
+{
+  if (!legacy_transaction_message_hash)
+    legacy_transaction_message_hash = fc::ripemd160::hash(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+  return *legacy_transaction_message_hash;
+}
+
 const hive::protocol::digest_type& full_transaction_type::get_digest() const
 {
   if (!digest)
