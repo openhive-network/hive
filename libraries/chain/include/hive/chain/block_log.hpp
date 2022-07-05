@@ -67,7 +67,7 @@ namespace hive { namespace chain {
 
       std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num )const;
       optional<signed_block_header> read_block_header_by_num( uint32_t block_num )const;
-      std::vector<std::shared_ptr<full_block_type>> read_block_range_by_num( uint32_t first_block_num, uint32_t count )const;
+      std::vector<std::shared_ptr<full_block_type>> read_block_range_by_num(uint32_t first_block_num, uint32_t count) const;
 
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
       std::shared_ptr<full_block_type> read_head() const;
@@ -81,10 +81,16 @@ namespace hive { namespace chain {
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size, 
                                                                                fc::optional<uint8_t> dictionary_number = fc::optional<int>(), 
                                                                                fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
-      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
+
+      /// Functor takes: block_num, serialized_block_data_size, block_log_file_offset, block_attributes. 
+      /// It should return true to continue processing, false to stop iteration.
+      typedef std::function<bool(uint32_t, uint32_t, uint64_t, const block_attributes_t&)> block_info_processor_t;
+      /// Allows to process blocks in REVERSE order.
+      void for_each_block_position(block_info_processor_t processor) const;
 
     private:
       void construct_index(bool resume = false);
+      static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
       std::unique_ptr<detail::block_log_impl> my;
   };
 
