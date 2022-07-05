@@ -46,6 +46,7 @@ namespace graphene { namespace net {
   typedef fc::uint160_t message_hash_type;
 
   struct block_message;
+  struct compressed_block_message;
   struct trx_message;
 
   /**
@@ -76,6 +77,7 @@ namespace graphene { namespace net {
      }
 
      message(const block_message& msg);
+     message(const compressed_block_message& msg);
      message(const trx_message& msg);
 
      fc::uint160_t id()const
@@ -113,8 +115,9 @@ namespace graphene { namespace net {
               );
      }
      
-     block_message as_block_message()const;
-     trx_message as_trx_message()const;
+     block_message as_block_message() const;
+     compressed_block_message as_compressed_block_message() const;
+     trx_message as_trx_message() const;
   };
 
 
