@@ -26,6 +26,7 @@ struct full_transaction_type
 {
   private:
     mutable fc::optional<hive::protocol::digest_type> merkle_digest; // transaction hash used for calculating block's merkle root
+    mutable fc::optional<fc::ripemd160> legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
     mutable fc::optional<hive::protocol::digest_type> digest; // hash used for generating transaction id
     mutable fc::optional<hive::protocol::transaction_id_type> transaction_id; // transaction id itself (truncated digest)
     mutable bool validation_attempted = false; // true if validate() has been called & cached
@@ -79,6 +80,7 @@ struct full_transaction_type
     const hive::protocol::signed_transaction& get_transaction() const;
     const hive::protocol::digest_type& get_merkle_digest() const;
     const hive::protocol::digest_type& get_digest() const;
+    const fc::ripemd160& get_legacy_transaction_message_hash() const;
     const hive::protocol::transaction_id_type& get_transaction_id() const;
     const flat_set<hive::protocol::public_key_type>& get_signature_keys() const;
     const hive::protocol::required_authorities_type& get_required_authorities() const;

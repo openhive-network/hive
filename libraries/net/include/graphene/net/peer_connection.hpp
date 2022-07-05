@@ -68,7 +68,7 @@ namespace graphene { namespace net
       virtual void on_message(peer_connection* originating_peer,
                               const message& received_message) = 0;
       virtual void on_connection_closed(peer_connection* originating_peer) = 0;
-      virtual message get_message_for_item(const item_id& item) = 0;
+      virtual std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) = 0;
     };
 
     class peer_connection;
@@ -123,7 +123,7 @@ namespace graphene { namespace net
           enqueue_time(enqueue_time)
         {}
 
-        virtual message get_message(peer_connection_delegate* node) = 0;
+        virtual message get_message(peer_connection_delegate* node, peer_connection* peer) = 0;
         /** returns roughly the number of bytes of memory the message is consuming while
          * it is sitting on the queue
          */
@@ -145,29 +145,29 @@ namespace graphene { namespace net
           message_send_time_field_offset(message_send_time_field_offset)
         {}
 
-        message get_message(peer_connection_delegate* node) override;
+        message get_message(peer_connection_delegate* node, peer_connection* peer) override;
         size_t get_size_in_queue() override;
       };
 
-      /* when you queue up a 'virtual_queued_message', we just queue up the hash of the
+      /* when you queue up a 'virtual_queued_block_message', we just queue up the hash of the
        * item we want to send.  When it reaches the top of the queue, we make a callback
        * to the node to generate the message.
        */
-      struct virtual_queued_message : queued_message
+      struct virtual_queued_block_message : queued_message
       {
-        item_id item_to_send;
+        std::shared_ptr<full_block_type> full_block;
 
-        virtual_queued_message(item_id item_to_send) :
-          item_to_send(std::move(item_to_send))
+        virtual_queued_block_message(const std::shared_ptr<full_block_type>& full_block) :
+          full_block(full_block)
         {}
 
-        message get_message(peer_connection_delegate* node) override;
+        message get_message(peer_connection_delegate* node, peer_connection* peer) override;
         size_t get_size_in_queue() override;
       };
 
 
       size_t _total_queued_messages_size = 0;
-      std::queue<std::unique_ptr<queued_message>, std::list<std::unique_ptr<queued_message> > > _queued_messages;
+      std::queue<std::unique_ptr<queued_message>, std::list<std::unique_ptr<queued_message>>> _queued_messages;
       fc::future<void> _send_queued_messages_done;
     public:
       fc::time_point connection_initiation_time;
@@ -208,6 +208,7 @@ namespace graphene { namespace net
       fc::optional<std::string> platform;
       fc::optional<uint32_t> bitness;
       fc::optional<hive::protocol::chain_id_type> chain_id;
+      fc::optional<uint8_t> last_available_zstd_compression_dictionary_number;
 
       // for inbound connections, these fields record what the peer sent us in
       // its hello message.  For outbound, they record what we sent the peer
@@ -261,6 +262,8 @@ namespace graphene { namespace net
       timestamped_items_set_type inventory_advertised_to_peer;
 
       item_to_time_map_type items_requested_from_peer;  /// items we've requested from this peer during normal operation.  fetch from another peer if this peer disconnects
+      uint32_t compressed_blocks_received_from_peer = 0;   // fields to track which peers are sending us compressed vs uncompressed blocks
+      uint32_t uncompressed_blocks_received_from_peer = 0;
       /// @}
 
       // if they're flooding us with transactions, we set this to avoid fetching for a few seconds to let the
@@ -293,6 +296,7 @@ namespace graphene { namespace net
       void on_connection_closed(message_oriented_connection* originating_connection) override;
 
       void send_queueable_message(std::unique_ptr<queued_message>&& message_to_send);
+      void send_block_message(const std::shared_ptr<full_block_type>& full_block);
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       void send_item(const item_id& item_to_send);
       void close_connection();
@@ -320,6 +324,7 @@ namespace graphene { namespace net
       bool performing_firewall_check() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_connecting() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_db() const;
+      bool supports_compressed_blocks() const;
     private:
       void send_queued_messages_task();
       void accept_connection_task();

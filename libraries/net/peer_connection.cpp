@@ -43,7 +43,7 @@
 
 namespace graphene { namespace net
   {
-    message peer_connection::real_queued_message::get_message(peer_connection_delegate*)
+    message peer_connection::real_queued_message::get_message(peer_connection_delegate*, peer_connection*)
     {
       if (message_send_time_field_offset != (size_t)-1)
       {
@@ -60,14 +60,24 @@ namespace graphene { namespace net
     {
       return message_to_send.data.size();
     }
-    message peer_connection::virtual_queued_message::get_message(peer_connection_delegate* node)
+    message peer_connection::virtual_queued_block_message::get_message(peer_connection_delegate* node, peer_connection* peer)
     {
-      return node->get_message_for_item(item_to_send);
+      if (peer->supports_compressed_blocks() && full_block->has_compressed_block_data())
+      {
+        // the peer can handle some form of compressed data.
+        const hive::chain::compressed_block_data& compressed_data = full_block->get_compressed_block();
+        if (compressed_data.compression_attributes.flags == hive::chain::block_log::block_flags::zstd &&
+            (!compressed_data.compression_attributes.dictionary_number ||  // the block isn't compressed using a dicitonary
+             (peer->last_available_zstd_compression_dictionary_number &&         // or it's one they understand
+              *peer->last_available_zstd_compression_dictionary_number >= *compressed_data.compression_attributes.dictionary_number)))
+          return compressed_block_message(full_block);
+      }
+      return block_message(full_block);
     }
 
-    size_t peer_connection::virtual_queued_message::get_size_in_queue()
+    size_t peer_connection::virtual_queued_block_message::get_size_in_queue()
     {
-      return sizeof(item_id);
+      return sizeof(full_block);
     }
 
     peer_connection::peer_connection(peer_connection_delegate* delegate) :
@@ -290,7 +300,7 @@ namespace graphene { namespace net
       while (!_queued_messages.empty())
       {
         _queued_messages.front()->transmission_start_time = fc::time_point::now();
-        message message_to_send = _queued_messages.front()->get_message(_node);
+        message message_to_send = _queued_messages.front()->get_message(_node, this);
         try
         {
           //dlog("peer_connection::send_queued_messages_task() calling message_oriented_connection::send_message() "
@@ -374,13 +384,10 @@ namespace graphene { namespace net
       send_queueable_message(std::move(message_to_enqueue));
     }
 
-    void peer_connection::send_item(const item_id& item_to_send)
+    void peer_connection::send_block_message(const std::shared_ptr<full_block_type>& full_block)
     {
       VERIFY_CORRECT_THREAD();
-      //dlog("peer_connection::send_item() enqueueing message of type ${type} for peer ${endpoint}",
-      //     ("type", item_to_send.item_type)("endpoint", get_remote_endpoint()));
-      std::unique_ptr<queued_message> message_to_enqueue(new virtual_queued_message(item_to_send));
-      send_queueable_message(std::move(message_to_enqueue));
+      send_queueable_message(std::make_unique<virtual_queued_block_message>(full_block));
     }
 
     void peer_connection::close_connection()
@@ -525,6 +532,11 @@ namespace graphene { namespace net
     fc::optional<fc::ip::endpoint> peer_connection::get_endpoint_for_db() const
     {
       return direction == peer_connection_direction::inbound ? get_endpoint_for_connecting() : get_remote_endpoint();
+    }
+
+    bool peer_connection::supports_compressed_blocks() const
+    {
+      return core_protocol_version >= GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION;
     }
 
 } } // end namespace graphene::net
