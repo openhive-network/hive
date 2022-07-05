@@ -98,11 +98,11 @@ public:
 
   // node_delegate interface
   virtual bool has_item( const graphene::net::item_id& ) override;
-  virtual bool handle_block( const graphene::net::block_message&, bool, std::vector<fc::uint160_t>& ) override;
-  virtual void handle_transaction( const graphene::net::trx_message& ) override;
+  virtual bool handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool) override;
+  virtual void handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction) override;
   virtual void handle_message( const graphene::net::message& ) override;
   virtual std::vector< graphene::net::item_hash_t > get_block_ids( const std::vector< graphene::net::item_hash_t >&, uint32_t&, uint32_t ) override;
-  virtual graphene::net::message get_item( const graphene::net::item_id& ) override;
+  virtual std::shared_ptr<chain::full_block_type> get_full_block(const block_id_type&) override;
   virtual std::vector< graphene::net::item_hash_t > get_blockchain_synopsis( const graphene::net::item_hash_t&, uint32_t ) override;
   virtual void sync_status( uint32_t, uint32_t ) override;
   virtual void connection_count_changed( uint32_t ) override;
@@ -148,7 +148,7 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
   FC_CAPTURE_LOG_AND_RETHROW( (id) )
 }
 
-bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg, bool sync_mode, std::vector<fc::uint160_t>& )
+bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool sync_mode)
 { try {
   if( shutdown_helper.get_running().load() )
   {
@@ -158,49 +158,57 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
           "chain pushing sync block #${block_num} ${block_hash}, head is ${head}",
-          ("block_num", blk_msg.full_block->get_block_num())
-          ("block_hash", blk_msg.full_block->get_block_id())
+          ("block_num", full_block->get_block_num())
+          ("block_hash", full_block->get_block_id())
           ("head", head_block_num));
     else
       fc_ilog(fc::logger::get("sync"),
           "chain pushing block #${block_num} ${block_hash}, head is ${head}",
-          ("block_num", blk_msg.full_block->get_block_num())
-          ("block_hash", blk_msg.block_id)
+          ("block_num", full_block->get_block_num())
+          ("block_hash", full_block->get_block_id())
           ("head", head_block_num));
 
-    try {
+    try
+    {
       // TODO: in the case where this block is valid but on a fork that's too old for us to switch to,
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
-      bool result = chain.accept_block(blk_msg.full_block, sync_mode, ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
+      bool result = chain.accept_block(full_block, sync_mode, (block_producer | force_validate) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
 
-      if( !sync_mode )
+      if (!sync_mode)
       {
-        fc::microseconds offset = fc::time_point::now() - blk_msg.full_block->get_block_header().timestamp;
-        STATSD_TIMER( "p2p", "offset", "block_arrival", offset, 1.0f )
-        ilog( "Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms",
-          ("t", blk_msg.full_block->get_block().transactions.size())
-          ("b", blk_msg.full_block->get_block_num())
-          ("w", blk_msg.full_block->get_block_header().witness)
-          ("l", offset.count() / 1000) );
+        fc::microseconds offset = fc::time_point::now() - full_block->get_block_header().timestamp;
+        STATSD_TIMER("p2p", "offset", "block_arrival", offset, 1.0f)
+        ilog("Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms",
+             ("t", full_block->get_block().transactions.size())
+             ("b", full_block->get_block_num())
+             ("w", full_block->get_block_header().witness)
+             ("l", offset.count() / 1000));
       }
 
       return result;
-    } catch ( const chain::unlinkable_block_exception& e ) {
+    }
+    catch (const chain::unlinkable_block_exception& e)
+    {
       // translate to a graphene::net exception
       fc_elog(fc::logger::get("sync"), "Error when pushing block, current head block is ${head}:\n${e}",
-          ("e", e.to_detail_string())
-          ("head", head_block_num));
+              ("e", e.to_detail_string())
+              ("head", head_block_num));
       elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
-    } catch( const fc::exception& e ) {
+    }
+    catch (const fc::exception& e)
+    {
       //fc_elog(fc::logger::get("sync"), "Error when pushing block, current head block is ${head}:\n${e}", ("e", e.to_detail_string()) ("head", head_block_num));
       //elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
-      if (e.code() == 4080000) {
+      if (e.code() == 4080000)
+      {
         elog("Rethrowing as graphene::net exception");
         FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
-      } else {
+      }
+      else
+      {
         throw;
       }
     }
@@ -211,9 +219,9 @@ bool p2p_plugin_impl::handle_block( const graphene::net::block_message& blk_msg,
     FC_THROW_EXCEPTION(graphene::net::p2p_node_shutting_down_exception, "Preventing further processing of ignored block...");
   }
   return false;
-} FC_CAPTURE_AND_RETHROW( (sync_mode) ) }
+} FC_CAPTURE_AND_RETHROW((sync_mode)) }
 
-void p2p_plugin_impl::handle_transaction(const graphene::net::trx_message& trx_msg)
+void p2p_plugin_impl::handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
 {
   if (shutdown_helper.get_running().load())
   {
@@ -221,9 +229,9 @@ void p2p_plugin_impl::handle_transaction(const graphene::net::trx_message& trx_m
     {
       action_catcher ac(shutdown_helper.get_running(), shutdown_helper.get_state(HIVE_P2P_TRANSACTION_HANDLER));
 
-      chain.accept_transaction(trx_msg.full_transaction, chain::chain_plugin::lock_type::fc);
+      chain.accept_transaction(full_transaction, chain::chain_plugin::lock_type::fc);
 
-    } FC_CAPTURE_AND_RETHROW((trx_msg.full_transaction->get_transaction()))
+    } FC_CAPTURE_AND_RETHROW((full_transaction->get_transaction()))
   }
   else
   {
@@ -250,24 +258,11 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
   }
 } FC_CAPTURE_AND_RETHROW((blockchain_synopsis)(remaining_item_count)(limit)) }
 
-//This function can only build block messages, otherwise it will throw key not found exception. Eventually
-//this and associated code should stop trying to be partially item_type agnostic.
-graphene::net::message p2p_plugin_impl::get_item( const graphene::net::item_id& id )
+std::shared_ptr<chain::full_block_type> p2p_plugin_impl::get_full_block(const block_id_type& id)
 { try {
-  if (id.item_type == graphene::net::block_message_type)
-  {
-    fc_dlog(fc::logger::get("chainlock"),"get_item getting a block will get forkdb read lock");
-    auto maybe_block = chain.db().fetch_block_by_id(id.item_hash);
-    if (!maybe_block)
-      elog("Couldn't find block ${id} -- corresponding ID in our chain is ${id2}",
-           ("id", id.item_hash)("id2", chain.db().get_block_id_for_num(block_header::num_from_id(id.item_hash))));
-    FC_ASSERT(maybe_block);
-    fc_dlog(fc::logger::get("chainlock"), "Serving up block #${num}", ("num", maybe_block->get_block_num()));
-    return block_message(maybe_block);
-  }
-  else
-    FC_THROW_EXCEPTION(fc::key_not_found_exception, "item not found");   
-} FC_CAPTURE_AND_RETHROW( (id) ) }
+  fc_dlog(fc::logger::get("chainlock"), "get_full_block will get forkdb read lock");
+  return chain.db().fetch_block_by_id(id);
+} FC_CAPTURE_AND_RETHROW((id)) }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
 {
@@ -393,7 +388,7 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
 
 void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 {
-  my = std::make_unique< detail::p2p_plugin_impl >( appbase::app().get_plugin< plugins::chain::chain_plugin >() );
+  my = std::make_unique<detail::p2p_plugin_impl>(appbase::app().get_plugin<plugins::chain::chain_plugin>());
 
   if( options.count( "p2p-endpoint" ) )
     my->endpoint = fc::ip::endpoint::from_string( options.at( "p2p-endpoint" ).as< string >() );
@@ -571,13 +566,13 @@ void p2p_plugin::broadcast_block(const std::shared_ptr<hive::chain::full_block_t
   uint32_t block_num = full_block->get_block_num();
   size_t transction_count = full_block->get_full_transactions().size();
   ulog("Broadcasting block #${block_num} with ${transction_count} transactions", (block_num)(transction_count));
-  my->node->broadcast(graphene::net::block_message(full_block));
+  my->node->broadcast(full_block);
 }
 
 void p2p_plugin::broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
 {
   ulog("Broadcasting tx #${id}", ("id", full_transaction->get_transaction_id()));
-  my->node->broadcast(graphene::net::trx_message(full_transaction));
+  my->node->broadcast(full_transaction);
 }
 
 void p2p_plugin::set_block_production( bool producing_blocks )
