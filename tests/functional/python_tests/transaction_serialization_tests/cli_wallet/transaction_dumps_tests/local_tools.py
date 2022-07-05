@@ -1,3 +1,4 @@
+import json
 import pathlib
 import shutil
 
@@ -11,3 +12,15 @@ def move_dumped_files(wallet, files_name):
 
     shutil.move(source_path_json_file, target_path_json_file)
     shutil.move(source_path_binary_file, target_path_binary_file)
+
+
+def read_keys_from_json_file():
+    with open(pathlib.Path(__file__).parent.joinpath('block_log/private_keys.json')) as file:
+        keys = json.load(file)
+
+    return keys
+
+
+def import_keys(wallet):
+    private_keys = read_keys_from_json_file()
+    wallet.api.import_keys(list(private_keys.values()))
