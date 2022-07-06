@@ -38,14 +38,16 @@ public:
 
   struct artifacts_t
   {
-    artifacts_t(const block_attributes_t& attrs, uint64_t file_pos) : attributes(attrs), block_log_file_pos(file_pos) {}
+    artifacts_t(const block_attributes_t& attrs, uint64_t file_pos, uint32_t block_size) :
+      attributes(attrs), block_log_file_pos(file_pos), block_serialized_data_size(block_size) {}
     artifacts_t() = default;
     artifacts_t(artifacts_t&&) = default;
     artifacts_t& operator=(artifacts_t&&) = default;
 
     block_attributes_t attributes;
     block_id_t block_id;
-    uint64_t   block_log_file_pos;
+    uint64_t   block_log_file_pos = 0;
+    uint32_t   block_serialized_data_size = 0;
   };
 
   typedef std::vector<artifacts_t> artifact_container_t;

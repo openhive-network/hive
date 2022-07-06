@@ -186,7 +186,8 @@ private:
 
   typedef std::pair<uint32_t, std::vector<artifacts_t>> worker_thread_result;
 
-  static void woker_thread_body(uint32_t min_block_num, std::vector<artifacts_t> data, std::promise<worker_thread_result>);
+  static void woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
+    std::promise<worker_thread_result>);
 
   void truncate_file(uint32_t last_block);
 
@@ -239,7 +240,7 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
   _is_writable = read_only == false;
 
-  int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
+  int flags = O_RDWR | O_APPEND | O_CLOEXEC;
   if(read_only)
     flags = O_RDONLY | O_CLOEXEC;
 
@@ -304,7 +305,13 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
         if(_storage_fd == -1)
           FC_THROW("Error creating block artifacts file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
 
+        _header.dirty_close = true;
+        flush_header();
+
         generate_file(source_block_provider, 1, head_block_num);
+
+        _header.head_block_num = head_block_num;
+        flush_header();
       }
     }
   }
@@ -323,7 +330,7 @@ bool block_log_artifacts::impl::load_header()
   }
   catch(const fc::exception& e)
   {
-    elog("Loading the artifact file header failed: ${e}", ("e", e.to_detail_string()));
+    wlog("Loading the artifact file header failed: ${e}", ("e", e.to_detail_string()));
     return false;
   }
 }
@@ -364,8 +371,8 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
   std::map<uint32_t, thread_data_t> spawned_threads;
 
   source_block_provider.for_each_block_position(
-    [this, first_block, last_block, blocks_per_thread, &artifacts_to_collect, &spawned_threads, &rest]
-    (uint32_t block_num, uint64_t block_pos, const block_attributes_t& block_attrs) -> bool
+    [this, first_block, last_block, blocks_per_thread, &source_block_provider, &artifacts_to_collect, &spawned_threads, &rest]
+    (uint32_t block_num, uint32_t block_size, uint64_t block_pos, const block_attributes_t& block_attrs) -> bool
     {
       /// Since here is backward processing direction lets ignore and stop for all blocks excluded from requested range
       if(block_num < first_block)
@@ -374,10 +381,10 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
       if(block_num > last_block)
         return true;
 
-      artifacts_to_collect.emplace_back(block_attrs, block_pos);
+      artifacts_to_collect.emplace_back(block_attrs, block_pos, block_size);
 
       /// First spawned thread will also include number of 'rest' blocks.
-      if(artifacts_to_collect.size() == blocks_per_thread + rest)
+      if(artifacts_to_collect.size() == (static_cast<size_t>(blocks_per_thread) + rest))
       {
         rest = 0; /// clear rest to give further threads estimated amount of blocks.
         size_t block_info_count = artifacts_to_collect.size();
@@ -388,9 +395,10 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
         auto worker_thread_future = work_promise.get_future();
 
         spawned_threads.emplace(block_num, std::make_pair(
-          std::thread(woker_thread_body, block_num, std::move(artifacts_to_collect), std::move(work_promise)), std::move(worker_thread_future)));
+          std::thread(woker_thread_body, std::cref(source_block_provider), block_num, std::move(artifacts_to_collect), std::move(work_promise)),
+            std::move(worker_thread_future)));
 
-        ilog("Spawned worker thread #{tc} covering block range:<${fb}:${lb}>", ("tc", spawned_threads.size())("fb", block_num)
+        ilog("Spawned worker thread #${tc} covering block range:<${fb}:${lb}>", ("tc", spawned_threads.size())("fb", block_num)
           ("lb", block_num + block_info_count - 1));
       }
 
@@ -406,12 +414,12 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
   {
     try
     {
-      ilog("Waiting for #{t} thread finish...", ("t", thread_no));
+      ilog("Waiting for thread #${t} finish...", ("t", thread_no));
 
       thread_data_t& thread_data = thread_info.second;
       worker_thread_result result = thread_data.second.get();
 
-      ilog("Thread #{t} finished...", ("t", thread_no));
+      ilog("Thread #${t} finished...", ("t", thread_no));
 
       flush_data_chunks(result.first, result.second);
 
@@ -419,12 +427,12 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
     }
     catch(const fc::exception& e)
     {
-      ilog("Thread #{t} failed with exception...", ("t", thread_no));
+      ilog("Thread #${t} failed with exception: ${e}...", ("t", thread_no)("e", e.to_detail_string()));
       throw;
     }
     catch(const std::exception& e)
     {
-      ilog("Thread #{t} failed with exception...", ("t", thread_no));
+      ilog("Thread #${t} failed with exception: ${e}...", ("t", thread_no)("e", e.what()));
       throw;
     }
   }
@@ -461,23 +469,38 @@ void block_log_artifacts::impl::flush_data_chunks(uint32_t min_block_num, const 
     ("s", data.size())("sb", min_block_num)("eb", max_block_num)("t", elapsed_time/1000));
 }
 
-void block_log_artifacts::impl::woker_thread_body(uint32_t min_block_num, std::vector<artifacts_t> data,
+void block_log_artifacts::impl::woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
   std::promise<worker_thread_result> work_promise)
 {
   try
   {
+    uint32_t first_block_num = 0;
     for(auto& a : data)
     {
-      
+      signed_block_header block_header = block_provider.read_block_header_by_offset(a.block_log_file_pos, a.block_serialized_data_size,
+        a.attributes);
+      a.block_id = block_header.id();
+
+      if(first_block_num == 0)
+      {
+        first_block_num = block_header.block_num();
+        FC_ASSERT(first_block_num == min_block_num);
+      }
     }
-  }
-  catch(const std::exception& e)
-  {
 
+    work_promise.set_value(std::make_pair(min_block_num, std::move(data)));
   }
-  catch(const fc::exception& e)
+  catch(...)
   {
-
+    try
+    {
+      auto eptr = std::current_exception();
+      work_promise.set_exception(eptr);
+    }
+    catch(...)
+    {
+      elog("Storing exception ptr in the thread promise failed with another exception...");
+    }
   }
 }
 
