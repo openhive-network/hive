@@ -58,23 +58,12 @@ def test_prepare_blocklog(node, wallet):
 
     wallet.api.create_order('alice', 1, tt.Asset.Test(1), tt.Asset.Tbd(1), False, 1000)
 
-    ####################################################################################################################
-    # node.wait_number_of_blocks(21)
-    #
-    # save_block_log_length_to_json_file(node.get_last_block_number())
-    #
-    # node.close()
-    #
-    # node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
-
-
 
 def save_keys_to_json_file(folder_name, *keys):
     dict = {}
     for key_num in range(len(keys)):
         dict[key_num] = keys[key_num]
 
-    path = Path().absolute()
     with open(Path().absolute() / folder_name / 'private_keys.json', 'w') as file:
         json.dump(dict, file)
 
@@ -82,39 +71,8 @@ def save_keys_to_json_file(folder_name, *keys):
 def save_block_log_length_to_json_file(folder_name, block_log_length):
     dict = {'block_log_length': block_log_length}
 
-    path = Path().absolute()
     with open(Path().absolute() / folder_name / 'block_log_length.json', 'w') as file:
         json.dump(dict, file)
-
-
-# def test_prepare_block_log_with_witnesses(node, wallet):
-#     # node, wallet = prepare_node_with_witnesses(WITNESSES_NAMES)
-#
-#     # create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(1000000))
-#     wallet.api.create_account('initminer', 'bob', '{}')
-#
-#     wallet.api.transfer_to_savings('initminer', 'alice', tt.Asset.Test(1000), 'memo')
-#
-#     wallet.api.transfer_from_savings('alice', 1, 'bob', tt.Asset.Test(100), 'memo')
-#
-#     alice = wallet.api.get_account('alice')
-#     bob = wallet.api.get_account('bob')
-#     initminer = wallet.api.get_account('initminer')
-#
-#     alice_pub_key = alice['active']['key_auths'][0][0]
-#     bob_pub_key = bob['active']['key_auths'][0][0]
-#     initminer_pub_key = initminer['active']['key_auths'][0][0]
-#
-#     alice_priv_key = wallet.api.get_private_key(alice_pub_key)
-#     bob_priv_key = wallet.api.get_private_key(bob_pub_key)
-#     initminer_priv_key = wallet.api.get_private_key(initminer_pub_key)
-#
-#     node.wait_number_of_blocks(21)
-#
-#     node.close()
-#
-#     node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
-#     pass
 
 
 # if __name__ == '__main__':
