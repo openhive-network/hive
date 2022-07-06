@@ -1,17 +1,32 @@
 import json
+import pytest
 
 from pathlib import Path
 
 import test_tools as tt
 
-WITNESSES_NAMES = [f'witness-{i}' for i in range(20)]  # 21-st is initminer
 
-ACCOUNTS = [f'account-{i}' for i in range(10)]
+@pytest.fixture(params=['legacy', 'hf26'])
+def wallet(node, request):
+    type_of_serialization = request.param
+    wallet = tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
+                                                             f'--transaction-serialization={type_of_serialization}'])
+
+    yield wallet, type_of_serialization
+
+    node.wait_number_of_blocks(21)
+
+    save_block_log_length_to_json_file(request.param, node.get_last_block_number())
+
+    node.close()
+
+    node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute() / type_of_serialization)
 
 
 def test_prepare_blocklog(node, wallet):
     # Account creation, powering and export private keys
-
+    type_of_serialization = wallet[1]
+    wallet = wallet[0]
     alice = wallet.api.create_account('initminer', 'alice', '{}')
     with wallet.in_single_transaction():
         wallet.api.transfer('initminer', 'alice', tt.Asset.Test(1000), 'memo')
@@ -24,13 +39,18 @@ def test_prepare_blocklog(node, wallet):
         wallet.api.transfer_to_vesting('initminer', 'bob', tt.Asset.Test(1000000))
         wallet.api.transfer('initminer', 'bob', tt.Asset.Tbd(1000), 'memo')
 
-    alice_pub_key = alice['operations'][0]['value']['active']['key_auths'][0][0]
-    bob_pub_key = bob['operations'][0]['value']['active']['key_auths'][0][0]
+    if type_of_serialization == 'legacy':
+        alice_pub_key = alice['operations'][0][1]['active']['key_auths'][0][0]
+        bob_pub_key = bob['operations'][0][1]['active']['key_auths'][0][0]
+
+    elif type_of_serialization == 'hf26':
+        alice_pub_key = alice['operations'][0]['value']['active']['key_auths'][0][0]
+        bob_pub_key = bob['operations'][0]['value']['active']['key_auths'][0][0]
 
     alice_priv_key = wallet.api.get_private_key(alice_pub_key)
     bob_priv_key = wallet.api.get_private_key(bob_pub_key)
 
-    save_keys_to_json_file(alice_priv_key, bob_priv_key)
+    save_keys_to_json_file(type_of_serialization, alice_priv_key, bob_priv_key)
     ####################################################################################################################
 
     wallet.api.transfer_to_savings('initminer', 'alice', tt.Asset.Test(10), 'memo')
@@ -39,95 +59,63 @@ def test_prepare_blocklog(node, wallet):
     wallet.api.create_order('alice', 1, tt.Asset.Test(1), tt.Asset.Tbd(1), False, 1000)
 
     ####################################################################################################################
-    node.wait_number_of_blocks(21)
+    # node.wait_number_of_blocks(21)
+    #
+    # save_block_log_length_to_json_file(node.get_last_block_number())
+    #
+    # node.close()
+    #
+    # node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
 
-    save_block_log_length_to_json_file(node.get_last_block_number())
-
-    node.close()
-
-    node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
 
 
-
-def save_keys_to_json_file(*keys):
+def save_keys_to_json_file(folder_name, *keys):
     dict = {}
     for key_num in range(len(keys)):
         dict[key_num] = keys[key_num]
 
     path = Path().absolute()
-    with open(Path().absolute() / 'private_keys.json', 'w') as file:
+    with open(Path().absolute() / folder_name / 'private_keys.json', 'w') as file:
         json.dump(dict, file)
 
 
-def save_block_log_length_to_json_file(block_log_length):
+def save_block_log_length_to_json_file(folder_name, block_log_length):
     dict = {'block_log_length': block_log_length}
 
     path = Path().absolute()
-    with open(Path().absolute() / 'block_log_length.json', 'w') as file:
+    with open(Path().absolute() / folder_name / 'block_log_length.json', 'w') as file:
         json.dump(dict, file)
 
 
-def test_prepare_block_log_with_witnesses(node, wallet):
-    # node, wallet = prepare_node_with_witnesses(WITNESSES_NAMES)
-
-    # create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(1000000))
-    wallet.api.create_account('initminer', 'bob', '{}')
-
-    wallet.api.transfer_to_savings('initminer', 'alice', tt.Asset.Test(1000), 'memo')
-
-    wallet.api.transfer_from_savings('alice', 1, 'bob', tt.Asset.Test(100), 'memo')
-
-    alice = wallet.api.get_account('alice')
-    bob = wallet.api.get_account('bob')
-    initminer = wallet.api.get_account('initminer')
-
-    alice_pub_key = alice['active']['key_auths'][0][0]
-    bob_pub_key = bob['active']['key_auths'][0][0]
-    initminer_pub_key = initminer['active']['key_auths'][0][0]
-
-    alice_priv_key = wallet.api.get_private_key(alice_pub_key)
-    bob_priv_key = wallet.api.get_private_key(bob_pub_key)
-    initminer_priv_key = wallet.api.get_private_key(initminer_pub_key)
-
-    node.wait_number_of_blocks(21)
-
-    node.close()
-
-    node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
-    pass
-
-
-# def prepare_node_with_witnesses(witnesses_names):
-#     node = tt.InitNode()
-#     for name in witnesses_names:
-#         witness = tt.Account(name)
-#         node.config.witness.append(witness.name)
-#         node.config.private_key.append(witness.private_key)
+# def test_prepare_block_log_with_witnesses(node, wallet):
+#     # node, wallet = prepare_node_with_witnesses(WITNESSES_NAMES)
 #
-#     node.run()
-#     wallet = tt.Wallet(attach_to=node)
+#     # create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(1000000))
+#     wallet.api.create_account('initminer', 'bob', '{}')
 #
-#     with wallet.in_single_transaction():
-#         for name in witnesses_names:
-#             wallet.api.create_account('initminer', name, '')
+#     wallet.api.transfer_to_savings('initminer', 'alice', tt.Asset.Test(1000), 'memo')
 #
-#     with wallet.in_single_transaction():
-#         for name in witnesses_names:
-#             wallet.api.transfer_to_vesting("initminer", name, tt.Asset.Test(1000))
+#     wallet.api.transfer_from_savings('alice', 1, 'bob', tt.Asset.Test(100), 'memo')
 #
-#     with wallet.in_single_transaction():
-#         for name in witnesses_names:
-#             wallet.api.update_witness(
-#                 name, "https://" + name,
-#                 tt.Account(name).public_key,
-#                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
-#             )
+#     alice = wallet.api.get_account('alice')
+#     bob = wallet.api.get_account('bob')
+#     initminer = wallet.api.get_account('initminer')
 #
-#     tt.logger.info('Waiting for next witness schedule...')
-#     node.wait_for_block_with_number(22)
+#     alice_pub_key = alice['active']['key_auths'][0][0]
+#     bob_pub_key = bob['active']['key_auths'][0][0]
+#     initminer_pub_key = initminer['active']['key_auths'][0][0]
 #
-#     return node, wallet
+#     alice_priv_key = wallet.api.get_private_key(alice_pub_key)
+#     bob_priv_key = wallet.api.get_private_key(bob_pub_key)
+#     initminer_priv_key = wallet.api.get_private_key(initminer_pub_key)
+#
+#     node.wait_number_of_blocks(21)
+#
+#     node.close()
+#
+#     node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
+#     pass
 
 
-if __name__ == '__main__':
-    prepare_blocklog()
+# if __name__ == '__main__':
+#     prepare_blocklog()

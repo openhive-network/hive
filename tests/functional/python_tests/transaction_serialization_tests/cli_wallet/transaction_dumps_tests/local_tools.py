@@ -1,5 +1,6 @@
 import json
 import pathlib
+import re
 import shutil
 
 
@@ -21,6 +22,12 @@ def read_keys_from_json_file():
     return keys
 
 
-def import_keys(wallet):
-    private_keys = read_keys_from_json_file()
+def import_private_keys_from_json_file(wallet, type_of_serialization):
+    with open(pathlib.Path(__file__).parent.joinpath(f'block_log/{type_of_serialization}/private_keys.json')) as file:
+        private_keys = json.load(file)
     wallet.api.import_keys(list(private_keys.values()))
+
+
+def get_type_of_serialization_from_test_name(text):
+    type_of_serialization = re.search('\[(.+?)\]', text).group(1)
+    return type_of_serialization
