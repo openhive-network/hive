@@ -60,10 +60,10 @@ struct full_transaction_type
     // store the data in this structure
     struct standalone_transaction_info
     {
-      hive::protocol::signed_transaction transaction;
+      std::unique_ptr<hive::protocol::signed_transaction> transaction;
       uncompressed_memory_buffer serialization_buffer;
     };
-    typedef fc::static_variant<contained_in_block_info, standalone_transaction_info> storage_type;
+    typedef std::variant<contained_in_block_info, standalone_transaction_info> storage_type;
     storage_type storage;
 
     serialized_transaction_data serialized_transaction; // pointers to the beginning, middle, and end of the transaction in the storage

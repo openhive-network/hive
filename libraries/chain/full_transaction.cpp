@@ -40,17 +40,17 @@ full_transaction_type::~full_transaction_type()
 
 const signed_transaction& full_transaction_type::get_transaction() const
 { 
-  if (storage.which() == storage_type::tag<contained_in_block_info>::value)
+  if (std::holds_alternative<contained_in_block_info>(storage))
   {
-    const contained_in_block_info& contained_in_block = storage.get<contained_in_block_info>();
+    const contained_in_block_info& contained_in_block = std::get<contained_in_block_info>(storage);
     assert(contained_in_block.block_storage->block);
     FC_ASSERT(contained_in_block.block_storage->block, "block should have already been decoded");
     return contained_in_block.block_storage->block->transactions[contained_in_block.index_in_block];
   }
   else //this is a standalone transaction
   {
-    const standalone_transaction_info& standalone_transaction = storage.get<standalone_transaction_info>();
-    return standalone_transaction.transaction;
+    const standalone_transaction_info& standalone_transaction = std::get<standalone_transaction_info>(storage);
+    return *standalone_transaction.transaction;
   }
 }
 
@@ -93,9 +93,9 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
     // of a block, validate based on the rules effective at the block's timestamp.  If it's a standalone transaction,
     // use the present-day rules.
     const transaction_signature_validation_rules_type* validation_rules;
-    if (storage.which() == storage_type::tag<contained_in_block_info>::value)
+    if (std::holds_alternative<contained_in_block_info>(storage))
     {
-      const contained_in_block_info& contained_in_block = storage.get<contained_in_block_info>();
+      const contained_in_block_info& contained_in_block = std::get<contained_in_block_info>(storage);
       assert(contained_in_block.block_storage->block);
       FC_ASSERT(contained_in_block.block_storage->block, "block should have already been decoded");
       validation_rules = &get_transaction_signature_validation_rules_at_time(contained_in_block.block_storage->block->timestamp);
@@ -252,9 +252,9 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
 {
   std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
 
-  full_transaction->storage.set_which(storage_type::tag<standalone_transaction_info>::value);
-  standalone_transaction_info& transaction_info = full_transaction->storage.get<standalone_transaction_info>();
-  transaction_info.transaction = transaction;
+  full_transaction->storage = standalone_transaction_info();
+  standalone_transaction_info& transaction_info = std::get<standalone_transaction_info>(full_transaction->storage);
+  transaction_info.transaction = std::make_unique<hive::protocol::signed_transaction>(transaction);
 
   hive::protocol::serialization_mode_controller::pack_guard guard(serialization_type);
   transaction_info.serialization_buffer.raw_size = fc::raw::pack_size(transaction);
@@ -271,10 +271,11 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
 /* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache)
 {
   std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
-  full_transaction->storage.set_which(storage_type::tag<standalone_transaction_info>::value);
+  full_transaction->storage = standalone_transaction_info();
 
   // copy the serialized transaction into the full_transaction's buffer
-  standalone_transaction_info& transaction_info = full_transaction->storage.get<standalone_transaction_info>();
+  standalone_transaction_info& transaction_info = std::get<standalone_transaction_info>(full_transaction->storage);
+  transaction_info.transaction = std::make_unique<hive::protocol::signed_transaction>();
   transaction_info.serialization_buffer.raw_size = size;
   transaction_info.serialization_buffer.raw_bytes.reset(new char[size]);
   memcpy(transaction_info.serialization_buffer.raw_bytes.get(), raw_data, size);
@@ -282,9 +283,9 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   // then unpack the serialized transaction
   fc::datastream<char*> datastream(transaction_info.serialization_buffer.raw_bytes.get(), transaction_info.serialization_buffer.raw_size);
   full_transaction->serialized_transaction.begin = transaction_info.serialization_buffer.raw_bytes.get();
-  fc::raw::unpack(datastream, (hive::protocol::transaction&)transaction_info.transaction);
+  fc::raw::unpack(datastream, *(hive::protocol::transaction*)transaction_info.transaction.get());
   full_transaction->serialized_transaction.transaction_end = transaction_info.serialization_buffer.raw_bytes.get() + datastream.tellp();
-  fc::raw::unpack(datastream, transaction_info.transaction.signatures);
+  fc::raw::unpack(datastream, transaction_info.transaction->signatures);
   full_transaction->serialized_transaction.signed_transaction_end = transaction_info.serialization_buffer.raw_bytes.get() + datastream.tellp();
   return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
