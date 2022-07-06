@@ -150,3 +150,14 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+add_executable( block_log_test block_log_test.cpp )
+target_link_libraries( block_log_test
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIB} ${PLATFORM_SPECIFIC_LIBS})
+
+install( TARGETS
+   compress_block_log
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
