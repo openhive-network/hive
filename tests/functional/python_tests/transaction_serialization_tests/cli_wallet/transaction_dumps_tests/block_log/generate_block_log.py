@@ -35,7 +35,13 @@ def test_prepare_blocklog(node, wallet):
 
     wallet.api.transfer_to_savings('initminer', 'alice', tt.Asset.Test(10), 'memo')
     wallet.api.transfer_from_savings('alice', 1, 'bob', tt.Asset.Test(1), 'memo')
+
+    wallet.api.create_order('alice', 1, tt.Asset.Test(1), tt.Asset.Tbd(1), False, 1000)
+
+    ####################################################################################################################
     node.wait_number_of_blocks(21)
+
+    save_block_log_length_to_json_file(node.get_last_block_number())
 
     node.close()
 
@@ -49,14 +55,22 @@ def save_keys_to_json_file(*keys):
         dict[key_num] = keys[key_num]
 
     path = Path().absolute()
-    with open(Path().absolute() / 'private_keys.json', 'w') as f:
-        json.dump(dict, f)
-    print()
+    with open(Path().absolute() / 'private_keys.json', 'w') as file:
+        json.dump(dict, file)
+
+
+def save_block_log_length_to_json_file(block_log_length):
+    dict = {'block_log_length': block_log_length}
+
+    path = Path().absolute()
+    with open(Path().absolute() / 'block_log_length.json', 'w') as file:
+        json.dump(dict, file)
+
 
 def test_prepare_block_log_with_witnesses(node, wallet):
     # node, wallet = prepare_node_with_witnesses(WITNESSES_NAMES)
 
-    create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(1000000))
+    # create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(1000000))
     wallet.api.create_account('initminer', 'bob', '{}')
 
     wallet.api.transfer_to_savings('initminer', 'alice', tt.Asset.Test(1000), 'memo')
@@ -116,4 +130,4 @@ def test_prepare_block_log_with_witnesses(node, wallet):
 
 
 if __name__ == '__main__':
-    prepare_block_log_with_witnesses()
+    prepare_blocklog()

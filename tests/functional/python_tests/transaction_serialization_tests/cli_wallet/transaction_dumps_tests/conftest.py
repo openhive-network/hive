@@ -16,9 +16,10 @@ def node():
 
 @pytest.fixture
 def replayed_node():
-    api_node = tt.InitNode()
-    api_node.run(replay_from=Path(__file__).parent.joinpath('block_log/block_log'), wait_for_live=False)
-    return api_node
+    init_node = tt.InitNode()
+    block_log_length = read_block_log_length_from_json_file()
+    init_node.run(replay_from=Path(__file__).parent.joinpath('block_log/block_log'), wait_for_live=False, stop_at_block=block_log_length)
+    return init_node
 
 # @pytest.fixture
 # def legacy_wallet(node, request):
@@ -78,3 +79,8 @@ def read_bin_from_file(path):
             file_content = file.readlines()
             return file_content
 
+def read_block_log_length_from_json_file():
+    with open(Path(__file__).parent.joinpath('block_log/block_log_length.json')) as file:
+        file = json.load(file)
+    block_log_length = file['block_log_length']
+    return block_log_length
