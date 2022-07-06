@@ -68,8 +68,13 @@ inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type
     case OBSOLETE_SYMBOL_LEGACY_SER_4:
     case OBSOLETE_SYMBOL_LEGACY_SER_5:
       wlog( "pack legacy serialization ${s}", ("s", sym.ser) );
-    case OBSOLETE_SYMBOL_SER:
       pack( s, sym.ser );
+      break;
+    case OBSOLETE_SYMBOL_SER:
+      if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
+        pack( s, sym.ser );
+      else
+        pack( s, HIVE_ASSET_NUM_HIVE );
       break;
     default:
       FC_ASSERT( false, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );
@@ -77,7 +82,7 @@ inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type
 }
 
 template< typename Stream >
-inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t depth )
+inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sym, uint32_t )
 {
   //  994240:        "account_creation_fee": "0.1 HIVE"
   // 1021529:        "account_creation_fee": "10.0 HIVE"
@@ -87,10 +92,16 @@ inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sy
   // 4338089:        "account_creation_fee": "0.001 0.001"
   // 4626205:        "account_creation_fee": "6.000 6.000"
   // 4632595:        "account_creation_fee": "6.000 6.000"
-  depth++;
   uint64_t ser = 0;
+  s.read( (char*) &ser, 4 );
 
-  fc::raw::unpack( s, ser, depth );
+  if( ser == HIVE_ASSET_NUM_HIVE )
+  {
+    sym.ser = OBSOLETE_SYMBOL_SER;
+    return;
+  }
+  s.read( ((char*) &ser)+4, 4 );
+
   switch( ser )
   {
     case OBSOLETE_SYMBOL_LEGACY_SER_1:
