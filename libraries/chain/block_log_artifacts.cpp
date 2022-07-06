@@ -182,9 +182,9 @@ private:
 
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
   
-  void flush_data_chunks(uint32_t min_block_num, const artifacts_t& data);
+  void flush_data_chunks(uint32_t min_block_num, const std::vector<artifacts_t>& data);
 
-  typedef std::pair<uint32_t, artifacts_t> worker_thread_result;
+  typedef std::pair<uint32_t, std::vector<artifacts_t>> worker_thread_result;
 
   static void woker_thread_body(uint32_t min_block_num, std::vector<artifacts_t> data, std::promise<worker_thread_result>);
 
@@ -434,7 +434,51 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
   uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   auto elapsed_time = time_end - time_begin;
 
-  ilog("Block artifact file generation finished. ${bc} processed in time: ${t}", ("bc", block_count)("t", elapsed_time));
+  ilog("Block artifact file generation finished. ${bc} blocks processed in time: ${t} ms", ("bc", block_count)("t", elapsed_time/1000));
+}
+
+void block_log_artifacts::impl::flush_data_chunks(uint32_t min_block_num, const std::vector<artifacts_t>& data)
+{
+  uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  
+  uint32_t max_block_num = min_block_num + data.size() - 1;
+  ilog("Attempting to flush ${s} artifact entries collected for block range: <${sb}:${eb}> into target file...",
+    ("s", data.size())("sb", min_block_num)("eb", max_block_num));
+
+  /// warning: data in artifacts container are placed in REVERSED order since block_log processing has backward direction
+  uint32_t processed_block_num = max_block_num;
+  for(auto dataI = data.rbegin(); dataI != data.rend(); ++dataI, --processed_block_num)
+  {
+    store_block_artifacts(processed_block_num, dataI->block_log_file_pos, dataI->attributes, dataI->block_id);
+  }
+
+  FC_ASSERT(processed_block_num == min_block_num);
+
+  uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  auto elapsed_time = time_end - time_begin;
+
+  ilog("Flushing ${s} artifact entries for block range: <${sb}:${eb}> finished in time: ${t} ms.",
+    ("s", data.size())("sb", min_block_num)("eb", max_block_num)("t", elapsed_time/1000));
+}
+
+void block_log_artifacts::impl::woker_thread_body(uint32_t min_block_num, std::vector<artifacts_t> data,
+  std::promise<worker_thread_result> work_promise)
+{
+  try
+  {
+    for(auto& a : data)
+    {
+      
+    }
+  }
+  catch(const std::exception& e)
+  {
+
+  }
+  catch(const fc::exception& e)
+  {
+
+  }
 }
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
