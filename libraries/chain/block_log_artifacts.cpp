@@ -125,7 +125,16 @@ public:
     return _header.head_block_num;
   }
 
-  artifacts_t read_block_artifacts(uint32_t block_num) const;
+  /** Chunk processor arguments:
+  *  - number of first block stating the range
+  *  - pointer to buffer holding data chunks read from file
+  *  - number of artifact_file_chunk items held in buffer,
+  *  - artifact_file_chunk following requested buffer, to allow correctly evaluate last queried block size
+  */
+  typedef std::function<void(uint32_t, const artifact_file_chunk*, size_t, const artifact_file_chunk&)> artifact_file_chunk_processor_t;
+
+  void process_block_artifacts(uint32_t block_num, uint32_t count, artifact_file_chunk_processor_t processor) const;
+
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes, const block_id_t& block_id);
 
   bool is_open() const
@@ -177,23 +186,20 @@ private:
     hive::utilities::perform_write(_storage_fd, reinterpret_cast<const char*>(&buffer), N*sizeof(Data), offset, description);
   }
 
-  std::vector<char> read_data(size_t to_read, off_t offset, const std::string& description) const
-  {
-    std::vector<char> buffer;
-    buffer.resize(to_read);
-
-    auto total_read = hive::utilities::perform_read(_storage_fd, buffer.data(), to_read, offset, description);
-
-    FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
-
-    return buffer;
-  }
-
-  template <class Data, unsigned int N=1>
+  template <class Data>
   void read_data(Data* buffer, off_t offset, const std::string& description) const
   {
-    const auto to_read = N*sizeof(Data);
+    const auto to_read = sizeof(Data);
     auto total_read = hive::utilities::perform_read(_storage_fd, reinterpret_cast<char*>(buffer), to_read, offset, description);
+
+    FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
+  }
+
+  template <class Data>
+  void read_data(Data* item_buffer, size_t item_count, off_t offset, const std::string& description) const
+  {
+    const auto to_read = item_count*sizeof(Data);
+    auto total_read = hive::utilities::perform_read(_storage_fd, reinterpret_cast<char*>(item_buffer), to_read, offset, description);
 
     FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
   }
@@ -335,18 +341,19 @@ void block_log_artifacts::impl::truncate_file(uint32_t last_block)
     FC_THROW("Error truncating block artifact file: ${error}", ("error", strerror(errno)));
 }
 
-block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts(uint32_t block_num) const
+void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint32_t count, artifact_file_chunk_processor_t processor) const
 {
   auto chunk_position = calculate_offset(block_num);
 
-  artifact_file_chunk data_chunk;
+  std::vector<artifact_file_chunk> chunk_buffer;
 
-  read_data(&data_chunk, chunk_position, "Reading an artifact data chunk");
+  chunk_buffer.resize(count + 1);
 
-  artifacts_t artifacts;
-  artifacts = data_chunk.unpack_data(block_num);
+  read_data(chunk_buffer.data(), chunk_buffer.size(), chunk_position, "Reading an artifact data chunk");
 
-  return artifacts;
+  const artifact_file_chunk& next_chunk = chunk_buffer.back();
+
+  processor(block_num, chunk_buffer.data(), count, next_chunk);
 }
 
 void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos,
@@ -391,7 +398,58 @@ uint32_t block_log_artifacts::read_head_block_num() const
 
 block_log_artifacts::artifacts_t block_log_artifacts::read_block_artifacts(uint32_t block_num) const
 {
-  return _impl->read_block_artifacts(block_num);
+  artifacts_t artifacts;
+
+  _impl->process_block_artifacts(block_num, 1, 
+    [&artifacts](uint32_t block_num, const artifact_file_chunk* chunk_buffer, size_t chunk_count, const artifact_file_chunk& next_chunk) -> void
+  {
+    artifacts = chunk_buffer->unpack_data(block_num);
+    artifacts.block_serialized_data_size = next_chunk.block_log_offset - chunk_buffer->block_log_offset;
+  });
+
+  return artifacts;
+}
+
+block_log_artifacts::artifact_container_t
+block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t block_count, size_t* block_size_sum /*= nullptr*/) const
+{
+  artifact_container_t storage;
+  storage.reserve(block_count);
+
+  size_t size_sum = 0;
+
+  _impl->process_block_artifacts(start_block_num, block_count,
+    [&storage, &size_sum](uint32_t block_num, const artifact_file_chunk* chunk_buffer, size_t chunk_count, const artifact_file_chunk& next_chunk) -> void
+  {
+    /// Process first chunk before loop, since inside we have to backreference prev. item
+    storage.emplace_back(chunk_buffer->unpack_data(block_num));
+
+    size_t prev_block_size = 0;
+
+    for(size_t i = 1; i < chunk_count; ++i)
+    {
+      const artifact_file_chunk& chunk = chunk_buffer[i];
+
+      prev_block_size = chunk.block_log_offset - storage.back().block_log_file_pos;
+
+      size_sum += prev_block_size;
+
+      storage.back().block_serialized_data_size = prev_block_size;
+
+      storage.emplace_back(chunk.unpack_data(block_num + i));
+    }
+
+    /// supplement last produced artifacts by block size
+    prev_block_size = next_chunk.block_log_offset - storage.back().block_log_file_pos;
+    storage.back().block_serialized_data_size = prev_block_size;
+
+    size_sum += prev_block_size;
+  });
+
+  if(block_size_sum != nullptr)
+    *block_size_sum = size_sum;
+
+  return storage;
 }
 
 void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
