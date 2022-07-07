@@ -59,10 +59,11 @@ struct artifact_file_chunk
   {
     struct
     {
-      uint64_t is_compressed : 1;
-      uint64_t custom_dict_used : 1;
-      uint64_t dictionary_no : 14;
       uint64_t block_log_offset : 48;
+      uint64_t dictionary_no : 8;
+      uint64_t custom_dict_used : 1;
+      uint64_t gap : 6;
+      uint64_t is_compressed : 1;
     };
     uint64_t combined_pos_and_attrs;
   };
@@ -88,13 +89,29 @@ struct artifact_file_chunk
     return artifacts;
   }
 
+  std::string as_hex(uint64_t v)
+  {
+    std::stringstream ss;
+    ss << std::hex << v;
+    return ss.str();
+  }
+
   void pack_data(uint64_t block_start_pos, block_attributes_t attributes)
   {
     combined_pos_and_attrs = detail::combine_block_start_pos_with_flags(block_start_pos, attributes);
-    FC_ASSERT(is_compressed == (attributes.flags == block_flags::zstd));
-    FC_ASSERT(custom_dict_used == attributes.dictionary_number.valid());
-    FC_ASSERT(custom_dict_used == 0 || (dictionary_no == *attributes.dictionary_number));
-    FC_ASSERT(block_start_pos == block_log_offset);
+
+    FC_ASSERT(block_start_pos == block_log_offset, "Mismatch: block_start_pos: ${block_start_pos} vs block_log_offset: ${block_log_offset}",
+      ("block_start_pos", block_start_pos)("block_log_offset", block_log_offset));
+    FC_ASSERT(is_compressed == (attributes.flags == block_flags::zstd), "Mismatch: is_compressed: ${is_compressed} vs attributes.flags: ${f}",
+      ("is_compressed", is_compressed)("f", attributes.flags));
+    FC_ASSERT(custom_dict_used == attributes.dictionary_number.valid(), "Mismatch for: combined_pos_and_attrs: ${combined_pos_and_attrs}: custom_dict_used: ${c} vs attributes.dictionary_number.valid: ${v}",
+      ("c", custom_dict_used)("v", attributes.dictionary_number.valid())("combined_pos_and_attrs", as_hex(combined_pos_and_attrs)));
+
+    if(attributes.dictionary_number.valid())
+    {
+      FC_ASSERT(dictionary_no == *attributes.dictionary_number,
+        "Mismatch: dictionary_no: ${dictionary_no} vs *attributes.dictionary_number: ${ad}", ("dictionary_no", dictionary_no)("ad", *attributes.dictionary_number));
+    }
   }
 
   block_log_artifacts::block_id_t unpack_block_id(uint32_t block_num) const
@@ -119,6 +136,12 @@ struct artifact_file_chunk
   }
 
 };
+
+inline size_t calculate_block_serialized_data_size(const artifact_file_chunk& next_chunk, const artifact_file_chunk& this_chunk)
+{
+  /// According to block_log format: <serialized_block1><offset_to_prev_block> .. <serialized_blockN><offset_to_prev_blockN>
+  return next_chunk.block_log_offset - this_chunk.block_log_offset - sizeof(uint64_t);
+}
 
 } /// anonymous
 
@@ -262,7 +285,15 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
         if(_storage_fd == -1)
           FC_THROW("Error creating block artifacts file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
 
-        generate_file(source_block_provider, 1, head_block_num);
+        _header.dirty_close = 1;
+        flush_header();
+
+        /// Generate artifacts file only if some blocks are present in pointed block_log.
+        if(head_block_num > 0)
+          generate_file(source_block_provider, 1, head_block_num);
+
+        _header.head_block_num = head_block_num;
+        flush_header();
       }
     }
     else
@@ -352,7 +383,7 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 
   uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-  FC_ASSERT(first_block <= last_block);
+  FC_ASSERT(first_block <= last_block, "${first_block} <= ${last_block}", ("first_block", first_block)("last_block", last_block));
 
   uint32_t block_count = last_block - first_block + 1;
 
@@ -577,7 +608,7 @@ block_log_artifacts::artifacts_t block_log_artifacts::read_block_artifacts(uint3
     [&artifacts](uint32_t block_num, const artifact_file_chunk* chunk_buffer, size_t chunk_count, const artifact_file_chunk& next_chunk) -> void
   {
     artifacts = chunk_buffer->unpack_data(block_num);
-    artifacts.block_serialized_data_size = next_chunk.block_log_offset - chunk_buffer->block_log_offset;
+    artifacts.block_serialized_data_size = calculate_block_serialized_data_size(next_chunk, *chunk_buffer);
   });
 
   return artifacts;
@@ -603,7 +634,7 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
     {
       const artifact_file_chunk& chunk = chunk_buffer[i];
 
-      prev_block_size = chunk.block_log_offset - storage.back().block_log_file_pos;
+      prev_block_size = calculate_block_serialized_data_size(chunk, chunk_buffer[i-1]);
 
       size_sum += prev_block_size;
 
@@ -613,7 +644,7 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
     }
 
     /// supplement last produced artifacts by block size
-    prev_block_size = next_chunk.block_log_offset - storage.back().block_log_file_pos;
+    prev_block_size = calculate_block_serialized_data_size(next_chunk, chunk_buffer[chunk_count - 1]);
     storage.back().block_serialized_data_size = prev_block_size;
 
     size_sum += prev_block_size;
