@@ -1,6 +1,7 @@
 #include <hive/chain/block_log_artifacts.hpp>
 
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/full_block.hpp>
 
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/io_primitives.hpp>
@@ -555,13 +556,13 @@ void block_log_artifacts::impl::woker_thread_body(const block_log& block_provide
     for(auto artifactI = data.rbegin(); artifactI != data.rend(); ++artifactI)
     {
       auto& a = *artifactI;
-      signed_block_header block_header = block_provider.read_block_header_by_offset(a.block_log_file_pos, a.block_serialized_data_size,
+      std::shared_ptr<full_block_type> full_block = block_provider.read_block_by_offset(a.block_log_file_pos, a.block_serialized_data_size,
         a.attributes);
-      a.block_id = block_header.id();
+      a.block_id = full_block->get_block_id();
 
       if(first_block_num == 0)
       {
-        first_block_num = block_header.block_num();
+        first_block_num = full_block->get_block_num();
         FC_ASSERT(first_block_num == min_block_num, "first_block: ${fb} != min_block: ${mb}", ("fb", first_block_num)("mb", min_block_num));
       }
     }

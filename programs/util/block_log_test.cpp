@@ -2,6 +2,7 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/full_block.hpp>
 #include <hive/chain/block_log_artifacts.hpp>
 
 #include <boost/program_options.hpp>
@@ -20,9 +21,9 @@ void generate_artifacts(const fc::path& block_log_path, uint32_t blocks_to_proce
 
   if(blocks_to_process == 0)
   {
-    hive::protocol::signed_block b = bl.read_head();
+    std::shared_ptr<full_block_type> head_block = bl.read_head();
 
-    blocks_to_process = b.block_num();
+    blocks_to_process = head_block->get_block_num();
   }
 
   auto bla = block_log_artifacts::open(block_log_path, false, bl, blocks_to_process);
