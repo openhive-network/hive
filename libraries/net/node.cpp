@@ -3925,7 +3925,9 @@ namespace graphene { namespace net {
         try
         {
           dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
+          _message_ids_currently_being_processed.insert(message_hash);
           _delegate->handle_transaction(full_transaction);
+          _message_ids_currently_being_processed.erase(message_hash);
           message_validated_time = fc::time_point::now();
         }
         catch (const fc::canceled_exception&)
