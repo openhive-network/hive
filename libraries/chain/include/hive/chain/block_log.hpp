@@ -48,16 +48,19 @@ namespace hive { namespace chain {
       using block_flags=detail::block_flags;
       using block_attributes_t=detail::block_attributes_t;
 
+      using block_id_type=hive::protocol::block_id_type;
+
       block_log();
       ~block_log();
 
-      void open( const fc::path& file, bool read_only = false );
+      void open( const fc::path& file, bool read_only = false, bool auto_open_artifacts = true );
 
       void close();
       bool is_open()const;
 
       uint64_t append(const signed_block& b);
-      uint64_t append_raw(const char* raw_block_data, size_t raw_block_size, block_attributes_t flags);
+      uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags);
+      uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const block_id_type& block_id);
 
       void flush();
       std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_block_data_by_num(uint32_t block_num) const;
@@ -90,7 +93,6 @@ namespace hive { namespace chain {
       void for_each_block_position(block_info_processor_t processor) const;
 
     private:
-      void construct_index(bool resume = false);
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
 
       std::unique_ptr<detail::block_log_impl> my;
