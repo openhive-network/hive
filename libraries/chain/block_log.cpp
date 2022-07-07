@@ -51,9 +51,8 @@ namespace hive { namespace chain {
 
         // these don't change after opening, don't need locking
         int block_log_fd;
-        int block_index_fd;
         fc::path block_file;
-        fc::path index_file;
+        block_log_artifacts::block_log_artifacts_ptr_t _artifacts;
 
         static void write_with_retry(int filedes, const void* buf, size_t nbyte);
         static void pwrite_with_retry(int filedes, const void* buf, size_t nbyte, off_t offset);
@@ -71,7 +70,6 @@ namespace hive { namespace chain {
 
         signed_block read_block_from_offset_and_size(uint64_t offset, uint64_t size);
         signed_block_header read_block_header_from_offset_and_size(uint64_t offset, uint64_t size);
-        void truncate_block_index_to_head_block();
     };
 
     void block_log_impl::write_with_retry(int fd, const void* buf, size_t nbyte)
@@ -125,30 +123,17 @@ namespace hive { namespace chain {
       return block_header;
     }
 
-    void block_log_impl::truncate_block_index_to_head_block()
-    {
-      // the caller has already loaded the head block
-      uint32_t head_block_num = std::atomic_load(&head)->get_block_num();
-      ilog("Truncating the block index to the last block in the block log, #${head_block_num}", (head_block_num));
-
-      if (ftruncate(block_index_fd, head_block_num * sizeof(uint64_t)) == -1)
-        FC_THROW("Error truncating block index file: ${error}", ("error", strerror(errno)));
-    }
-
   } // end namespace detail
 
   block_log::block_log() : my( new detail::block_log_impl() )
   {
     my->block_log_fd = -1;
-    my->block_index_fd = -1;
   }
 
   block_log::~block_log()
   {
     if (my->block_log_fd != -1)
       ::close(my->block_log_fd);
-    if (my->block_index_fd != -1)
-      ::close(my->block_index_fd);
   }
 
   namespace
@@ -162,12 +147,11 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log::open(const fc::path& file, bool read_only /* = false */ )
+  void block_log::open(const fc::path& file, bool read_only /* = false */, bool auto_open_artifacts /*= true*/ )
   {
       close();
 
       my->block_file = file;
-      my->index_file = fc::path(file.generic_string() + ".index");
 
       int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
       if (read_only)
@@ -176,22 +160,10 @@ namespace hive { namespace chain {
       my->block_log_fd = ::open(my->block_file.generic_string().c_str(), flags, 0644);
       if (my->block_log_fd == -1)
         FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
-      my->block_index_fd = ::open(my->index_file.generic_string().c_str(), flags, 0644);
-      if (my->block_index_fd == -1)
-      {
-        if (errno == ENOENT)
-        {
-          wlog("Could not find index file in ${path}, index will be created and constructed from block_log.", ("path", my->index_file));
-          my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-          if (my->block_index_fd == -1)
-            FC_THROW("Error creating block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
-        }
-        else
-            FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
-      }
       my->block_log_size = get_file_size(my->block_log_fd);
       const ssize_t block_log_size = my->block_log_size;
-      ssize_t index_size = get_file_size(my->block_index_fd);
+
+      uint32_t head_block_num = 0;
 
       /* On startup of the block log, there are several states the log file and the index file can be
         * in relation to eachother.
@@ -215,77 +187,19 @@ namespace hive { namespace chain {
       {
         idump((block_log_size));
         std::atomic_store(&my->head, read_head());
-
-        if (index_size)
-        {
-          ilog("Index is nonempty" );
-          FC_ASSERT(index_size % sizeof(uint64_t) == 0, "Corrupt index, file size is not an even multiple of 8");
-          uint32_t head_block_num_according_to_log = std::atomic_load(&my->head)->get_block_num();
-          uint32_t head_block_num_according_to_index = index_size / 8;
-          if (head_block_num_according_to_log > head_block_num_according_to_index)
-          {
-            ilog("Index is incomplete");
-            // add entries to the block index to make it the same length as the block log
-            // we won't need to do the extra check to ensure the last bytes of the log match
-            // the last bytes of the index since we're regenerating the end of the index from
-            // the log
-            construct_index(true);
-          }
-          else // head_block_num_according_to_log <= head_block_num_according_to_index
-          {
-            if (head_block_num_according_to_log < head_block_num_according_to_index)
-            {
-              ilog("Block index contains more entries than there are blocks in the block log");
-              ddump((head_block_num_according_to_log)(head_block_num_according_to_index));
-              my->truncate_block_index_to_head_block();
-              index_size = get_file_size(my->block_index_fd);
-            }
-
-            // read the last 8 bytes of the block log to get the offset of the beginning of the head 
-            // block
-            uint64_t block_pos_and_flags = 0;
-            auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, &block_pos_and_flags, sizeof(block_pos_and_flags), 
-                                                                      block_log_size - sizeof(block_pos_and_flags));
-            FC_ASSERT(bytes_read == sizeof(block_pos_and_flags));
-
-            // read the last 8 bytes of the block index to get the offset of the beginning of the 
-            // head block
-            uint64_t index_pos_and_flags = 0;
-            bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &index_pos_and_flags, sizeof(index_pos_and_flags), 
-                                                                  index_size - sizeof(index_pos_and_flags));
-            FC_ASSERT(bytes_read == sizeof(index_pos_and_flags));
-            // uint64_t block_pos = detail::split_block_start_pos_with_flags(block_pos_and_flags).first;
-            // uint64_t index_pos = detail::split_block_start_pos_with_flags(index_pos_and_flags).first;
-
-            if (block_pos_and_flags != index_pos_and_flags)
-            {
-              ilog("Block log and index mismatch.");
-              construct_index();
-            }
-          }
-        }
-        else
-        {
-          ilog("Index is empty");
-          construct_index();
-        }
+        head_block_num = std::atomic_load(&my->head)->get_block_num();
       }
-      else if (index_size)
-      {
-        ilog("Block log is empty but the index is not.  Clearing the index");
-        if (ftruncate(my->block_index_fd, 0))
-          FC_THROW("Error truncating block log: ${error}", ("error", strerror(errno)));
-      }
+
+      if(auto_open_artifacts)
+        my->_artifacts = block_log_artifacts::open(file, read_only, *this, head_block_num);
   }
 
   void block_log::close()
   {
+    my->_artifacts.reset(); /// Destruction also performs file close.
+
     if (my->block_log_fd != -1) {
       ::close(my->block_log_fd);
-      my->block_log_fd = -1;
-    }
-    if (my->block_index_fd != -1) {
-      ::close(my->block_index_fd);
       my->block_log_fd = -1;
     }
     std::atomic_store(&my->head, std::shared_ptr<full_block_type>());
@@ -295,14 +209,28 @@ namespace hive { namespace chain {
   {
     return my->block_log_fd != -1;
   }
-
-  uint64_t block_log::append_raw(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes)
+  
+  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes)
   {
+    std::unique_ptr<char[]> compressed_block_data(new char[raw_block_size]);
+    memcpy(compressed_block_data.get(), raw_block_data, raw_block_size);
+
+    std::shared_ptr<full_block_type> full_block;
+    if (attributes.flags == block_flags::uncompressed)
+      full_block = full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), raw_block_size);
+    else
+      full_block = full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), raw_block_size, attributes);
+
+    return append_raw(block_num, raw_block_data, raw_block_size, attributes, full_block->get_block_id());
+  }
+
+  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const block_id_type& block_id)
+  {
+    uint64_t block_start_pos = my->block_log_size;
+    uint64_t block_start_pos_with_flags = detail::combine_block_start_pos_with_flags(block_start_pos, attributes);
+
     try
     {
-      uint64_t block_start_pos = my->block_log_size;
-      uint64_t block_start_pos_with_flags = detail::combine_block_start_pos_with_flags(block_start_pos, attributes);
-
       // what we write to the file is the serialized data, followed by the index of the start of the
       // serialized data.  Append that index so we can do it in a single write.
       size_t block_size_including_start_pos = raw_block_size + sizeof(uint64_t);
@@ -313,29 +241,20 @@ namespace hive { namespace chain {
       detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
       my->block_log_size += block_size_including_start_pos;
 
-      // add it to the index
-      detail::block_log_impl::write_with_retry(my->block_index_fd, &block_start_pos_with_flags, sizeof(block_start_pos_with_flags));
+      my->_artifacts->store_block_artifacts(block_num, block_start_pos, attributes, block_id);
 
       return block_start_pos;
     }
-    FC_LOG_AND_RETHROW()
+    FC_CAPTURE_LOG_AND_RETHROW((block_num)(block_start_pos)(block_start_pos_with_flags)(attributes))
   }
 
   std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> block_log::read_raw_block_data_by_num(uint32_t block_num) const
   {
-    uint64_t offsets_with_flags[2] = {0, 0};
-    uint64_t offset_in_index = sizeof(uint64_t) * (block_num - 1);
-    auto bytes_read = detail::block_log_impl::pread_with_retry(my->block_index_fd, &offsets_with_flags, sizeof(offsets_with_flags),  offset_in_index);
-    FC_ASSERT(bytes_read == sizeof(offsets_with_flags));
+    block_log_artifacts::artifacts_t this_block_artifacts = my->_artifacts->read_block_artifacts(block_num);
 
-    uint64_t this_block_start_pos;
-    block_attributes_t this_block_attributes;
-    std::tie(this_block_start_pos, this_block_attributes) = detail::split_block_start_pos_with_flags(offsets_with_flags[0]);
-    uint64_t next_block_start_pos;
-    block_attributes_t next_block_attributes;
-    std::tie(next_block_start_pos, next_block_attributes) = detail::split_block_start_pos_with_flags(offsets_with_flags[1]);
-
-    uint64_t serialized_data_size = next_block_start_pos - this_block_start_pos - sizeof(uint64_t);
+    uint64_t this_block_start_pos = this_block_artifacts.block_log_file_pos;
+    const block_attributes_t& this_block_attributes = this_block_artifacts.attributes;
+    uint64_t serialized_data_size = this_block_artifacts.block_serialized_data_size;
 
     std::unique_ptr<char[]> serialized_data(new char[serialized_data_size]);
     auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), serialized_data_size, this_block_start_pos);
@@ -359,12 +278,16 @@ namespace hive { namespace chain {
       if (my->compression_enabled)
       {
         const compressed_block_data& compressed_block = full_block->get_compressed_block();
-        block_start_pos = append_raw(compressed_block.compressed_bytes.get(), compressed_block.compressed_size, compressed_block.compression_attributes);
+        block_start_pos = append_raw(full_block->get_block_num(),
+                                     compressed_block.compressed_bytes.get(), compressed_block.compressed_size, compressed_block.compression_attributes,
+                                     full_block->get_block_id());
       }
       else // compression not enabled
       {
         const uncompressed_block_data& uncompressed_block = full_block->get_uncompressed_block();
-        block_start_pos = append_raw(uncompressed_block.raw_bytes.get(), uncompressed_block.raw_size, {block_flags::uncompressed});
+        block_start_pos = append_raw(full_block->get_block_num(),
+                                     uncompressed_block.raw_bytes.get(), uncompressed_block.raw_size, {block_flags::uncompressed},
+                                     full_block->get_block_id());
       }
 
       // update our cached head block
@@ -446,29 +369,15 @@ namespace hive { namespace chain {
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
 
-  optional<signed_block_header> block_log::read_block_header_by_num( uint32_t block_num )const
+  std::shared_ptr<full_block_type> block_log::read_block_by_offset(uint64_t offset, size_t size, block_attributes_t attributes) const
   {
-    try
-    {
-      // first, check if it's the current head block; if so, we can just return it.  If the
-      // block number is less than than the current head, it's guaranteed to have been fully
-      // written to the log+index
-      std::shared_ptr<full_block_type> head_block = my->head;
-      /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
-      if (block_num == 0 || !head_block || block_num > head_block->get_block_num())
-        return optional<signed_block_header>();
-      if (block_num == head_block->get_block_num())
-        return head_block->get_block();
-      // if we're still here, we know that it's in the block log, and the block after it is also
-      // in the block log (which means we can determine its size)
+    std::unique_ptr<char[]> serialized_data(new char[size]);
+    size_t total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), size, offset);
+    FC_ASSERT(total_read == size);
 
-      std::tuple<std::unique_ptr<char[]>, size_t> uncompressed_block_data = decompress_raw_block(read_raw_block_data_by_num(block_num));
-
-      signed_block_header block_header;
-      fc::raw::unpack_from_char_array(std::get<0>(uncompressed_block_data).get(), std::get<1>(uncompressed_block_data), block_header);
-      return block_header;
-    }
-    FC_CAPTURE_LOG_AND_RETHROW((block_num))
+    return attributes.flags == block_flags::uncompressed ? 
+      full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), size) : 
+      full_block_type::create_from_compressed_block_data(std::move(serialized_data), size, attributes);
   }
 
   std::vector<std::shared_ptr<full_block_type>> block_log::read_block_range_by_num(uint32_t first_block_num, uint32_t count) const
@@ -492,38 +401,37 @@ namespace hive { namespace chain {
 
       if (first_block_num <= last_block_num_from_disk)
       {
+        result.reserve(count);
+
         // then we need to read blocks from the disk
         uint32_t number_of_blocks_to_read = last_block_num_from_disk - first_block_num + 1;
-        uint32_t number_of_offsets_to_read = number_of_blocks_to_read + 1;
-        // read all the offsets in one go
-        std::unique_ptr<uint64_t[]> offsets_with_flags(new uint64_t[number_of_blocks_to_read + 1]);
-        uint64_t offset_of_first_offset = sizeof(uint64_t) * (first_block_num - 1);
-        detail::block_log_impl::pread_with_retry(my->block_index_fd, offsets_with_flags.get(), sizeof(uint64_t) * number_of_offsets_to_read,  offset_of_first_offset);
 
-        std::unique_ptr<uint64_t[]> offsets(new uint64_t[number_of_blocks_to_read + 1]);
-        std::unique_ptr<block_attributes_t[]> attributes(new block_attributes_t[number_of_blocks_to_read + 1]);
-        for (unsigned i = 0; i < number_of_blocks_to_read + 1; ++i)
-          std::tie(offsets[i], attributes[i]) = detail::split_block_start_pos_with_flags(offsets_with_flags[i]);
+        size_t size_of_all_blocks = 0;
+        auto block_artifacts = my->_artifacts->read_block_artifacts(first_block_num, number_of_blocks_to_read, &size_of_all_blocks);
+
+        uint64_t first_block_offset = block_artifacts.front().block_log_file_pos;
 
         // then read all the blocks in one go
-        uint64_t size_of_all_blocks = offsets[number_of_blocks_to_read] - offsets[0];
         idump((size_of_all_blocks));
         std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
-        detail::block_log_impl::pread_with_retry(my->block_log_fd, block_data.get(), size_of_all_blocks,  offsets[0]);
+        detail::block_log_impl::pread_with_retry(my->block_log_fd, block_data.get(), size_of_all_blocks, first_block_offset);
+
+        uint64_t offset_in_memory = 0; /// offset in block_data buffer, pointing to another block
 
         // now deserialize the blocks
-        for (uint32_t i = 0; i <= last_block_num_from_disk - first_block_num; ++i)
+        for(size_t i = 0; i < block_artifacts.size(); ++i)
         {
-          uint64_t offset_in_memory = offsets[i] - offsets[0];
-          uint64_t size = offsets[i + 1] - offsets[i] - sizeof(uint64_t);
+          const auto& ba = block_artifacts[i];
 
           // full_block_type expects to take ownership of a unique_ptr for the memory, so create one
-          std::unique_ptr<char[]> compressed_block_data(new char[size]);
-          memcpy(compressed_block_data.get(), block_data.get() + offset_in_memory, size);
-          if (attributes[i].flags == block_flags::uncompressed)
-            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), size));
+          std::unique_ptr<char[]> compressed_block_data(new char[ba.block_serialized_data_size]);
+          memcpy(compressed_block_data.get(), block_data.get() + offset_in_memory, ba.block_serialized_data_size);
+          if (ba.attributes.flags == block_flags::uncompressed)
+            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), ba.block_serialized_data_size));
           else
-            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), size, attributes[i]));
+            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), ba.block_serialized_data_size, ba.attributes));
+
+          offset_in_memory += ba.block_serialized_data_size;
         }
       }
 
@@ -575,126 +483,6 @@ namespace hive { namespace chain {
   std::shared_ptr<full_block_type> block_log::head()const
   {
     return my->head;
-  }
-
-  void block_log::construct_index(bool resume /* = false */)
-  {
-    try
-    {
-      // the caller has already loaded the head block
-      std::shared_ptr<full_block_type> head_block = my->head;
-      FC_ASSERT(head_block);
-      const uint32_t head_block_num = head_block->get_block_num();
-      idump((head_block_num));
-
-      // Note: the old implementation recreated the block index by reading the log
-      // forwards, starting at the start of the block log and deserializing each block
-      // and then writing the new file position to the index.
-      // The new implementation recreates the index by reading the block log backwards,
-      // extracting only the offsets from the block log.  This should be much more efficient 
-      // when regenerating the whole index, but it lacks the ability to repair the end
-      // of the index.  
-      // It would probably be worthwhile to use the old method if the number of
-      // entries to repair is small compared to the total size of the block log
-
-
-      const ssize_t old_index_size = get_file_size(my->block_index_fd);
-      const uint32_t old_index_block_count = old_index_size / sizeof(uint64_t);
-      if (resume)
-        ilog("Reconstructing Block Log Index from block ${old_index_block_count} to ${head_block_num}", (old_index_block_count)(head_block_num));
-      else
-        ilog("Reconstructing Block Log Index from scratch");
-
-
-      //create and size the new temporary index file (block_log.index.new)
-      fc::path new_index_file(my->index_file.generic_string() + ".new");
-      const size_t block_index_size = head_block_num * sizeof(uint64_t);
-      int new_index_fd = ::open(new_index_file.generic_string().c_str(), O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
-      if (new_index_fd == -1)
-        FC_THROW("Error opening temporary new index file ${filename}: ${error}", ("filename", new_index_file.generic_string())("error", strerror(errno)));
-      if (ftruncate(new_index_fd, block_index_size) == -1)
-        FC_THROW("Error resizing rebuilt block index file: ${error}", ("error", strerror(errno)));
-
-      //memory map for block log
-      char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
-      if (block_log_ptr == (char*)-1)
-        FC_THROW("Failed to mmap block log file: ${error}",("error",strerror(errno)));
-      if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
-        wlog("madvise failed: ${error}", ("error", strerror(errno)));
-
-      //memory map for the new index file
-      char* block_index_ptr = (char*)mmap(0, block_index_size, PROT_WRITE, MAP_SHARED, new_index_fd, 0);
-      if (block_index_ptr == (char*)-1)
-        FC_THROW("Failed to mmap block log index: ${error}", ("error", strerror(errno)));
-
-      // if we're adding entries to an existing index, copy the original index entries over
-      uint32_t reindex_through_block_number = 1;
-      if (resume)
-      {
-        //memory map for the old index file
-        char* old_block_index_ptr = (char*)mmap(0, old_index_size, PROT_READ, MAP_SHARED, my->block_index_fd, 0);
-        if (old_block_index_ptr == (char*)-1)
-          FC_THROW("Failed to mmap the old block log index: ${error}", ("error", strerror(errno)));
-
-        // copy all the data we're preserving from the old index
-        memcpy(block_index_ptr, old_block_index_ptr, old_index_size);
-
-        if (munmap(old_block_index_ptr, old_index_size) == -1)
-          elog("error unmapping old block log index: ${error}", ("error", strerror(errno)));
-
-        reindex_through_block_number = old_index_block_count;
-      }
-      ::close(my->block_index_fd);
-
-
-      // now walk backwards through the block log reading the starting positions of the blocks
-      // and writing them to the index
-      uint32_t block_index = head_block_num;
-      uint64_t block_log_offset_of_block_pos = my->block_log_size - sizeof(uint64_t);
-
-      while (!appbase::app().is_interrupt_request() && block_index >= reindex_through_block_number)
-      {
-        // read the file offset of the start of the block from the block log
-        uint64_t higher_block_pos = block_log_offset_of_block_pos;
-        //read next block pos offset from the block log
-        uint64_t block_pos_with_flags;
-        memcpy(&block_pos_with_flags, block_log_ptr + block_log_offset_of_block_pos, sizeof(block_pos_with_flags));
-
-        // write it to the right location in the new index file
-        memcpy(block_index_ptr + sizeof(block_pos_with_flags) * (block_index - 1), &block_pos_with_flags, sizeof(block_pos_with_flags));
-        uint64_t block_pos = detail::split_block_start_pos_with_flags(block_pos_with_flags).first;
-        if (higher_block_pos <= block_pos) //this is a sanity check on index values stored in the block log
-          FC_THROW("bad block index at block ${block_index} because ${higher_block_pos} <= ${block_pos}",
-                   ("block_index",block_index)("higher_block_pos",higher_block_pos)("block_pos",block_pos));
-
-        --block_index;
-        block_log_offset_of_block_pos = block_pos - sizeof(uint64_t);
-      } //while writing block index
-      if (appbase::app().is_interrupt_request())
-      {
-        ilog("Creating Block Log Index was interrupted on user request and can't be resumed. Last applied: (block number: ${head_block_num})", (head_block_num));
-        return;
-      }
-
-      if (munmap(block_log_ptr, my->block_log_size) == -1)
-        elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
-      if (munmap(block_index_ptr, block_index_size) == -1)
-        elog("error unmapping block_index: ${error}", ("error", strerror(errno)));
-
-      ::close(new_index_fd);
-      fc::remove_all(my->index_file);
-      fc::rename(new_index_file, my->index_file);
-
-      ilog("opening new block index");
-      my->block_index_fd = ::open(my->index_file.generic_string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
-      if (my->block_index_fd == -1)
-        FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", my->index_file)("error", strerror(errno)));
-      //report size of new index file and verify it is the right size for the blocks in block log
-      ssize_t new_block_index_file_size = get_file_size(my->block_index_fd);
-      idump((new_block_index_file_size));
-      FC_ASSERT(new_block_index_file_size / sizeof(uint64_t) == head_block_num);
-    }
-    FC_LOG_AND_RETHROW()
   }
 
   void block_log::set_compression(bool enabled)
@@ -837,13 +625,13 @@ namespace hive { namespace chain {
     if (my->block_log_size == 0)
       return; /// Nothing to do for empty block log.
 
-    uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t time_begin = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    boost::shared_ptr<signed_block> head_block = my->head.load();
+    std::shared_ptr<full_block_type> head_block = my->head;
 
     FC_ASSERT(head_block != nullptr);
 
-    uint32_t head_block_num = head_block->block_num();
+    uint32_t head_block_num = head_block->get_block_num();
 
     //memory map for block log
     char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
@@ -886,7 +674,7 @@ namespace hive { namespace chain {
     if (munmap(block_log_ptr, my->block_log_size) == -1)
       elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
 
-    uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t time_end = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     auto elapsed_time = time_end - time_begin;
 
     ilog("Block position list walk finished in time: ${et} ms.", ("et", elapsed_time/1000));
