@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace hive { namespace chain {
 
@@ -42,6 +43,8 @@ public:
     uint64_t   block_log_file_pos;
   };
 
+  typedef std::vector<artifacts_t> artifact_container_t;
+
   /** Allows to open a block log aartifacts file located in the same directory as specified block_log file itself.
   *   \param block_log_file_path location of source block_log file
   *   \param read_only - if set, already existing artifacts file must match to pointed block log.
@@ -58,6 +61,16 @@ public:
   uint32_t read_head_block_num() const;
 
   artifacts_t read_block_artifacts(uint32_t block_num) const;
+
+  /**
+   * @brief Allows to query for artifacts of blocks pointed by particular block range.
+   * 
+   * @param start_block_num - input, first block to read artifacts for
+   * @param block_count     - input, number of blocks to be processed
+   * @param block_size_sum  - output, optional - allows to rettrieve total size of raw block storage, to simplify their load from block_log file
+   * @return filled container holding artifacts for queries blocks. First stored item is specific to `start_block_num`, next are following them.
+  */
+  artifact_container_t read_block_artifacts(uint32_t start_block_num, uint32_t block_count, size_t* block_size_sum = nullptr) const;
 
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
     const block_id_t& block_id);
