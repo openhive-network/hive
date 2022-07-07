@@ -539,4 +539,9 @@ namespace graphene { namespace net
       return core_protocol_version >= GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION;
     }
 
+    bool peer_connection::advertise_blocks_by_block_id() const
+    {
+      return core_protocol_version >= GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION;
+    }
+
 } } // end namespace graphene::net
