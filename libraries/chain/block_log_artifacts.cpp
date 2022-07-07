@@ -261,6 +261,11 @@ private:
     return header_pack_size + artifact_chunk_size*(block_num - 1);
   }
 
+  uint64_t timestamp_ms() const
+  {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  }
+
 private:
   fc::path _artifact_file_name;
   int _storage_fd = -1; /// file descriptor to the opened file.
@@ -410,7 +415,7 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 {
   ilog("Attempting to generate a block artifact file for block range: ${fb}...${lb}", ("fb", first_block)("lb", last_block));
 
-  uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  uint64_t time_begin = timestamp_ms();
 
   FC_ASSERT(first_block <= last_block, "${first_block} <= ${last_block}", ("first_block", first_block)("last_block", last_block));
 
@@ -508,15 +513,15 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 
   ilog("All threads finished...");
 
-  uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  uint64_t time_end = timestamp_ms();
   auto elapsed_time = time_end - time_begin;
 
-  ilog("Block artifact file generation finished. ${bc} blocks processed in time: ${t} ms", ("bc", block_count)("t", elapsed_time/1000));
+  ilog("Block artifact file generation finished. ${bc} blocks processed in time: ${t} ms", ("bc", block_count)("t", elapsed_time));
 }
 
 void block_log_artifacts::impl::flush_data_chunks(uint32_t min_block_num, const std::vector<artifacts_t>& data)
 {
-  uint64_t time_begin = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  uint64_t time_begin = timestamp_ms();
   
   uint32_t max_block_num = min_block_num + data.size() - 1;
   ilog("Attempting to flush ${s} artifact entries collected for block range: <${sb}:${eb}> into target file...",
@@ -534,11 +539,11 @@ void block_log_artifacts::impl::flush_data_chunks(uint32_t min_block_num, const 
 
   FC_ASSERT(processed_block_num == max_block_num, "processed_block_num: ${pb} vs max_block_num: ${mb} mismatch", ("pb", processed_block_num)("mb", max_block_num));
 
-  uint64_t time_end = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  uint64_t time_end = timestamp_ms();
   auto elapsed_time = time_end - time_begin;
 
   ilog("Flushing ${s} artifact entries for block range: <${sb}:${eb}> finished in time: ${t} ms.",
-    ("s", data.size())("sb", min_block_num)("eb", max_block_num)("t", elapsed_time/1000));
+    ("s", data.size())("sb", min_block_num)("eb", max_block_num)("t", elapsed_time));
 }
 
 void block_log_artifacts::impl::woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
