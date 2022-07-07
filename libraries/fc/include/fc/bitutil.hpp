@@ -3,6 +3,8 @@
 
 namespace fc {
 
+// note: at -O2 and higher, gcc 5.0 and higher detect this idiom and 
+// optimizes to a bswap (both 32 and 64-bit versions)
 inline uint64_t endian_reverse_u64( uint64_t x )
 {
    return (((x >> 0x38) & 0xFF)        )
