@@ -368,37 +368,6 @@ struct full_transaction_cache::impl
 
 full_transaction_cache::full_transaction_cache() : my(new impl) {}
 
-std::shared_ptr<full_transaction_type> full_transaction_cache::get_by_merkle_digest(const hive::protocol::digest_type& merkle_digest)
-{
-  fc::optional<fc::microseconds> wait_duration;
-  BOOST_SCOPE_EXIT(&my, &wait_duration) {
-    my->total_lock_count.fetch_add(1, std::memory_order_relaxed);
-    if (wait_duration)
-    {
-      my->contended_lock_count.fetch_add(1, std::memory_order_relaxed);
-      wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
-           ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
-
-    }
-  } BOOST_SCOPE_EXIT_END
-
-  std::unique_lock<std::mutex> lock(my->cache_mutex, std::try_to_lock_t());
-  if (!lock)
-  {
-    fc::time_point wait_start_time = fc::time_point::now();
-    lock.lock();
-    wait_duration = fc::time_point::now() - wait_start_time;
-  }
-  try
-  {
-    return my->cache.at(merkle_digest).lock();
-  }
-  catch (const std::out_of_range&)
-  {
-    return std::shared_ptr<full_transaction_type>();
-  }
-}
-
 std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(const std::shared_ptr<full_transaction_type>& transaction)
 {
   fc::optional<fc::microseconds> wait_duration;
@@ -407,6 +376,7 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(cons
     if (wait_duration)
     {
       my->contended_lock_count.fetch_add(1, std::memory_order_relaxed);
+      // TODO: disable this warning before release, this is expected right at the transition between sync & live mode
       wlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used", 
            ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
 

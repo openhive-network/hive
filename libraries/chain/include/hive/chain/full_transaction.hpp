@@ -107,7 +107,6 @@ class full_transaction_cache
   std::unique_ptr<impl> my;
   full_transaction_cache();
 public:
-  std::shared_ptr<full_transaction_type> get_by_merkle_digest(const hive::protocol::digest_type& merkle_digest);
   std::shared_ptr<full_transaction_type> add_to_cache(const std::shared_ptr<full_transaction_type>& transaction);
   void remove_from_cache(const hive::protocol::digest_type& merkle_digest);
 

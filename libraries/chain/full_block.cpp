@@ -139,14 +139,6 @@ full_block_type::~full_block_type()
   }
   FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after encoding block");
 
-  // compute the legacy_block_message_hash.  This is the hash you would get if you packed this block into a
-  // block_message and asked for its message_id.  On the p2p net, we'll always use the legacy_message_hash, even
-  // when we're sending blocks in their compressed form.
-  fc::ripemd160::encoder legacy_message_hash_encoder;
-  legacy_message_hash_encoder.write(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
-  legacy_message_hash_encoder.write(full_block->block_id->data(), full_block->block_id->data_size());
-  full_block->legacy_block_message_hash = legacy_message_hash_encoder.result();
-
   // serialization done.  Fill out the decoded version of the block with the transactions
   new_block.transactions.reserve(full_transactions.size());
   for (const std::shared_ptr<full_transaction_type>& full_transaction : full_transactions)
@@ -162,27 +154,36 @@ full_block_type::~full_block_type()
   return full_block;
 } FC_CAPTURE_AND_RETHROW() }
 
+void full_block_type::decompress_block() const
+{
+  std::lock_guard<std::mutex> guard(uncompressed_block_mutex);
+  if (!has_uncompressed_block.load(std::memory_order_consume))
+  {
+    assert(!decoded_block_storage);
+    FC_ASSERT(!decoded_block_storage, "Block is already decompressed");
+
+    assert(has_compressed_block);
+    FC_ASSERT(has_compressed_block.load(std::memory_order_consume), "Nothing to decompress");
+
+    decoded_block_storage = std::make_shared<decoded_block_storage_type>();
+    std::tie(decoded_block_storage->uncompressed_block.raw_bytes, decoded_block_storage->uncompressed_block.raw_size) = 
+      block_log::decompress_raw_block(compressed_block.compressed_bytes.get(), 
+                                      compressed_block.compressed_size, 
+                                      compressed_block.compression_attributes);
+
+    has_uncompressed_block.store(true, std::memory_order_release);
+  }
+}
+
 const uncompressed_block_data& full_block_type::get_uncompressed_block() const
 {
   if (!has_uncompressed_block.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> guard(uncompressed_block_mutex);
-    if (!has_uncompressed_block.load(std::memory_order_consume))
-    {
-      assert(!decoded_block_storage);
-      FC_ASSERT(!decoded_block_storage, "Block is already decompressed");
-
-      assert(has_compressed_block);
-      FC_ASSERT(has_compressed_block.load(std::memory_order_consume), "Nothing to decompress");
-
-      decoded_block_storage = std::make_shared<decoded_block_storage_type>();
-      std::tie(decoded_block_storage->uncompressed_block.raw_bytes, decoded_block_storage->uncompressed_block.raw_size) = 
-        block_log::decompress_raw_block(compressed_block.compressed_bytes.get(), 
-                                        compressed_block.compressed_size, 
-                                        compressed_block.compression_attributes);
-
-      has_uncompressed_block.store(true, std::memory_order_release);
-    }
+    fc::time_point wait_begin = fc::time_point::now();
+    decompress_block();
+    fc::time_point wait_end = fc::time_point::now();
+    fc::microseconds wait_duration = wait_end - wait_begin;
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_uncompressed_block()", (wait_duration));
   }
   return decoded_block_storage->uncompressed_block;
 }
@@ -192,28 +193,37 @@ bool full_block_type::has_compressed_block_data() const
   return has_compressed_block.load(std::memory_order_relaxed); 
 }
 
+void full_block_type::compress_block() const
+{
+  std::lock_guard<std::mutex> guard(compressed_block_mutex);
+  if (!has_compressed_block.load(std::memory_order_consume))
+  {
+    assert(decoded_block_storage);
+    FC_ASSERT(decoded_block_storage, "can't compress unless I already have the uncompressed version");
+
+    fc::time_point start = fc::time_point::now();
+
+    fc::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(get_block_num());
+    std::tie(compressed_block.compressed_bytes, compressed_block.compressed_size) = 
+      block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
+    compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
+    compressed_block.compression_attributes.dictionary_number = dictionary_number_to_use;
+
+    compression_time = fc::time_point::now() - start;
+    has_compressed_block.store(true, std::memory_order_release);
+  }
+}
+
 const compressed_block_data& full_block_type::get_compressed_block() const
 {
   if (!has_compressed_block.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> guard(compressed_block_mutex);
-    if (!has_compressed_block.load(std::memory_order_consume))
-    {
-      assert(decoded_block_storage);
-      FC_ASSERT(decoded_block_storage, "can't compress unless I already have the uncompressed version");
-
-      fc::time_point start = fc::time_point::now();
-
-      fc::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(get_block_num());
-      std::tie(compressed_block.compressed_bytes, compressed_block.compressed_size) = 
-        block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
-      compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
-      compressed_block.compression_attributes.dictionary_number = dictionary_number_to_use;
-
-      compression_time = fc::time_point::now() - start;
-
-      has_compressed_block.store(true, std::memory_order_release);
-    }
+    fc::time_point wait_begin = fc::time_point::now();
+    compress_block();
+    fc::time_point wait_end = fc::time_point::now();
+    fc::microseconds wait_duration = wait_end - wait_begin;
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_compressed_block(), compression took ${compression_time}",
+            (wait_duration)(compression_time));
   }
   return compressed_block;
 }
@@ -231,117 +241,140 @@ const compressed_block_data& full_block_type::get_compressed_block() const
   return block_id;
 }
 
+void full_block_type::decode_block_header() const
+{
+  std::lock_guard<std::mutex> guard(unpacked_block_header_mutex);
+  if (!has_unpacked_block_header.load(std::memory_order_consume))
+  {
+    decompress_block(); // force decompression to happen now, if it hasn't happened yet
+
+    fc::time_point decode_block_header_begin = fc::time_point::now();
+    assert(!decoded_block_storage->block);
+    FC_ASSERT(!decoded_block_storage->block, "It seems like the block header has already been unpacked");
+    
+    // unpack the block header.  We're likley to eventually want either or both of the block_id or 
+    // the block_digest, and a little work now can make those cheaper to compute in the 
+    // future.
+    //
+    // The block hierarchy looks like:
+    //   block_header (most of the fields in the block)
+    //   +- signed_block_header (adds `witness_signature`)
+    //      +- signed_block (adds `transactions`)
+    //
+    // The block_digest, used in witness signature verification, is the sha256 of the serialized
+    // block header.
+    // The block_id is the sha224 of the signed_block_header, with the first four bytes replaced
+    // with the block number.
+    // To generate those, we'll need to know how many bytes of the uncompressed_block we should
+    // feed in to the hash function.  So instead of deserializing the whole signed_block in
+    // one go, we do the individual parts so we can store off the sizes along the way.
+
+    decoded_block_storage->block = signed_block();
+    fc::datastream<const char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(), 
+                                           decoded_block_storage->uncompressed_block.raw_size);
+    fc::raw::unpack(datastream, (block_header&)*decoded_block_storage->block);
+    block_header_size = datastream.tellp();
+    fc::raw::unpack(datastream, decoded_block_storage->block->witness_signature);
+    signed_block_header_size = datastream.tellp();
+    
+    // construct the block id (not always needed, but we assume it's cheap enough that it's not worth doing lazily)
+    if (!block_id)
+      block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
+    
+    // construct the block digest (also not always needed, but we assume it's cheap enough that it's not worth doing lazily)
+    if (!digest)
+    {
+      // digest is just the hash of the block_header
+      digest = digest_type::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), block_header_size);
+    }
+    
+    fc::time_point decode_block_header_end = fc::time_point::now();
+    decode_block_header_time = decode_block_header_end - decode_block_header_begin;
+
+    has_unpacked_block_header.store(true, std::memory_order_release);
+  }
+}
+
 const signed_block_header& full_block_type::get_block_header() const
 {
   if (!has_unpacked_block_header.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> guard(unpacked_block_header_mutex);
-    if (!has_unpacked_block_header.load(std::memory_order_consume))
-    {
-      get_uncompressed_block(); // force uncompression to happen now, if it hasn't happened yet
-
-      assert(!decoded_block_storage->block);
-      FC_ASSERT(!decoded_block_storage->block, "It seems like the block header has already been unpacked");
-
-      // unpack the block header.  We're likley to eventually want either or both of the block_id or 
-      // the block_digest, and a little work now can make those cheaper to compute in the 
-      // future.
-      //
-      // The block hierarchy looks like:
-      //   block_header (most of the fields in the block)
-      //   +- signed_block_header (adds `witness_signature`)
-      //      +- signed_block (adds `transactions`)
-      //
-      // The block_digest, used in witness signature verification, is the sha256 of the serialized
-      // block header.
-      // The block_id is the sha224 of the signed_block_header, with the first four bytes replaced
-      // with the block number.
-      // To generate those, we'll need to know how many bytes of the uncompressed_block we should
-      // feed in to the hash function.  So instead of deserializing the whole signed_block in
-      // one go, we do the individual parts so we can store off the sizes along the way.
-      decoded_block_storage->block = signed_block();
-      fc::datastream<const char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(), 
-                                             decoded_block_storage->uncompressed_block.raw_size);
-      fc::raw::unpack(datastream, (block_header&)*decoded_block_storage->block);
-      block_header_size = datastream.tellp();
-      fc::raw::unpack(datastream, decoded_block_storage->block->witness_signature);
-      signed_block_header_size = datastream.tellp();
-
-      // construct the block id (not always needed, but we assume it's cheap enough that it's not worth doing lazily)
-      if (!block_id)
-        block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
-
-      // construct the block digest (also not always needed, but we assume it's cheap enough that it's not worth doing lazily)
-      if (!digest)
-      {
-        // digest is just the hash of the block_header
-        digest = digest_type::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), block_header_size);
-      }
-
-      // compute the legacy_block_message_hash.  This is the hash you would get if you packed this block into a
-      // block_message and asked for its message_id.  On the p2p net, we'll always use the legacy_message_hash, even
-      // when we're sending blocks in their compressed form.
-      fc::ripemd160::encoder legacy_message_hash_encoder;
-      legacy_message_hash_encoder.write(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
-      legacy_message_hash_encoder.write(block_id->data(), block_id->data_size());
-      legacy_block_message_hash = legacy_message_hash_encoder.result();
-
-      has_unpacked_block_header.store(true, std::memory_order_release);
-    }
+    fc::time_point decode_begin = fc::time_point::now();
+    decode_block_header();
+    fc::time_point decode_end = fc::time_point::now();
+    fc::microseconds decode_duration = decode_end - decode_begin;
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}μs in full_block_type::get_block_header(), header decode took ${decode_block_header_time}μs",
+            (decode_duration)(decode_block_header_time));
   }
 
   return *decoded_block_storage->block;
+}
+
+
+
+void full_block_type::decode_block() const
+{
+  std::lock_guard<std::mutex> guard(unpacked_block_mutex);
+  if (!has_unpacked_block.load(std::memory_order_consume))
+  {
+    decode_block_header(); // force decompression and decoding through the block header to happen now, if it hasn't happened yet
+
+    fc::time_point decode_block_begin = fc::time_point::now();
+    // decoded_block_storage->block should now have the signed_block_header slice valid, the remainder (the transactions) empty
+    assert(decoded_block_storage->block);
+    FC_ASSERT(decoded_block_storage->block, "The block header should have already been unpacked, but I don't see it");
+    
+    // now the only part left is the vector of transactions.  we could just fc::raw::unpack(datastream, block->transactions),
+    // but we need to know where each transaction begins and ends because we need to preserve the serialized form
+    // of each transaction.
+    // A vector serialized as a size followed by the transactions themselves
+    fc::datastream<char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(), 
+                                     decoded_block_storage->uncompressed_block.raw_size);
+    datastream.seekp(signed_block_header_size);
+    fc::unsigned_int number_of_transactions;
+    fc::raw::unpack(datastream, number_of_transactions);
+    decoded_block_storage->block->transactions.resize(number_of_transactions.value);
+    full_transactions.resize(number_of_transactions.value);
+    for (unsigned i = 0; i < number_of_transactions.value; ++i)
+    {
+      // The transaction hierarchy is:
+      // transaction
+      // +- signed_transaction (adds a vector<signatures>)
+      // 
+      // the transaction digest, transaction_id, and sig_digest are simply computed the fields in the `transaction` base 
+      // class.  The `merkle_digest()` also includes the signatures, so just like the block, we need to decode the 
+      // transaction in parts and record off the start/end points
+      serialized_transaction_data serialized_transaction;
+      serialized_transaction.begin = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
+      fc::raw::unpack(datastream, (transaction&)decoded_block_storage->block->transactions[i]);
+      serialized_transaction.transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
+      fc::raw::unpack(datastream, decoded_block_storage->block->transactions[i].signatures);
+      serialized_transaction.signed_transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
+    
+      // if we're in live mode (as opposed to not syncing/replaying), use the transaction cache to see if transactions in this
+      // block were previously seen as standalone transactions.  If so, we can reuse their data and avoid re-validating the transaction
+      const bool use_transaction_cache = fc::time_point::now() - decoded_block_storage->block->timestamp < fc::minutes(1);
+      full_transactions[i] = full_transaction_type::create_from_block(decoded_block_storage, i, serialized_transaction, use_transaction_cache);
+    }
+    FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after decoding block");
+
+    fc::time_point decode_block_end = fc::time_point::now();
+    decode_block_time = decode_block_end - decode_block_begin;
+
+    has_unpacked_block.store(true, std::memory_order_release);
+  }
 }
 
 const signed_block& full_block_type::get_block() const
 {
   if (!has_unpacked_block.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> guard(unpacked_block_mutex);
-    if (!has_unpacked_block.load(std::memory_order_consume))
-    {
-      get_block_header(); // force decompression and decoding through the block header to happen now, if it hasn't happened yet
-
-      // decoded_block_storage->block should now have the signed_block_header slice valid, the remainder (the transactions) empty
-      assert(decoded_block_storage->block);
-      FC_ASSERT(decoded_block_storage->block, "The block header should have already been unpacked, but I don't see it");
-
-      // now the only part left is the vector of transactions.  we could just fc::raw::unpack(datastream, block->transactions),
-      // but we need to know where each transaction begins and ends because we need to preserve the serialized form
-      // of each transaction.
-      // A vector serialized as a size followed by the transactions themselves
-      fc::datastream<char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(), 
-                                       decoded_block_storage->uncompressed_block.raw_size);
-      datastream.seekp(signed_block_header_size);
-      fc::unsigned_int number_of_transactions;
-      fc::raw::unpack(datastream, number_of_transactions);
-      decoded_block_storage->block->transactions.resize(number_of_transactions.value);
-      full_transactions.resize(number_of_transactions.value);
-      for (unsigned i = 0; i < number_of_transactions.value; ++i)
-      {
-        // The transaction hierarchy is:
-        // transaction
-        // +- signed_transaction (adds a vector<signatures>)
-        // 
-        // the transaction digest, transaction_id, and sig_digest are simply computed the fields in the `transaction` base 
-        // class.  The `merkle_digest()` also includes the signatures, so just like the block, we need to decode the 
-        // transaction in parts and record off the start/end points
-        serialized_transaction_data serialized_transaction;
-        serialized_transaction.begin = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
-        fc::raw::unpack(datastream, (transaction&)decoded_block_storage->block->transactions[i]);
-        serialized_transaction.transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
-        fc::raw::unpack(datastream, decoded_block_storage->block->transactions[i].signatures);
-        serialized_transaction.signed_transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
-
-        // if we're in live mode (as opposed to not syncing/replaying), use the transaction cache to see if transactions in this
-        // block were previously seen as standalone transactions.  If so, we can reuse their data and avoid re-validating the transaction
-        const bool use_transaction_cache = fc::time_point::now() - decoded_block_storage->block->timestamp < fc::minutes(1);
-        full_transactions[i] = full_transaction_type::create_from_block(decoded_block_storage, i, serialized_transaction, use_transaction_cache);
-      }
-      FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after decoding block");
-
-      has_unpacked_block.store(true, std::memory_order_release);
-    }
+    fc::time_point decode_begin = fc::time_point::now();
+    decode_block();
+    fc::time_point decode_end = fc::time_point::now();
+    fc::microseconds decode_duration = decode_end - decode_begin;
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}μs in full_block_type::get_block(), actual decode took ${decode_block_time}μs", 
+            (decode_duration)(decode_block_time));
   }
 
   return *decoded_block_storage->block;
@@ -358,27 +391,69 @@ uint32_t full_block_type::get_block_num() const
   return block_header::num_from_id(get_block_id());
 }
 
-const digest_type& full_block_type::get_digest() const 
+void full_block_type::compute_legacy_block_message_hash() const
 {
-  (void)get_block_header();
-  return *digest;
+  std::lock_guard<std::mutex> guard(legacy_block_message_hash_mutex);
+  if (!has_legacy_block_message_hash.load(std::memory_order_consume))
+  {
+    decode_block_header();
+    // compute the legacy_block_message_hash.  This is the hash you would get if you packed this block into a
+    // block_message and asked for its message_id.  On the p2p net, we'll always use the legacy_message_hash, even
+    // when we're sending blocks in their compressed form.
+    fc::time_point compute_hash_begin = fc::time_point::now();
+    fc::ripemd160::encoder legacy_message_hash_encoder;
+    legacy_message_hash_encoder.write(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
+    legacy_message_hash_encoder.write(block_id->data(), block_id->data_size());
+    legacy_block_message_hash = legacy_message_hash_encoder.result();
+    fc::time_point compute_hash_end = fc::time_point::now();
+    compute_legacy_block_message_hash_time = compute_hash_end - compute_hash_begin;
+
+    has_legacy_block_message_hash.store(true, std::memory_order_release);
+  }
 }
 
 const fc::ripemd160& full_block_type::get_legacy_block_message_hash() const
 {
-  (void)get_block_header();
+  if (!has_legacy_block_message_hash.load(std::memory_order_consume))
+  {
+    fc::time_point wait_begin = fc::time_point::now();
+    compute_legacy_block_message_hash();
+    fc::time_point wait_end = fc::time_point::now();
+    fc::microseconds wait_duration = wait_end - wait_begin;
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_legacy_block_message_hash(), computing it took ${compute_legacy_block_message_hash_time}μs", 
+            (wait_duration)(compute_legacy_block_message_hash_time));
+  }
   return legacy_block_message_hash;
+}
+
+void full_block_type::compute_signing_key() const
+{
+  std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
+  if (!block_signing_key)
+  {
+    decode_block_header();
+    fc::time_point compute_begin = fc::time_point::now();
+    const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(decoded_block_storage->block->timestamp);
+    block_signing_key = hive::protocol::signed_block_header::signee(decoded_block_storage->block->witness_signature, *digest, validation_rules.signature_type);
+    fc::time_point compute_end = fc::time_point::now();
+    compute_block_signing_key_time = compute_end - compute_begin;
+  }
 }
 
 const fc::ecc::public_key& full_block_type::get_signing_key() const
 {
-  const signed_block_header& header = get_block_header();
-  std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
-  if (!block_signing_key)
   {
-    const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(header.timestamp);
-    block_signing_key = hive::protocol::signed_block_header::signee(header.witness_signature, get_digest(), validation_rules.signature_type);
+    std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
+    if (block_signing_key)
+      return *block_signing_key;
   }
+
+  fc::time_point wait_begin = fc::time_point::now();
+  compute_signing_key();
+  fc::time_point wait_end = fc::time_point::now();
+  fc::microseconds wait_duration = wait_end - wait_begin;
+  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_signing_key(), actual calculation took ${compute_block_signing_key_time}μs",
+          (wait_duration)(compute_block_signing_key_time));
   return *block_signing_key;
 }
 
@@ -424,12 +499,33 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   return checksum_type::hash(ids[0]);
 }
 
-const checksum_type& full_block_type::get_merkle_root() const
-{ try {
-  get_block();
+void full_block_type::compute_merkle_root() const
+{
   std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
   if (!merkle_root)
+  {
+    decode_block();
+    fc::time_point compute_begin = fc::time_point::now();
     merkle_root = compute_merkle_root(full_transactions);
+    fc::time_point compute_end = fc::time_point::now();
+    compute_merkle_root_time = compute_end - compute_begin;
+  }
+}
+
+const checksum_type& full_block_type::get_merkle_root() const
+{ try {
+  {
+    std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
+    if (merkle_root)
+      return *merkle_root;
+  }
+
+  fc::time_point wait_begin = fc::time_point::now();
+  compute_merkle_root();
+  fc::time_point wait_end = fc::time_point::now();
+  fc::microseconds wait_duration = wait_end - wait_begin;
+  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_merkle_root(), actual calculation took ${compute_merkle_root_time}μs",
+          (wait_duration)(compute_merkle_root_time));
   return *merkle_root;
 } FC_CAPTURE_AND_RETHROW() }
 
