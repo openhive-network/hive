@@ -21,10 +21,11 @@ def prepared_wallet(node, request):
 
 
 @pytest.fixture
-def wallet_with_legacy_serialization(node):
-    return tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=legacy'])
-
+def wallet_with_legacy_serialization(node, request):
+    return tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
+                                                           '--transaction-serialization=legacy'])
 
 @pytest.fixture
-def wallet_with_nai_serialization(node):
-    return tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=hf26'])
+def wallet_with_nai_serialization(node, request):
+    return tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
+                                                           '--transaction-serialization=hf26'])
