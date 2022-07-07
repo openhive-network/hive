@@ -40,7 +40,8 @@ public:
     transaction_inside_block_received_from_p2p,
     standalone_transaction_received_from_p2p,
     standalone_transaction_received_from_api,
-    locally_produced_block
+    locally_produced_block,
+    block_log_destined_for_p2p
   };
   void enqueue_work(const std::shared_ptr<full_block_type>& full_block, data_source_type data_source);
   void enqueue_work(const std::shared_ptr<full_transaction_type>& full_transaction, data_source_type data_source);

@@ -62,10 +62,13 @@ namespace graphene { namespace net
     }
     message peer_connection::virtual_queued_block_message::get_message(peer_connection_delegate* node, peer_connection* peer)
     {
-      if (peer->supports_compressed_blocks() && full_block->has_compressed_block_data())
+      if (peer->supports_compressed_blocks())
       {
         // the peer can handle some form of compressed data.
         const hive::chain::compressed_block_data& compressed_data = full_block->get_compressed_block();
+        // ilog("sending compressed block to peer, compressed bytes: ${compressed_size}, uncompressed bytes: ${uncompressed_size}",
+        //      ("compressed_size", compressed_data.compressed_size)("uncompressed_size", full_block->get_uncompressed_block_size()));
+
         if (compressed_data.compression_attributes.flags == hive::chain::block_log::block_flags::zstd &&
             (!compressed_data.compression_attributes.dictionary_number ||  // the block isn't compressed using a dicitonary
              (peer->last_available_zstd_compression_dictionary_number &&         // or it's one they understand

@@ -477,8 +477,11 @@ namespace hive { namespace chain {
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> raw_block_data = read_raw_block_data_by_num(block_num);
+      block_log::block_attributes_t attributes = std::get<2>(raw_block_data);
 
-      return full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), std::get<2>(raw_block_data));
+      return attributes.flags == block_flags::uncompressed ? 
+        full_block_type::create_from_uncompressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data)) :
+        full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), attributes);
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -557,7 +560,10 @@ namespace hive { namespace chain {
           // full_block_type expects to take ownership of a unique_ptr for the memory, so create one
           std::unique_ptr<char[]> compressed_block_data(new char[size]);
           memcpy(compressed_block_data.get(), block_data.get() + offset_in_memory, size);
-          result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), size, attributes[i]));
+          if (attributes[i].flags == block_flags::uncompressed)
+            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), size));
+          else
+            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), size, attributes[i]));
         }
       }
 
@@ -597,7 +603,11 @@ namespace hive { namespace chain {
     try
     {
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> raw_block_data = read_raw_head_block();
-      return full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), std::get<2>(raw_block_data));
+      block_log::block_attributes_t attributes = std::get<2>(raw_block_data);
+
+      return attributes.flags == block_flags::uncompressed ? 
+        full_block_type::create_from_uncompressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data)) :
+        full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), attributes);
     }
     FC_LOG_AND_RETHROW()
   }
