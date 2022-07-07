@@ -105,20 +105,28 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
   {
     case blockchain_worker_thread_pool::data_source_type::block_received_from_p2p:
       // fully decompress (if necessary) the block and unpack it
-      (void)full_block->get_block();
+      full_block->decode_block();
+
       // now we have the full_transactions, get started working on them
       blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
-                                                           blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p);
+                                                                 blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p);
       // precompute some stuff we'll need for validating the block
-      (void)full_block->get_signing_key();
-      (void)full_block->get_merkle_root();
+      full_block->compute_signing_key();
+      full_block->compute_merkle_root();
+
+      // compute the legacy block message hash for sharing on the network
+      full_block->compute_legacy_block_message_hash();
 
       // finally, compress it if it didn't start out that way (needed for writing to the block log)
-      (void)full_block->get_compressed_block();
+      full_block->compress_block();
       break;
     case blockchain_worker_thread_pool::data_source_type::locally_produced_block:
       // locally-produced blocks should have everything done except for the compression, so kick that off now
-      full_block->get_compressed_block();
+      full_block->compress_block();
+
+      // compute the legacy block message hash for sharing on the network
+      full_block->compute_legacy_block_message_hash();
+
       break;
     default:
       elog("Error: full block added to worker thread with an unrecognized data source");

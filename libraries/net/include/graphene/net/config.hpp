@@ -23,9 +23,10 @@
  */
 #pragma once
 
-#define GRAPHENE_NET_PROTOCOL_VERSION                        107
-#define GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION      107 // support for compressed blocks added in 107
-#define GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION         106 // support for the firewall check was added in 106
+#define GRAPHENE_NET_PROTOCOL_VERSION                              107
+#define GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION            107 // support for compressed blocks added in 107
+#define GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION 107 // share blocks by block_id instead of by block_message hash added in 107
+#define GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION               106 // support for the firewall check was added in 106
 
 /**
  * Define this to enable debugging code in the p2p network interface.
@@ -79,7 +80,9 @@
  */
 #define GRAPHENE_NET_FUTURE_SYNC_BLOCKS_GRACE_PERIOD_SEC     (60 * 60)
 
-#define GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES           2
+/* recently lowered from 2 minutes -> 1 minute, to match the cache
+ * duration/default wallet expiration time */
+#define GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES           1
 
 #define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING      200
 

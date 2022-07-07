@@ -5132,8 +5132,8 @@ const witness_object& database::validate_block_header( uint32_t skip, const std:
   FC_ASSERT( head_block_time() < next_block_header.timestamp, "", ("head_block_time", head_block_time())("next", next_block_header.timestamp)("blocknum", full_block->get_block_num()) );
   const witness_object& witness = get_witness( next_block_header.witness );
 
-  if( !(skip&skip_witness_signature) )
-    FC_ASSERT( next_block_header.validate_signee( witness.signing_key, full_block->get_digest(), has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical ) );
+  if (!(skip & skip_witness_signature))
+    FC_ASSERT(witness.signing_key == full_block->get_signing_key());
 
   if( !(skip&skip_witness_schedule_check) )
   {

@@ -57,15 +57,24 @@ class full_block_type
     mutable size_t signed_block_header_size; // only valid when has_unpacked_block_header
     mutable fc::optional<block_id_type> block_id; // only valid when has_unpacked_block_header
     mutable fc::optional<digest_type> digest; // only valid when has_unpacked_block_header
-    mutable fc::ripemd160 legacy_block_message_hash; // only valid when has_unpacked_block_header
+    mutable fc::microseconds decode_block_header_time; // only valid when has_unpacked_block_header
+
+    mutable std::atomic<bool> has_legacy_block_message_hash = { false };
+    mutable std::mutex legacy_block_message_hash_mutex;
+    mutable fc::ripemd160 legacy_block_message_hash; // only valid when has_legacy_block_message_hash
+    mutable fc::microseconds compute_legacy_block_message_hash_time; // only valid when has_legacy_block_message_hash
+
 
     mutable std::atomic<bool> has_unpacked_block = { false };
     mutable std::mutex unpacked_block_mutex;
-    mutable std::vector<std::shared_ptr<full_transaction_type>> full_transactions;
+    mutable std::vector<std::shared_ptr<full_transaction_type>> full_transactions; // only valid when has_unpacked_block
+    mutable fc::microseconds decode_block_time; // only valid when has_unpacked_block
 
     mutable std::mutex block_signing_key_merkle_root_mutex;
     mutable fc::optional<fc::ecc::public_key> block_signing_key;
     mutable fc::optional<checksum_type> merkle_root;
+    mutable fc::microseconds compute_merkle_root_time;
+    mutable fc::microseconds compute_block_signing_key_time;
 
     static std::atomic<uint32_t> number_of_instances_created;
     static std::atomic<uint32_t> number_of_instances_destroyed;
@@ -85,19 +94,29 @@ class full_block_type
                                                                                       const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
                                                                                       const fc::ecc::private_key* signer);
 
+    void decode_block() const; // immediately decompresses & unpacks the block, called by the worker thread
     const signed_block& get_block() const;
+    void decode_block_header() const;
     const signed_block_header& get_block_header() const;
     const block_id_type& get_block_id() const;
     uint32_t get_block_num() const;
-    const digest_type& get_digest() const;
+
+    void compute_legacy_block_message_hash() const;
     const fc::ripemd160& get_legacy_block_message_hash() const;
+    void compute_signing_key() const;
     const fc::ecc::public_key& get_signing_key() const;
+
+    void decompress_block() const;
     const uncompressed_block_data& get_uncompressed_block() const;
-    bool has_compressed_block_data() const;
-    const compressed_block_data& get_compressed_block() const;
     uint32_t get_uncompressed_block_size() const;
+
+    bool has_compressed_block_data() const;
+    void compress_block() const; // immediately compresses the block, called by the worker thread
+    const compressed_block_data& get_compressed_block() const; // returns the compressed block (if not already compressed, this compresses the block first)
+
     const std::vector<std::shared_ptr<full_transaction_type>>& get_full_transactions() const;
     static checksum_type compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions);
+    void compute_merkle_root() const;
     const checksum_type& get_merkle_root() const;
 };
 

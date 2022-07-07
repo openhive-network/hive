@@ -325,6 +325,7 @@ namespace graphene { namespace net
       fc::optional<fc::ip::endpoint> get_endpoint_for_connecting() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_db() const;
       bool supports_compressed_blocks() const;
+      bool advertise_blocks_by_block_id() const;
     private:
       void send_queued_messages_task();
       void accept_connection_task();
