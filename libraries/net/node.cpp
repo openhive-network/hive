@@ -84,6 +84,7 @@
 #include <hive/protocol/config.hpp>
 #include <hive/plugins/statsd/utility.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <fc/git_revision.hpp>
 
@@ -2907,6 +2908,7 @@ namespace graphene { namespace net {
       }
     }
 
+    // this is only called when a peer wants a block from us
     std::shared_ptr<full_block_type> node_impl::get_full_block_by_block_id(const block_id_type& block_id)
     {
       activity_tracer aTracer(__FUNCTION__, *this);
@@ -2917,7 +2919,10 @@ namespace graphene { namespace net {
       }
       catch (const fc::key_not_found_exception&)
       {}
-      return _delegate->get_full_block(block_id);
+
+      std::shared_ptr<full_block_type> full_block = _delegate->get_full_block(block_id);
+      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p);
+      return full_block;
     }
 
     void node_impl::on_fetch_items_message(peer_connection* originating_peer, const fetch_items_message& fetch_items_message_received)
