@@ -240,7 +240,7 @@ void drain_completed_queue(const fc::path& block_log)
       dlog("writer thread writing compressed block ${block_number} to the compressed block log", ("block_number", compressed->block_number));
 
       // write it out
-      log.append_raw(compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes);
+      log.append_raw(compressed->block_number, compressed->compressed_block_data.get(), compressed->compressed_block_size, compressed->attributes);
 
       if (compressed->block_number % 100000 == 0)
       {
