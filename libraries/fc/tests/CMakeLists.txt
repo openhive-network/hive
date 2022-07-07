@@ -10,6 +10,9 @@ if( ECC_IMPL STREQUAL secp256k1 )
     target_link_libraries( blind fc )
 endif()
 
+add_executable( hash_benchmark crypto/hash_benchmark.cpp )
+target_link_libraries( hash_benchmark fc )
+
 add_executable( ntp_test all_tests.cpp network/ntp_test.cpp )
 target_link_libraries( ntp_test fc )
 

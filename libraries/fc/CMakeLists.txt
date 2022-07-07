@@ -229,6 +229,7 @@ set( fc_sources
      src/crypto/hex.cpp
      src/crypto/sha1.cpp
      src/crypto/ripemd160.cpp
+     src/crypto/cripemd160.cpp
      src/crypto/sha256.cpp
      src/crypto/sha224.cpp
      src/crypto/sha512.cpp
