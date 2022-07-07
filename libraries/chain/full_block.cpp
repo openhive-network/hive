@@ -222,7 +222,7 @@ const compressed_block_data& full_block_type::get_compressed_block() const
     compress_block();
     fc::time_point wait_end = fc::time_point::now();
     fc::microseconds wait_duration = wait_end - wait_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_compressed_block(), compression took ${compression_time}",
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_compressed_block(), compression took ${compression_time}μs",
             (wait_duration)(compression_time));
   }
   return compressed_block;
