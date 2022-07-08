@@ -4,21 +4,23 @@ from typing import Optional
 from test_tools import Asset
 
 
-def create_account_and_fund_it(wallet, name: str, tests: Optional[Asset.Test] = None,
+def create_account_and_fund_it(wallet, name: str, creator: str = 'initminer', tests: Optional[Asset.Test] = None,
                                vests: Optional[Asset.Test] = None, tbds: Optional[Asset.Tbd] = None):
     assert any(asset is not None for asset in [tests, vests, tbds]), 'You forgot to fund account'
 
-    wallet.api.create_account('initminer', name, '{}')
+    create_account_transaction = wallet.api.create_account(creator, name, '{}')
 
     with wallet.in_single_transaction():
         if tests is not None:
-            wallet.api.transfer('initminer', name, tests, 'memo')
+            wallet.api.transfer(creator, name, tests, 'memo')
 
         if vests is not None:
-            wallet.api.transfer_to_vesting('initminer', name, vests)
+            wallet.api.transfer_to_vesting(creator, name, vests)
 
         if tbds is not None:
-            wallet.api.transfer('initminer', name, tbds, 'memo')
+            wallet.api.transfer(creator, name, tbds, 'memo')
+
+    return create_account_transaction
 
 
 def date_from_now(*, weeks):
