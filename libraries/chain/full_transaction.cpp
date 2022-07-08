@@ -85,6 +85,8 @@ hive::protocol::digest_type full_transaction_type::compute_sig_digest(const hive
 
 const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_signature_keys() const
 {
+  std::lock_guard<std::mutex> guard(signature_mutex);
+
   if (!signature_info)
   {
     ++non_cached_get_signature_keys_calls;
@@ -139,6 +141,8 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
 
 void full_transaction_type::validate(std::function<void(const hive::protocol::operation& op, bool post)> notify /* = std::function<void(const operation&, bool)>() */) const
 {
+  std::lock_guard<std::mutex> guard(validate_mutex);
+
   if (!validation_attempted)
   {
     ++non_cached_validate_calls;
@@ -176,6 +180,8 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
 
 const hive::protocol::required_authorities_type& full_transaction_type::get_required_authorities() const
 {
+  std::lock_guard<std::mutex> guard(authority_mutex);
+
   if (!required_authorities)
   {
     ++non_cached_get_required_authorities_calls;

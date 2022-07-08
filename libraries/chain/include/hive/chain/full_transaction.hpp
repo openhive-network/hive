@@ -3,6 +3,7 @@
 #include <fc/reflect/reflect.hpp>
 #include <hive/protocol/transaction_util.hpp>
 #include <chrono>
+#include <mutex>
 
 namespace hive { namespace chain {
 
@@ -25,6 +26,10 @@ struct serialized_transaction_data
 struct full_transaction_type
 {
   private:
+    mutable std::mutex signature_mutex;
+    mutable std::mutex authority_mutex;
+    mutable std::mutex validate_mutex;
+
     mutable fc::optional<hive::protocol::digest_type> merkle_digest; // transaction hash used for calculating block's merkle root
     mutable fc::optional<fc::ripemd160> legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
     mutable fc::optional<hive::protocol::digest_type> digest; // hash used for generating transaction id
