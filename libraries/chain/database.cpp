@@ -34,8 +34,6 @@
 #include <hive/chain/util/sps_processor.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 
-#include <hive/protocol/transaction_util.hpp>
-
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
 
@@ -1293,7 +1291,7 @@ void database::_push_transaction( const signed_transaction& trx )
   // apply the changes.
 
   auto temp_session = start_undo_session();
-  _transaction_invariants.emplace( _apply_transaction( trx ) );
+  _apply_transaction( trx );
   _pending_tx.push_back( trx );
 
   notify_changed_objects();
@@ -1325,15 +1323,13 @@ void database::pop_block()
   FC_CAPTURE_AND_RETHROW()
 }
 
-void database::clear_pending( bool with_invariants )
+void database::clear_pending()
 {
   try
   {
     assert( _pending_tx.empty() || _pending_tx_session.valid() );
     _pending_tx.clear();
     _pending_tx_session.reset();
-    if( with_invariants )
-      _transaction_invariants.clear();
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -4644,7 +4640,7 @@ void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
   detail::with_skip_flags( *this, skip, [&]() { _apply_transaction(trx); });
 }
 
-transaction_invariants database::_apply_transaction(const signed_transaction& trx)
+void database::_apply_transaction(const signed_transaction& trx)
 { try {
   if( _current_tx_status == TX_STATUS_NONE )
   {
@@ -4656,20 +4652,6 @@ transaction_invariants database::_apply_transaction(const signed_transaction& tr
 
   BOOST_SCOPE_EXIT( this_ ) { this_->_current_trx_id = transaction_id_type(); } BOOST_SCOPE_EXIT_END
   _current_trx_id = note.transaction_id;
-
-  transaction_invariants invariants( note.transaction_id );
-  const transaction_invariants* _current_trx_invariants = nullptr;
-  auto find_invariants = [&]()
-  {
-    if( _current_trx_invariants == nullptr )
-    {
-      auto invI = _transaction_invariants.find( invariants );
-      if( invI != _transaction_invariants.end() )
-        _current_trx_invariants = &( *invI );
-      else
-        _current_trx_invariants = &invariants;
-    }
-  };
   const transaction_id_type& trx_id = note.transaction_id;
 
   uint32_t skip = get_node_properties().skip_flags;
@@ -4713,30 +4695,25 @@ transaction_invariants database::_apply_transaction(const signed_transaction& tr
 
   if( !(skip&skip_validate) )   /* issue #505 explains why this skip_flag is disabled */
   {
-    find_invariants();
-    if( _current_trx_invariants->statically_validated() == false ) // not yet validated
+    if( _benchmark_dumper.is_enabled() )
     {
-      if( _benchmark_dumper.is_enabled() )
+      std::string name;
+      trx.validate( [&]( const operation& op, bool post )
       {
-        std::string name;
-        trx.validate( [&]( const operation& op, bool post )
+        if( !post )
         {
-          if( !post )
-          {
-            name = _my->_evaluator_registry.get_evaluator( op ).get_name( op );
-            _benchmark_dumper.begin();
-          }
-          else
-          {
-            _benchmark_dumper.end( "validate", name );
-          }
-        } );
-      }
-      else
-      {
-        trx.validate();
-      }
-      _current_trx_invariants->set_static_validation(); // trx validated
+          name = _my->_evaluator_registry.get_evaluator( op ).get_name( op );
+          _benchmark_dumper.begin();
+        }
+        else
+        {
+          _benchmark_dumper.end( "validate", name );
+        }
+      } );
+    }
+    else
+    {
+      trx.validate();
     }
   }
 
@@ -4751,30 +4728,15 @@ transaction_invariants database::_apply_transaction(const signed_transaction& tr
       if( _benchmark_dumper.is_enabled() )
         _benchmark_dumper.begin();
 
-      find_invariants();
-      bool slow = _current_trx_invariants->empty();
-      size_t correction = 0;
-
+      const chain_id_type& chain_id = get_chain_id();
       auto _make_verification = [&, this]( hive::protocol::pack_type pack )
       {
-        if( slow ) // public signature keys not yet calculated
-        {
-          const chain_id_type& chain_id = get_chain_id();
-          _current_trx_invariants->store_public_keys( trx.get_signature_keys( chain_id,
-            has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical, pack ) );
-        }
-        protocol::verify_authority( trx.operations,
-          _current_trx_invariants->get_public_keys(),
-          get_active,
-          get_owner,
-          get_posting,
+        trx.verify_authority( chain_id, get_active, get_owner, get_posting,
+          pack,
           HIVE_MAX_SIG_CHECK_DEPTH,
           has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
           has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-          false,
-          flat_set< account_name_type >(),
-          flat_set< account_name_type >(),
-          flat_set< account_name_type >() );
+          has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
       };
       try
       {
@@ -4784,10 +4746,9 @@ transaction_invariants database::_apply_transaction(const signed_transaction& tr
       {
         try
         {
-          if( has_hardfork( HIVE_HARDFORK_1_26 ) && slow )
+          if( has_hardfork( HIVE_HARDFORK_1_26 ) )
           {
             _make_verification( protocol::serialization_mode_controller::get_another_pack() );
-            correction = trx.signatures.size();
           }
           else
             throw;
@@ -4795,12 +4756,7 @@ transaction_invariants database::_apply_transaction(const signed_transaction& tr
       }FC_CAPTURE_AND_RETHROW( (trx) )
 
       if( _benchmark_dumper.is_enabled() )
-      {
-        if( slow )
-          _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() + correction );
-        else
-          _benchmark_dumper.end( "transaction", "verify_authority (cached)", trx.signatures.size() + correction );
-      }
+        _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() );
     }
     catch( protocol::tx_missing_active_auth& e )
     {
@@ -4837,7 +4793,6 @@ transaction_invariants database::_apply_transaction(const signed_transaction& tr
 
   notify_post_apply_transaction( note );
 
-  return invariants; //if local invariants were not used, they won't overwrite stored ones
 } FC_CAPTURE_AND_RETHROW( (trx) ) }
 
 

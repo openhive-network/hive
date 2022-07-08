@@ -8,7 +8,6 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/transaction_invariants.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -367,7 +366,7 @@ namespace chain {
       void _push_transaction( const signed_transaction& trx );
 
       void pop_block();
-      void clear_pending( bool with_invariants = true );
+      void clear_pending();
 
       void push_virtual_operation( const operation& op );
       void pre_push_virtual_operation( const operation& op );
@@ -653,16 +652,6 @@ namespace chain {
         * can be reapplied at the proper time */
       std::deque< signed_transaction >       _popped_tx;
       vector< signed_transaction >           _pending_tx;
-      /**
-       * Holds data on pending transactions that is independent of state.
-       * Transactions are added to the map when they are first validated and stored as pending.
-       * Transactions permanently dropped from pending (expired, failed, included in blocks)
-       * are also removed from that container. The storage allows avoiding costly recalculation of
-       * stored data when transactions that were independently validated and became pending come as
-       * part of incoming (or new) block. Note that there still might be transactions in incoming
-       * blocks that were not validated before.
-       */
-      std::set< transaction_invariants, std::less<> > _transaction_invariants;
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
@@ -732,7 +721,7 @@ namespace chain {
 
       void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
       void _apply_block( const signed_block& next_block );
-      transaction_invariants _apply_transaction( const signed_transaction& trx );
+      void _apply_transaction( const signed_transaction& trx );
       void apply_operation( const operation& op );
 
       void process_required_actions( const required_automated_actions& actions );
@@ -839,22 +828,6 @@ namespace chain {
       const hardfork_versions& get_hardfork_versions()
       {
         return _hardfork_versions;
-      }
-
-      void check_invariants_count() const
-      {
-        if( _transaction_invariants.size() != _pending_tx.size() )
-        {
-          wlog( "NOTIFYALERT! inconsistency between amount of pending transactions ${p} and invariants ${i}",
-            ( "p", _pending_tx.size() )( "i", _transaction_invariants.size() ) );
-        }
-      }
-
-      void remove_invariants( const transaction_id_type& trx_id )
-      {
-        auto it = _transaction_invariants.find( trx_id );
-        if( it != _transaction_invariants.end() )
-          _transaction_invariants.erase( it );
       }
 
     private:
