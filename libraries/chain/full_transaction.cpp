@@ -56,23 +56,47 @@ const signed_transaction& full_transaction_type::get_transaction() const
 
 const hive::protocol::digest_type& full_transaction_type::get_merkle_digest() const
 {
-  if (!merkle_digest)
-    merkle_digest = hive::protocol::digest_type::hash(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
-  return *merkle_digest;
+  if (!has_merkle_digest.load(std::memory_order_consume))
+  {
+    std::lock_guard<std::mutex> guard(results_mutex);
+    if (!has_merkle_digest.load(std::memory_order_consume))
+    {
+      merkle_digest = hive::protocol::digest_type::hash(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+      has_merkle_digest.store(true, std::memory_order_release);
+    }
+  }
+  return merkle_digest;
 }
 
 const fc::ripemd160& full_transaction_type::get_legacy_transaction_message_hash() const
 {
-  if (!legacy_transaction_message_hash)
-    legacy_transaction_message_hash = fc::ripemd160::hash(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
-  return *legacy_transaction_message_hash;
+  if (!has_legacy_transaction_message_hash.load(std::memory_order_consume))
+  {
+    std::lock_guard<std::mutex> guard(results_mutex);
+    if (!has_legacy_transaction_message_hash.load(std::memory_order_consume))
+    {
+      legacy_transaction_message_hash = fc::ripemd160::hash(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+      has_legacy_transaction_message_hash.store(true, std::memory_order_release);
+    }
+  }
+  return legacy_transaction_message_hash;
 }
 
 const hive::protocol::digest_type& full_transaction_type::get_digest() const
 {
-  if (!digest)
-    digest = hive::protocol::digest_type::hash(serialized_transaction.begin, serialized_transaction.transaction_end - serialized_transaction.begin);
-  return *digest;
+  if (!has_digest_and_transaction_id.load(std::memory_order_consume))
+  {
+    std::lock_guard<std::mutex> guard(results_mutex);
+    if (!has_digest_and_transaction_id.load(std::memory_order_consume))
+    {
+      digest = hive::protocol::digest_type::hash(serialized_transaction.begin, serialized_transaction.transaction_end - serialized_transaction.begin);
+      transaction_id = hive::protocol::transaction_id_type();
+      memcpy(transaction_id._hash, digest._hash, std::min(sizeof(hive::protocol::transaction_id_type), sizeof(hive::protocol::digest_type)));
+      has_digest_and_transaction_id.store(true, std::memory_order_release);
+    }
+  }
+
+  return digest;
 }
 
 hive::protocol::digest_type full_transaction_type::compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const
@@ -85,88 +109,99 @@ hive::protocol::digest_type full_transaction_type::compute_sig_digest(const hive
 
 const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_signature_keys() const
 {
-  if (!signature_info)
+  if (!has_signature_info.load(std::memory_order_consume))
   {
-    ++non_cached_get_signature_keys_calls;
-    fc::time_point computation_start = fc::time_point::now();
-    // look up the chain_id and signature type required to validate this transaction.  If this transaction was part
-    // of a block, validate based on the rules effective at the block's timestamp.  If it's a standalone transaction,
-    // use the present-day rules.
-    const transaction_signature_validation_rules_type* validation_rules;
-    if (std::holds_alternative<contained_in_block_info>(storage))
+    std::lock_guard<std::mutex> guard(results_mutex);
+    if (!has_signature_info.load(std::memory_order_consume))
     {
-      const contained_in_block_info& contained_in_block = std::get<contained_in_block_info>(storage);
-      assert(contained_in_block.block_storage->block);
-      FC_ASSERT(contained_in_block.block_storage->block, "block should have already been decoded");
-      validation_rules = &get_transaction_signature_validation_rules_at_time(contained_in_block.block_storage->block->timestamp);
-    }
-    else
-      validation_rules = &get_signature_validation_for_new_transactions();
+      fc::time_point computation_start = fc::time_point::now();
+      // look up the chain_id and signature type required to validate this transaction.  If this transaction was part
+      // of a block, validate based on the rules effective at the block's timestamp.  If it's a standalone transaction,
+      // use the present-day rules.
+      const transaction_signature_validation_rules_type* validation_rules;
+      if (std::holds_alternative<contained_in_block_info>(storage))
+      {
+        const contained_in_block_info& contained_in_block = std::get<contained_in_block_info>(storage);
+        assert(contained_in_block.block_storage->block);
+        FC_ASSERT(contained_in_block.block_storage->block, "block should have already been decoded");
+        validation_rules = &get_transaction_signature_validation_rules_at_time(contained_in_block.block_storage->block->timestamp);
+      }
+      else
+        validation_rules = &get_signature_validation_for_new_transactions();
 
-    signature_info_type new_signature_info;
-    new_signature_info.sig_digest = compute_sig_digest(validation_rules->chain_id);
+      signature_info_type new_signature_info;
+      new_signature_info.sig_digest = compute_sig_digest(validation_rules->chain_id);
 
-    try
-    {
       try
       {
-        for (const hive::protocol::signature_type& signature : get_transaction().signatures)
-          HIVE_ASSERT(new_signature_info.signature_keys.insert(fc::ecc::public_key(signature, new_signature_info.sig_digest, validation_rules->signature_type)).second,
-                      hive::protocol::tx_duplicate_sig,
-                      "Duplicate Signature detected");
+        try
+        {
+          for (const hive::protocol::signature_type& signature : get_transaction().signatures)
+            HIVE_ASSERT(new_signature_info.signature_keys.insert(fc::ecc::public_key(signature, new_signature_info.sig_digest, validation_rules->signature_type)).second,
+                        hive::protocol::tx_duplicate_sig,
+                        "Duplicate Signature detected");
+        }
+        FC_RETHROW_EXCEPTIONS(error, "")
       }
-      FC_RETHROW_EXCEPTIONS(error, "")
+      catch (const fc::exception& e)
+      {
+        new_signature_info.signature_keys_exception = e.dynamic_copy_exception();
+      }
+      new_signature_info.computation_time = fc::time_point::now() - computation_start;
+      signature_info = std::move(new_signature_info);
+
+      has_signature_info.store(true, std::memory_order_release);
     }
-    catch (const fc::exception& e)
-    {
-      new_signature_info.signature_keys_exception = e.dynamic_copy_exception();
-    }
-    new_signature_info.computation_time = fc::time_point::now() - computation_start;
-    signature_info = std::move(new_signature_info);
+    non_cached_get_signature_keys_calls.fetch_add(1, std::memory_order_relaxed);
   }
   else
   {
-    ++cached_get_signature_keys_calls;
+    cached_get_signature_keys_calls.fetch_add(1, std::memory_order_relaxed);
     // ilog("get_signature_keys cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", signature_info->computation_time)
     //      ("cached", cached_get_signature_keys_calls.load())
     //      ("not", non_cached_get_signature_keys_calls.load()));
   }
-  if (signature_info->signature_keys_exception)
-    signature_info->signature_keys_exception->dynamic_rethrow_exception();
-  return signature_info->signature_keys;
+
+  if (signature_info.signature_keys_exception)
+    signature_info.signature_keys_exception->dynamic_rethrow_exception();
+  return signature_info.signature_keys;
 }
 
 void full_transaction_type::validate(std::function<void(const hive::protocol::operation& op, bool post)> notify /* = std::function<void(const operation&, bool)>() */) const
 {
-  if (!validation_attempted)
+  if (!validation_attempted.load(std::memory_order_consume))
   {
-    ++non_cached_validate_calls;
-    fc::time_point computation_start = fc::time_point::now();
-    try
+    std::lock_guard<std::mutex> results_guard(results_mutex);
+    if (!validation_attempted.load(std::memory_order_consume))
     {
+      fc::time_point computation_start = fc::time_point::now();
       try
       {
-        if (notify)
-          get_transaction().validate(notify);
-        else
-          get_transaction().validate();
+        try
+        {
+          if (notify)
+            get_transaction().validate(notify);
+          else
+            get_transaction().validate();
+        }
+        FC_RETHROW_EXCEPTIONS(error, "")
       }
-      FC_RETHROW_EXCEPTIONS(error, "")
+      catch (const fc::exception& e)
+      {
+        validation_exception = e.dynamic_copy_exception();
+      }
+      validation_computation_time = fc::time_point::now() - computation_start;
+      validation_attempted.store(true, std::memory_order_release);
+      // ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", 
+      //      ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
+      // idump((get_transaction()));
     }
-    catch (const fc::exception& e)
-    {
-      validation_exception = e.dynamic_copy_exception();
-    }
-    validation_computation_time = fc::time_point::now() - computation_start;
-    validation_attempted = true;
-    // ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", 
-    //      ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
-    // idump((get_transaction()));
+    non_cached_validate_calls.fetch_add(1, std::memory_order_relaxed);
   }
   else
   {
-    ++cached_validate_calls;
+    cached_validate_calls.fetch_add(1, std::memory_order_relaxed);
     // ilog("validate cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
   }
@@ -176,41 +211,54 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
 
 const hive::protocol::required_authorities_type& full_transaction_type::get_required_authorities() const
 {
-  if (!required_authorities)
+  if (!has_required_authorities.load(std::memory_order_consume))
   {
-    ++non_cached_get_required_authorities_calls;
-    auto computation_start = std::chrono::high_resolution_clock::now();
-    required_authorities = hive::protocol::get_required_authorities(get_transaction().operations);
-    required_authorities_computation_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - computation_start);
+    std::lock_guard<std::mutex> guard(results_mutex);
+    if (!has_required_authorities.load(std::memory_order_consume))
+    {
+      auto computation_start = std::chrono::high_resolution_clock::now();
+      required_authorities = hive::protocol::get_required_authorities(get_transaction().operations);
+      required_authorities_computation_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - computation_start);
+
+      has_required_authorities.store(true, std::memory_order_release);
+    }
+    non_cached_get_required_authorities_calls.fetch_add(1, std::memory_order_relaxed);
   }
   else
   {
-    ++cached_get_required_authorities_calls;
+    cached_get_required_authorities_calls.fetch_add(1, std::memory_order_relaxed);
     // ilog("get_required_authorities cache hit.  saved ${saved}ns, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", required_authorities_computation_time)
     //      ("cached", cached_get_required_authorities_calls.load())("not", non_cached_get_required_authorities_calls.load()));
   }
-  return *required_authorities;
+  return required_authorities;
 }
 
 bool full_transaction_type::is_legacy_pack() const
 {
-  if (!is_packed_in_legacy_format)
+  if (!has_is_packed_in_legacy_format.load(std::memory_order_consume))
   {
-    hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
-    const hive::protocol::signed_transaction& transaction = get_transaction();
-    size_t packed_size = fc::raw::pack_size(transaction);
-    if (packed_size != get_transaction_size())
-      is_packed_in_legacy_format = false;
-    else
+    std::lock_guard<std::mutex> results_guard(results_mutex);
+
+    if (!has_is_packed_in_legacy_format.load(std::memory_order_consume))
     {
-      std::unique_ptr<char[]> packed_bytes(new char[packed_size]);
-      fc::datastream<char*> stream(packed_bytes.get(), packed_size);
-      fc::raw::pack(stream, transaction);
-      is_packed_in_legacy_format = memcmp(packed_bytes.get(), serialized_transaction.begin, packed_size) == 0;
+      hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
+      const hive::protocol::signed_transaction& transaction = get_transaction();
+      size_t packed_size = fc::raw::pack_size(transaction);
+      if (packed_size != get_transaction_size())
+        is_packed_in_legacy_format = false;
+      else
+      {
+        std::unique_ptr<char[]> packed_bytes(new char[packed_size]);
+        fc::datastream<char*> stream(packed_bytes.get(), packed_size);
+        fc::raw::pack(stream, transaction);
+        is_packed_in_legacy_format = memcmp(packed_bytes.get(), serialized_transaction.begin, packed_size) == 0;
+      }
+
+      has_is_packed_in_legacy_format.store(true, std::memory_order_release);
     }
   }
-  return *is_packed_in_legacy_format;
+  return is_packed_in_legacy_format;
 }
 
 size_t full_transaction_type::get_transaction_size() const
@@ -225,13 +273,9 @@ const serialized_transaction_data& full_transaction_type::get_serialized_transac
 
 const hive::protocol::transaction_id_type& full_transaction_type::get_transaction_id() const
 {
-  if (!transaction_id)
-  {
-    const hive::protocol::digest_type& digest = get_digest();
-    transaction_id = hive::protocol::transaction_id_type();
-    memcpy(transaction_id->_hash, digest._hash, std::min(sizeof(hive::protocol::transaction_id_type), sizeof(hive::protocol::digest_type)));
-  }
-  return *transaction_id;
+  if (!has_digest_and_transaction_id.load(std::memory_order_consume))
+    (void)get_digest(); // guaranteed to compute transaction_id as a side effect
+  return transaction_id;
 }
 
 /* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 

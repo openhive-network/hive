@@ -75,7 +75,7 @@ struct pending_transactions_restorer
     auto head_block_time = _db.head_block_time();
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
 
-#ifndef IS_TEST_NET //especially during debugging that limit is highly problematic
+#if !defined(IS_TEST_NET) || defined NDEBUG //especially during debugging that limit is highly problematic
     auto start = fc::time_point::now();
 #endif
     bool apply_trxs = true;
