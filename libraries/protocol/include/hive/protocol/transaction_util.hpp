@@ -1,8 +1,23 @@
 #pragma once
 #include <hive/protocol/sign_state.hpp>
 #include <hive/protocol/exceptions.hpp>
+#include <thread>
 
 namespace hive { namespace protocol {
+
+struct dupa
+{
+    static void log( const std::string& message )
+    {
+      std::ostringstream ss;
+
+      ss << std::this_thread::get_id();
+
+      std::string idstr = ss.str();
+
+      wlog( "${a} ${b}", ("a", message.c_str())("b", idstr.c_str()) );
+    }
+};
 
 struct required_authorities_type
 {

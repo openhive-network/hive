@@ -7,6 +7,7 @@
 #include <fc/filesystem.hpp>
 #include <fc/macros.hpp>
 #include <fc/stacktrace.hpp>
+#include <boost/stacktrace.hpp>
 
 #if defined(__GNUC__) && !defined( __APPLE__ )
 
@@ -95,8 +96,16 @@ void print_stacktrace_linenums(const std::vector<std::pair<std::string, std::str
 
 void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, void* caller_overwrite_hack /* = nullptr */, bool addr2line /* = true */ )
 {
-   out << "stack trace:" << std::endl;
-
+   out << "stack trace-xxxx:" << std::endl;
+   try
+   {
+      out << boost::stacktrace::stacktrace();
+   }
+   catch(...)
+   {
+      out << "mario-xxxx:" << std::endl;
+   }
+   out << "end of stack trace-xxxx:" << std::endl;
    // storage array for stack trace address data
    void* addrlist[max_frames+1];
 

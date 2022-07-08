@@ -86,9 +86,9 @@ hive::protocol::digest_type full_transaction_type::compute_sig_digest(const hive
 const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_signature_keys() const
 {
   std::lock_guard<std::mutex> guard(signature_mutex);
-
   if (!signature_info)
   {
+    dupa::log("mario-01");
     ++non_cached_get_signature_keys_calls;
     fc::time_point computation_start = fc::time_point::now();
     // look up the chain_id and signature type required to validate this transaction.  If this transaction was part
@@ -97,6 +97,7 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
     const transaction_signature_validation_rules_type* validation_rules;
     if (storage.which() == storage_type::tag<contained_in_block_info>::value)
     {
+      dupa::log("mario-03");
       const contained_in_block_info& contained_in_block = storage.get<contained_in_block_info>();
       assert(contained_in_block.block_storage->block);
       FC_ASSERT(contained_in_block.block_storage->block, "block should have already been decoded");
@@ -105,13 +106,16 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
     else
       validation_rules = &get_signature_validation_for_new_transactions();
 
+    dupa::log("mario-04");
     signature_info_type new_signature_info;
     new_signature_info.sig_digest = compute_sig_digest(validation_rules->chain_id);
 
     try
     {
+      dupa::log("mario-05");
       try
       {
+        dupa::log("mario-06");
         for (const hive::protocol::signature_type& signature : get_transaction().signatures)
           HIVE_ASSERT(new_signature_info.signature_keys.insert(fc::ecc::public_key(signature, new_signature_info.sig_digest, validation_rules->signature_type)).second,
                       hive::protocol::tx_duplicate_sig,
@@ -121,28 +125,34 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
     }
     catch (const fc::exception& e)
     {
+      dupa::log("mario-07");
+      wlog( "${details}", ("details",e.to_detail_string()) );
       new_signature_info.signature_keys_exception = e.dynamic_copy_exception();
     }
     new_signature_info.computation_time = fc::time_point::now() - computation_start;
     signature_info = std::move(new_signature_info);
+    dupa::log("mario-08");
   }
   else
   {
+    dupa::log("mario-09");
     ++cached_get_signature_keys_calls;
     // ilog("get_signature_keys cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", signature_info->computation_time)
     //      ("cached", cached_get_signature_keys_calls.load())
     //      ("not", non_cached_get_signature_keys_calls.load()));
   }
+  dupa::log("mario-10");
   if (signature_info->signature_keys_exception)
     signature_info->signature_keys_exception->dynamic_rethrow_exception();
+
+  dupa::log("mario-11");
   return signature_info->signature_keys;
 }
 
 void full_transaction_type::validate(std::function<void(const hive::protocol::operation& op, bool post)> notify /* = std::function<void(const operation&, bool)>() */) const
 {
   std::lock_guard<std::mutex> guard(validate_mutex);
-
   if (!validation_attempted)
   {
     ++non_cached_validate_calls;
@@ -181,16 +191,21 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
 const hive::protocol::required_authorities_type& full_transaction_type::get_required_authorities() const
 {
   std::lock_guard<std::mutex> guard(authority_mutex);
-
   if (!required_authorities)
   {
+    dupa::log("mario-auth-01");
     ++non_cached_get_required_authorities_calls;
+    dupa::log("mario-auth-02");
     auto computation_start = std::chrono::high_resolution_clock::now();
+    dupa::log("mario-auth-03");
     required_authorities = hive::protocol::get_required_authorities(get_transaction().operations);
+    dupa::log("mario-auth-04");
     required_authorities_computation_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - computation_start);
+    dupa::log("mario-auth-05");
   }
   else
   {
+    dupa::log("mario-auth-06");
     ++cached_get_required_authorities_calls;
     // ilog("get_required_authorities cache hit.  saved ${saved}ns, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", required_authorities_computation_time)

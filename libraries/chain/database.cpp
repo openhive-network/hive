@@ -4703,8 +4703,9 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
         _benchmark_dumper.begin();
 
       const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
+      dupa::log("mario-database-1");
       const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
-
+      dupa::log("mario-database-2");
       hive::protocol::verify_authority(required_authorities,
                                        signature_keys,
                                        get_active,
