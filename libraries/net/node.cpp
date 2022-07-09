@@ -46,6 +46,7 @@
 #include <boost/range/algorithm_ext/push_back.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/numeric.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
@@ -3662,12 +3663,15 @@ namespace graphene { namespace net {
         if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) == _most_recent_blocks_accepted.end())
         {
           _message_ids_currently_being_processed.insert(legacy_block_message_hash);
+          _message_ids_currently_being_processed.insert(block_id);
+          BOOST_SCOPE_EXIT(this_, &legacy_block_message_hash, &block_id) {
+            this_->_message_ids_currently_being_processed.erase(legacy_block_message_hash);
+            this_->_message_ids_currently_being_processed.erase(block_id);
+          } BOOST_SCOPE_EXIT_END
           fc_ilog(fc::logger::get("sync"),
                   "p2p pushing block #${block_num} ${block_id} from ${peer} (message_id was ${legacy_block_message_hash})",
                   (block_num)(block_id)("peer", originating_peer->get_remote_endpoint())(legacy_block_message_hash));
-
           _delegate->handle_block(full_block, false);
-          _message_ids_currently_being_processed.erase(legacy_block_message_hash);
           message_validated_time = fc::time_point::now();
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           _most_recent_blocks_accepted.push_back(block_id);
@@ -3688,14 +3692,15 @@ namespace graphene { namespace net {
 
         dlog("client validated the block, advertising it to other peers");
 
-        item_id block_message_item_id(core_message_type_enum::block_message_type, legacy_block_message_hash);
+        item_id legacy_block_message_item_id(core_message_type_enum::block_message_type, legacy_block_message_hash);
+        item_id new_block_message_item_id(core_message_type_enum::block_message_type, block_id);
         fc::time_point_sec block_time = full_block->get_block_header().timestamp;
 
         for (const peer_connection_ptr& peer : _active_connections)
         {
           ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
 
-          auto iter = peer->inventory_peer_advertised_to_us.find(block_message_item_id);
+          auto iter = peer->inventory_peer_advertised_to_us.find(peer->advertise_blocks_by_block_id() ? new_block_message_item_id : legacy_block_message_item_id);
           if (iter != peer->inventory_peer_advertised_to_us.end())
           {
             // this peer offered us the item.  It will eventually expire from the peer's
