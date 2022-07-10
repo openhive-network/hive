@@ -88,7 +88,7 @@ struct artifact_file_chunk
     auto unpacked_data = detail::split_block_start_pos_with_flags(combined_pos_and_attrs);
 
     FC_ASSERT(is_compressed == (unpacked_data.second.flags == block_flags::zstd));
-    FC_ASSERT(custom_dict_used == unpacked_data.second.dictionary_number.valid());
+    FC_ASSERT(custom_dict_used == (bool)unpacked_data.second.dictionary_number);
     FC_ASSERT(custom_dict_used == 0 || (dictionary_no == *unpacked_data.second.dictionary_number));
     FC_ASSERT(block_log_offset == unpacked_data.first);
 
@@ -113,17 +113,16 @@ struct artifact_file_chunk
     combined_pos_and_attrs = detail::combine_block_start_pos_with_flags(block_start_pos, attributes);
 
     FC_ASSERT(block_start_pos == block_log_offset, "Mismatch: block_start_pos: ${block_start_pos} vs block_log_offset: ${block_log_offset}",
-      ("block_start_pos", block_start_pos)("block_log_offset", block_log_offset));
-    FC_ASSERT(is_compressed == (attributes.flags == block_flags::zstd), "Mismatch: is_compressed: ${is_compressed} vs attributes.flags: ${f}",
-      ("is_compressed", is_compressed)("f", attributes.flags));
-    FC_ASSERT(custom_dict_used == attributes.dictionary_number.valid(), "Mismatch for: combined_pos_and_attrs: ${combined_pos_and_attrs}: custom_dict_used: ${c} vs attributes.dictionary_number.valid: ${v}",
-      ("c", custom_dict_used)("v", attributes.dictionary_number.valid())("combined_pos_and_attrs", as_hex(combined_pos_and_attrs)));
+              (block_start_pos)(block_log_offset));
+    FC_ASSERT(is_compressed == (attributes.flags == block_flags::zstd), "Mismatch: is_compressed: ${is_compressed} vs attributes.flags: ${flags}",
+              (is_compressed)("flags", attributes.flags));
+    FC_ASSERT(custom_dict_used == (bool)attributes.dictionary_number,
+              "Mismatch for: combined_pos_and_attrs: ${combined_pos_and_attrs}: custom_dict_used: ${custom_dict_used} vs attributes.dictionary_number: ${v}",
+              (custom_dict_used)("v", (bool)attributes.dictionary_number)("combined_pos_and_attrs", as_hex(combined_pos_and_attrs)));
 
-    if(attributes.dictionary_number.valid())
-    {
-      FC_ASSERT(dictionary_no == *attributes.dictionary_number,
-        "Mismatch: dictionary_no: ${dictionary_no} vs *attributes.dictionary_number: ${ad}", ("dictionary_no", dictionary_no)("ad", *attributes.dictionary_number));
-    }
+    if (attributes.dictionary_number)
+      FC_ASSERT(dictionary_no == *attributes.dictionary_number, "Mismatch: dictionary_no: ${dictionary_no} vs *attributes.dictionary_number: ${attributes_dictionary_number}",
+                (dictionary_no)("attributes_dictionary_number", attributes.dictionary_number));
   }
 
   block_log_artifacts::block_id_t unpack_block_id(uint32_t block_num) const

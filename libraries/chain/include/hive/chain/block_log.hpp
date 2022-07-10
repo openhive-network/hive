@@ -3,6 +3,7 @@
 #include <hive/protocol/block.hpp>
 
 #include <hive/chain/detail/block_attributes.hpp>
+#include <hive/chain/block_log_artifacts.hpp>
 
 extern "C"
 {
@@ -13,6 +14,13 @@ extern "C"
 }
 
 namespace hive { namespace chain {
+
+  // struct serialized_block_data
+  // {
+  //   std::unique_ptr<char[]> data;
+  //   size_t size;
+  //   block_log_artifacts::artifacts_t>
+  // };
 
   using namespace hive::protocol;
 
@@ -65,7 +73,7 @@ namespace hive { namespace chain {
       uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const block_id_type& block_id);
 
       void flush();
-      std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> read_raw_block_data_by_num(uint32_t block_num) const;
+      std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const;
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t>&& raw_block_data_tuple);
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
 
@@ -79,11 +87,11 @@ namespace hive { namespace chain {
       void set_compression(bool enabled);
       void set_compression_level(int level);
 
-      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, fc::optional<uint8_t> dictionary_number, 
+      static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, std::optional<uint8_t> dictionary_number, 
                                                                              fc::optional<int> compression_level = fc::optional<int>(), 
                                                                              fc::optional<ZSTD_CCtx*> compression_context = fc::optional<ZSTD_CCtx*>());
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd(const char* compressed_block_data, size_t compressed_block_size, 
-                                                                               fc::optional<uint8_t> dictionary_number = fc::optional<int>(), 
+                                                                               std::optional<uint8_t> dictionary_number = std::optional<int>(), 
                                                                                fc::optional<ZSTD_DCtx*> decompression_context_for_reuse = fc::optional<ZSTD_DCtx*>());
 
       /// Functor takes: block_num, serialized_block_data_size, block_log_file_offset, block_attributes. 

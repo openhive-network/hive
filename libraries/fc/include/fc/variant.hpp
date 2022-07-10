@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <optional>
 
 #include <string.h> // memset
 
@@ -641,6 +642,27 @@ namespace fc
       c.clear();
       for( const auto& item : vars )
          c.insert( item.as<T>() );
+   }
+
+   template <typename T>
+   void to_variant(const std::optional<T>& vo, variant& v)
+   {
+      if (vo)
+         v = variant(*vo);
+      else
+         v.clear();
+   }
+
+   template <typename T>
+   void from_variant(const variant& var, std::optional<T>& vo)
+   {
+     if (var.is_null())
+        vo = std::optional<T>();
+     else
+     {
+        vo = T();
+        from_variant(var, *vo);
+     }
    }
 
    variant operator + ( const variant& a, const variant& b );
