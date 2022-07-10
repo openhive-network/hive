@@ -398,7 +398,7 @@ transaction_serialization_mainnet_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - apt update && apt install bash git ca-certificates curl build-base python3-dev
+    - apt update && apt install bash git ca-certificates curl build-essential python3-dev
     - python3 -m ensurepip
     - export NUMBER_OF_PROCESSES=$(nproc)
     - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools"
