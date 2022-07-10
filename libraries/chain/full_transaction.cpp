@@ -414,7 +414,7 @@ full_transaction_cache::full_transaction_cache() : my(new impl) {}
 
 std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(const std::shared_ptr<full_transaction_type>& transaction)
 {
-  fc::optional<fc::microseconds> wait_duration;
+  std::optional<fc::microseconds> wait_duration;
   BOOST_SCOPE_EXIT(&my, &wait_duration) {
     my->total_lock_count.fetch_add(1, std::memory_order_relaxed);
     if (wait_duration)

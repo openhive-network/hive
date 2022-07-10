@@ -28,7 +28,7 @@ struct uncompressed_block_data
 struct decoded_block_storage_type
 {
   uncompressed_block_data uncompressed_block;
-  fc::optional<signed_block> block;
+  std::optional<signed_block> block;
 
   decoded_block_storage_type();
   ~decoded_block_storage_type();
@@ -55,9 +55,12 @@ class full_block_type
     mutable std::mutex unpacked_block_header_mutex;
     mutable size_t block_header_size; // only valid when has_unpacked_block_header
     mutable size_t signed_block_header_size; // only valid when has_unpacked_block_header
-    mutable fc::optional<block_id_type> block_id; // only valid when has_unpacked_block_header
-    mutable fc::optional<digest_type> digest; // only valid when has_unpacked_block_header
+    mutable digest_type digest; // only valid when has_unpacked_block_header
     mutable fc::microseconds decode_block_header_time; // only valid when has_unpacked_block_header
+
+    mutable std::atomic<bool> has_block_id = { false };
+    mutable block_id_type block_id; // only valid when has_block_id
+
 
     mutable std::atomic<bool> has_legacy_block_message_hash = { false };
     mutable std::mutex legacy_block_message_hash_mutex;
@@ -71,8 +74,8 @@ class full_block_type
     mutable fc::microseconds decode_block_time; // only valid when has_unpacked_block
 
     mutable std::mutex block_signing_key_merkle_root_mutex;
-    mutable fc::optional<fc::ecc::public_key> block_signing_key;
-    mutable fc::optional<checksum_type> merkle_root;
+    mutable std::optional<fc::ecc::public_key> block_signing_key;
+    mutable std::optional<checksum_type> merkle_root;
     mutable fc::microseconds compute_merkle_root_time;
     mutable fc::microseconds compute_block_signing_key_time;
 
@@ -86,8 +89,10 @@ class full_block_type
 
     static std::shared_ptr<full_block_type> create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
                                                                               size_t compressed_size,
-                                                                              const block_log::block_attributes_t& compression_attributes);
-    static std::shared_ptr<full_block_type> create_from_uncompressed_block_data(std::unique_ptr<char[]>&& raw_bytes, size_t raw_size);
+                                                                              const block_log::block_attributes_t& compression_attributes,
+                                                                              const std::optional<block_id_type> block_id = std::optional<block_id_type>());
+    static std::shared_ptr<full_block_type> create_from_uncompressed_block_data(std::unique_ptr<char[]>&& raw_bytes, size_t raw_size,
+                                                                                const std::optional<block_id_type> block_id = std::optional<block_id_type>());
     static std::shared_ptr<full_block_type> create_from_signed_block(const signed_block& block);
 
     static std::shared_ptr<full_block_type> create_from_block_header_and_transactions(const block_header& header, 
