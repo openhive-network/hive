@@ -182,6 +182,11 @@ public:
 
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes, const block_id_t& block_id);
 
+  void update_head_block(uint32_t block_num)
+  {
+    _header.head_block_num = block_num;
+  }
+
   bool is_open() const
   {
     return _storage_fd != -1;
@@ -325,11 +330,19 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
     /// The file exists. Lets verify if it can be used immediately or rather shall be regenerated.
     if(load_header())
     {
+      _header.dirty_close = 1;
+      flush_header();
+
       if(head_block_num < _header.head_block_num)
       {
         wlog("block_log file is shorten than current block_log.artifact file - the artifact file will be truncated.");
+
         /// Artifact file is too big. Let's try to truncate it
         truncate_file(head_block_num);
+
+        /// head_block_num must be updated
+        _header.head_block_num = head_block_num;
+        flush_header();
       }
       else
       if(head_block_num > _header.head_block_num)
@@ -338,11 +351,17 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
         ("fb", _header.head_block_num + 1)("lb", head_block_num));
         /// Artifact file is too short - we need to resume its generation
         generate_file(source_block_provider, _header.head_block_num+1, head_block_num);
+
+        /// head_block_num must be updated
+        _header.head_block_num = head_block_num;
+        flush_header();
+
       }
       else
       {
         ilog("block_log and block_log.artifacts files match - no generation needed.");
       }
+
     }
     else
     {
@@ -708,6 +727,7 @@ void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t blo
   const block_id_t& block_id)
 {
   _impl->store_block_artifacts(block_num, block_log_file_pos, block_attributes, block_id);
+  _impl->update_head_block(block_num);
 }
 
 }}
