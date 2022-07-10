@@ -107,11 +107,11 @@ void compress_blocks()
       size_t size;
       std::unique_ptr<char[]> data;
       hive::chain::block_log::block_flags method;
-      fc::optional<uint8_t> dictionary_number;
+      std::optional<uint8_t> dictionary_number;
     };
     std::vector<compressed_data> compressed_versions;
 
-    fc::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(uncompressed->block_number);
+    std::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(uncompressed->block_number);
 
     // zstd
     if (enable_zstd)
@@ -306,7 +306,14 @@ void fill_pending_queue(const fc::path& block_log)
       block_to_compress* uncompressed_block = new block_to_compress;
       uncompressed_block->block_number = current_block_number;
 
-      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log::block_attributes_t> raw_compressed_block_data = current_block_number == head_block_num ? log.read_raw_head_block() : log.read_raw_block_data_by_num(current_block_number);
+      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log::block_attributes_t> raw_compressed_block_data;
+      if (current_block_number == head_block_num)
+        raw_compressed_block_data = log.read_raw_head_block();
+      else
+      {
+        std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts = log.read_raw_block_data_by_num(current_block_number);
+        raw_compressed_block_data = std::make_tuple(std::get<0>(std::move(data_with_artifacts)), std::get<1>(data_with_artifacts), std::get<2>(data_with_artifacts).attributes);
+      }
       std::tuple<std::unique_ptr<char[]>, size_t> raw_block_data = hive::chain::block_log::decompress_raw_block(std::move(raw_compressed_block_data));
 
       uncompressed_block->uncompressed_block_size = std::get<1>(raw_block_data);
