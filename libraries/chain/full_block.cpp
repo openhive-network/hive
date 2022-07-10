@@ -218,7 +218,7 @@ void full_block_type::compress_block() const
 
     fc::time_point start = fc::time_point::now();
 
-    fc::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(get_block_num());
+    std::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(get_block_num());
     std::tie(compressed_block.compressed_bytes, compressed_block.compressed_size) = 
       block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
     compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;

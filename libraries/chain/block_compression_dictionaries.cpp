@@ -72,13 +72,13 @@ const decompressed_raw_dictionary_info& get_decompressed_raw_dictionary(uint8_t 
   return decompressed_dictionary_iter->second;
 }
 
-fc::optional<uint8_t> get_best_available_zstd_compression_dictionary_number_for_block(uint32_t block_number)
+std::optional<uint8_t> get_best_available_zstd_compression_dictionary_number_for_block(uint32_t block_number)
 {
   uint8_t last_available_dictionary = raw_dictionaries.rbegin()->first;
   return std::min<uint8_t>(block_number / 1000000, last_available_dictionary);
 }
 
-fc::optional<uint8_t> get_last_available_zstd_compression_dictionary_number()
+std::optional<uint8_t> get_last_available_zstd_compression_dictionary_number()
 {
   return raw_dictionaries.rbegin()->first;
 }
@@ -117,14 +117,14 @@ ZSTD_CDict* get_zstd_compression_dictionary(uint8_t dictionary_number, int compr
 }
 
 #else // !defined(HAS_COMPRESSION_DICTIONARIES)
-fc::optional<uint8_t> get_best_available_zstd_compression_dictionary_number_for_block(uint32_t block_number)
+std::optional<uint8_t> get_best_available_zstd_compression_dictionary_number_for_block(uint32_t block_number)
 {
-  return fc::optional<uint8_t>();
+  return std::optional<uint8_t>();
 }
 
-fc::optional<uint8_t> get_last_available_zstd_compression_dictionary_number()
+std::optional<uint8_t> get_last_available_zstd_compression_dictionary_number()
 {
-  return fc::optional<uint8_t>();
+  return std::optional<uint8_t>();
 }
 
 ZSTD_DDict* get_zstd_decompression_dictionary(uint8_t dictionary_number)

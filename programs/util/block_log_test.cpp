@@ -69,10 +69,10 @@ int main(int argc, char** argv)
     if (options_map.count("input-block-log"))
       input_block_log_path = options_map["input-block-log"].as<std::string>();
 
-    uint32_t blocks_to_process = 0;
+    // uint32_t blocks_to_process = 0;
 
-    if(options_map.count("block-count"))
-      blocks_to_process = options_map["block-count"].as<uint32_t>();
+    // if (options_map.count("block-count"))
+    //   blocks_to_process = options_map["block-count"].as<uint32_t>();
 
     uint32_t block_count = 100000;
     generate_from_scratch(input_block_log_path, block_count);

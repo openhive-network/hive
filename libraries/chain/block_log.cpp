@@ -1,7 +1,6 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/protocol/config.hpp>
 
-#include <hive/chain/block_log_artifacts.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
@@ -248,19 +247,18 @@ namespace hive { namespace chain {
     FC_CAPTURE_LOG_AND_RETHROW((block_num)(block_start_pos)(block_start_pos_with_flags)(attributes))
   }
 
-  std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> block_log::read_raw_block_data_by_num(uint32_t block_num) const
+  std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> block_log::read_raw_block_data_by_num(uint32_t block_num) const
   {
     block_log_artifacts::artifacts_t this_block_artifacts = my->_artifacts->read_block_artifacts(block_num);
 
-    uint64_t this_block_start_pos = this_block_artifacts.block_log_file_pos;
-    const block_attributes_t& this_block_attributes = this_block_artifacts.attributes;
-    uint64_t serialized_data_size = this_block_artifacts.block_serialized_data_size;
+    const uint64_t block_start_pos = this_block_artifacts.block_log_file_pos;
+    const uint64_t serialized_data_size = this_block_artifacts.block_serialized_data_size;
 
     std::unique_ptr<char[]> serialized_data(new char[serialized_data_size]);
-    auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), serialized_data_size, this_block_start_pos);
+    size_t total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), serialized_data_size, block_start_pos);
     FC_ASSERT(total_read == serialized_data_size);
 
-    return std::make_tuple(std::move(serialized_data), serialized_data_size, this_block_attributes);
+    return std::make_tuple(std::move(serialized_data), serialized_data_size, std::move(this_block_artifacts));
   }
 
   // threading guarantees:
@@ -359,12 +357,12 @@ namespace hive { namespace chain {
 
       // if we're still here, we know that it's in the block log, and the block after it is also
       // in the block log (which means we can determine its size)
-      std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> raw_block_data = read_raw_block_data_by_num(block_num);
-      block_log::block_attributes_t attributes = std::get<2>(raw_block_data);
+      std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> raw_block_data = read_raw_block_data_by_num(block_num);
+      block_log_artifacts::artifacts_t artifacts = std::get<2>(std::move(raw_block_data));
 
-      return attributes.flags == block_flags::uncompressed ? 
-        full_block_type::create_from_uncompressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data)) :
-        full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), attributes);
+      return artifacts.attributes.flags == block_flags::uncompressed ? 
+        full_block_type::create_from_uncompressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), artifacts.block_id) :
+        full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), artifacts.attributes, artifacts.block_id);
     }
     FC_CAPTURE_LOG_AND_RETHROW((block_num))
   }
@@ -407,9 +405,9 @@ namespace hive { namespace chain {
         uint32_t number_of_blocks_to_read = last_block_num_from_disk - first_block_num + 1;
 
         size_t size_of_all_blocks = 0;
-        auto block_artifacts = my->_artifacts->read_block_artifacts(first_block_num, number_of_blocks_to_read, &size_of_all_blocks);
+        auto plural_of_block_artifacts = my->_artifacts->read_block_artifacts(first_block_num, number_of_blocks_to_read, &size_of_all_blocks);
 
-        uint64_t first_block_offset = block_artifacts.front().block_log_file_pos;
+        uint64_t first_block_offset = plural_of_block_artifacts.front().block_log_file_pos;
 
         // then read all the blocks in one go
         idump((size_of_all_blocks));
@@ -419,19 +417,21 @@ namespace hive { namespace chain {
         uint64_t offset_in_memory = 0; /// offset in block_data buffer, pointing to another block
 
         // now deserialize the blocks
-        for(size_t i = 0; i < block_artifacts.size(); ++i)
+        for (const block_log_artifacts::artifacts_t& block_artifacts : plural_of_block_artifacts)
         {
-          const auto& ba = block_artifacts[i];
-
           // full_block_type expects to take ownership of a unique_ptr for the memory, so create one
-          std::unique_ptr<char[]> compressed_block_data(new char[ba.block_serialized_data_size]);
-          memcpy(compressed_block_data.get(), block_data.get() + offset_in_memory, ba.block_serialized_data_size);
-          if (ba.attributes.flags == block_flags::uncompressed)
-            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), ba.block_serialized_data_size));
+          std::unique_ptr<char[]> compressed_block_data(new char[block_artifacts.block_serialized_data_size]);
+          memcpy(compressed_block_data.get(), block_data.get() + offset_in_memory, block_artifacts.block_serialized_data_size);
+          if (block_artifacts.attributes.flags == block_flags::uncompressed)
+            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), 
+                                                                                  block_artifacts.block_serialized_data_size, 
+                                                                                  block_artifacts.block_id));
           else
-            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), ba.block_serialized_data_size, ba.attributes));
+            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), 
+                                                                                block_artifacts.block_serialized_data_size, 
+                                                                                block_artifacts.attributes, block_artifacts.block_id));
 
-          offset_in_memory += ba.block_serialized_data_size;
+          offset_in_memory += block_artifacts.block_serialized_data_size;
         }
       }
 
@@ -497,7 +497,7 @@ namespace hive { namespace chain {
 
   std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd_helper(const char* uncompressed_block_data, 
                                                                          size_t uncompressed_block_size,
-                                                                         fc::optional<uint8_t> dictionary_number,
+                                                                         std::optional<uint8_t> dictionary_number,
                                                                          ZSTD_CCtx* compression_context,
                                                                          fc::optional<int> compression_level)
   {
@@ -541,7 +541,7 @@ namespace hive { namespace chain {
 
   /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::compress_block_zstd(const char* uncompressed_block_data, 
                                                                                           size_t uncompressed_block_size,
-                                                                                          fc::optional<uint8_t> dictionary_number,
+                                                                                          std::optional<uint8_t> dictionary_number,
                                                                                           fc::optional<int> compression_level,
                                                                                           fc::optional<ZSTD_CCtx*> compression_context_for_reuse)
   {
@@ -569,7 +569,7 @@ namespace hive { namespace chain {
 
   std::tuple<std::unique_ptr<char[]>, size_t> decompress_block_zstd_helper(const char* compressed_block_data,
                                                                            size_t compressed_block_size,
-                                                                           fc::optional<uint8_t> dictionary_number,
+                                                                           std::optional<uint8_t> dictionary_number,
                                                                            ZSTD_DCtx* decompression_context)
   {
     if (dictionary_number)
@@ -594,7 +594,7 @@ namespace hive { namespace chain {
 
   /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_zstd(const char* compressed_block_data,
                                                                                             size_t compressed_block_size,
-                                                                                            fc::optional<uint8_t> dictionary_number,
+                                                                                            std::optional<uint8_t> dictionary_number,
                                                                                             fc::optional<ZSTD_DCtx*> decompression_context_for_reuse)
   {
     if (decompression_context_for_reuse)
