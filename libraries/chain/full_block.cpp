@@ -27,8 +27,8 @@ decoded_block_storage_type::~decoded_block_storage_type()
 full_block_type::full_block_type()
 {
   number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
-  if (number_of_instances_created.load() % 10000 == 0)
-    ilog("Currently ${count} full_blocks in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
+  // if (number_of_instances_created.load() % 10000 == 0)
+  //   ilog("Currently ${count} full_blocks in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
 
 full_block_type::~full_block_type()
@@ -38,7 +38,8 @@ full_block_type::~full_block_type()
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
                                                                                                  size_t compressed_size,
-                                                                                                 const block_log::block_attributes_t& compression_attributes)
+                                                                                                 const block_log::block_attributes_t& compression_attributes,
+                                                                                                 const std::optional<block_id_type> block_id /* = std::optional<block_id_type>() */)
 {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
   full_block->compressed_block.compression_attributes = compression_attributes;
@@ -46,16 +47,29 @@ full_block_type::~full_block_type()
   full_block->compressed_block.compressed_size = compressed_size;
   full_block->has_compressed_block.store(true, std::memory_order_release);
 
+  if (block_id)
+  {
+    full_block->block_id = *block_id;
+    full_block->has_block_id.store(true, std::memory_order_release);
+  }
+
   return full_block;
 }
 
-/* static */ std::shared_ptr<full_block_type> full_block_type::create_from_uncompressed_block_data(std::unique_ptr<char[]>&& raw_bytes, size_t raw_size)
+/* static */ std::shared_ptr<full_block_type> full_block_type::create_from_uncompressed_block_data(std::unique_ptr<char[]>&& raw_bytes, size_t raw_size,
+                                                                                                   const std::optional<block_id_type> block_id /* = std::optional<block_id_type>() */)
 { try {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
 
   full_block->decoded_block_storage = std::make_shared<decoded_block_storage_type>();
   full_block->decoded_block_storage->uncompressed_block = uncompressed_block_data{std::move(raw_bytes), raw_size};
   full_block->has_uncompressed_block.store(true, std::memory_order_release);
+
+  if (block_id)
+  {
+    full_block->block_id = *block_id;
+    full_block->has_block_id.store(true, std::memory_order_release);
+  }
 
   return full_block;
 } FC_CAPTURE_AND_RETHROW() }
@@ -122,13 +136,14 @@ full_block_type::~full_block_type()
   if (signer)
   {
     const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(header.timestamp);
-    new_block.witness_signature = signer->sign_compact(*full_block->digest, validation_rules.signature_type);
+    new_block.witness_signature = signer->sign_compact(full_block->digest, validation_rules.signature_type);
     full_block->block_signing_key = signer->get_public_key();
   }
   // and serialize the signature
   fc::raw::pack(datastream, new_block.witness_signature);
   full_block->signed_block_header_size = datastream.tellp();
   full_block->block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), full_block->signed_block_header_size, header.block_num());
+  full_block->has_block_id.store(true, std::memory_order_release);
 
   // then serialize the vector of transactions
   fc::raw::pack(datastream, number_of_transactions);
@@ -278,15 +293,15 @@ void full_block_type::decode_block_header() const
     signed_block_header_size = datastream.tellp();
     
     // construct the block id (not always needed, but we assume it's cheap enough that it's not worth doing lazily)
-    if (!block_id)
+    if (!has_block_id.load(std::memory_order_consume))
+    {
       block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
+      has_block_id.store(true, std::memory_order_release);
+    }
     
     // construct the block digest (also not always needed, but we assume it's cheap enough that it's not worth doing lazily)
-    if (!digest)
-    {
-      // digest is just the hash of the block_header
-      digest = digest_type::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), block_header_size);
-    }
+    // digest is just the hash of the block_header
+    digest = digest_type::hash(decoded_block_storage->uncompressed_block.raw_bytes.get(), block_header_size);
     
     fc::time_point decode_block_header_end = fc::time_point::now();
     decode_block_header_time = decode_block_header_end - decode_block_header_begin;
@@ -382,8 +397,16 @@ const signed_block& full_block_type::get_block() const
 
 const block_id_type& full_block_type::get_block_id() const 
 {
-  (void)get_block_header();
-  return *block_id;
+  if (!has_block_id.load(std::memory_order_consume))
+  {
+    fc::time_point decode_begin = fc::time_point::now();
+    decode_block_header(); // block_id will be generated as part of decoding the header
+    fc::time_point decode_end = fc::time_point::now();
+    fc::microseconds decode_duration = decode_end - decode_begin;
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}μs in full_block_type::get_block_id(), actual decode took ${decode_block_header_time}μs", 
+            (decode_duration)(decode_block_header_time));
+  }
+  return block_id;
 }
 
 uint32_t full_block_type::get_block_num() const
@@ -403,7 +426,7 @@ void full_block_type::compute_legacy_block_message_hash() const
     fc::time_point compute_hash_begin = fc::time_point::now();
     fc::ripemd160::encoder legacy_message_hash_encoder;
     legacy_message_hash_encoder.write(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
-    legacy_message_hash_encoder.write(block_id->data(), block_id->data_size());
+    legacy_message_hash_encoder.write(block_id.data(), block_id.data_size());
     legacy_block_message_hash = legacy_message_hash_encoder.result();
     fc::time_point compute_hash_end = fc::time_point::now();
     compute_legacy_block_message_hash_time = compute_hash_end - compute_hash_begin;
@@ -434,7 +457,7 @@ void full_block_type::compute_signing_key() const
     decode_block_header();
     fc::time_point compute_begin = fc::time_point::now();
     const transaction_signature_validation_rules_type& validation_rules = get_transaction_signature_validation_rules_at_time(decoded_block_storage->block->timestamp);
-    block_signing_key = hive::protocol::signed_block_header::signee(decoded_block_storage->block->witness_signature, *digest, validation_rules.signature_type);
+    block_signing_key = hive::protocol::signed_block_header::signee(decoded_block_storage->block->witness_signature, digest, validation_rules.signature_type);
     fc::time_point compute_end = fc::time_point::now();
     compute_block_signing_key_time = compute_end - compute_begin;
   }
