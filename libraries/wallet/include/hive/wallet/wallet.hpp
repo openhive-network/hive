@@ -1177,13 +1177,13 @@ class wallet_api
       bool broadcast );
 
     /**
-      *  Change the benefits that come from creating a post.
+      *  Change the benefits that come from creating a comment.
       *
       *  @param author the name of the account authoring the comment
       *  @param permlink the unique permlink for the comment
-      *  @param max_accepted_payout HBD value of the maximum payout this post will receive
+      *  @param max_accepted_payout HBD value of the maximum payout this comment will receive
       *  @param percent_hbd the percent of HBD to key, unkept amounts will be received in form of VESTS
-      *  @param allow_votes allows a post to receive votes
+      *  @param allow_votes allows a comment to receive votes
       *  @param allow_curation_rewards allows voters to recieve curation rewards. Rewards return to reward fund.
       *  @param beneficiaries set of accounts that get the reward according to weights
       *  @param broadcast true if you wish to broadcast the transaction
@@ -1196,6 +1196,18 @@ class wallet_api
       bool                                                    allow_votes,
       bool                                                    allow_curation_rewards,
       const hive::protocol::comment_payout_beneficiaries&     beneficiaries,
+      bool broadcast );
+
+    /**
+      *  Delete a comment.
+      *
+      *  @param author the name of the account authoring the comment
+      *  @param permlink the unique permlink for the comment
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> delete_comment(
+      const string&                                           author,
+      const string&                                           permlink,
       bool broadcast );
 
     /**
@@ -1590,6 +1602,7 @@ FC_API( hive::wallet::wallet_api,
       (cancel_order)
       (post_comment)
       (change_comment_options)
+      (delete_comment)
       (vote)
       (set_transaction_expiration)
       (request_account_recovery)
