@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hive/protocol/hive_operations.hpp>
+
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/wallet/misc_utilities.hpp>
 
@@ -1175,6 +1177,28 @@ class wallet_api
       bool broadcast );
 
     /**
+      *  Change the benefits that come from creating a post.
+      *
+      *  @param author the name of the account authoring the comment
+      *  @param permlink the unique permlink for the comment
+      *  @param max_accepted_payout HBD value of the maximum payout this post will receive
+      *  @param percent_hbd the percent of HBD to key, unkept amounts will be received in form of VESTS
+      *  @param allow_votes allows a post to receive votes
+      *  @param allow_curation_rewards allows voters to recieve curation rewards. Rewards return to reward fund.
+      *  @param beneficiaries set of accounts that get the reward according to weights
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> change_comment_options(
+      const string&                                           author,
+      const string&                                           permlink,
+      const wallet_serializer_wrapper<hive::protocol::asset>& max_accepted_payout,
+      uint16_t                                                percent_hbd,
+      bool                                                    allow_votes,
+      bool                                                    allow_curation_rewards,
+      const hive::protocol::comment_payout_beneficiaries&     beneficiaries,
+      bool broadcast );
+
+    /**
       * Vote on a comment to be paid HIVE
       *
       * @param voter The account voting
@@ -1565,6 +1589,7 @@ FC_API( hive::wallet::wallet_api,
       (create_order)
       (cancel_order)
       (post_comment)
+      (change_comment_options)
       (vote)
       (set_transaction_expiration)
       (request_account_recovery)

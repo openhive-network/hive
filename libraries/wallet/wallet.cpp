@@ -2705,6 +2705,34 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::post_comment
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::change_comment_options(
+  const string&                                           author,
+  const string&                                           permlink,
+  const wallet_serializer_wrapper<hive::protocol::asset>& max_accepted_payout,
+  uint16_t                                                percent_hbd,
+  bool                                                    allow_votes,
+  bool                                                    allow_curation_rewards,
+  const hive::protocol::comment_payout_beneficiaries&     beneficiaries,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  comment_options_operation op;
+
+  op.author                 = author;
+  op.permlink               = permlink;
+  op.max_accepted_payout    = max_accepted_payout.value;
+  op.percent_hbd            = percent_hbd;
+  op.allow_votes            = allow_votes;
+  op.allow_curation_rewards = allow_curation_rewards;
+  op.extensions.insert( beneficiaries );
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::vote(
   const string& voter,
   const string& author,
