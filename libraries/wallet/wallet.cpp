@@ -2897,6 +2897,24 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::follow( cons
   return { my->sign_transaction( trx, broadcast ) };
 }
 
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::custom(
+  const flat_set<account_name_type>& required_auths,
+  uint16_t id,
+  const vector<char>& data,
+  bool broadcast )
+{
+  custom_operation op;
+  op.required_auths = required_auths;
+  op.id             = id;
+  op.data           = data;
+
+  signed_transaction trx;
+  trx.operations.push_back( op );
+  trx.validate();
+
+  return { my->sign_transaction( trx, broadcast ) };
+}
+
   wallet_serializer_wrapper<annotated_signed_transaction>  wallet_api::create_proposal(
     const account_name_type& creator,
     const account_name_type& receiver,
