@@ -406,7 +406,7 @@ transaction_serialization_mainnet_tests:
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet
-    - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml" --http-endpoint='hived-instance:8090' --ws-endpoint='hived-instance:8090' --wallet-path="$CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet"
+    - pytest -n ${NUMBER_OF_PROCESSES} -m mainnet_5m --junitxml="./report.xml" --http-endpoint='hived-instance:8090' --ws-endpoint='hived-instance:8090' --wallet-path="$CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet"
 
 
   artifacts:
