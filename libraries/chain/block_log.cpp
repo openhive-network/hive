@@ -189,7 +189,7 @@ namespace hive { namespace chain {
         head_block_num = std::atomic_load(&my->head)->get_block_num();
       }
 
-      if(auto_open_artifacts)
+      if (auto_open_artifacts)
         my->_artifacts = block_log_artifacts::open(file, read_only, *this, head_block_num);
   }
 
@@ -480,7 +480,7 @@ namespace hive { namespace chain {
     FC_LOG_AND_RETHROW()
   }
 
-  std::shared_ptr<full_block_type> block_log::head()const
+  std::shared_ptr<full_block_type> block_log::head() const
   {
     return my->head;
   }
@@ -633,7 +633,7 @@ namespace hive { namespace chain {
 
     uint32_t head_block_num = head_block->get_block_num();
 
-    //memory map for block log
+    // memory map for block log
     char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
     if (block_log_ptr == (char*)-1)
       FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
@@ -649,7 +649,7 @@ namespace hive { namespace chain {
     {
       // read the file offset of the start of the block from the block log
       uint64_t higher_block_pos = block_pos;
-      //read next block pos offset from the block log
+      // read next block pos offset from the block log
       uint64_t block_pos_with_flags = 0;
       memcpy(&block_pos_with_flags, block_log_ptr + block_pos, sizeof(block_pos_with_flags));
 

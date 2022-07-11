@@ -29,7 +29,7 @@ class block_log;
 class block_log_artifacts final
 {
 public:
-  typedef std::unique_ptr<block_log_artifacts, std::function<void(block_log_artifacts*)> > block_log_artifacts_ptr_t;
+  typedef std::unique_ptr<block_log_artifacts> block_log_artifacts_ptr_t;
 
   using block_digest_t= hive::protocol::digest_type;
   using block_id_t    = hive::protocol::block_id_type;
@@ -51,6 +51,8 @@ public:
   };
 
   typedef std::vector<artifacts_t> artifact_container_t;
+
+  ~block_log_artifacts();
 
   /** Allows to open a block log aartifacts file located in the same directory as specified block_log file itself.
   *   \param block_log_file_path location of source block_log file
@@ -86,7 +88,6 @@ private:
   class impl;
 
   block_log_artifacts();
-  ~block_log_artifacts();
 
   block_log_artifacts(const block_log_artifacts&) = delete;
   block_log_artifacts(block_log_artifacts&&) = delete;

@@ -191,20 +191,9 @@ public:
     return _storage_fd != -1;
   }
 
-  static void on_destroy(block_log_artifacts* bla)
-  {
-    FC_ASSERT(bla);
-    FC_ASSERT(bla->_impl);
-    
-    if(bla->_impl->is_open())
-      bla->_impl->close();
-
-    delete bla;
-  }
-
   void close()
   {
-    ilog("Closing a block log artifact file: ${f} file...", ("f", _artifact_file_name.generic_string()));
+    ilog("Closing a block log artifact file: ${_artifact_file_name} file...", (_artifact_file_name));
 
     _header.dirty_close = 0;
 
@@ -281,38 +270,37 @@ private:
 };
 
 void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path, bool read_only,
-  const block_log& source_block_provider, uint32_t head_block_num)
-{
+                                            const block_log& source_block_provider, uint32_t head_block_num)
+{ try {
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
-  _is_writable = read_only == false;
+  _is_writable = !read_only;
 
   int flags = O_RDWR | O_CLOEXEC;
-  if(read_only)
+  if (read_only)
     flags = O_RDONLY | O_CLOEXEC;
 
   _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), flags, 0644);
 
-  if(_storage_fd == -1)
+  if (_storage_fd == -1)
   {
-    if(errno == ENOENT)
+    if (errno == ENOENT)
     {
-      if(read_only)
+      if (read_only)
       {
-        FC_THROW("Block artifacts file ${filename} is missing, but its creation is disallowed by enforced read-only access.",
-          ("filename", _artifact_file_name));
+        FC_THROW("Block artifacts file ${_artifact_file_name} is missing, but its creation is disallowed by enforced read-only access.", (_artifact_file_name));
       }
       else
       {
-        wlog("Could not find artifacts file in ${path}, it will be created and generated from block_log.", ("path", _artifact_file_name));
+        wlog("Could not find artifacts file in ${_artifact_file_name}, it will be created and generated from block_log.", (_artifact_file_name));
         _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);
-        if(_storage_fd == -1)
-          FC_THROW("Error creating block artifacts file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
+        if (_storage_fd == -1)
+          FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
         _header.dirty_close = 1;
         flush_header();
 
         /// Generate artifacts file only if some blocks are present in pointed block_log.
-        if(head_block_num > 0)
+        if (head_block_num > 0)
           generate_file(source_block_provider, 1, head_block_num);
 
         _header.head_block_num = head_block_num;
@@ -321,18 +309,18 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
     }
     else
     {
-      FC_THROW("Error opening block index file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
+      FC_THROW("Error opening block index file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
     }
   }
   else
   {
     /// The file exists. Lets verify if it can be used immediately or rather shall be regenerated.
-    if(load_header())
+    if (load_header())
     {
       _header.dirty_close = 1;
       flush_header();
 
-      if(head_block_num < _header.head_block_num)
+      if (head_block_num < _header.head_block_num)
       {
         wlog("block_log file is shorten than current block_log.artifact file - the artifact file will be truncated.");
 
@@ -343,18 +331,16 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
         _header.head_block_num = head_block_num;
         flush_header();
       }
-      else
-      if(head_block_num > _header.head_block_num)
+      else if (head_block_num > _header.head_block_num)
       {
-        wlog("block_log file is longer than current block_log.artifact file - artifact file generation will be resumed for range: <${fb}:${lb}>.",
-        ("fb", _header.head_block_num + 1)("lb", head_block_num));
+        wlog("block_log file is longer than current block_log.artifact file - artifact file generation will be resumed for range: <${first_block}:${last_block}>.",
+             ("first_block", _header.head_block_num + 1)("last_block", head_block_num));
         /// Artifact file is too short - we need to resume its generation
-        generate_file(source_block_provider, _header.head_block_num+1, head_block_num);
+        generate_file(source_block_provider, _header.head_block_num + 1, head_block_num);
 
         /// head_block_num must be updated
         _header.head_block_num = head_block_num;
         flush_header();
-
       }
       else
       {
@@ -364,21 +350,21 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
     }
     else
     {
-      wlog("Block artifacts file ${filename} exists, but its header validation failed.", ("filename", _artifact_file_name));
+      wlog("Block artifacts file ${_artifact_file_name} exists, but its header validation failed.", (_artifact_file_name));
 
-      if(read_only)
+      if (read_only)
       {
-        FC_THROW("Generation of Block artifacts file ${filename} is disallowed by enforced read-only access.", ("filename", _artifact_file_name));
+        FC_THROW("Generation of Block artifacts file ${_artifact_file_name} is disallowed by enforced read-only access.", ("filename", _artifact_file_name));
       }
       else
       {
-        ilog("Attempting to overwrite existing artifacts file ${filename} exists...", ("filename", _artifact_file_name));
+        ilog("Attempting to overwrite existing artifacts file ${_artifact_file_name} exists...", (_artifact_file_name));
 
         HANDLE_IO((::close(_storage_fd)), "Closing the artifact file (before truncation)");
 
-        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), flags|O_TRUNC, 0644);
-        if(_storage_fd == -1)
-          FC_THROW("Error creating block artifacts file ${filename}: ${error}", ("filename", _artifact_file_name)("error", strerror(errno)));
+        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), flags | O_TRUNC, 0644);
+        if (_storage_fd == -1)
+          FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
         _header = artifact_file_header();
         _header.dirty_close = 1;
@@ -391,7 +377,7 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
       }
     }
   }
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 bool block_log_artifacts::impl::load_header()
 {
@@ -400,11 +386,11 @@ bool block_log_artifacts::impl::load_header()
     read_data(&_header, 0, "Reading the artifact file header");
 
     ilog("Loaded header containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}",
-      ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num));
+         ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num));
 
     return true;
   }
-  catch(const fc::exception& e)
+  catch (const fc::exception& e)
   {
     wlog("Loading the artifact file header failed: ${e}", ("e", e.to_detail_string()));
     return false;
@@ -412,11 +398,14 @@ bool block_log_artifacts::impl::load_header()
 }
 
 void block_log_artifacts::impl::flush_header() const
-{
-  dlog("Header pack size: ${p}", ("p", header_pack_size));
+{ try {
+  if (!_is_writable)
+    return;
+
+  dlog("Header pack size: ${header_pack_size}", (header_pack_size));
 
   dlog("Attempting to write header containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}, dirty_close: ${d}",
-    ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num)("d", _header.dirty_close));
+       ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num)("d", _header.dirty_close));
 
   write_data(_header, 0, "Flushing a file header");
 
@@ -428,15 +417,15 @@ void block_log_artifacts::impl::flush_header() const
 
   //ilog("Loaded header containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}, dirty_close: ${d}",
   //  ("gr", _h2.git_version)("major", _h2.format_major_version)("minor", _h2.format_minor_version)("hb", _h2.head_block_num)("d", _h2.dirty_close));
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 void block_log_artifacts::impl::generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block)
 {
-  ilog("Attempting to generate a block artifact file for block range: ${fb}...${lb}", ("fb", first_block)("lb", last_block));
+  ilog("Attempting to generate a block artifact file for block range: ${first_block}...${last_block}", (first_block)(last_block));
 
   uint64_t time_begin = timestamp_ms();
 
-  FC_ASSERT(first_block <= last_block, "${first_block} <= ${last_block}", ("first_block", first_block)("last_block", last_block));
+  FC_ASSERT(first_block <= last_block, "${first_block} <= ${last_block}", (first_block)(last_block));
 
   uint32_t block_count = last_block - first_block + 1;
 
@@ -459,10 +448,10 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
     (uint32_t block_num, uint32_t block_size, uint64_t block_pos, const block_attributes_t& block_attrs) -> bool
     {
       /// Since here is backward processing direction lets ignore and stop for all blocks excluded from requested range
-      if(block_num < first_block)
+      if (block_num < first_block)
         return false;
 
-      if(block_num > last_block)
+      if (block_num > last_block)
         return true;
 
       //dlog("Collecting data: ${b}, block_pos: ${block_pos}, block_size: ${block_size}", ("b", block_num)("block_pos", block_pos)("block_size", block_size));
@@ -470,7 +459,7 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
       artifacts_to_collect.emplace_back(block_attrs, block_pos, block_size);
 
       /// First spawned thread will also include number of 'rest' blocks.
-      if(artifacts_to_collect.size() == (static_cast<size_t>(blocks_per_thread) + rest))
+      if (artifacts_to_collect.size() == (static_cast<size_t>(blocks_per_thread) + rest))
       {
         rest = 0; /// clear rest to give further threads estimated amount of blocks.
         size_t block_info_count = artifacts_to_collect.size();
@@ -480,9 +469,9 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
         std::promise<worker_thread_result> work_promise;
         auto worker_thread_future = work_promise.get_future();
 
-        auto emplace_info = spawned_threads.emplace(block_num, std::make_pair(
-          std::thread(woker_thread_body, std::cref(source_block_provider), block_num, std::move(artifacts_to_collect), std::move(work_promise)),
-            std::move(worker_thread_future)));
+        auto emplace_info = spawned_threads.emplace(
+          block_num, std::make_pair(std::thread(woker_thread_body, std::cref(source_block_provider), block_num, std::move(artifacts_to_collect), std::move(work_promise)),
+                                    std::move(worker_thread_future)));
 
         FC_ASSERT(emplace_info.second);
 
@@ -490,17 +479,17 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
         const std::thread& t = td.first;
         size_t tid = (size_t)const_cast<std::thread*>(&t);
 
-        ilog("Spawned worker thread #${i} covering block range:<${fb}:${lb}>", ("i", tid)("fb", block_num)
-          ("lb", block_num + block_info_count - 1));
+        ilog("Spawned worker thread #${tid} covering block range:<${block_num}:${last_block}>", (tid)(block_num)
+             ("last_block", block_num + block_info_count - 1));
       }
 
       return true;
     }
     );
 
-  ilog("${tc} threads spawned - waiting for their work finish...", ("tc", spawned_threads.size()));
+  ilog("${thread_count} threads spawned - waiting for their work finish...", ("thread_count", spawned_threads.size()));
 
-  for(auto& thread_info : spawned_threads)
+  for (auto& thread_info : spawned_threads)
   {
     std::thread& t = thread_info.second.first;
     size_t tid = (size_t)&t;
@@ -518,12 +507,12 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 
       flush_data_chunks(result.first, result.second);
     }
-    catch(const fc::exception& e)
+    catch (const fc::exception& e)
     {
       ilog("Thread #${t} failed with exception: ${e}...", ("t", tid)("e", e.to_detail_string()));
       throw;
     }
-    catch(const std::exception& e)
+    catch (const std::exception& e)
     {
       ilog("Thread #${t} failed with exception: ${e}...", ("t", tid)("e", e.what()));
       throw;
@@ -543,58 +532,56 @@ void block_log_artifacts::impl::flush_data_chunks(uint32_t min_block_num, const 
   uint64_t time_begin = timestamp_ms();
   
   uint32_t max_block_num = min_block_num + data.size() - 1;
-  ilog("Attempting to flush ${s} artifact entries collected for block range: <${sb}:${eb}> into target file...",
-    ("s", data.size())("sb", min_block_num)("eb", max_block_num));
+  ilog("Attempting to flush ${count} artifact entries collected for block range: <${min_block_num}:${max_block_num}> into target file...",
+       ("count", data.size())(min_block_num)(max_block_num));
 
   /// warning: data in artifacts container are placed in REVERSED order since block_log processing has backward direction
   uint32_t processed_block_num = min_block_num;
-  for(auto dataI = data.rbegin(); dataI != data.rend(); ++dataI, ++processed_block_num)
-  {
+  for (auto dataI = data.rbegin(); dataI != data.rend(); ++dataI, ++processed_block_num)
     store_block_artifacts(processed_block_num, dataI->block_log_file_pos, dataI->attributes, dataI->block_id);
-  }
 
   /// STL has open ("past") end, so iterates once more
   --processed_block_num;
 
-  FC_ASSERT(processed_block_num == max_block_num, "processed_block_num: ${pb} vs max_block_num: ${mb} mismatch", ("pb", processed_block_num)("mb", max_block_num));
+  FC_ASSERT(processed_block_num == max_block_num, "processed_block_num: ${processed_block_num} vs max_block_num: ${max_block_num} mismatch", 
+            (processed_block_num)(max_block_num));
 
   uint64_t time_end = timestamp_ms();
   auto elapsed_time = time_end - time_begin;
 
-  ilog("Flushing ${s} artifact entries for block range: <${sb}:${eb}> finished in time: ${t} ms.",
-    ("s", data.size())("sb", min_block_num)("eb", max_block_num)("t", elapsed_time));
+  ilog("Flushing ${count} artifact entries for block range: <${min_block_num}:${max_block_num}> finished in time: ${elapsed_time} ms.",
+       ("count", data.size())(min_block_num)(max_block_num)(elapsed_time));
 }
 
 void block_log_artifacts::impl::woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
-  std::promise<worker_thread_result> work_promise)
+                                                  std::promise<worker_thread_result> work_promise)
 {
   try
   {
     uint32_t first_block_num = 0;
-    for(auto artifactI = data.rbegin(); artifactI != data.rend(); ++artifactI)
+    for (auto artifactI = data.rbegin(); artifactI != data.rend(); ++artifactI)
     {
       auto& a = *artifactI;
-      std::shared_ptr<full_block_type> full_block = block_provider.read_block_by_offset(a.block_log_file_pos, a.block_serialized_data_size,
-        a.attributes);
+      std::shared_ptr<full_block_type> full_block = block_provider.read_block_by_offset(a.block_log_file_pos, a.block_serialized_data_size, a.attributes);
       a.block_id = full_block->get_block_id();
 
-      if(first_block_num == 0)
+      if (first_block_num == 0)
       {
         first_block_num = full_block->get_block_num();
-        FC_ASSERT(first_block_num == min_block_num, "first_block: ${fb} != min_block: ${mb}", ("fb", first_block_num)("mb", min_block_num));
+        FC_ASSERT(first_block_num == min_block_num, "first_block: ${first_block_num} != min_block: ${min_block_num}", (first_block_num)(min_block_num));
       }
     }
 
     work_promise.set_value(std::make_pair(min_block_num, std::move(data)));
   }
-  catch(...)
+  catch (...)
   {
     try
     {
       auto eptr = std::current_exception();
       work_promise.set_exception(eptr);
     }
-    catch(...)
+    catch (...)
     {
       elog("Storing exception ptr in the thread promise failed with another exception...");
     }
@@ -607,7 +594,7 @@ void block_log_artifacts::impl::truncate_file(uint32_t last_block)
   /// File truncate should be done just after last data chunk stored.
   auto truncate_position = last_chunk_position + artifact_chunk_size;
 
-  if(ftruncate(_storage_fd, truncate_position) == -1)
+  if (ftruncate(_storage_fd, truncate_position) == -1)
     FC_THROW("Error truncating block artifact file: ${error}", ("error", strerror(errno)));
 }
 
@@ -627,7 +614,7 @@ void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint
 }
 
 void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos,
-  const block_attributes_t& block_attrs, const block_id_t& block_id)
+                                                      const block_attributes_t& block_attrs, const block_id_t& block_id)
 {
   artifact_file_chunk data_chunk;
 
@@ -646,14 +633,14 @@ block_log_artifacts::block_log_artifacts() : _impl(std::make_unique<impl>())
 
 block_log_artifacts::~block_log_artifacts()
 {
-  /// Nothing to do here, but definition must be placed here because of impl type visibility
+  if (_impl->is_open())
+    _impl->close();
 }
 
 block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path,
   bool read_only, const block_log& source_block_provider, uint32_t head_block_num)
 {
-  block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts(),
-    [](block_log_artifacts* bla) { impl::on_destroy(bla); });
+  block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts);
 
   block_artifacts->_impl->try_to_open(block_log_file_path, read_only, source_block_provider, head_block_num);
 
