@@ -788,6 +788,17 @@ class wallet_api
       const wallet_serializer_wrapper<legacy_chain_properties>& props,
       bool broadcast = false);
 
+    /** Update witness properties for the given account.
+      *
+      * @param witness_name The name of the witness account.
+      * @param props The chain properties the witness is voting on.
+      * @param broadcast true if you wish to broadcast the transaction.
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> update_witness2(
+      const string& witness_name,
+      const flat_map< string, vector< char > >&  props,
+      bool broadcast = false);
+
     /** Set the governance voting proxy for an account.
       *
       * If a user does not wish to take an active part in governance voting,
@@ -1621,6 +1632,7 @@ FC_API( hive::wallet::wallet_api,
       (delegate_vesting_shares_and_transfer)
       (delegate_vesting_shares_and_transfer_nonblocking)
       (update_witness)
+      (update_witness2)
       (set_voting_proxy)
       (vote_for_witness)
       (follow)

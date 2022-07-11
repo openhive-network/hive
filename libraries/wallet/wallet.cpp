@@ -2043,6 +2043,26 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_witne
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness2(
+  const string& witness_name,
+  const flat_map< string, vector< char > >& props,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  my->require_online();
+
+  witness_set_properties_operation op;
+
+  op.owner = witness_name;
+  op.props = props;
+
+  signed_transaction tx;
+  tx.operations.push_back(op);
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::vote_for_witness(
   const string& voting_account,
   const string& witness_to_vote_for,
