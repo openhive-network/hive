@@ -2733,6 +2733,24 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::change_comme
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delete_comment(
+  const string&                                           author,
+  const string&                                           permlink,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  delete_comment_operation op;
+
+  op.author                 = author;
+  op.permlink               = permlink;
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::vote(
   const string& voter,
   const string& author,
