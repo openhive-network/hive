@@ -2661,6 +2661,31 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_order
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_order2(
+  const string& owner,
+  uint32_t order_id,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount_to_sell,
+  const wallet_serializer_wrapper<price>& exchange_rate,
+  bool fill_or_kill,
+  uint32_t expiration,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  limit_order_create2_operation op;
+  op.owner          = owner;
+  op.orderid        = order_id;
+  op.amount_to_sell = amount_to_sell.value;
+  op.exchange_rate  = exchange_rate.value;
+  op.fill_or_kill   = fill_or_kill;
+  op.expiration     = expiration ? (fc::time_point::now() + fc::seconds(expiration)) : fc::time_point::maximum();
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_order(
   const string& owner,
   uint32_t orderid,

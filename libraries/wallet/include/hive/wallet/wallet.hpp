@@ -1143,6 +1143,26 @@ class wallet_api
       bool broadcast );
 
     /**
+      *  Creates a limit order. This operation is identical to limit_order_create except it serializes the price rather than calculating it from other fields.
+      *
+      *  @param owner The name of the account creating the order
+      *  @param order_id is a unique identifier assigned by the creator of the order, it can be reused after the order has been filled
+      *  @param amount_to_sell The amount of either HBD or HIVE you wish to sell
+      *  @param fill_or_kill true if you want the order to be killed if it cannot immediately be filled
+      *  @param exchange_rate The desired exchange rate
+      *  @param expiration the time the order should expire if it has not been filled
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> create_order2(
+      const string& owner,
+      uint32_t order_id,
+      const wallet_serializer_wrapper<hive::protocol::asset>& amount_to_sell,
+      const wallet_serializer_wrapper<price>& exchange_rate,
+      bool fill_or_kill,
+      uint32_t expiration,
+      bool broadcast );
+
+    /**
       * Cancel an order created with create_order
       *
       * @param owner The name of the account owning the order to cancel_order
@@ -1599,6 +1619,7 @@ FC_API( hive::wallet::wallet_api,
       (get_order_book)
       (get_open_orders)
       (create_order)
+      (create_order2)
       (cancel_order)
       (post_comment)
       (change_comment_options)
