@@ -105,10 +105,10 @@
  * then switch into block-fetching mode until the number of blocks we know about
  * but haven't yet fetched drops below this
  */
-#define GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH               100000
+#define GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH               20000
 
 #define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME 200
-#define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_PREFETCH           (500* GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME)
+#define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_PREFETCH           (100* GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME)
 
 #define GRAPHENE_NET_MAX_TRX_PER_SECOND                      1000
 
