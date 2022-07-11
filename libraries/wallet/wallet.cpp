@@ -1583,7 +1583,39 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_accou
 
     return { my->sign_transaction( tx, broadcast ) };
   }
-  FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(owner)(active)(memo)(broadcast) )
+  FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(owner)(active)(posting)(memo)(broadcast) )
+}
+
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account2(
+  const string& account_name,
+  const string& json_meta,
+  const string& posting_json_meta,
+  public_key_type owner,
+  public_key_type active,
+  public_key_type posting,
+  public_key_type memo,
+  bool broadcast )const
+{
+  try
+  {
+    FC_ASSERT( !is_locked() );
+
+    account_update2_operation op;
+    op.account                = account_name;
+    op.owner                  = authority( 1, owner, 1 );
+    op.active                 = authority( 1, active, 1);
+    op.posting                = authority( 1, posting, 1);
+    op.memo_key               = memo;
+    op.json_metadata          = json_meta;
+    op.posting_json_metadata  = posting_json_meta;
+
+    signed_transaction tx;
+    tx.operations.push_back(op);
+    tx.validate();
+
+    return { my->sign_transaction( tx, broadcast ) };
+  }
+  FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(posting_json_meta)(owner)(active)(posting)(memo)(broadcast) )
 }
 
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_key(

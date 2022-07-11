@@ -558,6 +558,27 @@ class wallet_api
       public_key_type memo,
       bool broadcast )const;
 
+    /** This method updates the keys of an existing account.
+      *
+      * @param accountname The name of the account
+      * @param json_meta New JSON Metadata to be associated with the account
+      * @param posting_json_meta New posting JSON Metadata to be associated with the account
+      * @param owner New public owner key for the account
+      * @param active New public active key for the account
+      * @param posting New public posting key for the account
+      * @param memo New public memo key for the account
+      * @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> update_account2(
+      const string& accountname,
+      const string& json_meta,
+      const string& posting_json_meta,
+      public_key_type owner,
+      public_key_type active,
+      public_key_type posting,
+      public_key_type memo,
+      bool broadcast )const;
+
     /** This method updates the key of an authority for an exisiting account.
       *
       * Warning: You can create impossible authorities using this method. The method
@@ -1589,6 +1610,7 @@ FC_API( hive::wallet::wallet_api,
       (create_account_delegated)
       (create_account_with_keys_delegated)
       (update_account)
+      (update_account2)
       (update_account_auth_key)
       (update_account_auth_account)
       (update_account_auth_threshold)
