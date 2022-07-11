@@ -68,6 +68,7 @@ WALLET_API_METHODS = [
 ]
 
 
+@pytest.mark.mainnet_5m
 @pytest.mark.parametrize(
     'cli_wallet_method, arguments', WALLET_API_METHODS
 )
