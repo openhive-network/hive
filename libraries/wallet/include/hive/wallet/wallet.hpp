@@ -1354,6 +1354,20 @@ class wallet_api
     wallet_serializer_wrapper<annotated_signed_transaction> follow( const string& follower, const string& following, set<string> what, bool broadcast );
 
     /**
+      *  Sends a custom operation.
+      *
+      *  @param required_auths required authorities
+      *  @param id  an identifier of an operation 
+      *  @param data contains the whole operation
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> custom(
+      const flat_set<account_name_type>& required_auths,
+      uint16_t id,
+      const vector<char>& data,
+      bool broadcast );
+
+    /**
       * Checks memos against private keys on account and imported in wallet
       */
     void check_memo( const string& memo, const database_api::api_account_object& account )const;
@@ -1635,6 +1649,7 @@ FC_API( hive::wallet::wallet_api,
       (update_witness2)
       (set_voting_proxy)
       (vote_for_witness)
+      (custom)
       (follow)
       (transfer)
       (transfer_nonblocking)
