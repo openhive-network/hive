@@ -45,6 +45,7 @@ struct compressed_block
 
 bool enable_zstd = true;
 fc::optional<int> zstd_level;
+bool use_compressed_even_when_larger = true;
 
 uint32_t starting_block_number = 1;
 fc::optional<uint32_t> blocks_to_compress;
@@ -151,7 +152,8 @@ void compress_blocks()
     if (!compressed_versions.empty())
     {
       // if the smallest compressed version is smaller than the uncompressed version, use it
-      if (compressed_versions.front().size < uncompressed->uncompressed_block_size)
+      if (use_compressed_even_when_larger ||
+          compressed_versions.front().size < uncompressed->uncompressed_block_size)
       {
         ++total_count_by_method[compressed_versions.front().method];
         compressed->attributes.flags = compressed_versions.front().method;
@@ -372,6 +374,8 @@ int main(int argc, char** argv)
     options.add_options()("dump-raw-blocks", boost::program_options::value<std::string>(), "A directory in which to dump raw, uncompressed blocks (one block per file)");
     options.add_options()("starting-block-number,s", boost::program_options::value<uint32_t>()->default_value(1), "Start at the given block number (for benchmarking only, values > 1 will generate an unusable block log)");
     options.add_options()("block-count,n", boost::program_options::value<uint32_t>(), "Stop after this many blocks");
+    options.add_options()("use-compressed-even-when-larger", boost::program_options::bool_switch()->default_value(true), "Store the compressed version of the blocks, even when larger than the uncompressed version");
+
     options.add_options()("help,h", "Print usage instructions");
 
     boost::program_options::positional_options_description positional_options;
@@ -415,6 +419,17 @@ int main(int argc, char** argv)
     if (options_map.count("dump-raw-blocks"))
       raw_block_output_path = options_map["dump-raw-blocks"].as<std::string>();
 
+    // store the block compressed with zstd even when the uncompressed version is smaller.
+    // There are a few thousand small blocks near the beginning of the chain which are uncompressable,
+    // and the zstd version comes out slightly larger than the uncompressed version.
+    // By default, we'll still store the compressed version in the block log.  Overall, this
+    // makes the block log about 50k bytes larger than if we didn't, but it simplifies matters.
+    // 
+    // When serving a block to a peer that accepts compressed blocks, we'll try to compress any
+    // uncompressed blocks loaded from the block log.  If we stored those blocks uncompressed,
+    // we would have to attempt to compress the blocks each time we sent them to a peer.
+    use_compressed_even_when_larger = options_map["use-compressed-even-when-larger"].as<bool>();
+
     std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
     std::shared_ptr<std::thread> drain_queue_thread = std::make_shared<std::thread>([&](){ drain_completed_queue(output_block_log_path / "block_log"); });
     std::vector<std::shared_ptr<std::thread>> compress_blocks_threads;
@@ -445,9 +460,13 @@ int main(int argc, char** argv)
              ("average_zstd_decompression_time", total_zstd_decompression_time.count() / total_blocks_processed));
     }
   }
-  catch ( const std::exception& e )
+  catch (const fc::exception& e)
   {
-    edump( ( std::string( e.what() ) ) );
+    edump((e));
+  }
+  catch (const std::exception& e)
+  {
+    edump((std::string(e.what())));
   }
 
   return 0;
