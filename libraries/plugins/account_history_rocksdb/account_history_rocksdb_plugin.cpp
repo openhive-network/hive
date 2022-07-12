@@ -454,28 +454,33 @@ public:
 
     _mainDb.add_pre_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
       {
-        on_pre_reindex( note );
+        if( !appbase::app().is_interrupt_request() )
+          on_pre_reindex( note );
       }, _self, 0);
 
     _mainDb.add_post_reindex_handler([&]( const hive::chain::reindex_notification& note ) -> void
       {
-        on_post_reindex( note );
+        if( !appbase::app().is_interrupt_request() )
+          on_post_reindex( note );
       }, _self, 0);
 
     _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
       {
-        supplement_snapshot(note);
+        if( !appbase::app().is_interrupt_request() )
+          supplement_snapshot(note);
       }, _self, 0);
 
     _mainDb.add_snapshot_supplement_handler([&](const hive::chain::load_snapshot_supplement_notification& note) -> void
       {
-        load_additional_data_from_snapshot(note);
+        if( !appbase::app().is_interrupt_request() )
+          load_additional_data_from_snapshot(note);
       }, _self, 0);
 
     _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
       [&]( const operation_notification& note )
       {
-        on_pre_apply_operation(note);
+        if( !appbase::app().is_interrupt_request() )
+          on_pre_apply_operation(note);
       },
       _self
     );
@@ -483,7 +488,8 @@ public:
     _on_irreversible_block_conn = _mainDb.add_irreversible_block_handler(
       [&]( uint32_t block_num )
       {
-        on_irreversible_block( block_num );
+        if( !appbase::app().is_interrupt_request() )
+          on_irreversible_block( block_num );
       },
       _self
     );
@@ -491,7 +497,8 @@ public:
     _on_pre_apply_block_conn = _mainDb.add_pre_apply_block_handler(
       [&](const block_notification& bn)
       {
-        on_pre_apply_block(bn);
+        if( !appbase::app().is_interrupt_request() )
+          on_pre_apply_block(bn);
       },
       _self
     );
@@ -499,7 +506,8 @@ public:
     _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
       [&](const block_notification& bn)
       {
-        on_post_apply_block(bn);
+        if( !appbase::app().is_interrupt_request() )
+          on_post_apply_block(bn);
       },
       _self
     );
@@ -507,7 +515,8 @@ public:
     _on_fail_apply_block_conn = _mainDb.add_fail_apply_block_handler(
       [&](const block_notification& bn)
       {
-        on_post_apply_block(bn);
+        if( !appbase::app().is_interrupt_request() )
+          on_post_apply_block(bn);
       },
       _self
     );
@@ -1886,6 +1895,11 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
   {
     ilog("Received onReindexStart request, attempting to clean database storage.");
     auto s = ::rocksdb::DestroyDB(strPath, ::rocksdb::Options());
+    if( !s.ok() )
+    {
+      elog("RocksDB cannot remove a database at location: `${p}'. Maybe an insufficient permission.", ("p", strPath));
+      appbase::app().generate_interrupt_request();
+    }
     checkStatus(s);
   }
 
