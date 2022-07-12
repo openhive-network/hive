@@ -130,14 +130,21 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       full_block->compute_legacy_block_message_hash();
 
       break;
-    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p:
+    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed:
       // if we're reading from an uncompressed block, but sending to a peer that wants compressed blocks, 
       // compress it for them
       full_block->compress_block();
-      // the converse, if we're reading a compressed block log serving blocks to a peer who can't accept 
+      break;
+    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed:
+      // if we're reading a compressed block log serving blocks to a peer who can't accept 
       // them, decompress the block
       // TODO: remove this after the hardfork
       full_block->decompress_block();
+      break;
+    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed:
+      // if we're reading a compressed block log serving blocks to a peer who can accept compressed blocks,
+      // but ours is compressed using a dictionary they don't have, recompress our block using no dictionary
+      full_block->alternate_compress_block();
       break;
     default:
       elog("Error: full block added to worker thread with an unrecognized data source");
@@ -200,7 +207,9 @@ namespace
         return blockchain_worker_thread_pool::impl::priority_type::medium;
       case blockchain_worker_thread_pool::data_source_type::locally_produced_block:
         return blockchain_worker_thread_pool::impl::priority_type::high;
-      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p:
+      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed:
+      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed:
+      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed:
         return blockchain_worker_thread_pool::impl::priority_type::low;
       default:
         elog("invalid data source type for block");

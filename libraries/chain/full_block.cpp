@@ -46,6 +46,8 @@ full_block_type::~full_block_type()
   full_block->compressed_block.compressed_bytes = std::move(compressed_bytes);
   full_block->compressed_block.compressed_size = compressed_size;
   full_block->has_compressed_block.store(true, std::memory_order_release);
+  if (!compression_attributes.dictionary_number)
+    full_block->has_alternate_compressed_block.store(true, std::memory_order_release);
 
   if (block_id)
   {
@@ -208,6 +210,11 @@ bool full_block_type::has_compressed_block_data() const
   return has_compressed_block.load(std::memory_order_relaxed); 
 }
 
+std::optional<uint8_t> full_block_type::get_best_available_zstd_compression_dictionary_number() const
+{
+  return hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(get_block_num());
+}
+
 void full_block_type::compress_block() const
 {
   std::lock_guard<std::mutex> guard(compressed_block_mutex);
@@ -218,7 +225,7 @@ void full_block_type::compress_block() const
 
     fc::time_point start = fc::time_point::now();
 
-    std::optional<uint8_t> dictionary_number_to_use = hive::chain::get_best_available_zstd_compression_dictionary_number_for_block(get_block_num());
+    std::optional<uint8_t> dictionary_number_to_use = get_best_available_zstd_compression_dictionary_number();
     std::tie(compressed_block.compressed_bytes, compressed_block.compressed_size) = 
       block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, dictionary_number_to_use);
     compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
@@ -226,6 +233,25 @@ void full_block_type::compress_block() const
 
     compression_time = fc::time_point::now() - start;
     has_compressed_block.store(true, std::memory_order_release);
+  }
+}
+
+void full_block_type::alternate_compress_block() const
+{
+  std::lock_guard<std::mutex> guard(compressed_block_mutex);
+  if (!has_alternate_compressed_block.load(std::memory_order_consume))
+  {
+    // if we make it here, either we only have an uncompressed version of the block, or we have 
+    // a compressed version of the block that isn't suitable because it has a dictionary.
+    decompress_block(); // force decompression to happen now, if it hasn't happened yet
+
+    fc::time_point start = fc::time_point::now();
+    std::tie(alternate_compressed_block.compressed_bytes, alternate_compressed_block.compressed_size) = 
+      block_log::compress_block_zstd(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size, std::optional<uint8_t>());
+    alternate_compressed_block.compression_attributes.flags = hive::chain::block_log::block_flags::zstd;
+    alternate_compressed_block.compression_attributes.dictionary_number = std::optional<uint8_t>();
+    alternate_compression_time = fc::time_point::now() - start;
+    has_alternate_compressed_block.store(true, std::memory_order_release);
   }
 }
 
@@ -241,6 +267,27 @@ const compressed_block_data& full_block_type::get_compressed_block() const
             (wait_duration)(compression_time));
   }
   return compressed_block;
+}
+
+const compressed_block_data& full_block_type::get_alternate_compressed_block() const
+{
+  // if we already have a block that's compressed with no dictionary, return it
+  if (has_alternate_compressed_block.load(std::memory_order_consume))
+  {
+    if (has_compressed_block.load(std::memory_order_consume) && !compressed_block.compression_attributes.dictionary_number)
+      return compressed_block;
+    return alternate_compressed_block;
+  }
+
+  // otherwise, generate one and return it
+  fc::time_point wait_begin = fc::time_point::now();
+  alternate_compress_block();
+  fc::time_point wait_end = fc::time_point::now();
+  fc::microseconds wait_duration = wait_end - wait_begin;
+  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_alternate_compressed_block(), compression took ${alternate_compression_time}μs",
+          (wait_duration)(alternate_compression_time));
+
+  return alternate_compressed_block;
 }
 
 /* static */ block_id_type full_block_type::construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num)
@@ -324,8 +371,6 @@ const signed_block_header& full_block_type::get_block_header() const
 
   return *decoded_block_storage->block;
 }
-
-
 
 void full_block_type::decode_block() const
 {
