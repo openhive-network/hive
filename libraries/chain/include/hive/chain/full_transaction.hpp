@@ -4,6 +4,7 @@
 #include <hive/protocol/transaction_util.hpp>
 #include <chrono>
 #include <mutex>
+#include <atomic>
 
 namespace hive { namespace chain {
 

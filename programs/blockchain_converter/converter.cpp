@@ -410,14 +410,14 @@ namespace hive { namespace converter {
       }
     }
 
-    _signed_block.transaction_merkle_root = _signed_block.calculate_merkle_root();
+    _signed_block.transaction_merkle_root = _signed_block.legacy_calculate_merkle_root();
 
     // Sign header (using given witness' private key)
     sign_header( _signed_block );
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
-    return _signed_block.id();
+    return _signed_block.legacy_id();
   }
 
   const hp::block_id_type& blockchain_converter::get_converter_head_block_id()const
@@ -459,7 +459,7 @@ namespace hive { namespace converter {
 
   void blockchain_converter::sign_header( hp::signed_block_header& _signed_header )
   {
-    _signed_header.sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+    _signed_header.legacy_sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
