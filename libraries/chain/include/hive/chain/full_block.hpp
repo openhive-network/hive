@@ -40,10 +40,17 @@ class full_block_type
 {
   private:
     // compressed version of the block
+    // we can hold two versions of the compressed block -- the preferred version, which
+    // we will store in the block log and share with capable peers; and an alternate
+    // version which is compresed without a dictionary, that's capable of being shared
+    // with peers that don't have the same compression dictionaries as we do
     mutable std::atomic<bool> has_compressed_block = { false };
+    mutable std::atomic<bool> has_alternate_compressed_block = { false };
     mutable std::mutex compressed_block_mutex;
     mutable compressed_block_data compressed_block;
+    mutable compressed_block_data alternate_compressed_block;
     mutable fc::microseconds compression_time;
+    mutable fc::microseconds alternate_compression_time;
 
     // uncompressed version of the block
     mutable std::atomic<bool> has_uncompressed_block = { false };
@@ -116,8 +123,11 @@ class full_block_type
     uint32_t get_uncompressed_block_size() const;
 
     bool has_compressed_block_data() const;
+    std::optional<uint8_t> get_best_available_zstd_compression_dictionary_number() const;
     void compress_block() const; // immediately compresses the block, called by the worker thread
     const compressed_block_data& get_compressed_block() const; // returns the compressed block (if not already compressed, this compresses the block first)
+    void alternate_compress_block() const;
+    const compressed_block_data& get_alternate_compressed_block() const;
 
     const std::vector<std::shared_ptr<full_transaction_type>>& get_full_transactions() const;
     static checksum_type compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions);

@@ -324,8 +324,10 @@ namespace graphene { namespace net
       bool performing_firewall_check() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_connecting() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_db() const;
+
       bool supports_compressed_blocks() const;
       bool advertise_blocks_by_block_id() const;
+      bool requires_alternate_compression_for_block(const std::shared_ptr<full_block_type>& full_block) const;
     private:
       void send_queued_messages_task();
       void accept_connection_task();

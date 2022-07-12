@@ -97,13 +97,10 @@ namespace graphene { namespace net {
   {
     constexpr size_t COMPRESSED_BLOCK_COMPRESSION_METADATA_SIZE = 2;
   }
-  message::message(const compressed_block_message& msg)
-  {
-    assert(msg.full_block);
-    FC_ASSERT(msg.full_block, "Can't send a block_message when we don't have the full_block");
-    msg_type = compressed_block_message::type;
 
-    const hive::chain::compressed_block_data& compressed_data = msg.full_block->get_compressed_block();
+  message::message(const hive::chain::compressed_block_data& compressed_data)
+  {
+    msg_type = compressed_block_message::type;
 
     // we need two extra bytes to specify whether the block is compressed, and if it is, what dictionary
     // to use to decompress it (same data as is stored in the block_log's index)

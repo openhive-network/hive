@@ -29,6 +29,10 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/reflect/variant.hpp>
 
+namespace hive { namespace chain {
+  struct compressed_block_data;
+} }
+
 namespace graphene { namespace net {
 
   /**
@@ -77,7 +81,7 @@ namespace graphene { namespace net {
      }
 
      message(const block_message& msg);
-     message(const compressed_block_message& msg);
+     message(const hive::chain::compressed_block_data& compressed_data);
      message(const trx_message& msg);
 
      fc::uint160_t id()const

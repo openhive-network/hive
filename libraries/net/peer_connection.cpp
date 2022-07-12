@@ -65,17 +65,16 @@ namespace graphene { namespace net
       if (peer->supports_compressed_blocks())
       {
         // the peer can handle some form of compressed data.
-        const hive::chain::compressed_block_data& compressed_data = full_block->get_compressed_block();
-        // ilog("sending compressed block to peer, compressed bytes: ${compressed_size}, uncompressed bytes: ${uncompressed_size}",
-        //      ("compressed_size", compressed_data.compressed_size)("uncompressed_size", full_block->get_uncompressed_block_size()));
-
-        if (compressed_data.compression_attributes.flags == hive::chain::block_log::block_flags::zstd &&
-            (!compressed_data.compression_attributes.dictionary_number ||  // the block isn't compressed using a dicitonary
-             (peer->last_available_zstd_compression_dictionary_number &&         // or it's one they understand
-              *peer->last_available_zstd_compression_dictionary_number >= *compressed_data.compression_attributes.dictionary_number)))
-          return compressed_block_message(full_block);
+        if (peer->requires_alternate_compression_for_block(full_block))
+        {
+          //fc_ilog(fc::logger::get("default"), "sending ALTERNATE compressed block");
+          return message(full_block->get_alternate_compressed_block());
+        }
+        else
+          return message(full_block->get_compressed_block());
       }
-      return block_message(full_block);
+      else
+        return block_message(full_block);
     }
 
     size_t peer_connection::virtual_queued_block_message::get_size_in_queue()
@@ -545,6 +544,29 @@ namespace graphene { namespace net
     bool peer_connection::advertise_blocks_by_block_id() const
     {
       return core_protocol_version >= GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION;
+    }
+
+    bool peer_connection::requires_alternate_compression_for_block(const std::shared_ptr<full_block_type>& full_block) const
+    {
+      assert(supports_compressed_blocks());
+      if (full_block->has_compressed_block_data())
+      {
+        // the block is already compressed.  If this is compressed using a dictionary, can the peer understand it?
+        const hive::chain::compressed_block_data& compressed_data = full_block->get_compressed_block();
+        return compressed_data.compression_attributes.dictionary_number &&
+               (!last_available_zstd_compression_dictionary_number ||
+                *last_available_zstd_compression_dictionary_number < *compressed_data.compression_attributes.dictionary_number);
+      }
+      else
+      {
+        // the block isn't yet compressed.  Find out if this peer will understand compression
+        // using the default dictionary we'd use, or if we need to compress without a dictionary
+        // for this peer
+        std::optional<uint8_t> default_dictionary = full_block->get_best_available_zstd_compression_dictionary_number();
+        return default_dictionary && 
+               (!last_available_zstd_compression_dictionary_number || 
+                *last_available_zstd_compression_dictionary_number < *default_dictionary);
+      }
     }
 
 } } // end namespace graphene::net
