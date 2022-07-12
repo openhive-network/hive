@@ -2922,7 +2922,6 @@ namespace graphene { namespace net {
       {}
 
       std::shared_ptr<full_block_type> full_block = _delegate->get_full_block(block_id);
-      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p);
       return full_block;
     }
 
@@ -2962,6 +2961,19 @@ namespace graphene { namespace net {
             full_block = get_full_block_by_block_id(item_hash);
           if (full_block)
             last_full_block_sent = full_block;
+
+          // this block may need to be compressed or decompressed before sending to the peer.  If that's the case,
+          // send it over to a worker thread to get started on it
+          if (originating_peer->supports_compressed_blocks())
+          {
+            if (originating_peer->requires_alternate_compression_for_block(full_block))
+              hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
+            else
+              hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
+          }
+          else
+            hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
+
           reply_blocks.push_back(std::move(full_block));
         }
         assert(reply_blocks.size() == fetch_items_message_received.items_to_fetch.size());
