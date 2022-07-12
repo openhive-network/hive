@@ -10,6 +10,7 @@
 #include <fc/variant.hpp>
 
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/full_block.hpp>
 
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/config.hpp>
@@ -78,13 +79,13 @@ namespace detail {
     if( log_out.head() )
     {
       if( !start_block_num ) // If output block log exists than continue
-        start_block_num = log_out.head()->block_num() + 1;
-      else if( start_block_num != log_out.head()->block_num() + 1 )
+        start_block_num = log_out.head()->get_block_num() + 1;
+      else if( start_block_num != log_out.head()->get_block_num() + 1 )
         wlog( "Continue block ${cbn} mismatch with out head block: ${obn} in block log conversion plugin. Make sure you know what you are doing.",
-            ("obn",log_out.head()->block_num())("cbn",start_block_num-1)
+            ("obn",log_out.head()->get_block_num())("cbn",start_block_num-1)
           );
 
-      head_block_time = log_out.head()->timestamp;
+      head_block_time = log_out.head()->get_block_header().timestamp;
     }
     else if( !start_block_num )
     {
@@ -95,33 +96,35 @@ namespace detail {
 
     if( start_block_num > 1 && log_out.head() ) // continuing conversion
     {
-      FC_ASSERT( start_block_num <= log_in.head()->block_num(), "cannot resume conversion from a block that is not in the block_log",
-        ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->block_num()) );
+      FC_ASSERT( start_block_num <= log_in.head()->get_block_num(), "cannot resume conversion from a block that is not in the block_log",
+        ("start_block_num", start_block_num)("log_in_head_block_num", log_in.head()->get_block_num()) );
 
       ilog("Continuing conversion from the block with number ${block_num}", ("block_num", start_block_num));
       ilog("Validating the chain id...");
 
-      last_block_id = log_out.head()->id(); // Required to resume the conversion
+      last_block_id = log_out.head()->get_block_id(); // Required to resume the conversion
 
       // Validate the chain id on conversion resume (in the best-case scenario, the complexity of this check is nearly constant - when the last block in the output block log has transactions with signatures)
       bool chain_id_match = false;
-      uint32_t it_block_num = log_out.head()->block_num();
+      uint32_t it_block_num = log_out.head()->get_block_num();
 
       while( !chain_id_match && it_block_num >= 1 )
       {
         if( appbase::app().is_interrupt_request() ) break;
-        fc::optional< hp::signed_block > block = log_out.read_block_by_num( it_block_num );
-        FC_ASSERT( block.valid(), "unable to read block", ("block_num", it_block_num) );
+        std::shared_ptr<hive::chain::full_block_type> _full_block = log_out.read_block_by_num( it_block_num );
+        FC_ASSERT( _full_block, "unable to read block", ("block_num", it_block_num) );
 
-        if( block->transactions.size() )
-          if( block->transactions.begin()->signatures.size() )
+        const hp::signed_block& block = _full_block->get_block();
+
+        if( block.transactions.size() )
+          if( block.transactions.begin()->signatures.size() )
           {
-            converter.touch(*block);
+            converter.touch(block);
 
-            const auto& trx = *block->transactions.begin();
-            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", trx.id())("block_num", block->block_num()));
+            const auto& trx = *block.transactions.begin();
+            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", trx.id())("block_num", block.block_num()));
 
-            const auto& sig = *block->transactions.begin()->signatures.begin();
+            const auto& sig = *block.transactions.begin()->signatures.begin();
             ilog("Previous signature: ${sig}", ("sig", sig));
 
             const auto sig_other = converter.generate_signature(trx);
@@ -143,30 +146,32 @@ namespace detail {
       dlog("Chain id match");
     }
 
-    if( !stop_block_num || stop_block_num > log_in.head()->block_num() )
-      stop_block_num = log_in.head()->block_num();
+    if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
+      stop_block_num = log_in.head()->get_block_num();
 
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
-      fc::optional< hp::signed_block > block = log_in.read_block_by_num( start_block_num );
-      FC_ASSERT( block.valid(), "unable to read block", ("block_num", start_block_num) );
+      std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+      FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
+
+      hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
+        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", block));
 
-      last_block_id = converter.convert_signed_block( *block, last_block_id, head_block_time, false );
+      last_block_id = converter.convert_signed_block( block, last_block_id, head_block_time, false );
       converter.on_tapos_change();
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
           ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
 
-      log_out.append( *block );
+      log_out.append( hive::chain::full_block_type::create_from_signed_block( block ) );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("After conversion: ${block}", ("block", *block));
+        dlog("After conversion: ${block}", ("block", block));
 
-      head_block_time = block->timestamp;
+      head_block_time = block.timestamp;
     }
 
     if( !appbase::app().is_interrupt_request() )
