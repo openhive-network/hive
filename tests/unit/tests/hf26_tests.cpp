@@ -398,7 +398,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         else
         {
           signed_transaction _tx = _get_trx( executor, { _op2 }, private_key, hive::protocol::pack_type::hf26 );
-          HIVE_REQUIRE_THROW( PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26 ), transaction_serialization_exception );
+          HIVE_REQUIRE_THROW( PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
         }
       };
 

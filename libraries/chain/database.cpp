@@ -4679,7 +4679,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     }
 
     if (!has_hardfork(HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION))
-      HIVE_ASSERT(full_transaction->is_legacy_pack(), transaction_serialization_exception, "legacy serialization must be used until hardfork 26");
+      HIVE_ASSERT(full_transaction->is_legacy_pack(), hive::protocol::transaction_auth_exception, "legacy serialization must be used until hardfork 26");
   }
 
   if( !(skip & (skip_transaction_signatures | skip_authority_check) ) )
