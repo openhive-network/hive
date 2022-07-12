@@ -7,19 +7,23 @@ from .local_tools import store_transaction, verify_correctness_of_generated_tran
 
 STORE_TRANSACTION = False
 
+VERIFY_FUNCTORS = [
+    verify_correctness_of_generated_transaction_bin,
+    verify_correctness_of_generated_transaction_json,
+]
+
+TYPES_OF_SERIALIZATION = [
+    'legacy',
+    'hf26',
+]
+
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_cancel_order(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -36,17 +40,11 @@ def test_cancel_order(replayed_node, wallet_with_type_of_serialization, request,
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_cancel_transfer_from_savings(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -63,17 +61,11 @@ def test_cancel_transfer_from_savings(replayed_node, wallet_with_type_of_seriali
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_change_recovery_account(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -90,17 +82,11 @@ def test_change_recovery_account(replayed_node, wallet_with_type_of_serializatio
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_claim_account_creation(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -117,17 +103,11 @@ def test_claim_account_creation(replayed_node, wallet_with_type_of_serialization
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_claim_account_creation_nonblocking(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -144,17 +124,11 @@ def test_claim_account_creation_nonblocking(replayed_node, wallet_with_type_of_s
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_create_account_with_keys(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -172,17 +146,11 @@ def test_create_account_with_keys(replayed_node, wallet_with_type_of_serializati
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_create_funded_account_with_keys(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
@@ -201,17 +169,11 @@ def test_create_funded_account_with_keys(replayed_node, wallet_with_type_of_seri
 
 
 @pytest.mark.parametrize(
-    'verify_functors', [
-        verify_correctness_of_generated_transaction_bin,
-        verify_correctness_of_generated_transaction_json,
-    ]
+    'verify_functors', VERIFY_FUNCTORS
 )
 @pytest.mark.testnet
 @pytest.mark.parametrize(
-    'wallet_with_type_of_serialization', [
-        'legacy',
-        'hf26',
-    ], indirect=True
+    'wallet_with_type_of_serialization', TYPES_OF_SERIALIZATION, indirect=True
 )
 def test_create_proposal(replayed_node, wallet_with_type_of_serialization, request, verify_functors):
     wallet, type_of_serialization, pattern_name = wallet_with_type_of_serialization
