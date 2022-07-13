@@ -1168,7 +1168,7 @@ namespace detail
       size_t trx_num = 0;
       for( const auto& trx : note.full_block->get_full_transactions() )
       {
-        auto id = trx->get_transaction_id();
+        auto id = trx->get_transaction().id(); //NOTE: using legacy id on purpose, since callback was registered with it
         auto itr = _callbacks.find( id );
         if( itr != _callbacks.end() )
         {
