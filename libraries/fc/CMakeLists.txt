@@ -277,9 +277,7 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
 # begin readline stuff
 find_package(Curses)
 
-if( HIVE_STATIC_BUILD )
-  set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
-endif()
+set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
 find_package(Readline)
 
 file(GLOB HEADERS "include/bts/cli/*.hpp")
