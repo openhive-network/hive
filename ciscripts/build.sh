@@ -20,7 +20,6 @@ cmake \
     -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install-root" \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET} \
-    -DHIVE_STATIC_BUILD=ON \
     -DHIVE_LINT=${HIVE_LINT} \
     -GNinja \
     ..
@@ -28,7 +27,7 @@ echo -e "\e[0Ksection_end:`date +%s`:cmake_section\r\e[0K"
 echo -e "\e[0Ksection_start:`date +%s`:build_section\r\e[0KBuilding with Ninja"
 ninja
 echo -e "\e[0Ksection_end:`date +%s`:build_section\r\e[0K"
-ldd "${BUILD_DIR}/programs/cli_wallet/cli_wallet" # Check HIVE_STATIC_BUILD
+ldd "${BUILD_DIR}/programs/cli_wallet/cli_wallet"
 echo -e "\e[0Ksection_start:`date +%s`:install_section\r\e[0KInstalling with Ninja"
 ninja install
 echo -e "\e[0Ksection_end:`date +%s`:install_section\r\e[0K"
