@@ -46,7 +46,7 @@ namespace detail
         _db( _chain.db() )
       {
         _on_post_apply_block_conn = _db.add_post_apply_block_handler(
-          [&]( const block_notification& note ){ on_post_apply_block( note.block ); },
+          [&]( const block_notification& note ){ on_post_apply_block( note ); },
           appbase::app().get_plugin< hive::plugins::condenser_api::condenser_api_plugin >(),
           0 );
       }
@@ -147,7 +147,7 @@ namespace detail
         (list_rc_direct_delegations)
       )
 
-      void on_post_apply_block( const signed_block& b );
+      void on_post_apply_block( const block_notification& note );
 
       hive::plugins::chain::chain_plugin&                              _chain;
 
@@ -1159,30 +1159,34 @@ namespace detail
     return _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
   }
 
-  void condenser_api_impl::on_post_apply_block( const signed_block& b )
+  void condenser_api_impl::on_post_apply_block( const block_notification& note )
   { try {
     boost::lock_guard< boost::mutex > guard( _mtx );
-    int32_t block_num = int32_t(b.block_num());
+    int32_t block_num = int32_t(note.block_num);
     if( _callbacks.size() )
     {
-      for( size_t trx_num = 0; trx_num < b.transactions.size(); ++trx_num )
+      size_t trx_num = 0;
+      for( const auto& trx : note.full_block->get_full_transactions() )
       {
-        const auto& trx = b.transactions[trx_num];
-        auto id = trx.id();
+        auto id = trx->get_transaction_id();
         auto itr = _callbacks.find( id );
-        if( itr == _callbacks.end() ) continue;
-        itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), false ) );
-        _callbacks.erase( itr );
+        if( itr != _callbacks.end() )
+        {
+          itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), false ) );
+          _callbacks.erase( itr );
+        }
+        ++trx_num;
       }
     }
 
     /// clear all expirations
+    auto block_ts = note.get_block_timestamp();
     while( true )
     {
       auto exp_it = _callback_expirations.begin();
       if( exp_it == _callback_expirations.end() )
         break;
-      if( exp_it->first >= b.timestamp )
+      if( exp_it->first >= block_ts )
         break;
       for( const transaction_id_type& txid : exp_it->second )
       {

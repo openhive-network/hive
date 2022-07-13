@@ -104,13 +104,13 @@ void stats_export_plugin_impl::on_post_apply_block( const block_notification& no
     return;
 
   stats->global_properties = api_dynamic_global_property_object( _db.get_dynamic_global_properties(), _db );
-  for( const signed_transaction& tx : note.block.transactions )
+  for( const auto& tx : note.full_block->get_full_transactions() )
   {
     stats->transaction_stats.emplace_back();
 
     api_stats_transaction_data_object& tx_stats = stats->transaction_stats.back();
-    tx_stats.user = get_transaction_user( tx );
-    tx_stats.size = fc::raw::pack_size( tx );
+    tx_stats.user = get_transaction_user( tx->get_transaction() );
+    tx_stats.size = tx->get_transaction_size();
   }
 
   stats->free_memory = _db.get_free_memory();

@@ -11,14 +11,16 @@ struct block_notification
     block_id(full_block->get_block_id()),
     prev_block_id(full_block->get_block_header().previous),
     block_num(full_block->get_block_num()),
-    block(full_block->get_block())
+    full_block(full_block)
   {
   }
 
-  hive::protocol::block_id_type          block_id;
-  hive::protocol::block_id_type          prev_block_id;
-  uint32_t                               block_num = 0;
-  const hive::protocol::signed_block&    block;
+  fc::time_point_sec get_block_timestamp() const { return full_block->get_block_header().timestamp; }
+
+  hive::protocol::block_id_type           block_id;
+  hive::protocol::block_id_type           prev_block_id;
+  uint32_t                                block_num = 0;
+  const std::shared_ptr<full_block_type>& full_block;
 };
 
 struct transaction_notification

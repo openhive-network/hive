@@ -82,9 +82,9 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
   if ( tracking )
   {
     // Update all status objects with the transaction current block number
-    for ( const auto& e : note.block.transactions )
+    for ( const auto& e : note.full_block->get_full_transactions() )
     {
-      const auto& tx_status_obj = _db.get< transaction_status_object, by_trx_id >( e.id() );
+      const auto& tx_status_obj = _db.get< transaction_status_object, by_trx_id >( e->get_transaction_id() );
 
       _db.modify( tx_status_obj, [&] ( transaction_status_object& obj )
       {
@@ -127,9 +127,8 @@ fc::optional< transaction_id_type > transaction_status_impl::get_earliest_transa
   {
     std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
     FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
-    const signed_block& block = full_block->get_block();
-    if (!block.transactions.empty())
-      return block.transactions.front().id();
+    if( !full_block->get_full_transactions().empty() )
+      return full_block->get_full_transactions().front()->get_transaction_id();
   }
   return {};
 }
@@ -147,9 +146,8 @@ fc::optional< transaction_id_type > transaction_status_impl::get_latest_transact
   {
     std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
     FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
-    const signed_block& block = full_block->get_block();
-    if (!block.transactions.empty())
-      return block.transactions.back().id();
+    if( !full_block->get_full_transactions().empty() )
+      return full_block->get_full_transactions().back()->get_transaction_id();
   }
   return {};
 }
@@ -208,10 +206,10 @@ void transaction_status_impl::rebuild_state()
   {
     std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
     FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
-    for (const auto& transaction : full_block->get_block().transactions)
+    for (const auto& transaction : full_block->get_full_transactions())
       _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
       {
-        obj.transaction_id = transaction.id();
+        obj.transaction_id = transaction->get_transaction_id();
         obj.block_num = block_num;
       } );
   }

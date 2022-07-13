@@ -2265,8 +2265,8 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
         if (balances_changed)
         {
           _balance_csv_file << (string)account.name << ","
-                            << bn.block.block_num() << ","
-                            << bn.block.timestamp.to_iso_string() << ","
+                            << bn.block_num << ","
+                            << bn.get_block_timestamp().to_iso_string() << ","
                             << get_asset_amount(saved_balance_record.hive_balance) << ","
                             << get_asset_amount(saved_balance_record.savings_hive_balance) << ","
                             << get_asset_amount(saved_balance_record.hbd_balance) << ","

@@ -213,7 +213,7 @@ void block_data_export_plugin_impl::create_export_data( const block_notification
   _edo = std::make_shared< api_export_data_object >();
 
   _edo->block_id = note.block_id;
-  _edo->previous = note.block.previous;
+  _edo->previous = note.prev_block_id;
   for( const auto& fact : _factory_list )
   {
     _edo->export_data.emplace( fact.first, fact.second() );

@@ -2472,7 +2472,7 @@ void database::process_delayed_voting( const block_notification& note )
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
     delayed_voting dv( *this );
-    dv.run( note.block.timestamp );
+    dv.run( note.get_block_timestamp() );
   }
 }
 
