@@ -18,25 +18,14 @@ if(ENABLE_PROFILING)
     message( INFO "Profiling enabled" )
 endif()
 
-
-if( HIVE_STATIC_BUILD )
-   target_link_libraries( hived PRIVATE
-      "-static-libstdc++ -static-libgcc"
-      appbase
-      hive_utilities
-      hive_plugins
-      ${CMAKE_DL_LIBS}
-      ${PLATFORM_SPECIFIC_LIBS}
-   )
-else( HIVE_STATIC_BUILD )
-   target_link_libraries( hived PRIVATE
-      appbase
-      hive_utilities
-      hive_plugins
-      ${CMAKE_DL_LIBS}
-      ${PLATFORM_SPECIFIC_LIBS}
-   )
-endif( HIVE_STATIC_BUILD )
+target_link_libraries( hived PRIVATE
+   "-static-libstdc++ -static-libgcc"
+   appbase
+   hive_utilities
+   hive_plugins
+   ${CMAKE_DL_LIBS}
+   ${PLATFORM_SPECIFIC_LIBS}
+)
 
 if( CLANG_TIDY_EXE )
    set_target_properties(

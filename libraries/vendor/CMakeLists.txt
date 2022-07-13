@@ -1,7 +1,7 @@
 # for each subdirectory containing a CMakeLists.txt, add that subdirectory
 
 set(BUILD_SHARED_LIBS OFF)
-set(ROCKSDB_STATIC ${HIVE_STATIC_BUILD})
+set(ROCKSDB_STATIC ON)
 
 #Configure needed build options of RocksDB.
 SET(FAIL_ON_WARNINGS OFF CACHE BOOL "Treat compile warnings as errors")
