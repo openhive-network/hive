@@ -864,7 +864,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     static_assert( HIVE_MAX_SIG_CHECK_ACCOUNTS >= 3 * HIVE_MAX_AUTHORITY_MEMBERSHIP );
 
     fc::flat_map< string, vector<char> > props;
-    props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_SOFT_MAX_BLOCK_SIZE );
+    props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE );
     set_witness_props( props ); //simple tx with maxed authority uses over 300kB
     const auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
 

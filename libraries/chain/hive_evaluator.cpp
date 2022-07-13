@@ -73,7 +73,7 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   FC_TODO( "Check and move this to validate after HF 20" );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2642 ) )
   {
-    FC_ASSERT( o.props.maximum_block_size <= HIVE_SOFT_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
+    FC_ASSERT( o.props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
   }
 
   const auto& by_witness_name_idx = _db.get_index< witness_index >().indices().get< by_name >();

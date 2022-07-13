@@ -324,8 +324,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC (60*60*24*30)
 #define HIVE_MAX_TRANSACTION_SIZE             (1024*64)
 #define HIVE_MIN_BLOCK_SIZE_LIMIT             (HIVE_MAX_TRANSACTION_SIZE)
-#define HIVE_MAX_BLOCK_SIZE                   (HIVE_MAX_TRANSACTION_SIZE*HIVE_BLOCK_INTERVAL*2000)
-#define HIVE_SOFT_MAX_BLOCK_SIZE              (2*1024*1024)
+#define HIVE_MAX_BLOCK_SIZE              (2*1024*1024)
 #define HIVE_MIN_BLOCK_SIZE                   115
 #define HIVE_BLOCKS_PER_HOUR                  (60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_FEED_INTERVAL_BLOCKS             (HIVE_BLOCKS_PER_HOUR)
