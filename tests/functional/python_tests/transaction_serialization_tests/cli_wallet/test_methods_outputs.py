@@ -32,9 +32,6 @@ def remote_node_wallet(http_endpoint, ws_endpoint, wallet_path):
 
 
 WALLET_API_METHODS = [
-    ('gethelp', ('get_block',)),
-    # ('about', ()),  #  should not be tested, output is changing in time
-    ('help', ()),
     ('is_new', ()),
     ('is_locked', ()),
     ('list_keys', ()),
@@ -50,8 +47,6 @@ WALLET_API_METHODS = [
     ('get_prototype_operation', ('account_create_operation',)),
     ('get_active_witnesses', ()),
     ('get_transaction', ('82d2c772db5312024f572c9dfbe926e45391f8e9',)),
-    # ('get_private_key', ()),  # unknown key, cause exception
-    # ('get_private_key_from_password', ()),  # unknown key, cause exception
     ('list_my_accounts', ()),  # work but return nothing ( there no acccount created with this wallet)
     ('get_conversion_requests', ('gtg',)),  # work but return nothing
     ('get_collateralized_conversion_requests', ('gtg',)),  # work but return nothing
