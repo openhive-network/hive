@@ -37,8 +37,7 @@ class block_log_info_plugin_impl
 
 void block_log_info_plugin_impl::on_post_apply_block( const block_notification& note )
 {
-  const signed_block& b = note.block;
-  uint32_t block_num = b.block_num();
+  uint32_t block_num = note.block_num;
   bool is_genesis = (block_num == 1);
 
   if( is_genesis )
@@ -53,7 +52,7 @@ void block_log_info_plugin_impl::on_post_apply_block( const block_notification& 
 
   if( (print_interval_seconds > 0) && !is_genesis )
   {
-    current_interval = b.timestamp.sec_since_epoch() / print_interval_seconds;
+    current_interval = note.get_block_timestamp().sec_since_epoch() / print_interval_seconds;
     if( current_interval != state.last_interval )
     {
       block_log_message_data data;
@@ -90,7 +89,8 @@ void block_log_info_plugin_impl::on_post_apply_block( const block_notification& 
 
 
   uint64_t offset = state.total_size;
-  std::vector< char > data = fc::raw::pack_to_vector( b );
+  const auto& block_bytes = note.full_block->get_uncompressed_block();
+  std::vector< char > data( block_bytes.raw_bytes.get(), block_bytes.raw_bytes.get() + block_bytes.raw_size );
   for( int i=0; i<8; i++ )
   {
     data.push_back( (char) (offset & 0xFF) );

@@ -221,7 +221,7 @@ void sps_processor::update_settings( const time_point_sec& head_time )
 
 void sps_processor::remove_old_proposals( const block_notification& note )
 {
-  auto head_time = note.block.timestamp;
+  auto head_time = note.get_block_timestamp();
 
   if( db.get_benchmark_dumper().is_enabled() )
     db.get_benchmark_dumper().begin();
@@ -234,7 +234,7 @@ void sps_processor::remove_old_proposals( const block_notification& note )
 
 void sps_processor::make_payments( const block_notification& note )
 {
-  auto head_time = note.block.timestamp;
+  auto head_time = note.get_block_timestamp();
 
   //Check maintenance period
   if( !is_maintenance_period( head_time ) )
@@ -302,7 +302,7 @@ void sps_processor::run( const block_notification& note )
 
 void sps_processor::record_funding( const block_notification& note )
 {
-  if( !is_maintenance_period( note.block.timestamp ) )
+  if( !is_maintenance_period( note.get_block_timestamp() ) )
     return;
 
   const auto& props = db.get_dynamic_global_properties();
@@ -321,14 +321,15 @@ void sps_processor::record_funding( const block_notification& note )
 
 void sps_processor::convert_funds( const block_notification& note )
 {
-  if( !is_daily_maintenance_period( note.block.timestamp ))
+  auto block_ts = note.get_block_timestamp();
+  if( !is_daily_maintenance_period( block_ts ))
     return;
 
   db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
   {
     //shifting from current time instead of proper maintenance time causes drift
     //when maintenance block was missed, but the fix is problematic - see MR!168 for details
-    _dgpo.next_daily_maintenance_time = note.block.timestamp + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
+    _dgpo.next_daily_maintenance_time = block_ts + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 
   const auto &treasury_account = db.get_treasury();

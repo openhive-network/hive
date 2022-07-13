@@ -482,7 +482,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     export_data->block = block_info;
   else if( debug_print )
     dlog( "${b} : ${i}", ( "b", gpo.head_block_number )( "i", block_info ) );
-} FC_CAPTURE_AND_RETHROW( (note.block) ) }
+} FC_CAPTURE_AND_RETHROW( (note.full_block->get_block()) ) }
 
 void rc_plugin_impl::on_first_block()
 {
