@@ -331,7 +331,9 @@ IF(APPLE)
   # just always try to link it in on mac.
   find_package( ZLIB REQUIRED )
 ELSE(APPLE)
+  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   find_package( ZLIB )
+  set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
 ENDIF(APPLE)
 
 if( ZLIB_FOUND )
