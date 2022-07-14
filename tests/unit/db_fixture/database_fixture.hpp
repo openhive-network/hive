@@ -48,7 +48,7 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
   op.field = value; \
   trx.operations.back() = op; \
   op.field = temp; \
-  db.push_transaction( trx, ~0 ); \
+  push_transaction( trx, ~0 ); \
 }
 
 /*#define HIVE_REQUIRE_THROW( expr, exc_type )            \
@@ -118,7 +118,7 @@ do {                                                              \
   op.field = value; \
   trx.operations.back() = op; \
   op.field = bak; \
-  HIVE_REQUIRE_THROW(db.push_transaction(trx, ~0), exc_type); \
+  HIVE_REQUIRE_THROW(push_transaction(trx, ~0), exc_type); \
 }
 
 #define REQUIRE_THROW_WITH_VALUE( op, field, value ) \
@@ -196,22 +196,22 @@ TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  db->push_transaction( tx, 0 ); \
+  push_transaction( tx, 0 ); \
 }
 
 #define PUSH_OP_TWICE(OP,KEY) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  db->push_transaction( tx, 0 ); \
-  db->push_transaction( tx, database::skip_transaction_dupe_check ); \
+  push_transaction( tx, 0 ); \
+  push_transaction( tx, database::skip_transaction_dupe_check ); \
 }
 
 #define FAIL_WITH_OP(OP,KEY,EXCEPTION) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), EXCEPTION ); \
+  HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), EXCEPTION ); \
 }
 
 namespace hive { namespace chain {
