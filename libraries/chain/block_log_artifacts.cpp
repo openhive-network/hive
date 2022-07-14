@@ -6,6 +6,8 @@
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/io_primitives.hpp>
 
+#include <appbase/application.hpp>
+
 #include <fc/bitutil.hpp>
 
 #include <fcntl.h>
@@ -447,6 +449,9 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
     [this, first_block, last_block, blocks_per_thread, &source_block_provider, &artifacts_to_collect, &spawned_threads, &rest]
     (uint32_t block_num, uint32_t block_size, uint64_t block_pos, const block_attributes_t& block_attrs) -> bool
     {
+      if (appbase::app().is_interrupt_request())
+        return false;
+
       /// Since here is backward processing direction lets ignore and stop for all blocks excluded from requested range
       if (block_num < first_block)
         return false;
@@ -486,6 +491,12 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
       return true;
     }
     );
+  if (appbase::app().is_interrupt_request())
+  {
+    ilog("Aborted artifact file generation");
+    return;
+  }
+
 
   ilog("${thread_count} threads spawned - waiting for their work finish...", ("thread_count", spawned_threads.size()));
 
@@ -499,13 +510,21 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
       ilog("Waiting for thread #${t} finish...", ("t", tid));
 
       thread_data_t& thread_data = thread_info.second;
-      worker_thread_result result = thread_data.second.get();
+      try
+      {
+        worker_thread_result result = thread_data.second.get();
+
+        ilog("Thread #${t} finished...", ("t", tid));
+
+        flush_data_chunks(result.first, result.second);
+      }
+      catch (const fc::exception& e)
+      {
+        if (!appbase::app().is_interrupt_request())
+          throw;
+      }
 
       t.join();
-
-      ilog("Thread #${t} finished...", ("t", tid));
-
-      flush_data_chunks(result.first, result.second);
     }
     catch (const fc::exception& e)
     {
@@ -517,6 +536,12 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
       ilog("Thread #${t} failed with exception: ${e}...", ("t", tid)("e", e.what()));
       throw;
     }
+  }
+
+  if (!appbase::app().is_interrupt_request())
+  {
+    ilog("Artifact generation aborted");
+    return;
   }
 
   ilog("All threads finished...");
@@ -561,6 +586,8 @@ void block_log_artifacts::impl::woker_thread_body(const block_log& block_provide
     uint32_t first_block_num = 0;
     for (auto artifactI = data.rbegin(); artifactI != data.rend(); ++artifactI)
     {
+      if (appbase::app().is_interrupt_request())
+        FC_THROW("worker thread exiting due to user abort");
       auto& a = *artifactI;
       std::shared_ptr<full_block_type> full_block = block_provider.read_block_by_offset(a.block_log_file_pos, a.block_serialized_data_size, a.attributes);
       a.block_id = full_block->get_block_id();
