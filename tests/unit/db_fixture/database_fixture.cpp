@@ -1037,7 +1037,7 @@ void push_invalid_operation(const operation& invalid_op, const fc::ecc::private_
   tx.operations.push_back( invalid_op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.sign( key, db->get_chain_id(), fc::ecc::bip_0062 );
-  HIVE_REQUIRE_THROW( push_transaction( tx, database::skip_transaction_dupe_check ), fc::assert_exception );
+  HIVE_REQUIRE_THROW( test::_push_transaction( *db, tx, database::skip_transaction_dupe_check ), fc::assert_exception );
 }
 
 template< typename T >

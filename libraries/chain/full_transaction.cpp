@@ -372,8 +372,11 @@ void set_chain_id_for_transaction_signature_validation(const chain_id_type& chai
 
 const transaction_signature_validation_rules_type& get_transaction_signature_validation_rules_at_time(fc::time_point_sec time)
 {
-#ifdef USE_ALTERNATE_CHAIN_ID
-  // testnet -- always uses the same chain_id, so no change of behavior at hf 1.24
+#ifdef IS_TEST_NET
+  // testnet -- we can't rely on time because in unit tests it will be close to genesis, but also hardforks are activated at different times manually
+  return post_hf_0_20_rules; //this is bad but better than rules for mirrornet
+#elif USE_ALTERNATE_CHAIN_ID
+  // mirrornet -- always uses the same chain_id, so no change of behavior at hf 1.24
   return time.sec_since_epoch() > HIVE_HARDFORK_0_20_ACTUAL_TIME ? post_hf_0_20_rules : pre_hf_0_20_rules;
 #else
   // mainnet rules
