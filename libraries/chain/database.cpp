@@ -4609,7 +4609,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
-  transaction_notification note(full_transaction->get_transaction(), full_transaction->get_transaction_id());
+  transaction_notification note( full_transaction );
   BOOST_SCOPE_EXIT(this_) { this_->_current_trx_id = transaction_id_type(); } BOOST_SCOPE_EXIT_END
   _current_trx_id = full_transaction->get_transaction_id();
   const transaction_id_type& trx_id = full_transaction->get_transaction_id();

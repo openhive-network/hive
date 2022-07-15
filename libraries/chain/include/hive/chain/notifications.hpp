@@ -2,6 +2,7 @@
 
 #include <hive/protocol/block.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/full_transaction.hpp>
 
 namespace hive { namespace chain {
 
@@ -25,13 +26,15 @@ struct block_notification
 
 struct transaction_notification
 {
-  transaction_notification(const hive::protocol::signed_transaction& transaction, const hive::protocol::transaction_id_type& transaction_id) :
-    transaction_id(transaction_id),
-    transaction(transaction)
+  transaction_notification( const std::shared_ptr<full_transaction_type>& full_transaction ) :
+    transaction_id(full_transaction->get_transaction_id()),
+    transaction(full_transaction->get_transaction()),
+    full_transaction(full_transaction)
   {}
 
-  hive::protocol::transaction_id_type          transaction_id;
-  const hive::protocol::signed_transaction&    transaction;
+  hive::protocol::transaction_id_type           transaction_id;
+  const hive::protocol::signed_transaction&     transaction;
+  const std::shared_ptr<full_transaction_type>& full_transaction;
 };
 
 struct operation_notification
