@@ -199,14 +199,13 @@ struct chain_plugin_impl::write_request_visitor
   write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
 
   chain_plugin_impl& cp;
-  uint32_t  skip = 0;
-  fc::exception_ptr* except;
+  write_context* cxt = nullptr;
 
   uint32_t pushed_transaction_counter = 0;
 
-  typedef bool result_type;
+  typedef void result_type;
 
-  bool operator()(const std::shared_ptr<hive::chain::full_block_type>& full_block)
+  void operator()(const std::shared_ptr<hive::chain::full_block_type>& full_block)
   {
     bool result = false;
 
@@ -214,23 +213,25 @@ struct chain_plugin_impl::write_request_visitor
     {
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      result = cp.db.push_block(full_block, skip);
+      result = cp.db.push_block(full_block, cxt->skip);
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
     catch (const fc::exception& e)
     {
-      *except = e.dynamic_copy_exception();
+      cxt->except = e.dynamic_copy_exception();
     }
     catch (...)
     {
-      *except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing block."), std::current_exception());
+      cxt->except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing block."), std::current_exception());
     }
 
-    return result;
+    cxt->success = result;
+    request_promise_visitor prom_visitor;
+    cxt->prom_ptr.visit( prom_visitor );
   }
 
-  bool operator()( const std::shared_ptr<full_transaction_type>& full_transaction )
+  void operator()( const std::shared_ptr<full_transaction_type>& full_transaction )
   {
     bool result = false;
 
@@ -246,18 +247,20 @@ struct chain_plugin_impl::write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      *except = e.dynamic_copy_exception();
+      cxt->except = e.dynamic_copy_exception();
     }
     catch( ... )
     {
       elog("Unknown exception while pushing transaction.");
-      *except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing transaction."), std::current_exception());
+      cxt->except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing transaction."), std::current_exception());
     }
 
-    return result;
+    cxt->success = result;
+    request_promise_visitor prom_visitor;
+    cxt->prom_ptr.visit( prom_visitor );
   }
 
-  bool operator()( generate_block_request* req )
+  void operator()( generate_block_request* req )
   {
     bool result = false;
 
@@ -277,14 +280,16 @@ struct chain_plugin_impl::write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      *except = e.dynamic_copy_exception();
+      cxt->except = e.dynamic_copy_exception();
     }
     catch( ... )
     {
-      *except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while generating block."), std::current_exception());
+      cxt->except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while generating block."), std::current_exception());
     }
 
-    return result;
+    cxt->success = result;
+    request_promise_visitor prom_visitor;
+    cxt->prom_ptr.visit( prom_visitor );
   }
 };
 
@@ -303,7 +308,6 @@ void chain_plugin_impl::start_write_processing()
       const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);
       bool is_syncing = true;
       write_request_visitor req_visitor( *this );
-      request_promise_visitor prom_visitor;
 
       /* This loop monitors the write request queue and performs writes to the database. These
         * can be blocks or pending transactions. Because the caller needs to know the success of
@@ -380,10 +384,8 @@ void chain_plugin_impl::start_write_processing()
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
           while (true)
           {
-            req_visitor.skip = cxt->skip;
-            req_visitor.except = &cxt->except;
-            cxt->success = cxt->req_ptr.visit( req_visitor );
-            cxt->prom_ptr.visit( prom_visitor );
+            req_visitor.cxt = cxt;
+            cxt->req_ptr.visit( req_visitor );
 
             ++write_queue_items_processed;
 
