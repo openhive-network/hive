@@ -5,8 +5,14 @@
 
 #include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/io_primitives.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
+
+#include <appbase/application.hpp>
 
 #include <fc/bitutil.hpp>
+#include <fc/thread/thread.hpp>
+
+#include <boost/lockfree/queue.hpp>
 
 #include <fcntl.h>
 
@@ -15,6 +21,8 @@
 #include <map>
 #include <thread>
 #include <vector>
+#include <queue>
+#include <list>
 
 namespace hive { namespace chain {
 
@@ -212,8 +220,6 @@ private:
 
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
   
-  void flush_data_chunks(uint32_t min_block_num, const std::vector<artifacts_t>& data);
-
   typedef std::pair<uint32_t, std::vector<artifacts_t>> worker_thread_result;
 
   static void woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
@@ -423,134 +429,126 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 {
   ilog("Attempting to generate a block artifact file for block range: ${first_block}...${last_block}", (first_block)(last_block));
 
-  uint64_t time_begin = timestamp_ms();
-
   FC_ASSERT(first_block <= last_block, "${first_block} <= ${last_block}", (first_block)(last_block));
 
+  uint64_t time_begin = timestamp_ms();
   uint32_t block_count = last_block - first_block + 1;
 
-  const uint32_t min_blocks_per_thread = 1000;
-  const uint32_t thread_count = block_count > min_blocks_per_thread ? 4 : 1;
-
-  const uint32_t blocks_per_thread = block_count / thread_count;
-  
-  uint32_t rest = block_count - blocks_per_thread*thread_count;
-
-  std::vector<artifacts_t> artifacts_to_collect;
-  artifacts_to_collect.reserve(blocks_per_thread);
-
-  typedef std::pair<std::thread, std::future<worker_thread_result>> thread_data_t;
-
-  std::map<uint32_t, thread_data_t> spawned_threads;
-
-  source_block_provider.for_each_block_position(
-    [this, first_block, last_block, blocks_per_thread, &source_block_provider, &artifacts_to_collect, &spawned_threads, &rest]
-    (uint32_t block_num, uint32_t block_size, uint64_t block_pos, const block_attributes_t& block_attrs) -> bool
-    {
-      /// Since here is backward processing direction lets ignore and stop for all blocks excluded from requested range
-      if (block_num < first_block)
-        return false;
-
-      if (block_num > last_block)
-        return true;
-
-      //dlog("Collecting data: ${b}, block_pos: ${block_pos}, block_size: ${block_size}", ("b", block_num)("block_pos", block_pos)("block_size", block_size));
-
-      artifacts_to_collect.emplace_back(block_attrs, block_pos, block_size);
-
-      /// First spawned thread will also include number of 'rest' blocks.
-      if (artifacts_to_collect.size() == (static_cast<size_t>(blocks_per_thread) + rest))
-      {
-        rest = 0; /// clear rest to give further threads estimated amount of blocks.
-        size_t block_info_count = artifacts_to_collect.size();
-
-        ilog("Collected amount of block data sufficient to start a worker thread...");
-
-        std::promise<worker_thread_result> work_promise;
-        auto worker_thread_future = work_promise.get_future();
-
-        auto emplace_info = spawned_threads.emplace(
-          block_num, std::make_pair(std::thread(woker_thread_body, std::cref(source_block_provider), block_num, std::move(artifacts_to_collect), std::move(work_promise)),
-                                    std::move(worker_thread_future)));
-
-        FC_ASSERT(emplace_info.second);
-
-        const thread_data_t& td = emplace_info.first->second;
-        const std::thread& t = td.first;
-        size_t tid = (size_t)const_cast<std::thread*>(&t);
-
-        ilog("Spawned worker thread #${tid} covering block range:<${block_num}:${last_block}>", (tid)(block_num)
-             ("last_block", block_num + block_info_count - 1));
-      }
-
-      return true;
-    }
-    );
-
-  ilog("${thread_count} threads spawned - waiting for their work finish...", ("thread_count", spawned_threads.size()));
-
-  for (auto& thread_info : spawned_threads)
+  std::mutex queue_mutex;
+  std::condition_variable queue_condition;
+  struct full_block_with_artifacts
   {
-    std::thread& t = thread_info.second.first;
-    size_t tid = (size_t)&t;
+    std::shared_ptr<full_block_type> full_block;
+    uint64_t block_log_file_pos;
+    block_attributes_t attributes;
+  };
 
-    try
+#define ARTIFACTS_LOCKFREE // no locks on the reader side of the queue (reader is always the limiting factor)
+#ifdef ARTIFACTS_LOCKFREE
+  typedef boost::lockfree::queue<full_block_with_artifacts*> queue_type;
+  queue_type full_block_queue{10000};
+  std::atomic<int> queue_size = { 0 }; // approx full_block_queue size
+#else
+  std::queue<full_block_with_artifacts*, std::list<full_block_with_artifacts*>> full_block_queue;
+#endif
+  constexpr int max_blocks_to_prefetch = 10000;
+
+  std::thread writer_thread([&]() {
+    fc::set_thread_name("artifact_writer"); // tells the OS the thread's name
+    fc::thread::current().set_name("artifact_writer"); // tells fc the thread's name for logging
+    std::vector<artifacts_t> plural_of_artifacts;
+    std::optional<fc::time_point> last_million_time;
+    for (;;)
     {
-      ilog("Waiting for thread #${t} finish...", ("t", tid));
+      full_block_with_artifacts* work_raw_ptr = nullptr;
+      {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+#ifdef ARTIFACTS_LOCKFREE
+        while (!appbase::app().is_interrupt_request() && !full_block_queue.pop(work_raw_ptr))
+          queue_condition.wait(lock);
+        if (appbase::app().is_interrupt_request() || !work_raw_ptr)
+          break;
+        queue_size.fetch_sub(1, std::memory_order_relaxed);
+#else
+        while (!appbase::app().is_interrupt_request() && full_block_queue.empty())
+          queue_condition.wait(lock);
+        if (appbase::app().is_interrupt_request())
+          break;
+        work_raw_ptr = full_block_queue.front();
+        full_block_queue.pop();
+        if (!work_raw_ptr)
+          break;
+#endif
+      }
+      queue_condition.notify_one();
 
-      thread_data_t& thread_data = thread_info.second;
-      worker_thread_result result = thread_data.second.get();
+      std::unique_ptr<full_block_with_artifacts> work(work_raw_ptr);
+      store_block_artifacts(work_raw_ptr->full_block->get_block_num(), work_raw_ptr->block_log_file_pos, work_raw_ptr->attributes, work_raw_ptr->full_block->get_block_id());
+      if (work_raw_ptr->full_block->get_block_num() % 1000000 == 0)
+      {
+        if (last_million_time)
+        {
+          fc::microseconds million_duration = fc::time_point::now() - *last_million_time;
+          float blocks_per_usec = 1000000.f / million_duration.count();
+          uint32_t seconds_remaining = work_raw_ptr->full_block->get_block_num() / blocks_per_usec / 1000000;
+          std::ostringstream blocks_per_sec;
+          blocks_per_sec << std::fixed << std::setprecision(2) << (blocks_per_usec * 1000000.f);
+          ilog("Processed block ${block_num} at ${blocks_per_sec} blocks/s, estimated ${seconds_remaining}s remaining", 
+               ("block_num", work_raw_ptr->full_block->get_block_num())
+               ("blocks_per_sec", blocks_per_sec.str())(seconds_remaining));
+        }
+        else
+          ilog("Processed block ${block_num}", ("block_num", work_raw_ptr->full_block->get_block_num()));
 
-      t.join();
-
-      ilog("Thread #${t} finished...", ("t", tid));
-
-      flush_data_chunks(result.first, result.second);
+        last_million_time = fc::time_point::now();
+      }
     }
-    catch (const fc::exception& e)
+  });
+
+  source_block_provider.for_each_block([&](uint32_t block_num, const std::shared_ptr<full_block_type>& full_block, uint64_t block_pos, block_attributes_t attributes) {
+    if (block_num < first_block)
+      return false;
+
+    if (block_num > last_block)
+      return true;
+#ifdef ARTIFACTS_LOCKFREE
+    if (!appbase::app().is_interrupt_request() &&
+        queue_size.load(std::memory_order_relaxed) >= max_blocks_to_prefetch)
     {
-      ilog("Thread #${t} failed with exception: ${e}...", ("t", tid)("e", e.to_detail_string()));
-      throw;
+      std::unique_lock<std::mutex> lock(queue_mutex);
+      while (!appbase::app().is_interrupt_request() && queue_size.load(std::memory_order_relaxed) >= max_blocks_to_prefetch)
+        queue_condition.wait(lock);
     }
-    catch (const std::exception& e)
-    {
-      ilog("Thread #${t} failed with exception: ${e}...", ("t", tid)("e", e.what()));
-      throw;
-    }
+    if (appbase::app().is_interrupt_request())
+      return false;
+
+    full_block_queue.push(new full_block_with_artifacts{full_block, block_pos, attributes});
+    queue_size.fetch_add(1, std::memory_order_relaxed);
+#else
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    while (!appbase::app().is_interrupt_request() && full_block_queue.size() >= max_blocks_to_prefetch)
+      queue_condition.wait(lock);
+    if (appbase::app().is_interrupt_request())
+      return false;
+
+    full_block_queue.push(new full_block_with_artifacts{full_block, block_pos, attributes});
+#endif
+    blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
+    queue_condition.notify_one();
+    return true;
+  });
+  {
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    full_block_queue.push(nullptr); // signal the writer thread that we've processed the last block
+    queue_condition.notify_one();
   }
-
-  ilog("All threads finished...");
-
-  uint64_t time_end = timestamp_ms();
-  auto elapsed_time = time_end - time_begin;
-
-  ilog("Block artifact file generation finished. ${bc} blocks processed in time: ${t} ms", ("bc", block_count)("t", elapsed_time));
-}
-
-void block_log_artifacts::impl::flush_data_chunks(uint32_t min_block_num, const std::vector<artifacts_t>& data)
-{
-  uint64_t time_begin = timestamp_ms();
   
-  uint32_t max_block_num = min_block_num + data.size() - 1;
-  ilog("Attempting to flush ${count} artifact entries collected for block range: <${min_block_num}:${max_block_num}> into target file...",
-       ("count", data.size())(min_block_num)(max_block_num));
-
-  /// warning: data in artifacts container are placed in REVERSED order since block_log processing has backward direction
-  uint32_t processed_block_num = min_block_num;
-  for (auto dataI = data.rbegin(); dataI != data.rend(); ++dataI, ++processed_block_num)
-    store_block_artifacts(processed_block_num, dataI->block_log_file_pos, dataI->attributes, dataI->block_id);
-
-  /// STL has open ("past") end, so iterates once more
-  --processed_block_num;
-
-  FC_ASSERT(processed_block_num == max_block_num, "processed_block_num: ${processed_block_num} vs max_block_num: ${max_block_num} mismatch", 
-            (processed_block_num)(max_block_num));
+  writer_thread.join();
 
   uint64_t time_end = timestamp_ms();
   auto elapsed_time = time_end - time_begin;
 
-  ilog("Flushing ${count} artifact entries for block range: <${min_block_num}:${max_block_num}> finished in time: ${elapsed_time} ms.",
-       ("count", data.size())(min_block_num)(max_block_num)(elapsed_time));
+  ilog("Block artifact file generation finished. ${block_count} blocks processed in time: ${elapsed_time} ms", (block_count)(elapsed_time));
 }
 
 void block_log_artifacts::impl::woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,

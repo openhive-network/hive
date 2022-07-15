@@ -112,6 +112,7 @@ class full_block_type
     const signed_block_header& get_block_header() const;
     const block_id_type& get_block_id() const;
     uint32_t get_block_num() const;
+    bool has_decoded_block_id() const;
 
     void compute_legacy_block_message_hash() const;
     const fc::ripemd160& get_legacy_block_message_hash() const;

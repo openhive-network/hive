@@ -143,7 +143,7 @@ namespace appbase {
 
       void generate_interrupt_request();
 
-      bool is_interrupt_request() const { return _is_interrupt_request; }
+      bool is_interrupt_request() const { return _is_interrupt_request.load(std::memory_order_relaxed); }
 
       std::set< std::string > get_plugins_names() const;
 

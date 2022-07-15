@@ -100,6 +100,15 @@ namespace hive { namespace chain {
       /// Allows to process blocks in REVERSE order.
       void for_each_block_position(block_info_processor_t processor) const;
 
+
+      // for testing, does disk reads in a similar manner to above, but in the FORWARDS order
+      void for_each_block_position_forwards(block_info_processor_t processor) const;
+
+      /// return true to continue processing, false to stop iteration.
+      typedef std::function<bool(uint32_t, const std::shared_ptr<full_block_type>&, uint64_t, block_attributes_t)> block_processor_t;
+      /// processes blocks in REVERSE order
+      void for_each_block(block_processor_t processor) const;
+
     private:
       std::unique_ptr<detail::block_log_impl> my;
   };
