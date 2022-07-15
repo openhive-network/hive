@@ -680,56 +680,7 @@ namespace hive { namespace chain {
     ilog("Block position list walk finished in time: ${et} ms.", ("et", elapsed_time/1000));
   }
 
-  void block_log::for_each_block_position_forwards(block_info_processor_t processor) const
-  {
-    FC_ASSERT(is_open(), "Open block log first !");
-
-    if (my->block_log_size == 0)
-      return; /// Nothing to do for empty block log.
-
-    uint64_t time_begin = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-    std::shared_ptr<full_block_type> head_block = my->head;
-
-    FC_ASSERT(head_block != nullptr);
-
-    uint32_t head_block_num = head_block->get_block_num();
-
-    // memory map for block log
-    char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
-    if (block_log_ptr == (char*)-1)
-      FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
-    if (madvise(block_log_ptr, my->block_log_size, MADV_SEQUENTIAL) == -1)
-      wlog("madvise failed: ${error}", ("error", strerror(errno)));
-
-    // now walk backwards through the block log reading the starting positions of the blocks
-    uint64_t block_pos = 0;
-    uint32_t stride = my->block_log_size / head_block_num;
-    
-    ilog("Attempting to walk over block position list starting from block: ${b}...", ("b", head_block_num));
-
-    for (uint32_t block_num = head_block_num; block_num >= 1 && block_pos < (uint64_t)my->block_log_size; --block_num)
-    {
-      uint64_t data;
-      memcpy(&data, block_log_ptr + block_pos, sizeof(data));
-      if (processor(0, data, block_pos, block_attributes_t()) == false)
-      {
-        ilog("Stopping block position list walk on caller request... Last processed block: ${b}", ("b", block_num));
-        break;
-      }
-      block_pos += stride;
-    }
-
-    if (munmap(block_log_ptr, my->block_log_size) == -1)
-      elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
-
-    uint64_t time_end = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    auto elapsed_time = time_end - time_begin;
-
-    ilog("Block position list walk finished in time: ${et} ms.", ("et", elapsed_time/1000));
-  }
-
-//#define MADVISE_EXPERIMENT
+  // calls your callback with every block, in reverse order
   void block_log::for_each_block(block_processor_t processor) const
   {
     FC_ASSERT(is_open(), "Open block log first!");
@@ -747,51 +698,12 @@ namespace hive { namespace chain {
     char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
     if (block_log_ptr == (char*)-1)
       FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
-#ifdef MADVISE_EXPERIMENT
-    // tell the OS not to try to detect our read patterns, it can't detect something as complicated as reading backwards
-    if (madvise(block_log_ptr, my->block_log_size, MADV_RANDOM) == -1)
-      wlog("madvise failed: ${error}", ("error", strerror(errno)));
-#else
     if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
       wlog("madvise failed: ${error}", ("error", strerror(errno)));
-#endif
     
     // now walk backwards through the block log reading the starting positions of the blocks
     uint64_t block_pos = my->block_log_size - sizeof(uint64_t);
 
-#ifdef MADVISE_EXPERIMENT
-    // conceptually we'll break the file up into one-gigabyte sections.  while we're
-    // processing one, we'll tell the OS that we'll soon need the next section.
-    // once we're done with the current section, tell the OS we don't plan to revisit it.
-    unsigned current_gig = block_pos / (1 << 30);
-    off_t current_gig_offset = (off_t)current_gig * (1 << 30);
-    void* current_gig_start = block_log_ptr + current_gig_offset;
-    size_t current_gig_size = my->block_log_size - current_gig_offset;
-
-    if (current_gig_size)
-    {
-      // preload the current gigabyte
-      ilog("current_gig is ${current_gig}G, current_gig_offset = ${current_gig_offset}", (current_gig)(current_gig_offset));
-      ilog("calling madvise(${current_gig_start}, ${current_gig_size}, MADV_WILLNEED)", 
-           ("current_gig_start", (off_t)current_gig_start)(current_gig_size));
-      if (madvise(current_gig_start, current_gig_size, MADV_WILLNEED) == -1)
-        wlog("madvise failed: ${error}", ("error", strerror(errno)));
-    }
-
-    if (current_gig > 0)
-    {
-      // and the next gigabyte ("next" temporally, meaning earlier in the file)
-      unsigned next_gig = current_gig - 1;
-      off_t next_gig_offset = next_gig * (1 << 30);
-      void* next_gig_start = block_log_ptr + next_gig_offset;
-      size_t next_gig_size = 1 << 30;
-
-      ilog("calling madvise(${next_gig_start}, ${next_gig_size}, MADV_WILLNEED)", 
-           ("next_gig_start", (off_t)next_gig_start)(next_gig_size));
-      if (madvise(next_gig_start, next_gig_size, MADV_WILLNEED) == -1)
-        wlog("madvise failed: ${error}", ("error", strerror(errno)));
-    }
-#endif    
     ilog("Walking over block log starting from block: ${head_block_num}...", (head_block_num));
     
     for (uint32_t block_num = head_block_num; block_num >= 1; --block_num)
@@ -824,36 +736,6 @@ namespace hive { namespace chain {
     
       /// Move to the offset of previous block
       block_pos -= sizeof(uint64_t);
-
-#ifdef MADVISE_EXPERIMENT
-      unsigned new_gig = block_pos / (1 << 30);
-      if (new_gig != current_gig)
-      {
-        ilog("Just walked from ${current_gig}G to ${new_gig}G", (current_gig)(new_gig));
-        ilog("calling madvise(${current_gig_start}, ${current_gig_size}, MADV_DONTNEED)", 
-             ("current_gig_start", (off_t)current_gig_start)(current_gig_size));
-        if (madvise(current_gig_start, current_gig_size, MADV_DONTNEED) == -1)
-          wlog("madvise failed: ${error}", ("error", strerror(errno)));
-
-        current_gig = new_gig;
-        current_gig_offset = current_gig * (1 << 30);
-        current_gig_start = block_log_ptr + current_gig_offset;
-        current_gig_size = 1 << 30;
-
-        if (current_gig > 0)
-        {
-          unsigned next_gig = current_gig - 1;
-          off_t next_gig_offset = next_gig * (1 << 30);
-          void* next_gig_start = block_log_ptr + next_gig_offset;
-          size_t next_gig_size = 1 << 30;
-
-          ilog("calling madvise(${next_gig_start}, ${next_gig_size}, MADV_WILLNEED)", 
-               ("next_gig_start", (off_t)next_gig_start)(next_gig_size));
-          if (madvise(next_gig_start, next_gig_size, MADV_WILLNEED) == -1)
-            wlog("madvise failed: ${error}", ("error", strerror(errno)));
-        }
-      }
-#endif
     }
     
     if (munmap(block_log_ptr, my->block_log_size) == -1)
@@ -864,6 +746,5 @@ namespace hive { namespace chain {
 
     ilog("Block log walk finished in time: ${iteration_duration} s.", ("iteration_duration", iteration_duration.count() / 1000000));
   }
-
 
 } } // hive::chain
