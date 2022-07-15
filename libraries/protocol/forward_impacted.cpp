@@ -431,8 +431,8 @@ struct impacted_balance_collector
 {
   private:
 
-    const bool is_hf01        = false;
-    const uint32_t magnitude  = 1'000'000;
+    const bool is_hardfork_1        = false;
+    const uint32_t VESTS_SCALING_FACTOR  = 1'000'000;
 
     void emplace_back(const protocol::account_name_type& account, const asset& a)
     {
@@ -440,9 +440,9 @@ struct impacted_balance_collector
         There was in the block 905693 a HF1 that generated bunch of virtual operations `vesting_shares_split_operation`( above 5000 ).
         This operation multiplied VESTS by milion for every account.
       */
-      if( !is_hf01 && is_asset_type( a, VESTS_SYMBOL ) )
+      if( !is_hardfork_1 && is_asset_type( a, VESTS_SYMBOL ) )
       {
-        result.emplace_back(account, asset(a.amount * magnitude, a.symbol));
+        result.emplace_back(account, asset(a.amount * VESTS_SCALING_FACTOR, a.symbol));
       }
       else
         result.emplace_back(account, a);
@@ -450,7 +450,7 @@ struct impacted_balance_collector
 
   public:
 
-  impacted_balance_collector(const bool is_hf01): is_hf01( is_hf01 ){}
+  impacted_balance_collector(const bool is_hardfork_1): is_hardfork_1( is_hardfork_1 ){}
 
   impacted_balance_data result;
 
@@ -630,9 +630,9 @@ struct impacted_balance_collector
 
 } /// anonymous
 
-impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hf01)
+impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hardfork_1)
 {
-  impacted_balance_collector collector(is_hf01);
+  impacted_balance_collector collector(is_hardfork_1);
 
   op.visit(collector);
   
