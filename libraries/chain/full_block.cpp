@@ -459,6 +459,12 @@ uint32_t full_block_type::get_block_num() const
   return block_header::num_from_id(get_block_id());
 }
 
+bool full_block_type::has_decoded_block_id() const
+{
+  return has_block_id.load(std::memory_order_consume);
+}
+
+
 void full_block_type::compute_legacy_block_message_hash() const
 {
   std::lock_guard<std::mutex> guard(legacy_block_message_hash_mutex);

@@ -32,6 +32,7 @@ struct blockchain_worker_thread_pool::impl
   // before working on low-priority jobs.
   enum class priority_type { high, medium, low };
   std::array<queue_type, 3> work_queues{queue_type{1000}, queue_type{1000}, queue_type{1000}};
+  std::atomic<unsigned> number_of_items_in_queue;
   std::mutex work_queue_mutex;
   std::condition_variable work_queue_condition_variable;
   std::atomic<bool> running = { true };
@@ -69,6 +70,9 @@ void blockchain_worker_thread_pool::impl::thread_function()
       if (!running.load(std::memory_order_relaxed))
         return;
     }
+
+    --number_of_items_in_queue;
+
     // we have work, take ownership of the pointer
     std::unique_ptr<work_request_type> work_request(work_request_raw_ptr);
 
@@ -146,6 +150,9 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       // but ours is compressed using a dictionary they don't have, recompress our block using no dictionary
       full_block->alternate_compress_block();
       break;
+    case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
+      full_block->decode_block_header();
+      break;
     default:
       elog("Error: full block added to worker thread with an unrecognized data source");
   };
@@ -211,6 +218,8 @@ namespace
       case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed:
       case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed:
         return blockchain_worker_thread_pool::impl::priority_type::low;
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
+        return blockchain_worker_thread_pool::impl::priority_type::high; // nothing else will be running, priority doesn't matter
       default:
         elog("invalid data source type for block");
         return blockchain_worker_thread_pool::impl::priority_type::low;
@@ -243,6 +252,9 @@ void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_bloc
     std::unique_lock<std::mutex> lock(my->work_queue_mutex);
     my->work_queues[(unsigned)priority].push(work_request.release());
   }
+
+  ++my->number_of_items_in_queue;
+  //idump((my->number_of_items_in_queue.load()));
   my->work_queue_condition_variable.notify_one();
 }
 
@@ -256,6 +268,8 @@ void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_tran
     std::unique_lock<std::mutex> lock(my->work_queue_mutex);
     my->work_queues[(unsigned)priority].push(work_request.release());
   }
+
+  ++my->number_of_items_in_queue;
   my->work_queue_condition_variable.notify_one();
 }
 
@@ -278,6 +292,7 @@ void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_p
     std::unique_lock<std::mutex> lock(my->work_queue_mutex);
     std::for_each(work_requests.begin(), work_requests.end(), [&](std::unique_ptr<impl::work_request_type>& work_request) { 
       my->work_queues[(unsigned)priority].push(work_request.release());
+      ++my->number_of_items_in_queue;
     });
   }
   my->work_queue_condition_variable.notify_all();
