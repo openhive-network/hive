@@ -167,21 +167,42 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_waiting_for_work;
 
     fc::optional<fc::time_point> last_myriad_time; // for sync progress
+
+    class request_promise_visitor;
+    class write_request_visitor;
 };
 
-struct write_request_visitor
+struct chain_plugin_impl::request_promise_visitor
 {
-  write_request_visitor() {}
+  request_promise_visitor() {}
 
-  database* db;
+  typedef void result_type;
+
+  // n.b. our visitor functions take a shared pointer to the promise by value
+  // so the promise can't be garbage collected until the set_value() function
+  // has finished exiting.  There's a race where the calling thread wakes up
+  // during the set_value() call and can delete the promise out from under us
+  // unless we hold a reference here.
+  void operator()( fc::promise<void>::ptr t )
+  {
+    t->set_value();
+  }
+
+  void operator()( std::shared_ptr<boost::promise<void>> t )
+  {
+    t->set_value();
+  }
+};
+
+struct chain_plugin_impl::write_request_visitor
+{
+  write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
+
+  chain_plugin_impl& cp;
   uint32_t  skip = 0;
   fc::exception_ptr* except;
-  std::shared_ptr< abstract_block_producer > block_generator;
 
   uint32_t pushed_transaction_counter = 0;
-
-  fc::microseconds* cumulative_time_processing_blocks;
-  fc::microseconds* cumulative_time_processing_transactions;
 
   typedef bool result_type;
 
@@ -193,8 +214,8 @@ struct write_request_visitor
     {
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      result = db->push_block(full_block, skip);
-      *cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
+      result = cp.db.push_block(full_block, skip);
+      cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
     catch (const fc::exception& e)
@@ -217,8 +238,8 @@ struct write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      db->push_transaction( full_transaction );
-      *cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
+      cp.db.push_transaction( full_transaction );
+      cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       result = true;
@@ -242,14 +263,14 @@ struct write_request_visitor
 
     try
     {
-      if( !block_generator )
+      if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      req->full_block = block_generator->generate_block(req->when,
-                                                        req->witness_owner,
-                                                        req->block_signing_private_key,
-                                                        req->skip);
+      req->full_block = cp.block_generator->generate_block(req->when,
+                                                           req->witness_owner,
+                                                           req->block_signing_private_key,
+                                                           req->skip);
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
 
       result = true;
@@ -267,28 +288,6 @@ struct write_request_visitor
   }
 };
 
-struct request_promise_visitor
-{
-  request_promise_visitor(){}
-
-  typedef void result_type;
-
-  // n.b. our visitor functions take a shared pointer to the promise by value
-  // so the promise can't be garbage collected until the set_value() function
-  // has finished exiting.  There's a race where the calling thread wakes up
-  // during the set_value() call and can delete the promise out from under us
-  // unless we hold a reference here.
-  void operator()( fc::promise<void>::ptr t )
-  {
-    t->set_value();
-  }
-  
-  void operator()( std::shared_ptr<boost::promise<void>> t )
-  {
-    t->set_value();
-  }
-};
-
 void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared<std::thread>([&]()
@@ -303,12 +302,7 @@ void chain_plugin_impl::start_write_processing()
 
       const fc::microseconds block_wait_max_time = fc::seconds(10 * HIVE_BLOCK_INTERVAL);
       bool is_syncing = true;
-      write_request_visitor req_visitor;
-      req_visitor.db = &db;
-      req_visitor.block_generator = block_generator;
-      req_visitor.cumulative_time_processing_blocks = &cumulative_time_processing_blocks;
-      req_visitor.cumulative_time_processing_transactions = &cumulative_time_processing_transactions;
-
+      write_request_visitor req_visitor( *this );
       request_promise_visitor prom_visitor;
 
       /* This loop monitors the write request queue and performs writes to the database. These
