@@ -220,11 +220,6 @@ private:
 
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
   
-  typedef std::pair<uint32_t, std::vector<artifacts_t>> worker_thread_result;
-
-  static void woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
-    std::promise<worker_thread_result>);
-
   void truncate_file(uint32_t last_block);
 
   void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description) const
@@ -549,41 +544,6 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
   auto elapsed_time = time_end - time_begin;
 
   ilog("Block artifact file generation finished. ${block_count} blocks processed in time: ${elapsed_time} ms", (block_count)(elapsed_time));
-}
-
-void block_log_artifacts::impl::woker_thread_body(const block_log& block_provider, uint32_t min_block_num, std::vector<artifacts_t> data,
-                                                  std::promise<worker_thread_result> work_promise)
-{
-  try
-  {
-    uint32_t first_block_num = 0;
-    for (auto artifactI = data.rbegin(); artifactI != data.rend(); ++artifactI)
-    {
-      auto& a = *artifactI;
-      std::shared_ptr<full_block_type> full_block = block_provider.read_block_by_offset(a.block_log_file_pos, a.block_serialized_data_size, a.attributes);
-      a.block_id = full_block->get_block_id();
-
-      if (first_block_num == 0)
-      {
-        first_block_num = full_block->get_block_num();
-        FC_ASSERT(first_block_num == min_block_num, "first_block: ${first_block_num} != min_block: ${min_block_num}", (first_block_num)(min_block_num));
-      }
-    }
-
-    work_promise.set_value(std::make_pair(min_block_num, std::move(data)));
-  }
-  catch (...)
-  {
-    try
-    {
-      auto eptr = std::current_exception();
-      work_promise.set_exception(eptr);
-    }
-    catch (...)
-    {
-      elog("Storing exception ptr in the thread promise failed with another exception...");
-    }
-  }
 }
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
