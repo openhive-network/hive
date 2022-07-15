@@ -31,7 +31,7 @@ namespace hive { namespace plugins { namespace rc {
 
 using hive::plugins::block_data_export::block_data_export_plugin;
 
-void count_resources( const optional_automated_action& action, count_resources_result& result );
+void count_resources( const optional_automated_action& action, const size_t size, count_resources_result& result );
 account_name_type get_resource_user( const optional_automated_action& action );
 
 namespace detail {
@@ -322,7 +322,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   rc_transaction_info tx_info;
 
   // How many resources does the transaction use?
-  count_resources( note.transaction, tx_info.usage );
+  count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage );
   if( note.transaction.operations.size() == 1 )
     tx_info.op = note.transaction.operations.front().which();
 
@@ -1138,7 +1138,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   rc_optional_action_info opt_action_info;
 
   // How many resources do the optional actions use?
-  count_resources( note.action, opt_action_info.usage );
+  count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage );
   opt_action_info.op = note.action.which();
 
   // How many RC do these actions cost?

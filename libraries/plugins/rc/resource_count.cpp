@@ -426,12 +426,13 @@ typedef count_operation_visitor count_optional_action_visitor;
 
 void count_resources(
   const signed_transaction& tx,
+  const size_t size,
   count_resources_result& result
   )
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
-  const int64_t tx_size = int64_t( fc::raw::pack_size( tx ) );
+  const int64_t tx_size = int64_t( size );
   count_operation_visitor vtor( size_info, exec_info );
 
   for( const operation& op : tx.operations )
@@ -461,11 +462,12 @@ void count_resources(
 
 void count_resources(
   const optional_automated_action& action,
+  const size_t size,
   count_resources_result& result)
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
-  const int64_t action_size = int64_t( fc::raw::pack_size( action ) );
+  const int64_t action_size = int64_t( size );
   count_optional_action_visitor vtor( size_info, exec_info );
 
   result[ resource_history_bytes ] += action_size;
