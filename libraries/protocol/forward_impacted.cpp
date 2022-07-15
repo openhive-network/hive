@@ -429,77 +429,100 @@ namespace /// anonymous
 */
 struct impacted_balance_collector
 {
+  private:
+
+    const bool is_hf01        = false;
+    const uint32_t magnitude  = 1'000'000;
+
+    void emplace_back(const protocol::account_name_type& account, const asset& a)
+    {
+      /*
+        There was in the block 905693 a HF1 that generated bunch of virtual operations `vesting_shares_split_operation`( above 5000 ).
+        This operation multiplied VESTS by milion for every account.
+      */
+      if( !is_hf01 && is_asset_type( a, VESTS_SYMBOL ) )
+      {
+        result.emplace_back(account, asset(a.amount * magnitude, a.symbol));
+      }
+      else
+        result.emplace_back(account, a);
+    }
+
+  public:
+
+  impacted_balance_collector(const bool is_hf01): is_hf01( is_hf01 ){}
+
   impacted_balance_data result;
 
   typedef void result_type;
 
   void operator()(const fill_vesting_withdraw_operation& o)
   {
-    result.emplace_back(o.to_account, o.deposited);
-    result.emplace_back(o.from_account, -o.withdrawn);
+    emplace_back(o.to_account, o.deposited);
+    emplace_back(o.from_account, -o.withdrawn);
   }
 
   void operator()(const producer_reward_operation& o)
   {
-    result.emplace_back(o.producer, o.vesting_shares);
+    emplace_back(o.producer, o.vesting_shares);
   }
 
   void operator()(const claim_account_operation& o)
   {
-    result.emplace_back(o.creator, -o.fee);
-    result.emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+    emplace_back(o.creator, -o.fee);
+    emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
   }
 
   void operator()(const account_create_operation& o)
   {
-    result.emplace_back(o.creator, -o.fee);
-    result.emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+    emplace_back(o.creator, -o.fee);
+    emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
   }
 
   void operator()(const account_create_with_delegation_operation& o)
   {
-    result.emplace_back(o.creator, -o.fee);
-    result.emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+    emplace_back(o.creator, -o.fee);
+    emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
   }
 
   void operator()(const hardfork_hive_restore_operation& o)
   {
     if(o.hbd_transferred.amount != 0)
     {
-      result.emplace_back(o.account, o.hbd_transferred);
-      result.emplace_back(o.treasury, -o.hbd_transferred);
+      emplace_back(o.account, o.hbd_transferred);
+      emplace_back(o.treasury, -o.hbd_transferred);
     }
     if(o.hive_transferred.amount != 0)
     {
-      result.emplace_back(o.account, o.hive_transferred);
-      result.emplace_back(o.treasury, -o.hive_transferred);
+      emplace_back(o.account, o.hive_transferred);
+      emplace_back(o.treasury, -o.hive_transferred);
     }
   }
 
   void operator()(const fill_recurrent_transfer_operation& o)
   {
-    result.emplace_back(o.to, o.amount);
-    result.emplace_back(o.from, -o.amount);
+    emplace_back(o.to, o.amount);
+    emplace_back(o.from, -o.amount);
   }
 
   void operator()(const fill_transfer_from_savings_operation& o)
   {
-    result.emplace_back(o.to, o.amount);
+    emplace_back(o.to, o.amount);
   }
 
   void operator()(const liquidity_reward_operation& o)
   {
-    result.emplace_back(o.owner, o.payout);
+    emplace_back(o.owner, o.payout);
   }
 
   void operator()(const fill_convert_request_operation& o)
   {
-    result.emplace_back(o.owner, o.amount_out);
+    emplace_back(o.owner, o.amount_out);
   }
 
   void operator()(const fill_collateralized_convert_request_operation& o)
   {
-    result.emplace_back(o.owner, o.excess_collateral);
+    emplace_back(o.owner, o.excess_collateral);
   }
 
   void operator()(const escrow_transfer_operation& o)
@@ -512,25 +535,25 @@ struct impacted_balance_collector
       hbd_spent += o.fee;
 
     if(hive_spent.amount != 0)
-      result.emplace_back(o.from, -hive_spent);
+      emplace_back(o.from, -hive_spent);
   
     if(hbd_spent.amount != 0)
-      result.emplace_back(o.from, -hbd_spent);
+      emplace_back(o.from, -hbd_spent);
   }
 
   void operator()(const escrow_release_operation& o)
   {
     if(o.hive_amount.amount != 0)
-      result.emplace_back(o.receiver, o.hive_amount);
+      emplace_back(o.receiver, o.hive_amount);
 
     if(o.hbd_amount.amount != 0)
-      result.emplace_back(o.receiver, o.hbd_amount);
+      emplace_back(o.receiver, o.hbd_amount);
   }
 
   void operator()(const transfer_operation& o)
   {
-    result.emplace_back(o.from, -o.amount);
-    result.emplace_back(o.to, o.amount);
+    emplace_back(o.from, -o.amount);
+    emplace_back(o.to, o.amount);
   }
 
   void operator()(const transfer_to_vesting_operation& o)
@@ -540,61 +563,61 @@ struct impacted_balance_collector
 
   void operator()(const transfer_to_vesting_completed_operation& o)
   {
-    result.emplace_back(o.to_account, o.vesting_shares_received);
-    result.emplace_back(o.from_account, -o.hive_vested);
+    emplace_back(o.to_account, o.vesting_shares_received);
+    emplace_back(o.from_account, -o.hive_vested);
   }
 
   void operator()(const pow_reward_operation& o)
   {
-    result.emplace_back(o.worker, o.reward);
+    emplace_back(o.worker, o.reward);
   }
 
   void operator()(const limit_order_create_operation& o)
   {
-    result.emplace_back(o.owner, -o.amount_to_sell);
+    emplace_back(o.owner, -o.amount_to_sell);
   }
 
   void operator()(const limit_order_create2_operation& o)
   {
-    result.emplace_back(o.owner, -o.amount_to_sell);
+    emplace_back(o.owner, -o.amount_to_sell);
   }
 
   void operator()(const transfer_to_savings_operation& o)
   {
-    result.emplace_back(o.from, -o.amount);
+    emplace_back(o.from, -o.amount);
   }
 
   void operator()(const fill_order_operation& o)
   {
-    result.emplace_back(o.open_owner, o.current_pays);
-    result.emplace_back(o.current_owner, o.open_pays);
+    emplace_back(o.open_owner, o.current_pays);
+    emplace_back(o.current_owner, o.open_pays);
   }
 
   void operator()(const limit_order_cancelled_operation& o)
   {
-    result.emplace_back(o.seller, o.amount_back);
+    emplace_back(o.seller, o.amount_back);
   }
   
   void operator()(const claim_reward_balance_operation& o)
   {
     if(o.reward_hive.amount != 0)
-      result.emplace_back(o.account, o.reward_hive);
+      emplace_back(o.account, o.reward_hive);
     if(o.reward_hbd.amount != 0)
-      result.emplace_back(o.account, o.reward_hbd);
+      emplace_back(o.account, o.reward_hbd);
     if(o.reward_vests.amount != 0)
-      result.emplace_back(o.account, o.reward_vests);
+      emplace_back(o.account, o.reward_vests);
   }
 
   void operator()(const proposal_pay_operation& o)
   {
-    result.emplace_back(o.receiver, o.payment);
-    result.emplace_back(o.payer, -o.payment);
+    emplace_back(o.receiver, o.payment);
+    emplace_back(o.payer, -o.payment);
   }
 
   void operator()(const sps_convert_operation& o)
   {
-    result.emplace_back(o.fund_account, -o.hive_amount_in);
-    result.emplace_back(o.fund_account, o.hbd_amount_out);
+    emplace_back(o.fund_account, -o.hive_amount_in);
+    emplace_back(o.fund_account, o.hbd_amount_out);
   }
   
 
@@ -607,9 +630,9 @@ struct impacted_balance_collector
 
 } /// anonymous
 
-impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op)
+impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hf01)
 {
-  impacted_balance_collector collector;
+  impacted_balance_collector collector(is_hf01);
 
   op.visit(collector);
   
