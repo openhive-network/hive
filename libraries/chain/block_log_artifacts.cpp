@@ -286,27 +286,20 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
   {
     if (errno == ENOENT)
     {
-      if (read_only)
-      {
-        FC_THROW("Block artifacts file ${_artifact_file_name} is missing, but its creation is disallowed by enforced read-only access.", (_artifact_file_name));
-      }
-      else
-      {
-        wlog("Could not find artifacts file in ${_artifact_file_name}, it will be created and generated from block_log.", (_artifact_file_name));
-        _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);
-        if (_storage_fd == -1)
-          FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
+      wlog("Could not find artifacts file in ${_artifact_file_name}, it will be created and generated from block_log.", (_artifact_file_name));
+      _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0644);
+      if (_storage_fd == -1)
+        FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
-        _header.dirty_close = 1;
-        flush_header();
+      _header.dirty_close = 1;
+      flush_header();
 
-        /// Generate artifacts file only if some blocks are present in pointed block_log.
-        if (head_block_num > 0)
-          generate_file(source_block_provider, 1, head_block_num);
+      /// Generate artifacts file only if some blocks are present in pointed block_log.
+      if (head_block_num > 0)
+        generate_file(source_block_provider, 1, head_block_num);
 
-        _header.head_block_num = head_block_num;
-        flush_header();
-      }
+      _header.head_block_num = head_block_num;
+      flush_header();
     }
     else
     {
