@@ -77,17 +77,17 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       witness::block_producer bp( db );
       db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
-      b = bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      b = GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
 
       // TODO:  Change this test when we correct #406
       // n.b. we generate HIVE_MIN_UNDO_HISTORY+1 extra blocks which will be discarded on save
       for( uint32_t i = 1; ; ++i )
       {
         BOOST_CHECK( db.head_block_id() == b->get_block_id() );
-        //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
-        //BOOST_CHECK( cur_witness != prev_witness );
-        b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
+        b = GENERATE_BLOCK( bp, db.get_slot_time(1), cur_witness,
+          init_account_priv_key, database::skip_nothing );
         BOOST_CHECK( b->get_block_header().witness == cur_witness );
         uint32_t cutoff_height = db.get_last_irreversible_block_num();
         if( cutoff_height >= 200 )
@@ -113,10 +113,9 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       {
         BOOST_CHECK( db.head_block_id() == b->get_block_id() );
 
-        //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
-        //BOOST_CHECK( cur_witness != prev_witness );
-        b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
+        b = GENERATE_BLOCK( bp, db.get_slot_time(1), cur_witness,
+          init_account_priv_key, database::skip_nothing );
       }
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num()+200 );
     }
@@ -143,7 +142,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
       {
         now = db.get_slot_time(1);
         time_stack.push_back( now );
-        auto b = bp.generate_block( now, db.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing );
+        GENERATE_BLOCK( bp, now, db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
       }
       BOOST_CHECK( db.head_block_num() == 5 );
       BOOST_CHECK( db.head_block_time() == now );
@@ -166,7 +166,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
       {
         now = db.get_slot_time(1);
         time_stack.push_back( now );
-        auto b = bp.generate_block( now, db.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing );
+        auto b = GENERATE_BLOCK( bp, now, db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
       }
       BOOST_CHECK( db.head_block_num() == 7 );
     }
@@ -196,20 +197,23 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     for( uint32_t i = 0; i < 10; ++i )
     {
-      auto b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
       try {
         PUSH_BLOCK( db2, b );
       } FC_CAPTURE_AND_RETHROW( ("db2") );
     }
     for( uint32_t i = 10; i < 13; ++i )
     {
-      auto b =  bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
     }
     string db1_tip = db1.head_block_id().str();
     uint32_t next_slot = 3;
     for( uint32_t i = 13; i < 16; ++i )
     {
-      auto b =  bp2.generate_block(db2.get_slot_time(next_slot), db2.get_scheduled_witness(next_slot), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(next_slot), db2.get_scheduled_witness(next_slot),
+        init_account_priv_key, database::skip_nothing );
       next_slot = 1;
       // notify both databases of the new block.
       // only db2 should switch to the new fork, db1 should not
@@ -224,7 +228,8 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db2.head_block_num(), 13u);
     {
-      auto b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
       good_block = b;
       signed_block bad_block = b->get_block();
       bad_block.transactions.emplace_back(signed_transaction());
@@ -280,15 +285,18 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     // db1 : A
     // db2 : B C D
 
-    auto b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
 
     auto alice_id = db1.get_account( "alice" ).get_id();
     BOOST_CHECK( db1.get(alice_id).name == "alice" );
 
-    b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    db1.push_block(b);
-    b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    db1.push_block(b);
+    b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( db1, b );
+    b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( db1, b );
     HIVE_REQUIRE_THROW(db2.get(alice_id), std::exception);
     db1.get(alice_id); /// it should be included in the pending state
     db1.clear_pending(); // clear it so that we can verify it was properly removed from pending state.
@@ -296,8 +304,9 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 
     PUSH_TX( db2, trx );
 
-    b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    db1.push_block(b);
+    b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( db1, b );
 
     BOOST_CHECK( db1.get(alice_id).name == "alice");
     BOOST_CHECK( db2.get(alice_id).name == "alice");
@@ -349,7 +358,8 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
 
     HIVE_CHECK_THROW(PUSH_TX( db1, trx, skip_sigs ), fc::exception);
 
-    auto b = bp1.generate_block( db1.get_slot_time(1), db1.get_scheduled_witness( 1 ), init_account_priv_key, skip_sigs );
+    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, skip_sigs );
     PUSH_BLOCK( db2, b, skip_sigs );
 
     HIVE_CHECK_THROW(PUSH_TX( db1, trx, skip_sigs ), fc::exception);
@@ -374,7 +384,8 @@ BOOST_AUTO_TEST_CASE( tapos )
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
 
-    auto b = bp1.generate_block( db1.get_slot_time(1), db1.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing);
+    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
 
     BOOST_TEST_MESSAGE( "Creating a transaction with reference block" );
     idump((db1.head_block_id()));
@@ -395,7 +406,8 @@ BOOST_AUTO_TEST_CASE( tapos )
     idump((trx));
     PUSH_TX(db1, trx);
     BOOST_TEST_MESSAGE( "Generating a block" );
-    b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
     trx.clear();
 
     transfer_operation t;
@@ -406,9 +418,11 @@ BOOST_AUTO_TEST_CASE( tapos )
     trx.set_expiration( db1.head_block_time() + fc::seconds(2) );
     trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
     idump((trx)(db1.head_block_time()));
-    b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
     idump((b->get_block()));
-    b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
     trx.signatures.clear();
     trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
     BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
@@ -716,7 +730,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
     int miss_blocks = fc::minutes( 1 ).to_seconds() / HIVE_BLOCK_INTERVAL;
     auto witness = db->get_scheduled_witness( miss_blocks );
     auto block_time = db->get_slot_time( miss_blocks );
-    bp.generate_block( block_time , witness, init_account_priv_key, 0 );
+    GENERATE_BLOCK( bp, block_time , witness, init_account_priv_key, 0 );
 
     BOOST_CHECK_EQUAL( db->head_block_num(), init_block_num + 1 );
     BOOST_CHECK( db->head_block_time() == block_time );
@@ -928,28 +942,40 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
     {
       uint32_t head_block_to_check = HIVE_MAX_WITNESSES - 3;
       for( uint32_t i = 0; i < head_block_to_check; ++i )
-        bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      {
+        GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
+      }
 
       db.set_last_irreversible_block_num(db.head_block_num());
-      bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
     }
 
     {
       uint32_t head_block_to_check = (HIVE_MAX_WITNESSES + HIVE_START_MINER_VOTING_BLOCK) / 2;
       for( uint32_t i = db.head_block_num(); i < head_block_to_check; ++i )
-        bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      {
+        GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
+      }
 
       db.set_last_irreversible_block_num(db.head_block_num());
-      bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
     }
 
     {
       uint32_t head_block_to_check = HIVE_START_MINER_VOTING_BLOCK + 3;
       for( uint32_t i = db.head_block_num(); i < head_block_to_check; ++i )
-        bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      {
+        GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
+      }
 
       db.set_last_irreversible_block_num(db.head_block_num());
-      bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
     }
   }
   FC_LOG_AND_RETHROW()

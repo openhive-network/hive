@@ -1667,14 +1667,25 @@ void json_rpc_database_fixture::make_positive_request( std::string& request )
 
 namespace test {
 
+std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
+  const fc::ecc::private_key& _key, uint32_t _skip )
+{
+  new_block_flow_control new_block_ctrl( _block_ts, _wo, _key, _skip );
+  bp.generate_block( &new_block_ctrl );
+  return new_block_ctrl.get_full_block();
+}
+
 bool _push_block( database& db, const signed_block& b, uint32_t skip_flags /* = 0 */ )
 {
-  return db.push_block( hive::chain::full_block_type::create_from_signed_block(b), skip_flags);
+  std::shared_ptr<full_block_type> full_block( hive::chain::full_block_type::create_from_signed_block( b ) );
+  existing_block_flow_control block_ctrl( full_block );
+  return db.push_block( block_ctrl, skip_flags);
 }
 
 bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
 {
-  return db.push_block( b, skip_flags);
+  existing_block_flow_control block_ctrl( b );
+  return db.push_block( block_ctrl, skip_flags);
 }
 
 void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags /* = 0 */, hive::protocol::pack_type pack_type /* = hive::protocol::pack_type::legacy */ )

@@ -15,22 +15,22 @@
 
 namespace hive { namespace plugins { namespace witness {
 
-std::shared_ptr<hive::chain::full_block_type> block_producer::generate_block(fc::time_point_sec when, const chain::account_name_type& witness_owner, const fc::ecc::private_key& block_signing_private_key, uint32_t skip)
+void block_producer::generate_block( chain::new_block_flow_control* new_block_ctrl )
 {
-  std::shared_ptr<hive::chain::full_block_type> result;
-  hive::chain::detail::with_skip_flags(_db, skip, [&]()
+  hive::chain::detail::with_skip_flags( _db, new_block_ctrl->get_skip_flags(), [&]()
+  {
+    try
     {
-      try
-      {
-        result = _generate_block(when, witness_owner, block_signing_private_key);
-      }
-      FC_CAPTURE_AND_RETHROW((witness_owner))
-    });
-  return result;
+      _generate_block( new_block_ctrl, new_block_ctrl->get_block_timestamp(), new_block_ctrl->get_witness_owner(),
+        new_block_ctrl->get_block_signing_private_key() );
+    }
+    FC_CAPTURE_AND_RETHROW( ( new_block_ctrl->get_witness_owner() ) )
+  } );
 }
 
-std::shared_ptr<hive::chain::full_block_type> block_producer::_generate_block(fc::time_point_sec when, const chain::account_name_type& witness_owner, 
-                                                                              const fc::ecc::private_key& block_signing_private_key)
+void block_producer::_generate_block( chain::new_block_flow_control* new_block_ctrl,
+  fc::time_point_sec when, const chain::account_name_type& witness_owner, 
+  const fc::ecc::private_key& block_signing_private_key)
 {
   uint32_t skip = _db.get_node_properties().skip_flags;
   uint32_t slot_num = _db.get_slot_at_time( when );
@@ -68,10 +68,11 @@ std::shared_ptr<hive::chain::full_block_type> block_producer::_generate_block(fc
   // TODO:  Move this to _push_block() so session is restored.
   if( !(skip & chain::database::skip_block_size_check) )
     FC_ASSERT(full_pending_block->get_uncompressed_block_size() <= HIVE_MAX_BLOCK_SIZE );
+  new_block_ctrl->store_produced_block( full_pending_block );
 
   try
   {
-    _db.push_block(full_pending_block, skip);
+    _db.push_block( *new_block_ctrl, skip );
   }
   catch (const fc::exception& e)
   {
@@ -79,8 +80,6 @@ std::shared_ptr<hive::chain::full_block_type> block_producer::_generate_block(fc
          ("block_num", full_pending_block->get_block_num())("block_id", full_pending_block->get_block_id())(e));
     throw;
   }
-
-  return full_pending_block;
 }
 
 void block_producer::adjust_hardfork_version_vote(const chain::witness_object& witness, chain::signed_block_header& pending_block_header)
@@ -113,6 +112,9 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
                                                 std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions)
 {
   // The 4 is for the max size of the transaction vector length
+  //ABW: size of vector can take between 1 and 5 packed bytes, therefore +4 covers potential max (size of empty is already
+  //included in uncorrected pack_size; in practice total_block_size will overshoot actual pack_size by 4 or 3 bytes, maybe
+  //2 bytes if we ever allow blocks big enough to accomodate over 16k transactions (15 or more bits needed for size)
   size_t total_block_size = fc::raw::pack_size(pending_block_header) + 4;
   const auto& gpo = _db.get_dynamic_global_properties();
   uint64_t maximum_block_size = gpo.maximum_block_size; //HIVE_MAX_BLOCK_SIZE;
@@ -136,11 +138,10 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     /// modify current witness so transaction evaluators can know who included the transaction
-    _db.modify(_db.get_dynamic_global_properties(),
-               [&](chain::dynamic_global_property_object& dgp)
-               {
-                 dgp.current_witness = witness_owner;
-               });
+    _db.modify(_db.get_dynamic_global_properties(), [&]( chain::dynamic_global_property_object& dgp )
+    {
+      dgp.current_witness = witness_owner;
+    } );
   }
 
   BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END

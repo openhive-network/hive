@@ -174,7 +174,9 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
-      bool result = chain.accept_block(full_block, sync_mode, (block_producer | force_validate) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures, chain::chain_plugin::lock_type::fc);
+      chain::p2p_block_flow_control p2p_block_ctrl( full_block,
+        ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures );
+      bool result = chain.accept_block( p2p_block_ctrl, sync_mode, chain::chain_plugin::lock_type::fc );
 
       if (!sync_mode)
       {

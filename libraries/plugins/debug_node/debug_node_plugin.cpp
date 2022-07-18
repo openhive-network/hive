@@ -242,7 +242,8 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
         break;
     }
 
-    bp.generate_block( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    hive::chain::new_block_flow_control new_block_ctrl( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    bp.generate_block( &new_block_ctrl );
     ++produced;
     slot = new_slot;
   }

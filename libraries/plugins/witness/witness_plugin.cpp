@@ -442,10 +442,10 @@ namespace detail {
       return block_production_condition::lag;
     }
 
-    std::shared_ptr<full_block_type> full_block = _chain_plugin.generate_block(scheduled_time,
-                                                                               scheduled_witness,
-                                                                               private_key_itr->second,
-                                                                               _production_skip_flags);
+    new_block_flow_control new_block_ctrl( scheduled_time, scheduled_witness,
+      private_key_itr->second, _production_skip_flags );
+    _chain_plugin.generate_block( &new_block_ctrl );
+    const std::shared_ptr<full_block_type>& full_block = new_block_ctrl.get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 
     appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);

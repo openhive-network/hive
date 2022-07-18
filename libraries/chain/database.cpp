@@ -1050,9 +1050,9 @@ bool database::before_last_checkpoint()const
   *
   * @return true if we switched forks as a result of this push.
   */
-bool database::push_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
+bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
 {
-  //fc::time_point begin_time = fc::time_point::now();
+  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const signed_block& new_block = full_block->get_block();
 
   uint32_t block_num = full_block->get_block_num();
@@ -1081,11 +1081,12 @@ bool database::push_block(const std::shared_ptr<full_block_type>& full_block, ui
   bool result;
   detail::with_skip_flags( *this, skip, [&]()
   {
-    detail::without_pending_transactions( *this, std::move(_pending_tx), [&]()
+    detail::without_pending_transactions( *this, block_ctrl, std::move(_pending_tx), [&]()
     {
       try
       {
-        result = _push_block(full_block);
+        result = _push_block( block_ctrl );
+        block_ctrl.on_end_of_apply_block();
       }
       FC_CAPTURE_AND_RETHROW((new_block))
 
@@ -1115,8 +1116,10 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   return;
 }
 
-bool database::_push_block(const std::shared_ptr<full_block_type>& full_block)
+bool database::_push_block( const block_flow_control& block_ctrl )
 { try {
+  const std::shared_ptr< full_block_type >& full_block = block_ctrl.get_full_block();
+
 #ifdef IS_TEST_NET
   FC_ASSERT(full_block->get_block_num() < TESTNET_BLOCK_LIMIT, "Testnet block limit exceeded");
 #endif /// IS_TEST_NET
@@ -1127,6 +1130,7 @@ bool database::_push_block(const std::shared_ptr<full_block_type>& full_block)
   if( !(skip&skip_fork_db) )
   {
     shared_ptr<fork_item> new_head = _fork_db.push_block(full_block);
+    block_ctrl.on_fork_db_insert();
     _maybe_warn_multiple_production( new_head->get_block_num() );
 
     //If the head block from the longest chain does not build off of the current head, we need to switch forks.
@@ -1138,6 +1142,7 @@ bool database::_push_block(const std::shared_ptr<full_block_type>& full_block)
       if (new_head->get_block_num() > head_block_num())
       {
         wlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
+        block_ctrl.on_fork_apply();
         auto branches = _fork_db.fetch_branch_from(new_head->get_block_id(), head_block_id());
 
         // pop blocks until we hit the common ancestor block
@@ -1203,7 +1208,10 @@ bool database::_push_block(const std::shared_ptr<full_block_type>& full_block)
         return true;
       }
       else //the new block is on a fork but lower than our head block, so don't validate it
+      {
+        block_ctrl.on_fork_ignore();
         return false;
+      }
     } //if not building off current head block
   } //if fork checking enabled
 
@@ -1213,6 +1221,7 @@ bool database::_push_block(const std::shared_ptr<full_block_type>& full_block)
     BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
     set_tx_status( database::TX_STATUS_INC_BLOCK );
     auto session = start_undo_session();
+    block_ctrl.on_fork_normal();
     apply_block(full_block, skip);
     session.push();
   }

@@ -14,6 +14,7 @@
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/protocol/asset.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 
@@ -33,6 +34,9 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 
 #define PUSH_BLOCK \
   hive::chain::test::_push_block
+
+#define GENERATE_BLOCK \
+  hive::chain::test::_generate_block
 
 // See below
 #define REQUIRE_OP_VALIDATION_SUCCESS( op, field, value ) \
@@ -609,6 +613,8 @@ struct json_rpc_database_fixture : public database_fixture
 
 namespace test
 {
+  std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
+    const fc::ecc::private_key& _key, uint32_t _skip = 0 );
   bool _push_block( database& db, const signed_block& b, uint32_t skip_flags = 0 );
   bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
   void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
