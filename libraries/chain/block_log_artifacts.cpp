@@ -291,6 +291,7 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
       if (_storage_fd == -1)
         FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
+      _is_writable = true; //we need to be able to write the header since we're creating a new artifacts file
       _header.dirty_close = 1;
       flush_header();
 
