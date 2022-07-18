@@ -446,3 +446,23 @@ transaction_serialization_mainnet_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+message_format_mainnet_5m_tests:
+  extends: .message_format_tests
+  needs:
+    - job: prepare_hived_data_image
+      artifacts: true
+  services:
+    - name: $HIVED_IMAGE_NAME
+      alias: hived-instance
+  variables:
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    NODE_ADDRESS: "hived-instance:8090"
+    HIVED_MODE: "mainnet_5m"
+  timeout: 25min
+  artifacts:
+    reports:
+      junit: tests/api_tests/message_format_tests/report.xml
+  tags:
+    - public-runner-docker
+    - hived-for-tests
