@@ -5742,7 +5742,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             acnt.hbd_last_interest_payment = head_block_time();
 
             if(interest > 0)
-              push_virtual_operation( interest_operation( a.name, interest_paid ) );
+              push_virtual_operation( interest_operation( a.name, interest_paid, true/*is_saved_into_hbd_balance*/ ) );
 
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
             {

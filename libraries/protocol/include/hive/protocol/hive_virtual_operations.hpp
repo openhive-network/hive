@@ -72,11 +72,12 @@ namespace hive { namespace protocol {
 
   struct interest_operation : public virtual_operation
   {
-    interest_operation( const string& o = "", const asset& i = asset(0,HBD_SYMBOL) )
-      :owner(o),interest(i){}
+    interest_operation( const string& o = "", const asset& i = asset(0,HBD_SYMBOL), bool is_saved_into_hbd_balance = false )
+      :owner(o),interest(i),is_saved_into_hbd_balance(is_saved_into_hbd_balance){}
 
     account_name_type owner;
     asset             interest;
+    bool              is_saved_into_hbd_balance;
   };
 
 
@@ -431,7 +432,7 @@ FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(a
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
-FC_REFLECT( hive::protocol::interest_operation, (owner)(interest) )
+FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_hbd_balance) )
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
