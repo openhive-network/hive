@@ -119,7 +119,6 @@ namespace detail
         (get_account_history)
         (broadcast_transaction)
         (broadcast_transaction_synchronous)
-        (broadcast_block)
         (get_followers)
         (get_following)
         (get_follow_count)
@@ -966,14 +965,6 @@ namespace detail
     return p.get_future().get();
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, broadcast_block )
-  {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-
-    return _network_broadcast_api->broadcast_block( { signed_block( args[0].as< legacy_signed_block >() ) } );
-  }
-
   DEFINE_API_IMPL( condenser_api_impl, get_followers )
   {
     FC_ASSERT( false, "Supported by hivemind" );
@@ -1340,7 +1331,6 @@ DEFINE_LOCKLESS_APIS( condenser_api,
   (get_account_references)
   (broadcast_transaction)
   (broadcast_transaction_synchronous)
-  (broadcast_block)
   (get_market_history_buckets)
   (get_ops_in_block)
   (get_account_history)
