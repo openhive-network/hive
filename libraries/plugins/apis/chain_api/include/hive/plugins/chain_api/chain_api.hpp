@@ -38,7 +38,6 @@ class chain_api
     ~chain_api();
 
     DECLARE_API(
-      (push_block)
       (push_transaction) )
     
   private:
