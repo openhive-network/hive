@@ -17,7 +17,6 @@ namespace detail
 
       DECLARE_API_IMPL(
         (broadcast_transaction)
-        (broadcast_block)
       )
 
       bool check_max_block_age( int32_t max_block_age ) const;
@@ -35,17 +34,6 @@ namespace detail
     _p2p.broadcast_transaction(full_transaction);
 
     return broadcast_transaction_return();
-  }
-
-  DEFINE_API_IMPL( network_broadcast_api_impl, broadcast_block )
-  {
-    // TODO: analyze this API -- will it be a problem accepting JSON transactions where the serialization
-    // is not known?  methinks it will
-    std::shared_ptr<hive::chain::full_block_type> full_block = hive::chain::full_block_type::create_from_signed_block(args.block);
-
-    _chain.accept_block(full_block, /*currently syncing*/ false, /*skip*/ chain::database::skip_nothing);
-    _p2p.broadcast_block(full_block);
-    return broadcast_block_return();
   }
 
   bool network_broadcast_api_impl::check_max_block_age( int32_t max_block_age ) const
@@ -73,7 +61,6 @@ network_broadcast_api::~network_broadcast_api() {}
 
 DEFINE_LOCKLESS_APIS( network_broadcast_api,
   (broadcast_transaction)
-  (broadcast_block)
 )
 
 } } } // hive::plugins::network_broadcast_api
