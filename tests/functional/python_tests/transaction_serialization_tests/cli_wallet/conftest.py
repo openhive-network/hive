@@ -33,7 +33,7 @@ def wallet_with_legacy_serialization(node, request):
                                                            '--transaction-serialization=legacy'])
 
 @pytest.fixture
-def wallet_with_nai_serialization(node, request):
+def wallet_with_hf26_serialization(node, request):
     return tt.Wallet(attach_to=node, additional_arguments=[f'--store-transaction={request.fspath.purebasename}',
                                                            '--transaction-serialization=hf26'])
 
