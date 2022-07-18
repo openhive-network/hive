@@ -452,3 +452,29 @@ message_format_mainnet_5m_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+message_format_mainnet_64m_tests:
+  stage: test
+  image: python:3.8-slim-bullseye
+  variables:
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    MAINNET_NODE_64M: "http://hive-6.pl.syncad.com:8092"
+  before_script:
+    - echo "$ACTIVATE_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M"
+    - echo "$ACTIVATE_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M"
+    - echo "HIVED image name $HIVED_IMAGE_NAME"
+    - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
+    - python3 -m ensurepip
+    - export NUMBER_OF_PROCESSES=$(nproc)
+    - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools"
+  script:
+    - cd tests/api_tests/message_format_tests
+    - pip3 install "$CI_PROJECT_DIR/tests/schemas"
+    - pip3 install pytest-timestamper
+    - timeout 20m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} -m mainnet_64m --junitxml="./report.xml" --http-endpoint=${MAINNET_NODE_64M}
+  timeout: 25min
+  artifacts:
+    reports:
+      junit: tests/api_tests/message_format_tests/report.xml
+  tags:
+    - pl-runner-docker
