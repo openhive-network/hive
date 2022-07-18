@@ -6,10 +6,10 @@ from .....local_tools import create_account_and_fund_it
 
 
 @pytest.mark.testnet
-def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_nai_serialization, request):
-    create_and_power_account_and_update_witness(wallet_with_nai_serialization)
+def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_hf26_serialization, request):
+    create_and_power_account_and_update_witness(wallet_with_hf26_serialization)
 
-    path = get_path_to_binary_transaction_stored_from_wallet(wallet_with_nai_serialization, request)
+    path = get_path_to_binary_transaction_stored_from_wallet(wallet_with_hf26_serialization, request)
     bin_transaction = read_binary_file_from_store(path)
 
     # Check is in transaction appear keyword 'TESTS', which means a currency in legacy format.

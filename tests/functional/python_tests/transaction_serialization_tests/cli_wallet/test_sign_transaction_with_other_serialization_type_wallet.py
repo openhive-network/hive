@@ -21,13 +21,13 @@ def test_sign_transaction_with_matching_wallet(wallet):
     wallet.api.sign_transaction(transaction)
 
 
-def test_sign_legacy_transaction_with_nai_wallet(wallet_with_legacy_serialization, wallet_with_nai_serialization):
+def test_sign_legacy_transaction_with_hf26_wallet(wallet_with_legacy_serialization, wallet_with_hf26_serialization):
     legacy_transaction = wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}', broadcast=False)
     with pytest.raises(tt.exceptions.CommunicationError):
-        wallet_with_nai_serialization.api.sign_transaction(legacy_transaction)
+        wallet_with_hf26_serialization.api.sign_transaction(legacy_transaction)
 
 
-def test_sign_nai_transaction_with_legacy_wallet(wallet_with_legacy_serialization, wallet_with_nai_serialization):
-    nai_transaction = wallet_with_nai_serialization.api.create_account('initminer', 'alice', '{}', broadcast=False)
+def test_sign_hf26_transaction_with_legacy_wallet(wallet_with_legacy_serialization, wallet_with_hf26_serialization):
+    hf26_transaction = wallet_with_hf26_serialization.api.create_account('initminer', 'alice', '{}', broadcast=False)
     with pytest.raises(tt.exceptions.CommunicationError):
-        wallet_with_legacy_serialization.api.sign_transaction(nai_transaction)
+        wallet_with_legacy_serialization.api.sign_transaction(hf26_transaction)
