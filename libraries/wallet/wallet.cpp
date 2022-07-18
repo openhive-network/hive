@@ -2647,7 +2647,7 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_order
   op.amount_to_sell = amount_to_sell.value;
   op.min_to_receive = min_to_receive.value;
   op.fill_or_kill = fill_or_kill;
-  op.expiration = expiration_sec ? (fc::time_point::now() + fc::seconds(expiration_sec)) : fc::time_point::maximum();
+  op.expiration = expiration_sec ? ( my->get_dynamic_global_properties().value.time + fc::seconds(expiration_sec)) : fc::time_point::maximum();
 
   signed_transaction tx;
   tx.operations.push_back( op );
