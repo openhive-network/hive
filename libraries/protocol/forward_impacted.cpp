@@ -619,7 +619,35 @@ struct impacted_balance_collector
     emplace_back(o.fund_account, -o.hive_amount_in);
     emplace_back(o.fund_account, o.hbd_amount_out);
   }
-  
+
+  void operator()(const author_reward_operation& o)
+  {
+    if( !o.payout_must_be_claimed )
+    {
+      emplace_back(o.author, o.hbd_payout);
+      emplace_back(o.author, o.hive_payout);
+      emplace_back(o.author, o.vesting_payout);
+    }
+  }
+
+  void operator()(const curation_reward_operation& o)
+  {
+    if( !o.payout_must_be_claimed )
+    {
+      emplace_back(o.curator, o.reward);
+    }
+  }
+
+  void operator()( const account_created_operation& op )
+  {
+    emplace_back(op.new_account_name, op.initial_vesting_shares);
+  }
+
+  void operator()( const interest_operation& op )
+  {
+    if(op.is_saved_into_hbd_balance)
+      emplace_back(op.owner, op.interest);
+  }
 
   template <class T>
   void operator()(const T&) 
