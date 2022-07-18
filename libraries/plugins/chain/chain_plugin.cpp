@@ -69,7 +69,6 @@ typedef fc::static_variant<const p2p_block_flow_control*, transaction_flow_contr
 struct write_context
 {
   write_request_ptr             req_ptr;
-  bool                          success = true;
   promise_ptr                   prom_ptr;
 };
 
@@ -213,14 +212,12 @@ struct chain_plugin_impl::write_request_visitor
 
   void operator()( const p2p_block_flow_control* p2p_block_ctrl )
   {
-    bool result = false;
-
     try
     {
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       on_block( p2p_block_ctrl );
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      result = cp.db.push_block( *p2p_block_ctrl, p2p_block_ctrl->get_skip_flags() );
+      cp.db.push_block( *p2p_block_ctrl, p2p_block_ctrl->get_skip_flags() );
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
@@ -235,15 +232,12 @@ struct chain_plugin_impl::write_request_visitor
     }
     p2p_block_ctrl->on_worker_done();
 
-    cxt->success = result;
     request_promise_visitor prom_visitor;
     cxt->prom_ptr.visit( prom_visitor );
   }
 
   void operator()( transaction_flow_control* tx_ctrl )
   {
-    bool result = false;
-
     try
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
@@ -251,8 +245,6 @@ struct chain_plugin_impl::write_request_visitor
       cp.db.push_transaction( tx_ctrl->get_full_transaction() );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
-
-      result = true;
     }
     catch( const fc::exception& e )
     {
@@ -266,15 +258,12 @@ struct chain_plugin_impl::write_request_visitor
     }
     tx_ctrl->on_worker_done();
 
-    cxt->success = result;
     request_promise_visitor prom_visitor;
     cxt->prom_ptr.visit( prom_visitor );
   }
 
   void operator()( new_block_flow_control* new_block_ctrl )
   {
-    bool result = false;
-
     try
     {
       if( !cp.block_generator )
@@ -284,8 +273,6 @@ struct chain_plugin_impl::write_request_visitor
       on_block( new_block_ctrl );
       cp.block_generator->generate_block( new_block_ctrl );
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
-
-      result = true;
     }
     catch( const fc::exception& e )
     {
@@ -298,7 +285,6 @@ struct chain_plugin_impl::write_request_visitor
     }
     new_block_ctrl->on_worker_done();
 
-    cxt->success = result;
     request_promise_visitor prom_visitor;
     cxt->prom_ptr.visit( prom_visitor );
   }
@@ -1049,7 +1035,7 @@ bool chain_plugin::accept_block( const hive::chain::p2p_block_flow_control& bloc
 
   block_ctrl.rethrow_if_exception();
 
-  return cxt.success;
+  return block_ctrl.forked();
 }
 
 void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, const lock_type lock /* = lock_type::boost */  )
@@ -1140,8 +1126,6 @@ void chain_plugin::generate_block( chain::new_block_flow_control* new_block_ctrl
   generate_block_future.get();
 
   new_block_ctrl->rethrow_if_exception();
-
-  FC_ASSERT( cxt.success, "Block could not be generated" );
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
