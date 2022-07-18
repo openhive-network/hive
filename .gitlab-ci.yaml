@@ -328,7 +328,7 @@ rc_direct_delegations_tests:
   tags:
     - public-runner-docker
 
-message_format_tests:
+message_format_testnet_tests:
   stage: test
   extends: .test_tools_based
   needs:
@@ -338,12 +338,14 @@ message_format_tests:
   variables:
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    NODE_TYPE: "testnet"
   script:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
-    - pip3 install pytest-timestamper
-    - timeout 15m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 20min
+    - pytest --collect-only -q -m "not testnet and not mainnet_5m and not mainnet_64m" | wc -l
+    - timeout 15m pytest -m "not testnet and not mainnet_5m and not mainnet_64m" -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+    - timeout 15m pytest -m ${NODE_TYPE} -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 17min
   artifacts:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
