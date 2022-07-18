@@ -45,28 +45,12 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 
 #define NUM_THREADS 1
 
-struct generate_block_request
-{
-  generate_block_request( const fc::time_point_sec w, const account_name_type& wo, const fc::ecc::private_key& priv_key, uint32_t s ) :
-    when( w ),
-    witness_owner( wo ),
-    block_signing_private_key( priv_key ),
-    skip( s ) {}
-
-  const fc::time_point_sec when;
-  const account_name_type& witness_owner;
-  const fc::ecc::private_key& block_signing_private_key;
-  uint32_t skip;
-  std::shared_ptr<hive::chain::full_block_type> full_block;
-};
-
-typedef fc::static_variant<std::shared_ptr<hive::chain::full_block_type>, std::shared_ptr<full_transaction_type>, generate_block_request*> write_request_ptr;
+typedef fc::static_variant<const p2p_block_flow_control*, std::shared_ptr<full_transaction_type>, new_block_flow_control*> write_request_ptr;
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
 
 struct write_context
 {
   write_request_ptr             req_ptr;
-  uint32_t                      skip = 0;
   bool                          success = true;
   fc::exception_ptr             except;
   promise_ptr                   prom_ptr;
@@ -205,7 +189,7 @@ struct chain_plugin_impl::write_request_visitor
 
   typedef void result_type;
 
-  void operator()(const std::shared_ptr<hive::chain::full_block_type>& full_block)
+  void operator()( const p2p_block_flow_control* p2p_block_ctrl )
   {
     bool result = false;
 
@@ -213,7 +197,7 @@ struct chain_plugin_impl::write_request_visitor
     {
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      result = cp.db.push_block(full_block, cxt->skip);
+      result = cp.db.push_block( *p2p_block_ctrl, p2p_block_ctrl->get_skip_flags() );
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
@@ -260,7 +244,7 @@ struct chain_plugin_impl::write_request_visitor
     cxt->prom_ptr.visit( prom_visitor );
   }
 
-  void operator()( generate_block_request* req )
+  void operator()( new_block_flow_control* new_block_ctrl )
   {
     bool result = false;
 
@@ -270,10 +254,7 @@ struct chain_plugin_impl::write_request_visitor
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      req->full_block = cp.block_generator->generate_block(req->when,
-                                                           req->witness_owner,
-                                                           req->block_signing_private_key,
-                                                           req->skip);
+      cp.block_generator->generate_block( new_block_ctrl );
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
 
       result = true;
@@ -970,9 +951,9 @@ void chain_plugin::connection_count_changed(uint32_t peer_count)
   fc_wlog(fc::logger::get("default"),"peer_count changed: ${peer_count}",(peer_count));
 }
 
-bool chain_plugin::accept_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool currently_syncing, uint32_t skip, const lock_type lock /* = lock_type::boost */)
+bool chain_plugin::accept_block( const hive::chain::p2p_block_flow_control& block_ctrl, bool currently_syncing, const lock_type lock /* = lock_type::boost */)
 {
-  const signed_block& block = full_block->get_block();
+  const signed_block& block = block_ctrl.get_full_block()->get_block();
   if (currently_syncing && block.block_num() % 10000 == 0)
   {
     fc::time_point now = fc::time_point::now();
@@ -998,8 +979,7 @@ bool chain_plugin::accept_block(const std::shared_ptr<hive::chain::full_block_ty
   check_time_in_block(block);
 
   write_context cxt;
-  cxt.req_ptr = full_block;
-  cxt.skip = skip;
+  cxt.req_ptr = &block_ctrl;
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1113,14 +1093,10 @@ std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_acce
 } FC_CAPTURE_AND_RETHROW() }
 
 
-std::shared_ptr<hive::chain::full_block_type> chain_plugin::generate_block(const fc::time_point_sec when,
-                                                                           const account_name_type& witness_owner,
-                                                                           const fc::ecc::private_key& block_signing_private_key,
-                                                                           uint32_t skip)
+void chain_plugin::generate_block( chain::new_block_flow_control* new_block_ctrl )
 {
-  generate_block_request req( when, witness_owner, block_signing_private_key, skip );
   write_context cxt;
-  cxt.req_ptr = &req;
+  cxt.req_ptr = new_block_ctrl;
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
@@ -1138,8 +1114,6 @@ std::shared_ptr<hive::chain::full_block_type> chain_plugin::generate_block(const
     cxt.except->dynamic_rethrow_exception();
 
   FC_ASSERT( cxt.success, "Block could not be generated" );
-
-  return req.full_block;
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )

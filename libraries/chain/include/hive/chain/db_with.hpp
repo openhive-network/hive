@@ -64,8 +64,8 @@ void with_skip_flags(
   */
 struct pending_transactions_restorer
 {
-  pending_transactions_restorer( database& db, std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions )
-    : _db(db), _pending_transactions( std::move(pending_transactions) )
+  pending_transactions_restorer( database& db, const block_flow_control& block_ctrl, std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions )
+    : _db(db), _block_ctrl( block_ctrl ), _pending_transactions( std::move(pending_transactions) )
   {
     _db.clear_pending();
   }
@@ -157,12 +157,16 @@ struct pending_transactions_restorer
         handle_tx(tx);
     } );
 
+    _block_ctrl.on_end_of_processing();
     if (postponed_txs || expired_txs)
+    {
       wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
            (postponed_txs)(applied_txs)(expired_txs));
+    }
   }
 
   database& _db;
+  const block_flow_control& _block_ctrl;
   std::vector<std::shared_ptr<full_transaction_type>> _pending_transactions;
 };
 
@@ -174,10 +178,11 @@ struct pending_transactions_restorer
   */
 template<typename Lambda>
 void without_pending_transactions(database& db,
+                                  const block_flow_control& block_ctrl,
                                   std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions,
                                   Lambda callback)
 {
-    pending_transactions_restorer restorer( db, std::move(pending_transactions) );
+    pending_transactions_restorer restorer( db, block_ctrl, std::move(pending_transactions) );
     callback();
     return;
 }

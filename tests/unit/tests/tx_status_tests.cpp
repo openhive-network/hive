@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::inc_block( expectation::POST_TX ) );
     check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
     //popped transactions are dropped silently as duplicates of those that came with block
-    db->push_block(block);
+    PUSH_BLOCK( *db, block );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating empty block - no popped/pending transactions remain" );
@@ -564,7 +564,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     for( int i = 0; i < 9; ++i )
     {
       auto block = reality1[i];
-      db->push_block(block);
+      PUSH_BLOCK( *db, block );
     }
     //then all blocks from fork are applied one by one
     check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
