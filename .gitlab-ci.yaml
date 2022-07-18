@@ -466,3 +466,20 @@ message_format_mainnet_5m_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+message_format_mainnet_64m_tests:
+  extends: .message_format_tests
+  variables:
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    NODE_ADDRESS: "http://api.fqdn.pl:8092"
+    HIVED_MODE: "mainnet_64m"
+  rules:
+    - if: $ACTIVATE_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M == "TRUE"
+      when: always
+  timeout: 25min
+  artifacts:
+    reports:
+      junit: tests/api_tests/message_format_tests/report.xml
+  tags:
+    - public-runner-docker
+    - hived-for-tests
