@@ -2,6 +2,9 @@
 #include <hive/chain/full_block.hpp>
 
 #include <fc/time.hpp>
+#include <fc/thread/future.hpp>
+
+#include <boost/thread/future.hpp>
 
 namespace hive { namespace chain {
 
@@ -68,12 +71,9 @@ public:
   }
 
   // in case of exception
-  void on_failure( const fc::exception& e ) const
-  {
-    except = e.dynamic_copy_exception();
-  }
+  virtual void on_failure( const fc::exception& e ) const = 0; //call at the start of implementation in subclass
   // at the end of processing in worker thread (called even if there was exception earlier)
-  void on_worker_done() const {}
+  virtual void on_worker_done() const;
 
   const std::shared_ptr<full_block_type>& get_full_block() const { return full_block; }
 
@@ -112,6 +112,7 @@ public:
     block_signing_private_key( _key ), skip( _skip ) {}
   virtual ~new_block_flow_control() = default;
 
+  void attach_promise( const std::shared_ptr<boost::promise<void>>& _p ) { prom = _p; }
   void store_produced_block( const std::shared_ptr<full_block_type>& _block ) { full_block = _block; }
 
   const fc::time_point_sec& get_block_timestamp() const { return block_ts; }
@@ -119,13 +120,27 @@ public:
   const fc::ecc::private_key& get_block_signing_private_key() const { return block_signing_private_key; }
   uint32_t get_skip_flags() const { return skip; }
 
+  virtual void on_failure( const fc::exception& e ) const override final;
+  virtual void on_worker_done() const override
+  {
+    block_flow_control::on_worker_done();
+    trigger_promise();
+  }
+
 protected:
-  virtual const char* buffer_type() const override { return "new"; }
+  virtual const char* buffer_type() const override final { return "new"; }
+
+  void trigger_promise() const
+  {
+    if( prom )
+      prom->set_value();
+  }
 
   fc::time_point_sec block_ts;
   protocol::account_name_type witness_owner;
   fc::ecc::private_key block_signing_private_key;
   uint32_t skip;
+  std::shared_ptr<boost::promise<void>> prom;
 };
 
 /**
@@ -138,12 +153,28 @@ public:
     : block_flow_control( _block ), skip( _skip ) {}
   virtual ~p2p_block_flow_control() = default;
 
+  void attach_promise( const fc::promise<void>::ptr& _p ) { prom = _p; }
+
   uint32_t get_skip_flags() const { return skip; }
 
+  virtual void on_failure( const fc::exception& e ) const override final;
+  virtual void on_worker_done() const override
+  {
+    block_flow_control::on_worker_done();
+    trigger_promise();
+  }
+
 private:
-  virtual const char* buffer_type() const override { return "p2p"; }
+  virtual const char* buffer_type() const override final { return "p2p"; }
+
+  void trigger_promise() const
+  {
+    if( prom )
+      prom->set_value();
+  }
 
   uint32_t skip;
+  fc::promise<void>::ptr prom;
 };
 
 /**
@@ -156,7 +187,9 @@ public:
     : block_flow_control( _block ) {}
   virtual ~existing_block_flow_control() = default;
 
+  virtual void on_failure( const fc::exception& e ) const override final;
+
 protected:
-  virtual const char* buffer_type() const override { return "old"; }
+  virtual const char* buffer_type() const override final { return "old"; }
 };
 } }

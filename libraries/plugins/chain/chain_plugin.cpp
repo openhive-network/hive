@@ -52,8 +52,10 @@ class transaction_flow_control
 public:
   explicit transaction_flow_control( const std::shared_ptr<full_transaction_type>& _tx ) : tx( _tx ) {}
 
+  void attach_promise( promise_ptr _p ) { prom_ptr = _p; }
+
   void on_failure( const fc::exception& ex ) { except = ex.dynamic_copy_exception(); }
-  void on_worker_done() {}
+  void on_worker_done();
 
   const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }
   const fc::exception_ptr& get_exception() const { return except; }
@@ -61,15 +63,49 @@ public:
 
 private:
   std::shared_ptr<full_transaction_type> tx;
-  fc::exception_ptr except;
+  promise_ptr                            prom_ptr;
+  fc::exception_ptr                      except;
+
+  struct request_promise_visitor;
 };
 
-typedef fc::static_variant<const p2p_block_flow_control*, transaction_flow_control*, new_block_flow_control*> write_request_ptr;
+struct transaction_flow_control::request_promise_visitor
+{
+  request_promise_visitor() {}
+
+  typedef void result_type;
+
+  // n.b. our visitor functions take a shared pointer to the promise by value
+  // so the promise can't be garbage collected until the set_value() function
+  // has finished exiting.  There's a race where the calling thread wakes up
+  // during the set_value() call and can delete the promise out from under us
+  // unless we hold a reference here.
+  void operator()( fc::promise<void>::ptr t )
+  {
+    t->set_value();
+  }
+
+  void operator()( std::shared_ptr<boost::promise<void>> t )
+  {
+    t->set_value();
+  }
+};
+
+void transaction_flow_control::on_worker_done()
+{
+  request_promise_visitor prom_visitor;
+  prom_ptr.visit( prom_visitor );
+}
+
+typedef fc::static_variant<
+  std::shared_ptr< p2p_block_flow_control >,
+  transaction_flow_control*,
+  std::shared_ptr< new_block_flow_control >
+> write_request_ptr;
 
 struct write_context
 {
   write_request_ptr             req_ptr;
-  promise_ptr                   prom_ptr;
 };
 
 namespace detail {
@@ -168,30 +204,7 @@ class chain_plugin_impl
 
     fc::optional<fc::time_point> last_myriad_time; // for sync progress
 
-    class request_promise_visitor;
     class write_request_visitor;
-};
-
-struct chain_plugin_impl::request_promise_visitor
-{
-  request_promise_visitor() {}
-
-  typedef void result_type;
-
-  // n.b. our visitor functions take a shared pointer to the promise by value
-  // so the promise can't be garbage collected until the set_value() function
-  // has finished exiting.  There's a race where the calling thread wakes up
-  // during the set_value() call and can delete the promise out from under us
-  // unless we hold a reference here.
-  void operator()( fc::promise<void>::ptr t )
-  {
-    t->set_value();
-  }
-
-  void operator()( std::shared_ptr<boost::promise<void>> t )
-  {
-    t->set_value();
-  }
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -210,14 +223,14 @@ struct chain_plugin_impl::write_request_visitor
     block_ctrl->on_worker_queue_pop();
   }
 
-  void operator()( const p2p_block_flow_control* p2p_block_ctrl )
+  void operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
   {
     try
     {
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
-      on_block( p2p_block_ctrl );
+      on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      cp.db.push_block( *p2p_block_ctrl, p2p_block_ctrl->get_skip_flags() );
+      cp.db.push_block( *p2p_block_ctrl.get(), p2p_block_ctrl->get_skip_flags() );
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
@@ -231,9 +244,6 @@ struct chain_plugin_impl::write_request_visitor
         "Unexpected exception while pushing block." ), std::current_exception() ) );
     }
     p2p_block_ctrl->on_worker_done();
-
-    request_promise_visitor prom_visitor;
-    cxt->prom_ptr.visit( prom_visitor );
   }
 
   void operator()( transaction_flow_control* tx_ctrl )
@@ -257,12 +267,9 @@ struct chain_plugin_impl::write_request_visitor
         "Unexpected exception while pushing transaction." ), std::current_exception() ) );
     }
     tx_ctrl->on_worker_done();
-
-    request_promise_visitor prom_visitor;
-    cxt->prom_ptr.visit( prom_visitor );
   }
 
-  void operator()( new_block_flow_control* new_block_ctrl )
+  void operator()( std::shared_ptr< new_block_flow_control > new_block_ctrl )
   {
     try
     {
@@ -270,8 +277,8 @@ struct chain_plugin_impl::write_request_visitor
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      on_block( new_block_ctrl );
-      cp.block_generator->generate_block( new_block_ctrl );
+      on_block( new_block_ctrl.get() );
+      cp.block_generator->generate_block( new_block_ctrl.get() );
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
     }
     catch( const fc::exception& e )
@@ -284,9 +291,6 @@ struct chain_plugin_impl::write_request_visitor
         "Unexpected exception while generating block."), std::current_exception() ) );
     }
     new_block_ctrl->on_worker_done();
-
-    request_promise_visitor prom_visitor;
-    cxt->prom_ptr.visit( prom_visitor );
   }
 };
 
@@ -967,9 +971,9 @@ void chain_plugin::connection_count_changed(uint32_t peer_count)
   fc_wlog(fc::logger::get("default"),"peer_count changed: ${peer_count}",(peer_count));
 }
 
-bool chain_plugin::accept_block( const hive::chain::p2p_block_flow_control& block_ctrl, bool currently_syncing, const lock_type lock /* = lock_type::boost */)
+bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >& block_ctrl, bool currently_syncing )
 {
-  const signed_block& block = block_ctrl.get_full_block()->get_block();
+  const signed_block& block = block_ctrl->get_full_block()->get_block();
   if (currently_syncing && block.block_num() % 10000 == 0)
   {
     fc::time_point now = fc::time_point::now();
@@ -995,7 +999,7 @@ bool chain_plugin::accept_block( const hive::chain::p2p_block_flow_control& bloc
   check_time_in_block(block);
 
   write_context cxt;
-  cxt.req_ptr = &block_ctrl;
+  cxt.req_ptr = block_ctrl;
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1003,39 +1007,20 @@ bool chain_plugin::accept_block( const hive::chain::p2p_block_flow_control& bloc
     fc_dlog(fc::logger::get("chainlock"), "<-- accept_block_calls_in_progress: ${call_count}", (call_count));
   } BOOST_SCOPE_EXIT_END
 
-  if (lock == lock_type::boost)
+  fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
+  fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
+  fc::future<void> accept_block_future(accept_block_promise);
+  block_ctrl->attach_promise( accept_block_promise );
   {
-    fc_dlog(fc::logger::get("chainlock"), "--> boost accept_block_calls_in_progress: ${call_count}", (call_count));
-    std::shared_ptr<boost::promise<void>> accept_block_promise = std::make_shared<boost::promise<void>>();
-    // note: whether boost's futures are named `future` or `unique_future` depends on the BOOST_THREAD_VERSION,
-    //       if this doesn't compile, see:
-    //       https://www.boost.org/doc/libs/1_78_0/doc/html/thread/build.html#thread.build.configuration.future
-    boost::unique_future<void> accept_block_future(accept_block_promise->get_future());
-    cxt.prom_ptr = accept_block_promise;
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-    }
-    my->queue_condition_variable.notify_one();
-    accept_block_future.get();
+    std::unique_lock<std::mutex> lock(my->queue_mutex);
+    my->write_queue.push(&cxt);
   }
-  else
-  {
-    fc_dlog(fc::logger::get("chainlock"), "--> fc accept_block_calls_in_progress: ${call_count}", (call_count));
-    fc::promise<void>::ptr accept_block_promise(new fc::promise<void>("accept_block"));
-    fc::future<void> accept_block_future(accept_block_promise);
-    cxt.prom_ptr = accept_block_promise;
-    {
-      std::unique_lock<std::mutex> lock(my->queue_mutex);
-      my->write_queue.push(&cxt);
-    }
-    my->queue_condition_variable.notify_one();
-    accept_block_future.wait();
-  }
+  my->queue_condition_variable.notify_one();
+  accept_block_future.wait();
 
-  block_ctrl.rethrow_if_exception();
+  block_ctrl->rethrow_if_exception();
 
-  return block_ctrl.forked();
+  return block_ctrl->forked();
 }
 
 void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, const lock_type lock /* = lock_type::boost */  )
@@ -1055,7 +1040,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
     std::shared_ptr<boost::promise<void>> accept_transaction_promise = std::make_shared<boost::promise<void>>();
     boost::unique_future<void> accept_transaction_future(accept_transaction_promise->get_future());
-    cxt.prom_ptr = accept_transaction_promise;
+    tx_ctrl.attach_promise( accept_transaction_promise );
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1068,7 +1053,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     fc_dlog(fc::logger::get("chainlock"), "--> fc accept_transaction_calls_in_progress: ${call_count}", (call_count));
     fc::promise<void>::ptr accept_transaction_promise(new fc::promise<void>("accept_transaction"));
     fc::future<void> accept_transaction_future(accept_transaction_promise);
-    cxt.prom_ptr = accept_transaction_promise;
+    tx_ctrl.attach_promise( accept_transaction_promise );
     {
       std::unique_lock<std::mutex> lock(my->queue_mutex);
       my->write_queue.push(&cxt);
@@ -1108,14 +1093,14 @@ std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_acce
 } FC_CAPTURE_AND_RETHROW() }
 
 
-void chain_plugin::generate_block( chain::new_block_flow_control* new_block_ctrl )
+void chain_plugin::generate_block( const std::shared_ptr< new_block_flow_control >& new_block_ctrl )
 {
   write_context cxt;
   cxt.req_ptr = new_block_ctrl;
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
-  cxt.prom_ptr = generate_block_promise;
+  new_block_ctrl->attach_promise( generate_block_promise );
 
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);

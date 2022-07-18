@@ -46,10 +46,10 @@ public:
 
   void connection_count_changed(uint32_t peer_count);
   enum class lock_type { boost, fc };
-  bool accept_block( const hive::chain::p2p_block_flow_control& p2p_block_ctrl, bool currently_syncing, const lock_type lock = lock_type::boost);
+  bool accept_block( const std::shared_ptr< p2p_block_flow_control >& p2p_block_ctrl, bool currently_syncing );
   void accept_transaction( const std::shared_ptr<full_transaction_type>& trx, const lock_type lock = lock_type::boost );
   std::shared_ptr<full_transaction_type> determine_encoding_and_accept_transaction( const hive::protocol::signed_transaction& trx, const lock_type lock = lock_type::boost );
-  void generate_block( hive::chain::new_block_flow_control* new_block_ctrl );
+  void generate_block( const std::shared_ptr< new_block_flow_control >& new_block_ctrl );
 
   /**
     * Set a class to be called for block generation.
