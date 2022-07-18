@@ -293,7 +293,7 @@ rc_direct_delegations_tests:
   tags:
     - public-runner-docker
 
-message_format_tests:
+message_format_testnet_tests:
   stage: test
   extends: .test_tools_based
   needs:
@@ -307,7 +307,7 @@ message_format_tests:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
     - pip3 install pytest-timestamper
-    - timeout 20m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+    - timeout 20m pytest -m testnet --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   timeout: 25min
   artifacts:
     reports:
