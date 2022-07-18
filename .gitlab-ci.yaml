@@ -500,3 +500,15 @@ transaction_serialization_mainnet_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+message_format_mainnet_5m_tests:
+  extends: .message_format_tests
+  needs:
+    - job: prepare_hived_data_image
+      artifacts: true
+  services:
+    - name: $HIVED_IMAGE_NAME
+      alias: hived-instance
+  variables:
+    NODE_ADDRESS: "hived-instance:8090"
+    NODE_TYPE: "mainnet_5m"
