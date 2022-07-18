@@ -82,6 +82,7 @@ public:
   bool forked() const { return was_fork; }
   bool ignored() const { return was_ignored; }
   const fc::exception_ptr& get_exception() const { return except; }
+  void rethrow_if_exception() const { if( except ) except->dynamic_rethrow_exception(); }
 
 protected:
   block_flow_control( const std::shared_ptr<full_block_type>& _block )

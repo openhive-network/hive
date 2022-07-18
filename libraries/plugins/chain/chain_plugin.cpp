@@ -45,14 +45,31 @@ using get_indexes_memory_details_type = std::function< void( index_memory_detail
 
 #define NUM_THREADS 1
 
-typedef fc::static_variant<const p2p_block_flow_control*, std::shared_ptr<full_transaction_type>, new_block_flow_control*> write_request_ptr;
 typedef fc::static_variant<std::shared_ptr<boost::promise<void>>, fc::promise<void>::ptr> promise_ptr;
+
+class transaction_flow_control
+{
+public:
+  explicit transaction_flow_control( const std::shared_ptr<full_transaction_type>& _tx ) : tx( _tx ) {}
+
+  void on_failure( const fc::exception& ex ) { except = ex.dynamic_copy_exception(); }
+  void on_worker_done() {}
+
+  const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }
+  const fc::exception_ptr& get_exception() const { return except; }
+  void rethrow_if_exception() const { if( except ) except->dynamic_rethrow_exception(); }
+
+private:
+  std::shared_ptr<full_transaction_type> tx;
+  fc::exception_ptr except;
+};
+
+typedef fc::static_variant<const p2p_block_flow_control*, transaction_flow_control*, new_block_flow_control*> write_request_ptr;
 
 struct write_context
 {
   write_request_ptr             req_ptr;
   bool                          success = true;
-  fc::exception_ptr             except;
   promise_ptr                   prom_ptr;
 };
 
@@ -189,6 +206,11 @@ struct chain_plugin_impl::write_request_visitor
 
   typedef void result_type;
 
+  void on_block( const block_flow_control* block_ctrl )
+  {
+    block_ctrl->on_worker_queue_pop();
+  }
+
   void operator()( const p2p_block_flow_control* p2p_block_ctrl )
   {
     bool result = false;
@@ -196,26 +218,29 @@ struct chain_plugin_impl::write_request_visitor
     try
     {
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
+      on_block( p2p_block_ctrl );
       fc::time_point time_before_pushing_block = fc::time_point::now();
       result = cp.db.push_block( *p2p_block_ctrl, p2p_block_ctrl->get_skip_flags() );
       cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
       STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
-    catch (const fc::exception& e)
+    catch( const fc::exception& e )
     {
-      cxt->except = e.dynamic_copy_exception();
+      p2p_block_ctrl->on_failure( e );
     }
-    catch (...)
+    catch( ... )
     {
-      cxt->except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing block."), std::current_exception());
+      p2p_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+        "Unexpected exception while pushing block." ), std::current_exception() ) );
     }
+    p2p_block_ctrl->on_worker_done();
 
     cxt->success = result;
     request_promise_visitor prom_visitor;
     cxt->prom_ptr.visit( prom_visitor );
   }
 
-  void operator()( const std::shared_ptr<full_transaction_type>& full_transaction )
+  void operator()( transaction_flow_control* tx_ctrl )
   {
     bool result = false;
 
@@ -223,7 +248,7 @@ struct chain_plugin_impl::write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
-      cp.db.push_transaction( full_transaction );
+      cp.db.push_transaction( tx_ctrl->get_full_transaction() );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
@@ -231,13 +256,15 @@ struct chain_plugin_impl::write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      cxt->except = e.dynamic_copy_exception();
+      tx_ctrl->on_failure( e );
     }
     catch( ... )
     {
       elog("Unknown exception while pushing transaction.");
-      cxt->except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while pushing transaction."), std::current_exception());
+      tx_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+        "Unexpected exception while pushing transaction." ), std::current_exception() ) );
     }
+    tx_ctrl->on_worker_done();
 
     cxt->success = result;
     request_promise_visitor prom_visitor;
@@ -254,6 +281,7 @@ struct chain_plugin_impl::write_request_visitor
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
+      on_block( new_block_ctrl );
       cp.block_generator->generate_block( new_block_ctrl );
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
 
@@ -261,12 +289,14 @@ struct chain_plugin_impl::write_request_visitor
     }
     catch( const fc::exception& e )
     {
-      cxt->except = e.dynamic_copy_exception();
+      new_block_ctrl->on_failure( e );
     }
     catch( ... )
     {
-      cxt->except = std::make_shared<fc::unhandled_exception>(FC_LOG_MESSAGE(warn, "Unexpected exception while generating block."), std::current_exception());
+      new_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+        "Unexpected exception while generating block."), std::current_exception() ) );
     }
+    new_block_ctrl->on_worker_done();
 
     cxt->success = result;
     request_promise_visitor prom_visitor;
@@ -1017,16 +1047,16 @@ bool chain_plugin::accept_block( const hive::chain::p2p_block_flow_control& bloc
     accept_block_future.wait();
   }
 
-  if (cxt.except)
-    cxt.except->dynamic_rethrow_exception();
+  block_ctrl.rethrow_if_exception();
 
   return cxt.success;
 }
 
 void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, const lock_type lock /* = lock_type::boost */  )
 {
+  transaction_flow_control tx_ctrl( full_transaction );
   write_context cxt;
-  cxt.req_ptr = full_transaction;
+  cxt.req_ptr = &tx_ctrl;
   static int call_count = 0;
   call_count++;
   BOOST_SCOPE_EXIT(&call_count) {
@@ -1061,8 +1091,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     accept_transaction_future.wait();
   }
 
-  if (cxt.except) 
-    cxt.except->dynamic_rethrow_exception();
+  tx_ctrl.rethrow_if_exception();
 }
 
 std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx, 
@@ -1110,8 +1139,7 @@ void chain_plugin::generate_block( chain::new_block_flow_control* new_block_ctrl
 
   generate_block_future.get();
 
-  if (cxt.except)
-    cxt.except->dynamic_rethrow_exception();
+  new_block_ctrl->rethrow_if_exception();
 
   FC_ASSERT( cxt.success, "Block could not be generated" );
 }
