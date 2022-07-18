@@ -459,6 +459,9 @@ message_format_mainnet_64m_tests:
   variables:
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     MAINNET_NODE_64M: "http://hive-6.pl.syncad.com:8092"
+  rules:
+    - if: $ACTIVATE_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M == "TRUE"
+      when: always
   before_script:
     - echo "$ACTIVATE_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M"
     - echo "$ACTIVATE_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M"
