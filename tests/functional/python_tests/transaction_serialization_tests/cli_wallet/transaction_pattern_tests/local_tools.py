@@ -16,13 +16,6 @@ def move_dumped_files(wallet, files_name):
     shutil.move(source_path_json_file, target_path_json_file)
     shutil.move(source_path_binary_file, target_path_binary_file)
 
-
-def import_private_keys_from_json_file(wallet):
-    with open(pathlib.Path(__file__).parent / 'block_log' / 'private_keys.json') as file:
-        private_keys = json.load(file)
-    wallet.api.import_keys(list(private_keys.values()))
-
-
 def verify_correctness_of_generated_transaction_json(wallet, type_of_serialization, request, pattern_name):
     source_path_file = wallet.directory / f'{pattern_name}.json'
     target_path_file = pathlib.Path(
