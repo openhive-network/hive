@@ -10465,7 +10465,6 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
     wdump((alice_witness));
 
     //const account_object& _alice = db->get_account("alice");
-
     {
       witness_block_approve_operation op;
       op.witness = "mallory";
