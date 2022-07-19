@@ -107,7 +107,7 @@ public:
   }
 
   // right after fork_db gets a block - end of work for new block
-  void on_fork_db_insert() const;
+  virtual void on_fork_db_insert() const;
   // right before switching fork
   void on_fork_apply() const
   {
@@ -126,7 +126,7 @@ public:
     current_phase = phase::FORK_NORMAL;
   }
   // right before reapplication of pending transactions - end of work for block under verification
-  void on_end_of_apply_block() const;
+  virtual void on_end_of_apply_block() const;
 
   // after reapplication of pending transactions
   void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs ) const
@@ -137,7 +137,7 @@ public:
   }
 
   // in case of exception
-  virtual void on_failure( const fc::exception& e ) const = 0; //call at the start of implementation in subclass
+  virtual void on_failure( const fc::exception& e ) const;
   // at the end of processing in worker thread (called even if there was exception earlier)
   virtual void on_worker_done() const;
 
@@ -191,13 +191,9 @@ public:
   const fc::ecc::private_key& get_block_signing_private_key() const { return block_signing_private_key; }
   uint32_t get_skip_flags() const { return skip; }
 
+  virtual void on_fork_db_insert() const override; //to be supplemented with broadcast in witness_plugin
+  virtual void on_end_of_apply_block() const override final;
   virtual void on_failure( const fc::exception& e ) const override final;
-  virtual void on_worker_done() const override
-  {
-    stats.on_end_work();
-    block_flow_control::on_worker_done();
-    trigger_promise();
-  }
 
 protected:
   virtual const char* buffer_type() const override final { return "new"; }
@@ -229,6 +225,7 @@ public:
 
   uint32_t get_skip_flags() const { return skip; }
 
+  virtual void on_end_of_apply_block() const override final;
   virtual void on_failure( const fc::exception& e ) const override final;
   virtual void on_worker_done() const override
   {
@@ -260,7 +257,7 @@ public:
     : block_flow_control( _block ) {}
   virtual ~existing_block_flow_control() = default;
 
-  virtual void on_failure( const fc::exception& e ) const override final;
+  virtual void on_end_of_apply_block() const override final;
 
 protected:
   virtual const char* buffer_type() const override final { return "old"; }
