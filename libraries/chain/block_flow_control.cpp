@@ -64,10 +64,32 @@ void block_flow_control::notify_stats() const
   //);
 }
 
+void new_block_flow_control::on_fork_db_insert() const
+{
+  block_flow_control::on_fork_db_insert();
+  stats.on_end_work();
+}
+
+void new_block_flow_control::on_end_of_apply_block() const
+{
+  block_flow_control::on_end_of_apply_block();
+  trigger_promise();
+  // only now we can let the witness thread continue to potentially look if it has to produce new
+  // block; if we set promise when we broadcast the block, the state would not yet reflect new
+  // head block, so for witness plugin it would look like it should produce the same block again
+}
+
 void new_block_flow_control::on_failure( const fc::exception& e ) const
 {
   block_flow_control::on_failure( e );
+  trigger_promise();
+}
+
+void p2p_block_flow_control::on_end_of_apply_block() const
+{
+  block_flow_control::on_end_of_apply_block();
   //trigger_promise();
+  //stats.on_end_work();
 }
 
 void p2p_block_flow_control::on_failure( const fc::exception& e ) const
@@ -76,9 +98,10 @@ void p2p_block_flow_control::on_failure( const fc::exception& e ) const
   //trigger_promise();
 }
 
-void existing_block_flow_control::on_failure( const fc::exception& e ) const
+void existing_block_flow_control::on_end_of_apply_block() const
 {
-  block_flow_control::on_failure( e );
+  block_flow_control::on_end_of_apply_block();
+  stats.on_end_work();
 }
 
 } } // hive::chain
