@@ -47,9 +47,9 @@ def store_transaction(wallet, type_of_serialization, request, pattern_name):
         shutil.move(source_path_file, target_path_file)
 
 
-def compare_with_pattern(validate_function, wallet, type_of_serialization, request, pattern_name):
+def compare_with_pattern(validate_function, wallet, request, pattern_name):
     generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
     if not generate_patterns:
-        validate_function(wallet, type_of_serialization, request, pattern_name)
+        validate_function(wallet, wallet.transaction_serialization, request, pattern_name)
     else:
-        store_transaction(wallet, type_of_serialization, request, pattern_name)
+        store_transaction(wallet, wallet.transaction_serialization, request, pattern_name)
