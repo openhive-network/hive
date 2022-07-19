@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import compare_with_pattern, verify_correctness_of_generated_transaction_json, \
+from .local_tools import verify_correctness_of_generated_transaction_json, \
     verify_correctness_of_generated_transaction_bin
 
 STORE_TRANSACTION = False
