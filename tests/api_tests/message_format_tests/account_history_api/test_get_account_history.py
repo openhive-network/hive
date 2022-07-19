@@ -8,23 +8,23 @@ ACCOUNT = 'initminer'
 
 
 @pytest.mark.parametrize(
-    'account_name, start, limit', [
-        (ACCOUNT, 0, 1),
-        (ACCOUNT, 1.1, 1),
-        (ACCOUNT, 1, 1.1),
-        (ACCOUNT, 1000, 1000),
-        (ACCOUNT, -1, 1000),
-        (ACCOUNT, '-1', 1000),
-        (ACCOUNT, -1, '1000'),
-        (ACCOUNT, True, 1),  # bool is treated like numeric (0:1)
-        (ACCOUNT, True, True),
-        (ACCOUNT, None, True),  # none is treated like numeric (0)
+    'start, limit', [
+        (0, 1),
+        (1.1, 1),
+        (1, 1.1),
+        (1000, 1000),
+        (-1, 1000),
+        ('-1', 1000),
+        (-1, '1000'),
+        (True, 1),  # bool is treated like numeric (0:1)
+        (True, True),
+        (None, True),  # none is treated like numeric (0)
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_account_history(prepared_node, account_name, start, limit):
+def test_get_account_history(prepared_node, start, limit):
     prepared_node.api.account_history.get_account_history(
-        account=account_name,
+        account='initminer',
         start=start,
         limit=limit,
         include_reversible=True,
@@ -42,9 +42,18 @@ def test_get_account_history(prepared_node, account_name, start, limit):
         (ACCOUNT, '', 100),
         (ACCOUNT, 1, 'alice'),
         (ACCOUNT, 'alice', 100),
-        ([ACCOUNT], 'alice', 100),
-        ({}, 'alice', 100),
-        (None, 'alice', 100),
+
+        (None, 0, 100),
+        (ACCOUNT, None, 100),
+        (ACCOUNT, 0, None),
+
+        (ACCOUNT, [], 100),
+        (ACCOUNT, 0, [100]),
+        ([ACCOUNT], 0, 100),
+
+        ({}, 0, 100),
+        (ACCOUNT, {}, 100),
+        (ACCOUNT, 0, {}),
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
