@@ -470,7 +470,9 @@ message_format_mainnet_64m_tests:
     - python3 -m ensurepip
     - export NUMBER_OF_PROCESSES=$(nproc)
     - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools"
+    - curl --version
   script:
+    - curl -s --data '{"jsonrpc":"2.0", "method":"account_history_api.enum_virtual_ops", "params":{"block_range_begin":1,"block_range_end":2}, "id":1}' https://api.hive.blog
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
     - pip3 install pytest-timestamper
@@ -480,4 +482,5 @@ message_format_mainnet_64m_tests:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
   tags:
-    - pl-runner-docker
+    - public-runner-docker
+    - hived-for-tests
