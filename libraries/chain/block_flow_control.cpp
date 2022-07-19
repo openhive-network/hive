@@ -88,14 +88,14 @@ void new_block_flow_control::on_failure( const fc::exception& e ) const
 void p2p_block_flow_control::on_end_of_apply_block() const
 {
   block_flow_control::on_end_of_apply_block();
-  //trigger_promise();
-  //stats.on_end_work();
+  trigger_promise();
+  stats.on_end_work();
 }
 
 void p2p_block_flow_control::on_failure( const fc::exception& e ) const
 {
   block_flow_control::on_failure( e );
-  //trigger_promise();
+  trigger_promise();
 }
 
 void existing_block_flow_control::on_end_of_apply_block() const

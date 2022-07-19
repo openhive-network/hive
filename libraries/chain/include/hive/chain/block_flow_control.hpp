@@ -227,12 +227,6 @@ public:
 
   virtual void on_end_of_apply_block() const override final;
   virtual void on_failure( const fc::exception& e ) const override final;
-  virtual void on_worker_done() const override
-  {
-    stats.on_end_work();
-    block_flow_control::on_worker_done();
-    trigger_promise();
-  }
 
 private:
   virtual const char* buffer_type() const override final { return "p2p"; }
