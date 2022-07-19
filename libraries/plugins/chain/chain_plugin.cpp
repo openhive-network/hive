@@ -211,16 +211,20 @@ struct chain_plugin_impl::write_request_visitor
 {
   write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
 
+  //cumulative data on transactions since last block
+  uint32_t         count_tx_pushed = 0;
+  uint32_t         count_tx_applied = 0;
+
   chain_plugin_impl& cp;
   write_context* cxt = nullptr;
-
-  uint32_t pushed_transaction_counter = 0;
 
   typedef void result_type;
 
   void on_block( const block_flow_control* block_ctrl )
   {
-    block_ctrl->on_worker_queue_pop();
+    block_ctrl->on_worker_queue_pop( count_tx_pushed, count_tx_applied );
+    count_tx_pushed = 0;
+    count_tx_applied = 0;
   }
 
   void operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
@@ -252,9 +256,12 @@ struct chain_plugin_impl::write_request_visitor
     {
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
+      ++count_tx_pushed;
       cp.db.push_transaction( tx_ctrl->get_full_transaction() );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
+
+      ++count_tx_applied;
     }
     catch( const fc::exception& e )
     {

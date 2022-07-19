@@ -82,6 +82,7 @@ struct pending_transactions_restorer
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
+    uint32_t failed_txs = 0;
 
     auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction)
     {
@@ -113,6 +114,7 @@ struct pending_transactions_restorer
                ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()));
           dlog("The invalid transaction caused exception ${e}", ("e", e.to_detail_string()));
           dlog("${tx}", (tx));
+          ++failed_txs;
         }
         catch( const fc::exception& e )
         {
@@ -122,6 +124,7 @@ struct pending_transactions_restorer
           dlog( "The invalid pending transaction caused exception ${e}", ("e", e.to_detail_string() ) );
           dlog( "${t}", ("t", tx) );
           */
+          ++failed_txs;
         }
       }
       else
@@ -157,7 +160,7 @@ struct pending_transactions_restorer
         handle_tx(tx);
     } );
 
-    _block_ctrl.on_end_of_processing();
+    _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs );
     if (postponed_txs || expired_txs)
     {
       wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
