@@ -121,7 +121,7 @@ class database_impl
     evaluator_registry< operation >                 _evaluator_registry;
     evaluator_registry< required_automated_action > _req_action_evaluator_registry;
     evaluator_registry< optional_automated_action > _opt_action_evaluator_registry;
-    std::map<account_name_type, block_id_type>      _last_approved_block_by_witness;
+    std::map<account_name_type, block_id_type>      _last_fast_approved_block_by_witness;
 };
 
 database_impl::database_impl( database& self )
@@ -1059,7 +1059,73 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   return;
 }
 
-bool database::_push_block( const block_flow_control& block_ctrl )
+void database::switch_forks(item_ptr new_head)
+{
+  uint32_t skip = get_node_properties().skip_flags;
+
+  wlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
+  auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), head_block_id());
+
+  // pop blocks until we hit the common ancestor block
+  while (head_block_id() != old_branch.back()->previous_id())
+    pop_block();
+
+  notify_switch_fork(head_block_num());
+
+  // push all blocks on the new fork
+  for (auto ritr = new_branch.rbegin(); ritr != new_branch.rend(); ++ritr)
+  {
+    ilog("pushing blocks from fork ${n} ${id}", ("n", (*ritr)->get_block_num())("id", (*ritr)->get_block_id()));
+    std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
+    try
+    {
+      BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+      // we have to treat blocks from fork as not validated
+      set_tx_status(database::TX_STATUS_INC_BLOCK);
+      _fork_db.set_head(*ritr);
+      auto session = start_undo_session();
+      apply_block((*ritr)->full_block, skip);
+      session.push();
+    }
+    catch (const fc::exception& e)
+    {
+      delayed_exception_to_avoid_yield_in_catch = e.dynamic_copy_exception();
+    }
+    if (delayed_exception_to_avoid_yield_in_catch)
+    {
+      wlog("exception thrown while switching forks ${e}", ("e", delayed_exception_to_avoid_yield_in_catch->to_detail_string()));
+      // remove the rest of new_branch from the fork_db, those blocks are invalid
+      while (ritr != new_branch.rend())
+      {
+        _fork_db.remove((*ritr)->get_block_id());
+        ++ritr;
+      }
+
+      // pop all blocks from the bad fork
+      while (head_block_id() != old_branch.back()->previous_id())
+        pop_block();
+      notify_switch_fork(head_block_num());
+
+      // restore all blocks from the good fork
+      for (auto ritr = old_branch.rbegin(); ritr != old_branch.rend(); ++ritr)
+      {
+        BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+        // even though those blocks were already processed before, it is safer to treat them as completely new,
+        // especially since alternative would be to treat them as replayed blocks, but that would be misleading
+        // since replayed blocks are already irreversible, while these are clearly reversible
+        set_tx_status(database::TX_STATUS_INC_BLOCK);
+        _fork_db.set_head(*ritr);
+        auto session = start_undo_session();
+        apply_block((*ritr)->full_block, skip);
+        session.push();
+      }
+      delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
+    }
+  }
+  hive::notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
+}
+
+bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
   const std::shared_ptr< full_block_type >& full_block = block_ctrl.get_full_block();
 
@@ -1084,70 +1150,7 @@ bool database::_push_block( const block_flow_control& block_ctrl )
       //Only switch forks if new_head is actually higher than head
       if (new_head->get_block_num() > head_block_num())
       {
-        wlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
-        block_ctrl.on_fork_apply();
-        auto branches = _fork_db.fetch_branch_from(new_head->get_block_id(), head_block_id());
-
-        // pop blocks until we hit the common ancestor block
-        while (head_block_id() != branches.second.back()->previous_id())
-          pop_block();
-
-        notify_switch_fork( head_block_num() );
-
-        // push all blocks on the new fork
-        for( auto ritr = branches.first.rbegin(); ritr != branches.first.rend(); ++ritr )
-        {
-          ilog("pushing blocks from fork ${n} ${id}", ("n", (*ritr)->get_block_num())("id", (*ritr)->get_block_id()));
-          std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
-          try
-          {
-            BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-            // we have to treat blocks from fork as not validated
-            set_tx_status( database::TX_STATUS_INC_BLOCK );
-            _fork_db.set_head( *ritr );
-            auto session = start_undo_session();
-            apply_block((*ritr)->full_block, skip);
-            session.push();
-          }
-          catch( const fc::exception& e )
-          {
-            delayed_exception_to_avoid_yield_in_catch = e.dynamic_copy_exception();
-          }
-          if (delayed_exception_to_avoid_yield_in_catch)
-          {
-            wlog( "exception thrown while switching forks ${e}", ( "e", delayed_exception_to_avoid_yield_in_catch->to_detail_string() ) );
-            // remove the rest of branches.first from the fork_db, those blocks are invalid
-            while( ritr != branches.first.rend() )
-            {
-              _fork_db.remove( (*ritr)->get_block_id() );
-              ++ritr;
-            }
-
-            // pop all blocks from the bad fork
-            while (head_block_id() != branches.second.back()->previous_id())
-              pop_block();
-            notify_switch_fork( head_block_num() );
-
-            // restore all blocks from the good fork
-            for( auto ritr = branches.second.rbegin(); ritr != branches.second.rend(); ++ritr )
-            {
-              BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-              // even though those blocks were already processed before, it is safer to treat them as completely new,
-              // especially since alternative would be to treat them as replayed blocks, but that would be misleading
-              // since replayed blocks are already irreversible, while these are clearly reversible
-              set_tx_status( database::TX_STATUS_INC_BLOCK );
-              _fork_db.set_head( *ritr );
-              auto session = start_undo_session();
-              apply_block((*ritr)->full_block, skip);
-              session.push();
-            }
-            delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
-          }
-        }
-        hive::notify( "switching forks",
-          "id", new_head->get_block_id().str(),
-          "num", new_head->get_block_num()
-        );
+        switch_forks(new_head);
         return true;
       }
       else //the new block is on a fork but lower than our head block, so don't validate it
@@ -1198,6 +1201,13 @@ void database::push_transaction( const std::shared_ptr<full_transaction_type>& f
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
   {
+    if (is_fast_confirm_transaction(full_transaction))
+    {
+      // fast-confirm transactions are just processed in memory, they're not added to the blockchain
+      process_fast_confirm_transaction(full_transaction);
+      return;
+    }
+
     size_t trx_size = full_transaction->get_transaction_size();
     //ABW: why is that limit related to block size and not HIVE_MAX_TRANSACTION_SIZE?
     //DLN: the block size is dynamically voted by witnesses, so this code ensures that the transaction
@@ -1218,13 +1228,6 @@ void database::push_transaction( const std::shared_ptr<full_transaction_type>& f
 
 void database::_push_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
-  if (is_fast_confirm_transaction(full_transaction))
-  {
-    // fast-confirm transactions are just processed in memory, they're not added to the blockchain
-    process_fast_confirm_transaction(full_transaction);
-    return;
-  }
-
   // If this is the first transaction pushed after applying a block, start a new undo session.
   // This allows us to quickly rewind to the clean state of the head block, in case a new block arrives.
   if (!_pending_tx_session.valid())
@@ -4575,6 +4578,105 @@ void database::apply_transaction(const std::shared_ptr<full_transaction_type>& t
   detail::with_skip_flags( *this, skip, [&]() { _apply_transaction(trx); });
 }
 
+void database::validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip)
+{
+  const signed_transaction& trx = full_transaction->get_transaction();
+
+  //Skip all manner of expiration and TaPoS checking if we're on block 1; It's impossible that the transaction is
+  //expired, and TaPoS makes no sense as no blocks exist.
+  if (BOOST_LIKELY(head_block_num() > 0))
+  {
+    fc::time_point_sec now = head_block_time();
+
+    HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
+                "", (trx.expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
+    if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
+      HIVE_ASSERT(now < trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
+    else
+      HIVE_ASSERT(now <= trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
+
+    if (!(skip & skip_tapos_check))
+    {
+      if (_benchmark_dumper.is_enabled())
+        _benchmark_dumper.begin();
+
+      block_summary_object::id_type bsid( trx.ref_block_num );
+      const auto& tapos_block_summary = get< block_summary_object >( bsid );
+      //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
+      HIVE_ASSERT(trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
+                  "", (trx.ref_block_prefix)("tapos_block_summary", tapos_block_summary.block_id._hash[1]));
+
+      if (_benchmark_dumper.is_enabled())
+        _benchmark_dumper.end("transaction", "tapos check");
+    }
+  }
+
+  if (!(skip & skip_validate)) /* issue #505 explains why this skip_flag is disabled */
+  {
+    if (_benchmark_dumper.is_enabled())
+    {
+      std::string name;
+      full_transaction->validate([&](const operation& op, bool post) {
+        if (!post)
+        {
+          name = _my->_evaluator_registry.get_evaluator(op).get_name(op);
+          _benchmark_dumper.begin();
+        }
+        else
+        {
+          _benchmark_dumper.end("validate", name);
+        }
+      });
+    }
+    else
+    {
+      full_transaction->validate();
+    }
+
+    if (!has_hardfork(HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION))
+      HIVE_ASSERT(full_transaction->is_legacy_pack(), hive::protocol::transaction_auth_exception, "legacy serialization must be used until hardfork 26");
+  }
+
+  if (!(skip & (skip_transaction_signatures | skip_authority_check)))
+  {
+    auto get_active  =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).active ); };
+    auto get_owner   =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).owner );  };
+    auto get_posting =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).posting );  };
+    auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
+
+    try
+    {
+      if( _benchmark_dumper.is_enabled() )
+        _benchmark_dumper.begin();
+
+      const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
+      const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
+
+      hive::protocol::verify_authority(required_authorities,
+                                       signature_keys,
+                                       get_active,
+                                       get_owner,
+                                       get_posting,
+                                       get_witness_key,
+                                       HIVE_MAX_SIG_CHECK_DEPTH,
+                                       has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
+                                       has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
+                                       false,
+                                       flat_set<account_name_type>(),
+                                       flat_set<account_name_type>(),
+                                       flat_set<account_name_type>());
+
+      if (_benchmark_dumper.is_enabled())
+        _benchmark_dumper.end("transaction", "verify_authority", trx.signatures.size());
+    }
+    catch (protocol::tx_missing_active_auth& e)
+    {
+      if (get_shared_db_merkle().find(head_block_num() + 1) == get_shared_db_merkle().end())
+        throw e;
+    }
+  }
+}
+
 void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
   if( _current_tx_status == TX_STATUS_NONE )
@@ -4599,101 +4701,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
   const signed_transaction& trx = full_transaction->get_transaction();
 
-  //Skip all manner of expiration and TaPoS checking if we're on block 1; It's impossible that the transaction is
-  //expired, and TaPoS makes no sense as no blocks exist.
-  if( BOOST_LIKELY( head_block_num() > 0 ) )
-  {
-    fc::time_point_sec now = head_block_time();
-
-    HIVE_ASSERT(trx.expiration <= now + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
-                "", ("trx.expiration", trx.expiration)("now", now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION));
-    if (has_hardfork(HIVE_HARDFORK_0_9)) // Simple solution to pending trx bug when now == trx.expiration
-      HIVE_ASSERT(now < trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
-    else
-      HIVE_ASSERT(now <= trx.expiration, transaction_expiration_exception, "", (now)(trx.expiration));
-
-    if( !( skip & skip_tapos_check ) )
-    {
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.begin();
-
-      block_summary_object::id_type bsid( trx.ref_block_num );
-      const auto& tapos_block_summary = get< block_summary_object >( bsid );
-      //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
-      HIVE_ASSERT(trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
-                  "", ("trx.ref_block_prefix", trx.ref_block_prefix)
-                  ("tapos_block_summary", tapos_block_summary.block_id._hash[1]));
-
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.end( "transaction", "tapos check" );
-    }
-  }
-
-  if( !(skip&skip_validate) )   /* issue #505 explains why this skip_flag is disabled */
-  {
-    if( _benchmark_dumper.is_enabled() )
-    {
-      std::string name;
-      full_transaction->validate( [&]( const operation& op, bool post )
-      {
-        if( !post )
-        {
-          name = _my->_evaluator_registry.get_evaluator( op ).get_name( op );
-          _benchmark_dumper.begin();
-        }
-        else
-        {
-          _benchmark_dumper.end( "validate", name );
-        }
-      } );
-    }
-    else
-    {
-      full_transaction->validate();
-    }
-
-    if (!has_hardfork(HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION))
-      HIVE_ASSERT(full_transaction->is_legacy_pack(), hive::protocol::transaction_auth_exception, "legacy serialization must be used until hardfork 26");
-  }
-
-  if( !(skip & (skip_transaction_signatures | skip_authority_check) ) )
-  {
-    auto get_active  = [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner   = [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).owner );  };
-    auto get_posting = [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).posting );  };
-    auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
-
-    try
-    {
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.begin();
-
-      const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
-      const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
-
-      hive::protocol::verify_authority(required_authorities,
-                                       signature_keys,
-                                       get_active,
-                                       get_owner,
-                                       get_posting,
-                                       get_witness_key,
-                                       HIVE_MAX_SIG_CHECK_DEPTH,
-                                       has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
-                                       has_hardfork( HIVE_HARDFORK_0_20 ) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-                                       false,
-                                       flat_set<account_name_type>(),
-                                       flat_set<account_name_type>(),
-                                       flat_set<account_name_type>());
-
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.end( "transaction", "verify_authority", trx.signatures.size() );
-    }
-    catch( protocol::tx_missing_active_auth& e )
-    {
-      if( get_shared_db_merkle().find( head_block_num() + 1 ) == get_shared_db_merkle().end() )
-        throw e;
-    }
-  }
+  validate_transaction(full_transaction, skip);
 
   //Insert transaction into unique transactions database.
   if( !(skip & skip_transaction_dupe_check) )
@@ -4721,12 +4729,11 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
   //Finally process the operations
   _current_op_in_trx = 0;
-  for( const auto& op : trx.operations )
+  for (const auto& op : trx.operations)
   { try {
     apply_operation(op);
     ++_current_op_in_trx;
-    } FC_CAPTURE_AND_RETHROW( (op) );
-  }
+  } FC_CAPTURE_AND_RETHROW( (op) ) }
 
   notify_post_apply_transaction( note );
 
@@ -5271,11 +5278,15 @@ const fc::array<account_name_type, HIVE_MAX_WITNESSES>& database::get_witness_sc
 
 void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
+  // fast-confirm transactions are processed outside of the normal transaction processing flow,
+  // so we need to explicitly call validation here
+  validate_transaction(full_transaction, skip_nothing);
+
   bool witness_is_scheduled = false;
   signed_transaction trx = full_transaction->get_transaction();
 
   const witness_block_approve_operation& block_approve_op = trx.operations.front().get<witness_block_approve_operation>();
-  ilog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
+  // dlog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
 
   const witness_schedule_object& wso = get_witness_schedule_object();
   const fc::array<account_name_type, HIVE_MAX_WITNESSES>& shuffled_witnesses = get_witness_schedule_for_irreversibility(wso);
@@ -5292,8 +5303,21 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
     return;
   }
   
-  _my->_last_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
-  idump((_my->_last_approved_block_by_witness));
+  if (auto iter = _my->_last_fast_approved_block_by_witness.find(block_approve_op.witness);
+      iter != _my->_last_fast_approved_block_by_witness.end())
+  {
+    const uint32_t previous_approved_block_number = block_header::num_from_id(iter->second);
+    const uint32_t new_approved_block_number = block_header::num_from_id(block_approve_op.block_id);
+    if (new_approved_block_number <= previous_approved_block_number)
+    {
+      ilog("Received a fast-confirm from witness ${witness} for block #${new_approved_block_number}, "
+           "but we already have a fast-confirm for a block #${previous_approved_block_number} which is at least as new, ignoring",
+           (previous_approved_block_number)(new_approved_block_number));
+      return;
+    }
+  }
+  _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
+  // ddump((_my->_last_fast_approved_block_by_witness));
 
   uint32_t old_last_irreversible_block = update_last_irreversible_block();
   migrate_irreversible_state(old_last_irreversible_block);
@@ -5301,11 +5325,9 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
 
 uint32_t database::update_last_irreversible_block()
 { try {
-#if 1
   uint32_t old_last_irreversible = get_last_irreversible_block_num();
   /**
     * Prior to voting taking over, we must be more conservative...
-    *
     */
   if (head_block_num() < HIVE_START_MINER_VOTING_BLOCK)
   {
@@ -5322,132 +5344,127 @@ uint32_t database::update_last_irreversible_block()
   uint32_t head_block_number = head_block_num();
   if (old_last_irreversible == head_block_number)
   {
-    ilog("Head-block is already irreversible, nothing to do");
+    //dlog("Head-block is already irreversible, nothing to do");
     return old_last_irreversible;
   }
-  idump((head_block_number)(old_last_irreversible));
+  // ddump((head_block_number)(old_last_irreversible));
 
   // we'll need to know who the current scheduled witnesses are, because their opinions are
   // the only ones that matter
   std::set<account_name_type> scheduled_witnesses;
   const witness_schedule_object& wso = get_witness_schedule_object();
   const fc::array<account_name_type, HIVE_MAX_WITNESSES>& shuffled_witnesses = get_witness_schedule_for_irreversibility(wso);
-  for (int i = 0; i < wso.num_scheduled_witnesses; i++)
-    scheduled_witnesses.insert(get_witness(shuffled_witnesses[i]).owner);
-  idump((scheduled_witnesses));
+  std::transform(shuffled_witnesses.begin(), shuffled_witnesses.begin() + wso.num_scheduled_witnesses,
+                 std::inserter(scheduled_witnesses, scheduled_witnesses.end()),
+                 [&](const account_name_type& witness_account_name) {
+                   return get_witness(witness_account_name).owner;
+                 });
 
-  // and we need the list of reversible blocks
-  vector<fork_item> main_branch = _fork_db.fetch_block_range_on_main_branch_by_number(old_last_irreversible + 1, head_block_number - old_last_irreversible);
-  // main_branch begins with the first reversible block head block and goes up to the head block
-  idump((main_branch.size())(main_branch.front().full_block->get_block_num())(main_branch.back().full_block->get_block_num()));
+  const unsigned witnesses_required_for_irreversiblity = scheduled_witnesses.size() * HIVE_IRREVERSIBLE_THRESHOLD / HIVE_100_PERCENT;
 
-  // we'll walk down the main_branch, starting at the head block, and add witness names to the set
-  // when they approve a block (and implicitly all of its ancestors).  If we reach the irreversible
-  // threshold, make that block and all of its predecessors irreversible.
-  std::set<account_name_type> witnesses_approving_branch;
-  fc::optional<uint32_t> new_last_irreversible_block;
+  // during our search for a new irreversible block, if we find a 
+  // candidate better than the current last_irreversible_block,
+  // store it here:
+  item_ptr new_last_irreversible_block;
+  item_ptr new_head_block;
 
-  for (auto iter = main_branch.rbegin(); iter != main_branch.rend(); ++iter)
+  // construct a list of the highest-numbered block approved by each witness.  
+  // start with the fast-confirms broadcast by each witness
+  std::map<account_name_type, block_id_type> last_block_approved_by_witness = _my->_last_fast_approved_block_by_witness;
+  // then, if they have signed a block with a higher block number than the last fast_confirm message,
+  // overwrite their last_approved with the block they signed.
+  const std::map<account_name_type, block_id_type> last_block_generated_by_witness = _fork_db.get_last_block_generated_by_each_witness();
+  for (const auto& [witness, block_id] : last_block_generated_by_witness)
+    if (auto iter = last_block_approved_by_witness.find(witness); 
+        iter != last_block_approved_by_witness.end() || 
+        block_header::num_from_id(block_id) > block_header::num_from_id(iter->second))
+      last_block_approved_by_witness[witness] = block_id;
+  std::multimap<block_id_type, account_name_type> witnesses_approving_blocks;
+  // now flip the map around so we can query by block_id
+  for (const auto& [witness, block_id] : last_block_approved_by_witness)
+    witnesses_approving_blocks.insert(std::make_pair(block_id, witness));
+
+  // keep track of the highest block number we can make irreversible;
+  uint32_t last_irreversible_candidate_block_num = old_last_irreversible;
+  
+  // walk over each fork in the forkdb
+  std::vector<item_ptr> heads = _fork_db.fetch_heads();
+  for (const item_ptr& possible_head : heads)
   {
-    const block_id_type& block_id = iter->get_block_id();
-    const std::shared_ptr<full_block_type>& full_block = iter->full_block;
-    ilog("Considering block ${num}", ("num", full_block->get_block_num()));
-    const signed_block_header& header = full_block->get_block_header();
+    // dlog("Considering possible head ${block_id}", ("block_id", possible_head->get_block_id()));
+    // keep track of all witnesses approving this block
+    // we can probably just count witnesses instead, just keep a set for debugging
+    std::set<account_name_type> witnesses_approving_this_block;
+    item_ptr this_block = possible_head;
 
-    // if a witness generated this block, we have strong reason to believe they approve it
-    if (scheduled_witnesses.find(header.witness) != scheduled_witnesses.end())
-      witnesses_approving_branch.insert(header.witness);
+    // walk backwards over blocks on this fork
+    while (this_block && this_block->get_block_num() > last_irreversible_candidate_block_num)
+    {
+      // dlog("Considering block ${block_id}", ("block_id", this_block->get_block_id()));
+      const auto [begin, end] = witnesses_approving_blocks.equal_range(this_block->get_block_id());
+      for (auto iter = begin; iter != end; ++iter)
+        witnesses_approving_this_block.insert(iter->second);
+      // dlog("Has ${count} witnesses approving", ("count", witnesses_approving_this_block.size()));
 
-    // check all other scheduled witnesses that haven't expressed an opinion on this 
-    // chain to see if they've fast-confirmed this block
-    for (const account_name_type& scheduled_witness : scheduled_witnesses)
-      if (witnesses_approving_branch.find(scheduled_witness) == witnesses_approving_branch.end())
+      if (witnesses_approving_this_block.size() >= witnesses_required_for_irreversiblity)
       {
-        auto iter = _my->_last_approved_block_by_witness.find(scheduled_witness);
-        if (iter != _my->_last_approved_block_by_witness.end() && iter->second == block_id)
-          witnesses_approving_branch.insert(scheduled_witness);
+        // dlog("Block ${num} can be made irreversible, ${witnesses_approving_this_block} witnesses approve it", 
+        //      ("num", this_block->get_block_num())("witnesses_approving_this_block", witnesses_approving_this_block.size()));
+        new_head_block = possible_head;
+        new_last_irreversible_block = this_block;
+        last_irreversible_candidate_block_num = this_block->get_block_num();
+        break;
       }
-
-    unsigned witnesses_required_for_irreversiblity = scheduled_witnesses.size() * HIVE_IRREVERSIBLE_THRESHOLD / HIVE_100_PERCENT;
-    if (witnesses_approving_branch.size() >= witnesses_required_for_irreversiblity)
-    {
-      ilog("Making block ${num} irreversible, ${witnesses_approving_branch} witnesses approve it", 
-           ("num", full_block->get_block_num())("witnesses_approving_branch", witnesses_approving_branch.size()));
-      new_last_irreversible_block = full_block->get_block_num();
-      break;
-    }
-    else
-    {
-      ilog("Can't make block ${num} irreversible, only ${witnesses_approving_branch} out of a required ${witnesses_required_for_irreversiblity} approve it", 
-           ("num", full_block->get_block_num())("witnesses_approving_branch", witnesses_approving_branch.size())(witnesses_required_for_irreversiblity));
+      else
+      {
+        // dlog("Can't make block ${num} irreversible, only ${witnesses_approving_this_block} out of a required ${witnesses_required_for_irreversiblity} approve it", 
+        //      ("num", this_block->get_block_num())("witnesses_approving_this_block", witnesses_approving_this_block.size())(witnesses_required_for_irreversiblity));
+      }
+      this_block = this_block->prev.lock();
     }
   }
+
   if (!new_last_irreversible_block)
   {
-    ilog("Leaving process_fast_confirm_transaction without making any new blocks irreversible");
+    // dlog("Leaving process_fast_confirm_transaction without making any new blocks irreversible");
     return old_last_irreversible;
   }
 
-  ilog("Found a new last irreversible block: ${new_last_irreversible_block}", (new_last_irreversible_block));
-  set_last_irreversible_block_num(*new_last_irreversible_block);
+  // dlog("Found a new last irreversible block: ${new_last_irreversible_block_num}", ("new_last_irreversible_block_num", new_last_irreversible_block->get_block_num()));
+  const item_ptr main_branch_block = _fork_db.fetch_block_on_main_branch_by_number(new_last_irreversible_block->get_block_num());
+  if (new_last_irreversible_block != main_branch_block)
+  {
+    // we found a new last irreversible block on another fork
+    if (new_head_block->get_block_num() < head_block_num())
+    {
+      // we need to switch to the fork containing our new last irreversible block candidate, but 
+      // that fork is shorter than our current head block, so our head block number would decrease
+      // as a result.  There may be other places in the code that assume the head block number 
+      // never decreases.  Since we're not sure, just postpone the fork switch until we get 
+      // enough blocks on the candidate fork to at least equal our current head block
+      return old_last_irreversible;
+    }
+
+    try
+    {
+      switch_forks(new_head_block);
+    }
+    catch (const fc::exception&)
+    {
+      return old_last_irreversible;
+    }
+  }
+
+  set_last_irreversible_block_num(new_last_irreversible_block->get_block_num());
 
   // clean up any fast-confirms that are no longer relevant to reversible blocks
-  for (auto iter = _my->_last_approved_block_by_witness.begin(); iter != _my->_last_approved_block_by_witness.end();)
-    if (block_header::num_from_id(iter->second) <= *new_last_irreversible_block)
-      iter = _my->_last_approved_block_by_witness.erase(iter);
+  for (auto iter = _my->_last_fast_approved_block_by_witness.begin(); iter != _my->_last_fast_approved_block_by_witness.end();)
+    if (block_header::num_from_id(iter->second) <= new_last_irreversible_block->get_block_num())
+      iter = _my->_last_fast_approved_block_by_witness.erase(iter);
     else
       ++iter;
 
   return old_last_irreversible;
-#else
-  uint32_t old_last_irreversible = get_last_irreversible_block_num();
-
-  /**
-    * Prior to voting taking over, we must be more conservative...
-    *
-    */
-  if( head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
-  {
-    if ( head_block_num() > HIVE_MAX_WITNESSES ) {
-      uint32_t new_last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
-
-      if( new_last_irreversible_block_num > get_last_irreversible_block_num() )
-        set_last_irreversible_block_num(new_last_irreversible_block_num);
-    }
-  }
-  else
-  {
-    const witness_schedule_object& wso = get_witness_schedule_object();
-
-    vector< const witness_object* > wit_objs;
-    wit_objs.reserve( wso.num_scheduled_witnesses );
-    for( int i = 0; i < wso.num_scheduled_witnesses; i++ )
-      wit_objs.push_back( &get_witness( wso.current_shuffled_witnesses[i] ) );
-
-    static_assert( HIVE_IRREVERSIBLE_THRESHOLD > 0, "irreversible threshold must be nonzero" );
-
-    // 1 1 1 2 2 2 2 2 2 2 -> 2     .7*10 = 7
-    // 1 1 1 1 1 1 1 2 2 2 -> 1
-    // 3 3 3 3 3 3 3 3 3 3 -> 3
-
-    size_t offset = ((HIVE_100_PERCENT - HIVE_IRREVERSIBLE_THRESHOLD) * wit_objs.size() / HIVE_100_PERCENT);
-
-    std::nth_element( wit_objs.begin(), wit_objs.begin() + offset, wit_objs.end(),
-      []( const witness_object* a, const witness_object* b )
-      {
-        return a->last_confirmed_block_num < b->last_confirmed_block_num;
-      } );
-
-    uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
-
-    if( new_last_irreversible_block_num > get_last_irreversible_block_num() )
-    {
-      //ilog("Last irreversible block changed to ${b}. Got from witness: ${w}", ("b", new_last_irreversible_block_num)("w", wit_objs[offset]->owner));
-      set_last_irreversible_block_num(new_last_irreversible_block_num);
-    }
-  }
-  return old_last_irreversible;
-#endif
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)
@@ -5498,15 +5515,13 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     // This deletes undo state
     commit( get_last_irreversible_block_num() );
 
-    if(old_last_irreversible < get_last_irreversible_block_num() )
+    if (old_last_irreversible < get_last_irreversible_block_num())
     {
       //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
       //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
 
-      for( uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i )
-      {
-        notify_irreversible_block( i );
-      }
+      for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
+        notify_irreversible_block(i);
     }
 
   }

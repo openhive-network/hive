@@ -2090,14 +2090,16 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_GT( late_stats[i].value, late_stats[i+1].value );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + 2/*rounding*/ + crh.comment_rewards[0].author_tokens.value );
         BOOST_REQUIRE_EQUAL( late_stats[0].value,  10529 );
         BOOST_REQUIRE_EQUAL( late_stats[1].value,  8551 );
         BOOST_REQUIRE_EQUAL( late_stats[2].value,  7083 );
         BOOST_REQUIRE_EQUAL( late_stats[3].value,  5963 );
         BOOST_REQUIRE_EQUAL( late_stats[4].value,  5172 );
+
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + 2/*rounding*/ + crh.comment_rewards[0].author_tokens.value );
       }
       {
         /*
