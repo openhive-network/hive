@@ -69,12 +69,14 @@ namespace hive { namespace chain {
 
       void                             start_block(const std::shared_ptr<full_block_type>& full_block);
       void                             remove(block_id_type b);
-      void                             set_head(shared_ptr<fork_item> h);
+      void                             set_head(item_ptr h);
       bool                             is_known_block(const block_id_type& id)const;
-      shared_ptr<fork_item>            fetch_block_unlocked(const block_id_type& id)const;
-      shared_ptr<fork_item>            fetch_block(const block_id_type& id)const;
+      item_ptr                         fetch_block_unlocked(const block_id_type& id)const;
+      item_ptr                         fetch_block(const block_id_type& id)const;
       vector<item_ptr>                 fetch_block_by_number_unlocked(uint32_t num) const;
       vector<item_ptr>                 fetch_block_by_number(uint32_t n)const;
+      vector<item_ptr>                 fetch_heads() const;
+      std::map<account_name_type, block_id_type> get_last_block_generated_by_each_witness() const;
 
       // These functions are similar to the corresponding versions in `database`,
       // except the database versions work off the `dynamic_global_properties_object`
@@ -91,9 +93,9 @@ namespace hive { namespace chain {
       /**
         *  @return the new head block ( the longest fork )
         */
-      shared_ptr<fork_item>            push_block(const std::shared_ptr<full_block_type>& full_block);
-      shared_ptr<fork_item>            head()const;
-      shared_ptr<fork_item>            head_unlocked()const;
+      item_ptr            push_block(const std::shared_ptr<full_block_type>& full_block);
+      item_ptr            head()const;
+      item_ptr            head_unlocked()const;
       uint32_t                         get_oldest_block_num_unlocked()const;
       void                             pop_block();
 
@@ -101,11 +103,11 @@ namespace hive { namespace chain {
         *  Given two head blocks, return two branches of the fork graph that
         *  end with a common ancestor (same prior block)
         */
-      pair< branch_type, branch_type >  fetch_branch_from(block_id_type first, block_id_type second)const;
-      shared_ptr<fork_item>            walk_main_branch_to_num_unlocked( uint32_t block_num )const;
-      shared_ptr<fork_item>            walk_main_branch_to_num( uint32_t block_num )const;
-      shared_ptr<fork_item>            fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      shared_ptr<fork_item>            fetch_block_on_main_branch_by_number_unlocked( uint32_t block_num )const;
+      pair<branch_type, branch_type>   fetch_branch_from(block_id_type first, block_id_type second)const;
+      item_ptr                         walk_main_branch_to_num_unlocked( uint32_t block_num )const;
+      item_ptr                         walk_main_branch_to_num( uint32_t block_num )const;
+      item_ptr                         fetch_block_on_main_branch_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      item_ptr                         fetch_block_on_main_branch_by_number_unlocked( uint32_t block_num )const;
       vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<block_id_type> get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, /* out */ fc::optional<uint32_t>& blocks_number_needed_from_block_log);
 
@@ -202,7 +204,7 @@ namespace hive { namespace chain {
 
       fork_multi_index_type    _unlinked_index;
       fork_multi_index_type    _index;
-      shared_ptr<fork_item>    _head;
+      item_ptr                 _head;
   };
 
 } } // hive::chain

@@ -223,6 +223,32 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
   FC_LOG_AND_RETHROW()
 }
 
+vector<item_ptr> fork_database::fetch_heads() const
+{
+  return with_read_lock([&](){
+    vector<item_ptr> result;
+    const auto& prev_idx = _index.get<by_previous>();
+    std::copy_if(_index.begin(), _index.end(), std::back_inserter(result), 
+                 [&](const item_ptr& fork_item) {
+      return prev_idx.find(fork_item->get_block_id()) == prev_idx.end();
+    });
+    return result;
+  });
+}
+
+std::map<account_name_type, block_id_type> fork_database::get_last_block_generated_by_each_witness() const
+{
+  return with_read_lock([&](){
+    std::map<account_name_type, block_id_type> result;
+
+    const auto& block_num_idx = _index.get<block_num>();
+    for (const item_ptr& fork_item : block_num_idx)
+      result[fork_item->get_block_header().witness] = fork_item->get_block_id();
+
+    return result;
+  });
+}
+
 time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {

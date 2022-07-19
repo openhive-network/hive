@@ -324,11 +324,11 @@ namespace detail {
       const fc::array<account_name_type, HIVE_MAX_WITNESSES>& shuffled_witnesses = _db.get_witness_schedule_for_irreversibility(wso);
       for (int i = 0; i < wso.num_scheduled_witnesses; i++)
         scheduled_witnesses.insert(_db.get_witness(shuffled_witnesses[i]).owner);
-      idump((scheduled_witnesses));
+      //ddump((scheduled_witnesses));
 
       for (const account_name_type& witness_name : _witnesses)
       {
-        ilog("In on_post_apply_block(), checking witness ${witness_name}", (witness_name));
+        // dlog("In on_post_apply_block(), checking witness ${witness_name}", (witness_name));
         if (witness_name != note.full_block->get_block().witness && 
             scheduled_witnesses.find(witness_name) != scheduled_witnesses.end())
           try
@@ -350,12 +350,14 @@ namespace detail {
               op.block_id = note.block_id;
 
               signed_transaction tx;
-              tx.set_reference_block(_db.head_block_id());
+              uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
+              const block_id_type reference_block_id = last_irreversible_block ? _db.get_block_id_for_num(last_irreversible_block) : _db.head_block_id();
+              tx.set_reference_block(reference_block_id);
               tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
               tx.operations.push_back( op );
               tx.sign(private_key_itr->second, _db.get_chain_id(), fc::ecc::fc_canonical);
 
-              ilog("Broadcasting fast-confirm transaction for ${witness_name}", (witness_name));
+              ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
               uint32_t skip = _db.get_node_properties().skip_flags;
 
               std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_signed_transaction(tx, hive::protocol::serialization_mode_controller::get_current_pack(), false);

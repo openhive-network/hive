@@ -144,12 +144,11 @@ namespace chain {
 
       transaction_status get_tx_status() const { return _current_tx_status; }
 
-      void set_tx_status( transaction_status s )
+      void set_tx_status(transaction_status s)
       {
-        if( _current_tx_status != TX_STATUS_NONE )
+        if (_current_tx_status != TX_STATUS_NONE)
         {
-          wlog( "Nested tx processing: _current_tx_status==${cs}, incoming ${s}",
-            ( "cs", ( int )_current_tx_status )( "s", ( int )s ) );
+          wlog("Nested tx processing: _current_tx_status==${cs}, incoming ${s}", ("cs", (int)_current_tx_status)("s", (int)s));
           // make sure to unconditionally call clear_tx_status() when processing ends or is broken
         }
         _current_tx_status = s;
@@ -704,7 +703,9 @@ namespace chain {
       optional< chainbase::database::session > _pending_tx_session;
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
+      void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
+      void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
 
