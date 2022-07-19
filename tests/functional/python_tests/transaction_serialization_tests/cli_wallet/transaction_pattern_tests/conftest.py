@@ -17,5 +17,8 @@ def wallet_with_type_of_serialization(replayed_node, request):
                        additional_arguments=[f'--store-transaction={request.keywords.node.originalname}',
                                              f'--transaction-serialization={request.param}'])
 
+    for account_name in ['alice', 'initminer', 'dan', 'bob']:
+        wallet.api.import_key(tt.Account(account_name).private_key)
+
     # Return wallet, type_of_serialization and pattern_name
     return wallet, request.param, request.keywords.node.originalname
