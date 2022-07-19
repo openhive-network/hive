@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import pytest
+from typing import Literal
 
 
 def date_from_now(*, weeks):
@@ -8,7 +9,7 @@ def date_from_now(*, weeks):
     return future_data.strftime('%Y-%m-%dT%H:%M:%S')
 
 
-def run_for(*node_names: str):
+def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
     """
     Runs decorated test for each node specified as parameter.
 
