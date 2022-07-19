@@ -108,8 +108,10 @@ def test_claim_account_creation_nonblocking(replayed_node, wallet_with_pattern_n
 def test_create_account_with_keys(replayed_node, wallet_with_pattern_name, way_to_verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-    transaction = wallet.api.create_account_with_keys('initminer', 'dan', '{}', key, key, key, key, broadcast=False)
+    dan = tt.Account('dan')
+    transaction = wallet.api.create_account_with_keys('initminer', dan.name, '{}', dan.public_key,
+                                                      dan.public_key, dan.public_key, dan.public_key,
+                                                      broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
     way_to_verify_pattern(wallet, pattern_name)
@@ -125,9 +127,10 @@ def test_create_account_with_keys(replayed_node, wallet_with_pattern_name, way_t
 def test_create_funded_account_with_keys(replayed_node, wallet_with_pattern_name, way_to_verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
-    transaction = wallet.api.create_funded_account_with_keys('initminer', 'dan', tt.Asset.Test(10), 'memo', '{}', key,
-                                                             key, key, key, broadcast=False)
+    dan = tt.Account('dan')
+    transaction = wallet.api.create_funded_account_with_keys('initminer', dan.name, tt.Asset.Test(10),
+                                                             'memo', '{}', dan.public_key, dan.public_key,
+                                                             dan.public_key, dan.public_key, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
     way_to_verify_pattern(wallet, pattern_name)
