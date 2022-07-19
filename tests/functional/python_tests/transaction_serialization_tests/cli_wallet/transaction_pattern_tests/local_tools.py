@@ -1,7 +1,9 @@
 import filecmp
 import json
+import os
 import pathlib
 import shutil
+from distutils.util import strtobool
 
 
 def move_dumped_files(wallet, files_name):
@@ -50,3 +52,11 @@ def store_transaction(wallet, type_of_serialization, request, pattern_name):
             request.fspath.dirname) / f'dumped_{file_extension}_files_{type_of_serialization}_wallet' / f'{pattern_name}.{file_extension}'
 
         shutil.move(source_path_file, target_path_file)
+
+
+def compare_with_pattern(validate_function, wallet, type_of_serialization, request, pattern_name):
+    generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
+    if not generate_patterns:
+        validate_function(wallet, type_of_serialization, request, pattern_name)
+    else:
+        store_transaction(wallet, type_of_serialization, request, pattern_name)
