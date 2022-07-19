@@ -10,7 +10,7 @@ PACKAGE_PATH = Path(__file__).parent
 
 
 def dumped_directory_path(extension, type_of_serialization, pattern_name):
-    return PACKAGE_PATH / f'dumped_{extension}_files_{type_of_serialization}_wallet' / f'{pattern_name}.{extension}'
+    return PACKAGE_PATH / f'dumped_files_{type_of_serialization}_wallet' / f'{pattern_name}.{extension}'
 
 
 def __able_to_generate_pattern(validate_function):
