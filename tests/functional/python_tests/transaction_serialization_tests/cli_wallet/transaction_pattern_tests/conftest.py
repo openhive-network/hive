@@ -21,4 +21,4 @@ def wallet_with_type_of_serialization(replayed_node, request):
         wallet.api.import_key(tt.Account(account_name).private_key)
 
     # Return wallet, type_of_serialization and pattern_name
-    return wallet, request.param, request.keywords.node.originalname
+    return wallet, request.keywords.node.originalname
