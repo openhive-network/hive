@@ -398,7 +398,7 @@ void update_witness_schedule(database& db)
     {
       if (db.has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE))
       {
-        ilog("Has hardfork 1_26, generating a future shuffled witness schedule");
+        // dlog("Has hardfork 1_26, generating a future shuffled witness schedule");
         // there are two cases: if this is the first time we've run after the hardfork, `future_shuffled_witnesses` will
         // be empty.  We should first compute the new `current_shuffled_witnesses`, then run again to fill the
         // `future_scheduled_witnesses`.
