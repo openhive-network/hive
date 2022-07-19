@@ -481,3 +481,22 @@ transaction_serialization_mainnet_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+.message_format_tests:
+  image: python:3.8-slim-bullseye
+  variables:
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+  script:
+    - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
+    - python3 -m ensurepip
+    - export NUMBER_OF_PROCESSES=$(nproc)
+    - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+    - cd tests/api_tests/message_format_tests
+    - timeout 20m pytest -n ${NUMBER_OF_PROCESSES} -m ${NODE_TYPE} --junitxml="./report.xml" --http-endpoint=${NODE_ADDRESS}
+  timeout: 25min
+  artifacts:
+    reports:
+      junit: tests/api_tests/message_format_tests/report.xml
+  tags:
+    - public-runner-docker
+    - hived-for-tests
