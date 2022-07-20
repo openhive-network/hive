@@ -14,6 +14,11 @@ def __get_path_of_pattern_file(extension, type_of_serialization, pattern_name):
 
 
 def __able_to_generate_pattern(validate_function):
+    '''
+    This decorator, depending on `GENERATE_PATTERNS` environment variable, decides
+    whether to call a wrapped function, which should validate a given transaction,
+    or set newly generated file as new pattern
+    '''
     def impl(wallet, pattern_name):
         generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
         if not generate_patterns:
