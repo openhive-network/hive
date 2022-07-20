@@ -4599,8 +4599,8 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       if (_benchmark_dumper.is_enabled())
         _benchmark_dumper.begin();
 
-      block_summary_object::id_type bsid( trx.ref_block_num );
-      const auto& tapos_block_summary = get< block_summary_object >( bsid );
+      block_summary_object::id_type bsid(trx.ref_block_num);
+      const auto& tapos_block_summary = get<block_summary_object>(bsid);
       //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
       HIVE_ASSERT(trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
                   "", (trx.ref_block_prefix)("tapos_block_summary", tapos_block_summary.block_id._hash[1]));
@@ -5271,8 +5271,12 @@ const fc::array<account_name_type, HIVE_MAX_WITNESSES>& database::get_witness_sc
 void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
   // fast-confirm transactions are processed outside of the normal transaction processing flow,
-  // so we need to explicitly call validation here
-  validate_transaction(full_transaction, skip_nothing);
+  // so we need to explicitly call validation here.
+  // Skip the tapos check for these transactions -- a witness could be on a different fork from
+  // ours (so their tapos would reference a block not in our chain), but we still want to know.
+  // If we have that block in our fork database and a supermajority of witnesses approve it, we 
+  // want to try to switch to it.
+  validate_transaction(full_transaction, skip_tapos_check);
 
   bool witness_is_scheduled = false;
   signed_transaction trx = full_transaction->get_transaction();
@@ -5376,8 +5380,6 @@ uint32_t database::update_last_irreversible_block()
   for (const auto& [witness, block_id] : last_block_approved_by_witness)
     witnesses_approving_blocks.insert(std::make_pair(block_id, witness));
 
-  // keep track of the highest block number we can make irreversible;
-  uint32_t last_irreversible_candidate_block_num = old_last_irreversible;
   
   // walk over each fork in the forkdb
   std::vector<item_ptr> heads = _fork_db.fetch_heads();
@@ -5385,12 +5387,16 @@ uint32_t database::update_last_irreversible_block()
   {
     // dlog("Considering possible head ${block_id}", ("block_id", possible_head->get_block_id()));
     // keep track of all witnesses approving this block
-    // we can probably just count witnesses instead, just keep a set for debugging
+    // we can probably just count witnesses instead, just keeping a set right now for debugging
     std::set<account_name_type> witnesses_approving_this_block;
     item_ptr this_block = possible_head;
 
     // walk backwards over blocks on this fork
-    while (this_block && this_block->get_block_num() > last_irreversible_candidate_block_num)
+    while (this_block && 
+           this_block->get_block_num() > old_last_irreversible &&
+           (!new_last_irreversible_block || // we don't yet have a candidate
+            this_block == new_last_irreversible_block || // this is our candidate, but we're coming at it from a different fork
+            this_block->get_block_num() > new_last_irreversible_block->get_block_num())) // it's a higher block number than our current candidate
     {
       // dlog("Considering block ${block_id}", ("block_id", this_block->get_block_id()));
       const auto [begin, end] = witnesses_approving_blocks.equal_range(this_block->get_block_id());
@@ -5402,9 +5408,12 @@ uint32_t database::update_last_irreversible_block()
       {
         // dlog("Block ${num} can be made irreversible, ${witnesses_approving_this_block} witnesses approve it", 
         //      ("num", this_block->get_block_num())("witnesses_approving_this_block", witnesses_approving_this_block.size()));
-        new_head_block = possible_head;
-        new_last_irreversible_block = this_block;
-        last_irreversible_candidate_block_num = this_block->get_block_num();
+        if (!new_last_irreversible_block || 
+            possible_head->get_block_num() > new_head_block->get_block_num())
+        {
+          new_head_block = possible_head;
+          new_last_irreversible_block = this_block;
+        }
         break;
       }
       else
