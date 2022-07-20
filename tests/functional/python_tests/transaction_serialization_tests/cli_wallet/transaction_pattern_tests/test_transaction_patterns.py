@@ -2,14 +2,14 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import verify_correctness_of_generated_transaction_json, \
-    verify_correctness_of_generated_transaction_bin
+from .local_tools import verify_generated_transaction_with_json_pattern, \
+    verify_generated_transaction_with_binary_pattern
 
 STORE_TRANSACTION = False
 
 WAYS_OF_PATTERN_VERIFICATION = [
-    verify_correctness_of_generated_transaction_bin,
-    verify_correctness_of_generated_transaction_json,
+    verify_generated_transaction_with_binary_pattern,
+    verify_generated_transaction_with_json_pattern
 ]
 
 TYPES_OF_SERIALIZATION = [
