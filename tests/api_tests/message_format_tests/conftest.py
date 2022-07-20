@@ -1,5 +1,6 @@
-import pytest
 import logging
+
+import pytest
 
 import test_tools as tt
 
@@ -16,12 +17,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def http_endpoint(request):
-    return request.config.getoption("--http-endpoint")
-
-
-@pytest.fixture
-def prepared_node(request, http_endpoint):
+def prepared_node(request):
     def __create_init_node():
         init_node = tt.InitNode()
         init_node.run()
@@ -29,8 +25,8 @@ def prepared_node(request, http_endpoint):
 
     create_node = {
         'testnet': __create_init_node,
-        'mainnet_5m': lambda: tt.RemoteNode(http_endpoint=http_endpoint),
-        'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=http_endpoint),
+        'mainnet_5m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
+        'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }
 
     requested_node = request.param[0]
