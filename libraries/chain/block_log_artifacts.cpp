@@ -317,7 +317,7 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
 
       if (head_block_num < _header.head_block_num)
       {
-        wlog("block_log file is shorten than current block_log.artifact file - the artifact file will be truncated.");
+        wlog("block_log file is shorter than current block_log.artifact file - the artifact file will be truncated.");
 
         /// Artifact file is too big. Let's try to truncate it
         truncate_file(head_block_num);
