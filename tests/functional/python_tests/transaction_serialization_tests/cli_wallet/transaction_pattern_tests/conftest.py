@@ -15,7 +15,7 @@ def replayed_node():
 def wallet_with_pattern_name(replayed_node, request):
     method_name: str = request.keywords.node.originalname
     assert method_name.startswith('test_')
-    pattern_name = method_name[len('test_'):]
+    pattern_name = method_name[len('test_'):] # Remove "test_" prefix
 
     wallet = tt.Wallet(attach_to=replayed_node,
                        additional_arguments=[f'--store-transaction={pattern_name}',
