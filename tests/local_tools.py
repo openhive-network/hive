@@ -4,7 +4,7 @@ from typing import Optional
 from test_tools import Account, Asset, Wallet
 
 
-def create_account_and_fund_it(wallet : Wallet, name: str, creator: str = 'initminer', tests: Optional[Asset.Test] = None,
+def create_account_and_fund_it(wallet: Wallet, name: str, creator: str = 'initminer', tests: Optional[Asset.Test] = None,
                                vests: Optional[Asset.Test] = None, tbds: Optional[Asset.Tbd] = None):
     assert any(asset is not None for asset in [tests, vests, tbds]), 'You forgot to fund account'
 

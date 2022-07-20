@@ -13,7 +13,7 @@ def replayed_node():
 
 @pytest.fixture
 def wallet_with_pattern_name(replayed_node, request):
-    method_name : str = request.keywords.node.originalname
+    method_name: str = request.keywords.node.originalname
     assert method_name.startswith('test_')
     pattern_name = method_name[len('test_'):]
 
