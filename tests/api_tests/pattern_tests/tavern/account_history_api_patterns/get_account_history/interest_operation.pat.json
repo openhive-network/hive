@@ -12,6 +12,7 @@
               "nai": "@@000000013",
               "precision": 3
             },
+            "is_saved_into_hbd_balance": true,
             "owner": "xeroc"
           }
         },
