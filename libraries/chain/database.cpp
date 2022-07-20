@@ -1240,8 +1240,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
 
   auto temp_session = start_undo_session();
   _apply_transaction(full_transaction);
-  if (!is_fast_confirm_transaction(full_transaction)) // keep fast-confirm transactions out of _pending_tx so they don't get into blocks
-    _pending_tx.push_back(full_transaction);
+  _pending_tx.push_back(full_transaction);
 
   notify_changed_objects();
   // The transaction applied successfully. Merge its changes into the pending block session.
@@ -4716,13 +4715,6 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
     if( _benchmark_dumper.is_enabled() )
       _benchmark_dumper.end( "transaction", "dupe check" );
-  }
-
-  if (is_fast_confirm_transaction(full_transaction))
-  {
-    // fast-confirm transactions are just processed in memory, they're not added to the blockchain
-    process_fast_confirm_transaction(full_transaction);
-    return;
   }
 
   notify_pre_apply_transaction( note );
