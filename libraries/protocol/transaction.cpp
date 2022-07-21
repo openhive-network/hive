@@ -1,6 +1,7 @@
 
 #include <hive/protocol/transaction.hpp>
 #include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/crypto.hpp>
 
 #include <fc/io/raw.hpp>
 #include <fc/bitutil.hpp>
@@ -23,17 +24,6 @@ digest_type transaction::digest()const
   hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::serialization_mode_controller::get_current_pack() );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
-  return enc.result();
-}
-
-digest_type transaction::sig_digest( const chain_id_type& chain_id, hive::protocol::pack_type pack )const
-{
-  digest_type::encoder enc;
-
-  hive::protocol::serialization_mode_controller::pack_guard guard( pack );
-  fc::raw::pack( enc, chain_id );
-  fc::raw::pack( enc, *this );
-
   return enc.result();
 }
 
@@ -65,14 +55,14 @@ transaction_id_type transaction::id() const
 
 const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
 {
-  digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
+  digest_type h = sig_digest( *this, chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
   signatures.push_back( key.sign_compact( h, canon_type ) );
   return signatures.back();
 }
 
 signature_type signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )const
 {
-  digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
+  digest_type h = sig_digest( *this, chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
   return key.sign_compact( h, canon_type );
 }
 
@@ -98,7 +88,7 @@ void transaction::get_required_authorities( flat_set< account_name_type >& activ
 
 flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, canonical_signature_type canon_type, hive::protocol::pack_type pack )const
 { try {
-  auto d = sig_digest( chain_id, pack );
+  auto d = sig_digest( *this, chain_id, pack );
   flat_set<public_key_type> result;
   for( const auto&  sig : signatures )
   {
