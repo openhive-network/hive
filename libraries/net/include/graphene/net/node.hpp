@@ -55,6 +55,13 @@ namespace graphene { namespace net {
     node_id_t originating_peer;
   };
 
+  // timestamps for item getting to inventory and later fetch request
+  struct inventory_timestamps
+  {
+    fc::time_point fetch_ts; // time when item was requested from peer
+    fc::time_point inventory_ts; // time when we've first seen the item advertised
+  };
+
    /**
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
@@ -93,7 +100,7 @@ namespace graphene { namespace net {
           *  @throws exception if error validating the item, otherwise the item is
           *          safe to broadcast on.
           */
-         virtual bool handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) = 0;
+         virtual bool handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode, const inventory_timestamps& times ) = 0;
 
          /**
           *  @brief Called when a new transaction comes in from the network

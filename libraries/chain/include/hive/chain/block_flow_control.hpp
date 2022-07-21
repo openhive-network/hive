@@ -14,7 +14,13 @@ namespace hive { namespace chain {
 class block_stats
 {
 public:
-  block_stats() : creation( fc::time_point::now() ) {}
+  block_stats() : p2p_inventory( fc::time_point::now() ), p2p_fetch_request( p2p_inventory ), creation( p2p_inventory ) {}
+
+  void supplement_p2p_timestamps( const fc::time_point& _i, const fc::time_point& _r )
+  {
+    p2p_inventory = _i;
+    p2p_fetch_request = _r;
+  }
 
   void on_start_work( uint32_t _inc_txs, uint32_t _ok_txs )
   {
@@ -37,11 +43,15 @@ public:
     txs_postponed = _post_txs;
   }
 
+  fc::microseconds get_p2p_time_to_request() const { return p2p_fetch_request - p2p_inventory; }
+  fc::microseconds get_p2p_time_to_arrive() const { return creation - p2p_fetch_request; }
   fc::microseconds get_wait_time() const { return start_work - creation; }
   fc::microseconds get_work_time() const { return end_work - start_work; }
   fc::microseconds get_cleanup_time() const { return end_cleanup - end_work; }
   fc::microseconds get_total_time() const { return end_cleanup - creation; }
 
+  const fc::time_point& get_p2p_inventory_ts() const { return p2p_inventory; }
+  const fc::time_point& get_p2p_fetch_request_ts() const { return p2p_fetch_request; }
   const fc::time_point& get_creation_ts() const { return creation; }
   const fc::time_point& get_start_ts() const { return start_work; }
   const fc::time_point& get_ready_ts() const { return end_work; }
@@ -55,6 +65,10 @@ public:
   uint32_t get_txs_postponed_after_block() const { return txs_postponed; }
 
 private:
+  //time when block was first announced by any peer (or ==creation for non-P2P)
+  fc::time_point p2p_inventory;
+  //time when the node requested the block to fetch (or ==creation for non-P2P)
+  fc::time_point p2p_fetch_request;
   //time of arrival for P2P, time of request for new block
   fc::time_point creation;
   //start of block building or verification
@@ -217,8 +231,12 @@ protected:
 class p2p_block_flow_control : public block_flow_control
 {
 public:
-  p2p_block_flow_control( const std::shared_ptr<full_block_type>& _block, uint32_t _skip )
-    : block_flow_control( _block ), skip( _skip ) {}
+  p2p_block_flow_control( const std::shared_ptr<full_block_type>& _block, uint32_t _skip,
+    const fc::time_point& _inventory_ts, const fc::time_point& _fetch_ts )
+    : block_flow_control( _block ), skip( _skip )
+  {
+    stats.supplement_p2p_timestamps( _inventory_ts, _fetch_ts );
+  }
   virtual ~p2p_block_flow_control() = default;
 
   void attach_promise( const fc::promise<void>::ptr& _p ) { prom = _p; }

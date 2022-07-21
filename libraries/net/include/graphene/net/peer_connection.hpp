@@ -218,7 +218,7 @@ namespace graphene { namespace net
       uint16_t outbound_port = 0;
       /// @}
 
-      typedef std::unordered_map<item_id, fc::time_point> item_to_time_map_type;
+      typedef std::unordered_map<item_id, inventory_timestamps> item_to_time_map_type;
 
       /// blockchain synchronization state data
       /// @{

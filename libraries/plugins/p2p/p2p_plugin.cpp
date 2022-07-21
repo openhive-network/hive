@@ -98,7 +98,7 @@ public:
 
   // node_delegate interface
   virtual bool has_item( const graphene::net::item_id& ) override;
-  virtual bool handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool) override;
+  virtual bool handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool, const graphene::net::inventory_timestamps&) override;
   virtual void handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction) override;
   virtual void handle_message( const graphene::net::message& ) override;
   virtual std::vector< graphene::net::item_hash_t > get_block_ids( const std::vector< graphene::net::item_hash_t >&, uint32_t&, uint32_t ) override;
@@ -148,7 +148,7 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
   FC_CAPTURE_LOG_AND_RETHROW( (id) )
 }
 
-bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool sync_mode)
+bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool sync_mode, const graphene::net::inventory_timestamps& times)
 { try {
   if( shutdown_helper.get_running().load() )
   {
@@ -162,11 +162,16 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
           ("block_hash", full_block->get_block_id())
           ("head", head_block_num));
     else
+    {
+      auto now = fc::time_point::now();
       fc_ilog(fc::logger::get("sync"),
-          "chain pushing block #${block_num} ${block_hash}, head is ${head}",
+          "chain pushing block #${block_num} ${block_hash}, head is ${head}, first seen/requested ${i}/${r} ms ago",
           ("block_num", full_block->get_block_num())
           ("block_hash", full_block->get_block_id())
-          ("head", head_block_num));
+          ("head", head_block_num)
+          ("i", (now - times.inventory_ts).count() / 1000)
+          ("r", (now - times.fetch_ts).count() / 1000 ));
+    }
 
     try
     {
@@ -175,7 +180,8 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
       auto p2p_block_ctrl = std::make_shared< chain::p2p_block_flow_control >( full_block,
-        ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures );
+        ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures,
+        times.inventory_ts, times.fetch_ts );
       bool result = chain.accept_block( p2p_block_ctrl, sync_mode );
 
       if (!sync_mode)
