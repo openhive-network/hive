@@ -414,14 +414,13 @@ namespace hive { namespace chain {
         std::unique_ptr<char[]> block_data(new char[size_of_all_blocks]);
         detail::block_log_impl::pread_with_retry(my->block_log_fd, block_data.get(), size_of_all_blocks, first_block_offset);
 
-        uint64_t offset_in_memory = 0; /// offset in block_data buffer, pointing to another block
-
         // now deserialize the blocks
         for (const block_log_artifacts::artifacts_t& block_artifacts : plural_of_block_artifacts)
         {
           // full_block_type expects to take ownership of a unique_ptr for the memory, so create one
           std::unique_ptr<char[]> compressed_block_data(new char[block_artifacts.block_serialized_data_size]);
-          memcpy(compressed_block_data.get(), block_data.get() + offset_in_memory, block_artifacts.block_serialized_data_size);
+          memcpy(compressed_block_data.get(), block_data.get() + block_artifacts.block_log_file_pos - first_block_offset, 
+                 block_artifacts.block_serialized_data_size);
           if (block_artifacts.attributes.flags == block_flags::uncompressed)
             result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), 
                                                                                   block_artifacts.block_serialized_data_size, 
@@ -430,8 +429,6 @@ namespace hive { namespace chain {
             result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), 
                                                                                 block_artifacts.block_serialized_data_size, 
                                                                                 block_artifacts.attributes, block_artifacts.block_id));
-
-          offset_in_memory += block_artifacts.block_serialized_data_size;
         }
       }
 
