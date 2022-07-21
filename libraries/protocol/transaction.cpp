@@ -12,7 +12,7 @@ namespace hive { namespace protocol {
 
 digest_type signed_transaction::merkle_digest()const
 {
-  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
+  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::serialization_mode_controller::get_current_pack() );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
   return enc.result();
@@ -20,7 +20,7 @@ digest_type signed_transaction::merkle_digest()const
 
 digest_type transaction::digest()const
 {
-  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
+  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::serialization_mode_controller::get_current_pack() );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
   return enc.result();
