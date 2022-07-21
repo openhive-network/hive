@@ -1150,6 +1150,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       //Only switch forks if new_head is actually higher than head
       if (new_head->get_block_num() > head_block_num())
       {
+        block_ctrl.on_fork_apply();
         switch_forks(new_head);
         return true;
       }
