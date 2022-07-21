@@ -76,8 +76,11 @@ public:
    * 
    * @param start_block_num - input, first block to read artifacts for
    * @param block_count     - input, number of blocks to be processed
-   * @param block_size_sum  - output, optional - allows to rettrieve total size of raw block storage, to simplify their load from block_log file
-   * @return filled container holding artifacts for queries blocks. First stored item is specific to `start_block_num`, next are following them.
+   * @param block_size_sum  - output, optional - allows to retrieve total size of raw block storage, to simplify their load from block_log file.
+   *                          \warning This sum additionally includes sizeof of additional field stored after each block (prev-block-position)
+                              to simplify reading data for multiple blocks at one time. This field should be accordingly skipped in the memory buffer
+                              while accessing RAW block data.
+   * @return filled container holding artifacts for queried blocks. First stored item is specific to `start_block_num`, next are following them.
   */
   artifact_container_t read_block_artifacts(uint32_t start_block_num, uint32_t block_count, size_t* block_size_sum = nullptr) const;
 
