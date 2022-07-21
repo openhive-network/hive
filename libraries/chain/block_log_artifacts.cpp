@@ -641,7 +641,7 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
 
       prev_block_size = calculate_block_serialized_data_size(chunk, chunk_buffer[i-1]);
 
-      size_sum += prev_block_size;
+      size_sum += prev_block_size + sizeof(uint64_t);
 
       storage.back().block_serialized_data_size = prev_block_size;
 
@@ -652,7 +652,7 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
     prev_block_size = calculate_block_serialized_data_size(next_chunk, chunk_buffer[chunk_count - 1]);
     storage.back().block_serialized_data_size = prev_block_size;
 
-    size_sum += prev_block_size;
+    size_sum += prev_block_size + sizeof(uint64_t);
   });
 
   if(block_size_sum != nullptr)
