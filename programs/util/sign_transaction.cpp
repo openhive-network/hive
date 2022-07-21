@@ -10,8 +10,7 @@
 
 #include <hive/utilities/key_conversion.hpp>
 
-#include <hive/protocol/transaction.hpp>
-#include <hive/protocol/types.hpp>
+#include <hive/protocol/crypto.hpp>
 
 #define CHAIN_ID_PARAM "--chain-id"
 
@@ -118,7 +117,7 @@ int main(int argc, char** argv, char** envp)
       tx_signing_result sres;
       sres.tx = sreq.tx;
       sres.digest = sreq.tx.digest();
-      sres.sig_digest = sreq.tx.sig_digest(chainId, hive::protocol::pack_type::legacy);
+      sres.sig_digest = sig_digest(sreq.tx, chainId, hive::protocol::pack_type::legacy);
 
       auto priv_key = hive::utilities::wif_to_key( sreq.wif );
 

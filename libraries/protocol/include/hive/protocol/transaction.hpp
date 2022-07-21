@@ -24,7 +24,6 @@ using fc::ecc::canonical_signature_type;
     transaction_id_type id()const;
     void                validate() const;
     void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
-    digest_type         sig_digest( const chain_id_type& chain_id, hive::protocol::pack_type pack )const;
 
     void set_expiration( fc::time_point_sec expiration_time );
     void set_reference_block( const block_id_type& reference_block );
