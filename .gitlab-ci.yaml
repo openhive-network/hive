@@ -317,6 +317,25 @@ message_format_tests:
   tags:
     - public-runner-docker
 
+datagen_api_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+  script:
+    - cd tests/functional/python_tests/datagen_tests/api_tests/
+    - timeout 2m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="tests/functional/python_tests/datagen_tests/api_tests/report.xml"
+  timeout: 10min
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/datagen_tests/api_tests/report.xml
+  tags:
+    - public-runner-docker
+
 patterns_tests:
   extends: .docker_image_builder_job
   stage: test
