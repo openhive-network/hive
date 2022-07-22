@@ -464,3 +464,22 @@ message_format_mainnet_64m_tests:
     # Run this job, only when environment variable "RUN_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M" is set to "TRUE"
     - if: $RUN_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M == "TRUE"
       when: always
+
+pytest-timeout-test:
+  image: python:3.8-slim-bullseye
+  script:
+    - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
+    - python3 -m ensurepip
+    - export NUMBER_OF_PROCESSES=$(nproc)
+    - pip3 install pytest pytest-xdist pytest-timeout "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+    - cd tests/api_tests/message_format_tests/account_history_api/pytest_durations
+    - echo "START TEST test_durations_pytest_options.py"
+    - pytest --timeout=60 --junitxml="./report.xml"
+    - echo "FINISH. 3 MIN TIME OUT"
+  timeout: 3min
+  artifacts:
+    reports:
+      junit: tests/api_tests/message_format_tests/report.xml
+  tags:
+    - public-runner-docker
+    - hived-for-tests
