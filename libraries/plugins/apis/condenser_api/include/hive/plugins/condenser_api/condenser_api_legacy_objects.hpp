@@ -2,9 +2,12 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
 
+#include <hive/plugins/account_history_api/annotated_signed_transaction.hpp>
 #include <hive/plugins/block_api/block_api_objects.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {
+
+using hive::plugins::account_history::annotated_signed_transaction;
 
 FC_TODO( "Remove when automated actions are created" )
 typedef static_variant<

@@ -13,6 +13,8 @@
 
 namespace hive { namespace wallet {
 
+using hive::plugins::account_history::annotated_signed_transaction;
+
 using namespace std;
 
 using namespace hive::utilities;
