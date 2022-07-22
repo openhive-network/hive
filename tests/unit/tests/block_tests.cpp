@@ -231,12 +231,13 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
         init_account_priv_key, database::skip_nothing );
       good_block = b;
-      signed_block bad_block = b->get_block();
-      bad_block.transactions.emplace_back(signed_transaction());
-      bad_block.transactions.back().operations.emplace_back(transfer_operation());
-      bad_block.legacy_sign( init_account_priv_key );
-      BOOST_CHECK_EQUAL(bad_block.block_num(), 14u);
-      HIVE_CHECK_THROW(PUSH_BLOCK( db1, bad_block ), fc::exception);
+      auto bad_block_header = b->get_block_header();
+      auto bad_block_txs = b->get_full_transactions();
+      signed_transaction tx;
+      tx.operations.emplace_back( transfer_operation() );
+      bad_block_txs.emplace_back( full_transaction_type::create_from_signed_transaction( tx, pack_type::legacy, false ) );
+      BOOST_CHECK_EQUAL(bad_block_header.block_num(), 14u);
+      HIVE_CHECK_THROW(PUSH_BLOCK( db1, bad_block_header, bad_block_txs, init_account_priv_key ), fc::exception);
     }
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);

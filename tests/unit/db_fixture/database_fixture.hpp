@@ -332,7 +332,6 @@ struct database_fixture {
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
   void push_transaction( const signed_transaction& tx, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
 
-  bool push_block( const signed_block& b, uint32_t skip_flags = 0 );
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
   void fund( const string& account_name, const share_type& amount = 500000 );
@@ -615,7 +614,7 @@ namespace test
 {
   std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
     const fc::ecc::private_key& _key, uint32_t _skip = 0 );
-  bool _push_block( database& db, const signed_block& b, uint32_t skip_flags = 0 );
+  bool _push_block( database& db, const block_header& header, const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, const fc::ecc::private_key& signer, uint32_t skip_flags = 0 );
   bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
   void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
 }

@@ -117,17 +117,17 @@ BOOST_AUTO_TEST_CASE( full_block )
   });
 
   generate_block();
-  signed_block block = db->fetch_block_by_number( db->head_block_num() )->get_block();
+  auto full_block = db->fetch_block_by_number( db->head_block_num() );
 
   db->pop_block();
 
   // In a full block scenario, there would be no optional actions included nor the last required action
   // Clear optional actions and the last required action and resign.
-  block.extensions.erase( *block.extensions.end() );
-  block.extensions.begin()->get< required_automated_actions >().pop_back();
-  block.legacy_sign( HIVE_INIT_PRIVATE_KEY );
+  auto block_header = full_block->get_block_header();
+  block_header.extensions.erase( *block_header.extensions.end() );
+  block_header.extensions.begin()->get< required_automated_actions >().pop_back();
 
-  PUSH_BLOCK( *db, block );
+  PUSH_BLOCK( *db, block_header, full_block->get_full_transactions(), HIVE_INIT_PRIVATE_KEY );
 
   {
     const auto& pending_req_index = db->get_index< pending_required_action_index, by_execution >();
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE( unexpected_required_action )
   generate_block();
 
   generate_block();
-  signed_block block = db->fetch_block_by_number( db->head_block_num() )->get_block();
+  auto full_block = db->fetch_block_by_number( db->head_block_num() );
 
   db->pop_block();
 
@@ -209,10 +209,10 @@ BOOST_AUTO_TEST_CASE( unexpected_required_action )
   req_action.account = HIVE_TEMP_ACCOUNT;
   required_automated_actions req_actions;
   req_actions.push_back( req_action );
-  block.extensions.insert( req_actions );
-  block.legacy_sign( HIVE_INIT_PRIVATE_KEY );
+  auto block_header = full_block->get_block_header();
+  block_header.extensions.insert( req_actions );
 
-  BOOST_REQUIRE_THROW( PUSH_BLOCK( *db, block ), fc::assert_exception );
+  BOOST_REQUIRE_THROW( PUSH_BLOCK( *db, block_header, full_block->get_full_transactions(), HIVE_INIT_PRIVATE_KEY ), fc::assert_exception );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -235,14 +235,14 @@ BOOST_AUTO_TEST_CASE( missing_required_action )
   });
 
   generate_block();
-  signed_block block = db->fetch_block_by_number( db->head_block_num() )->get_block();
+  auto full_block = db->fetch_block_by_number( db->head_block_num() );
 
   db->pop_block();
 
-  block.extensions.clear();
-  block.legacy_sign( HIVE_INIT_PRIVATE_KEY );
+  auto block_header = full_block->get_block_header();
+  block_header.extensions.clear();
 
-  BOOST_REQUIRE_THROW( PUSH_BLOCK( *db, block ), fc::assert_exception );
+  BOOST_REQUIRE_THROW( PUSH_BLOCK( *db, block_header, full_block->get_full_transactions(), HIVE_INIT_PRIVATE_KEY ), fc::assert_exception );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -271,14 +271,14 @@ BOOST_AUTO_TEST_CASE( optional_action_expiration )
 
   generate_block();
 
-  signed_block block = db->fetch_block_by_number( db->head_block_num() )->get_block();
+  auto full_block = db->fetch_block_by_number( db->head_block_num() );
 
   db->pop_block();
 
-  block.extensions.erase( *block.extensions.rbegin() );
-  block.legacy_sign( HIVE_INIT_PRIVATE_KEY );
+  auto block_header = full_block->get_block_header();
+  block_header.extensions.erase( *block_header.extensions.rbegin() );
 
-  PUSH_BLOCK( *db, block );
+  PUSH_BLOCK( *db, block_header, full_block->get_full_transactions(), HIVE_INIT_PRIVATE_KEY );
 
   const auto& opt_action_idx = db->get_index< pending_optional_action_index, by_execution >();
   auto opt_itr = opt_action_idx.begin();
@@ -295,17 +295,17 @@ BOOST_AUTO_TEST_CASE( unexpected_optional_action )
 
   generate_block();
 
-  signed_block block = db->fetch_block_by_number( db->head_block_num() )->get_block();
+  auto full_block = db->fetch_block_by_number( db->head_block_num() );
 
   db->pop_block();
 
   example_optional_action opt_action;
   opt_action.account = HIVE_NULL_ACCOUNT;
   optional_automated_actions opt_actions = { opt_action };
-  block.extensions.insert( opt_actions );
-  block.legacy_sign( HIVE_INIT_PRIVATE_KEY );
+  auto block_header = full_block->get_block_header();
+  block_header.extensions.insert( opt_actions );
 
-  PUSH_BLOCK( *db, block );
+  PUSH_BLOCK( *db, block_header, full_block->get_full_transactions(), HIVE_INIT_PRIVATE_KEY );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -321,17 +321,17 @@ BOOST_AUTO_TEST_CASE( reject_optional_action )
 
   generate_block();
 
-  signed_block block = db->fetch_block_by_number( db->head_block_num() )->get_block();
+  auto full_block = db->fetch_block_by_number( db->head_block_num() );
 
   db->pop_block();
 
   example_optional_action opt_action;
   opt_action.account = "_foobar";
   optional_automated_actions opt_actions = { opt_action };
-  block.extensions.insert( opt_actions );
-  block.legacy_sign( HIVE_INIT_PRIVATE_KEY );
+  auto block_header = full_block->get_block_header();
+  block_header.extensions.insert( opt_actions );
 
-  BOOST_REQUIRE_THROW( PUSH_BLOCK( *db, block ), fc::assert_exception );
+  BOOST_REQUIRE_THROW( PUSH_BLOCK( *db, block_header, full_block->get_full_transactions(), HIVE_INIT_PRIVATE_KEY ), fc::assert_exception );
 
 } FC_LOG_AND_RETHROW() }
 
