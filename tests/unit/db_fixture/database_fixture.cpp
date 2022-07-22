@@ -645,11 +645,6 @@ void database_fixture::push_transaction( const signed_transaction& tx, uint32_t 
   test::_push_transaction(*db, tx, skip_flags, pack_type);
 }
 
-bool database_fixture::push_block( const signed_block& b, uint32_t skip_flags /* = 0 */ )
-{
-  return test::_push_block(*db, b, skip_flags);
-}
-
 bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
 {
   return test::_push_block(*db, b, skip_flags);
@@ -1675,11 +1670,13 @@ std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract
   return new_block_ctrl.get_full_block();
 }
 
-bool _push_block( database& db, const signed_block& b, uint32_t skip_flags /* = 0 */ )
+bool _push_block( database& db, const block_header& header,
+  const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
+  const fc::ecc::private_key& signer, uint32_t skip_flags /* = 0 */ )
 {
-  std::shared_ptr<full_block_type> full_block( hive::chain::full_block_type::create_from_signed_block( b ) );
+  std::shared_ptr<full_block_type> full_block( hive::chain::full_block_type::create_from_block_header_and_transactions( header, full_transactions, &signer ) );
   existing_block_flow_control block_ctrl( full_block );
-  return db.push_block( block_ctrl, skip_flags);
+  return db.push_block( block_ctrl, skip_flags );
 }
 
 bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
