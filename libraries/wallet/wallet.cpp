@@ -234,8 +234,10 @@ class wallet_api_impl
 
 public:
   wallet_api& self;
-  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id, const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization, const std::string& store_transaction )
-    : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
+  wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id,
+    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api, transaction_serialization_type transaction_serialization,
+    const std::string& store_transaction ) : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _chosen_transaction_serialization(transaction_serialization),
+    _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
   {
     wallet_transaction_serialization::transaction_serialization = transaction_serialization;
     serialization_mode_controller::set_pack( transaction_serialization );
@@ -848,6 +850,8 @@ public:
       }
     }
 
+    auto new_tx = hive::chain::full_transaction_type::create_from_signed_transaction(tx, _chosen_transaction_serialization, false);
+
     if( broadcast ) {
       try {
         auto v = _remote_wallet_bridge_api->get_version({}, LOCK);
@@ -856,17 +860,15 @@ public:
         if( blocking )
         {
           auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(tx)}}, LOCK );
-          annotated_signed_transaction rtrx(tx);
-          rtrx.block_num = result.block_num;
-          rtrx.transaction_num = result.trx_num;
-          dump_transaction( rtrx );
+          annotated_signed_transaction rtrx(new_tx->get_transaction(), new_tx->get_transaction_id(), result.block_num, result.trx_num);
+          dump_transaction(*new_tx, rtrx );
           return rtrx;
         }
         else
         {
           _remote_wallet_bridge_api->broadcast_transaction( vector<variant>{{variant(tx)}}, LOCK );
-          auto _result = annotated_signed_transaction(tx);
-          dump_transaction( _result );
+          annotated_signed_transaction _result(new_tx->get_transaction(), new_tx->get_transaction_id());
+          dump_transaction(*new_tx, _result );
           return _result;
         }
       }
@@ -876,8 +878,11 @@ public:
         throw;
       }
     }
-    dump_transaction( tx );
-    return tx;
+    
+    annotated_signed_transaction _result(new_tx->get_transaction(), new_tx->get_transaction_id());
+    dump_transaction(*new_tx, _result);
+
+    return _result;
   }
 
   operation get_prototype_operation( const string& operation_name )
@@ -888,7 +893,7 @@ public:
     return it->second;
   }
 
-  void dump_transaction( const annotated_signed_transaction& trx ) const
+  void dump_transaction( const hive::chain::full_transaction_type& full_trx, const annotated_signed_transaction& trx ) const
   {
     if( _store_transaction.empty() )
       return;
@@ -908,6 +913,10 @@ public:
     try
     {
       std::ofstream _file_bin( _store_transaction + ".bin", std::ios_base::out | std::ios_base::binary );
+      
+      /// TODO: it seems that full_transaction should do the work here but bad type originally used as serialization source (annotated_signed_transaction) broken it.
+      /// The idea behind tx dumping feature was to store it in the same form as in block - annotated_signed_transaction NEVER comes to the block. Another aspect of tx dump
+      /// was serializing tx BEFORE sign, just to prepare it for offline sign.
       fc::raw::pack( _file_bin, trx );
       _file_bin.flush();
       _file_bin.close();
@@ -918,7 +927,7 @@ public:
   string                                                    _wallet_filename;
   wallet_data                                               _wallet;
   chain_id_type                                             _hive_chain_id;
-
+  transaction_serialization_type                            _chosen_transaction_serialization;
   map<public_key_type,string>                               _keys;
   fc::sha512                                                _checksum;
   fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api > _remote_wallet_bridge_api;
