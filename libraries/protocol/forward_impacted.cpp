@@ -399,7 +399,6 @@ struct get_impacted_account_visitor
     _impacted.insert( HIVE_INIT_MINER_NAME );
   }
 
-
   void operator()( const fill_recurrent_transfer_operation& op )
   {
     _impacted.insert( op.from );
@@ -410,6 +409,16 @@ struct get_impacted_account_visitor
   {
     _impacted.insert( op.from );
     _impacted.insert( op.to );
+  }
+
+  void operator()( const producer_missed_operation& op )
+  {
+    _impacted.insert( op.producer );
+  }
+
+  void operator()( const dhf_instant_conversion_operation& op )
+  {
+    _impacted.insert( op.converter );
   }
 
   //void operator()( const operation& op ){}
@@ -523,6 +532,12 @@ struct impacted_balance_collector
   void operator()(const fill_collateralized_convert_request_operation& o)
   {
     emplace_back(o.owner, o.excess_collateral);
+  }
+
+  void operator()(const dhf_instant_conversion_operation& o)
+  {
+    result.emplace_back(o.converter, -o.hive_amount_in);
+    result.emplace_back(o.converter, o.hbd_amount_out);
   }
 
   void operator()(const escrow_transfer_operation& o)

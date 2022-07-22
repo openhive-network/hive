@@ -85,6 +85,8 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef ineffective_delete_comment_operation   legacy_ineffective_delete_comment_operation;
   typedef fill_recurrent_transfer_operation      legacy_fill_recurrent_transfer_operation;
   typedef failed_recurrent_transfer_operation    legacy_failed_recurrent_transfer_operation;
+  typedef producer_missed_operation              legacy_producer_missed_operation;
+  typedef dhf_instant_conversion_operation       legacy_dhf_instant_conversion_operation;
 
   struct legacy_price
   {
@@ -1490,7 +1492,9 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_ineffective_delete_comment_operation,
         legacy_recurrent_transfer_operation,
         legacy_fill_recurrent_transfer_operation,
-        legacy_failed_recurrent_transfer_operation
+        legacy_failed_recurrent_transfer_operation,
+        legacy_producer_missed_operation,
+        legacy_dhf_instant_conversion_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1540,6 +1544,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const ineffective_delete_comment_operation& op )const     { l_op = op; return true; }
     bool operator()( const fill_recurrent_transfer_operation& op )const        { l_op = op; return true; }
     bool operator()( const failed_recurrent_transfer_operation& op )const      { l_op = op; return true; }
+    bool operator()( const producer_missed_operation& op )const                { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
@@ -1811,6 +1816,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const dhf_instant_conversion_operation& op )const
+    {
+      l_op = legacy_dhf_instant_conversion_operation( op );
+      return true;
+    }
+
     // Should only be SMT ops
     template< typename T >
     bool operator()( const T& )const { return false; }
@@ -2045,6 +2056,11 @@ struct convert_from_legacy_operation_visitor
   operation operator()( const legacy_recurrent_transfer_operation& op )const
   {
     return operation( recurrent_transfer_operation( op ) );
+  }
+
+  operation operator()( const legacy_dhf_instant_conversion_operation& op )const
+  {
+    return operation( dhf_instant_conversion_operation( op ) );
   }
 
   template< typename T >

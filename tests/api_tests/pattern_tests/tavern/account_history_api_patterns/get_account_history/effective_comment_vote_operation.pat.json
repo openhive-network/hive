@@ -1,7 +1,63 @@
 {
   "history": [
     [
-      2037,
+      2166,
+      {
+        "block": 1261922,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5768066",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 691600921,
+            "total_vote_weight": "36191518155478",
+            "voter": "steemrollin",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T07:13:57",
+        "trx_id": "413ca262fb5c77dfc1f78f4443681ccc815ccc99",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2181,
+      {
+        "block": 1262196,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "791",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-tuck-fheman-medical-equipment-crashes-during-heart-procedure-because-of-antivirus-scan-20160508t044758862z",
+            "rshares": "151385198541",
+            "total_vote_weight": "151385198541",
+            "voter": "tuck-fheman",
+            "weight": "151385198541"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T07:27:45",
+        "trx_id": "01a0af82c0967e0c22f78403744a7e51b3626f9a",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2222,
       {
         "block": 1262996,
         "op": {
@@ -29,7 +85,7 @@
       }
     ],
     [
-      2039,
+      2224,
       {
         "block": 1262997,
         "op": {
@@ -57,7 +113,7 @@
       }
     ],
     [
-      2048,
+      2233,
       {
         "block": 1263131,
         "op": {
@@ -85,7 +141,7 @@
       }
     ],
     [
-      2050,
+      2235,
       {
         "block": 1263131,
         "op": {
@@ -113,7 +169,7 @@
       }
     ],
     [
-      2191,
+      2376,
       {
         "block": 1265961,
         "op": {
@@ -141,7 +197,7 @@
       }
     ],
     [
-      2200,
+      2385,
       {
         "block": 1266083,
         "op": {
@@ -169,7 +225,7 @@
       }
     ],
     [
-      2205,
+      2390,
       {
         "block": 1266137,
         "op": {
@@ -197,7 +253,7 @@
       }
     ],
     [
-      2208,
+      2393,
       {
         "block": 1266149,
         "op": {
@@ -225,7 +281,7 @@
       }
     ],
     [
-      2213,
+      2398,
       {
         "block": 1266212,
         "op": {
@@ -253,7 +309,7 @@
       }
     ],
     [
-      2216,
+      2401,
       {
         "block": 1266221,
         "op": {
@@ -281,7 +337,7 @@
       }
     ],
     [
-      2218,
+      2403,
       {
         "block": 1266232,
         "op": {
@@ -309,7 +365,7 @@
       }
     ],
     [
-      2331,
+      2516,
       {
         "block": 1268489,
         "op": {
@@ -337,7 +393,7 @@
       }
     ],
     [
-      2423,
+      2608,
       {
         "block": 1270270,
         "op": {
@@ -365,7 +421,7 @@
       }
     ],
     [
-      2425,
+      2610,
       {
         "block": 1270271,
         "op": {
@@ -393,7 +449,7 @@
       }
     ],
     [
-      2546,
+      2731,
       {
         "block": 1272592,
         "op": {
@@ -421,7 +477,7 @@
       }
     ],
     [
-      2549,
+      2734,
       {
         "block": 1272628,
         "op": {
@@ -449,7 +505,7 @@
       }
     ],
     [
-      2564,
+      2749,
       {
         "block": 1272856,
         "op": {
@@ -477,7 +533,7 @@
       }
     ],
     [
-      2645,
+      2830,
       {
         "block": 1274459,
         "op": {
@@ -505,7 +561,7 @@
       }
     ],
     [
-      2647,
+      2832,
       {
         "block": 1274460,
         "op": {
@@ -533,7 +589,7 @@
       }
     ],
     [
-      2705,
+      2890,
       {
         "block": 1275555,
         "op": {
@@ -561,7 +617,7 @@
       }
     ],
     [
-      2708,
+      2893,
       {
         "block": 1275560,
         "op": {
@@ -589,7 +645,7 @@
       }
     ],
     [
-      2710,
+      2895,
       {
         "block": 1275565,
         "op": {
@@ -617,7 +673,7 @@
       }
     ],
     [
-      2712,
+      2897,
       {
         "block": 1275568,
         "op": {
@@ -645,7 +701,7 @@
       }
     ],
     [
-      2823,
+      3008,
       {
         "block": 1277711,
         "op": {
@@ -673,7 +729,7 @@
       }
     ],
     [
-      2825,
+      3010,
       {
         "block": 1277712,
         "op": {
@@ -701,7 +757,7 @@
       }
     ],
     [
-      3055,
+      3240,
       {
         "block": 1282083,
         "op": {
@@ -729,7 +785,7 @@
       }
     ],
     [
-      3124,
+      3309,
       {
         "block": 1283361,
         "op": {
@@ -757,7 +813,7 @@
       }
     ],
     [
-      3309,
+      3494,
       {
         "block": 1286939,
         "op": {
@@ -785,7 +841,7 @@
       }
     ],
     [
-      3618,
+      3803,
       {
         "block": 1292969,
         "op": {
@@ -813,7 +869,7 @@
       }
     ],
     [
-      3735,
+      3920,
       {
         "block": 1295318,
         "op": {
@@ -841,7 +897,7 @@
       }
     ],
     [
-      3748,
+      3933,
       {
         "block": 1295551,
         "op": {
@@ -869,7 +925,7 @@
       }
     ],
     [
-      3778,
+      3963,
       {
         "block": 1296139,
         "op": {
@@ -893,62 +949,6 @@
         "timestamp": "2016-05-09T11:49:24",
         "trx_id": "f6b40bc59cf82cedda94f9249b37b008987924d3",
         "trx_in_block": 1,
-        "virtual_op": true
-      }
-    ],
-    [
-      3919,
-      {
-        "block": 1298876,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "bavak",
-            "pending_payout": {
-              "amount": "1667673",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "campaign-myths-regarding-the-economy-by-greg-mankiw",
-            "rshares": "35090183111946",
-            "total_vote_weight": "33848255033113",
-            "voter": "blocktrades",
-            "weight": "32446962004213"
-          }
-        },
-        "op_in_trx": 1,
-        "operation_id": 0,
-        "timestamp": "2016-05-09T14:06:45",
-        "trx_id": "d2254506426386de9a034e78a669bd51f2861e1d",
-        "trx_in_block": 0,
-        "virtual_op": true
-      }
-    ],
-    [
-      3960,
-      {
-        "block": 1299641,
-        "op": {
-          "type": "effective_comment_vote_operation",
-          "value": {
-            "author": "blocktrades",
-            "pending_payout": {
-              "amount": "12989014",
-              "nai": "@@000000013",
-              "precision": 3
-            },
-            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
-            "rshares": 641550645,
-            "total_vote_weight": "38753096448056",
-            "voter": "mldorton",
-            "weight": 0
-          }
-        },
-        "op_in_trx": 1,
-        "operation_id": 0,
-        "timestamp": "2016-05-09T14:45:12",
-        "trx_id": "ebe50cef0d8e17ddf5e516f2773370aeb8ccdab3",
-        "trx_in_block": 0,
         "virtual_op": true
       }
     ]

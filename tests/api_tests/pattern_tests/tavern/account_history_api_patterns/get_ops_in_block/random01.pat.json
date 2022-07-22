@@ -50,6 +50,21 @@
     {
       "block": 639639,
       "op": {
+        "type": "producer_missed_operation",
+        "value": {
+          "producer": "ladygaga"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-04-16T06:45:12",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 639639,
+      "op": {
         "type": "producer_reward_operation",
         "value": {
           "producer": "tombstone21",
@@ -60,7 +75,7 @@
           }
         }
       },
-      "op_in_trx": 1,
+      "op_in_trx": 2,
       "operation_id": 0,
       "timestamp": "2016-04-16T06:45:18",
       "trx_id": "0000000000000000000000000000000000000000",

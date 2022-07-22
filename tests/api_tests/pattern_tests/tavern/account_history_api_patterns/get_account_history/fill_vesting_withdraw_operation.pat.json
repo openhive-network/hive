@@ -1,14 +1,14 @@
 {
   "history": [
     [
-      5934,
+      1594,
       {
-        "block": 2888724,
+        "block": 2487244,
         "op": {
           "type": "fill_vesting_withdraw_operation",
           "value": {
             "deposited": {
-              "amount": "299792",
+              "amount": "259543",
               "nai": "@@000000021",
               "precision": 3
             },
@@ -23,7 +23,7 @@
         },
         "op_in_trx": 2,
         "operation_id": 0,
-        "timestamp": "2016-07-03T23:45:09",
+        "timestamp": "2016-06-19T23:45:09",
         "trx_id": "0000000000000000000000000000000000000000",
         "trx_in_block": 4294967295,
         "virtual_op": true
