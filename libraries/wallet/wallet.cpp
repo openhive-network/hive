@@ -528,48 +528,7 @@ public:
       }
     }
   }
-
-  annotated_signed_transaction create_account_with_private_key(const fc::ecc::private_key& owner_privkey,
-                                    const string& account_name,
-                                    const string& creator_account_name,
-                                    bool broadcast = false,
-                                    bool save_wallet = true)
-  { try {
-      require_online();
-      int active_key_index = find_first_unused_derived_key_index(owner_privkey);
-      fc::ecc::private_key active_privkey = derive_private_key( key_to_wif(owner_privkey), active_key_index);
-
-      int memo_key_index = find_first_unused_derived_key_index(active_privkey);
-      fc::ecc::private_key memo_privkey = derive_private_key( key_to_wif(active_privkey), memo_key_index);
-
-      hive::chain::public_key_type owner_pubkey = owner_privkey.get_public_key();
-      hive::chain::public_key_type active_pubkey = active_privkey.get_public_key();
-      hive::chain::public_key_type memo_pubkey = memo_privkey.get_public_key();
-
-      account_create_operation account_create_op;
-
-      account_create_op.creator = creator_account_name;
-      account_create_op.new_account_name = account_name;
-      account_create_op.fee = _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee;
-      account_create_op.owner = authority(1, owner_pubkey, 1);
-      account_create_op.active = authority(1, active_pubkey, 1);
-      account_create_op.memo_key = memo_pubkey;
-
-      signed_transaction tx;
-
-      tx.operations.push_back( account_create_op );
-      tx.validate();
-
-      if( save_wallet )
-        save_wallet_file();
-      if( broadcast )
-      {
-        auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous(vector<variant>{{variant(tx)}}, LOCK);
-        FC_UNUSED(result);
-      }
-      return tx;
-  } FC_CAPTURE_AND_RETHROW( (account_name)(creator_account_name)(broadcast) ) }
-
+  
   annotated_signed_transaction set_voting_proxy(const string& account_to_modify, const string& proxy, bool broadcast /* = false */)
   { try {
     account_witness_proxy_operation op;
