@@ -1827,7 +1827,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     //both witnesses take the same state space, even though alice had hers built with two operations
     //it wouldn't calculate properly if visitor was run in pre-apply transaction instead of pre-apply
     //operation (second witness update for alice would not yet see state resulting from first update)
-    BOOST_REQUIRE_EQUAL( alice_state_usage - 289, carol_state_usage - 178 ); //the difference is just size of tx
+    BOOST_REQUIRE_EQUAL( alice_state_usage, carol_state_usage );
 
     validate_database();
   }

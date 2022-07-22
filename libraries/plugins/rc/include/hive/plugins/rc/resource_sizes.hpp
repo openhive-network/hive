@@ -60,7 +60,6 @@ struct state_object_size_info
 
   // transaction
   const int64_t transaction_base_size;
-  const int64_t transaction_byte_size;
 
   // delegate vesting shares
   const int64_t vesting_delegation_object_size;
@@ -186,7 +185,6 @@ FC_REFLECT( hive::plugins::rc::state_object_size_info,
   ( limit_order_create_size )
   ( transfer_from_savings_size )
   ( transaction_base_size )
-  ( transaction_byte_size )
   ( vesting_delegation_object_size )
   ( vesting_delegation_expiration_object_size )
   ( delegate_vesting_shares_size )
