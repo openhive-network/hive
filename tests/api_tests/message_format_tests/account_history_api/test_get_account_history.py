@@ -22,7 +22,7 @@ ACCOUNT = 'initminer'
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_account_history(prepared_node, start, limit):
+def test_get_account_history_with_correct_values(prepared_node, start, limit):
     prepared_node.api.account_history.get_account_history(
         account='initminer',
         start=start,
@@ -33,26 +33,28 @@ def test_get_account_history(prepared_node, start, limit):
 
 @pytest.mark.parametrize(
     'account_name, start, limit', [
-        (ACCOUNT, 0, 0),
-        (ACCOUNT, 1, 100),
-        (ACCOUNT, '1.1', 100),
-        (ACCOUNT, 1, '1.1'),
-        (ACCOUNT, 1000, 1001),
-        (ACCOUNT, 1, ''),
-        (ACCOUNT, '', 100),
-        (ACCOUNT, 1, 'alice'),
-        (ACCOUNT, 'alice', 100),
-
+        # Invalid account name
         (None, 0, 100),
-        (ACCOUNT, None, 100),
-        (ACCOUNT, 0, None),
-
-        (ACCOUNT, [], 100),
-        (ACCOUNT, 0, [100]),
+        ({}, 0, 100),
         ([ACCOUNT], 0, 100),
 
-        ({}, 0, 100),
+        # Invalid start
+        (ACCOUNT, '', 100),
+        (ACCOUNT, 'alice', 100),
+        (ACCOUNT, None, 100),
+        (ACCOUNT, [], 100),
         (ACCOUNT, {}, 100),
+        (ACCOUNT, '1.1', 100),
+
+        # Invalid limit
+        (ACCOUNT, 1, ''),
+        (ACCOUNT, 1, 'alice'),
+        (ACCOUNT, 1, '1.1'),
+        (ACCOUNT, 0, 0),
+        (ACCOUNT, 1, 100),
+        (ACCOUNT, 1000, 1001),
+        (ACCOUNT, 0, None),
+        (ACCOUNT, 0, [100]),
         (ACCOUNT, 0, {}),
     ]
 )
