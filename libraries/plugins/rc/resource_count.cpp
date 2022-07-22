@@ -681,7 +681,8 @@ void count_resources(
     result[ resource_market_bytes ] += tx_size;
 
   result[ resource_state_bytes ] += vtor.state_bytes_count
-    + size_info.transaction_base_size + size_info.transaction_byte_size * tx_size; //cost of temporary tx storage
+    + size_info.transaction_base_size; //we could also charge for data stored in full_transaction
+                                       //but its lifetime is not that long and it is not state data
 
   result[ resource_execution_time ] += vtor.execution_time_count
     + exec_info.transaction_time + exec_info.verify_authority_time * tx.signatures.size();

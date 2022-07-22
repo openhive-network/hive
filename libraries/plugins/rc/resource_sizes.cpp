@@ -17,7 +17,7 @@ using namespace hive::chain;
 // also do not use dynamic sizes with SMT enabled configuration - we don't want to charge differently just
 // because someone built with SMTs locally (unless of course SMTs become official feature in which case
 // we should always charge with SMTs included), some tests are super sensitive to changes in RC costs
-//#define USE_FIXED_SIZE
+#define USE_FIXED_SIZE
 
 #ifdef USE_FIXED_SIZE
 #define SIZE( type, fixed_value ) ( fixed_value )
@@ -120,8 +120,6 @@ state_object_size_info::state_object_size_info()
   // transaction
   transaction_base_size(
     SIZE( transaction_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 1 ), //HIVE_MAX_TIME_UNTIL_EXPIRATION
-  transaction_byte_size(
-    TEMPORARY_STATE_BYTE * 1 ), //HIVE_MAX_TIME_UNTIL_EXPIRATION
 
   // delegate vesting shares
   vesting_delegation_object_size(
