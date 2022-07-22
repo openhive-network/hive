@@ -57,7 +57,6 @@ private:
 
   std::unique_ptr<impl> _my;
   uint32_t              _blockLimit = 0;
-  bool                  _doImmediateImport = false;
   bool                  _destroyOnStartup = false;
   bool                  _destroyOnShutdown = false;
 };

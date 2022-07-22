@@ -685,64 +685,6 @@ void database::set_chain_id( const chain_id_type& chain_id )
 #endif
 }
 
-void database::foreach_block(const std::function<bool(const signed_block_header&, const signed_block&)>& processor) const
-{
-  if(!_block_log.head())
-    return;
-
-  uint32_t last_block_num = _block_log.head()->get_block_num();
-  signed_block_header previous_block_header;
-  for (uint32_t block_num = 1; block_num <= last_block_num; ++block_num)
-  {
-    std::shared_ptr<full_block_type> this_block = _block_log.read_block_by_num(block_num);
-    if (!this_block) // should never happen since we're only iterating up to last_block_num
-      return;
-    if (block_num == 1)
-      previous_block_header = this_block->get_block_header();
-    if (!processor(previous_block_header, this_block->get_block()))
-      return;
-    previous_block_header = this_block->get_block_header();
-  }
-}
-
-void database::foreach_tx(std::function<bool(const signed_block_header&, const signed_block&,
-  const signed_transaction&, uint32_t)> processor) const
-{
-  foreach_block([&processor](const signed_block_header& prevBlockHeader, const signed_block& block) -> bool
-  {
-    uint32_t txInBlock = 0;
-    for( const auto& trx : block.transactions )
-    {
-      if(processor(prevBlockHeader, block, trx, txInBlock) == false)
-        return false;
-      ++txInBlock;
-    }
-
-    return true;
-  }
-  );
-}
-
-void database::foreach_operation(std::function<bool(const signed_block_header&,const signed_block&,
-  const signed_transaction&, uint32_t, const operation&, uint16_t)> processor) const
-{
-  foreach_tx([&processor](const signed_block_header& prevBlockHeader, const signed_block& block,
-    const signed_transaction& tx, uint32_t txInBlock) -> bool
-  {
-    uint16_t opInTx = 0;
-    for(const auto& op : tx.operations)
-    {
-      if(processor(prevBlockHeader, block, tx, txInBlock, op, opInTx) == false)
-        return false;
-      ++opInTx;
-    }
-
-    return true;
-  }
-  );
-}
-
-
 const witness_object& database::get_witness( const account_name_type& name ) const
 { try {
   return get< witness_object, by_name >( name );
