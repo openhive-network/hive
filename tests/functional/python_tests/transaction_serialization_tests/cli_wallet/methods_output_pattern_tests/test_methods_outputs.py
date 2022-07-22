@@ -60,6 +60,9 @@ WALLET_API_METHODS = [
     ('find_proposals', ([0],)),  # work but return nothing (there is no proposals)
     ('list_proposal_votes', ([""], 100, 33, 0, 0)),  # work but return nothing (there is no proposals)
     ('info', ()),
+    ('list_rc_direct_delegations', (['gtg', 'blocktrades'], 100)),
+    ('list_rc_accounts', ('gtg', 100)),
+    ('find_rc_accounts', (['gtg'],)),
 ]
 
 
