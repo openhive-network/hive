@@ -11,6 +11,28 @@ namespace hive { namespace plugins { namespace rc {
 
 using namespace hive::chain;
 
+// when uncommented the sizes of multiindex nodes will not be calculated dynamically, but will use fixed given values;
+// this is how it should be on production; dynamic sizes should only be compared with fixed values used temporarily
+// when we plan to update state RC costs for new hardfork after some significant changes in chain objects
+//#define USE_FIXED_SIZE
+
+#ifdef USE_FIXED_SIZE
+#define SIZE( type, fixed_value ) ( fixed_value )
+#else
+template< size_t dynamic_value, int fixed_value >
+struct compare
+{
+  static_assert( dynamic_value == fixed_value, "Update fixed size" ); //error should tell you correct value
+};
+template< typename type, int fixed_value >
+struct validate_size
+{
+  static const compare< sizeof( type ), fixed_value > _;
+  static const size_t value = fixed_value;
+};
+#define SIZE( type, fixed_value ) validate_size< type, ( fixed_value ) >::value
+#endif
+
 state_object_size_info::state_object_size_info()
   // cost is expressed in hour-bytes - amount of bytes taken multiplied by
   // amount of hours the object is going to live (average time in case of lasting
@@ -26,115 +48,115 @@ state_object_size_info::state_object_size_info()
 
   // account create (all versions)
   account_create_base_size(
-    sizeof( account_index::node_type ) * PERSISTENT_STATE_BYTE +
-    //sizeof( account_metadata_index::node_type ) * PERSISTENT_STATE_BYTE +
-    sizeof( account_authority_index::node_type ) * PERSISTENT_STATE_BYTE +
-    sizeof( rc_account_index::node_type ) * PERSISTENT_STATE_BYTE ),
+    SIZE( account_index::MULTIINDEX_NODE_TYPE, 616 ) * PERSISTENT_STATE_BYTE +
+    //SIZE( account_metadata_index::MULTIINDEX_NODE_TYPE, 136 ) * PERSISTENT_STATE_BYTE +
+    SIZE( account_authority_index::MULTIINDEX_NODE_TYPE, 312 ) * PERSISTENT_STATE_BYTE +
+    SIZE( rc_account_index::MULTIINDEX_NODE_TYPE, 144 ) * PERSISTENT_STATE_BYTE ),
   //account_json_metadata_char_size(
   //  PERSISTENT_STATE_BYTE ),
   authority_account_member_size(
-    sizeof( shared_authority::account_authority_map::value_type ) * PERSISTENT_STATE_BYTE ),
+    SIZE( shared_authority::account_authority_map::value_type, 24 ) * PERSISTENT_STATE_BYTE ),
   authority_key_member_size(
-    sizeof( shared_authority::key_authority_map::value_type ) * PERSISTENT_STATE_BYTE ),
+    SIZE( shared_authority::key_authority_map::value_type, 36 ) * PERSISTENT_STATE_BYTE ),
 
   // account update (both versions)
   owner_authority_history_object_size(
-    sizeof( owner_authority_history_index::node_type ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_OWNER_AUTH_RECOVERY_PERIOD
+    SIZE( owner_authority_history_index::MULTIINDEX_NODE_TYPE, 168 ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_OWNER_AUTH_RECOVERY_PERIOD
 
   // transfer to vesting
   transfer_to_vesting_size(
-    sizeof( delayed_votes_data ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
+    SIZE( delayed_votes_data, 16 ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
 
   // request account recovery
   request_account_recovery_size(
-    sizeof( account_recovery_request_index::node_type ) * TEMPORARY_STATE_BYTE * 24 ), //HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD
+    SIZE( account_recovery_request_index::MULTIINDEX_NODE_TYPE, 192 ) * TEMPORARY_STATE_BYTE * 24 ), //HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD
 
   // change recovery account
   change_recovery_account_size(
-    sizeof( change_recovery_account_request_index::node_type ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_OWNER_AUTH_RECOVERY_PERIOD
+    SIZE( change_recovery_account_request_index::MULTIINDEX_NODE_TYPE, 136 ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_OWNER_AUTH_RECOVERY_PERIOD
 
   // comment
   comment_base_size(
-    sizeof( comment_index::node_type ) * PERSISTENT_STATE_BYTE +
-    sizeof( comment_cashout_index::node_type ) * TEMPORARY_STATE_BYTE * 7 * 24 ), //HIVE_CASHOUT_WINDOW_SECONDS
+    SIZE( comment_index::MULTIINDEX_NODE_TYPE, 96 ) * PERSISTENT_STATE_BYTE +
+    SIZE( comment_cashout_index::MULTIINDEX_NODE_TYPE, 224 ) * TEMPORARY_STATE_BYTE * 7 * 24 ), //HIVE_CASHOUT_WINDOW_SECONDS
   comment_permlink_char_size(
     TEMPORARY_STATE_BYTE * 7 * 24 ), //HIVE_CASHOUT_WINDOW_SECONDS
   comment_beneficiaries_member_size(
-    sizeof( comment_cashout_object::stored_beneficiary_route_type ) *
+    SIZE( comment_cashout_object::stored_beneficiary_route_type, 8 ) *
     TEMPORARY_STATE_BYTE * 7 * 24 ), //HIVE_CASHOUT_WINDOW_SECONDS
 
   // vote
   vote_size(
-    sizeof( comment_vote_index::node_type ) * TEMPORARY_STATE_BYTE * 7 * 24 ), //HIVE_CASHOUT_WINDOW_SECONDS
+    SIZE( comment_vote_index::MULTIINDEX_NODE_TYPE, 144 ) * TEMPORARY_STATE_BYTE * 7 * 24 ), //HIVE_CASHOUT_WINDOW_SECONDS
 
   // convert
   convert_size(
-    sizeof( convert_request_index::node_type ) * TEMPORARY_STATE_BYTE * 7 * 12 ), //HIVE_CONVERSION_DELAY
+    SIZE( convert_request_index::MULTIINDEX_NODE_TYPE, 120 ) * TEMPORARY_STATE_BYTE * 7 * 12 ), //HIVE_CONVERSION_DELAY
   // collateralized convert
   collateralized_convert_size(
-    sizeof( collateralized_convert_request_index::node_type ) * TEMPORARY_STATE_BYTE * 7 * 12 ), //HIVE_COLLATERALIZED_CONVERSION_DELAY
+    SIZE( collateralized_convert_request_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 7 * 12 ), //HIVE_COLLATERALIZED_CONVERSION_DELAY
 
   // decline voting rights
   decline_voting_rights_size(
-    sizeof( decline_voting_rights_request_index::node_type ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_OWNER_AUTH_RECOVERY_PERIOD
+    SIZE( decline_voting_rights_request_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 30 * 24 ), //HIVE_OWNER_AUTH_RECOVERY_PERIOD
 
   // escrow transfer
   escrow_transfer_size(
-    sizeof( escrow_index::node_type ) * LASTING_STATE_BYTE ),
+    SIZE( escrow_index::MULTIINDEX_NODE_TYPE, 216 ) * LASTING_STATE_BYTE ),
 
   // limit order create (both versions)
   limit_order_create_size(
-    sizeof( limit_order_index::node_type ) * TEMPORARY_STATE_BYTE * 28 * 24 ), //HIVE_MAX_LIMIT_ORDER_EXPIRATION
+    SIZE( limit_order_index::MULTIINDEX_NODE_TYPE, 208 ) * TEMPORARY_STATE_BYTE * 28 * 24 ), //HIVE_MAX_LIMIT_ORDER_EXPIRATION
 
   // transfer from savings
   transfer_from_savings_size(
-    sizeof( savings_withdraw_index::node_type ) * TEMPORARY_STATE_BYTE * 3 * 24 ), //HIVE_SAVINGS_WITHDRAW_TIME
+    SIZE( savings_withdraw_index::MULTIINDEX_NODE_TYPE, 232 ) * TEMPORARY_STATE_BYTE * 3 * 24 ), //HIVE_SAVINGS_WITHDRAW_TIME
 
   // transaction
   transaction_base_size(
-    sizeof( transaction_index::node_type ) * TEMPORARY_STATE_BYTE * 1 ), //HIVE_MAX_TIME_UNTIL_EXPIRATION
+    SIZE( transaction_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 1 ), //HIVE_MAX_TIME_UNTIL_EXPIRATION
   transaction_byte_size(
     TEMPORARY_STATE_BYTE * 1 ), //HIVE_MAX_TIME_UNTIL_EXPIRATION
 
   // delegate vesting shares
   vesting_delegation_object_size(
-    sizeof( vesting_delegation_index::node_type ) * LASTING_STATE_BYTE ),
+    SIZE( vesting_delegation_index::MULTIINDEX_NODE_TYPE, 88 ) * LASTING_STATE_BYTE ),
   vesting_delegation_expiration_object_size(
-    sizeof( vesting_delegation_expiration_index::node_type ) * TEMPORARY_STATE_BYTE * 5 * 24 ), //HIVE_DELEGATION_RETURN_PERIOD_HF20
+    SIZE( vesting_delegation_expiration_index::MULTIINDEX_NODE_TYPE, 120 ) * TEMPORARY_STATE_BYTE * 5 * 24 ), //HIVE_DELEGATION_RETURN_PERIOD_HF20
   delegate_vesting_shares_size(
     std::max( vesting_delegation_object_size, vesting_delegation_expiration_object_size ) ),
 
   // set withdraw vesting route
   set_withdraw_vesting_route_size(
-    sizeof( withdraw_vesting_route_index::node_type ) * LASTING_STATE_BYTE ),
+    SIZE( withdraw_vesting_route_index::MULTIINDEX_NODE_TYPE, 144 ) * LASTING_STATE_BYTE ),
 
   // witness update
   witness_update_base_size(
-    sizeof( witness_index::node_type ) * PERSISTENT_STATE_BYTE ),
+    SIZE( witness_index::MULTIINDEX_NODE_TYPE, 544 ) * PERSISTENT_STATE_BYTE ),
   witness_update_url_char_size(
     PERSISTENT_STATE_BYTE ),
 
   // account witness vote
   account_witness_vote_size(
-    sizeof( witness_vote_index::node_type ) * TEMPORARY_STATE_BYTE * 365 * 24 ), //HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
+    SIZE( witness_vote_index::MULTIINDEX_NODE_TYPE, 136 ) * TEMPORARY_STATE_BYTE * 365 * 24 ), //HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 
   // create proposal
   create_proposal_base_size(
-    sizeof( proposal_index::node_type ) * TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
+    SIZE( proposal_index::MULTIINDEX_NODE_TYPE, 336 ) * TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
   create_proposal_subject_permlink_char_size(
     TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
 
   // update proposal votes
   update_proposal_votes_member_size(
-    sizeof( proposal_vote_index::node_type ) * TEMPORARY_STATE_BYTE * 365 * 24), //HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
+    SIZE( proposal_vote_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 365 * 24), //HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 
   // recurrent transfer
   recurrent_transfer_base_size(
-    sizeof( recurrent_transfer_index::node_type ) * TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
+    SIZE( recurrent_transfer_index::MULTIINDEX_NODE_TYPE, 200 ) * TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
 
   // direct rc delegation
   delegate_rc_base_size(
-    sizeof( rc_direct_delegation_index::node_type ) * LASTING_STATE_BYTE ) //multiply by number of delegatees
+    SIZE( rc_direct_delegation_index::MULTIINDEX_NODE_TYPE, 88 ) * LASTING_STATE_BYTE ) //multiply by number of delegatees
 {}
 
 operation_exec_info::operation_exec_info()
