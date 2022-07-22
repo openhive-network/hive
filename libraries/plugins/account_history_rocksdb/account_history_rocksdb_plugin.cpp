@@ -595,9 +595,6 @@ public:
   void on_pre_reindex( const hive::chain::reindex_notification& note );
   void on_post_reindex( const hive::chain::reindex_notification& note );
 
-  /// Allows to start immediate data import (outside replay process).
-  void importData(unsigned int blockLimit);
-
   void find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
     std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
   uint32_t find_reversible_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, uint32_t number_of_irreversible_ops,
@@ -1944,84 +1941,6 @@ void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const c
     );
 }
 
-void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
-{
-  if(_storage == nullptr)
-  {
-    ilog("RocksDB has no opened storage. Skipping data import...");
-    return;
-  }
-
-  ilog("Starting data import...");
-
-  block_id_type lastBlock;
-  size_t blockNo = 0;
-
-  _lastTx = transaction_id_type();
-  _txNo = 0;
-  _totalOps = 0;
-  _excludedOps = 0;
-
-  benchmark_dumper dumper;
-  dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&){}, "rocksdb_data_import.json");
-
-  _mainDb.foreach_operation([blockLimit, &blockNo, &lastBlock, this](
-    const signed_block_header& prevBlockHeader, const signed_block& block, const signed_transaction& tx,
-    uint32_t txInBlock, const operation& op, uint16_t opInTx) -> bool
-  {
-    if(lastBlock != block.previous)
-    {
-      blockNo = block.block_num();
-      lastBlock = block.previous;
-
-      if(blockLimit != 0 && blockNo > blockLimit)
-      {
-        ilog( "RocksDb data import stopped because of block limit reached.");
-        return false;
-      }
-
-      if(blockNo % 1000 == 0)
-      {
-        printReport(blockNo, "Executing data import has ");
-      }
-    }
-
-    auto impacted = getImpactedAccounts( op );
-    if( impacted.empty() )
-      return true;
-
-    hive::util::supplement_operation( op, _mainDb );
-
-    rocksdb_operation_object obj;
-    obj.trx_id = tx.id();
-    obj.block = blockNo;
-    obj.trx_in_block = txInBlock;
-    obj.op_in_trx = opInTx;
-    obj.is_virtual = hive::protocol::is_virtual_operation( op );
-    obj.timestamp = _mainDb.head_block_time();
-    auto size = fc::raw::pack_size( op );
-    obj.serialized_op.resize( size );
-    fc::datastream< char* > ds( obj.serialized_op.data(), size );
-    fc::raw::pack( ds, op );
-
-    importOperation( obj, impacted );
-
-    return true;
-  });
-
-  flushWriteBuffer();
-
-  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool){});
-  ilog( "RocksDb data import - Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
-    ("n", blockNo)
-    ("rt", measure.real_ms)
-    ("ct", measure.cpu_ms)
-    ("cm", measure.current_mem)
-    ("pm", measure.peak_mem) );
-
-  printReport(blockNo, "RocksDB data import finished. ");
-}
-
 void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operation_notification& n)
 {
   if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !n.virtual_op)
@@ -2324,8 +2243,6 @@ void account_history_rocksdb_plugin::set_program_options(
 
   ;
   command_line_options.add_options()
-    ("account-history-rocksdb-immediate-import", bpo::bool_switch()->default_value(false),
-      "Allows to force immediate data import at plugin startup. By default storage is supplied during reindex process.")
     ("account-history-rocksdb-stop-import-at-block", bpo::value<uint32_t>()->default_value(0),
       "Allows to specify block number, the data import process should stop at.")
     ("account-history-rocksdb-dump-balance-history", boost::program_options::value< string >(), "Dumps balances for all tracked accounts to a CSV file every time they change")
@@ -2336,8 +2253,6 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 {
   if(options.count("account-history-rocksdb-stop-import-at-block"))
     _blockLimit = options.at("account-history-rocksdb-stop-import-at-block").as<uint32_t>();
-
-  _doImmediateImport = options.at("account-history-rocksdb-immediate-import").as<bool>();
 
   bfs::path dbPath;
 
@@ -2359,9 +2274,6 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 void account_history_rocksdb_plugin::plugin_startup()
 {
   ilog("Starting up account_history_rocksdb_plugin...");
-
-  if(_doImmediateImport)
-    _my->importData(_blockLimit);
 }
 
 void account_history_rocksdb_plugin::plugin_shutdown()
