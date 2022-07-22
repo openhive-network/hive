@@ -2,8 +2,9 @@
 #include <hive/plugins/json_rpc/utility.hpp>
 
 #include <hive/protocol/operations.hpp>
-#include <hive/protocol/transaction.hpp>
 #include <hive/protocol/types.hpp>
+
+#include <hive/plugins/account_history_api/annotated_signed_transaction.hpp>
 
 #include <hive/chain/buffer_type.hpp>
 
@@ -69,7 +70,7 @@ struct get_transaction_args
   fc::optional<bool> include_reversible;
 };
 
-typedef hive::protocol::annotated_signed_transaction get_transaction_return;
+typedef hive::plugins::account_history::annotated_signed_transaction get_transaction_return;
 
 struct get_account_history_args
 {

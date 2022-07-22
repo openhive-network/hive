@@ -2,8 +2,9 @@
 
 #include <hive/chain/hive_objects.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api.hpp>
-#include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
+#include <hive/plugins/account_history_api/annotated_signed_transaction.hpp>
+
 #include <hive/plugins/block_api/block_api.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
@@ -95,7 +96,7 @@ typedef std::vector<database_api::api_account_object>   get_accounts_return;
 
 /* get transaction */
 typedef variant                                         get_transaction_args;
-typedef hive::protocol::annotated_signed_transaction    get_transaction_return;
+typedef hive::plugins::account_history::annotated_signed_transaction get_transaction_return;
 
 /* list_witnesses */
 typedef variant                               list_witnesses_args;
