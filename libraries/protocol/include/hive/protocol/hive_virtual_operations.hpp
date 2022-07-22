@@ -423,6 +423,25 @@ namespace hive { namespace protocol {
      bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
  };
 
+ struct producer_missed_operation : public virtual_operation {
+   producer_missed_operation() {}
+
+   producer_missed_operation(const account_name_type p) : producer(p) {}
+
+   account_name_type producer;
+ };
+
+ struct dhf_instant_conversion_operation : public virtual_operation {
+   dhf_instant_conversion_operation() {}
+
+   dhf_instant_conversion_operation(account_name_type d, account_name_type co, const asset& c, const asset& a) : donator(d), converter(co), hive_amount_in( c ), hbd_amount_out( a ) {}
+
+   account_name_type donator;
+   account_name_type converter;
+   asset hive_amount_in;
+   asset hbd_amount_out;
+ };
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
@@ -460,3 +479,5 @@ FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_re
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
+FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
+FC_REFLECT( hive::protocol::dhf_instant_conversion_operation, (donator)(converter)(hive_amount_in)(hbd_amount_out) )

@@ -19,7 +19,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "condenser_api.get_account_history"
-          params: ["blocktrades", 6000, 2, 128]
+          params: ["blocktrades", 6200, 2, 128]
       response:
         status_code: 200
         verify_response_with:

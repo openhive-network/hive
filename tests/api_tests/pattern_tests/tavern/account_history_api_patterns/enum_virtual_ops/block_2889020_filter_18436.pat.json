@@ -1,17 +1,17 @@
 {
-  "next_block_range_begin": 2889021,
-  "next_operation_begin": 3846280,
+  "next_block_range_begin": 2889020,
+  "next_operation_begin": 3846281,
   "ops": [
     {
       "block": 2889020,
       "op": {
         "type": "comment_payout_update_operation",
         "value": {
-          "author": "steemrollin",
-          "permlink": "re-wingz-re-steemrollin-re-wingz-steemit-clearing-the-smoke-and-mirrors-20160703t030318339z"
+          "author": "asperger514",
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173607360z"
         }
       },
-      "op_in_trx": 106448,
+      "op_in_trx": 77311,
       "operation_id": 3846275,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
@@ -21,13 +21,20 @@
     {
       "block": 2889020,
       "op": {
-        "type": "comment_payout_update_operation",
+        "type": "curation_reward_operation",
         "value": {
-          "author": "stellabelle",
-          "permlink": "re-wingz-re-steemrollin-re-wingz-steemit-clearing-the-smoke-and-mirrors-20160703t104856676z"
+          "comment_author": "dantheman",
+          "comment_permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
+          "curator": "sean-king",
+          "payout_must_be_claimed": false,
+          "reward": {
+            "amount": "1392441282",
+            "nai": "@@000000037",
+            "precision": 6
+          }
         }
       },
-      "op_in_trx": 106449,
+      "op_in_trx": 77312,
       "operation_id": 3846276,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
@@ -35,44 +42,40 @@
       "virtual_op": true
     },
     {
-      "block": 2889021,
+      "block": 2889020,
       "op": {
-        "type": "producer_reward_operation",
+        "type": "curation_reward_operation",
         "value": {
-          "producer": "arhag",
-          "vesting_shares": {
-            "amount": "5234741664",
+          "comment_author": "dantheman",
+          "comment_permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
+          "curator": "proctologic",
+          "payout_must_be_claimed": false,
+          "reward": {
+            "amount": "57582158",
             "nai": "@@000000037",
             "precision": 6
           }
         }
       },
-      "op_in_trx": 1,
-      "operation_id": 3846278,
-      "timestamp": "2016-07-04T00:00:21",
+      "op_in_trx": 77313,
+      "operation_id": 3846277,
+      "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
       "virtual_op": true
     },
     {
-      "block": 2889021,
+      "block": 2889020,
       "op": {
-        "type": "curation_reward_operation",
+        "type": "comment_payout_update_operation",
         "value": {
-          "comment_author": "ricardopnl",
-          "comment_permlink": "what-can-do-for-you-nlp",
-          "curator": "abit",
-          "payout_must_be_claimed": false,
-          "reward": {
-            "amount": "30487125897",
-            "nai": "@@000000037",
-            "precision": 6
-          }
+          "author": "dantheman",
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z"
         }
       },
-      "op_in_trx": 2,
-      "operation_id": 3846279,
-      "timestamp": "2016-07-04T00:00:21",
+      "op_in_trx": 77316,
+      "operation_id": 3846280,
+      "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
       "virtual_op": true

@@ -1,138 +1,138 @@
 [
   [
-    205311,
+    205161,
     {
-      "block": 4768346,
+      "block": 4751713,
       "op": [
         "comment",
         {
           "author": "blocktrades",
-          "body": "Beyond that, let's just add more reasons for people to participate on the platform, regardless of their SP.",
-          "json_metadata": "{\"tags\":[\"steem\"]}",
-          "parent_author": "timcliff",
-          "parent_permlink": "re-ned-re-nextgencrypto-re-ned-increasing-curation-demand-for-steem-power-and-community-interaction-20160907t165805379z",
-          "permlink": "re-timcliff-re-ned-re-nextgencrypto-re-ned-increasing-curation-demand-for-steem-power-and-community-interaction-20160907t174828393z",
+          "body": "If you're familiar with blockchain terminology, steemd is the \"blockexplorer\" for steem, whereas steemit is a site more like a specialized web wallet.",
+          "json_metadata": "{\"tags\":[\"steemit\"]}",
+          "parent_author": "crok",
+          "parent_permlink": "my-question-is-steemit-com-and-steemd-com-one-and-the-same-official-website-s",
+          "permlink": "re-crok-my-question-is-steemit-com-and-steemd-com-one-and-the-same-official-website-s-20160907t035524964z",
           "title": ""
         }
       ],
       "op_in_trx": 0,
-      "timestamp": "2016-09-07T17:48:24",
-      "trx_id": "193a5839cb6717c2463feb2983c6fcadb5745731",
-      "trx_in_block": 7,
+      "timestamp": "2016-09-07T03:55:24",
+      "trx_id": "e18fdfc60dfe01174108f9edb770cb2fd91f49a7",
+      "trx_in_block": 0,
       "virtual_op": false
     }
   ],
   [
-    205930,
+    205198,
     {
-      "block": 4779547,
+      "block": 4752277,
       "op": [
         "comment",
         {
           "author": "blocktrades",
-          "body": "From the samples in your post, your artwork is incredible. I don't think you're acting irresponsibly.",
-          "json_metadata": "{\"tags\":[\"life\"]}",
-          "parent_author": "kommienezuspadt",
-          "parent_permlink": "when-does-pursuing-your-dreams-become-irresponsible",
-          "permlink": "re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t030916390z",
+          "body": "I don't use many images when I post, but here's one that is \"steem-dedicated\": https://www.steemimg.com/",
+          "json_metadata": "{\"tags\":[\"steemhelp\"],\"links\":[\"https://www.steemimg.com/\"]}",
+          "parent_author": "godo",
+          "parent_permlink": "please-read-even-thought-there-is-no-picture",
+          "permlink": "re-godo-please-read-even-thought-there-is-no-picture-20160907t042347935z",
           "title": ""
         }
       ],
       "op_in_trx": 0,
-      "timestamp": "2016-09-08T03:09:12",
-      "trx_id": "3cae51f967b3f4674393a3e40a5c74504fbb3753",
-      "trx_in_block": 1,
+      "timestamp": "2016-09-07T04:23:45",
+      "trx_id": "be1c9af7f205f8ad5bc6d929c2c2164a21f334cb",
+      "trx_in_block": 3,
       "virtual_op": false
     }
   ],
   [
-    205970,
+    205204,
     {
-      "block": 4780186,
+      "block": 4752378,
       "op": [
         "comment",
         {
-          "author": "gardenofeden",
-          "body": "Agreed ~ stellar work!",
-          "json_metadata": "{\"tags\":[\"life\"]}",
+          "author": "godo",
+          "body": "Thanks, thats exactly what I was looking for.",
+          "json_metadata": "{\"tags\":[\"steemhelp\"]}",
           "parent_author": "blocktrades",
-          "parent_permlink": "re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t030916390z",
-          "permlink": "re-blocktrades-re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t034110282z",
+          "parent_permlink": "re-godo-please-read-even-thought-there-is-no-picture-20160907t042347935z",
+          "permlink": "re-blocktrades-re-godo-please-read-even-thought-there-is-no-picture-20160907t042849371z",
           "title": ""
         }
       ],
       "op_in_trx": 0,
-      "timestamp": "2016-09-08T03:41:09",
-      "trx_id": "d68484b901523cbe7ca8bcfc4129e9c579234a1a",
-      "trx_in_block": 1,
+      "timestamp": "2016-09-07T04:28:48",
+      "trx_id": "4875327a02976b7df63645b2196cf627b3dfc3b5",
+      "trx_in_block": 2,
       "virtual_op": false
     }
   ],
   [
-    205989,
+    205754,
     {
-      "block": 4780379,
+      "block": 4761738,
       "op": [
         "comment",
         {
-          "author": "kommienezuspadt",
-          "body": "Thanks so much @blocktrades, and thank you for the upvote! I appreciate the encouragement.",
-          "json_metadata": "{\"tags\":[\"life\"],\"users\":[\"blocktrades\"]}",
+          "author": "ranko-k",
+          "body": "Hahaaahahha thank you for the reply.",
+          "json_metadata": "{\"tags\":[\"blocktrades\"]}",
           "parent_author": "blocktrades",
-          "parent_permlink": "re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t030916390z",
-          "permlink": "re-blocktrades-re-kommienezuspadt-when-does-pursuing-your-dreams-become-irresponsible-20160908t035054292z",
+          "parent_permlink": "re-ranko-k-blocktrades-voting-pattern-20160907t035201614z",
+          "permlink": "re-blocktrades-re-ranko-k-blocktrades-voting-pattern-20160907t121718437z",
           "title": ""
         }
       ],
       "op_in_trx": 0,
-      "timestamp": "2016-09-08T03:50:54",
-      "trx_id": "83788ba216ff55b6ae83767bd69d8ccc3e413160",
+      "timestamp": "2016-09-07T12:17:21",
+      "trx_id": "88849388cc314aa659b26c83b42594fd35da05c7",
+      "trx_in_block": 4,
+      "virtual_op": false
+    }
+  ],
+  [
+    205883,
+    {
+      "block": 4763465,
+      "op": [
+        "comment",
+        {
+          "author": "blocktrades",
+          "body": "Every day I just wait for your next post. I keep thinking that today will be the day you screw up and draw a square. But no, each day you manage to create another unique dot.",
+          "json_metadata": "{\"tags\":[\"dots\"]}",
+          "parent_author": "dots",
+          "parent_permlink": "53-dots",
+          "permlink": "re-dots-53-dots-20160907t134404428z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-09-07T13:43:51",
+      "trx_id": "85cbd0b4f2ab507da451344a1f5e95c847dc09ca",
       "trx_in_block": 1,
       "virtual_op": false
     }
   ],
   [
-    206049,
+    205885,
     {
-      "block": 4781372,
+      "block": 4763502,
       "op": [
         "comment",
         {
-          "author": "blocktrades",
-          "body": "When I was 12 I used to play D&D and sometimes we would bet with our gold. I came up with a betting system where I would bet on near 50/50 odds games like a coin toss against another player, and each time I lost, I would double my bet. I played around with the math and I figured out that I could get my odds of winning this way up to 99.99% before too long. But it took a few empirical tests to figure out why this wasn't such a great system...",
-          "json_metadata": "{\"tags\":[\"finance\"]}",
-          "parent_author": "jdbertron",
-          "parent_permlink": "how-hard-is-it-going-to-be-part-2",
-          "permlink": "re-jdbertron-how-hard-is-it-going-to-be-part-2-20160908t044038866z",
+          "author": "anduweb",
+          "body": "same here, keep waiting for something different, but am never disappointed in getting new dots every day.",
+          "json_metadata": "{\"tags\":[\"dots\"]}",
+          "parent_author": "blocktrades",
+          "parent_permlink": "re-dots-53-dots-20160907t134404428z",
+          "permlink": "re-blocktrades-re-dots-53-dots-20160907t134543723z",
           "title": ""
         }
       ],
       "op_in_trx": 0,
-      "timestamp": "2016-09-08T04:40:33",
-      "trx_id": "6da5552e116d4ba575e5b44e9a3bd6a9550120f7",
-      "trx_in_block": 1,
-      "virtual_op": false
-    }
-  ],
-  [
-    206054,
-    {
-      "block": 4781397,
-      "op": [
-        "comment",
-        {
-          "author": "blocktrades",
-          "body": "@@ -9,9 +9,9 @@\n as 1\n-2\n+3\n  I u\n",
-          "json_metadata": "{\"tags\":[\"finance\"]}",
-          "parent_author": "jdbertron",
-          "parent_permlink": "how-hard-is-it-going-to-be-part-2",
-          "permlink": "re-jdbertron-how-hard-is-it-going-to-be-part-2-20160908t044038866z",
-          "title": ""
-        }
-      ],
-      "op_in_trx": 0,
-      "timestamp": "2016-09-08T04:41:48",
-      "trx_id": "68754616a940f3ef07c4af1559c196380ccaca18",
+      "timestamp": "2016-09-07T13:45:42",
+      "trx_id": "2dbb1476bd83c2c89df3bfb171c87f697249a02c",
       "trx_in_block": 1,
       "virtual_op": false
     }

@@ -1,23 +1,23 @@
 {
-  "next_block_range_begin": 3744646,
-  "next_operation_begin": 0,
+  "next_block_range_begin": 3744645,
+  "next_operation_begin": 9882433,
   "ops": [
     {
-      "block": 3744645,
+      "block": 3744644,
       "op": {
         "type": "producer_reward_operation",
         "value": {
-          "producer": "blocktrades",
+          "producer": "nexus-dev",
           "vesting_shares": {
-            "amount": "3907503785",
+            "amount": "3907504698",
             "nai": "@@000000037",
             "precision": 6
           }
         }
       },
       "op_in_trx": 1,
-      "operation_id": 9844931,
-      "timestamp": "2016-08-03T00:00:03",
+      "operation_id": 9882430,
+      "timestamp": "2016-08-03T00:00:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
       "virtual_op": true
