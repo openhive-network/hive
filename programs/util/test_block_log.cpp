@@ -26,40 +26,44 @@ int main( int argc, char** argv, char** envp )
  
     dump_head(log);
 
-    hive::protocol::signed_block b1;
+    std::vector<std::shared_ptr<hive::chain::full_transaction_type>> full_txs;
+
+    hive::protocol::signed_block_header b1;
     b1.witness = "alice";
     b1.previous = hive::protocol::block_id_type();
 
-    std::shared_ptr<hive::chain::full_block_type> fb1 = hive::chain::full_block_type::create_from_signed_block(b1);
+    std::shared_ptr<hive::chain::full_block_type> fb1 =
+      hive::chain::full_block_type::create_from_block_header_and_transactions(b1, full_txs, nullptr);
 
     log.append(fb1);
     log.flush();
-    idump((b1));
+    idump((fb1->get_block()));
     dump_head(log);
-    idump((fc::raw::pack_size(b1)));
+    idump((fb1->get_uncompressed_block_size()));
 
-    hive::protocol::signed_block b2;
+    hive::protocol::signed_block_header b2;
     b2.witness = "bob";
-    b2.previous = b1.legacy_id();
+    b2.previous = fb1->get_block_id();
 
-    std::shared_ptr<hive::chain::full_block_type> fb2 = hive::chain::full_block_type::create_from_signed_block(b2);
+    std::shared_ptr<hive::chain::full_block_type> fb2 =
+      hive::chain::full_block_type::create_from_block_header_and_transactions(b2, full_txs, nullptr);
 
     log.append(fb2);
     log.flush();
-    idump((b2));
+    idump((fb2->get_block()));
     dump_head(log);
-    idump((fc::raw::pack_size(b2)));
+    idump((fb2->get_uncompressed_block_size()));
 
     std::shared_ptr<hive::chain::full_block_type> r1 = log.read_block_by_num(1);
     idump((r1->get_block()));
-    idump((fc::raw::pack_size(r1->get_block())));
+    idump((r1->get_uncompressed_block_size()));
 
     std::shared_ptr<hive::chain::full_block_type> r2 = log.read_block_by_num(2);
-    idump( (r2->get_block()) );
-    idump( (fc::raw::pack_size(r2->get_block())) );
+    idump((r2->get_block()));
+    idump((r2->get_uncompressed_block_size()));
 
     idump((log.read_head()->get_block()));
-    idump((fc::raw::pack_size(log.read_head()->get_block())));
+    idump((log.read_head()->get_uncompressed_block_size()));
 
     std::shared_ptr<hive::chain::full_block_type> r3 = log.read_block_by_num(3);
     idump(((bool)r3));
