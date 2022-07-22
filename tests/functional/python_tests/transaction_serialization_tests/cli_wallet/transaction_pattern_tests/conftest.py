@@ -21,7 +21,7 @@ def wallet_with_pattern_name(replayed_node, request):
                        additional_arguments=[f'--store-transaction={pattern_name}',
                                              f'--transaction-serialization={request.param}'])
 
-    for account_name in ['alice', 'initminer', 'dan', 'bob']:
+    for account_name in ['alice', 'initminer', 'dan', 'bob', 'carol']:
         wallet.api.import_key(tt.Account(account_name).private_key)
 
     return wallet, pattern_name
