@@ -111,7 +111,7 @@ namespace hive { namespace protocol {
         consolidate_treasury_balance_operation, // last_regular + 22
         effective_comment_vote_operation, // last_regular + 23
         ineffective_delete_comment_operation, // last_regular + 24
-        sps_convert_operation, // last_regular + 25
+        dhf_conversion_operation, // last_regular + 25
         expired_account_notification_operation, // last_regular + 26
         changed_recovery_account_operation, // last_regular + 27
         transfer_to_vesting_completed_operation, // last_regular + 28
@@ -123,8 +123,7 @@ namespace hive { namespace protocol {
         fill_recurrent_transfer_operation, // last_regular + 34
         failed_recurrent_transfer_operation, // last_regular + 35
         limit_order_cancelled_operation,  // last_regular + 36
-        producer_missed_operation, // last_regular + 37
-        dhf_instant_conversion_operation // last_regular + 38
+        producer_missed_operation // last_regular + 37
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

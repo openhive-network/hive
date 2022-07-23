@@ -78,7 +78,6 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
   typedef consolidate_treasury_balance_operation legacy_consolidate_treasury_balance_operation;
   typedef delayed_voting_operation               legacy_delayed_voting_operation;
-  typedef sps_convert_operation                  legacy_sps_convert_operation;
   typedef expired_account_notification_operation legacy_expired_account_notification_operation;
   typedef changed_recovery_account_operation     legacy_changed_recovery_account_operation;
   typedef system_warning_operation               legacy_system_warning_operation;
@@ -1429,18 +1428,18 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t          executions = 0;
   };
 
-  struct legacy_dhf_instant_conversion_operation
+  struct legacy_dhf_conversion_operation
   {
-    legacy_dhf_instant_conversion_operation() {}
-    legacy_dhf_instant_conversion_operation( const dhf_instant_conversion_operation& op ) :
+    legacy_dhf_conversion_operation() {}
+    legacy_dhf_conversion_operation( const dhf_conversion_operation& op ) :
       treasury( op.treasury ),
       hive_amount_in( legacy_asset::from_asset( op.hive_amount_in ) ),
       hbd_amount_out( legacy_asset::from_asset( op.hbd_amount_out ) )
     {}
 
-    operator dhf_instant_conversion_operation()const
+    operator dhf_conversion_operation()const
     {
-      dhf_instant_conversion_operation op;
+      dhf_conversion_operation op;
       op.treasury = treasury;
       op.hive_amount_in = hive_amount_in;
       op.hbd_amount_out = hbd_amount_out;
@@ -1524,7 +1523,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_hardfork_hive_restore_operation,
         legacy_delayed_voting_operation,
         legacy_consolidate_treasury_balance_operation,
-        legacy_sps_convert_operation,
+        legacy_dhf_conversion_operation,
         legacy_expired_account_notification_operation,
         legacy_changed_recovery_account_operation,
         legacy_transfer_to_vesting_completed_operation,
@@ -1539,7 +1538,6 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_fill_recurrent_transfer_operation,
         legacy_failed_recurrent_transfer_operation,
         legacy_producer_missed_operation,
-        legacy_dhf_instant_conversion_operation,
         legacy_limit_order_cancelled_operation //was missing from the list (should be much earlier but see comment above)
       > legacy_operation;
 
@@ -1584,7 +1582,6 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
     bool operator()( const consolidate_treasury_balance_operation& op )const   { l_op = op; return true; }
     bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
-    bool operator()( const sps_convert_operation& op )const                    { l_op = op; return true; }
     bool operator()( const expired_account_notification_operation& op )const   { l_op = op; return true; }
     bool operator()( const changed_recovery_account_operation& op )const       { l_op = op; return true; }
     bool operator()( const system_warning_operation& op )const                 { l_op = op; return true; }
@@ -1869,9 +1866,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
-    bool operator()( const dhf_instant_conversion_operation& op )const
+    bool operator()( const dhf_conversion_operation& op )const
     {
-      l_op = legacy_dhf_instant_conversion_operation( op );
+      l_op = legacy_dhf_conversion_operation( op );
       return true;
     }
 
@@ -2118,9 +2115,9 @@ struct convert_from_legacy_operation_visitor
     return operation( recurrent_transfer_operation( op ) );
   }
 
-  operation operator()( const legacy_dhf_instant_conversion_operation& op )const
+  operation operator()( const legacy_dhf_conversion_operation& op )const
   {
-    return operation( dhf_instant_conversion_operation( op ) );
+    return operation( dhf_conversion_operation( op ) );
   }
 
   template< typename T >
@@ -2331,6 +2328,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (accou
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_instant_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

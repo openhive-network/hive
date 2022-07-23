@@ -121,7 +121,7 @@ enum enum_vops_filter : uint64_t
   consolidate_treasury_balance_operation        = 0x00'00200000ull,
   effective_comment_vote_operation              = 0x00'00400000ull,
   ineffective_delete_comment_operation          = 0x00'00800000ull,
-  sps_convert_operation                         = 0x00'01000000ull,
+  dhf_conversion_operation                      = 0x00'01000000ull,
   expired_account_notification_operation        = 0x00'02000000ull,
   changed_recovery_account_operation            = 0x00'04000000ull,
   transfer_to_vesting_completed_operation       = 0x00'08000000ull,
@@ -134,7 +134,6 @@ enum enum_vops_filter : uint64_t
   failed_recurrent_transfer_operation           = 0x04'00000000ull,
   limit_order_cancelled_operation               = 0x08'00000000ull,
   producer_missed_operation                     = 0x10'00000000ull,
-  dhf_instant_conversion_operation              = 0x20'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
