@@ -151,8 +151,7 @@ full_block_type::~full_block_type()
   fc::raw::pack(datastream, number_of_transactions);
   for (const std::shared_ptr<full_transaction_type>& full_transaction : full_transactions)
   {
-    const serialized_transaction_data& serialized_transaction = full_transaction->get_serialized_transaction();
-    datastream.write(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+    full_transaction->dump_serialized_transaction(datastream);
   }
   FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after encoding block");
 

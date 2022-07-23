@@ -106,6 +106,13 @@ struct full_transaction_type
     const serialized_transaction_data& get_serialized_transaction() const;
     size_t get_transaction_size() const;
 
+    template <class DataStream>
+    void dump_serialized_transaction(DataStream& datastream) const
+    {
+      const serialized_transaction_data& serialized_transaction = get_serialized_transaction();
+      datastream.write(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+    }
+
     static std::shared_ptr<full_transaction_type> create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage,
                                                                     uint32_t index_in_block, 
                                                                     const serialized_transaction_data& serialized_transaction,
