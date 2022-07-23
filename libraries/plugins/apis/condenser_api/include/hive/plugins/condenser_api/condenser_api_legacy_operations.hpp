@@ -86,7 +86,6 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef fill_recurrent_transfer_operation      legacy_fill_recurrent_transfer_operation;
   typedef failed_recurrent_transfer_operation    legacy_failed_recurrent_transfer_operation;
   typedef producer_missed_operation              legacy_producer_missed_operation;
-  typedef dhf_instant_conversion_operation       legacy_dhf_instant_conversion_operation;
 
   struct legacy_price
   {
@@ -1407,6 +1406,32 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t          executions = 0;
   };
 
+  struct legacy_dhf_instant_conversion_operation
+  {
+    legacy_dhf_instant_conversion_operation() {}
+    legacy_dhf_instant_conversion_operation( const dhf_instant_conversion_operation& op ) :
+      donator( op.donator ),
+      converter( op.converter ),
+      hive_amount_in( legacy_asset::from_asset( op.hive_amount_in ) ),
+      hbd_amount_out( legacy_asset::from_asset( op.hbd_amount_out ) )
+    {}
+
+    operator dhf_instant_conversion_operation()const
+    {
+      dhf_instant_conversion_operation op;
+      op.donator = donator;
+      op.converter = converter;
+      op.hive_amount_in = hive_amount_in;
+      op.hbd_amount_out = hbd_amount_out;
+      return op;
+    }
+
+    account_name_type donator;
+    account_name_type converter;
+    legacy_asset      hive_amount_in;
+    legacy_asset      hbd_amount_out;
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -2270,5 +2295,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (accou
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_instant_conversion_operation, (donator)(converter)(hive_amount_in)(hbd_amount_out) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )
