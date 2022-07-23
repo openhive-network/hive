@@ -395,52 +395,53 @@ namespace hive { namespace protocol {
     string message;
   };
 
+  struct fill_recurrent_transfer_operation : public virtual_operation
+  {
+    fill_recurrent_transfer_operation() {}
+    fill_recurrent_transfer_operation( const account_name_type& f, const account_name_type& t, const asset& a, const string& m, uint16_t re )
+      : from( f ), to( t ), amount( a ), memo( m ), remaining_executions( re ) {}
 
- struct fill_recurrent_transfer_operation : public virtual_operation
- {
-     fill_recurrent_transfer_operation() {}
-     fill_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, const string& m, uint16_t re) : from( f ), to( t ), amount( a ), memo( m ), remaining_executions(re) {}
+    account_name_type from;
+    account_name_type to;
+    asset amount;
+    string memo;
+    uint16_t remaining_executions = 0;
+  };
 
-     account_name_type from;
-     account_name_type to;
-     asset amount;
-     string memo;
-     uint16_t remaining_executions = 0;
- };
+  struct failed_recurrent_transfer_operation : public virtual_operation
+  {
+    failed_recurrent_transfer_operation() {}
+    failed_recurrent_transfer_operation( const account_name_type& f, const account_name_type& t, const asset& a, uint8_t cf, const string& m, uint16_t re, bool d )
+      : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions( re ), deleted( d ) {}
 
- struct failed_recurrent_transfer_operation : public virtual_operation
- {
-   failed_recurrent_transfer_operation() {}
-   failed_recurrent_transfer_operation(const account_name_type& f,const account_name_type& t, const asset& a, uint8_t cf, const string& m, uint16_t re, bool d) :
-     from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions(re), deleted( d ) {}
+    account_name_type from;
+    account_name_type to;
+    asset amount;
+    string memo;
+    uint8_t consecutive_failures = 0;
+    uint16_t remaining_executions = 0;
+    bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
+  };
 
-     account_name_type from;
-     account_name_type to;
-     asset amount;
-     string memo;
-     uint8_t consecutive_failures = 0;
-     uint16_t remaining_executions = 0;
-     bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
- };
+  struct producer_missed_operation : public virtual_operation
+  {
+    producer_missed_operation() {}
+    producer_missed_operation( const account_name_type p ) : producer( p ) {}
 
- struct producer_missed_operation : public virtual_operation {
-   producer_missed_operation() {}
+    account_name_type producer;
+  };
 
-   producer_missed_operation(const account_name_type p) : producer(p) {}
+  struct dhf_instant_conversion_operation : public virtual_operation
+  {
+    dhf_instant_conversion_operation() {}
+    dhf_instant_conversion_operation( account_name_type d, account_name_type co, const asset& c, const asset& a )
+      : donator( d ), converter( co ), hive_amount_in( c ), hbd_amount_out( a ) {}
 
-   account_name_type producer;
- };
-
- struct dhf_instant_conversion_operation : public virtual_operation {
-   dhf_instant_conversion_operation() {}
-
-   dhf_instant_conversion_operation(account_name_type d, account_name_type co, const asset& c, const asset& a) : donator(d), converter(co), hive_amount_in( c ), hbd_amount_out( a ) {}
-
-   account_name_type donator;
-   account_name_type converter;
-   asset hive_amount_in;
-   asset hbd_amount_out;
- };
+    account_name_type donator;
+    account_name_type converter;
+    asset hive_amount_in;
+    asset hbd_amount_out;
+  };
 
 } } //hive::protocol
 
