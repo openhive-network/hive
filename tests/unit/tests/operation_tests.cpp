@@ -1675,8 +1675,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
 
     BOOST_TEST_MESSAGE( "Checking Virtual Operation Correctness" );
     auto dhf_instant_conversion_op = get_last_operations( 1 )[0].get< dhf_instant_conversion_operation >();
-    BOOST_REQUIRE( dhf_instant_conversion_op.donator == op.from );
-    BOOST_REQUIRE( dhf_instant_conversion_op.converter == op.to );
+    BOOST_REQUIRE( dhf_instant_conversion_op.treasury == op.to );
     BOOST_REQUIRE( dhf_instant_conversion_op.hive_amount_in == op.amount );
     BOOST_REQUIRE( dhf_instant_conversion_op.hbd_amount_out == ASSET( "1.000 TBD" ) );
 
