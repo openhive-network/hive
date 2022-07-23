@@ -1122,7 +1122,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
       _db.adjust_supply(amount_to_transfer);
 
     // o.to will always be the treasury so no need to call _db.get_treasury
-    _db.push_virtual_operation(dhf_instant_conversion_operation(o.from, o.to, o.amount, amount_to_transfer));
+    _db.push_virtual_operation( dhf_instant_conversion_operation( o.to, o.amount, amount_to_transfer ) );
     return;
   } else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {

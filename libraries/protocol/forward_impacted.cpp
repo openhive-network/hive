@@ -418,7 +418,7 @@ struct get_impacted_account_visitor
 
   void operator()( const dhf_instant_conversion_operation& op )
   {
-    _impacted.insert( op.converter );
+    _impacted.insert( op.treasury );
   }
 
   //void operator()( const operation& op ){}
@@ -536,8 +536,8 @@ struct impacted_balance_collector
 
   void operator()(const dhf_instant_conversion_operation& o)
   {
-    result.emplace_back(o.converter, -o.hive_amount_in);
-    result.emplace_back(o.converter, o.hbd_amount_out);
+    result.emplace_back(o.treasury, -o.hive_amount_in);
+    result.emplace_back(o.treasury, o.hbd_amount_out);
   }
 
   void operator()(const escrow_transfer_operation& o)
