@@ -333,9 +333,8 @@ void sps_processor::convert_funds( const block_notification& note )
   } );
 
   const auto &treasury_account = db.get_treasury();
-  if (treasury_account.balance.amount == 0) {
+  if (treasury_account.balance.amount == 0)
     return;
-  }
 
   const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
@@ -349,12 +348,12 @@ void sps_processor::convert_funds( const block_notification& note )
     return;
 
   db.adjust_balance( treasury_account, -to_convert );
-  db.adjust_balance(treasury_account, converted_hbd );
+  db.adjust_balance( treasury_account, converted_hbd );
 
   db.adjust_supply( -to_convert );
   db.adjust_supply( converted_hbd );
 
-  operation vop = sps_convert_operation(treasury_account.name, to_convert, converted_hbd );
+  operation vop = dhf_conversion_operation( treasury_account.name, to_convert, converted_hbd );
   db.push_virtual_operation( vop );
 }
 

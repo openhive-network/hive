@@ -324,12 +324,12 @@ namespace hive { namespace protocol {
     asset additional_funds;
   };
 
-  struct sps_convert_operation : public virtual_operation
+  struct dhf_conversion_operation : public virtual_operation
   {
-    sps_convert_operation() {}
-    sps_convert_operation(account_name_type f, const asset& c, const asset& a) : fund_account(f), hive_amount_in( c ), hbd_amount_out( a ) {}
+    dhf_conversion_operation() {}
+    dhf_conversion_operation( account_name_type f, const asset& c, const asset& a ) : treasury( f ), hive_amount_in( c ), hbd_amount_out( a ) {}
 
-    account_name_type fund_account;
+    account_name_type treasury;
     asset hive_amount_in;
     asset hbd_amount_out;
   };
@@ -431,17 +431,6 @@ namespace hive { namespace protocol {
     account_name_type producer;
   };
 
-  struct dhf_instant_conversion_operation : public virtual_operation
-  {
-    dhf_instant_conversion_operation() {}
-    dhf_instant_conversion_operation( account_name_type tr, const asset& c, const asset& a )
-      : treasury( tr ), hive_amount_in( c ), hbd_amount_out( a ) {}
-
-    account_name_type treasury;
-    asset hive_amount_in;
-    asset hbd_amount_out;
-  };
-
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
@@ -471,7 +460,7 @@ FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds) )
-FC_REFLECT( hive::protocol::sps_convert_operation, (fund_account)(hive_amount_in)(hbd_amount_out) )
+FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
@@ -480,4 +469,3 @@ FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
-FC_REFLECT( hive::protocol::dhf_instant_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )

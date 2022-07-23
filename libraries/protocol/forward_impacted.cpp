@@ -366,9 +366,9 @@ struct get_impacted_account_visitor
     _impacted.insert( op.account );
   }
 
-  void operator()( const sps_convert_operation& op )
+  void operator()( const dhf_conversion_operation& op )
   {
-    _impacted.insert( op.fund_account );
+    _impacted.insert( op.treasury );
   }
 
   void operator()( const consolidate_treasury_balance_operation& op )
@@ -414,11 +414,6 @@ struct get_impacted_account_visitor
   void operator()( const producer_missed_operation& op )
   {
     _impacted.insert( op.producer );
-  }
-
-  void operator()( const dhf_instant_conversion_operation& op )
-  {
-    _impacted.insert( op.treasury );
   }
 
   //void operator()( const operation& op ){}
@@ -534,12 +529,6 @@ struct impacted_balance_collector
     emplace_back(o.owner, o.excess_collateral);
   }
 
-  void operator()(const dhf_instant_conversion_operation& o)
-  {
-    result.emplace_back(o.treasury, -o.hive_amount_in);
-    result.emplace_back(o.treasury, o.hbd_amount_out);
-  }
-
   void operator()(const escrow_transfer_operation& o)
   {
     asset hive_spent = o.hive_amount;
@@ -629,10 +618,10 @@ struct impacted_balance_collector
     emplace_back(o.payer, -o.payment);
   }
 
-  void operator()(const sps_convert_operation& o)
+  void operator()(const dhf_conversion_operation& o)
   {
-    emplace_back(o.fund_account, -o.hive_amount_in);
-    emplace_back(o.fund_account, o.hbd_amount_out);
+    emplace_back(o.treasury, -o.hive_amount_in);
+    emplace_back(o.treasury, o.hbd_amount_out);
   }
 
   void operator()(const author_reward_operation& o)
