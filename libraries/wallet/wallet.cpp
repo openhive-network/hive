@@ -861,14 +861,14 @@ public:
         {
           auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(tx)}}, LOCK );
           annotated_signed_transaction rtrx(new_tx->get_transaction(), new_tx->get_transaction_id(), result.block_num, result.trx_num);
-          dump_transaction(*new_tx, rtrx );
+          dump_transaction(*new_tx );
           return rtrx;
         }
         else
         {
           _remote_wallet_bridge_api->broadcast_transaction( vector<variant>{{variant(tx)}}, LOCK );
           annotated_signed_transaction _result(new_tx->get_transaction(), new_tx->get_transaction_id());
-          dump_transaction(*new_tx, _result );
+          dump_transaction(*new_tx);
           return _result;
         }
       }
@@ -880,7 +880,7 @@ public:
     }
     
     annotated_signed_transaction _result(new_tx->get_transaction(), new_tx->get_transaction_id());
-    dump_transaction(*new_tx, _result);
+    dump_transaction(*new_tx);
 
     return _result;
   }
@@ -893,15 +893,17 @@ public:
     return it->second;
   }
 
-  void dump_transaction( const hive::chain::full_transaction_type& full_trx, const annotated_signed_transaction& trx ) const
+  void dump_transaction( const hive::chain::full_transaction_type& full_trx) const
   {
     if( _store_transaction.empty() )
       return;
 
     try
     {
+      const signed_transaction& trx = full_trx.get_transaction();
+
       fc::variant _v;
-      fc::to_variant( wallet_serializer_wrapper<annotated_signed_transaction>{ trx }, _v );
+      fc::to_variant( wallet_serializer_wrapper<signed_transaction>{ trx }, _v );
 
       std::ofstream _file_json( _store_transaction + ".json", std::ios_base::out );
       _file_json << fc::json::to_string( _v );
@@ -914,10 +916,8 @@ public:
     {
       std::ofstream _file_bin( _store_transaction + ".bin", std::ios_base::out | std::ios_base::binary );
       
-      /// TODO: it seems that full_transaction should do the work here but bad type originally used as serialization source (annotated_signed_transaction) broken it.
-      /// The idea behind tx dumping feature was to store it in the same form as in block - annotated_signed_transaction NEVER comes to the block. Another aspect of tx dump
-      /// was serializing tx BEFORE sign, just to prepare it for offline sign.
-      fc::raw::pack( _file_bin, trx );
+      full_trx.dump_serialized_transaction(_file_bin);
+
       _file_bin.flush();
       _file_bin.close();
     }
