@@ -184,7 +184,7 @@ void webserver_plugin_impl::prepare_threads()
   thread_pool_work.reset( new asio::io_service::work( this->thread_pool_ios ) );
 
   for( uint32_t i = 0; i < thread_pool_size; ++i )
-    thread_pool.create_thread( boost::bind( &asio::io_service::run, &thread_pool_ios ) );
+    thread_pool.create_thread( [&]() { fc::set_thread_name("api"); thread_pool_ios.run(); } );
 }
 
 void webserver_plugin_impl::start_webserver()
