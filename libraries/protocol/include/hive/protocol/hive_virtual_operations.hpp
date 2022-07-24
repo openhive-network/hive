@@ -315,12 +315,12 @@ namespace hive { namespace protocol {
     ushare_type          votes = 0;
   };
 
-  struct sps_fund_operation : public virtual_operation
+  struct dhf_funding_operation : public virtual_operation
   {
-    sps_fund_operation() {}
-    sps_fund_operation( const account_name_type& _fund, const asset& v ) : fund_account( _fund ), additional_funds( v ) {}
+    dhf_funding_operation() {}
+    dhf_funding_operation( const account_name_type& f, const asset& v ) : treasury( f ), additional_funds( v ) {}
 
-    account_name_type fund_account;
+    account_name_type treasury;
     asset additional_funds;
   };
 
@@ -459,7 +459,7 @@ FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
-FC_REFLECT( hive::protocol::sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )

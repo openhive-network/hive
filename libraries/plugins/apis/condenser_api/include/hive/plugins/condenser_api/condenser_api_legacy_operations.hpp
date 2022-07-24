@@ -1287,22 +1287,22 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t             op_in_trx = 0;
   };
 
-  struct legacy_sps_fund_operation
+  struct legacy_dhf_funding_operation
   {
-    legacy_sps_fund_operation() {}
-    legacy_sps_fund_operation( const sps_fund_operation& op ) :
-      fund_account( op.fund_account ), additional_funds( legacy_asset::from_asset( op.additional_funds ) )
+    legacy_dhf_funding_operation() {}
+    legacy_dhf_funding_operation( const dhf_funding_operation& op ) :
+      treasury( op.treasury ), additional_funds( legacy_asset::from_asset( op.additional_funds ) )
     {}
 
-    operator sps_fund_operation()const
+    operator dhf_funding_operation()const
     {
-      sps_fund_operation op;
-      op.fund_account = fund_account;
+      dhf_funding_operation op;
+      op.treasury = treasury;
       op.additional_funds = additional_funds;
       return op;
     }
 
-    account_name_type fund_account;
+    account_name_type treasury;
     legacy_asset additional_funds;
   };
 
@@ -1518,7 +1518,7 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_producer_reward_operation,
         legacy_clear_null_account_balance_operation,
         legacy_proposal_pay_operation,
-        legacy_sps_fund_operation,
+        legacy_dhf_funding_operation,
         legacy_hardfork_hive_operation,
         legacy_hardfork_hive_restore_operation,
         legacy_delayed_voting_operation,
@@ -1836,9 +1836,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
-    bool operator()( const sps_fund_operation& op )const
+    bool operator()( const dhf_funding_operation& op )const
     {
-      l_op = legacy_sps_fund_operation( op );
+      l_op = legacy_dhf_funding_operation( op );
       return true;
     }
 
@@ -2090,9 +2090,9 @@ struct convert_from_legacy_operation_visitor
     return operation( proposal_pay_operation( op ) );
   }
 
-  operation operator()( const legacy_sps_fund_operation& op )const
+  operation operator()( const legacy_dhf_funding_operation& op )const
   {
-    return operation( sps_fund_operation( op ) );
+    return operation( dhf_funding_operation( op ) );
   }
 
   operation operator()( const legacy_hardfork_hive_operation& op )const
@@ -2321,7 +2321,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creat
 FC_REFLECT( hive::plugins::condenser_api::legacy_vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )

@@ -114,7 +114,7 @@ enum enum_vops_filter : uint64_t
   producer_reward_operation                     = 0x00'00004000ull,
   clear_null_account_balance_operation          = 0x00'00008000ull,
   proposal_pay_operation                        = 0x00'00010000ull,
-  sps_fund_operation                            = 0x00'00020000ull,
+  dhf_funding_operation                         = 0x00'00020000ull,
   hardfork_hive_operation                       = 0x00'00040000ull,
   hardfork_hive_restore_operation               = 0x00'00080000ull,
   delayed_voting_operation                      = 0x00'00100000ull,

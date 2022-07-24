@@ -338,9 +338,9 @@ struct get_impacted_account_visitor
     _impacted.insert( op.proposal_owner );
   }
 
-  void operator()( const sps_fund_operation& op )
+  void operator()( const dhf_funding_operation& op )
   {
-    _impacted.insert( op.fund_account );
+    _impacted.insert( op.treasury );
   }
 
   void operator()( const delayed_voting_operation& op )
