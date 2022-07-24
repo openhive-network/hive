@@ -29,15 +29,15 @@ def trigger_fork(alpha_net, beta_net):
     alpha_net.disconnect_from(beta_net)
     tt.logger.info(f'Disconnected {alpha_net} and {beta_net}')
 
-    # wait until irreversible block number increases in both subnetworks
-    irreversible_block_number_during_disconnection = alpha_node.api.database.get_dynamic_global_properties()['last_irreversible_block_num']
-    tt.logger.info(f'irreversible_block_number_during_disconnection: {irreversible_block_number_during_disconnection}')
-    tt.logger.info('Waiting until irreversible block number increases in both subnetworks')
+    # wait until head block number increases in both subnetworks
+    head_block_during_disconnection = alpha_node.api.database.get_dynamic_global_properties()['head_block_number']
+    tt.logger.info(f'head_block_during_disconnection: {head_block_during_disconnection}')
+    tt.logger.info('Waiting until head block increases in both subnetworks')
     for node in [alpha_node, beta_node]:
         while True:
-            current_irreversible_block = node.api.database.get_dynamic_global_properties()['last_irreversible_block_num']
-            tt.logger.info(f'Irreversible in {node}: {current_irreversible_block}')
-            if current_irreversible_block > irreversible_block_number_during_disconnection:
+            current_head_block = node.api.database.get_dynamic_global_properties()['head_block_number']
+            tt.logger.info(f'Head in {node}: {current_head_block}')
+            if current_head_block > head_block_during_disconnection:
                 break
             node.wait_number_of_blocks(1)
 

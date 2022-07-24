@@ -172,6 +172,7 @@ typedef oid_ref< pending_optional_action_object         > pending_optional_actio
 typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
 typedef oid_ref< comment_cashout_ex_object              > comment_cashout_ex_id_type;
 typedef oid_ref< recurrent_transfer_object              > recurrent_transfer_id_type;
+typedef oid_ref< witness_schedule_object                > witness_schedule_object_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid_ref< smt_token_object                       > smt_token_id_type;

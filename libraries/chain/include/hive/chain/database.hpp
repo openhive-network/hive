@@ -312,6 +312,8 @@ namespace chain {
       const node_property_object&            get_node_properties()const;
       const feed_history_object&             get_feed_history()const;
       const witness_schedule_object&         get_witness_schedule_object()const;
+      const witness_schedule_object&         get_future_witness_schedule_object() const;
+
       const hardfork_property_object&        get_hardfork_property_object()const;
 
     private:
@@ -691,9 +693,9 @@ namespace chain {
       void clear_accounts( const std::set< std::string >& cleared_accounts );
       void clear_account( const account_object& account );
 
-      // return the set of witnesses whose opinion we use for computing irreversibility.  Roughly, before HF26, it's the 
-      // current_shuffled_witnesses, after, it's the set that will take effect at the end of the current round, the future_shuffled_witnesses
-      const fc::array<account_name_type, HIVE_MAX_WITNESSES>& get_witness_schedule_for_irreversibility(const witness_schedule_object& wso);
+      // return the witness schedule object whose current_shuffled_witnesses we use for computing irreversibility.  Roughly, before HF26, it's the 
+      // current witnesses_schedule_object; after, it's future_witness_schedule_object
+      const witness_schedule_object& get_witness_schedule_object_for_irreversibility();
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }

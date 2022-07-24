@@ -34,7 +34,9 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
             )
 
-    tt.logger.info('Wait 21 blocks to schedule newly created witnesses')
+    tt.logger.info('Wait 21 blocks to schedule newly created witnesses into future slate')
+    init_node.wait_number_of_blocks(21)
+    tt.logger.info('Wait 21 blocks for future slate to become active slate')
     init_node.wait_number_of_blocks(21)
 
     active_witnesses = init_node.api.database.get_active_witnesses()["witnesses"]
@@ -52,4 +54,5 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
     head = result["head_block_num"]
     tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
 
-    assert irreversible + 10 < head
+    # with fast confirm, irreversible will usually be = head
+    # assert irreversible + 10 < head
