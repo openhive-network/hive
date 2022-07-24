@@ -14,15 +14,19 @@ struct decoded_block_storage_type;
 struct uncompressed_memory_buffer
 {
   std::unique_ptr<char[]> raw_bytes;
-  size_t raw_size;
+  size_t raw_size = 0;
 };
 
 struct serialized_transaction_data
 {
-  const char* begin; // pointer to the first byte of the transaction in the memory buffer
-  const char* transaction_end; // pointer past the last byte of the transaction (slice) in the memory buffer
-  const char* signed_transaction_end; // pointer past the last byte of the signed_transaction in the memory buffer
+  const char* begin = nullptr; // pointer to the first byte of the transaction in the memory buffer
+  const char* transaction_end = nullptr; // pointer past the last byte of the transaction (slice) in the memory buffer
+  const char* signed_transaction_end = nullptr; // pointer past the last byte of the signed_transaction in the memory buffer
 };
+
+struct full_transaction_type;
+
+using full_transaction_ptr = std::shared_ptr<full_transaction_type>;
 
 struct full_transaction_type
 {
@@ -44,7 +48,7 @@ struct full_transaction_type
     mutable fc::microseconds validation_computation_time;
 
     mutable std::atomic<bool> has_is_packed_in_legacy_format = { false };
-    mutable bool is_packed_in_legacy_format;
+    mutable bool is_packed_in_legacy_format = false;
 
     struct signature_info_type
     {
@@ -113,15 +117,11 @@ struct full_transaction_type
       datastream.write(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
     }
 
-    static std::shared_ptr<full_transaction_type> create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage,
-                                                                    uint32_t index_in_block, 
-                                                                    const serialized_transaction_data& serialized_transaction,
-                                                                    bool use_transaction_cache);
-    static std::shared_ptr<full_transaction_type> create_from_signed_transaction(const hive::protocol::signed_transaction& transaction, 
-                                                                                 hive::protocol::pack_type serialization_type,
-                                                                                 bool use_transaction_cache);
-    static std::shared_ptr<full_transaction_type> create_from_serialized_transaction(const char* raw_data, size_t size,
-                                                                                 bool use_transaction_cache);
+    static full_transaction_ptr create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, uint32_t index_in_block,
+                                                  const serialized_transaction_data& serialized_transaction, bool use_transaction_cache);
+    static full_transaction_ptr create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
+                                                               hive::protocol::pack_type serialization_type, bool use_transaction_cache);
+    static full_transaction_ptr create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache);
 };
 
 class full_transaction_cache
@@ -130,7 +130,7 @@ class full_transaction_cache
   std::unique_ptr<impl> my;
   full_transaction_cache();
 public:
-  std::shared_ptr<full_transaction_type> add_to_cache(const std::shared_ptr<full_transaction_type>& transaction);
+  full_transaction_ptr add_to_cache(const full_transaction_ptr& transaction);
   void remove_from_cache(const hive::protocol::digest_type& merkle_digest);
 
   static full_transaction_cache& get_instance();
