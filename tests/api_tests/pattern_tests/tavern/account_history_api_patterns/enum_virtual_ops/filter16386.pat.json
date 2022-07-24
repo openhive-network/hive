@@ -1,6 +1,6 @@
 {
   "next_block_range_begin": 1838274,
-  "next_operation_begin": 2328996,
+  "next_operation_begin": 2328997,
   "ops": [],
   "ops_by_block": [
     {
@@ -21,7 +21,7 @@
             }
           },
           "op_in_trx": 1,
-          "operation_id": 2328994,
+          "operation_id": 2328995,
           "timestamp": "2016-05-28T08:42:12",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,
@@ -48,7 +48,7 @@
             }
           },
           "op_in_trx": 1,
-          "operation_id": 2328995,
+          "operation_id": 2328996,
           "timestamp": "2016-05-28T08:42:15",
           "trx_id": "0000000000000000000000000000000000000000",
           "trx_in_block": 4294967295,

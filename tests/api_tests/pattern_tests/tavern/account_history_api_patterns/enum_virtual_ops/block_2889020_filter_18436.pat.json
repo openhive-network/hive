@@ -1,7 +1,23 @@
 {
   "next_block_range_begin": 2889020,
-  "next_operation_begin": 3846281,
+  "next_operation_begin": 3846279,
   "ops": [
+    {
+      "block": 2889020,
+      "op": {
+        "type": "comment_payout_update_operation",
+        "value": {
+          "author": "ash",
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t172207026z"
+        }
+      },
+      "op_in_trx": 77310,
+      "operation_id": 3846275,
+      "timestamp": "2016-07-04T00:00:06",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
     {
       "block": 2889020,
       "op": {
@@ -12,7 +28,7 @@
         }
       },
       "op_in_trx": 77311,
-      "operation_id": 3846275,
+      "operation_id": 3846276,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -35,7 +51,7 @@
         }
       },
       "op_in_trx": 77312,
-      "operation_id": 3846276,
+      "operation_id": 3846277,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -58,23 +74,7 @@
         }
       },
       "op_in_trx": 77313,
-      "operation_id": 3846277,
-      "timestamp": "2016-07-04T00:00:06",
-      "trx_id": "0000000000000000000000000000000000000000",
-      "trx_in_block": 4294967295,
-      "virtual_op": true
-    },
-    {
-      "block": 2889020,
-      "op": {
-        "type": "comment_payout_update_operation",
-        "value": {
-          "author": "dantheman",
-          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z"
-        }
-      },
-      "op_in_trx": 77316,
-      "operation_id": 3846280,
+      "operation_id": 3846278,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
