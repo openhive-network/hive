@@ -25,5 +25,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION (HIVE_HARDFORK_1_26)
 //always compute a full witness slate into the future
 #define HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE (HIVE_HARDFORK_1_26)
+//enable fast confirmation operation
+#define HIVE_HARDFORK_1_26_FAST_CONFIRMATION (HIVE_HARDFORK_1_26)
 
 #endif

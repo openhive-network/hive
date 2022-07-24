@@ -839,6 +839,18 @@ const witness_schedule_object& database::get_witness_schedule_object()const
   return get< witness_schedule_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
+const witness_schedule_object& database::get_future_witness_schedule_object() const
+{
+  try
+  {
+    return get<witness_schedule_object>(witness_schedule_object::id_type(1));
+  }
+  catch (const std::out_of_range&)
+  {
+    FC_THROW_EXCEPTION(fc::key_not_found_exception, "Future witness schedule does not exist");
+  }
+}
+
 const hardfork_property_object& database::get_hardfork_property_object()const
 { try {
   return get< hardfork_property_object >();
@@ -4178,7 +4190,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   _currently_processing_block_id = full_block->get_block_id();
 
   uint32_t skip = get_node_properties().skip_flags;
-
   _current_block_num    = block_num;
   _current_trx_in_block = 0;
 
@@ -4343,7 +4354,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   // last call of applying a block because it is the only thing that is not
   // reversible.
   migrate_irreversible_state(old_last_irreversible);
-
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
 struct process_header_visitor
@@ -5263,14 +5273,22 @@ void database::update_signing_witness(const witness_object& signing_witness, con
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
-const fc::array<account_name_type, HIVE_MAX_WITNESSES>& database::get_witness_schedule_for_irreversibility(const witness_schedule_object& wso)
+const witness_schedule_object& database::get_witness_schedule_object_for_irreversibility()
 {
-  return has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE) && wso.future_shuffled_witnesses[0].length() ?
-    wso.future_shuffled_witnesses : wso.current_shuffled_witnesses;
+  if (has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE))
+    try
+    {
+      return get_future_witness_schedule_object();
+    }
+    catch (const fc::key_not_found_exception&)
+    {
+    }
+  return get_witness_schedule_object();
 }
 
 void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
+  FC_ASSERT(has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION), "Fast confirmation transactions not valid until HF26");
   // fast-confirm transactions are processed outside of the normal transaction processing flow,
   // so we need to explicitly call validation here.
   // Skip the tapos check for these transactions -- a witness could be on a different fork from
@@ -5279,21 +5297,17 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // want to try to switch to it.
   validate_transaction(full_transaction, skip_tapos_check);
 
-  bool witness_is_scheduled = false;
   signed_transaction trx = full_transaction->get_transaction();
 
   const witness_block_approve_operation& block_approve_op = trx.operations.front().get<witness_block_approve_operation>();
   // dlog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
 
-  const witness_schedule_object& wso = get_witness_schedule_object();
-  const fc::array<account_name_type, HIVE_MAX_WITNESSES>& shuffled_witnesses = get_witness_schedule_for_irreversibility(wso);
-  for (int i = 0; i < wso.num_scheduled_witnesses; i++)
-    if (block_approve_op.witness == get_witness(shuffled_witnesses[i]).owner)
-    {
-      witness_is_scheduled = true;
-      break;
-    }
-
+  const witness_schedule_object& wso_for_irreversibility = get_witness_schedule_object_for_irreversibility();
+  bool witness_is_scheduled = std::any_of(wso_for_irreversibility.current_shuffled_witnesses.begin(), 
+                                          wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
+                                          [&](const account_name_type& witness_account_name) {
+                                            return block_approve_op.witness == get_witness(witness_account_name).owner;
+                                          });
   if (!witness_is_scheduled)
   {
     ilog("Received a fast-confirm from witness ${witness} who is not on the schedule, ignoring", ("witness", block_approve_op.witness));
@@ -5349,9 +5363,9 @@ uint32_t database::update_last_irreversible_block()
   // we'll need to know who the current scheduled witnesses are, because their opinions are
   // the only ones that matter
   std::set<account_name_type> scheduled_witnesses;
-  const witness_schedule_object& wso = get_witness_schedule_object();
-  const fc::array<account_name_type, HIVE_MAX_WITNESSES>& shuffled_witnesses = get_witness_schedule_for_irreversibility(wso);
-  std::transform(shuffled_witnesses.begin(), shuffled_witnesses.begin() + wso.num_scheduled_witnesses,
+  const witness_schedule_object& wso_for_irreversibility = get_witness_schedule_object_for_irreversibility();
+  std::transform(wso_for_irreversibility.current_shuffled_witnesses.begin(), 
+                 wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
                  std::inserter(scheduled_witnesses, scheduled_witnesses.end()),
                  [&](const account_name_type& witness_account_name) {
                    return get_witness(witness_account_name).owner;
