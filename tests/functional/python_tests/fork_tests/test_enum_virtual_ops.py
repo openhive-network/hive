@@ -14,9 +14,13 @@ def test_enum_virtual_ops(prepared_networks):
     for _ in range(10):
         # TRIGGER
         # We broadcast transactions (with non virtual operations).
-        wallet.api.transfer_to_vesting('initminer', account_name, tt.Asset.Test(1))
 
+        # starting_block_number = wallet.api.info()['head_block_number']
+        # tt.logger.info(f"staring block number = {starting_block_number}")
+
+        wallet.api.transfer_to_vesting('initminer', account_name, tt.Asset.Test(1))
         head_block = wallet.api.info()['head_block_number']
+        # tt.logger.info(f"head block number = {head_block}")
         block_to_check = head_block - 1
 
         # VERIFY
