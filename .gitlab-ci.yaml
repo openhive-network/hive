@@ -328,7 +328,7 @@ datagen_api_tests:
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
   script:
     - cd tests/functional/python_tests/datagen_tests/api_tests/
-    - timeout 2m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="tests/functional/python_tests/datagen_tests/api_tests/report.xml"
+    - timeout 2m pytest --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
   timeout: 10min
   artifacts:
     reports:
