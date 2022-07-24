@@ -85,6 +85,8 @@ namespace detail {
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
     uint32_t _last_fast_confirmation_block_number = 0;
+
+    std::atomic<bool> _enable_fast_confirm = true;
   };
 
   class witness_generate_block_flow_control final : public generate_block_flow_control
@@ -298,16 +300,16 @@ namespace detail {
     }
   }
 
-  void witness_plugin_impl::on_post_apply_block( const block_notification& note )
+  void witness_plugin_impl::on_post_apply_block(const block_notification& note)
   {
     //note that we can't use clear on mutable version of this index because it bypasses undo sessions
-    const auto& idx = _db.get_index< witness_custom_op_index >().indices().get< by_id >();
-    while( true )
+    const auto& idx = _db.get_index<witness_custom_op_index>().indices().get<by_id>();
+    while (true)
     {
       auto it = idx.begin();
-      if( it == idx.end() )
+      if (it == idx.end())
         break;
-      _db.remove( *it );
+      _db.remove(*it);
     }
 
     // Broadcast a transaction to let the other witnesses know we've accepted this block for fast 
@@ -317,13 +319,14 @@ namespace detail {
     //
     // TODO: we probably shouldn't broadcast anything if our head block is older than some threshold
     //       so we don't spam the network if we fall behind and are catching back up
-    if (note.block_num > _last_fast_confirmation_block_number)
+    if (_db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) && 
+        note.block_num > _last_fast_confirmation_block_number)
     {
       std::set<account_name_type> scheduled_witnesses;
-      const witness_schedule_object& wso = _db.get_witness_schedule_object();
-      const fc::array<account_name_type, HIVE_MAX_WITNESSES>& shuffled_witnesses = _db.get_witness_schedule_for_irreversibility(wso);
-      for (int i = 0; i < wso.num_scheduled_witnesses; i++)
-        scheduled_witnesses.insert(_db.get_witness(shuffled_witnesses[i]).owner);
+      const witness_schedule_object& wso_for_irreversibility = _db.get_witness_schedule_object_for_irreversibility();
+      std::copy(wso_for_irreversibility.current_shuffled_witnesses.begin(), 
+                wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
+                std::inserter(scheduled_witnesses, scheduled_witnesses.end()));
       //ddump((scheduled_witnesses));
 
       for (const account_name_type& witness_name : _witnesses)
@@ -345,24 +348,33 @@ namespace detail {
             auto private_key_itr = _private_keys.find(scheduled_key);
             if (private_key_itr != _private_keys.end())
             {
-              witness_block_approve_operation op;
-              op.witness = witness_name;
-              op.block_id = note.block_id;
+              // we're on the schedule and we have the keys required to generate the fast confirm op.
+              if (_enable_fast_confirm.load(std::memory_order_relaxed))
+              {
+                witness_block_approve_operation op;
+                op.witness = witness_name;
+                op.block_id = note.block_id;
 
-              signed_transaction tx;
-              uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
-              const block_id_type reference_block_id = last_irreversible_block ? _db.get_block_id_for_num(last_irreversible_block) : _db.head_block_id();
-              tx.set_reference_block(reference_block_id);
-              tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-              tx.operations.push_back( op );
-              tx.sign(private_key_itr->second, _db.get_chain_id(), fc::ecc::fc_canonical);
+                signed_transaction tx;
+                uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
+                const block_id_type reference_block_id = last_irreversible_block ? _db.get_block_id_for_num(last_irreversible_block) : _db.head_block_id();
+                tx.set_reference_block(reference_block_id);
+                tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+                tx.operations.push_back( op );
+                tx.sign(private_key_itr->second, _db.get_chain_id(), fc::ecc::fc_canonical);
 
-              ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
-              uint32_t skip = _db.get_node_properties().skip_flags;
+                ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
+                uint32_t skip = _db.get_node_properties().skip_flags;
 
-              std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_signed_transaction(tx, hive::protocol::serialization_mode_controller::get_current_pack(), false);
-              _db.push_transaction(full_transaction, skip);
-              appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
+                std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_signed_transaction(tx, hive::protocol::serialization_mode_controller::get_current_pack(), false);
+                _db.push_transaction(full_transaction, skip);
+                appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
+              }
+              else
+              {
+                ilog("Not broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}, because fast-confirm is disabled",
+                     (witness_name)("block_num", note.block_num));
+              }
             }
           }
           catch (const fc::exception& e)
@@ -536,6 +548,21 @@ namespace detail {
 
 witness_plugin::witness_plugin() {}
 witness_plugin::~witness_plugin() {}
+
+void witness_plugin::enable_fast_confirm()
+{
+  my->_enable_fast_confirm.store(true, std::memory_order_relaxed);
+}
+
+void witness_plugin::disable_fast_confirm()
+{
+  my->_enable_fast_confirm.store(false, std::memory_order_relaxed);
+}
+
+bool witness_plugin::is_fast_confirm_enabled() const
+{
+  return my->_enable_fast_confirm.load(std::memory_order_relaxed);
+}
 
 void witness_plugin::set_program_options(
   boost::program_options::options_description& cli,
