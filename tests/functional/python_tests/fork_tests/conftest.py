@@ -5,6 +5,7 @@ import pytest
 import test_tools as tt
 
 from ..local_tools import prepare_witnesses
+from test_tools.__private.user_handles import WitnessNodeHandle
 
 @pytest.fixture(scope="package")
 def prepared_networks() -> Dict:
@@ -39,11 +40,19 @@ def prepared_networks() -> Dict:
     # Run
     alpha_net.connect_with(beta_net)
 
+
     tt.logger.info('Running networks, waiting for live...')
     alpha_net.run()
     beta_net.run()
 
+    # tt.logger.info('Disabling fast confirm on all witnesses')
+    # for node in alpha_net.nodes + beta_net.nodes:
+    #     if isinstance(node, WitnessNodeHandle):
+    #         tt.logger.error('Disabling fast confirm')
+    #         node.disable_fast_confirm()
+
     prepare_witnesses(init_node, all_witness_names)
+
 
     yield {
         'Alpha': alpha_net,
