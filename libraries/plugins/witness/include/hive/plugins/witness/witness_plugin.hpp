@@ -47,6 +47,10 @@ public:
   witness_plugin();
   virtual ~witness_plugin();
 
+  void enable_fast_confirm();
+  void disable_fast_confirm();
+  bool is_fast_confirm_enabled() const;
+
   static const std::string& name() { static std::string name = HIVE_WITNESS_PLUGIN_NAME; return name; }
 
   virtual void set_program_options(

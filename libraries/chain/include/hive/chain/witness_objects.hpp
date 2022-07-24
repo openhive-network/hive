@@ -177,7 +177,6 @@ namespace hive { namespace chain {
       fc::uint128                                        current_virtual_time;
       uint32_t                                           next_shuffle_block_num = 1;
       fc::array< account_name_type, HIVE_MAX_WITNESSES > current_shuffled_witnesses;
-      fc::array< account_name_type, HIVE_MAX_WITNESSES > future_shuffled_witnesses;
       uint8_t                                            num_scheduled_witnesses = 1;
       uint8_t                                            elected_weight = 1;
       uint8_t                                            timeshare_weight = 5;
@@ -195,6 +194,31 @@ namespace hive { namespace chain {
       rd_dynamics_params account_subsidy_rd;
       rd_dynamics_params account_subsidy_witness_rd;
       int64_t            min_witness_account_subsidy_decay = 0;
+      
+      void copy_values_from(const witness_schedule_object& rhs)
+      {
+        current_virtual_time = rhs.current_virtual_time;
+
+        next_shuffle_block_num = rhs.next_shuffle_block_num;
+        current_shuffled_witnesses = rhs.current_shuffled_witnesses;
+        num_scheduled_witnesses = rhs.num_scheduled_witnesses;
+        elected_weight = rhs.elected_weight;
+        timeshare_weight = rhs.timeshare_weight;
+        miner_weight = rhs.miner_weight;
+        witness_pay_normalization_factor = rhs.witness_pay_normalization_factor;
+        median_props = rhs.median_props;
+        majority_version = rhs.majority_version;
+
+        max_voted_witnesses = rhs.max_voted_witnesses;
+        max_miner_witnesses = rhs.max_miner_witnesses;
+        max_runner_witnesses = rhs.max_runner_witnesses;
+        hardfork_required_witnesses = rhs.hardfork_required_witnesses;
+
+        // Derived fields that are stored for easy caching and reading of values.
+        account_subsidy_rd = rhs.account_subsidy_rd;
+        account_subsidy_witness_rd = rhs.account_subsidy_witness_rd;
+        min_witness_account_subsidy_decay = rhs.min_witness_account_subsidy_decay;
+      }
   };
 
 
@@ -307,7 +331,7 @@ FC_REFLECT( hive::chain::witness_vote_object, (id)(witness)(account) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::witness_vote_object, hive::chain::witness_vote_index )
 
 FC_REFLECT(hive::chain::witness_schedule_object,
-           (id)(current_virtual_time)(next_shuffle_block_num)(current_shuffled_witnesses)(future_shuffled_witnesses)(num_scheduled_witnesses)
+           (id)(current_virtual_time)(next_shuffle_block_num)(current_shuffled_witnesses)(num_scheduled_witnesses)
            (elected_weight)(timeshare_weight)(miner_weight)(witness_pay_normalization_factor)
            (median_props)(majority_version)
            (max_voted_witnesses)

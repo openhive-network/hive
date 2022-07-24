@@ -433,11 +433,8 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
 DEFINE_API_IMPL( database_api_impl, get_active_witnesses )
 {
   const auto& wso = _db.get_witness_schedule_object();
-  size_t n = wso.current_shuffled_witnesses.size();
   get_active_witnesses_return result;
-  result.witnesses.reserve( n );
-  for( size_t i=0; i<n; i++ )
-    result.witnesses.emplace_back( wso.current_shuffled_witnesses[i] );
+  result.witnesses.assign(wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.begin() + wso.num_scheduled_witnesses);
   return result;
 }
 
