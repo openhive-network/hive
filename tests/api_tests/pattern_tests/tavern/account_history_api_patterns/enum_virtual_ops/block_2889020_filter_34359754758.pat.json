@@ -1,7 +1,30 @@
 {
   "next_block_range_begin": 2889020,
-  "next_operation_begin": 3846298,
+  "next_operation_begin": 3846294,
   "ops": [
+    {
+      "block": 2889020,
+      "op": {
+        "type": "curation_reward_operation",
+        "value": {
+          "comment_author": "dantheman",
+          "comment_permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
+          "curator": "sean-king",
+          "payout_must_be_claimed": false,
+          "reward": {
+            "amount": "1392441282",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 77312,
+      "operation_id": 3846277,
+      "timestamp": "2016-07-04T00:00:06",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
     {
       "block": 2889020,
       "op": {
@@ -19,7 +42,7 @@
         }
       },
       "op_in_trx": 77313,
-      "operation_id": 3846277,
+      "operation_id": 3846278,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -56,7 +79,7 @@
         }
       },
       "op_in_trx": 77314,
-      "operation_id": 3846278,
+      "operation_id": 3846279,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -79,7 +102,7 @@
         }
       },
       "op_in_trx": 77323,
-      "operation_id": 3846287,
+      "operation_id": 3846288,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -116,7 +139,7 @@
         }
       },
       "op_in_trx": 77324,
-      "operation_id": 3846288,
+      "operation_id": 3846289,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -139,7 +162,7 @@
         }
       },
       "op_in_trx": 77327,
-      "operation_id": 3846291,
+      "operation_id": 3846292,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
@@ -176,30 +199,7 @@
         }
       },
       "op_in_trx": 77328,
-      "operation_id": 3846292,
-      "timestamp": "2016-07-04T00:00:06",
-      "trx_id": "0000000000000000000000000000000000000000",
-      "trx_in_block": 4294967295,
-      "virtual_op": true
-    },
-    {
-      "block": 2889020,
-      "op": {
-        "type": "curation_reward_operation",
-        "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
-          "curator": "ned",
-          "payout_must_be_claimed": false,
-          "reward": {
-            "amount": "14359131949647",
-            "nai": "@@000000037",
-            "precision": 6
-          }
-        }
-      },
-      "op_in_trx": 77333,
-      "operation_id": 3846297,
+      "operation_id": 3846293,
       "timestamp": "2016-07-04T00:00:06",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,

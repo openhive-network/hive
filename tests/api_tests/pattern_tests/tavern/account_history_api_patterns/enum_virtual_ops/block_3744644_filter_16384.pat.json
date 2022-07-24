@@ -1,6 +1,6 @@
 {
   "next_block_range_begin": 3744645,
-  "next_operation_begin": 9882433,
+  "next_operation_begin": 9881841,
   "ops": [
     {
       "block": 3744644,
@@ -16,7 +16,7 @@
         }
       },
       "op_in_trx": 1,
-      "operation_id": 9882430,
+      "operation_id": 9881838,
       "timestamp": "2016-08-03T00:00:00",
       "trx_id": "0000000000000000000000000000000000000000",
       "trx_in_block": 4294967295,
