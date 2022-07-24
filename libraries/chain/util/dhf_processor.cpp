@@ -1,4 +1,4 @@
-#include <hive/chain/util/sps_processor.hpp>
+#include <hive/chain/util/dhf_processor.hpp>
 
 namespace hive { namespace chain {
 
@@ -13,20 +13,20 @@ using hive::chain::proposal_id_type;
 using hive::chain::proposal_vote_index;
 using hive::chain::by_proposal_voter;
 using hive::protocol::proposal_pay_operation;
-using hive::chain::sps_helper;
+using hive::chain::dhf_helper;
 using hive::chain::dynamic_global_property_object;
 using hive::chain::block_notification;
 
-const std::string sps_processor::removing_name = "sps_processor_remove";
-const std::string sps_processor::calculating_name = "sps_processor_calculate";
+const std::string dhf_processor::removing_name = "dhf_processor_remove";
+const std::string dhf_processor::calculating_name = "dhf_processor_calculate";
 
-bool sps_processor::is_maintenance_period( const time_point_sec& head_time ) const
+bool dhf_processor::is_maintenance_period( const time_point_sec& head_time ) const
 {
   auto due_time = db.get_dynamic_global_properties().next_maintenance_time;
   return due_time <= head_time;
 }
 
-bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
+bool dhf_processor::is_daily_maintenance_period( const time_point_sec& head_time ) const
 {
   /// No DHF conversion until HF24 !
   if( !db.has_hardfork( HIVE_HARDFORK_1_24 ) )
@@ -35,7 +35,7 @@ bool sps_processor::is_daily_maintenance_period( const time_point_sec& head_time
   return due_time <= head_time;
 }
 
-void sps_processor::remove_proposals( const time_point_sec& head_time )
+void dhf_processor::remove_proposals( const time_point_sec& head_time )
 {
   FC_TODO("implement proposal removal based on automatic actions")
 
@@ -59,13 +59,13 @@ void sps_processor::remove_proposals( const time_point_sec& head_time )
       cycles here.
     */
     if( proposal.removed )
-      sps_helper::remove_proposal( proposal, byVoterIdx, db, obj_perf );
+      dhf_helper::remove_proposal( proposal, byVoterIdx, db, obj_perf );
     if( obj_perf.done() )
       break;
   }
 }
 
-void sps_processor::find_proposals( const time_point_sec& head_time, t_proposals& active_proposals, t_proposals& no_active_yet_proposals )
+void dhf_processor::find_proposals( const time_point_sec& head_time, t_proposals& active_proposals, t_proposals& no_active_yet_proposals )
 {
   const auto& pidx = db.get_index< proposal_index >().indices().get< by_start_date >();
 
@@ -82,7 +82,7 @@ void sps_processor::find_proposals( const time_point_sec& head_time, t_proposals
   } );
 }
 
-uint64_t sps_processor::calculate_votes( uint32_t pid )
+uint64_t dhf_processor::calculate_votes( uint32_t pid )
 {
   uint64_t ret = 0;
 
@@ -106,7 +106,7 @@ uint64_t sps_processor::calculate_votes( uint32_t pid )
   return ret;
 }
 
-void sps_processor::calculate_votes( const t_proposals& proposals )
+void dhf_processor::calculate_votes( const t_proposals& proposals )
 {
   for( auto& item : proposals )
   {
@@ -120,7 +120,7 @@ void sps_processor::calculate_votes( const t_proposals& proposals )
   }
 }
 
-void sps_processor::sort_by_votes( t_proposals& proposals )
+void dhf_processor::sort_by_votes( t_proposals& proposals )
 {
   std::sort( proposals.begin(), proposals.end(), []( const proposal_object& a, const proposal_object& b )
   {
@@ -132,14 +132,14 @@ void sps_processor::sort_by_votes( t_proposals& proposals )
   } );
 }
 
-asset sps_processor::get_treasury_fund()
+asset dhf_processor::get_treasury_fund()
 {
   auto& treasury_account = db.get_treasury();
 
   return treasury_account.get_hbd_balance();
 }
 
-asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_time )
+asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_time )
 {
   //Get funds from 'treasury' account ( treasury_fund )
   asset treasury_fund = get_treasury_fund();
@@ -155,7 +155,7 @@ asset sps_processor::calculate_maintenance_budget( const time_point_sec& head_ti
   return asset( daily_budget_limit, treasury_fund.symbol );
 }
 
-void sps_processor::transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals )
+void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals )
 {
   if( maintenance_budget_limit.amount.value == 0 )
     return;
@@ -208,7 +208,7 @@ void sps_processor::transfer_payments( const time_point_sec& head_time, asset& m
   }
 }
 
-void sps_processor::update_settings( const time_point_sec& head_time )
+void dhf_processor::update_settings( const time_point_sec& head_time )
 {
   db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
   {
@@ -219,7 +219,7 @@ void sps_processor::update_settings( const time_point_sec& head_time )
   } );
 }
 
-void sps_processor::remove_old_proposals( const block_notification& note )
+void dhf_processor::remove_old_proposals( const block_notification& note )
 {
   auto head_time = note.get_block_timestamp();
 
@@ -229,10 +229,10 @@ void sps_processor::remove_old_proposals( const block_notification& note )
   remove_proposals( head_time );
 
   if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
-    db.get_benchmark_dumper().end( "block", sps_processor::removing_name );
+    db.get_benchmark_dumper().end( "block", dhf_processor::removing_name );
 }
 
-void sps_processor::make_payments( const block_notification& note )
+void dhf_processor::make_payments( const block_notification& note )
 {
   auto head_time = note.get_block_timestamp();
 
@@ -256,7 +256,7 @@ void sps_processor::make_payments( const block_notification& note )
     update_settings( head_time );
 
     if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
-      db.get_benchmark_dumper().end( "block", sps_processor::calculating_name );
+      db.get_benchmark_dumper().end( "block", dhf_processor::calculating_name );
     return;
   }
 
@@ -279,20 +279,20 @@ void sps_processor::make_payments( const block_notification& note )
   update_settings( head_time );
 
   if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
-    db.get_benchmark_dumper().end( "block", sps_processor::calculating_name );
+    db.get_benchmark_dumper().end( "block", dhf_processor::calculating_name );
 }
 
-const std::string& sps_processor::get_removing_name()
+const std::string& dhf_processor::get_removing_name()
 {
   return removing_name;
 }
 
-const std::string& sps_processor::get_calculating_name()
+const std::string& dhf_processor::get_calculating_name()
 {
   return calculating_name;
 }
 
-void sps_processor::run( const block_notification& note )
+void dhf_processor::run( const block_notification& note )
 {
   remove_old_proposals( note );
   record_funding( note );
@@ -300,26 +300,26 @@ void sps_processor::run( const block_notification& note )
   make_payments( note );
 }
 
-void sps_processor::record_funding( const block_notification& note )
+void dhf_processor::record_funding( const block_notification& note )
 {
   if( !is_maintenance_period( note.get_block_timestamp() ) )
     return;
 
   const auto& props = db.get_dynamic_global_properties();
 
-  if ( props.sps_interval_ledger.amount.value <= 0 )
+  if ( props.dhf_interval_ledger.amount.value <= 0 )
     return;
 
-  operation vop = dhf_funding_operation( db.get_treasury_name(), props.sps_interval_ledger );
+  operation vop = dhf_funding_operation( db.get_treasury_name(), props.dhf_interval_ledger );
   db.push_virtual_operation( vop );
 
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
-    dgpo.sps_interval_ledger = asset( 0, HBD_SYMBOL );
+    dgpo.dhf_interval_ledger = asset( 0, HBD_SYMBOL );
   });
 }
 
-void sps_processor::convert_funds( const block_notification& note )
+void dhf_processor::convert_funds( const block_notification& note )
 {
   auto block_ts = note.get_block_timestamp();
   if( !is_daily_maintenance_period( block_ts ))

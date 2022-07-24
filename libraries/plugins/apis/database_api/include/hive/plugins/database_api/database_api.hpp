@@ -104,7 +104,7 @@ class database_api
       (get_order_book)
 
       /////////
-      // SPS //
+      // DHF //
       /////////
 
       (list_proposals)

@@ -4,7 +4,7 @@
 #include <hive/utilities/database_configuration.hpp>
 
 #include <hive/chain/hive_objects.hpp>
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
@@ -1111,7 +1111,7 @@ template smt_capped_generation_policy t_smt_database_fixture< clean_database_fix
 
 #endif
 
-void sps_proposal_database_fixture::plugin_prepare()
+void dhf_database_fixture::plugin_prepare()
 {
   auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
   {
@@ -1137,7 +1137,7 @@ void sps_proposal_database_fixture::plugin_prepare()
   validate_database();
 }
 
-int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std::string receiver,
+int64_t dhf_database_fixture::create_proposal( std::string creator, std::string receiver,
                   time_point_sec start_date, time_point_sec end_date,
                   asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation )
 {
@@ -1182,7 +1182,7 @@ int64_t sps_proposal_database_fixture::create_proposal( std::string creator, std
   return itr->proposal_id;
 }
 
-void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date)
+void dhf_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date)
 {
   signed_transaction tx;
   update_proposal_operation op;
@@ -1207,7 +1207,7 @@ void sps_proposal_database_fixture::update_proposal(uint64_t proposal_id, std::s
   tx.operations.clear();
 }
 
-void sps_proposal_database_fixture::vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key )
+void dhf_database_fixture::vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key )
 {
   update_proposal_votes_operation op;
 
@@ -1222,13 +1222,13 @@ void sps_proposal_database_fixture::vote_proposal( std::string voter, const std:
   push_transaction( tx, 0 );
 }
 
-bool sps_proposal_database_fixture::exist_proposal( int64_t id )
+bool dhf_database_fixture::exist_proposal( int64_t id )
 {
   const auto& proposal_idx = db->get_index< proposal_index >().indices(). template get< by_proposal_id >();
   return proposal_idx.find( id ) != proposal_idx.end();
 }
 
-const proposal_object* sps_proposal_database_fixture::find_proposal( int64_t id )
+const proposal_object* dhf_database_fixture::find_proposal( int64_t id )
 {
   const auto& proposal_idx = db->get_index< proposal_index >().indices(). template get< by_proposal_id >();
   auto found = proposal_idx.find( id );
@@ -1239,7 +1239,7 @@ const proposal_object* sps_proposal_database_fixture::find_proposal( int64_t id 
     return nullptr;
 }
 
-void sps_proposal_database_fixture::remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key)
+void dhf_database_fixture::remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key)
 {
   remove_proposal_operation rp;
   rp.proposal_owner = _deleter;
@@ -1254,14 +1254,14 @@ void sps_proposal_database_fixture::remove_proposal(account_name_type _deleter, 
   trx.operations.clear();
 }
 
-bool sps_proposal_database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
+bool dhf_database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
 {
   const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
   auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
   return found_vote != proposal_vote_idx.end();
 }
 
-uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
+uint64_t dhf_database_fixture::get_nr_blocks_until_maintenance_block()
 {
   auto block_time = db->head_block_time();
 
@@ -1273,7 +1273,7 @@ uint64_t sps_proposal_database_fixture::get_nr_blocks_until_maintenance_block()
   return ret;
 }
 
-uint64_t sps_proposal_database_fixture::get_nr_blocks_until_daily_maintenance_block()
+uint64_t dhf_database_fixture::get_nr_blocks_until_daily_maintenance_block()
 {
   auto block_time = db->head_block_time();
 
@@ -1285,7 +1285,7 @@ uint64_t sps_proposal_database_fixture::get_nr_blocks_until_daily_maintenance_bl
   return ret;
 }
 
-void sps_proposal_database_fixture::witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve )
+void dhf_database_fixture::witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve )
 {
   signed_transaction tx;
   account_witness_vote_operation op;
@@ -1299,7 +1299,7 @@ void sps_proposal_database_fixture::witness_vote( account_name_type _voter, acco
   push_transaction( tx, 0 );
 }
 
-void sps_proposal_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
+void dhf_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
 {
   signed_transaction tx;
   account_witness_proxy_operation op;

@@ -470,11 +470,11 @@ using smt_database_fixture_for_plugin = t_smt_database_fixture< database_fixture
 
 #endif
 
-struct sps_proposal_database_fixture : public virtual clean_database_fixture
+struct dhf_database_fixture : public virtual clean_database_fixture
 {
-  sps_proposal_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
+  dhf_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                   : clean_database_fixture( shared_file_size_in_mb ){}
-  virtual ~sps_proposal_database_fixture(){}
+  virtual ~dhf_database_fixture(){}
 
   void plugin_prepare();
 
@@ -522,10 +522,10 @@ struct sps_proposal_database_fixture : public virtual clean_database_fixture
 
 };
 
-struct sps_proposal_database_fixture_performance : public sps_proposal_database_fixture
+struct dhf_database_fixture_performance : public dhf_database_fixture
 {
-  sps_proposal_database_fixture_performance( uint16_t shared_file_size_in_mb = 512 )
-                  : sps_proposal_database_fixture( shared_file_size_in_mb )
+  dhf_database_fixture_performance( uint16_t shared_file_size_in_mb = 512 )
+                  : dhf_database_fixture( shared_file_size_in_mb )
   {
     db->get_benchmark_dumper().set_enabled( true );
     db_plugin->debug_update( []( database& db )
@@ -584,11 +584,11 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
 
 struct delayed_vote_proposal_database_fixture 
   :  public delayed_vote_database_fixture,
-    public sps_proposal_database_fixture
+    public dhf_database_fixture
 {
   delayed_vote_proposal_database_fixture( uint16_t shared_file_size_in_mb = 8 )
                     :  delayed_vote_database_fixture( shared_file_size_in_mb ),
-                      sps_proposal_database_fixture( shared_file_size_in_mb ) {}
+                      dhf_database_fixture( shared_file_size_in_mb ) {}
   virtual ~delayed_vote_proposal_database_fixture(){}
 };
 

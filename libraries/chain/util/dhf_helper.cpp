@@ -1,10 +1,10 @@
 #include <hive/chain/hive_fwd.hpp>
 
-#include <hive/chain/util/sps_helper.hpp>
+#include <hive/chain/util/dhf_helper.hpp>
 
 namespace hive { namespace chain {
 
-void sps_helper::remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner )
+void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner )
 {
   if( proposal_ids.empty() )
     return;

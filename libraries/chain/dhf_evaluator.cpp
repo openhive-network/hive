@@ -1,12 +1,12 @@
 #include <hive/chain/hive_fwd.hpp>
 
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_evaluator.hpp>
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 
-#include <hive/chain/util/sps_helper.hpp>
+#include <hive/chain/util/dhf_helper.hpp>
 
 
 namespace hive { namespace chain {
@@ -182,7 +182,7 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
     FC_ASSERT( _db.has_hardfork( HIVE_PROPOSALS_HARDFORK ), "Proposals functionality not enabled until hardfork ${hf}", ("hf", HIVE_PROPOSALS_HARDFORK) );
 
     // Remove proposals and related votes...
-    sps_helper::remove_proposals( _db, op.proposal_ids, op.proposal_owner );
+    dhf_helper::remove_proposals( _db, op.proposal_ids, op.proposal_owner );
 
     /*
       ...For performance reasons and the fact that proposal votes can accumulate over time but need to be removed along with proposals,
@@ -190,8 +190,8 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
       some remain due to threshold being reached, the rest is marked with `removed` flag, to be actually removed during regular per-block cycles.
       The `end_date` is moved to `head_time - HIVE_PROPOSAL_MAINTENANCE_CLEANUP` so the proposals are ready to be removed immediately
       (see proposal_object::get_end_date_with_delay() - there was a short window when proposal was expired but still "alive" to avoid corner cases)
-      flag `removed` - it's information for 'sps_api' plugin
-      moving `end_date` - triggers the algorithm in `sps_processor::remove_proposals`
+      flag `removed` - it's information for 'dhf_api' plugin
+      moving `end_date` - triggers the algorithm in `dhf_processor::remove_proposals`
 
       When automatic actions will be introduced, this code will disappear.
     */

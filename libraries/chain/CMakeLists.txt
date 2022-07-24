@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/hive/chain/*.hpp" "include/hive/chain/util/*.hpp" "include/hive/chain/smt_objects/*.hpp" "include/hive/chain/sps_objects/*.hpp")
+file(GLOB HEADERS "include/hive/chain/*.hpp" "include/hive/chain/util/*.hpp" "include/hive/chain/smt_objects/*.hpp" "include/hive/chain/dhf_objects/*.hpp")
 
 if (NOT BUILD_HIVE_TESTNET)
   if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/compression_dictionaries"
@@ -37,7 +37,7 @@ add_library( hive_chain
              blockchain_worker_thread_pool.cpp
 
              smt_evaluator.cpp
-             sps_evaluator.cpp
+             dhf_evaluator.cpp
 
              smt_objects/smt_market_maker.cpp
              smt_objects/nai_pool.cpp
@@ -62,8 +62,8 @@ add_library( hive_chain
              util/extractors.cpp
              util/advanced_benchmark_dumper.cpp
              util/smt_token.cpp
-             util/sps_processor.cpp
-             util/sps_helper.cpp
+             util/dhf_processor.cpp
+             util/dhf_helper.cpp
              util/delayed_voting.cpp
              util/owner_update_limit_mgr.cpp
              util/operation_extractor.cpp

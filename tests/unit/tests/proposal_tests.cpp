@@ -4,7 +4,7 @@
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -15,8 +15,8 @@
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
 
-#include <hive/chain/sps_objects.hpp>
-#include <hive/chain/util/sps_processor.hpp>
+#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/util/dhf_processor.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -87,7 +87,7 @@ struct expired_account_notification_operation_visitor
   }
 };
 
-BOOST_FIXTURE_TEST_SUITE( proposal_tests, sps_proposal_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( proposal_tests, dhf_database_fixture )
 
 BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
 {
@@ -1701,7 +1701,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
       BOOST_REQUIRE( exist_proposal( id_proposal_02 ) );
 
       /*
-            Take a look at comment in `sps_processor::remove_proposals`
+            Take a look at comment in `dhf_processor::remove_proposals`
       */
       generate_blocks( start_time + fc::minutes( 11 ) );
       
@@ -3152,7 +3152,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
       auto found = calc_proposals( proposal_idx, proposals_id );
 
       /*
-        Take a look at comment in `sps_processor::remove_proposals`
+        Take a look at comment in `dhf_processor::remove_proposals`
       */
       //BOOST_REQUIRE( current_active_proposals == found ); //earlier
       BOOST_REQUIRE( nr_proposals == found );               //now
@@ -3260,7 +3260,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
 
       /*
-        Take a look at comment in `sps_processor::remove_proposals`
+        Take a look at comment in `dhf_processor::remove_proposals`
       */
       //BOOST_REQUIRE( current_active_anything == found_proposals + found_votes );                            //earlier
       BOOST_REQUIRE( ( current_active_proposals + current_active_votes ) == found_proposals + found_votes );  //now
@@ -4340,7 +4340,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 BOOST_AUTO_TEST_SUITE_END()
 
 
-BOOST_FIXTURE_TEST_SUITE( proposal_tests_performance, sps_proposal_database_fixture_performance )
+BOOST_FIXTURE_TEST_SUITE( proposal_tests_performance, dhf_database_fixture_performance )
 
 int32_t get_time( database& db, const std::string& name )
 {
@@ -4357,7 +4357,7 @@ int32_t get_time( database& db, const std::string& name )
   {
   "total_time": 1421,
   "items": [{
-      "op_name": "sps_processor",
+      "op_name": "dhf_processor",
       "time": 80
     },...
   */
@@ -4524,14 +4524,14 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     generate_blocks( 1 );
 
     /*
-      Take a look at comment in `sps_processor::remove_proposals`
+      Take a look at comment in `dhf_processor::remove_proposals`
     */
     //BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == 0 );                       //earlier
     //BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == 0 );                      //earlier
     BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );  //now
     BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );     //now
 
-    int32_t benchmark_time = get_time( *db, sps_processor::get_removing_name() );
+    int32_t benchmark_time = get_time( *db, dhf_processor::get_removing_name() );
     idump( (benchmark_time) );
     BOOST_REQUIRE( benchmark_time == -1 || benchmark_time < 100 );
 

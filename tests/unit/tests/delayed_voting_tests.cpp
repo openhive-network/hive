@@ -11,7 +11,7 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/hive_objects.hpp>
 
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/resource_count.hpp>

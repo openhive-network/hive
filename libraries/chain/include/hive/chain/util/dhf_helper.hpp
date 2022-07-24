@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
 #include <boost/container/flat_set.hpp>
@@ -10,7 +10,7 @@ namespace hive { namespace chain {
 
 using boost::container::flat_set;
 
-class sps_helper
+class dhf_helper
 {
   public:
     // removes votes cast for proposals by given account (as long as we are within limit), returns if the process was successful

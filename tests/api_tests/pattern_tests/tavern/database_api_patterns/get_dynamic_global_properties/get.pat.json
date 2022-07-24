@@ -54,8 +54,8 @@
   "recent_slots_filled": "255209179042255236190010672587206549503",
   "required_actions_partition_percent": 0,
   "reverse_auction_seconds": 1800,
-  "sps_fund_percent": 0,
-  "sps_interval_ledger": {
+  "proposal_fund_percent": 0,
+  "dhf_interval_ledger": {
     "amount": "0",
     "nai": "@@000000013",
     "precision": 3

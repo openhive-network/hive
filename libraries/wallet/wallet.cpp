@@ -6,7 +6,7 @@
 
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 #include <hive/protocol/validation.hpp>
 #include <hive/protocol/version.hpp>
 #include <hive/wallet/wallet.hpp>

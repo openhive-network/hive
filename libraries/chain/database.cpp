@@ -32,7 +32,7 @@
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/rd_setup.hpp>
 #include <hive/chain/util/nai_generator.hpp>
-#include <hive/chain/util/sps_processor.hpp>
+#include <hive/chain/util/dhf_processor.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 
 #include <fc/smart_ref_impl.hpp>
@@ -2413,8 +2413,8 @@ void database::process_proposals( const block_notification& note )
 {
   if( has_hardfork( HIVE_PROPOSALS_HARDFORK ) )
   {
-    sps_processor sps( *this );
-    sps.run( note );
+    dhf_processor dhf( *this );
+    dhf.run( note );
   }
 }
 
@@ -3165,8 +3165,8 @@ void database::process_funds()
     if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       content_reward = pay_reward_funds( content_reward );
     auto vesting_reward = ( new_hive * props.vesting_reward_percent ) / HIVE_100_PERCENT;
-    auto sps_fund = ( new_hive * props.sps_fund_percent ) / HIVE_100_PERCENT;
-    auto witness_reward = new_hive - content_reward - vesting_reward - sps_fund;
+    auto dhf_new_funds = ( new_hive * props.proposal_fund_percent ) / HIVE_100_PERCENT;
+    auto witness_reward = new_hive - content_reward - vesting_reward - dhf_new_funds;
 
     const auto& cwit = get_witness( props.current_witness );
     witness_reward *= HIVE_MAX_WITNESSES;
@@ -3187,9 +3187,9 @@ void database::process_funds()
 
     auto new_hbd = asset( 0, HBD_SYMBOL );
 
-    if( sps_fund.value )
+    if( dhf_new_funds.value )
     {
-      new_hbd = asset( sps_fund, HIVE_SYMBOL ) * feed.current_median_history;
+      new_hbd = asset( dhf_new_funds, HIVE_SYMBOL ) * feed.current_median_history;
       adjust_balance( get_treasury_name(), new_hbd );
     }
 
@@ -3202,8 +3202,8 @@ void database::process_funds()
         p.total_reward_fund_hive += asset( content_reward, HIVE_SYMBOL );
       p.current_supply      += asset( new_hive, HIVE_SYMBOL );
       p.current_hbd_supply  += new_hbd;
-      p.virtual_supply      += asset( new_hive + sps_fund, HIVE_SYMBOL );
-      p.sps_interval_ledger += new_hbd;
+      p.virtual_supply      += asset( new_hive + dhf_new_funds, HIVE_SYMBOL );
+      p.dhf_interval_ledger += new_hbd;
     });
 
     operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
@@ -6436,7 +6436,7 @@ void database::apply_hardfork( uint32_t hardfork )
     {
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF21;
+        gpo.proposal_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF21;
         gpo.content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF21;
         gpo.downvote_pool_percent = HIVE_DOWNVOTE_POOL_PERCENT_HF21;
         gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21;
@@ -6984,7 +6984,7 @@ void database::remove_expired_governance_votes()
     const auto& account = *acc_it;
     ++acc_it;
 
-    if( sps_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
+    if( dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
     {
       nullify_proxied_witness_votes( account );
       clear_witness_votes( account );

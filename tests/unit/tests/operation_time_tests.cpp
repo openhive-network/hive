@@ -2741,7 +2741,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       });
     }, database::skip_witness_signature );
 

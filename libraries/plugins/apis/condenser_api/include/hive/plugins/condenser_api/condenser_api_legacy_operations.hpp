@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/operations.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/witness_objects.hpp>
 

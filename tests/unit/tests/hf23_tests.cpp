@@ -6,7 +6,7 @@
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -736,7 +736,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
     generate_block();
 
     fund( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
-    fund( "alice", ASSET( "10.100 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
+    fund( "alice", ASSET( "10.100 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "10.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "10.100", "0.000", "0.000", "0.027", get_hbd_balance, "TBD" );
@@ -1003,7 +1003,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
     generate_block();
 
     fund( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
-    fund( "bob", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
+    fund( "bob", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "10.000", "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "0.000", "5.000", "0.027", get_hbd_balance, "TBD" );
@@ -1129,7 +1129,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
     generate_block();
 
     //note! extra 0.1 TESTS is in form of vests
-    fund( "alice", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
+    fund( "alice", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "5.000", "0.027", get_hbd_balance, "TBD" );

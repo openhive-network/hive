@@ -24,7 +24,7 @@
 # finally is created 600(2*300) proposals and 300 votes for every proposals -> 180600 objects are created
 #  ./proposal_benchmark_test.py "/home/a/hived" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 2 300 200000.000 30000.000 100000.000
 
-# Time[ms] is saved in `r_advanced_benchmark.json` ( position{"op_name": "sps_processor"} ) in directory where this script is called
+# Time[ms] is saved in `r_advanced_benchmark.json` ( position{"op_name": "dhf_processor"} ) in directory where this script is called
 
 import logging
 import os
@@ -37,7 +37,7 @@ from ... import hive_utils
 data_size = 100
 delayed_blocks = 1
 delayed_blocks_ex = 3
-SPS_API_SINGLE_QUERY_LIMIT = 1000
+DHF_API_SINGLE_QUERY_LIMIT = 1000
 HIVE_PROPOSAL_MAX_IDS_NUMBER = 5
 
 LOG_LEVEL = logging.INFO
@@ -195,7 +195,7 @@ def list_proposals(node, ids, limit):
     start = ""
     last_id = None
     while cnt < limit:
-        nr_proposals = limit - cnt if limit - cnt <= SPS_API_SINGLE_QUERY_LIMIT else SPS_API_SINGLE_QUERY_LIMIT
+        nr_proposals = limit - cnt if limit - cnt <= DHF_API_SINGLE_QUERY_LIMIT else DHF_API_SINGLE_QUERY_LIMIT
         proposals = node.list_proposals(start, "by_creator", "direction_ascending", nr_proposals, "all", last_id)
         for proposal in proposals:
             ids.append(proposal["id"])
@@ -215,7 +215,7 @@ def list_voter_proposals(node, limit):
     cnt = 0
     start = ""
     while cnt < limit:
-        nr_proposals = limit - cnt if limit - cnt <= SPS_API_SINGLE_QUERY_LIMIT else SPS_API_SINGLE_QUERY_LIMIT
+        nr_proposals = limit - cnt if limit - cnt <= DHF_API_SINGLE_QUERY_LIMIT else DHF_API_SINGLE_QUERY_LIMIT
         voter_proposals = node.list_voter_proposals(start, "by_creator", "direction_ascending", nr_proposals, "all")
         res += len(voter_proposals)
 
@@ -277,7 +277,7 @@ def get_info(node, message, time):
 
 
 if __name__ == "__main__":
-    logger.info("Performing SPS tests")
+    logger.info("Performing DHF tests")
     import argparse
 
     parser = argparse.ArgumentParser()
