@@ -104,7 +104,7 @@ namespace hive { namespace protocol {
         producer_reward_operation, // last_regular + 15
         clear_null_account_balance_operation, // last_regular + 16
         proposal_pay_operation, // last_regular + 17
-        sps_fund_operation, // last_regular + 18
+        dhf_funding_operation, // last_regular + 18
         hardfork_hive_operation, // last_regular + 19
         hardfork_hive_restore_operation, // last_regular + 20
         delayed_voting_operation, // last_regular + 21
