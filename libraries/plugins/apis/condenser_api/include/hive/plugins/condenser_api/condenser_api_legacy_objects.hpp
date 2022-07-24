@@ -114,9 +114,16 @@ struct legacy_signed_block
       extensions.push_back( ext );
     }
 
+    uint32_t block_num = b.block_num();
+    uint32_t tx_no = 0;
+
     for( const auto& t : b.transactions )
     {
-      transactions.push_back( legacy_signed_transaction( t ) );
+      legacy_signed_transaction& legcy_tx = transactions.emplace_back( legacy_signed_transaction( t ) );
+
+      legcy_tx.transaction_id = b.transaction_ids[tx_no];
+      legcy_tx.transaction_num = tx_no;
+      legcy_tx.block_num = block_num;
     }
 
     transaction_ids.insert( transaction_ids.end(), b.transaction_ids.begin(), b.transaction_ids.end() );
