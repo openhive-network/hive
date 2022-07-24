@@ -1332,12 +1332,26 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     auto old_bob_vesting = bob.get_vesting();
     auto old_sam_balance = sam.get_balance();
     auto old_sam_vesting = sam.get_vesting();
-    generate_blocks( alice.next_vesting_withdrawal, true );
+
+    generate_blocks( alice.next_vesting_withdrawal - HIVE_BLOCK_INTERVAL, true );
+    generate_block();
 
     {
       const auto& alice = db->get_account( "alice" );
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
+
+      // check vops
+      auto vops = get_last_operations( 3 );
+      auto implied_route = vops[0].get< fill_vesting_withdraw_operation >();
+      auto route_sam = vops[1].get< fill_vesting_withdraw_operation >();
+      auto route_bob = vops[2].get< fill_vesting_withdraw_operation >();
+      BOOST_REQUIRE( implied_route.to_account == alice.get_name() );
+      BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
+      BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
+      BOOST_REQUIRE( route_sam.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE( route_bob.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE( implied_route.withdrawn == ( vesting_withdraw_rate - route_sam.withdrawn - route_bob.withdrawn ) );
 
       BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
@@ -1377,11 +1391,23 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     sign( tx, alice_private_key );
     push_transaction( tx, 0 );
 
-    generate_blocks( db->get_account( "alice" ).next_vesting_withdrawal, true );
+    generate_blocks( db->get_account( "alice" ).next_vesting_withdrawal - HIVE_BLOCK_INTERVAL, true );
+    generate_block();
+
     {
       const auto& alice = db->get_account( "alice" );
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
+
+      // check vops - unlike previous time, this time there is no vop for implied route, since its "power" is 0%
+      auto vops = get_last_operations( 2 );
+      auto route_sam = vops[0].get< fill_vesting_withdraw_operation >();
+      auto route_bob = vops[1].get< fill_vesting_withdraw_operation >();
+      BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
+      BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
+      BOOST_REQUIRE( route_sam.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE( route_bob.withdrawn == route_sam.withdrawn );
+      BOOST_REQUIRE( route_bob.withdrawn + route_sam.withdrawn == vesting_withdraw_rate );
 
       BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance );
