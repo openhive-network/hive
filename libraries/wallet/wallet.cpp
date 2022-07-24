@@ -74,6 +74,9 @@
 
 constexpr bool LOCK = false;  //DECLARE_API addes lock argument to all wallet_bridge_api methods. Default value is false, so we need to pass it here.
 
+using hive::chain::full_transaction_ptr;
+using hive::chain::full_transaction_type;
+
 namespace hive { namespace wallet {
 
 namespace detail {
@@ -591,22 +594,31 @@ public:
   // adds a do-nothing custom operation to the transaction which contains a
   // random 64-bit number, which will change the transaction's hash to prevent
   // collisions.
-  void make_transaction_unique(transaction& tx, const std::string& auth)
+  full_transaction_ptr make_transaction_unique(const full_transaction_ptr& tx, const std::string& auth)
   {
     require_online();
-    initialize_transaction_header(tx);
-    vector<variant> args{variant(tx.id())};
+    
+    vector<variant> args{variant(tx->get_transaction_id())};
     if (_remote_wallet_bridge_api->is_known_transaction({args},LOCK))
     {
+      signed_transaction tx_copy(tx->get_transaction());
+      /// Reinitialize a header again, to potentially use fresh head block as reference block.
+      initialize_transaction_header(tx_copy);
+
       // create a custom operation with a random 64-bit integer which will give this
       // transaction a new id
       custom_operation custom_op;
       custom_op.data.resize(8);
       fc::rand_bytes(custom_op.data.data(), custom_op.data.size());
       custom_op.required_auths.insert(auth);
-      tx.operations.push_back(custom_op);
-      tx.validate();
+      tx_copy.operations.push_back(custom_op);
+      tx_copy.validate();
+
+      auto new_tx = hive::chain::full_transaction_type::create_from_transaction(tx_copy, _chosen_transaction_serialization);
+      return new_tx;
     }
+
+    return tx;
   }
 
   annotated_signed_transaction sign_transaction(
@@ -616,7 +628,10 @@ public:
     return sign_and_broadcast_transaction(std::move(tx), broadcast, true);
   }
 
-  annotated_signed_transaction sign_and_broadcast_transaction(signed_transaction tx, bool broadcast, bool blocking)
+  typedef std::function<full_transaction_ptr(full_transaction_ptr source_tx)> unique_tx_builder_t;
+
+  annotated_signed_transaction sign_and_broadcast_transaction(transaction tx, bool broadcast, bool blocking,
+    unique_tx_builder_t unique_tx_builder = [](full_transaction_ptr ptr) -> full_transaction_ptr { return ptr; })
   {
     require_online();
     static const authority null_auth( 1, public_key_type(), 0 );
@@ -778,10 +793,10 @@ public:
       }
     }
 
-    auto dyn_props = get_dynamic_global_properties();
-    tx.set_reference_block( dyn_props.value.head_block_id );
-    tx.set_expiration( dyn_props.value.time + fc::seconds(_tx_expiration_seconds) );
-    tx.signatures.clear();
+    initialize_transaction_header(tx);
+
+    auto new_tx = hive::chain::full_transaction_type::create_from_transaction(tx, _chosen_transaction_serialization);
+    new_tx = unique_tx_builder(new_tx);
 
     //idump((_keys));
     flat_set< public_key_type > available_keys;
@@ -798,9 +813,13 @@ public:
       }
     }
 
+    std::vector<hive::protocol::private_key_type> keys_to_sign;
+
     if( _use_automatic_authority == true )
     {
-      auto minimal_signing_keys = tx.minimize_required_signatures(
+      const signed_transaction& signature_source = new_tx->get_transaction();
+
+      auto minimal_signing_keys = signature_source.minimize_required_signatures(
         _hive_chain_id,
         available_keys,
         [&]( const string& account_name ) -> const authority&
@@ -837,7 +856,8 @@ public:
       {
         auto it = available_private_keys.find(k);
         FC_ASSERT( it != available_private_keys.end() );
-        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+
+        keys_to_sign.push_back(it->second);
       }
     }
     else
@@ -846,11 +866,14 @@ public:
       {
         auto it = available_private_keys.find(k);
         FC_ASSERT( it != available_private_keys.end() );
-        tx.sign( it->second, _hive_chain_id, fc::ecc::fc_canonical );
+
+        keys_to_sign.push_back(it->second);
       }
     }
 
-    auto new_tx = hive::chain::full_transaction_type::create_from_signed_transaction(tx, _chosen_transaction_serialization, false);
+    new_tx->sign_transaction(keys_to_sign, _hive_chain_id, fc::ecc::fc_canonical, _chosen_transaction_serialization);
+
+    dump_transaction(*new_tx);
 
     if( broadcast ) {
       try {
@@ -859,28 +882,25 @@ public:
 
         if( blocking )
         {
-          auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(tx)}}, LOCK );
+          auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(new_tx->get_transaction())}}, LOCK );
           annotated_signed_transaction rtrx(new_tx->get_transaction(), new_tx->get_transaction_id(), result.block_num, result.trx_num);
-          dump_transaction(*new_tx );
           return rtrx;
         }
         else
         {
-          _remote_wallet_bridge_api->broadcast_transaction( vector<variant>{{variant(tx)}}, LOCK );
+          _remote_wallet_bridge_api->broadcast_transaction( vector<variant>{{variant(new_tx->get_transaction())}}, LOCK );
           annotated_signed_transaction _result(new_tx->get_transaction(), new_tx->get_transaction_id());
-          dump_transaction(*new_tx);
           return _result;
         }
       }
       catch (const fc::exception& e)
       {
-        elog("Caught exception while broadcasting tx ${id}: ${e}", ("id", tx.id().str())("e", e.to_detail_string()) );
+        elog("Caught exception while broadcasting tx ${id}: ${e}", ("id", new_tx->get_transaction_id().str())("e", e.to_detail_string()) );
         throw;
       }
     }
     
     annotated_signed_transaction _result(new_tx->get_transaction(), new_tx->get_transaction_id());
-    dump_transaction(*new_tx);
 
     return _result;
   }
@@ -2126,8 +2146,12 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_and
   tx.operations.push_back( op );
   tx.validate();
 
-  my->make_transaction_unique(tx, from);
-  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ) };
+  auto unique_tx_builder = [this, from](full_transaction_ptr tx) ->full_transaction_ptr
+  {
+    return my->make_transaction_unique(tx, from);
+  };
+
+  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking, std::move(unique_tx_builder)) };
 } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(broadcast) ) }
 
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::escrow_transfer(
@@ -2335,9 +2359,12 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::transfer_to_
   tx.operations.push_back( op );
   tx.validate();
 
-  my->make_transaction_unique(tx, from);
+  auto unique_tx_builder = [this, from](full_transaction_ptr tx) ->full_transaction_ptr
+  {
+    return my->make_transaction_unique(tx, from);
+  };
 
-  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking ) };
+  return { my->sign_and_broadcast_transaction( tx, broadcast, blocking, std::move(unique_tx_builder)) };
 }
 
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::withdraw_vesting(
