@@ -92,6 +92,12 @@ struct full_transaction_type
 
     static std::atomic<uint32_t> number_of_instances_created;
     static std::atomic<uint32_t> number_of_instances_destroyed;
+    
+    /// Helper method encapsulating full_transaction object creation.
+    static full_transaction_ptr build_transaction_object(const hive::protocol::signed_transaction& transaction, hive::protocol::pack_type serialization_type);
+    static serialized_transaction_data fill_serialization_buffer(const hive::protocol::signed_transaction& transaction, hive::protocol::pack_type serialization_type,
+      uncompressed_memory_buffer* serialization_buffer);
+
   public:
     full_transaction_type();
     ~full_transaction_type();
@@ -117,8 +123,15 @@ struct full_transaction_type
       datastream.write(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
     }
 
+    /// Allows to sign transaction and append signature to the underlying signed_transaction::signatures container;
+    void sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id,
+      fc::ecc::canonical_signature_type canon_type, hive::protocol::pack_type serialization_type);
+
     static full_transaction_ptr create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, uint32_t index_in_block,
                                                   const serialized_transaction_data& serialized_transaction, bool use_transaction_cache);
+    /// Allows to build a full_transaction object basing on not yet signed transaction 
+    static full_transaction_ptr create_from_transaction(const hive::protocol::transaction& transaction, hive::protocol::pack_type serialization_type);
+    /// Allows to build a full_transaction object from ALREADY signed transaction (pointed transaction object must contain at least one signature).
     static full_transaction_ptr create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
                                                                hive::protocol::pack_type serialization_type, bool use_transaction_cache);
     static full_transaction_ptr create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache);

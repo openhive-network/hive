@@ -278,6 +278,30 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   return transaction_id;
 }
 
+void full_transaction_type::sign_transaction(const std::vector<hive::protocol::private_key_type>& keys, const hive::protocol::chain_id_type& chain_id,
+  fc::ecc::canonical_signature_type canon_type, hive::protocol::pack_type serialization_type)
+{
+  FC_ASSERT(std::holds_alternative<standalone_transaction_info>(storage), "Only standalone transactions can be signed");
+
+  standalone_transaction_info& standalone_transaction = std::get<standalone_transaction_info>(storage);
+  signed_transaction& tx = *standalone_transaction.transaction;
+
+  /// Update serialization buffer to reflect requested serialization_type
+  serialized_transaction = fill_serialization_buffer(tx, serialization_type, &standalone_transaction.serialization_buffer);
+
+  auto sig_digest = compute_sig_digest(chain_id);
+
+  for(const auto& key : keys)
+  {
+    auto signature = key.sign_compact(sig_digest, canon_type);
+
+    tx.signatures.emplace_back(signature);
+  }
+
+  /// Now serialized buffer must be updated, since new signatures has been added.
+  serialized_transaction = fill_serialization_buffer(tx, serialization_type, &standalone_transaction.serialization_buffer);
+}
+
 /* static */ full_transaction_ptr full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 
                                                                            uint32_t index_in_block, 
                                                                            const serialized_transaction_data& serialized_transaction,
@@ -290,9 +314,7 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
-/* static */ full_transaction_ptr full_transaction_type::create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
-                                                                                        hive::protocol::pack_type serialization_type,
-                                                                                        bool use_transaction_cache)
+/*static*/full_transaction_ptr full_transaction_type::build_transaction_object(const hive::protocol::signed_transaction& transaction, hive::protocol::pack_type serialization_type)
 {
   full_transaction_ptr full_transaction = std::make_shared<full_transaction_type>();
 
@@ -300,15 +322,47 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   standalone_transaction_info& transaction_info = std::get<standalone_transaction_info>(full_transaction->storage);
   transaction_info.transaction = std::make_unique<hive::protocol::signed_transaction>(transaction);
 
+  full_transaction->serialized_transaction = fill_serialization_buffer(transaction, serialization_type, &transaction_info.serialization_buffer);
+
+  return full_transaction;
+}
+
+/*static*/ serialized_transaction_data full_transaction_type::fill_serialization_buffer(const hive::protocol::signed_transaction& transaction,
+  hive::protocol::pack_type serialization_type, uncompressed_memory_buffer* serialization_buffer)
+{
   hive::protocol::serialization_mode_controller::pack_guard guard(serialization_type);
-  transaction_info.serialization_buffer.raw_size = fc::raw::pack_size(transaction);
-  transaction_info.serialization_buffer.raw_bytes.reset(new char[transaction_info.serialization_buffer.raw_size]);
-  full_transaction->serialized_transaction.begin = transaction_info.serialization_buffer.raw_bytes.get();
-  fc::datastream<char*> stream(transaction_info.serialization_buffer.raw_bytes.get(), transaction_info.serialization_buffer.raw_size);
-  fc::raw::pack(stream, (hive::protocol::transaction)transaction);
-  full_transaction->serialized_transaction.transaction_end = full_transaction->serialized_transaction.begin + stream.tellp();
+
+  serialization_buffer->raw_size = fc::raw::pack_size(transaction);
+  serialization_buffer->raw_bytes.reset(new char[serialization_buffer->raw_size]);
+
+  serialized_transaction_data data;
+
+  data.begin = serialization_buffer->raw_bytes.get();
+  fc::datastream<char*> stream(serialization_buffer->raw_bytes.get(), serialization_buffer->raw_size);
+  fc::raw::pack(stream, static_cast<const hive::protocol::transaction&>(transaction));
+  data.transaction_end = data.begin + stream.tellp();
   fc::raw::pack(stream, transaction.signatures);
-  full_transaction->serialized_transaction.signed_transaction_end = full_transaction->serialized_transaction.begin + stream.tellp();
+  data.signed_transaction_end = data.begin + stream.tellp();
+
+  return data;
+}
+
+/*static*/ full_transaction_ptr full_transaction_type::create_from_transaction(const hive::protocol::transaction& transaction,
+                                                                               hive::protocol::pack_type serialization_type)
+{
+  signed_transaction copy(transaction);
+  return build_transaction_object(copy, serialization_type);
+}
+
+
+/* static */ full_transaction_ptr full_transaction_type::create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
+                                                                                        hive::protocol::pack_type serialization_type,
+                                                                                        bool use_transaction_cache)
+{
+  //FC_ASSERT(transaction.signatures.empty() == false, "Passed signed transaction does not contain any signatures");
+
+  auto full_transaction = build_transaction_object(transaction, serialization_type);
+
   return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
