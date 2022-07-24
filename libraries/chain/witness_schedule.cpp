@@ -125,7 +125,13 @@ void update_median_witness_props( database& db )
     _wso.account_subsidy_witness_rd.min_decay = min_decay;
   } );
 
-  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
+  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
+  if( dgpo.maximum_block_size != median_maximum_block_size )
+  {
+    db.push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+      "Changing maximum block size from ${old} to ${new}", ( "old", dgpo.maximum_block_size )( "new", median_maximum_block_size ) ).get_message() ) );
+  }
+  db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
   {
     _dgpo.maximum_block_size = median_maximum_block_size;
     _dgpo.hbd_interest_rate  = median_hbd_interest_rate;
