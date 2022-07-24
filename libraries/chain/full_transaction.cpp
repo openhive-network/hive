@@ -278,23 +278,23 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   return transaction_id;
 }
 
-/* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 
-                                                                                             uint32_t index_in_block, 
-                                                                                             const serialized_transaction_data& serialized_transaction,
-                                                                                             bool use_transaction_cache)
+/* static */ full_transaction_ptr full_transaction_type::create_from_block(const std::shared_ptr<decoded_block_storage_type>& block_storage, 
+                                                                           uint32_t index_in_block, 
+                                                                           const serialized_transaction_data& serialized_transaction,
+                                                                           bool use_transaction_cache)
 {
-  std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
+  full_transaction_ptr full_transaction = std::make_shared<full_transaction_type>();
   full_transaction->storage = contained_in_block_info{block_storage, index_in_block};
   full_transaction->serialized_transaction = serialized_transaction;
 
   return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
-/* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
-                                                                                                          hive::protocol::pack_type serialization_type,
-                                                                                                          bool use_transaction_cache)
+/* static */ full_transaction_ptr full_transaction_type::create_from_signed_transaction(const hive::protocol::signed_transaction& transaction,
+                                                                                        hive::protocol::pack_type serialization_type,
+                                                                                        bool use_transaction_cache)
 {
-  std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
+  full_transaction_ptr full_transaction = std::make_shared<full_transaction_type>();
 
   full_transaction->storage = standalone_transaction_info();
   standalone_transaction_info& transaction_info = std::get<standalone_transaction_info>(full_transaction->storage);
@@ -312,9 +312,9 @@ const hive::protocol::transaction_id_type& full_transaction_type::get_transactio
   return use_transaction_cache ? full_transaction_cache::get_instance().add_to_cache(full_transaction) : full_transaction;
 }
 
-/* static */ std::shared_ptr<full_transaction_type> full_transaction_type::create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache)
+/* static */ full_transaction_ptr full_transaction_type::create_from_serialized_transaction(const char* raw_data, size_t size, bool use_transaction_cache)
 {
-  std::shared_ptr<full_transaction_type> full_transaction = std::make_shared<full_transaction_type>();
+  full_transaction_ptr full_transaction = std::make_shared<full_transaction_type>();
   full_transaction->storage = standalone_transaction_info();
 
   // copy the serialized transaction into the full_transaction's buffer
@@ -415,7 +415,7 @@ struct full_transaction_cache::impl
 
 full_transaction_cache::full_transaction_cache() : my(new impl) {}
 
-std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(const std::shared_ptr<full_transaction_type>& transaction)
+full_transaction_ptr full_transaction_cache::add_to_cache(const full_transaction_ptr& transaction)
 {
   std::optional<fc::microseconds> wait_duration;
   BOOST_SCOPE_EXIT(&my, &wait_duration) {
@@ -451,7 +451,7 @@ std::shared_ptr<full_transaction_type> full_transaction_cache::add_to_cache(cons
     return transaction;
   }
   // else there was already an entry, see if it's still valid
-  std::shared_ptr<full_transaction_type> existing_transaction = result.first->second.lock();
+  full_transaction_ptr existing_transaction = result.first->second.lock();
   if (existing_transaction)
     return existing_transaction;
   result.first->second = transaction;
