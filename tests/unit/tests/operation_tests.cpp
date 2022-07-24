@@ -8309,7 +8309,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       });
 
       db.modify( db.get_treasury(), [=]( account_object& a )
@@ -8449,7 +8449,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       } );
 
       db.modify( db.get_treasury(), [=]( account_object& a )
@@ -8631,7 +8631,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       } );
 
       db.modify( db.get_treasury(), [=]( account_object& a )

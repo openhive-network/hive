@@ -5,7 +5,7 @@
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
@@ -251,8 +251,8 @@ struct api_dynamic_global_property_object
     next_daily_maintenance_time( o.next_daily_maintenance_time ),
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
-    sps_fund_percent( o.sps_fund_percent ),
-    sps_interval_ledger( o.sps_interval_ledger ),
+    proposal_fund_percent( o.proposal_fund_percent ),
+    dhf_interval_ledger( o.dhf_interval_ledger ),
     downvote_pool_percent( o.downvote_pool_percent ),
     current_remove_threshold( o.current_remove_threshold ),
     early_voting_seconds( o.early_voting_seconds ),
@@ -304,8 +304,8 @@ struct api_dynamic_global_property_object
   time_point_sec                  next_daily_maintenance_time;
   uint16_t                        content_reward_percent              = 0;
   uint16_t                        vesting_reward_percent              = 0;
-  uint16_t                        sps_fund_percent                    = 0;
-  asset                           sps_interval_ledger;
+  uint16_t                        proposal_fund_percent               = 0;
+  asset                           dhf_interval_ledger;
   uint16_t                        downvote_pool_percent               = 0;
   int16_t                         current_remove_threshold            = 0;
   uint64_t                        early_voting_seconds                = 0;
@@ -1142,8 +1142,8 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
-          (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
-          (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
+          (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(proposal_fund_percent)
+          (dhf_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
           (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
           (max_open_recurrent_transfers)
 #ifdef HIVE_ENABLE_SMT

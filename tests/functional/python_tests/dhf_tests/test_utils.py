@@ -211,7 +211,7 @@ def calculate_propsal_budget(node, treasury, wif=None) -> int:
 
 
 def calculate_hourly_pay(budget: int, daily_pay: int) -> int:
-    # 416.6666667 is ratio in sps_processor, which is constant if proposals are paid in constant periods (in this case 1 hour = 3600 s)
+    # 416.6666667 is ratio in dhf_processor, which is constant if proposals are paid in constant periods (in this case 1 hour = 3600 s)
     theory = int((daily_pay * 416.666666667) / 10000)
     return min(theory, budget)
 

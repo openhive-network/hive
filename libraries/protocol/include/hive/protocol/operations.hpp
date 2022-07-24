@@ -6,7 +6,7 @@
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/hive_virtual_operations.hpp>
 #include <hive/protocol/smt_operations.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 namespace hive { namespace protocol {
 

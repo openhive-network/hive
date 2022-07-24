@@ -6,7 +6,7 @@
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     {
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       } );
     } );
     fund( "alice", ASSET( "10.000 TESTS" ) );
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       } );
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
       db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );

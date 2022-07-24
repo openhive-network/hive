@@ -20,7 +20,7 @@ ENDMACRO( __SETUP_TEST_VARS )
 #   example: test script functional/python_tests/dhf_tests/beem_dhf_tests.py will started with ctest as follows:
 #       ctest functional/dhf_tests/beem_dhf_tests
 # To start group of tests use ctest -R
-#   example: to start all tests in sps_tests group:
+#   example: to start all tests in dhf_tests group:
 #       ctest -R functional/dhf_tests/.*
 #   example: to start all python_functional tests:
 #       ctest -R functional/.*

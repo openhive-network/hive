@@ -1,18 +1,18 @@
 #pragma once
 
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>
 
-#include <hive/chain/util/sps_helper.hpp>
+#include <hive/chain/util/dhf_helper.hpp>
 
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 namespace hive { namespace chain {
 
-class sps_processor
+class dhf_processor
 {
   public:
 
@@ -57,7 +57,7 @@ class sps_processor
 
   public:
 
-    sps_processor( chain::database& _db ) : db( _db ){}
+    dhf_processor( chain::database& _db ) : db( _db ){}
 
     const static std::string& get_removing_name();
     const static std::string& get_calculating_name();
