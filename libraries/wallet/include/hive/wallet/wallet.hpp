@@ -706,11 +706,6 @@ class wallet_api
       optional<hive::protocol::asset> transfer_amount, optional<string> transfer_memo,
       bool broadcast, bool blocking );
 
-    /**
-      *  This method is used to convert a JSON transaction to its transaction ID.
-      */
-    transaction_id_type get_transaction_id( const signed_transaction& trx )const { return trx.id(); }
-
     /** Lists all witnesses registered in the blockchain.
       *
       * This returns a list of all account names registered as witnesses sorted by name.
