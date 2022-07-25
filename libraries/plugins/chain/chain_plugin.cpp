@@ -1072,24 +1072,53 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   tx_ctrl.rethrow_if_exception();
 }
 
-std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx, 
-                                                                                               const lock_type lock /* = lock_type::boost */)
+struct auto_scope
+{
+  auto_scope(std::function<void()> action) : _action(action), _do_action(true) {}
+  void cancel()
+  {
+    _do_action = false;
+  }
+
+  ~auto_scope()
+  {
+    if(_do_action)
+      _action();
+  }
+
+private:
+  std::function< void() > _action;
+  bool _do_action = false;
+};
+
+
+std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx,
+  std::function< void( const full_transaction_ptr&, bool failed )> on_full_trx, const lock_type lock /* = lock_type::boost */)
 { try {
-  std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26, 
-                                                                                                                                            true /* cache this transaction */);
+  full_transaction_ptr full_transaction = full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
+
+  auto_scope as(
+    [&on_full_trx, &full_transaction]() { on_full_trx(full_transaction, true); }
+    );
+
+  on_full_trx( full_transaction, false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
   blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
   try
   {
     accept_transaction(full_transaction, lock);
+    as.cancel();
   }
   catch (const hive::protocol::transaction_auth_exception&)
   {
-    full_transaction = hive::chain::full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
+    on_full_trx(full_transaction, true);
+    full_transaction = full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
+    on_full_trx(full_transaction, false);
     blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
       accept_transaction(full_transaction, lock);
+      as.cancel();
     }
     catch (hive::protocol::transaction_auth_exception& legacy_e)
     {
@@ -1097,6 +1126,7 @@ std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_acce
     }
   }
   return full_transaction;
+
 } FC_CAPTURE_AND_RETHROW() }
 
 
