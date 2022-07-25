@@ -1,0 +1,1 @@
+{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["delegate_vesting_shares",{"delegator":"alice","delegatee":"bob","vesting_shares":"1.000000 VESTS"}]],"extensions":[],"signatures":["1f1a9e574b9c15de4b96083255842998d00287adb34822f743881eb9d16624cb9a47d05d7694c4b2f8d943fba224f16917dea1a4e807e4b572ab368d0e71fbfa56"]}
