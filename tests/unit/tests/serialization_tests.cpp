@@ -57,9 +57,12 @@ BOOST_AUTO_TEST_CASE( serialization_raw_test )
 
     trx.operations.push_back( op );
     auto packed = fc::raw::pack_to_vector( trx );
-    signed_transaction unpacked = fc::raw::unpack_from_vector<signed_transaction>(packed);
-    unpacked.validate();
-    BOOST_CHECK( trx.digest() == unpacked.digest() );
+    full_transaction_ptr unpacked = full_transaction_type::create_from_serialized_transaction( packed.data(), packed.size(), false/*use_transaction_cache*/);
+    unpacked->get_transaction().validate();
+
+    full_transaction_ptr _trx = hive::chain::full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::legacy, false /* cache this transaction */);
+
+    BOOST_CHECK( _trx->get_digest() == unpacked->get_digest() );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -81,9 +84,12 @@ BOOST_AUTO_TEST_CASE( serialization_json_test )
 
     trx.operations.push_back( op );
     fc::variant packed(trx);
-    signed_transaction unpacked = packed.as<signed_transaction>();
-    unpacked.validate();
-    BOOST_CHECK( trx.digest() == unpacked.digest() );
+
+    const full_transaction_ptr unpacked = hive::chain::full_transaction_type::create_from_signed_transaction( packed.as<signed_transaction>(), hive::protocol::pack_type::legacy, false /* cache this transaction */);
+    const full_transaction_ptr _trx = hive::chain::full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::legacy, false /* cache this transaction */) ;
+
+    unpacked->get_transaction().validate();
+    BOOST_CHECK( _trx->get_digest() == unpacked->get_digest() );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
