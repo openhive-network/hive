@@ -409,7 +409,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_before.delegated_rc == uint64_t(vesting_amount) );
     BOOST_REQUIRE( alice_rc_before.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_before.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == creation_rc - ( 28756 + 28758 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
+    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == creation_rc - ( 28756 + 28757 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
 
     BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc + 10 );
     BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc + 10 );
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after.delegated_rc == uint64_t(vesting_amount) - 5 );
     BOOST_REQUIRE( alice_rc_after.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_after.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 28940 );
+    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 28943 );
 
     BOOST_REQUIRE( bob_rc_account_after.rc_manabar.current_mana == creation_rc + 5 );
     BOOST_REQUIRE( bob_rc_account_after.last_max_rc == creation_rc + 5 );
@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after_two.delegated_rc == uint64_t(vesting_amount) - 11 );
     BOOST_REQUIRE( alice_rc_after_two.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_after_two.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - (28940 + 28941) );
+    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - ( 28943 + 28944 ) );
 
     BOOST_REQUIRE( bob_rc_account_after_two.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( bob_rc_account_after_two.last_max_rc == creation_rc );
