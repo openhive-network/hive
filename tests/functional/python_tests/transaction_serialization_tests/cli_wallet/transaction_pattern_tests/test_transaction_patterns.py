@@ -692,8 +692,8 @@ def test_update_account_auth_threshold(replayed_node, wallet_with_pattern_name, 
 def test_update_account_memo_key(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    transaction = wallet.api.update_account_memo_key('alice', 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ',
-                                                     broadcast=False)
+    key = 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ'
+    transaction = wallet.api.update_account_memo_key('alice', key, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
     verify_pattern(wallet, pattern_name)
