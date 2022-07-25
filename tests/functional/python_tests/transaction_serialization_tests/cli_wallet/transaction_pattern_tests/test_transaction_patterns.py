@@ -352,13 +352,7 @@ def test_update_account_auth_key(replayed_node, wallet_with_pattern_name, verify
     alice_owner_key = tt.Account('alice').public_key
     transaction = wallet.api.update_account_auth_key('alice', 'owner', alice_owner_key, 3, broadcast=False)
 
-    authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[alice_owner_key, 1]]}
-
-    for transaction in [
-        wallet.api.request_account_recovery('alice', 'carol', authority, broadcast=False),
-        wallet.api.update_account_auth_key('carol', 'owner', carol_owner_key, 3, broadcast=False),
-    ]:
-        replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
+    replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
     verify_pattern(wallet, pattern_name)
 
