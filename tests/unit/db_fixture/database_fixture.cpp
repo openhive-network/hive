@@ -645,6 +645,11 @@ void database_fixture::push_transaction( const signed_transaction& tx, uint32_t 
   test::_push_transaction(*db, tx, skip_flags, pack_type);
 }
 
+void database_fixture::push_transaction( const full_transaction_ptr& tx, uint32_t skip_flags /* = 0 */ )
+{
+  db->push_transaction( tx, skip_flags );
+}
+
 bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
 {
   return test::_push_block(*db, b, skip_flags);
