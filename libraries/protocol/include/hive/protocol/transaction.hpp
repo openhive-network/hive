@@ -20,7 +20,6 @@ using fc::ecc::canonical_signature_type;
     vector<operation>  operations;
     extensions_type    extensions;
 
-    digest_type         digest()const;
     transaction_id_type id()const;
     void                validate() const;
     void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;

@@ -14,4 +14,11 @@ digest_type sig_digest( const transaction& trx, const chain_id_type& chain_id, h
   return enc.result();
 }
 
+digest_type digest( const transaction& trx )
+{
+  digest_type::encoder enc;
+  fc::raw::pack( enc, trx );
+  return enc.result();
+}
+
 } } // end namespace hive::protocol

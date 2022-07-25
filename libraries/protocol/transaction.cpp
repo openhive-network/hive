@@ -19,14 +19,6 @@ digest_type signed_transaction::merkle_digest()const
   return enc.result();
 }
 
-digest_type transaction::digest()const
-{
-  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::serialization_mode_controller::get_current_pack() );
-  digest_type::encoder enc;
-  fc::raw::pack( enc, *this );
-  return enc.result();
-}
-
 void transaction::validate() const
 {
   FC_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("trx",*this) );
@@ -47,7 +39,7 @@ void transaction::validate( const std::function<void( const operation& op, bool 
 
 transaction_id_type transaction::id() const
 {
-  auto h = digest();
+  auto h = digest( *this );
   transaction_id_type result;
   memcpy(result._hash, h._hash, std::min(sizeof(result), sizeof(h)));
   return result;

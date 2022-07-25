@@ -30,6 +30,7 @@
 #include <hive/chain/database.hpp>
 
 #include <hive/protocol/asset.hpp>
+#include <hive/protocol/crypto.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_objects.hpp>
 
 #include <fc/crypto/digest.hpp>
@@ -59,7 +60,7 @@ BOOST_AUTO_TEST_CASE( serialization_raw_test )
     auto packed = fc::raw::pack_to_vector( trx );
     signed_transaction unpacked = fc::raw::unpack_from_vector<signed_transaction>(packed);
     unpacked.validate();
-    BOOST_CHECK( trx.digest() == unpacked.digest() );
+    BOOST_CHECK( digest( trx ) == digest( unpacked ) );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -83,7 +84,7 @@ BOOST_AUTO_TEST_CASE( serialization_json_test )
     fc::variant packed(trx);
     signed_transaction unpacked = packed.as<signed_transaction>();
     unpacked.validate();
-    BOOST_CHECK( trx.digest() == unpacked.digest() );
+    BOOST_CHECK( digest( trx ) == digest( unpacked ) );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
