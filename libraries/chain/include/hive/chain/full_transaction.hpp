@@ -88,7 +88,6 @@ struct full_transaction_type
     serialized_transaction_data serialized_transaction; // pointers to the beginning, middle, and end of the transaction in the storage
     mutable bool is_in_cache = false; // true if this is tracked in the global transaction cache; if so, we need to remove ourselves upon garbage collection
 
-    hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
 
     static std::atomic<uint32_t> number_of_instances_created;
     static std::atomic<uint32_t> number_of_instances_destroyed;
@@ -106,6 +105,7 @@ struct full_transaction_type
     const hive::protocol::signed_transaction& get_transaction() const;
     const hive::protocol::digest_type& get_merkle_digest() const;
     const hive::protocol::digest_type& get_digest() const;
+    hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
     const fc::ripemd160& get_legacy_transaction_message_hash() const;
     const hive::protocol::transaction_id_type& get_transaction_id() const;
     const flat_set<hive::protocol::public_key_type>& get_signature_keys() const;
