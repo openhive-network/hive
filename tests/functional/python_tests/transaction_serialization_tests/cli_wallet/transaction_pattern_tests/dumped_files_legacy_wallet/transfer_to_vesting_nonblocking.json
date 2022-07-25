@@ -1,0 +1,1 @@
+{"ref_block_num":42,"ref_block_prefix":4057990609,"expiration":"2022-07-22T07:09:18","operations":[["transfer_to_vesting",{"from":"initminer","to":"alice","amount":"100.000 TESTS"}]],"extensions":[],"signatures":["202d0eac93ec3ed12c2474da5563935e7ffd84f34510b693d57613187892e3d8ca4d7885211ca96745c3a4d8a2f953fd46a07d3c8a0528c538f2f518c5ca88edbc"]}

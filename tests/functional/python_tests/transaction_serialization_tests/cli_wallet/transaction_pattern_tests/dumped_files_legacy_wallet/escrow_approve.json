@@ -1,0 +1,1 @@
+{"ref_block_num":42,"ref_block_prefix":4057990609,"expiration":"2022-07-22T07:09:18","operations":[["escrow_approve",{"from":"initminer","to":"alice","agent":"bob","who":"bob","escrow_id":2,"approve":true}]],"extensions":[],"signatures":["1f501605b45355c3e89ed64800fe8413d299bc8952f2615f391bbe2a7910f6e58c3542c9f9dfc77de847cfdabbfe39d6486074ab0e18af7c4bbb1bca38989aae0b"]}
