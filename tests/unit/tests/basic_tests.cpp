@@ -140,15 +140,17 @@ BOOST_AUTO_TEST_CASE( valid_name_test )
 BOOST_AUTO_TEST_CASE( merkle_root )
 {
   signed_block block;
-  vector<signed_transaction> tx;
+  vector<full_transaction_ptr> tx;
+  vector<full_transaction_ptr> tx2;
   vector<digest_type> t;
   const uint32_t num_tx = 10;
 
   for( uint32_t i=0; i<num_tx; i++ )
   {
-    tx.emplace_back();
-    tx.back().ref_block_prefix = i;
-    t.push_back( tx.back().merkle_digest() );
+    signed_transaction _tx;
+    _tx.ref_block_prefix = i;
+    tx.emplace_back( hive::chain::full_transaction_type::create_from_signed_transaction( _tx, hive::protocol::pack_type::legacy, false /* cache this transaction */) );
+    t.push_back( tx.back()->get_merkle_digest() );
   }
 
   auto c = []( const digest_type& digest ) -> checksum_type
@@ -157,10 +159,10 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   auto d = []( const digest_type& left, const digest_type& right ) -> digest_type
   {   return digest_type::hash( std::make_pair( left, right ) );   };
 
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == checksum_type() );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == checksum_type() );
 
-  block.transactions.push_back( tx[0] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() ==
+  tx2.push_back( tx[0] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) ==
     c(t[0])
     );
 
@@ -176,8 +178,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
 
   dA = d(t[0], t[1]);
 
-  block.transactions.push_back( tx[1] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dA) );
+  tx2.push_back( tx[1] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dA) );
 
   /*************************
     *                       *
@@ -192,8 +194,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dB = t[2];
   dI = d(dA, dB);
 
-  block.transactions.push_back( tx[2] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dI) );
+  tx2.push_back( tx[2] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dI) );
 
   /***************************
     *                         *
@@ -209,8 +211,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dB = d(t[2], t[3]);
   dI = d(dA, dB);
 
-  block.transactions.push_back( tx[3] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dI) );
+  tx2.push_back( tx[3] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dI) );
 
   /***************************************
     *                                     *
@@ -228,8 +230,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = dC;
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[4] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[4] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /**************************************
     *                                    *
@@ -247,8 +249,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = dC;
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[5] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[5] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /***********************************************
     *                                             *
@@ -266,8 +268,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = d(dC, dD);
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[6] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[6] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /*************************************************
     *                                               *
@@ -285,8 +287,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = d(dC, dD);
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[7] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[7] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /************************************************************************
     *                                                                      *
@@ -307,8 +309,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dN = dK;
   dO = d(dM, dN);
 
-  block.transactions.push_back( tx[8] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dO) );
+  tx2.push_back( tx[8] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dO) );
 
   /************************************************************************
     *                                                                      *
@@ -329,8 +331,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dN = dK;
   dO = d(dM, dN);
 
-  block.transactions.push_back( tx[9] );
-  BOOST_CHECK( block.legacy_calculate_merkle_root() == c(dO) );
+  tx2.push_back( tx[9] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dO) );
 }
 
 BOOST_AUTO_TEST_CASE( adjust_balance_test )
