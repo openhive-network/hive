@@ -13,9 +13,14 @@ def replayed_node():
 
 @pytest.fixture
 def wallet_with_pattern_name(replayed_node, request):
-    method_name: str = request.keywords.node.originalname
-    assert method_name.startswith('test_')
-    pattern_name = method_name[len('test_'):] # Remove "test_" prefix
+    for marker in request.keywords.node.iter_markers():
+        if marker.args and marker.args[0].startswith('cli_wallet_method'):
+            pattern_name = marker.args[1][0][0]
+            break
+    else:
+        method_name: str = request.keywords.node.originalname
+        assert method_name.startswith('test_')
+        pattern_name = method_name[len('test_'):]
 
     wallet = tt.Wallet(attach_to=replayed_node,
                        additional_arguments=[f'--store-transaction={pattern_name}',
