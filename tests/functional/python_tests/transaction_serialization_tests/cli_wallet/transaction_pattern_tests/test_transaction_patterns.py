@@ -433,14 +433,12 @@ def test_recover_account(replayed_node, wallet_with_pattern_name, verify_pattern
     carol_owner_key = tt.Account('carol').public_key
     recent_authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[carol_owner_key, 1]]}
 
-    transaction1 = wallet.api.request_account_recovery('alice', 'carol', authority, broadcast=False)
-    replayed_node.api.wallet_bridge.broadcast_transaction(transaction1)
-
-    transaction2 = wallet.api.update_account_auth_key('carol', 'owner', carol_owner_key, 3, broadcast=False)
-    replayed_node.api.wallet_bridge.broadcast_transaction(transaction2)
-
-    transaction3 = wallet.api.recover_account('carol', recent_authority, new_authority, broadcast=False)
-    replayed_node.api.wallet_bridge.broadcast_transaction(transaction3)
+    for transaction in [
+        wallet.api.request_account_recovery('alice', 'carol', authority, broadcast=False),
+        wallet.api.update_account_auth_key('carol', 'owner', carol_owner_key, 3, broadcast=False),
+        wallet.api.recover_account('carol', recent_authority, new_authority, broadcast=False),
+    ]:
+        replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
     verify_pattern(wallet, pattern_name)
 
