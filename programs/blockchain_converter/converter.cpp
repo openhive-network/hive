@@ -28,6 +28,7 @@
 namespace hive { namespace converter {
 
   namespace hp = hive::protocol;
+  namespace hc = hive::chain;
 
   using hp::authority;
 
@@ -160,8 +161,10 @@ namespace hive { namespace converter {
 
   const hp::report_over_production_operation& convert_operations_visitor::operator()( hp::report_over_production_operation& op )const
   {
+    /*
     converter.sign_header( op.first_block );
     converter.sign_header( op.second_block );
+    */
 
     return op;
   }
@@ -302,7 +305,7 @@ namespace hive { namespace converter {
 
 #define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
 
-  hp::block_id_type blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
+  std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
   {
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
@@ -336,6 +339,8 @@ namespace hive { namespace converter {
       while(!tapos_scope_tx_ids.insert( trx.id() ).second);
     };
 
+    std::vector<std::shared_ptr<hc::full_transaction_type>> full_transactions;
+
     std::set<size_t> already_signed_transaction_pos;
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
@@ -351,7 +356,7 @@ namespace hive { namespace converter {
 
       post_convert_transaction(helper_tx);
 
-      if(helper_tx.operations.empty() == false)
+      if(!helper_tx.operations.empty())
       {
         apply_trx_expiration_offset(helper_tx);
 
@@ -410,14 +415,18 @@ namespace hive { namespace converter {
       }
     }
 
-    _signed_block.transaction_merkle_root = _signed_block.legacy_calculate_merkle_root();
+    for( const auto& tx : _signed_block.transactions )
+      full_transactions.emplace_back( hc::full_transaction_type::create_from_signed_transaction(
+        tx,
+        hp::pack_type::legacy,
+        false
+       ) );
 
-    // Sign header (using given witness' private key)
-    sign_header( _signed_block );
+    _signed_block.transaction_merkle_root = hc::full_block_type::compute_merkle_root( full_transactions );
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
-    return _signed_block.legacy_id();
+    return hc::full_block_type::create_from_block_header_and_transactions( _signed_block, full_transactions, &_private_key );
   }
 
   const hp::block_id_type& blockchain_converter::get_converter_head_block_id()const
@@ -443,7 +452,7 @@ namespace hive { namespace converter {
   hp::signature_type blockchain_converter::generate_signature( const hp::signed_transaction& trx, authority::classification type )const
   {
     return get_second_authority_key( type ).sign_compact(
-            trx.sig_digest( chain_id, hive::protocol::pack_type::legacy ),
+            trx.sig_digest( chain_id, hp::pack_type::legacy ),
             has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
           );
   }
@@ -455,11 +464,6 @@ namespace hive { namespace converter {
       trx.signatures.clear();
       trx.signatures.push_back( generate_signature(trx) ); // XXX: All operations are being signed using the owner key of the 2nd authority
     }
-  }
-
-  void blockchain_converter::sign_header( hp::signed_block_header& _signed_header )
-  {
-    _signed_header.legacy_sign( _private_key, has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )

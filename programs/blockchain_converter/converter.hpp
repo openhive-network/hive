@@ -15,6 +15,9 @@
 #include <fc/optional.hpp>
 #include <fc/time.hpp>
 
+#include <hive/chain/full_block.hpp>
+#include <hive/chain/full_transaction.hpp>
+
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
@@ -28,8 +31,7 @@
 namespace hive { namespace converter {
 
   namespace hp = hive::protocol;
-
-  using hp::authority;
+  namespace hc = hive::chain;
 
   class blockchain_converter
   {
@@ -38,9 +40,9 @@ namespace hive { namespace converter {
     hp::chain_id_type    chain_id;
     hp::signed_block*    current_block_ptr = nullptr;
 
-    std::map< authority::classification, hp::private_key_type > second_authority;
+    std::map< hp::authority::classification, hp::private_key_type > second_authority;
 
-    std::queue< authority > pow_keys;
+    std::queue< hp::authority > pow_keys;
     std::set< hp::account_name_type > accounts;
 
     std::set< hp::transaction_id_type > tapos_scope_tx_ids;
@@ -72,22 +74,20 @@ namespace hive { namespace converter {
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
-    hp::block_id_type convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time, bool alter_time_in_visitor = false );
+    std::shared_ptr< hc::full_block_type > convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time, bool alter_time_in_visitor = false );
 
     const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;
 
     uint32_t get_converter_head_block_num()const;
 
-    void sign_header( hp::signed_block_header& _signed_header );
+    void add_second_authority( hp::authority& _auth, hp::authority::classification type );
 
-    void add_second_authority( authority& _auth, authority::classification type );
-
-    hp::signature_type generate_signature( const hp::signed_transaction& trx, authority::classification type = authority::owner )const;
+    hp::signature_type generate_signature( const hp::signed_transaction& trx, hp::authority::classification type = hp::authority::owner )const;
     void sign_transaction( hp::signed_transaction& trx, bool force=false )const;
 
-    const hp::private_key_type& get_second_authority_key( authority::classification type )const;
-    void set_second_authority_key( const hp::private_key_type& key, authority::classification type );
+    const hp::private_key_type& get_second_authority_key( hp::authority::classification type )const;
+    void set_second_authority_key( const hp::private_key_type& key, hp::authority::classification type );
 
     void add_pow_key( const hp::account_name_type& acc, const hp::public_key_type& key );
     void add_account( const hp::account_name_type& acc );

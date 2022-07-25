@@ -159,14 +159,15 @@ namespace detail {
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", block));
 
-      last_block_id = converter.convert_signed_block( block, last_block_id, head_block_time, false );
+      auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
+      last_block_id = fb->get_block_id();
       converter.on_tapos_change();
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
           ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
 
-      log_out.append( hive::chain::full_block_type::create_from_signed_block( block ) );
+      log_out.append( fb );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", block));
