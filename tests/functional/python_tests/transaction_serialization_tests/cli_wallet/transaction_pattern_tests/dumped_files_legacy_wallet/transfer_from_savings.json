@@ -1,0 +1,1 @@
+{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["transfer_from_savings",{"from":"alice","request_id":1000,"to":"bob","amount":"1.000 TESTS","memo":"memo"}]],"extensions":[],"signatures":["202eb309bc7a4c4fb2aa4edcda920aed4e72622ec967f01bdc59f79df6227b33884ca89aa38c934c6e151b8b16038e2aeab3da2f4057d3b72d349073a5fc354d5a"]}
