@@ -3,6 +3,7 @@
 #include <string>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/program_options.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/reflect/reflect.hpp>
@@ -12,7 +13,7 @@
 
 #include <hive/protocol/crypto.hpp>
 
-#define CHAIN_ID_PARAM "--chain-id"
+namespace bpo = boost::program_options;
 
 struct tx_signing_request
 {
@@ -40,62 +41,43 @@ FC_REFLECT( error_result, (error) )
 
 int main(int argc, char** argv, char** envp)
 {
-  fc::sha256 chainId;
+  boost::program_options::options_description opts;
 
-  chainId = HIVE_CHAIN_ID;
+  opts.add_options()
+  ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
+  ("sign-type", bpo::value< std::string >()->default_value( "legacy" ), "Allows to sign a transaction using legacy/HF26 format. Possible values(legacy/hf26). By default is `legacy`." )
+  ;
 
-  const size_t chainIdLen = strlen(CHAIN_ID_PARAM);
+  bpo::variables_map options;
 
-  if(argc > 1 && !strncmp(argv[1], CHAIN_ID_PARAM, chainIdLen))
+  bpo::store( bpo::parse_command_line(argc, argv, opts), options );
+
+  //********** parsing `chain-id` **********
+  hive::protocol::chain_id_type chainId = HIVE_CHAIN_ID;
+  auto chain_id_str = options.at("chain-id").as< std::string >();
+
+  try
   {
-    const char* strChainId = argv[1] + chainIdLen;
-    if(*strChainId == '=')
-    {
-      ++strChainId;
-      if(*strChainId == '\0')
-      {
-        if(argc == 2)
-        {
-          /// --chain-id=
-          std::cerr << "Missing parameter for `--chain-id' option. Option ignored, default chain-id used."
-            << std::endl;
-          std::cerr << "Usage: sign_transaction [--chain-id=<hex-chain-id>]" << std::endl;
-        }
-        else
-        {
-          /// --chain-id= XXXXX
-          strChainId = argv[2]; /// ChainId passed as another parameter
-        }
-      }
-    }
-    else
-    if(argc > 2)
-    {
-      /// ChainId passed as another parameter
-      strChainId = argv[2];
-    }
-    else
-    {
-      std::cerr << "Missing parameter for `--chain-id' option. Option ignored, default chain-id used."
-        << std::endl;
-      std::cerr << "Usage: sign_transaction [--chain-id=<hex-chain-id>]" << std::endl;
-    }
+    chainId = hive::protocol::chain_id_type( chain_id_str );
+  }
+  catch( fc::exception& )
+  {
+    std::cerr << "Could not parse chain-id as hex string. Chain ID String: `" << chain_id_str << "'" << std::endl;
+    std::cerr << "Option ignored, default chain-id used." << std::endl;
+  }
 
-    if(*strChainId != '\0')
-    {
-      try
-      {
-        fc::sha256 parsedId(strChainId);
-        chainId = parsedId;
-        std::cerr << "Using explicit chain-id: `" << strChainId << "'" << std::endl;
-      }
-      catch(const fc::exception& e)
-      {
-        std::cerr << "Specified explicit chain-id : `" << strChainId << "' is invalid. Option ignored, default chain-id used." << std::endl;
-        auto error = e.to_detail_string();
-        std::cerr << error << std::endl;
-      }
-    }
+  //********** parsing `sign-transaction` **********
+  hive::protocol::pack_type _pack = hive::protocol::pack_type::legacy;
+  auto _sign_type_str = options["sign-type"].as<std::string>();
+  try
+  {
+    fc::variant _v = _sign_type_str;
+    from_variant( _v, _pack );
+  }
+  catch( fc::exception& )
+  {
+    std::cerr << "Could not parse sign-transaction as a pack type. Sign Type String: `" << _sign_type_str << "'" << std::endl;
+    std::cerr << "Option ignored, default sign-type used." << std::endl;
   }
 
   // hash key pairs on stdin
@@ -117,7 +99,7 @@ int main(int argc, char** argv, char** envp)
       tx_signing_result sres;
       sres.tx = sreq.tx;
       sres.digest = sreq.tx.digest();
-      sres.sig_digest = sig_digest(sreq.tx, chainId, hive::protocol::pack_type::legacy);
+      sres.sig_digest = sig_digest(sreq.tx, chainId, _pack);
 
       auto priv_key = hive::utilities::wif_to_key( sreq.wif );
 
