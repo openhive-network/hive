@@ -177,45 +177,45 @@ operation_exec_info::operation_exec_info()
   //validate + exec + pre->rc + post->rc [+ automatic processing]
   //times from witness not included since it runs empty during replay (no valid measurements)
 :
-  account_create_time( 587 + 31859 + 236 + 6401 ),
-  account_create_with_delegation_time( 3292 + 41583 + 139 + 66 ),
-  account_witness_vote_time( 436 + 14005 + 173 + 145 ),
-  comment_time( 16949 + 20931 + 221 + 166 + 41857 ), //cashout
-  comment_options_time( 464 + 5550 + 142 + 117 ),
-  convert_time( 403 + 10763 + 207 + 143 + 7928 ), //conversion
-  collateralized_convert_time( 513 + 12888 + 332 + 239 + 8755 ), //conversion
-  create_claimed_account_time( 6562 + 45969 + 342 + 10778 ),
-  decline_voting_rights_time( 513 + 46887 + 179 + 187 + 24301 ), //finalization
-  delegate_vesting_shares_time( 376 + 11480 + 3110 + 1208 ),
-  escrow_transfer_time( 10420 + 13628 + 309 + 204 ),
-  limit_order_create_time( 367 + 13436 + 187 + 124 ),
-  limit_order_create2_time( 569 + 23169 + 310 + 118 ),
-  request_account_recovery_time( 625 + 6555 + 149 + 127 ),
-  set_withdraw_vesting_route_time( 412 + 8762 + 632 + 121 ),
-  vote_time( 391 + 17530 + 187 + 78 ),
-  witness_update_time( 524 + 3326 + 154 + 121 ),
-  transfer_time( 513 + 4959 + 204 + 134 ),
-  transfer_to_vesting_time( 399 + 17085 + 2174 + 721 + 24064 ), //delayed voting
-  transfer_to_savings_time( 720 + 5073 + 205 + 155 ),
-  transfer_from_savings_time( 444 + 6923 + 111 + 106 + 8028 ), //savings withdraws
-  claim_reward_balance_time( 352 + 22648 + 2798 + 970 ),
-  withdraw_vesting_time( 351 + 6715 + 2068 + 567 + 15950 * HIVE_VESTING_WITHDRAW_INTERVALS ), //vesting withdrawals
-  account_update_time( 18668 + 12004 + 206 + 152 ),
-  account_update2_time( 22417 + 10389 + 405 + 257 ),
-  account_witness_proxy_time( 557 + 54013 + 170 + 166 ),
-  cancel_transfer_from_savings_time( 127 + 2696 + 72 + 66 ),
-  change_recovery_account_time( 551 + 12819 + 297 + 202 ),
-  claim_account_time( 336 + 7861 + 267 + 150 ),
-  custom_time( 115 + 150 + 238 + 121 ),
-  custom_json_time( 13550 + 183 + 321 + 167 ),
+  account_create_time( 498 + 31575 + 236 + 6401 ),
+  account_create_with_delegation_time( 770 + 39616 + 139 + 66 ),
+  account_witness_vote_time( 516 + 13907 + 173 + 145 ),
+  comment_time( 2419 + 20408 + 221 + 166 + 42964 ), //cashout
+  comment_options_time( 413 + 5530 + 142 + 117 ),
+  convert_time( 442 + 11491 + 207 + 143 + 8280 ), //conversion
+  collateralized_convert_time( 613 + 13325 + 332 + 239 + 9154 ), //conversion
+  create_claimed_account_time( 964 + 46331 + 342 + 10778 ),
+  decline_voting_rights_time( 530 + 3894 + 179 + 187 + 24301 ), //finalization (NOTE: low operation count - excessive time of processing discarded)
+  delegate_vesting_shares_time( 411 + 11998 + 3110 + 1208 ),
+  escrow_transfer_time( 2943 + 16130 + 309 + 204 ),
+  limit_order_create_time( 468 + 13924 + 187 + 124 ),
+  limit_order_create2_time( 607 + 23356 + 310 + 118 ),
+  request_account_recovery_time( 613 + 7058 + 149 + 127 ),
+  set_withdraw_vesting_route_time( 501 + 9003 + 632 + 121 ),
+  vote_time( 479 + 17568 + 187 + 78 ),
+  witness_update_time( 675 + 3287 + 154 + 121 ),
+  transfer_time( 638 + 5023 + 204 + 134 ),
+  transfer_to_vesting_time( 484 + 15856 + 2174 + 721 + 23010 ), //delayed voting
+  transfer_to_savings_time( 771 + 5392 + 205 + 155 ),
+  transfer_from_savings_time( 519 + 7840 + 111 + 106 + 8974 ), //savings withdraws
+  claim_reward_balance_time( 427 + 23366 + 2798 + 970 ),
+  withdraw_vesting_time( 376 + 6524 + 2068 + 567 + 16307 * HIVE_VESTING_WITHDRAW_INTERVALS ), //vesting withdrawals
+  account_update_time( 1531 + 11433 + 206 + 152 ),
+  account_update2_time( 2182 + 10804 + 405 + 257 ),
+  account_witness_proxy_time( 684 + 57106 + 170 + 166 ),
+  cancel_transfer_from_savings_time( 135 + 2881 + 72 + 66 ),
+  change_recovery_account_time( 580 + 9391 + 297 + 202 ),
+  claim_account_time( 336 + 8028 + 267 + 150 ),
+  custom_time( 132 + 183 + 238 + 121 ),
+  custom_json_time( 859 + 162 + 321 + 167 ),
   custom_binary_time( 0 + 0 + 0 + 0 + 100000 ), //never executed (artificial time added for safety)
-  delete_comment_time( 436 + 17725 + 175 + 146 ),
-  escrow_approve_time( 850 + 5970 + 260 + 181 ),
-  escrow_dispute_time( 826 + 9759 + 261 + 176 ),
-  escrow_release_time( 730 + 13320 + 252 + 189 ),
-  feed_publish_time( 372 + 2283 + 213 + 144 ),
-  limit_order_cancel_time( 299 + 5160 + 204 + 142 ),
-  witness_set_properties_time( 3258 + 4210 + 310 + 234 ),
+  delete_comment_time( 521 + 17208 + 175 + 146 ),
+  escrow_approve_time( 814 + 8408 + 260 + 181 ),
+  escrow_dispute_time( 918 + 5219 + 261 + 176 ),
+  escrow_release_time( 1313 + 13586 + 252 + 189 ),
+  feed_publish_time( 469 + 2233 + 213 + 144 ),
+  limit_order_cancel_time( 407 + 5986 + 204 + 142 ),
+  witness_set_properties_time( 3986 + 4920 + 310 + 234 ),
 #ifdef HIVE_ENABLE_SMT
   claim_reward_balance2_time( 0 ),
   smt_setup_time( 0 ),
@@ -225,26 +225,26 @@ operation_exec_info::operation_exec_info()
   smt_create_time( 0 ),
   smt_contribute_time( 0 ),
 #endif
-  create_proposal_time( 5917 + 59896 + 5666 + 2168 ), //processing not counted since it depends on too many variables
-  update_proposal_time( 762 + 12673 + 4501 + 267 ),
-  update_proposal_votes_time( 404 + 10625 + 2993 + 1206 ),
-  remove_proposal_time( 594 + 129492 + 3886 + 1692 ),
-  recurrent_transfer_base_time( 811 + 19349 + 330 + 238 ), //processing separately below
-  recurrent_transfer_processing_time( 13023 ), //multiply by number of transfers
+  create_proposal_time( 831 + 24323 + 5666 + 2168 ), //processing not counted since it depends on too many variables
+  update_proposal_time( 820 + 11193 + 4501 + 267 ),
+  update_proposal_votes_time( 503 + 12602 + 2993 + 1206 ),
+  remove_proposal_time( 527 + 129323 + 3886 + 1692 ), //(NOTE: low operation count)
+  recurrent_transfer_base_time( 914 + 12426 + 330 + 238 ), //processing separately below
+  recurrent_transfer_processing_time( 14347 ), //multiply by number of transfers
   delegate_rc_time( 75000 ), //this is cost over custom json processing (difference between RC delegation and dummy custom json of the same size);
     //while it depends on number of delegatees, the differences should be neglegible so it was collected for 10 delegatees
     //once we have real uses of RC delegation we can correct actual average time consumption
 
-  verify_authority_time( 95230 ), //multiply by number of signatures
+  verify_authority_time( 94165 ), //multiply by number of signatures
   transaction_time(
-    4405 + //transaction dupe check
-    364 + //tapos check
+    2821 + //transaction dupe check
+    386 + //tapos check
     3415 ), //post->rc::transaction
 
   //not used but included since we have measurements
-  recover_account_time( 687 + 24296 + 149 + 145 ),
-  pow_time( 177891 + 23343 + 165 + 57 ),
-  pow2_time( 86439 + 17341 + 160 + 92 )
+  recover_account_time( 727 + 17934 + 149 + 145 ),
+  pow_time( 177321 + 23458 + 165 + 57 ),
+  pow2_time( 86349 + 17226 + 160 + 92 )
 
 {}
 
