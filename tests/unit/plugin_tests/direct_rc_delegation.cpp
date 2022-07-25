@@ -17,7 +17,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins::rc;
 
-BOOST_FIXTURE_TEST_SUITE( rc_direct_delegation, clean_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( direct_rc_delegation, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( delegate_rc_operation_validate )
 {
