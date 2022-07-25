@@ -15,6 +15,23 @@ TYPES_OF_SERIALIZATION = [
     'hf26',
 ]
 
+METHODS_WITH_CORRECT_ARGUMENTS = [
+    ('cancel_order', ('alice', 1, False)),
+]
+
+
+@pytest.mark.testnet
+@pytest.mark.parametrize('cli_wallet_method, arguments', METHODS_WITH_CORRECT_ARGUMENTS)
+@pytest.mark.parametrize('verify_pattern', WAYS_OF_PATTERN_VERIFICATION)
+@pytest.mark.parametrize('wallet_with_pattern_name', TYPES_OF_SERIALIZATION, indirect=True)
+def test_transaction_patterns(replayed_node, wallet_with_pattern_name, verify_pattern, cli_wallet_method, arguments):
+    wallet, pattern_name = wallet_with_pattern_name
+
+    transaction = getattr(wallet.api, cli_wallet_method)(*arguments)
+    replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
+
+    verify_pattern(wallet, pattern_name)
+
 
 @pytest.mark.testnet
 @pytest.mark.parametrize('verify_pattern', WAYS_OF_PATTERN_VERIFICATION)
