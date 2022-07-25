@@ -495,7 +495,7 @@ def test_transfer_to_vesting_nonblocking(replayed_node, wallet_with_pattern_name
 def test_update_account(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    key = 'TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER'
+    key = tt.Account('alice', secret='other_than_previous').public_key
     transaction = wallet.api.update_account('alice', '{}', key, key, key, key, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
@@ -532,7 +532,7 @@ def test_update_account_auth_threshold(replayed_node, wallet_with_pattern_name, 
 def test_update_account_memo_key(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    key = 'TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ'
+    key = tt.Account('alice', secret='other_than_previous').public_key
     transaction = wallet.api.update_account_memo_key('alice', key, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
