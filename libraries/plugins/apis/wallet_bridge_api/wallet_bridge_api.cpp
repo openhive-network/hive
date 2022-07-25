@@ -172,10 +172,10 @@ void wallet_bridge_api::api_startup()
 wallet_bridge_api_impl::wallet_bridge_api_impl() : 
   _chain(appbase::app().get_plugin< hive::plugins::chain::chain_plugin >()),
   _db( _chain.db() )
-  {
-    _on_post_apply_block_conn = _db.add_post_apply_block_handler([&]( const chain::block_notification& note ){ on_post_apply_block( note ); },
-    appbase::app().get_plugin< hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >(), 0 );
-  }
+{
+  _on_post_apply_block_conn = _db.add_post_apply_block_handler([&]( const chain::block_notification& note ){ on_post_apply_block( note ); },
+  appbase::app().get_plugin< hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >(), 0 );
+}
 
 wallet_bridge_api_impl::~wallet_bridge_api_impl() {}
 
@@ -187,51 +187,50 @@ void wallet_bridge_api_impl::verify_args( const variant& v, size_t length_requir
 }
 
 void wallet_bridge_api_impl::on_post_apply_block( const chain::block_notification& note )
-  { try {
-    boost::lock_guard< boost::mutex > guard( _mtx );
-    int32_t block_num = int32_t(note.block_num);
-    if( _callbacks.size() )
+{ try {
+  boost::lock_guard< boost::mutex > guard( _mtx );
+  int32_t block_num = int32_t(note.block_num);
+  if( _callbacks.size() )
+  {
+    size_t trx_num = 0;
+    for( const auto& trx : note.full_block->get_full_transactions() )
     {
-      size_t trx_num = 0;
-      for( const auto& trx : note.full_block->get_full_transactions() )
+      const auto& id = trx->get_transaction_id();
+      auto itr = _callbacks.find( id );
+      if( itr != _callbacks.end() )
       {
-        auto id = trx->get_transaction().id(); //NOTE: using legacy id on purpose, since callback was registered with it
-        auto itr = _callbacks.find( id );
-        if( itr != _callbacks.end() )
-        {
-          itr->second( broadcast_transaction_synchronous_return( { id, block_num, int32_t( trx_num ), false } ) );
-          _callbacks.erase( itr );
-        }
-        ++trx_num;
+        itr->second( broadcast_transaction_synchronous_return( { id, block_num, int32_t( trx_num ), false } ) );
+        _callbacks.erase( itr );
       }
+      ++trx_num;
     }
+  }
 
-    /// clear all expirations
-    auto block_ts = note.get_block_timestamp();
-    while( true )
+  /// clear all expirations
+  auto block_ts = note.get_block_timestamp();
+  while( true )
+  {
+    auto exp_it = _callback_expirations.begin();
+    if( exp_it == _callback_expirations.end() )
+      break;
+    if( exp_it->first >= block_ts )
+      break;
+    for( const protocol::transaction_id_type& txid : exp_it->second )
     {
-      auto exp_it = _callback_expirations.begin();
-      if( exp_it == _callback_expirations.end() )
-        break;
-      if( exp_it->first >= block_ts )
-        break;
-      for( const protocol::transaction_id_type& txid : exp_it->second )
-      {
-        auto cb_it = _callbacks.find( txid );
-        // If it's empty, that means the transaction has been confirmed and has been deleted by the above check.
-        if( cb_it == _callbacks.end() )
-          continue;
+      auto cb_it = _callbacks.find( txid );
+      // If it's empty, that means the transaction has been confirmed and has been deleted by the above check.
+      if( cb_it == _callbacks.end() )
+        continue;
 
-        confirmation_callback callback = cb_it->second;
-        protocol::transaction_id_type txid_byval = txid;    // can't pass in by reference as it's going to be deleted
-        callback( broadcast_transaction_synchronous_return( {txid_byval, block_num, -1, true }) );
+      confirmation_callback callback = cb_it->second;
+      protocol::transaction_id_type txid_byval = txid;    // can't pass in by reference as it's going to be deleted
+      callback( broadcast_transaction_synchronous_return( {txid_byval, block_num, -1, true }) );
 
-        _callbacks.erase( cb_it );
-      }
-      _callback_expirations.erase( exp_it );
+      _callbacks.erase( cb_it );
     }
-  } FC_LOG_AND_RETHROW()
-}
+    _callback_expirations.erase( exp_it );
+  }
+} FC_LOG_AND_RETHROW() }
 
 /* API IMPLEMENTATION
   Arguments to every method are passed via variant.
@@ -675,18 +674,32 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
 
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   auto tx = get_trx( arguments );
-
-  auto txid = tx.id();
   boost::promise< broadcast_transaction_synchronous_return > p;
+
+  auto set_remove_callback = [&]( const hive::chain::full_transaction_ptr& ftx, bool fail )
   {
+    const auto& txid = ftx->get_transaction_id();
     boost::lock_guard< boost::mutex > guard( _mtx );
-    FC_ASSERT( _callbacks.find( txid ) == _callbacks.end(), "Transaction is a duplicate" );
-    _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
+    auto c_itr = _callbacks.find( txid );
+
+    if( fail ) //remove callback
     {
-      p.set_value( r );
-    };
-    _callback_expirations[ tx.expiration ].push_back( txid );
-  }
+      // The callback may have been cleared in the meantine, so we need to check for existence.
+      if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
+      // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
+    }
+    else
+    {
+      FC_ASSERT( c_itr == _callbacks.end(), "Transaction is a duplicate" );
+      _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
+      {
+        p.set_value( r );
+      };
+      _callback_expirations[ tx.expiration ].push_back( txid );
+    }
+  };
+
+  hive::chain::full_transaction_ptr full_transaction;
 
   try
   {
@@ -697,27 +710,19 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
      * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
      * thread for the lock.
      */
-    std::shared_ptr<hive::chain::full_transaction_type> full_transaction = _chain.determine_encoding_and_accept_transaction(tx);
+    full_transaction = _chain.determine_encoding_and_accept_transaction( tx, set_remove_callback );
     _p2p->broadcast_transaction(full_transaction);
   }
   catch( fc::exception& e )
   {
-    boost::lock_guard< boost::mutex > guard( _mtx );
-    // The callback may have been cleared in the meantine, so we need to check for existence.
-    auto c_itr = _callbacks.find( txid );
-    if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-
-    // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
-
-    throw e;
+    if(full_transaction)
+      set_remove_callback( full_transaction, true );
+    throw;
   }
   catch( ... )
   {
-    boost::lock_guard< boost::mutex > guard( _mtx );
-    // The callback may have been cleared in the meantine, so we need to check for existence.
-    auto c_itr = _callbacks.find( txid );
-    if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-
+    if(full_transaction)
+      set_remove_callback( full_transaction, true );
     throw fc::unhandled_exception(
       FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
       std::current_exception() );

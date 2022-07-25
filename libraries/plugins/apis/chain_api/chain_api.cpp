@@ -25,7 +25,7 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
   try
   {
-    _chain.determine_encoding_and_accept_transaction(args);
+    _chain.determine_encoding_and_accept_transaction(args, []( const full_transaction_ptr&, bool){});
     result.success = true;
   }
   catch (const fc::exception& e)
@@ -38,7 +38,7 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
   }
   catch (...)
   {
-    result.error = "uknown error";
+    result.error = "unknown error";
   }
 
   return result;

@@ -899,53 +899,61 @@ namespace detail
 
     fc::time_point api_start_time = fc::time_point::now();
     signed_transaction trx = args[0].as< legacy_signed_transaction >();
-    auto txid = trx.id();
     boost::promise< broadcast_transaction_synchronous_return > p;
+    fc::time_point callback_setup_time;
 
+    auto set_remove_callback = [&]( const full_transaction_ptr& ftx, bool fail )
     {
+      const auto& txid = ftx->get_transaction_id();
       boost::lock_guard< boost::mutex > guard( _mtx );
-      FC_ASSERT( _callbacks.find( txid ) == _callbacks.end(), "Transaction is a duplicate" );
-      _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
-      {
-        p.set_value( r );
-      };
-      _callback_expirations[ trx.expiration ].push_back( txid );
-    }
+      auto c_itr = _callbacks.find( txid );
 
-    LOG_DELAY(api_start_time, fc::seconds(1), "Excessive delay to setup callback");
-    fc::time_point callback_setup_time = fc::time_point::now();
+      if( fail ) //remove callback
+      {
+        // The callback may have been cleared in the meantime, so we need to check for existence.
+        if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
+        // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
+      }
+      else //setup callback
+      {
+        FC_ASSERT( c_itr == _callbacks.end(), "Transaction is a duplicate" );
+        _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
+        {
+          p.set_value( r );
+        };
+        _callback_expirations[ trx.expiration ].push_back( txid );
+        LOG_DELAY( api_start_time, fc::seconds( 1 ), "Excessive delay to setup callback" );
+        if( callback_setup_time != fc::time_point() )
+          callback_setup_time = fc::time_point::now();
+      }
+    };
+
+    full_transaction_ptr full_transaction;
 
     try
     {
       /* It may look strange to call these without the lock and then lock again in the case of an exception,
-        * but it is correct and avoids deadlock. accept_transaction is trained along with all other writes, including
-        * pushing blocks. Pushing blocks do not originate from this code path and will never have this lock.
-        * However, it will trigger the on_post_apply_block callback and then attempt to acquire the lock. In this case,
-        * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
-        * thread for the lock.
-        */
-      std::shared_ptr<full_transaction_type> full_transaction = _chain.determine_encoding_and_accept_transaction(trx);
+       * but it is correct and avoids deadlock. accept_transaction is trained along with all other writes, including
+       * pushing blocks. Pushing blocks do not originate from this code path and will never have this lock.
+       * However, it will trigger the on_post_apply_block callback and then attempt to acquire the lock. In this case,
+       * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
+       * thread for the lock.
+       */
+      full_transaction = _chain.determine_encoding_and_accept_transaction( trx, set_remove_callback );
       _p2p->broadcast_transaction(full_transaction);
     }
     catch( fc::exception& e )
     {
-      LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Exccesive delay to validate & broadcast trx ${e}", (e) );
-
-      boost::lock_guard< boost::mutex > guard( _mtx );
-      // The callback may have been cleared in the meantime, so we need to check for existence.
-      auto c_itr = _callbacks.find( txid );
-      if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-      // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
-      throw e;
+      LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx ${e}", (e) );
+      if(full_transaction)
+        set_remove_callback( full_transaction, true );
+      throw;
     }
     catch( ... )
     {
       LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
-
-      boost::lock_guard< boost::mutex > guard( _mtx );
-      // The callback may have been cleared in the meantine, so we need to check for existence.
-      auto c_itr = _callbacks.find( txid );
-      if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
+      if(full_transaction)
+        set_remove_callback( full_transaction, true );
       throw fc::unhandled_exception(
         FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
         std::current_exception() );
@@ -1149,7 +1157,7 @@ namespace detail
       size_t trx_num = 0;
       for( const auto& trx : note.full_block->get_full_transactions() )
       {
-        auto id = trx->get_transaction().id(); //NOTE: using legacy id on purpose, since callback was registered with it
+        const auto& id = trx->get_transaction_id();
         auto itr = _callbacks.find( id );
         if( itr != _callbacks.end() )
         {
