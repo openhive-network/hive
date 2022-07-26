@@ -15,7 +15,7 @@ def replayed_node():
 def wallet_with_pattern_name(replayed_node, request):
     for marker in request.keywords.node.iter_markers():
         if marker.args and marker.args[0].startswith('cli_wallet_method'):
-            pattern_name = marker.args[1][0][0]
+            pattern_name = marker.args[1][request.param_index][0]
             break
     else:
         method_name: str = request.keywords.node.originalname
