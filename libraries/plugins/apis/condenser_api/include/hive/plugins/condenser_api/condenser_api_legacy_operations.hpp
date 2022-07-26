@@ -1451,6 +1451,32 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      hbd_amount_out;
   };
 
+  struct legacy_proposal_fee_operation
+  {
+    legacy_proposal_fee_operation() {}
+    legacy_proposal_fee_operation( const proposal_fee_operation& op ) :
+      creator( op.creator ),
+      treasury( op.treasury ),
+      proposal_id( op.proposal_id ),
+      fee( legacy_asset::from_asset( op.fee ) )
+    {}
+
+    operator proposal_fee_operation()const
+    {
+      proposal_fee_operation op;
+      op.creator = creator;
+      op.treasury = treasury;
+      op.proposal_id = proposal_id;
+      op.fee = fee;
+      return op;
+    }
+
+    account_name_type creator;
+    account_name_type treasury;
+    uint32_t          proposal_id = 0;
+    legacy_asset      fee;
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -1538,7 +1564,8 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_fill_recurrent_transfer_operation,
         legacy_failed_recurrent_transfer_operation,
         legacy_producer_missed_operation,
-        legacy_limit_order_cancelled_operation //was missing from the list (should be much earlier but see comment above)
+        legacy_limit_order_cancelled_operation, //was missing from the list (should be much earlier but see comment above)
+        legacy_proposal_fee_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1872,6 +1899,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const proposal_fee_operation& op )const
+    {
+      l_op = legacy_proposal_fee_operation( op );
+      return true;
+    }
+
 #ifdef HIVE_ENABLE_SMT
     // Should only be SMT ops
     template< typename T >
@@ -2120,6 +2153,11 @@ struct convert_from_legacy_operation_visitor
     return operation( dhf_conversion_operation( op ) );
   }
 
+  operation operator()( const legacy_proposal_fee_operation& op )const
+  {
+    return operation( proposal_fee_operation( op ) );
+  }
+
   template< typename T >
   operation operator()( const T& t )const
   {
@@ -2329,5 +2367,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

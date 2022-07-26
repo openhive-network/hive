@@ -426,9 +426,21 @@ namespace hive { namespace protocol {
   struct producer_missed_operation : public virtual_operation
   {
     producer_missed_operation() {}
-    producer_missed_operation( const account_name_type p ) : producer( p ) {}
+    producer_missed_operation( const account_name_type& p ) : producer( p ) {}
 
     account_name_type producer;
+  };
+
+  struct proposal_fee_operation : public virtual_operation
+  {
+    proposal_fee_operation() {}
+    proposal_fee_operation( const account_name_type& c, const account_name_type& t, uint32_t pid, const asset& f )
+      : creator( c ), treasury( t ), proposal_id( pid ), fee( f ) {}
+
+    account_name_type creator;
+    account_name_type treasury;
+    uint32_t proposal_id;
+    asset fee;
   };
 
 } } //hive::protocol
@@ -469,3 +481,4 @@ FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
+FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
