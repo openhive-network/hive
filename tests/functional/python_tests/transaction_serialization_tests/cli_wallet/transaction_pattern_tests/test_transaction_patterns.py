@@ -16,12 +16,12 @@ TYPES_OF_SERIALIZATION = [
 ]
 
 METHODS_WITH_CORRECT_ARGUMENTS = [
-    ('cancel_order', ('alice', 1, False)),
-    ('cancel_transfer_from_savings', ('alice', 1, False)),
+    # ('cancel_order', ('alice', 1, False)),
+    # ('cancel_transfer_from_savings', ('alice', 1, False)),
     ('change_recovery_account', ('initminer', 'alice', False)),
-    ('claim_account_creation', ('initminer', tt.Asset.Test(0), False)),
-    ('claim_account_creation_nonblocking', ('initminer', tt.Asset.Test(0), False)),
-    ('create_proposal', ('alice', 'alice', '2031-01-01T00:00:00', '2031-06-01T00:00:00', tt.Asset.Tbd(1000), 'subject-1', 'permlink', False)),
+    # ('claim_account_creation', ('initminer', tt.Asset.Test(0), False)),
+    # ('claim_account_creation_nonblocking', ('initminer', tt.Asset.Test(0), False)),
+    # ('create_proposal', ('alice', 'alice', '2031-01-01T00:00:00', '2031-06-01T00:00:00', tt.Asset.Tbd(1000), 'subject-1', 'permlink', False)),
 
 ]
 

@@ -1,10 +1,11 @@
+from distutils.util import strtobool
 import filecmp
 import json
 import os
+from pathlib import Path
 import shutil
 
-from pathlib import Path
-from distutils.util import strtobool
+import test_tools as tt
 
 PACKAGE_PATH = Path(__file__).parent
 
@@ -25,6 +26,8 @@ def __able_to_generate_pattern(validate_function):
             return validate_function(wallet, pattern_name)
 
         for file_extension in ['json', 'bin']:
+            dupa1 = wallet.directory / f'{pattern_name}.{file_extension}'
+            dupa2 = __get_path_of_pattern_file(file_extension, wallet.transaction_serialization, pattern_name)
             shutil.move(
                 wallet.directory / f'{pattern_name}.{file_extension}',
                 __get_path_of_pattern_file(file_extension, wallet.transaction_serialization, pattern_name)
@@ -36,12 +39,15 @@ def __able_to_generate_pattern(validate_function):
 def verify_generated_transaction_with_json_pattern(wallet, pattern_name):
     source_path_file = wallet.directory / f'{pattern_name}.json'
     target_path_file = __get_path_of_pattern_file('json', wallet.transaction_serialization, pattern_name)
-
+    tt.logger.info(f'source    {source_path_file}')
+    tt.logger.info(f'target    {target_path_file}')
     # Compare actual transaction with stored transaction
     with open(source_path_file) as file:
         actual_json = json.load(file)
     with open(target_path_file) as file:
         pattern_json = json.load(file)
+    tt.logger.info(f'source json    {actual_json}')
+    tt.logger.info(f'target json   {pattern_json}')
     assert actual_json == pattern_json
 
 
@@ -50,5 +56,7 @@ def verify_generated_transaction_with_binary_pattern(wallet, pattern_name):
     source_path_file = wallet.directory / f'{pattern_name}.bin'
     target_path_file = __get_path_of_pattern_file('bin', wallet.transaction_serialization, pattern_name)
 
+    tt.logger.info(f'source    {source_path_file}')
+    tt.logger.info(f'target    {target_path_file}')
     # Compare actual transaction with stored transaction
     assert filecmp.cmp(source_path_file, target_path_file, shallow=False)
