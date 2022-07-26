@@ -134,6 +134,7 @@ enum enum_vops_filter : uint64_t
   failed_recurrent_transfer_operation           = 0x04'00000000ull,
   limit_order_cancelled_operation               = 0x08'00000000ull,
   producer_missed_operation                     = 0x10'00000000ull,
+  proposal_fee_operation                        = 0x20'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.

@@ -55,9 +55,11 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or receiver");
     }
 
+    uint32_t proposal_id = 0;
     _db.create< proposal_object >( [&]( proposal_object& proposal )
     {
-      proposal.proposal_id = proposal.get_id();
+      proposal_id = proposal.get_id();
+      proposal.proposal_id = proposal_id;
 
       proposal.creator = o.creator;
       proposal.receiver = o.receiver;
@@ -75,6 +77,8 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     _db.adjust_balance( owner_account, -fee_hbd );
     /// Fee shall be paid to the treasury
     _db.adjust_balance(treasury_account, fee_hbd );
+
+    _db.push_virtual_operation( proposal_fee_operation( o.creator, treasury_account.get_name(), proposal_id, fee_hbd ) );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }

@@ -416,6 +416,12 @@ struct get_impacted_account_visitor
     _impacted.insert( op.producer );
   }
 
+  void operator()( const proposal_fee_operation& op )
+  {
+    _impacted.insert( op.creator );
+    _impacted.insert( op.treasury );
+  }
+
   //void operator()( const operation& op ){}
 };
 
@@ -651,6 +657,12 @@ struct impacted_balance_collector
   {
     if(op.is_saved_into_hbd_balance)
       emplace_back(op.owner, op.interest);
+  }
+
+  void operator()( const proposal_fee_operation& op )
+  {
+    emplace_back(op.creator, -op.fee);
+    emplace_back(op.treasury, op.fee);
   }
 
   template <class T>
