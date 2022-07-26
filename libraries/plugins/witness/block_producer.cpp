@@ -22,15 +22,15 @@ void block_producer::generate_block( chain::generate_block_flow_control* generat
     try
     {
       _generate_block( generate_block_ctrl, generate_block_ctrl->get_block_timestamp(), generate_block_ctrl->get_witness_owner(),
-        generate_block_ctrl->get_block_signing_private_key() );
+                       generate_block_ctrl->get_block_signing_private_key() );
     }
     FC_CAPTURE_AND_RETHROW( ( generate_block_ctrl->get_witness_owner() ) )
   } );
 }
 
 void block_producer::_generate_block( chain::generate_block_flow_control* generate_block_ctrl,
-  fc::time_point_sec when, const chain::account_name_type& witness_owner, 
-  const fc::ecc::private_key& block_signing_private_key)
+                                      fc::time_point_sec when, const chain::account_name_type& witness_owner,
+                                      const fc::ecc::private_key& block_signing_private_key)
 {
   uint32_t skip = _db.get_node_properties().skip_flags;
   uint32_t slot_num = _db.get_slot_at_time( when );

@@ -695,7 +695,7 @@ namespace chain {
 
       // return the witness schedule object whose current_shuffled_witnesses we use for computing irreversibility.  Roughly, before HF26, it's the 
       // current witnesses_schedule_object; after, it's future_witness_schedule_object
-      const witness_schedule_object& get_witness_schedule_object_for_irreversibility();
+      const witness_schedule_object& get_witness_schedule_object_for_irreversibility() const;
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }
