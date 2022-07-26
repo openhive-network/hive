@@ -801,7 +801,7 @@ DEFINE_API_ARGS( get_trending_tags,                      vector< variant >,   no
 DEFINE_API_ARGS( get_state,                              vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_active_witnesses,                   vector< variant >,   vector< account_name_type > )
 DEFINE_API_ARGS( get_block_header,                       vector< variant >,   optional< block_header > )
-DEFINE_API_ARGS( get_block,                              vector< variant >,   optional< legacy_signed_block > )
+DEFINE_API_ARGS( get_block,                              vector< variant >,   optional< hive::protocol::serializer_wrapper<legacy_signed_block> > )
 DEFINE_API_ARGS( get_ops_in_block,                       vector< variant >,   vector< hive::protocol::serializer_wrapper<api_operation_object> > )
 DEFINE_API_ARGS( get_config,                             vector< variant >,   fc::variant_object )
 DEFINE_API_ARGS( get_dynamic_global_properties,          vector< variant >,   extended_dynamic_global_properties )
