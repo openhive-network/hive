@@ -205,7 +205,7 @@ namespace detail
     auto b = _block_api->get_block( { args[0].as< uint32_t >() } ).block;
 
     if( b )
-      result = legacy_signed_block( *b );
+      result = hive::protocol::serializer_wrapper<legacy_signed_block>{ legacy_signed_block( *b ), transaction_serialization_type::legacy };
 
     return result;
   }
