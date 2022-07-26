@@ -207,14 +207,14 @@ namespace detail
 
     if( b )
     {
-      result = legacy_signed_block( *b );
+      result = hive::protocol::serializer_wrapper<legacy_signed_block>{ legacy_signed_block( *b ), transaction_serialization_type::legacy };
       uint32_t n = uint32_t( b->transactions.size() );
       uint32_t block_num = block_header::num_from_id( b->block_id );
       for( uint32_t i=0; i<n; i++ )
       {
-        result->transactions[i].transaction_id = b->transactions[i].id();
-        result->transactions[i].block_num = block_num;
-        result->transactions[i].transaction_num = i;
+        result->value.transactions[i].transaction_id = b->transactions[i].id();
+        result->value.transactions[i].block_num = block_num;
+        result->value.transactions[i].transaction_num = i;
       }
     }
 
