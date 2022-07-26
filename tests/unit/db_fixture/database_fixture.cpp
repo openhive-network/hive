@@ -1670,9 +1670,9 @@ namespace test {
 std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
   const fc::ecc::private_key& _key, uint32_t _skip )
 {
-  new_block_flow_control new_block_ctrl( _block_ts, _wo, _key, _skip );
-  bp.generate_block( &new_block_ctrl );
-  return new_block_ctrl.get_full_block();
+  generate_block_flow_control generate_block_ctrl( _block_ts, _wo, _key, _skip );
+  bp.generate_block( &generate_block_ctrl );
+  return generate_block_ctrl.get_full_block();
 }
 
 bool _push_block( database& db, const block_header& header,

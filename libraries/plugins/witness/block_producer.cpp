@@ -15,20 +15,20 @@
 
 namespace hive { namespace plugins { namespace witness {
 
-void block_producer::generate_block( chain::new_block_flow_control* new_block_ctrl )
+void block_producer::generate_block( chain::generate_block_flow_control* generate_block_ctrl )
 {
-  hive::chain::detail::with_skip_flags( _db, new_block_ctrl->get_skip_flags(), [&]()
+  hive::chain::detail::with_skip_flags( _db, generate_block_ctrl->get_skip_flags(), [&]()
   {
     try
     {
-      _generate_block( new_block_ctrl, new_block_ctrl->get_block_timestamp(), new_block_ctrl->get_witness_owner(),
-        new_block_ctrl->get_block_signing_private_key() );
+      _generate_block( generate_block_ctrl, generate_block_ctrl->get_block_timestamp(), generate_block_ctrl->get_witness_owner(),
+        generate_block_ctrl->get_block_signing_private_key() );
     }
-    FC_CAPTURE_AND_RETHROW( ( new_block_ctrl->get_witness_owner() ) )
+    FC_CAPTURE_AND_RETHROW( ( generate_block_ctrl->get_witness_owner() ) )
   } );
 }
 
-void block_producer::_generate_block( chain::new_block_flow_control* new_block_ctrl,
+void block_producer::_generate_block( chain::generate_block_flow_control* generate_block_ctrl,
   fc::time_point_sec when, const chain::account_name_type& witness_owner, 
   const fc::ecc::private_key& block_signing_private_key)
 {
@@ -68,11 +68,11 @@ void block_producer::_generate_block( chain::new_block_flow_control* new_block_c
   // TODO:  Move this to _push_block() so session is restored.
   if( !(skip & chain::database::skip_block_size_check) )
     FC_ASSERT(full_pending_block->get_uncompressed_block_size() <= HIVE_MAX_BLOCK_SIZE );
-  new_block_ctrl->store_produced_block( full_pending_block );
+  generate_block_ctrl->store_produced_block( full_pending_block );
 
   try
   {
-    _db.push_block( *new_block_ctrl, skip );
+    _db.push_block( *generate_block_ctrl, skip );
   }
   catch (const fc::exception& e)
   {
@@ -146,7 +146,7 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
 
   BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
   // the flag also covers time of processing of required and optional actions
-  _db.set_tx_status( chain::database::TX_STATUS_NEW_BLOCK );
+  _db.set_tx_status( chain::database::TX_STATUS_GEN_BLOCK );
 
   uint32_t postponed_tx_count = 0;
   uint32_t failed_tx_count = 0;

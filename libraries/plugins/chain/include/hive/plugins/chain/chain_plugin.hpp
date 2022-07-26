@@ -50,7 +50,7 @@ public:
   void accept_transaction( const full_transaction_ptr& trx, const lock_type lock = lock_type::boost );
   full_transaction_ptr determine_encoding_and_accept_transaction( const hive::protocol::signed_transaction& trx,
     std::function< void( const full_transaction_ptr&, bool hf26_auth_fail )> on_full_trx, const lock_type lock = lock_type::boost );
-  void generate_block( const std::shared_ptr< new_block_flow_control >& new_block_ctrl );
+  void generate_block( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl );
 
   /**
     * Set a class to be called for block generation.

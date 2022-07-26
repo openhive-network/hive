@@ -64,13 +64,13 @@ void block_flow_control::notify_stats() const
   //);
 }
 
-void new_block_flow_control::on_fork_db_insert() const
+void generate_block_flow_control::on_fork_db_insert() const
 {
   block_flow_control::on_fork_db_insert();
   stats.on_end_work();
 }
 
-void new_block_flow_control::on_end_of_apply_block() const
+void generate_block_flow_control::on_end_of_apply_block() const
 {
   block_flow_control::on_end_of_apply_block();
   trigger_promise();
@@ -79,7 +79,7 @@ void new_block_flow_control::on_end_of_apply_block() const
   // head block, so for witness plugin it would look like it should produce the same block again
 }
 
-void new_block_flow_control::on_failure( const fc::exception& e ) const
+void generate_block_flow_control::on_failure( const fc::exception& e ) const
 {
   block_flow_control::on_failure( e );
   trigger_promise();
