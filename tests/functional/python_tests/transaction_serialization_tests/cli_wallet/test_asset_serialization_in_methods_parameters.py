@@ -276,3 +276,12 @@ def test_claim_reward_balance_matched(node, prepared_wallet, claim_test_amount, 
     create_alice_and_bob_accounts_with_received_rewards(node, prepared_wallet)
 
     prepared_wallet.api.claim_reward_balance('alice', claim_test_amount, claim_tbd_amount, claim_vest_amount)
+
+
+@pytest.mark.testnet
+@run_for_all_cases(create_order_tests_amount=tt.Asset.Test(100))
+def test_create_order2(prepared_wallet, create_order_tests_amount):
+    create_account_and_fund_it(prepared_wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+
+    prepared_wallet.api.create_order2('alice', 0, create_order_tests_amount,
+                                      {"base":tt.Asset.Test(1), "quote":tt.Asset.Tbd(1)}, False, 10)

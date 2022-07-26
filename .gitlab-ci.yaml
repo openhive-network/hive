@@ -202,6 +202,8 @@ cli_wallet_extended_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    SERIALIZE_SET_PROPERTIES_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/serialize_set_properties"
   script:
     - cd tests/functional/python_tests/cli_wallet_extended_tests
     - pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"

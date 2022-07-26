@@ -1571,7 +1571,39 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_accou
 
     return { my->sign_transaction( tx, broadcast ) };
   }
-  FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(owner)(active)(memo)(broadcast) )
+  FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(owner)(active)(posting)(memo)(broadcast) )
+}
+
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account2(
+  const string& account_name,
+  const string& json_meta,
+  const string& posting_json_meta,
+  public_key_type owner,
+  public_key_type active,
+  public_key_type posting,
+  public_key_type memo,
+  bool broadcast )const
+{
+  try
+  {
+    FC_ASSERT( !is_locked() );
+
+    account_update2_operation op;
+    op.account                = account_name;
+    op.owner                  = authority( 1, owner, 1 );
+    op.active                 = authority( 1, active, 1);
+    op.posting                = authority( 1, posting, 1);
+    op.memo_key               = memo;
+    op.json_metadata          = json_meta;
+    op.posting_json_metadata  = posting_json_meta;
+
+    signed_transaction tx;
+    tx.operations.push_back(op);
+    tx.validate();
+
+    return { my->sign_transaction( tx, broadcast ) };
+  }
+  FC_CAPTURE_AND_RETHROW( (account_name)(json_meta)(posting_json_meta)(owner)(active)(posting)(memo)(broadcast) )
 }
 
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_account_auth_key(
@@ -1991,6 +2023,26 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_witne
   op.owner = witness_account_name;
   op.block_signing_key = block_signing_key;
   op.props = props.value;
+
+  signed_transaction tx;
+  tx.operations.push_back(op);
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::update_witness2(
+  const string& witness_name,
+  const flat_map< string, vector< char > >& props,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  my->require_online();
+
+  witness_set_properties_operation op;
+
+  op.owner = witness_name;
+  op.props = props;
 
   signed_transaction tx;
   tx.operations.push_back(op);
@@ -2656,6 +2708,31 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_order
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::create_order2(
+  const string& owner,
+  uint32_t order_id,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount_to_sell,
+  const wallet_serializer_wrapper<price>& exchange_rate,
+  bool fill_or_kill,
+  uint32_t expiration,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  limit_order_create2_operation op;
+  op.owner          = owner;
+  op.orderid        = order_id;
+  op.amount_to_sell = amount_to_sell.value;
+  op.exchange_rate  = exchange_rate.value;
+  op.fill_or_kill   = fill_or_kill;
+  op.expiration     = expiration ? (fc::time_point::now() + fc::seconds(expiration)) : fc::time_point::maximum();
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
 wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::cancel_order(
   const string& owner,
   uint32_t orderid,
@@ -2692,6 +2769,52 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::post_comment
   op.title = title;
   op.body = body;
   op.json_metadata = json;
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::change_comment_options(
+  const string&                                           author,
+  const string&                                           permlink,
+  const wallet_serializer_wrapper<hive::protocol::asset>& max_accepted_payout,
+  uint16_t                                                percent_hbd,
+  bool                                                    allow_votes,
+  bool                                                    allow_curation_rewards,
+  const hive::protocol::comment_payout_beneficiaries&     beneficiaries,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  comment_options_operation op;
+
+  op.author                 = author;
+  op.permlink               = permlink;
+  op.max_accepted_payout    = max_accepted_payout.value;
+  op.percent_hbd            = percent_hbd;
+  op.allow_votes            = allow_votes;
+  op.allow_curation_rewards = allow_curation_rewards;
+  op.extensions.insert( beneficiaries );
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.validate();
+
+  return { my->sign_transaction( tx, broadcast ) };
+}
+
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::delete_comment(
+  const string&                                           author,
+  const string&                                           permlink,
+  bool broadcast )
+{
+  FC_ASSERT( !is_locked() );
+  delete_comment_operation op;
+
+  op.author                 = author;
+  op.permlink               = permlink;
 
   signed_transaction tx;
   tx.operations.push_back( op );
@@ -2764,6 +2887,24 @@ wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::follow( cons
 
   signed_transaction trx;
   trx.operations.push_back( jop );
+  trx.validate();
+
+  return { my->sign_transaction( trx, broadcast ) };
+}
+
+wallet_serializer_wrapper<annotated_signed_transaction> wallet_api::custom(
+  const flat_set<account_name_type>& required_auths,
+  uint16_t id,
+  const vector<char>& data,
+  bool broadcast )
+{
+  custom_operation op;
+  op.required_auths = required_auths;
+  op.id             = id;
+  op.data           = data;
+
+  signed_transaction trx;
+  trx.operations.push_back( op );
   trx.validate();
 
   return { my->sign_transaction( trx, broadcast ) };

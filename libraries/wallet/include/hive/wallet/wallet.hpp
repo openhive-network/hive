@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hive/protocol/hive_operations.hpp>
+
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/wallet/misc_utilities.hpp>
 
@@ -558,6 +560,27 @@ class wallet_api
       public_key_type memo,
       bool broadcast )const;
 
+    /** This method updates the keys of an existing account.
+      *
+      * @param accountname The name of the account
+      * @param json_meta New JSON Metadata to be associated with the account
+      * @param posting_json_meta New posting JSON Metadata to be associated with the account
+      * @param owner New public owner key for the account
+      * @param active New public active key for the account
+      * @param posting New public posting key for the account
+      * @param memo New public memo key for the account
+      * @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> update_account2(
+      const string& accountname,
+      const string& json_meta,
+      const string& posting_json_meta,
+      public_key_type owner,
+      public_key_type active,
+      public_key_type posting,
+      public_key_type memo,
+      bool broadcast )const;
+
     /** This method updates the key of an authority for an exisiting account.
       *
       * Warning: You can create impossible authorities using this method. The method
@@ -760,6 +783,17 @@ class wallet_api
       const string& url,
       public_key_type block_signing_key,
       const wallet_serializer_wrapper<legacy_chain_properties>& props,
+      bool broadcast = false);
+
+    /** Update witness properties for the given account.
+      *
+      * @param witness_name The name of the witness account.
+      * @param props The chain properties the witness is voting on.
+      * @param broadcast true if you wish to broadcast the transaction.
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> update_witness2(
+      const string& witness_name,
+      const flat_map< string, vector< char > >&  props,
       bool broadcast = false);
 
     /** Set the governance voting proxy for an account.
@@ -1138,6 +1172,26 @@ class wallet_api
       bool broadcast );
 
     /**
+      *  Creates a limit order. This operation is identical to limit_order_create except it serializes the price rather than calculating it from other fields.
+      *
+      *  @param owner The name of the account creating the order
+      *  @param order_id is a unique identifier assigned by the creator of the order, it can be reused after the order has been filled
+      *  @param amount_to_sell The amount of either HBD or HIVE you wish to sell
+      *  @param fill_or_kill true if you want the order to be killed if it cannot immediately be filled
+      *  @param exchange_rate The desired exchange rate
+      *  @param expiration the time the order should expire if it has not been filled
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> create_order2(
+      const string& owner,
+      uint32_t order_id,
+      const wallet_serializer_wrapper<hive::protocol::asset>& amount_to_sell,
+      const wallet_serializer_wrapper<price>& exchange_rate,
+      bool fill_or_kill,
+      uint32_t expiration,
+      bool broadcast );
+
+    /**
       * Cancel an order created with create_order
       *
       * @param owner The name of the account owning the order to cancel_order
@@ -1169,6 +1223,40 @@ class wallet_api
       const string& title,
       const string& body,
       const string& json,
+      bool broadcast );
+
+    /**
+      *  Change the benefits that come from creating a comment.
+      *
+      *  @param author the name of the account authoring the comment
+      *  @param permlink the unique permlink for the comment
+      *  @param max_accepted_payout HBD value of the maximum payout this comment will receive
+      *  @param percent_hbd the percent of HBD to key, unkept amounts will be received in form of VESTS
+      *  @param allow_votes allows a comment to receive votes
+      *  @param allow_curation_rewards allows voters to recieve curation rewards. Rewards return to reward fund.
+      *  @param beneficiaries set of accounts that get the reward according to weights
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> change_comment_options(
+      const string&                                           author,
+      const string&                                           permlink,
+      const wallet_serializer_wrapper<hive::protocol::asset>& max_accepted_payout,
+      uint16_t                                                percent_hbd,
+      bool                                                    allow_votes,
+      bool                                                    allow_curation_rewards,
+      const hive::protocol::comment_payout_beneficiaries&     beneficiaries,
+      bool broadcast );
+
+    /**
+      *  Delete a comment.
+      *
+      *  @param author the name of the account authoring the comment
+      *  @param permlink the unique permlink for the comment
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> delete_comment(
+      const string&                                           author,
+      const string&                                           permlink,
       bool broadcast );
 
     /**
@@ -1261,6 +1349,20 @@ class wallet_api
       *  @param broadcast true if you wish to broadcast the transaction
       */
     wallet_serializer_wrapper<annotated_signed_transaction> follow( const string& follower, const string& following, set<string> what, bool broadcast );
+
+    /**
+      *  Sends a custom operation.
+      *
+      *  @param required_auths required authorities
+      *  @param id  an identifier of an operation 
+      *  @param data contains the whole operation
+      *  @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_serializer_wrapper<annotated_signed_transaction> custom(
+      const flat_set<account_name_type>& required_auths,
+      uint16_t id,
+      const vector<char>& data,
+      bool broadcast );
 
     /**
       * Checks memos against private keys on account and imported in wallet
@@ -1530,6 +1632,7 @@ FC_API( hive::wallet::wallet_api,
       (create_account_delegated)
       (create_account_with_keys_delegated)
       (update_account)
+      (update_account2)
       (update_account_auth_key)
       (update_account_auth_account)
       (update_account_auth_threshold)
@@ -1540,8 +1643,10 @@ FC_API( hive::wallet::wallet_api,
       (delegate_vesting_shares_and_transfer)
       (delegate_vesting_shares_and_transfer_nonblocking)
       (update_witness)
+      (update_witness2)
       (set_voting_proxy)
       (vote_for_witness)
+      (custom)
       (follow)
       (transfer)
       (transfer_nonblocking)
@@ -1560,8 +1665,11 @@ FC_API( hive::wallet::wallet_api,
       (get_order_book)
       (get_open_orders)
       (create_order)
+      (create_order2)
       (cancel_order)
       (post_comment)
+      (change_comment_options)
+      (delete_comment)
       (vote)
       (set_transaction_expiration)
       (request_account_recovery)
