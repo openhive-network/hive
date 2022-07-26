@@ -128,7 +128,7 @@ namespace detail {
             const auto& sig = *tx.signatures.begin();
             ilog("Previous signature: ${sig}", ("sig", sig));
 
-            hive::chain::full_transaction_ptr tx_other = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hp::pack_type::legacy, false );
+            hive::chain::full_transaction_ptr tx_other = hive::chain::full_transaction_type::create_from_transaction( tx, hp::pack_type::legacy );
             converter.sign_transaction( *tx_other );
             const auto sig_other = *tx_other->get_transaction().signatures.begin();
             ilog("Current signature: ${sig}", ("sig", sig_other));
