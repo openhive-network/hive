@@ -25,7 +25,8 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
   try
   {
-    _chain.determine_encoding_and_accept_transaction(args, []( const full_transaction_ptr&, bool){});
+    full_transaction_ptr dummy;
+    _chain.determine_encoding_and_accept_transaction( dummy, args );
     result.success = true;
   }
   catch (const fc::exception& e)

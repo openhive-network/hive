@@ -48,8 +48,8 @@ public:
   enum class lock_type { boost, fc };
   bool accept_block( const std::shared_ptr< p2p_block_flow_control >& p2p_block_ctrl, bool currently_syncing );
   void accept_transaction( const full_transaction_ptr& trx, const lock_type lock = lock_type::boost );
-  full_transaction_ptr determine_encoding_and_accept_transaction( const hive::protocol::signed_transaction& trx,
-    std::function< void( const full_transaction_ptr&, bool hf26_auth_fail )> on_full_trx, const lock_type lock = lock_type::boost );
+  void determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
+    std::function< void( bool hf26_auth_fail )> on_full_trx = []( bool ){}, const lock_type lock = lock_type::boost );
   void generate_block( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl );
 
   /**
