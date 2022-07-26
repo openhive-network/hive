@@ -5273,7 +5273,7 @@ void database::update_signing_witness(const witness_object& signing_witness, con
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
-const witness_schedule_object& database::get_witness_schedule_object_for_irreversibility()
+const witness_schedule_object& database::get_witness_schedule_object_for_irreversibility() const
 {
   if (has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE))
     try
