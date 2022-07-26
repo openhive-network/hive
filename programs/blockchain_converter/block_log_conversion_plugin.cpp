@@ -114,20 +114,23 @@ namespace detail {
         std::shared_ptr<hive::chain::full_block_type> _full_block = log_out.read_block_by_num( it_block_num );
         FC_ASSERT( _full_block, "unable to read block", ("block_num", it_block_num) );
 
-        const hp::signed_block& block = _full_block->get_block();
+        const auto& txs = _full_block->get_full_transactions();
 
-        if( block.transactions.size() )
-          if( block.transactions.begin()->signatures.size() )
+        if( txs.size() )
+        {
+          const auto& tx = txs.at(0)->get_transaction();
+          if( tx.signatures.size() )
           {
-            converter.touch(block);
+            converter.touch(_full_block->get_block_id());
 
-            const auto& trx = *block.transactions.begin();
-            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", trx.id())("block_num", block.block_num()));
+            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", tx.id())("block_num", _full_block->get_block_num()));
 
-            const auto& sig = *block.transactions.begin()->signatures.begin();
+            const auto& sig = *tx.signatures.begin();
             ilog("Previous signature: ${sig}", ("sig", sig));
 
-            const auto sig_other = converter.generate_signature(trx);
+            hive::chain::full_transaction_ptr tx_other = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hp::pack_type::legacy, false );
+            converter.sign_transaction( *tx_other );
+            const auto sig_other = *tx_other->get_transaction().signatures.begin();
             ilog("Current signature: ${sig}", ("sig", sig_other));
 
             if( sig == sig_other )
@@ -135,6 +138,7 @@ namespace detail {
             else
               break;
           }
+        }
 
         if( it_block_num == 1 )
           chain_id_match = true; // No transactions in the entire block_log, so the chain id matches

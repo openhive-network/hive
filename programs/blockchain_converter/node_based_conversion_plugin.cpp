@@ -15,6 +15,8 @@
 #include <fc/variant.hpp>
 #include <fc/variant_object.hpp>
 
+#include <hive/chain/full_transaction.hpp>
+
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
@@ -83,7 +85,7 @@ namespace detail {
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
 
-    void transmit( const hp::signed_transaction& trx, const fc::url& using_url );
+    void transmit( const hc::full_transaction_type& trx, const fc::url& using_url );
 
     // Those two functions work with input_url which is always one
     fc::optional< hp::signed_block > receive_uncached( uint32_t num );
@@ -299,19 +301,19 @@ namespace detail {
         if( block->transactions.size() == 0 )
           continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-        converter.convert_signed_block( *block, lib_id,
+        auto transactions = converter.convert_signed_block( *block, lib_id,
           gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
           true
-        );
+        )->get_full_transactions();
 
         if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
           dlog("After conversion: ${block}", ("block", *block));
 
-        for( size_t i = 0; i < block->transactions.size(); ++i )
+        for( size_t i = 0; i < transactions.size(); ++i )
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
             break;
           else
-            transmit( block->transactions.at(i), output_urls.at( i % output_urls.size() ) );
+            transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
@@ -343,12 +345,12 @@ namespace detail {
       appbase::app().generate_interrupt_request();
   }
 
-  void node_based_conversion_plugin_impl::transmit( const hp::signed_transaction& trx, const fc::url& using_url )
+  void node_based_conversion_plugin_impl::transmit( const hc::full_transaction_type& trx, const fc::url& using_url )
   {
     try
     {
       fc::variant v;
-      fc::to_variant( trx, v );
+      fc::to_variant( trx.get_transaction(), v );
 
       fc::http::connection local_output_con;
       post( local_output_con, using_url, "network_broadcast_api.broadcast_transaction", "{\"trx\":" + fc::json::to_string( v ) + "}" );
@@ -356,7 +358,7 @@ namespace detail {
     catch( const error_response_from_node& error )
     {
       handle_error_response_from_node( error );
-    } FC_CAPTURE_AND_RETHROW( (trx.id().str()) )
+    } FC_CAPTURE_AND_RETHROW( (trx.get_transaction_id().str()) )
   }
 
   const fc::variants& node_based_conversion_plugin_impl::get_block_buffer()const
