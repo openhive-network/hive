@@ -675,10 +675,15 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   auto tx = get_trx( arguments );
   boost::promise< broadcast_transaction_synchronous_return > p;
+  hive::chain::full_transaction_ptr full_transaction;
 
-  auto set_remove_callback = [&]( const hive::chain::full_transaction_ptr& ftx, bool fail )
+  auto set_remove_callback = [&]( bool fail )
   {
-    const auto& txid = ftx->get_transaction_id();
+    //(possible?) case when determine_encoding_and_accept_transaction throws before filling result
+    if( !full_transaction )
+      return;
+
+    const auto& txid = full_transaction->get_transaction_id();
     boost::lock_guard< boost::mutex > guard( _mtx );
     auto c_itr = _callbacks.find( txid );
 
@@ -687,6 +692,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
       // The callback may have been cleared in the meantine, so we need to check for existence.
       if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
       // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
+      full_transaction.reset();
     }
     else
     {
@@ -699,8 +705,6 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
     }
   };
 
-  hive::chain::full_transaction_ptr full_transaction;
-
   try
   {
     /* It may look strange to call these without the lock and then lock again in the case of an exception,
@@ -710,19 +714,17 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
      * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
      * thread for the lock.
      */
-    full_transaction = _chain.determine_encoding_and_accept_transaction( tx, set_remove_callback );
+    _chain.determine_encoding_and_accept_transaction( full_transaction, tx, set_remove_callback );
     _p2p->broadcast_transaction(full_transaction);
   }
   catch( fc::exception& e )
   {
-    if(full_transaction)
-      set_remove_callback( full_transaction, true );
+    set_remove_callback( true );
     throw;
   }
   catch( ... )
   {
-    if(full_transaction)
-      set_remove_callback( full_transaction, true );
+    set_remove_callback( true );
     throw fc::unhandled_exception(
       FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
       std::current_exception() );

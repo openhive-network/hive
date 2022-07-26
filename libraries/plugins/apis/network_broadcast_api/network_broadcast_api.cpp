@@ -29,9 +29,8 @@ namespace detail
   {
     FC_ASSERT( !check_max_block_age( args.max_block_age ) );
 
-    hive::chain::full_transaction_ptr full_transaction = _chain.determine_encoding_and_accept_transaction(args.trx,
-      []( const hive::chain::full_transaction_ptr&, bool ){});
-
+    hive::chain::full_transaction_ptr full_transaction;
+    _chain.determine_encoding_and_accept_transaction( full_transaction, args.trx );
     _p2p.broadcast_transaction(full_transaction);
 
     return broadcast_transaction_return();

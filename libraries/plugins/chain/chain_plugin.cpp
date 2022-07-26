@@ -1092,41 +1092,32 @@ private:
 };
 
 
-std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_accept_transaction(const hive::protocol::signed_transaction& trx,
-  std::function< void( const full_transaction_ptr&, bool failed )> on_full_trx, const lock_type lock /* = lock_type::boost */)
+void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
+  std::function< void( bool hf26_auth_fail )> on_full_trx, const lock_type lock /* = lock_type::boost */)
 { try {
-  full_transaction_ptr full_transaction = full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
-
-  auto_scope as(
-    [&on_full_trx, &full_transaction]() { on_full_trx(full_transaction, true); }
-    );
-
-  on_full_trx( full_transaction, false );
+  result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
+  on_full_trx( false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
-  blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+  blockchain_worker_thread_pool::get_instance().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
   try
   {
-    accept_transaction(full_transaction, lock);
-    as.cancel();
+    accept_transaction(result, lock);
   }
   catch (const hive::protocol::transaction_auth_exception&)
   {
-    on_full_trx(full_transaction, true);
-    full_transaction = full_transaction_type::create_from_signed_transaction(trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
-    on_full_trx(full_transaction, false);
-    blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+    on_full_trx( true );
+    result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
+    on_full_trx( false );
+    blockchain_worker_thread_pool::get_instance().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
-      accept_transaction(full_transaction, lock);
-      as.cancel();
+      accept_transaction(result, lock);
     }
     catch (hive::protocol::transaction_auth_exception& legacy_e)
     {
       FC_RETHROW_EXCEPTION(legacy_e, error, "Transaction failed to validate using both new (hf26) and legacy serialization");
     }
   }
-  return full_transaction;
-
 } FC_CAPTURE_AND_RETHROW() }
 
 
