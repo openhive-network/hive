@@ -443,6 +443,17 @@ namespace hive { namespace protocol {
     asset fee;
   };
 
+  struct collateralized_convert_immediate_conversion_operation : public virtual_operation
+  {
+    collateralized_convert_immediate_conversion_operation() {}
+    collateralized_convert_immediate_conversion_operation( const account_name_type& o, uint32_t rid, const asset& out )
+      : owner( o ), requestid( rid ), hbd_out( out ) {}
+
+    account_name_type owner;
+    uint32_t requestid;
+    asset hbd_out;
+  };
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
@@ -482,3 +493,4 @@ FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
 FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
+FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )

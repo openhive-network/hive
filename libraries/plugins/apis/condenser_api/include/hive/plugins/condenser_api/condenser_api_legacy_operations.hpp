@@ -1477,6 +1477,29 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      fee;
   };
 
+  struct legacy_collateralized_convert_immediate_conversion_operation
+  {
+    legacy_collateralized_convert_immediate_conversion_operation() {}
+    legacy_collateralized_convert_immediate_conversion_operation( const collateralized_convert_immediate_conversion_operation& op ) :
+      owner( op.owner ),
+      requestid( op.requestid ),
+      hbd_out( legacy_asset::from_asset( op.hbd_out ) )
+    {}
+
+    operator collateralized_convert_immediate_conversion_operation()const
+    {
+      collateralized_convert_immediate_conversion_operation op;
+      op.owner = owner;
+      op.requestid = requestid;
+      op.hbd_out = hbd_out;
+      return op;
+    }
+
+    account_name_type owner;
+    uint32_t requestid = 0;
+    legacy_asset hbd_out;
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -1565,7 +1588,8 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_failed_recurrent_transfer_operation,
         legacy_producer_missed_operation,
         legacy_limit_order_cancelled_operation, //was missing from the list (should be much earlier but see comment above)
-        legacy_proposal_fee_operation
+        legacy_proposal_fee_operation,
+        legacy_collateralized_convert_immediate_conversion_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1905,6 +1929,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const collateralized_convert_immediate_conversion_operation& op )const
+    {
+      l_op = legacy_collateralized_convert_immediate_conversion_operation( op );
+      return true;
+    }
+
 #ifdef HIVE_ENABLE_SMT
     // Should only be SMT ops
     template< typename T >
@@ -2158,6 +2188,11 @@ struct convert_from_legacy_operation_visitor
     return operation( proposal_fee_operation( op ) );
   }
 
+  operation operator()( const legacy_collateralized_convert_immediate_conversion_operation& op )const
+  {
+    return operation( collateralized_convert_immediate_conversion_operation( op ) );
+  }
+
   template< typename T >
   operation operator()( const T& t )const
   {
@@ -2368,5 +2403,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operatio
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )
