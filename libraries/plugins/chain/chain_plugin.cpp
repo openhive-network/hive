@@ -100,7 +100,7 @@ void transaction_flow_control::on_worker_done()
 typedef fc::static_variant<
   std::shared_ptr< p2p_block_flow_control >,
   transaction_flow_control*,
-  std::shared_ptr< new_block_flow_control >
+  std::shared_ptr< generate_block_flow_control >
 > write_request_ptr;
 
 struct write_context
@@ -222,7 +222,7 @@ struct chain_plugin_impl::write_request_visitor
 
   void on_block( const block_flow_control* block_ctrl )
   {
-    block_ctrl->on_worker_queue_pop( count_tx_pushed, count_tx_applied );
+    block_ctrl->on_write_queue_pop( count_tx_pushed, count_tx_applied );
     count_tx_pushed = 0;
     count_tx_applied = 0;
   }
@@ -276,7 +276,7 @@ struct chain_plugin_impl::write_request_visitor
     tx_ctrl->on_worker_done();
   }
 
-  void operator()( std::shared_ptr< new_block_flow_control > new_block_ctrl )
+  void operator()( std::shared_ptr< generate_block_flow_control > generate_block_ctrl )
   {
     try
     {
@@ -284,20 +284,20 @@ struct chain_plugin_impl::write_request_visitor
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
       STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
-      on_block( new_block_ctrl.get() );
-      cp.block_generator->generate_block( new_block_ctrl.get() );
+      on_block( generate_block_ctrl.get() );
+      cp.block_generator->generate_block( generate_block_ctrl.get() );
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
     }
     catch( const fc::exception& e )
     {
-      new_block_ctrl->on_failure( e );
+      generate_block_ctrl->on_failure( e );
     }
     catch( ... )
     {
-      new_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
+      generate_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
         "Unexpected exception while generating block."), std::current_exception() ) );
     }
-    new_block_ctrl->on_worker_done();
+    generate_block_ctrl->on_worker_done();
   }
 };
 
@@ -1130,14 +1130,14 @@ std::shared_ptr<full_transaction_type> chain_plugin::determine_encoding_and_acce
 } FC_CAPTURE_AND_RETHROW() }
 
 
-void chain_plugin::generate_block( const std::shared_ptr< new_block_flow_control >& new_block_ctrl )
+void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl )
 {
   write_context cxt;
-  cxt.req_ptr = new_block_ctrl;
+  cxt.req_ptr = generate_block_ctrl;
 
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
-  new_block_ctrl->attach_promise( generate_block_promise );
+  generate_block_ctrl->attach_promise( generate_block_promise );
 
   {
     std::unique_lock<std::mutex> lock(my->queue_mutex);
@@ -1147,7 +1147,7 @@ void chain_plugin::generate_block( const std::shared_ptr< new_block_flow_control
 
   generate_block_future.get();
 
-  new_block_ctrl->rethrow_if_exception();
+  generate_block_ctrl->rethrow_if_exception();
 }
 
 int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )

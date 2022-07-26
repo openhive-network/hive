@@ -100,7 +100,7 @@ public:
   virtual ~block_flow_control() = default;
 
   // when block related request is picked by worker thread
-  void on_worker_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs ) const
+  void on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs ) const
   {
     stats.on_start_work( _inc_txs, _ok_txs );
     current_phase = phase::START;
@@ -171,17 +171,17 @@ protected:
 };
 
 /**
- * Block flow control for new block. Necessary for block producer.
+ * Block flow control for newly generated block. Necessary for block producer.
  * Allows adding block after creation of this wrapper.
  */
-class new_block_flow_control : public block_flow_control
+class generate_block_flow_control : public block_flow_control
 {
 public:
-  new_block_flow_control( const fc::time_point_sec _block_ts, const protocol::account_name_type& _wo,
+  generate_block_flow_control( const fc::time_point_sec _block_ts, const protocol::account_name_type& _wo,
     const fc::ecc::private_key& _key, uint32_t _skip )
   : block_flow_control( nullptr ), block_ts( _block_ts ), witness_owner( _wo ),
     block_signing_private_key( _key ), skip( _skip ) {}
-  virtual ~new_block_flow_control() = default;
+  virtual ~generate_block_flow_control() = default;
 
   void attach_promise( const std::shared_ptr<boost::promise<void>>& _p ) { prom = _p; }
   void store_produced_block( const std::shared_ptr<full_block_type>& _block ) { full_block = _block; }
@@ -196,7 +196,7 @@ public:
   virtual void on_failure( const fc::exception& e ) const override final;
 
 protected:
-  virtual const char* buffer_type() const override final { return "new"; }
+  virtual const char* buffer_type() const override final { return "gen"; }
 
   void trigger_promise() const
   {

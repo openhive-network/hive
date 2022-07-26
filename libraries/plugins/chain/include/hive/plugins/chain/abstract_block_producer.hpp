@@ -10,7 +10,7 @@ class abstract_block_producer
 public:
   virtual ~abstract_block_producer() = default;
 
-  virtual void generate_block( hive::chain::new_block_flow_control* new_block_ctrl ) = 0;
+  virtual void generate_block( hive::chain::generate_block_flow_control* generate_block_ctrl ) = 0;
 };
 
 } } } // hive::plugins::chain
