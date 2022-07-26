@@ -1793,6 +1793,14 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     tx.operations.clear();
     tx.signatures.clear();
 
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto fee_op = recent_ops.back().get< proposal_fee_operation >();
+      BOOST_REQUIRE( fee_op.creator == creator );
+      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
+      BOOST_REQUIRE( fee_op.fee == fee );
+    }
+
     const auto& after_treasury_account = db->get_treasury();
     const account_object& after_alice_account = db->get_account( creator );
     const account_object& after_bob_account = db->get_account( receiver );
@@ -1823,7 +1831,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( proposal_object_apply_free_increase )
+BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
 {
   try
   {
@@ -1882,6 +1890,14 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_free_increase )
     push_transaction( tx, 0 );
     tx.operations.clear();
     tx.signatures.clear();
+
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto fee_op = recent_ops.back().get< proposal_fee_operation >();
+      BOOST_REQUIRE( fee_op.creator == creator );
+      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
+      BOOST_REQUIRE( fee_op.fee == fee );
+    }
 
     const auto& after_treasury_account = db->get_treasury();
     const account_object& after_alice_account = db->get_account( creator );
