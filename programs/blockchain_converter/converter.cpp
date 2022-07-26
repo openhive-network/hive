@@ -437,7 +437,7 @@ namespace hive { namespace converter {
 
   void blockchain_converter::sign_transaction( hc::full_transaction_type& trx, authority::classification type, bool force )const
   {
-    static const std::vector< hp::private_key_type > transaction_signing_keys = { get_second_authority_key( type ) };
+    FC_ASSERT( transaction_signing_keys.size() == 1, "There are no signing keys. You need to call apply_second_authority_keys() before signing transactions" );
 
     if( trx.get_transaction().signatures.size() || force )
       trx.sign_transaction(
@@ -537,6 +537,11 @@ namespace hive { namespace converter {
   bool blockchain_converter::block_size_increase_enabled()const
   {
     return increase_block_size;
+  }
+
+  void blockchain_converter::apply_second_authority_keys()
+  {
+    transaction_signing_keys = { get_second_authority_key( authority::owner ) };
   }
 
 } } // hive::converter

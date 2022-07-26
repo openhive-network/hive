@@ -42,6 +42,8 @@ namespace hive { namespace converter { namespace plugins {
     converter.set_second_authority_key( *_owner_key, authority::owner );
     converter.set_second_authority_key( *_active_key, authority::active );
     converter.set_second_authority_key( *_posting_key, authority::posting );
+
+    converter.apply_second_authority_keys();
   }
 
   void conversion_plugin_impl::print_wifs()const
