@@ -135,6 +135,8 @@ enum enum_vops_filter : uint64_t
   limit_order_cancelled_operation               = 0x08'00000000ull,
   producer_missed_operation                     = 0x10'00000000ull,
   proposal_fee_operation                        = 0x20'00000000ull,
+  collateralized_convert_immediate_conversion_operation
+                                                = 0x40'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.

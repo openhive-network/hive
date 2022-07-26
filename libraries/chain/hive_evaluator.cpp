@@ -2353,6 +2353,8 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
   _db.create<collateralized_convert_request_object>( owner, o.amount, converted_amount,
     _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
+
+  _db.push_virtual_operation( collateralized_convert_immediate_conversion_operation( o.owner, o.requestid, converted_amount ) );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )

@@ -422,6 +422,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.treasury );
   }
 
+  void operator()( const collateralized_convert_immediate_conversion_operation& op )
+  {
+    _impacted.insert( op.owner );
+  }
+
   //void operator()( const operation& op ){}
 };
 
@@ -663,6 +668,11 @@ struct impacted_balance_collector
   {
     emplace_back(op.creator, -op.fee);
     emplace_back(op.treasury, op.fee);
+  }
+
+  void operator()( const collateralized_convert_immediate_conversion_operation& op )
+  {
+    emplace_back(op.owner, op.hbd_out);
   }
 
   template <class T>
