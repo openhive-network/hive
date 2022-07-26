@@ -51,8 +51,8 @@ namespace hive { namespace converter {
 
     std::vector< std::thread > signers; // Transactions signers (defualt number is 1)
 
-    typedef std::pair< size_t, const hp::signed_transaction* > sig_stack_in_type;
-    typedef std::pair< size_t, hp::signature_type >            sig_stack_out_type;
+    typedef std::pair< size_t, hc::full_transaction_ptr > sig_stack_in_type;
+    typedef size_t sig_stack_out_type;
 
     boost::lockfree::stack< sig_stack_in_type >  shared_signatures_stack_in;  // pair< trx index in block, signed transaction ptr to convert >
     boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
@@ -60,8 +60,6 @@ namespace hive { namespace converter {
     bool increase_block_size;
 
     std::atomic_bool        signers_exit;
-
-    mutable std::mutex second_auth_mutex;
 
     hp::block_id_type converter_head_block_id;
     hp::block_id_type mainnet_head_block_id;
@@ -83,8 +81,7 @@ namespace hive { namespace converter {
 
     void add_second_authority( hp::authority& _auth, hp::authority::classification type );
 
-    hp::signature_type generate_signature( const hp::signed_transaction& trx, hp::authority::classification type = hp::authority::owner )const;
-    void sign_transaction( hp::signed_transaction& trx, bool force=false )const;
+    void sign_transaction( hc::full_transaction_type& trx, hp::authority::classification type = hp::authority::owner, bool force = false )const;
 
     const hp::private_key_type& get_second_authority_key( hp::authority::classification type )const;
     void set_second_authority_key( const hp::private_key_type& key, hp::authority::classification type );

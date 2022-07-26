@@ -229,9 +229,9 @@ namespace hive { namespace converter {
         while( !signers_exit.load() )
           if( shared_signatures_stack_in.pop( local_trx ) )
           {
-            while( !shared_signatures_stack_out.push(
-              std::make_pair(local_trx.first, generate_signature( *local_trx.second ))
-            ) ) continue;
+            sign_transaction( *local_trx.second );
+
+            while( !shared_signatures_stack_out.push( local_trx.first ) ) continue;
           }
       }, i ) );
   }
@@ -307,6 +307,9 @@ namespace hive { namespace converter {
 
   std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
   {
+    std::vector< hc::full_transaction_ptr > full_transactions;
+    full_transactions.reserve( _signed_block.transactions.size() );
+
     touch( _signed_block ); // Update the mainnet head block id
     // Now when we have our mainnet head block id saved for the expiration time before HF20 generation in the
     // `limit_order_create_operation` operation generation, we can override the previous block id in our block:
@@ -339,8 +342,6 @@ namespace hive { namespace converter {
       while(!tapos_scope_tx_ids.insert( trx.id() ).second);
     };
 
-    std::vector<std::shared_ptr<hc::full_transaction_type>> full_transactions;
-
     std::set<size_t> already_signed_transaction_pos;
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
@@ -356,11 +357,15 @@ namespace hive { namespace converter {
 
       post_convert_transaction(helper_tx);
 
+      full_transactions.emplace_back( hc::full_transaction_type::create_from_transaction( *transaction_itr, hp::pack_type::legacy ) );
+
       if(!helper_tx.operations.empty())
       {
         apply_trx_expiration_offset(helper_tx);
 
-        sign_transaction(helper_tx, true);
+        full_transactions.emplace_back( hc::full_transaction_type::create_from_transaction( helper_tx, hp::pack_type::legacy ) );
+
+        sign_transaction(*full_transactions.back(), hp::authority::owner, true);
 
         auto insert_pos = transaction_itr;
         ++insert_pos;
@@ -380,10 +385,10 @@ namespace hive { namespace converter {
 
       case 2:
         if (already_signed_transaction_pos.find(1)== already_signed_transaction_pos.end())
-          sign_transaction(_signed_block.transactions.at(1));
+          sign_transaction(*full_transactions.at(1));
       case 1:
         if(already_signed_transaction_pos.find(0) == already_signed_transaction_pos.end())
-          sign_transaction(_signed_block.transactions.at(0));
+          sign_transaction(*full_transactions.at(0));
         break; // Optimize signing when block contains only 2 trx
 
       default: // There are multiple trxs in block. Enable multithreading
@@ -391,36 +396,17 @@ namespace hive { namespace converter {
       size_t trx_applied_count = 0;
 
       for( size_t i = 0; i < _signed_block.transactions.size(); ++i )
-        if( _signed_block.transactions.at( i ).signatures.size()  && already_signed_transaction_pos.find(i) == already_signed_transaction_pos.end() )
-          shared_signatures_stack_in.push( std::make_pair( i, &_signed_block.transactions.at( i ) ) );
+        if( _signed_block.transactions.at( i ).signatures.size() && already_signed_transaction_pos.find(i) == already_signed_transaction_pos.end() )
+          shared_signatures_stack_in.push( std::make_pair( i, full_transactions.at(i) ) );
         else
           ++trx_applied_count; // We do not have to replace any signature(s) so skip this transaction
 
       sig_stack_out_type current_sig;
 
       while( trx_applied_count < _signed_block.transactions.size() ) // Replace the signatures
-      {
         if( shared_signatures_stack_out.pop( current_sig ) )
-        {
-          if( _signed_block.transactions.at( current_sig.first ).signatures.size() > 1 ) // Remove redundant signatures
-          {
-            auto& sigs = _signed_block.transactions.at( current_sig.first ).signatures;
-            sigs.erase( sigs.begin() + 1, sigs.end() );
-          }
-
-          _signed_block.transactions.at( current_sig.first ).signatures.at( 0 ) = current_sig.second;
-
           ++trx_applied_count;
-        }
-      }
     }
-
-    for( const auto& tx : _signed_block.transactions )
-      full_transactions.emplace_back( hc::full_transaction_type::create_from_signed_transaction(
-        tx,
-        hp::pack_type::legacy,
-        false
-       ) );
 
     _signed_block.transaction_merkle_root = hc::full_block_type::compute_merkle_root( full_transactions );
 
@@ -449,21 +435,17 @@ namespace hive { namespace converter {
     return hp::block_header::num_from_id(mainnet_head_block_id) + 1;
   }
 
-  hp::signature_type blockchain_converter::generate_signature( const hp::signed_transaction& trx, authority::classification type )const
+  void blockchain_converter::sign_transaction( hc::full_transaction_type& trx, authority::classification type, bool force )const
   {
-    return get_second_authority_key( type ).sign_compact(
-            trx.sig_digest( chain_id, hp::pack_type::legacy ),
-            has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical
-          );
-  }
+    static const std::vector< hp::private_key_type > transaction_signing_keys = { get_second_authority_key( type ) };
 
-  void blockchain_converter::sign_transaction( hp::signed_transaction& trx, bool force )const
-  {
-    if( trx.signatures.size() || force)
-    {
-      trx.signatures.clear();
-      trx.signatures.push_back( generate_signature(trx) ); // XXX: All operations are being signed using the owner key of the 2nd authority
-    }
+    if( trx.get_transaction().signatures.size() || force )
+      trx.sign_transaction(
+        transaction_signing_keys,
+        chain_id,
+        has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
+        hp::pack_type::legacy
+      );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
@@ -473,13 +455,11 @@ namespace hive { namespace converter {
 
   const hp::private_key_type& blockchain_converter::get_second_authority_key( authority::classification type )const
   {
-    std::lock_guard< std::mutex > _guard( second_auth_mutex );
     return second_authority.at( type );
   }
 
   void blockchain_converter::set_second_authority_key( const hp::private_key_type& key, authority::classification type )
   {
-    std::lock_guard< std::mutex > _guard( second_auth_mutex );
     second_authority[ type ] = key;
   }
 
