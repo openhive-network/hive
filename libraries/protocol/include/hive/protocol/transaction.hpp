@@ -20,8 +20,8 @@ using fc::ecc::canonical_signature_type;
     vector<operation>  operations;
     extensions_type    extensions;
 
-    digest_type         digest()const;
-    transaction_id_type id()const;
+    digest_type         obsolete_digest()const;
+    transaction_id_type obsolete_id()const;
     void                validate() const;
     void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
     digest_type         sig_digest( const chain_id_type& chain_id, hive::protocol::pack_type pack )const;
@@ -100,7 +100,7 @@ using fc::ecc::canonical_signature_type;
     flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, hive::protocol::pack_type pack )const;
 
     vector<signature_type> signatures;
-    digest_type merkle_digest()const;
+    digest_type obsolete_merkle_digest()const;
 
     void clear() { operations.clear(); signatures.clear(); }
   };

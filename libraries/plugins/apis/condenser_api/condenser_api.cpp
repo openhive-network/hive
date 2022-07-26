@@ -899,7 +899,7 @@ namespace detail
 
     fc::time_point api_start_time = fc::time_point::now();
     signed_transaction trx = args[0].as< legacy_signed_transaction >();
-    auto txid = trx.id();
+    auto txid = trx.obsolete_id();
     boost::promise< broadcast_transaction_synchronous_return > p;
 
     {
@@ -1149,7 +1149,7 @@ namespace detail
       size_t trx_num = 0;
       for( const auto& trx : note.full_block->get_full_transactions() )
       {
-        auto id = trx->get_transaction().id(); //NOTE: using legacy id on purpose, since callback was registered with it
+        auto id = trx->get_transaction().obsolete_id(); //NOTE: using legacy id on purpose, since callback was registered with it
         auto itr = _callbacks.find( id );
         if( itr != _callbacks.end() )
         {

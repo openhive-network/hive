@@ -195,7 +195,7 @@ void wallet_bridge_api_impl::on_post_apply_block( const chain::block_notificatio
       size_t trx_num = 0;
       for( const auto& trx : note.full_block->get_full_transactions() )
       {
-        auto id = trx->get_transaction().id(); //NOTE: using legacy id on purpose, since callback was registered with it
+        auto id = trx->get_transaction().obsolete_id(); //NOTE: using legacy id on purpose, since callback was registered with it
         auto itr = _callbacks.find( id );
         if( itr != _callbacks.end() )
         {
@@ -676,7 +676,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   auto tx = get_trx( arguments );
 
-  auto txid = tx.id();
+  auto txid = tx.obsolete_id();
   boost::promise< broadcast_transaction_synchronous_return > p;
   {
     boost::lock_guard< boost::mutex > guard( _mtx );
