@@ -3567,6 +3567,13 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     op.amount = ASSET( "1000.000 TESTS" );
     auto conversion_time = db->head_block_time();
     push_transaction( op, alice_private_key );
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto convert_op = recent_ops.back().get< collateralized_convert_immediate_conversion_operation >();
+      BOOST_REQUIRE( convert_op.owner == "alice" );
+      BOOST_REQUIRE( convert_op.requestid == 0 );
+      BOOST_REQUIRE( convert_op.hbd_out == ASSET( "119.047 TBD" ) );
+    }
 
     alice_balance -= ASSET( "1000.000 TESTS" );
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
@@ -3603,6 +3610,13 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     op.amount = ASSET( "1000.000 TESTS" );
     auto conversion_2_time = db->head_block_time();
     push_transaction( op, alice_private_key );
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto convert_op = recent_ops.back().get< collateralized_convert_immediate_conversion_operation >();
+      BOOST_REQUIRE( convert_op.owner == "alice" );
+      BOOST_REQUIRE( convert_op.requestid == 0 );
+      BOOST_REQUIRE( convert_op.hbd_out == ASSET( "119.047 TBD" ) );
+    }
 
     alice_balance -= ASSET( "1000.000 TESTS" );
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
@@ -3621,11 +3635,27 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     alice_balance += ASSET( "0.006 TESTS" ); //almost no excess collateral (1000 - 119.047 * 84/10)
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto convert_op = recent_ops.back().get< fill_collateralized_convert_request_operation >();
+      BOOST_REQUIRE( convert_op.owner == "alice" );
+      BOOST_REQUIRE( convert_op.requestid == 0 );
+      BOOST_REQUIRE( convert_op.amount_in == ASSET( "999.994 TESTS" ) );
+      BOOST_REQUIRE( convert_op.amount_out == ASSET( "119.047 TBD" ) );
+      BOOST_REQUIRE( convert_op.excess_collateral == ASSET( "0.006 TESTS" ) );
+    }
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 12.5 cents initial, 5 cents per HIVE actual" );
     op.amount = ASSET( "1000.000 TESTS" );
     auto conversion_3_time = db->head_block_time();
     push_transaction( op, alice_private_key );
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto convert_op = recent_ops.back().get< collateralized_convert_immediate_conversion_operation >();
+      BOOST_REQUIRE( convert_op.owner == "alice" );
+      BOOST_REQUIRE( convert_op.requestid == 0 );
+      BOOST_REQUIRE( convert_op.hbd_out == ASSET( "59.523 TBD" ) );
+    }
 
     alice_balance -= ASSET( "1000.000 TESTS" );
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
@@ -3647,6 +3677,12 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "59.523 TBD" ) ); //even though there was too little collateral we still don't try to take back produced HBD
     {
       auto recent_ops = get_last_operations( 2 );
+      auto convert_op = recent_ops.front().get< fill_collateralized_convert_request_operation >();
+      BOOST_REQUIRE( convert_op.owner == "alice" );
+      BOOST_REQUIRE( convert_op.requestid == 0 );
+      BOOST_REQUIRE( convert_op.amount_in == ASSET( "1000.000 TESTS" ) );
+      BOOST_REQUIRE( convert_op.amount_out == ASSET( "59.523 TBD" ) );
+      BOOST_REQUIRE( convert_op.excess_collateral == ASSET( "0.000 TESTS" ) );
       auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
       BOOST_REQUIRE( sys_warn_op.message.compare( 0, 23, "Insufficient collateral" ) == 0 );
     }
