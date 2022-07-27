@@ -1503,6 +1503,70 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset hbd_out;
   };
 
+  struct legacy_escrow_approved_operation
+  {
+    legacy_escrow_approved_operation() {}
+    legacy_escrow_approved_operation( const escrow_approved_operation& op ) :
+      from( op.from ),
+      to( op.to ),
+      agent( op.agent ),
+      escrow_id( op.escrow_id ),
+      fee( legacy_asset::from_asset( op.fee ) )
+    {}
+
+    operator escrow_approved_operation()const
+    {
+      escrow_approved_operation op;
+      op.from = from;
+      op.to = to;
+      op.agent = agent;
+      op.escrow_id = escrow_id;
+      op.fee = fee;
+      return op;
+    }
+
+    account_name_type from;
+    account_name_type to;
+    account_name_type agent;
+    uint32_t escrow_id;
+    legacy_asset fee;
+  };
+
+  struct legacy_escrow_rejected_operation
+  {
+    legacy_escrow_rejected_operation() {}
+    legacy_escrow_rejected_operation( const escrow_rejected_operation& op ) :
+      from( op.from ),
+      to( op.to ),
+      agent( op.agent ),
+      escrow_id( op.escrow_id ),
+      hbd_amount( legacy_asset::from_asset( op.hbd_amount ) ),
+      hive_amount( legacy_asset::from_asset( op.hive_amount ) ),
+      fee( legacy_asset::from_asset( op.fee ) )
+    {}
+
+    operator escrow_rejected_operation()const
+    {
+      escrow_rejected_operation op;
+      op.from = from;
+      op.to = to;
+      op.agent = agent;
+      op.escrow_id = escrow_id;
+      op.hbd_amount = hbd_amount;
+      op.hive_amount = hive_amount;
+      op.fee = fee;
+      return op;
+    }
+
+    account_name_type from;
+    account_name_type to;
+    account_name_type agent;
+    uint32_t escrow_id;
+    legacy_asset hbd_amount;
+    legacy_asset hive_amount;
+    legacy_asset fee;
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -1592,7 +1656,9 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_producer_missed_operation,
         legacy_limit_order_cancelled_operation, //was missing from the list (should be much earlier but see comment above)
         legacy_proposal_fee_operation,
-        legacy_collateralized_convert_immediate_conversion_operation
+        legacy_collateralized_convert_immediate_conversion_operation,
+        legacy_escrow_approved_operation,
+        legacy_escrow_rejected_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1938,6 +2004,18 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const escrow_approved_operation& op )const
+    {
+      l_op = legacy_escrow_approved_operation( op );
+      return true;
+    }
+
+    bool operator()( const escrow_rejected_operation& op )const
+    {
+      l_op = legacy_escrow_rejected_operation( op );
+      return true;
+    }
+
 #ifdef HIVE_ENABLE_SMT
     // Should only be SMT ops
     template< typename T >
@@ -2196,6 +2274,16 @@ struct convert_from_legacy_operation_visitor
     return operation( collateralized_convert_immediate_conversion_operation( op ) );
   }
 
+  operation operator()( const legacy_escrow_approved_operation& op )const
+  {
+    return operation( escrow_approved_operation( op ) );
+  }
+
+  operation operator()( const legacy_escrow_rejected_operation& op )const
+  {
+    return operation( escrow_rejected_operation( op ) );
+  }
+
   template< typename T >
   operation operator()( const T& t )const
   {
@@ -2407,5 +2495,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (
 FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_approved_operation, (from)(to)(agent)(escrow_id)(fee) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_rejected_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

@@ -1005,6 +1005,9 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
       _db.adjust_balance( o.from, escrow.get_hbd_balance() );
       _db.adjust_balance( o.from, escrow.get_fee() );
 
+      _db.push_virtual_operation( escrow_rejected_operation( o.from, o.to, o.agent, o.escrow_id,
+        escrow.get_hbd_balance(), escrow.get_hive_balance(), escrow.get_fee() ) );
+
       _db.modify( _db.get_account( escrow.from ), []( account_object& a )
       {
         a.pending_transfers--;
@@ -1014,6 +1017,9 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
     else if( escrow.to_approved && escrow.agent_approved )
     {
       _db.adjust_balance( o.agent, escrow.get_fee() );
+
+      _db.push_virtual_operation( escrow_approved_operation( o.from, o.to, o.agent,
+        o.escrow_id, escrow.get_fee() ) );
 
       _db.modify( escrow, [&]( escrow_object& esc )
       {

@@ -460,6 +460,37 @@ namespace hive { namespace protocol {
     asset hbd_out;
   };
 
+  struct escrow_approved_operation : public virtual_operation
+  {
+    escrow_approved_operation() {}
+    escrow_approved_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid, const asset& f )
+      : from( in ), to( out ), agent( a ), escrow_id( eid ), fee( f )
+    {}
+
+    account_name_type from;
+    account_name_type to;
+    account_name_type agent;
+    uint32_t escrow_id;
+    asset fee;
+  };
+
+  struct escrow_rejected_operation : public virtual_operation
+  {
+    escrow_rejected_operation() {}
+    escrow_rejected_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid,
+      const asset& d, const asset& h, const asset& f )
+    : from( in ), to( out ), agent( a ), escrow_id( eid ), hbd_amount( d ), hive_amount( h ), fee( f )
+    {}
+
+    account_name_type from;
+    account_name_type to;
+    account_name_type agent;
+    uint32_t escrow_id;
+    asset hbd_amount;
+    asset hive_amount;
+    asset fee;
+  };
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
@@ -500,3 +531,5 @@ FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amou
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
 FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
 FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
+FC_REFLECT( hive::protocol::escrow_approved_operation, (from)(to)(agent)(escrow_id)(fee) )
+FC_REFLECT( hive::protocol::escrow_rejected_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee) )

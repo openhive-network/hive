@@ -3613,6 +3613,9 @@ void database::expire_escrow_ratification()
     adjust_balance( old_escrow.from, old_escrow.get_hbd_balance() );
     adjust_balance( old_escrow.from, old_escrow.get_fee() );
 
+    push_virtual_operation( escrow_rejected_operation( old_escrow.from, old_escrow.to, old_escrow.agent, old_escrow.escrow_id,
+      old_escrow.get_hbd_balance(), old_escrow.get_hive_balance(), old_escrow.get_fee() ) );
+
     modify( get_account( old_escrow.from ), []( account_object& a )
     {
       a.pending_transfers--;
