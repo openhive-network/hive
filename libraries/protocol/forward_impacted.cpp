@@ -645,6 +645,16 @@ struct impacted_balance_collector
     }
   }
 
+  void operator()(const comment_benefactor_reward_operation& o)
+  {
+    if( !o.payout_must_be_claimed )
+    {
+      emplace_back(o.benefactor, o.hbd_payout);
+      emplace_back(o.benefactor, o.hive_payout);
+      emplace_back(o.benefactor, o.vesting_payout);
+    }
+  }
+
   void operator()(const curation_reward_operation& o)
   {
     if( !o.payout_must_be_claimed )

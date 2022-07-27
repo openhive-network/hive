@@ -275,8 +275,11 @@ namespace hive { namespace protocol {
   struct comment_benefactor_reward_operation : public virtual_operation
   {
     comment_benefactor_reward_operation() {}
-    comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v )
-      : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v ) {}
+    comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a,
+      const string& p, const asset& s, const asset& st, const asset& v, bool must_be_claimed )
+    : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ),
+      vesting_payout( v ), payout_must_be_claimed( must_be_claimed )
+    {}
 
     account_name_type benefactor;
     account_name_type author;
@@ -284,6 +287,9 @@ namespace hive { namespace protocol {
     asset             hbd_payout;
     asset             hive_payout;
     asset             vesting_payout;
+    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
+    /// to be transferred to regular balance.
+    bool              payout_must_be_claimed = false;
   };
 
   struct producer_reward_operation : public virtual_operation
@@ -477,7 +483,7 @@ FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) 
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
+FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
