@@ -1,12 +1,14 @@
 import time
+from ......local_tools import date_from_now
+
 
 
 def test_find_existing_transaction(node, wallet):
     wallet.api.set_transaction_expiration(90)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
     transaction_id = transaction['transaction_id']
+    assert node.api.transaction_status.find_transaction(transaction_id=transaction_id)['status'] == 'unknown'
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
-
     assert node.api.transaction_status.find_transaction(transaction_id=transaction_id)['status'] == 'within_mempool'
 
     node.wait_number_of_blocks(1)
@@ -25,6 +27,22 @@ def test_find_existing_transaction(node, wallet):
     assert node.api.database.is_known_transaction(id=transaction_id)['is_known'] is False
 
 
+def test_find_too_old_transaction(node, wallet):
+    response = node.api.transaction_status.find_transaction(transaction_id='0000000000000000000000000000000000000000',
+                                                            expiration=date_from_now(weeks=-24))
+    assert response['status'] == 'too_old'
+
+
 def test_find_unknown_transaction(node, wallet):
-    response = node.api.transaction_status.find_transaction(transaction_id="0000000000000000000000000000000000000000")
+    response = node.api.transaction_status.find_transaction(transaction_id='0000000000000000000000000000000000000000')
     assert response['status'] == 'unknown'
+
+
+def test_try(node, wallet):
+    wallet.api.set_transaction_expiration(3)
+    transaction = wallet.api.create_account('initminer', 'alice', '{}')
+    transaction_id = transaction['transaction_id']
+    q = node.api.transaction_status.find_transaction(transaction_id=transaction_id)
+    time.sleep(15)
+    q2 = node.api.transaction_status.find_transaction(transaction_id=transaction_id)
+    print()
