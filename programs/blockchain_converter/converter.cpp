@@ -365,7 +365,7 @@ namespace hive { namespace converter {
 
         full_transactions.emplace_back( hc::full_transaction_type::create_from_transaction( helper_tx, hp::pack_type::legacy ) );
 
-        sign_transaction(*full_transactions.back(), hp::authority::owner, true);
+        sign_transaction(*full_transactions.back());
 
         auto insert_pos = transaction_itr;
         ++insert_pos;
@@ -384,10 +384,10 @@ namespace hive { namespace converter {
       case 0: break; // Skip signatures generation when block does not contain any trxs
 
       case 2:
-        if (already_signed_transaction_pos.find(1)== already_signed_transaction_pos.end())
+        if (_signed_block.transactions.at( 1 ).signatures.size() && already_signed_transaction_pos.find(1)== already_signed_transaction_pos.end())
           sign_transaction(*full_transactions.at(1));
       case 1:
-        if(already_signed_transaction_pos.find(0) == already_signed_transaction_pos.end())
+        if(_signed_block.transactions.at( 0 ).signatures.size() && already_signed_transaction_pos.find(0) == already_signed_transaction_pos.end())
           sign_transaction(*full_transactions.at(0));
         break; // Optimize signing when block contains only 2 trx
 
@@ -435,17 +435,16 @@ namespace hive { namespace converter {
     return hp::block_header::num_from_id(mainnet_head_block_id) + 1;
   }
 
-  void blockchain_converter::sign_transaction( hc::full_transaction_type& trx, authority::classification type, bool force )const
+  void blockchain_converter::sign_transaction( hc::full_transaction_type& trx, authority::classification type )const
   {
     FC_ASSERT( transaction_signing_keys.size() == 1, "There are no signing keys. You need to call apply_second_authority_keys() before signing transactions" );
 
-    if( trx.get_transaction().signatures.size() || force )
-      trx.sign_transaction(
-        transaction_signing_keys,
-        chain_id,
-        has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
-        hp::pack_type::legacy
-      );
+    trx.sign_transaction(
+      transaction_signing_keys,
+      chain_id,
+      has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
+      hp::pack_type::legacy
+    );
   }
 
   void blockchain_converter::add_second_authority( authority& _auth, authority::classification type )
