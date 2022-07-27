@@ -451,14 +451,14 @@ struct impacted_balance_collector
 
     void emplace_back(const protocol::account_name_type& account, const asset& a)
     {
+      if( a.amount == 0 )
+        return;
       /*
         There was in the block 905693 a HF1 that generated bunch of virtual operations `vesting_shares_split_operation`( above 5000 ).
         This operation multiplied VESTS by milion for every account.
       */
       if( !is_hardfork_1 && is_asset_type( a, VESTS_SYMBOL ) )
-      {
         result.emplace_back(account, asset(a.amount * VESTS_SCALING_FACTOR, a.symbol));
-      }
       else
         result.emplace_back(account, a);
     }
@@ -502,16 +502,10 @@ struct impacted_balance_collector
 
   void operator()(const hardfork_hive_restore_operation& o)
   {
-    if(o.hbd_transferred.amount != 0)
-    {
-      emplace_back(o.account, o.hbd_transferred);
-      emplace_back(o.treasury, -o.hbd_transferred);
-    }
-    if(o.hive_transferred.amount != 0)
-    {
-      emplace_back(o.account, o.hive_transferred);
-      emplace_back(o.treasury, -o.hive_transferred);
-    }
+    emplace_back(o.account, o.hbd_transferred);
+    emplace_back(o.treasury, -o.hbd_transferred);
+    emplace_back(o.account, o.hive_transferred);
+    emplace_back(o.treasury, -o.hive_transferred);
   }
 
   void operator()(const fill_recurrent_transfer_operation& o)
@@ -549,20 +543,15 @@ struct impacted_balance_collector
     else
       hbd_spent += o.fee;
 
-    if(hive_spent.amount != 0)
-      emplace_back(o.from, -hive_spent);
-  
-    if(hbd_spent.amount != 0)
-      emplace_back(o.from, -hbd_spent);
+    emplace_back(o.from, -hive_spent);
+    emplace_back(o.from, -hbd_spent);
   }
 
   void operator()(const escrow_release_operation& o)
   {
-    if(o.hive_amount.amount != 0)
-      emplace_back(o.receiver, o.hive_amount);
+    emplace_back(o.receiver, o.hive_amount);
+    emplace_back(o.receiver, o.hbd_amount);
 
-    if(o.hbd_amount.amount != 0)
-      emplace_back(o.receiver, o.hbd_amount);
   }
 
   void operator()(const transfer_operation& o)
@@ -615,12 +604,9 @@ struct impacted_balance_collector
   
   void operator()(const claim_reward_balance_operation& o)
   {
-    if(o.reward_hive.amount != 0)
-      emplace_back(o.account, o.reward_hive);
-    if(o.reward_hbd.amount != 0)
-      emplace_back(o.account, o.reward_hbd);
-    if(o.reward_vests.amount != 0)
-      emplace_back(o.account, o.reward_vests);
+    emplace_back(o.account, o.reward_hive);
+    emplace_back(o.account, o.reward_hbd);
+    emplace_back(o.account, o.reward_vests);
   }
 
   void operator()(const proposal_pay_operation& o)
