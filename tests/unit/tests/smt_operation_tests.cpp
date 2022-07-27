@@ -65,9 +65,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
-    sign( tx, alice_private_key );
-    sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     tx.signatures.clear();
@@ -114,9 +112,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
-    sign( tx, alice_private_key );
-    sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     tx.signatures.clear();
@@ -505,9 +501,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
-    sign( tx, alice_private_key );
-    sign( tx, bob_private_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     tx.signatures.clear();

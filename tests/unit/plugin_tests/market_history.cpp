@@ -92,8 +92,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     op.amount_to_sell = ASSET( "1.500 TESTS" );
     op.min_to_receive = ASSET( "0.750 TBD" );
     tx.operations.push_back( op );
-    sign(tx, bob_private_key);
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
 
     generate_blocks( db->head_block_time() + ( 60 * 90 ) );
 

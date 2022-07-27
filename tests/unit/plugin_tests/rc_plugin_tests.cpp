@@ -160,9 +160,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       tx.operations.push_back( transfer );
-      sign( tx, init_account_priv_key );
-      sign( tx, bob_private_key ); //still needed as "other"
-      push_transaction( tx, 0 );
+      push_transaction( tx, {init_account_priv_key, bob_private_key/*still needed as "other"*/}, 0 );
     }
     generate_block();
 
@@ -579,9 +577,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     recover.new_owner_authority = authority( 1, victim_new_private_key.get_public_key(), 1 );
     recover.recent_owner_authority = authority( 1, victim_private_key.get_public_key(), 1 );
     tx.operations.push_back( recover );
-    sign( tx, victim_private_key );
-    sign( tx, victim_new_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {victim_private_key, victim_new_private_key}, 0 );
     tx.clear();
     //RC cost covered by the network - no RC spent on any account (it would fail if victim was charged like it used to be)
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
@@ -620,10 +616,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     recover.recent_owner_authority = authority( 3, "agent", 1, victim_new_private_key.get_public_key(), 3 );
     tx.operations.push_back( expensive );
     tx.operations.push_back( recover );
-    sign( tx, victim_new_private_key );
-    sign( tx, victim_testA_private_key ); //that key is needed for claim account
-    sign( tx, victim_testB_private_key );
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_testA_private_key/*that key is needed for claim account*/, victim_testB_private_key}, 0 ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
@@ -631,10 +624,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( recover );
     tx.operations.push_back( expensive );
-    sign( tx, victim_new_private_key );
-    sign( tx, victim_testA_private_key );
-    sign( tx, victim_testB_private_key );
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim_new_private_key, victim_testA_private_key, victim_testB_private_key}, 0 ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( pre_tx_victim_mana, victim_rc.rc_manabar.current_mana );
@@ -647,10 +637,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     cheap.memo = "Thanks for help!";
     tx.operations.push_back( recover );
     tx.operations.push_back( cheap );
-    sign( tx, victim_new_private_key );
-    sign( tx, victim_testA_private_key );
-    sign( tx, victim_testB_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {victim_new_private_key, victim_testA_private_key, victim_testB_private_key}, 0 );
     tx.clear();
     //RC consumed from victim - recovery is not free if mixed with other operations
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
@@ -764,14 +751,8 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     transfer.amount = ASSET( "0.001 TESTS" );
     transfer.memo = "All those accounts are actually mine";
     tx.operations.push_back( transfer );
-    sign( tx, victim1_private_key );
-    sign( tx, victim1_new_private_key );
-    sign( tx, victim2_private_key );
-    sign( tx, victim2_new_private_key );
-    sign( tx, victim3_private_key );
-    sign( tx, victim3_new_private_key );
     //oops! recovery failed when combined with transfer because it's not free then
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim1_private_key, victim1_new_private_key, victim2_private_key, victim2_new_private_key, victim3_private_key, victim3_new_private_key}, 0 ), "has_mana", plugin_exception );
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim2_rc.rc_manabar.current_mana );
@@ -782,17 +763,11 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     //remove transfer from tx
     tx.operations.pop_back();
     tx.signatures.clear();
-    sign( tx, victim1_private_key );
-    sign( tx, victim1_new_private_key );
-    sign( tx, victim2_private_key );
-    sign( tx, victim2_new_private_key );
-    sign( tx, victim3_private_key );
-    sign( tx, victim3_new_private_key );
     //now that transfer was removed it used to work ok despite total lack of RC mana, however
     //rc_multisig_recover_account test showed the dangers of such approach, therefore it was blocked
     //now there can be only one subsidized operation in tx and with no more than allowed limit of
     //signatures (2 in this case) for the tx to be free
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, 0 ), "has_mana", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx, {victim1_private_key, victim1_new_private_key, victim2_private_key, victim2_new_private_key, victim3_private_key, victim3_new_private_key}, 0 ), "has_mana", plugin_exception );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
@@ -807,27 +782,21 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     recover.new_owner_authority = authority( 1, victim1_new_private_key.get_public_key(), 1 );
     recover.recent_owner_authority = authority( 1, victim1_private_key.get_public_key(), 1 );
     tx.operations.push_back( recover );
-    sign( tx, victim1_private_key );
-    sign( tx, victim1_new_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {victim1_private_key, victim1_new_private_key}, 0 );
     tx.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover.account_to_recover = "victim2";
     recover.new_owner_authority = authority( 1, victim2_new_private_key.get_public_key(), 1 );
     recover.recent_owner_authority = authority( 1, victim2_private_key.get_public_key(), 1 );
     tx.operations.push_back( recover );
-    sign( tx, victim2_private_key );
-    sign( tx, victim2_new_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {victim2_private_key, victim2_new_private_key}, 0 );
     tx.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover.account_to_recover = "victim3";
     recover.new_owner_authority = authority( 1, victim3_new_private_key.get_public_key(), 1 );
     recover.recent_owner_authority = authority( 1, victim3_private_key.get_public_key(), 1 );
     tx.operations.push_back( recover );
-    sign( tx, victim3_private_key );
-    sign( tx, victim3_new_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {victim3_private_key, victim3_new_private_key}, 0 );
     tx.clear();
     BOOST_REQUIRE_EQUAL( pre_tx_agent_mana, agent_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( 0, victim1_rc.rc_manabar.current_mana );
@@ -1079,15 +1048,13 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     transfer.amount = ASSET( "10.000 TESTS" );
     transfer.memo = "First transfer";
     tx1.operations.push_back( transfer );
-    sign( tx1, alice_private_key );
-    push_transaction( tx1, 0 ); //t1
+    push_transaction( tx1, alice_private_key, 0 ); //t1
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     transfer.amount = ASSET( "5.000 TESTS" );
     transfer.memo = "Second transfer";
     tx2.operations.push_back( transfer );
-    sign( tx2, alice_private_key );
-    HIVE_REQUIRE_EXCEPTION( push_transaction( tx2, 0 ), "has_mana", plugin_exception ); //t2
+    HIVE_REQUIRE_EXCEPTION( push_transaction( tx2, alice_private_key, 0 ), "has_mana", plugin_exception ); //t2
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     generate_block(); //t1 becomes part of block

@@ -759,19 +759,15 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   HIVE_REQUIRE_THROW( push_transaction(trx, 0), fc::exception );
 
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
-  sign( trx, bob_private_key );
-  sign( trx, bob_private_key );
-  HIVE_REQUIRE_THROW( push_transaction(trx, 0), tx_duplicate_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, bob_private_key}, 0), tx_duplicate_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing with an extra, unused key fails" );
   trx.signatures.pop_back();
-  sign( trx, generate_private_key( "bogus" ) );
-  HIVE_REQUIRE_THROW( push_transaction(trx, 0), tx_irrelevant_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, generate_private_key( "bogus" ), 0), tx_irrelevant_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing once with the proper key passes" );
   trx.signatures.pop_back();
   push_transaction(trx, 0);
-  sign( trx, bob_private_key );
 
 } FC_LOG_AND_RETHROW() }
 

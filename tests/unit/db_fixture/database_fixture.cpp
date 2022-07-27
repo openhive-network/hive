@@ -664,6 +664,13 @@ void database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::
   push_transaction( tx, skip_flags );
 }
 
+void database_fixture::push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags )
+{
+  for( const auto& key : keys )
+    sign( tx, key );
+  push_transaction( tx, skip_flags );
+}
+
 bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
 {
   return test::_push_block(*db, b, skip_flags);
