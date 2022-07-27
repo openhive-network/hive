@@ -83,8 +83,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -108,8 +107,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     op.min_to_receive = ASSET( "0.500 TBD" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, sam_private_key );
-    push_transaction( tx,  0 );
+    push_transaction( tx, sam_private_key, 0 );
 
     generate_blocks( db->head_block_time() + 60 );
 
@@ -123,8 +121,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     op.min_to_receive = ASSET( "0.900 TESTS" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     tx.operations.clear();
     tx.signatures.clear();
@@ -134,8 +131,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
     op.min_to_receive = ASSET( "0.250 TBD" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, bob_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
     validate_database();
 
     auto bucket = bucket_idx.begin();

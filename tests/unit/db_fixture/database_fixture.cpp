@@ -644,8 +644,7 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   signed_transaction tx;
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
-  sign( tx, key );
-  push_transaction(tx, 0);
+  push_transaction(tx, key, 0);
 }
 
 void database_fixture::push_transaction( const signed_transaction& tx, uint32_t skip_flags /* = 0 */, 
@@ -657,6 +656,12 @@ void database_fixture::push_transaction( const signed_transaction& tx, uint32_t 
 void database_fixture::push_transaction( const full_transaction_ptr& tx, uint32_t skip_flags /* = 0 */ )
 {
   db->push_transaction( tx, skip_flags );
+}
+
+void database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags )
+{
+  sign( tx, key );
+  push_transaction( tx, skip_flags );
 }
 
 bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
@@ -1179,8 +1184,7 @@ int64_t dhf_database_fixture::create_proposal( std::string creator, std::string 
 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( tx, key );
-  push_transaction( tx, 0 );
+  push_transaction( tx, key, 0 );
   tx.signatures.clear();
   tx.operations.clear();
 
@@ -1215,8 +1219,7 @@ void dhf_database_fixture::update_proposal(uint64_t proposal_id, std::string cre
 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( tx, key );
-  push_transaction( tx, 0 );
+  push_transaction( tx, key, 0 );
   tx.signatures.clear();
   tx.operations.clear();
 }
@@ -1232,8 +1235,7 @@ void dhf_database_fixture::vote_proposal( std::string voter, const std::vector< 
   signed_transaction tx;
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
-  sign( tx, key );
-  push_transaction( tx, 0 );
+  push_transaction( tx, key, 0 );
 }
 
 bool dhf_database_fixture::exist_proposal( int64_t id )
@@ -1309,8 +1311,7 @@ void dhf_database_fixture::witness_vote( account_name_type _voter, account_name_
 
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
-  sign( tx, _key );
-  push_transaction( tx, 0 );
+  push_transaction( tx, _key, 0 );
 }
 
 void dhf_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
@@ -1322,8 +1323,7 @@ void dhf_database_fixture::proxy( account_name_type _account, account_name_type 
 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( tx, _key );
-  push_transaction( tx, 0 );
+  push_transaction( tx, _key, 0 );
 }
 
 void hf23_database_fixture::delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key )

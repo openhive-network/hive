@@ -527,8 +527,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     //SMT doesn't exist
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
     tx.operations.clear();
     tx.signatures.clear();
 
@@ -541,8 +540,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     op.symbol = alice_symbol;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
     tx.operations.clear();
     tx.signatures.clear();
   }
