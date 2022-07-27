@@ -1432,8 +1432,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     {
       txs[i].set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       txs[i].operations.push_back( ops[i] );
-      sign( txs[i], keys[i] );
-      push_transaction( txs[i], 0 );
+      push_transaction( txs[i], keys[i], 0 );
     }
 
     BOOST_TEST_MESSAGE( "Jump forward an hour" );
@@ -1460,8 +1459,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
         ops[j].exchange_rate = price( ops[j].exchange_rate.base, asset( ops[j].exchange_rate.quote.amount + 10, HIVE_SYMBOL ) );
         txs[j].set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
         txs[j].operations.push_back( ops[j] );
-        sign( txs[j], keys[j] );
-        push_transaction( txs[j], 0 );
+        push_transaction( txs[j], keys[j], 0 );
       }
 
       BOOST_TEST_MESSAGE( "Generate Blocks" );
