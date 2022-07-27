@@ -1145,7 +1145,8 @@ namespace hive { namespace plugins { namespace condenser_api {
       permlink( op.permlink ),
       hbd_payout( legacy_asset::from_asset( op.hbd_payout ) ),
       hive_payout( legacy_asset::from_asset( op.hive_payout ) ),
-      vesting_payout( legacy_asset::from_asset( op.vesting_payout ) )
+      vesting_payout( legacy_asset::from_asset( op.vesting_payout ) ),
+      payout_must_be_claimed( op.payout_must_be_claimed )
     {}
 
     operator comment_benefactor_reward_operation()const
@@ -1157,6 +1158,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.hbd_payout = hbd_payout;
       op.hive_payout = hive_payout;
       op.vesting_payout = vesting_payout;
+      op.payout_must_be_claimed = payout_must_be_claimed;
       return op;
     }
 
@@ -1166,6 +1168,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      hbd_payout;
     legacy_asset      hive_payout;
     legacy_asset      vesting_payout;
+    bool              payout_must_be_claimed = false;
   };
 
   struct legacy_producer_reward_operation
@@ -2388,7 +2391,7 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_fill_order_operation, (current_
 FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_cancelled_operation, (seller)(orderid)(amount_back) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
