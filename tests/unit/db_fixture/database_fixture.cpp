@@ -1676,17 +1676,18 @@ void json_rpc_database_fixture::make_positive_request( std::string& request )
 
 namespace test {
 
-std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
-  const fc::ecc::private_key& _key, uint32_t _skip )
+std::shared_ptr<full_block_type> _generate_block(hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts,
+                                                 const hive::protocol::account_name_type& _wo, const fc::ecc::private_key& _key, uint32_t _skip)
 {
   generate_block_flow_control generate_block_ctrl( _block_ts, _wo, _key, _skip );
   bp.generate_block( &generate_block_ctrl );
   return generate_block_ctrl.get_full_block();
 }
 
-bool _push_block( database& db, const block_header& header,
-  const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
-  const fc::ecc::private_key& signer, uint32_t skip_flags /* = 0 */ )
+bool _push_block(database& db, const block_header& header, 
+                 const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, 
+                 const fc::ecc::private_key& signer,
+                 uint32_t skip_flags /* = 0 */)
 {
   std::shared_ptr<full_block_type> full_block( hive::chain::full_block_type::create_from_block_header_and_transactions( header, full_transactions, &signer ) );
   existing_block_flow_control block_ctrl( full_block );
