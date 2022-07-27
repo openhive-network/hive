@@ -427,6 +427,20 @@ struct get_impacted_account_visitor
     _impacted.insert( op.owner );
   }
 
+  void operator()( const escrow_approved_operation& op )
+  {
+    _impacted.insert( op.from );
+    _impacted.insert( op.to );
+    _impacted.insert( op.agent );
+  }
+
+  void operator()( const escrow_rejected_operation& op )
+  {
+    _impacted.insert( op.from );
+    _impacted.insert( op.to );
+    _impacted.insert( op.agent );
+  }
+
   //void operator()( const operation& op ){}
 };
 
@@ -581,7 +595,7 @@ struct impacted_balance_collector
 
   void operator()(const escrow_approve_operation& o)
   {
-    // TODO: new vop needed since we don't know if approved or not and assets transferred
+    // Nothing to do in favor of escrow_approved_operation/escrow_rejected_operation
   }
 
   void operator()(const transfer_operation& o)
@@ -725,6 +739,18 @@ struct impacted_balance_collector
   void operator()( const collateralized_convert_immediate_conversion_operation& op )
   {
     emplace_back(op.owner, op.hbd_out);
+  }
+
+  void operator()( const escrow_approved_operation& op )
+  {
+    emplace_back( op.agent, op.fee );
+  }
+
+  void operator()( const escrow_rejected_operation& op )
+  {
+    emplace_back( op.from, op.hbd_amount );
+    emplace_back( op.from, op.hive_amount );
+    emplace_back( op.from, op.fee );
   }
 
   template <class T>

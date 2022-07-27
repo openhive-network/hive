@@ -125,7 +125,9 @@ namespace hive { namespace protocol {
         limit_order_cancelled_operation,  // last_regular + 36
         producer_missed_operation, // last_regular + 37
         proposal_fee_operation, //last_regular + 38
-        collateralized_convert_immediate_conversion_operation //last_regular + 39
+        collateralized_convert_immediate_conversion_operation, //last_regular + 39
+        escrow_approved_operation, //last_regular + 40
+        escrow_rejected_operation //last_regular + 41
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,
