@@ -90,8 +90,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     BOOST_TEST_MESSAGE( "Waiting 10 minutes" );
 
@@ -109,8 +108,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
 
     alice_hive_volume += ( asset( alice_smt.amount / 20, any_smt_symbol ) * exchange_rate ).amount.value;
     alice_reward_last_update = db->head_block_time();
@@ -157,8 +155,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.signatures.clear();
     tx.operations.clear();
     tx.operations.push_back( op );
-    sign( tx, sam_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key, 0 );
 
     BOOST_TEST_MESSAGE( "Waiting 10 minutes" );
 
@@ -175,8 +172,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
 
     BOOST_TEST_MESSAGE( "Waiting 30 minutes" );
 
@@ -193,8 +189,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     alice_smt_volume -= ( alice_smt.amount.value / 10 ) * 3;
     alice_reward_last_update = db->head_block_time();
@@ -251,8 +246,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10.to_seconds() / 2 ), true );
 
@@ -265,8 +259,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10.to_seconds() / 2 ), true );
 
@@ -310,8 +303,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, sam_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key, 0 );
 
     alice_hive_volume += alice_smt.amount.value / 20;
     alice_reward_last_update = db->head_block_time();
@@ -360,8 +352,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.signatures.clear();
     tx.operations.push_back( transfer );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     op.owner = "alice";
     op.amount_to_sell = asset( 8 * ( alice_smt.amount.value / 20 ), HIVE_SYMBOL );
@@ -370,8 +361,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10, true );
 
@@ -383,8 +373,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.signatures.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, dave_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key, 0 );
 
     alice_smt_volume += op.amount_to_sell.amount.value;
     alice_reward_last_update = db->head_block_time();
@@ -436,8 +425,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
 
     alice_smt_volume += op.amount_to_sell.amount.value;
     alice_reward_last_update = db->head_block_time();
@@ -489,8 +477,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.signatures.clear();
     tx.operations.push_back( transfer );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     op.owner = "bob";
     op.orderid = 12;
@@ -499,8 +486,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key, 0 );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10, true );
 
@@ -511,8 +497,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.operations.clear();
     tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, dave_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key, 0 );
 
     bob_hive_volume += op.amount_to_sell.amount.value;
     bob_reward_last_update = db->head_block_time();
@@ -618,8 +603,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.signatures.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, sam_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key, 0 );
 
     generate_blocks( db->head_block_time() + ( HIVE_BLOCK_INTERVAL / 2 ) + HIVE_LIQUIDITY_TIMEOUT_SEC, true );
 
@@ -640,8 +624,7 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     tx.signatures.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key, 0 );
 
     sam_smt_volume = ASSET( "1.000 TBD" ).amount.value;
     sam_hive_volume = 0;

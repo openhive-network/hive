@@ -337,6 +337,7 @@ struct database_fixture {
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
   void push_transaction( const signed_transaction& tx, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
   void push_transaction( const full_transaction_ptr& tx, uint32_t skip_flags = 0 );
+  void push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags );
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 

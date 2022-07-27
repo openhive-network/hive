@@ -1136,16 +1136,14 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
       tx.operations.push_back( op );
     }
 
-    sign( tx, init_account_priv_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, init_account_priv_key, 0 );
 
     // Second transaction, tx minus op is 78 (one less byte for operation vector size)
     // We need a 88 byte op. We need a 22 character memo (1 byte for length) 55 = 32 (old op) + 55 + 1
     op.memo = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123";
     tx.clear();
     tx.operations.push_back( op );
-    sign( tx, init_account_priv_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, init_account_priv_key, 0 );
 
     generate_block();
 
