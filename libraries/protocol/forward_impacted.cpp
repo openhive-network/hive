@@ -482,6 +482,24 @@ struct impacted_balance_collector
     emplace_back(o.producer, o.vesting_shares);
   }
 
+  void operator()(const clear_null_account_balance_operation& o)
+  {
+    // balance tracker and similar apps need to clear all balances or even skip handling null account altogether
+    // vop will not contain all the information necessary (f.e. it only has summary including savings and pending
+    // rewards, adding all details would bloat the vop)
+  }
+
+  void operator()(const consolidate_treasury_balance_operation& o)
+  {
+    // balance tracker and similar apps need to clear all balances of OBSOLETE_TREASURY_ACCOUNT like in case
+    // of clear_null_account_balance_operation
+    // NOTE: there is a potential problem, since the related routine rewrites balances one to one; normally
+    // treasury cannot have rewards or savings, but if it somehow did (f.e. if old treasury were treated like normal
+    // account due to bug), then we'd be erroneously counting reward/saving balances towards liquid balances
+    for( auto& value : o.total_moved )
+      emplace_back(NEW_HIVE_TREASURY_ACCOUNT, value);
+  }
+
   void operator()(const claim_account_operation& o)
   {
     emplace_back(o.creator, -o.fee);
@@ -498,6 +516,14 @@ struct impacted_balance_collector
   {
     emplace_back(o.creator, -o.fee);
     emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
+  }
+
+  void operator()(const hardfork_hive_operation& o)
+  {
+    // balance tracker and similar apps need to clear all balances for accounts pointed by o.account
+    emplace_back(o.treasury, o.hive_transferred);
+    emplace_back(o.treasury, o.hbd_transferred);
+    emplace_back(o.treasury, o.total_hive_from_vests);
   }
 
   void operator()(const hardfork_hive_restore_operation& o)
@@ -551,7 +577,11 @@ struct impacted_balance_collector
   {
     emplace_back(o.receiver, o.hive_amount);
     emplace_back(o.receiver, o.hbd_amount);
+  }
 
+  void operator()(const escrow_approve_operation& o)
+  {
+    // TODO: new vop needed since we don't know if approved or not and assets transferred
   }
 
   void operator()(const transfer_operation& o)
@@ -562,7 +592,7 @@ struct impacted_balance_collector
 
   void operator()(const transfer_to_vesting_operation& o)
   {
-    /// Nothing to do in favor to transfer_to_vesting_completed_operation
+    // Nothing to do in favor of transfer_to_vesting_completed_operation
   }
 
   void operator()(const transfer_to_vesting_completed_operation& o)
@@ -581,14 +611,35 @@ struct impacted_balance_collector
     emplace_back(o.owner, -o.amount_to_sell);
   }
 
+  void operator()(const limit_order_cancel_operation& o)
+  {
+    // Nothing to do in favor of limit_order_cancelled_operation
+  }
+
   void operator()(const limit_order_create2_operation& o)
   {
     emplace_back(o.owner, -o.amount_to_sell);
   }
 
+  void operator()(const convert_operation& o)
+  {
+    emplace_back(o.owner, -o.amount);
+  }
+
+  void operator()(const collateralized_convert_operation& o)
+  {
+    emplace_back(o.owner, -o.amount);
+    // Note: HBD received handled in collateralized_convert_immediate_conversion_operation
+  }
+
   void operator()(const transfer_to_savings_operation& o)
   {
     emplace_back(o.from, -o.amount);
+  }
+
+  void operator()( const transfer_from_savings_operation& o)
+  {
+    // Nothing to do in favor of fill_transfer_from_savings_operation
   }
 
   void operator()(const fill_order_operation& o)
@@ -613,6 +664,11 @@ struct impacted_balance_collector
   {
     emplace_back(o.receiver, o.payment);
     emplace_back(o.payer, -o.payment);
+  }
+
+  void operator()(const dhf_funding_operation& o)
+  {
+    emplace_back(o.treasury, o.additional_funds);
   }
 
   void operator()(const dhf_conversion_operation& o)
