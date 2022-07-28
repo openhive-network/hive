@@ -405,7 +405,6 @@ struct count_operation_visitor
   }
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
-  void operator()( const report_over_production_operation& ) const {}
   void operator()( const reset_account_operation& ) const {}
   void operator()( const set_reset_account_operation& ) const {}
 

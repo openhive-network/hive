@@ -62,7 +62,6 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef custom_binary_operation                legacy_custom_binary_operation;
   typedef limit_order_cancel_operation           legacy_limit_order_cancel_operation;
   typedef pow_operation                          legacy_pow_operation;
-  typedef report_over_production_operation       legacy_report_over_production_operation;
   typedef request_account_recovery_operation     legacy_request_account_recovery_operation;
   typedef recover_account_operation              legacy_recover_account_operation;
   typedef reset_account_operation                legacy_reset_account_operation;
@@ -1585,7 +1584,6 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_account_witness_proxy_operation,
         legacy_pow_operation,
         legacy_custom_operation,
-        legacy_report_over_production_operation,
         legacy_delete_comment_operation,
         legacy_custom_json_operation,
         legacy_comment_options_operation,
@@ -1688,7 +1686,6 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const custom_binary_operation& op )const                  { l_op = op; return true; }
     bool operator()( const limit_order_cancel_operation& op )const             { l_op = op; return true; }
     bool operator()( const pow_operation& op )const                            { l_op = op; return true; }
-    bool operator()( const report_over_production_operation& op )const         { l_op = op; return true; }
     bool operator()( const request_account_recovery_operation& op )const       { l_op = op; return true; }
     bool operator()( const recover_account_operation& op )const                { l_op = op; return true; }
     bool operator()( const reset_account_operation& op )const                  { l_op = op; return true; }
