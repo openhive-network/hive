@@ -5618,6 +5618,19 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     sign( tx, sam_private_key );
     push_transaction( tx, 0 );
 
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto reject_op = recent_ops.back().get< escrow_rejected_operation >();
+
+      BOOST_REQUIRE( reject_op.from == et_op.from );
+      BOOST_REQUIRE( reject_op.to == et_op.to );
+      BOOST_REQUIRE( reject_op.agent == et_op.agent );
+      BOOST_REQUIRE( reject_op.escrow_id == et_op.escrow_id );
+      BOOST_REQUIRE( reject_op.hive_amount == et_op.hive_amount );
+      BOOST_REQUIRE( reject_op.hbd_amount == et_op.hbd_amount );
+      BOOST_REQUIRE( reject_op.fee == et_op.fee );
+    }
+
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
     BOOST_REQUIRE( alice.get_balance() == ASSET( "10.000 TESTS" ) );
     validate_database();
@@ -5630,7 +5643,21 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     sign( tx, alice_private_key );
     push_transaction( tx, 0 );
 
-    generate_blocks( et_op.ratification_deadline + HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( et_op.ratification_deadline, true );
+    generate_block();
+
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto reject_op = recent_ops.back().get< escrow_rejected_operation >();
+
+      BOOST_REQUIRE( reject_op.from == et_op.from );
+      BOOST_REQUIRE( reject_op.to == et_op.to );
+      BOOST_REQUIRE( reject_op.agent == et_op.agent );
+      BOOST_REQUIRE( reject_op.escrow_id == et_op.escrow_id );
+      BOOST_REQUIRE( reject_op.hive_amount == et_op.hive_amount );
+      BOOST_REQUIRE( reject_op.hbd_amount == et_op.hbd_amount );
+      BOOST_REQUIRE( reject_op.fee == et_op.fee );
+    }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
@@ -5655,7 +5682,21 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     sign( tx, bob_private_key );
     push_transaction( tx, 0 );
 
-    generate_blocks( et_op.ratification_deadline + HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( et_op.ratification_deadline, true );
+    generate_block();
+
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto reject_op = recent_ops.back().get< escrow_rejected_operation >();
+
+      BOOST_REQUIRE( reject_op.from == et_op.from );
+      BOOST_REQUIRE( reject_op.to == et_op.to );
+      BOOST_REQUIRE( reject_op.agent == et_op.agent );
+      BOOST_REQUIRE( reject_op.escrow_id == et_op.escrow_id );
+      BOOST_REQUIRE( reject_op.hive_amount == et_op.hive_amount );
+      BOOST_REQUIRE( reject_op.hbd_amount == et_op.hbd_amount );
+      BOOST_REQUIRE( reject_op.fee == et_op.fee );
+    }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
@@ -5679,7 +5720,21 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     sign( tx, sam_private_key );
     push_transaction( tx, 0 );
 
-    generate_blocks( et_op.ratification_deadline + HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( et_op.ratification_deadline, true );
+    generate_block();
+
+    {
+      auto recent_ops = get_last_operations( 1 );
+      auto reject_op = recent_ops.back().get< escrow_rejected_operation >();
+
+      BOOST_REQUIRE( reject_op.from == et_op.from );
+      BOOST_REQUIRE( reject_op.to == et_op.to );
+      BOOST_REQUIRE( reject_op.agent == et_op.agent );
+      BOOST_REQUIRE( reject_op.escrow_id == et_op.escrow_id );
+      BOOST_REQUIRE( reject_op.hive_amount == et_op.hive_amount );
+      BOOST_REQUIRE( reject_op.hbd_amount == et_op.hbd_amount );
+      BOOST_REQUIRE( reject_op.fee == et_op.fee );
+    }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
@@ -5711,6 +5766,15 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     push_transaction( tx, 0 );
 
     {
+      auto recent_ops = get_last_operations( 1 );
+      auto accept_op = recent_ops.back().get< escrow_approved_operation >();
+
+      BOOST_REQUIRE( accept_op.from == et_op.from );
+      BOOST_REQUIRE( accept_op.to == et_op.to );
+      BOOST_REQUIRE( accept_op.agent == et_op.agent );
+      BOOST_REQUIRE( accept_op.escrow_id == et_op.escrow_id );
+      BOOST_REQUIRE( accept_op.fee == et_op.fee );
+
       const auto& escrow = db->get_escrow( op.from, op.escrow_id );
       BOOST_REQUIRE( escrow.to == "bob" );
       BOOST_REQUIRE( escrow.agent == "sam" );
