@@ -662,6 +662,8 @@ void to_variant( const std::vector<char>& var,  variant& vo )
 }
 void from_variant( const variant& var,  std::vector<char>& vo )
 {
+     FC_ASSERT( vo.size() % 2 == 0, "Number of character in hexadecimal string must be even" );
+
      auto str = var.as_string();
      vo.resize( str.size() / 2 );
      if( vo.size() )
