@@ -229,7 +229,7 @@ public:
   virtual void on_failure( const fc::exception& e ) const override final;
 
 private:
-  virtual const char* buffer_type() const override final { return "p2p"; }
+  virtual const char* buffer_type() const override { return "p2p"; }
 
   void trigger_promise() const
   {
@@ -239,6 +239,21 @@ private:
 
   uint32_t skip;
   fc::promise<void>::ptr prom;
+};
+
+/**
+ * Block flow control for block coming from sync mode p2p.
+ */
+class sync_block_flow_control : public p2p_block_flow_control
+{
+public:
+  using p2p_block_flow_control::p2p_block_flow_control;
+  virtual ~sync_block_flow_control() = default;
+
+  virtual void on_worker_done() const override final;
+
+private:
+  virtual const char* buffer_type() const override final { return "sync"; }
 };
 
 /**
