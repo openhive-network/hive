@@ -636,7 +636,7 @@ namespace chain {
 
       bool apply_order( const limit_order_object& new_order_object );
       bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
-      void cancel_order( const limit_order_object& obj );
+      void cancel_order( const limit_order_object& obj, bool suppress_vop = false );
       int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
 
       void perform_vesting_share_split( uint32_t magnitude );
