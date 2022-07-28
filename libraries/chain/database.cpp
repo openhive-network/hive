@@ -2294,7 +2294,7 @@ void database::clear_account( const account_object& account )
     auto& order = *order_itr;
     ++order_itr;
 
-    cancel_order( order );
+    cancel_order( order, true );
   }
 
   // Remove pending convert requests (return balance to account)
@@ -5555,12 +5555,13 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   FC_CAPTURE_AND_RETHROW( (order)(pays)(receives) )
 }
 
-void database::cancel_order( const limit_order_object& order )
+void database::cancel_order( const limit_order_object& order, bool suppress_vop )
 {
   auto amount_back = order.amount_for_sale();
 
   adjust_balance( order.seller, amount_back );
-  push_virtual_operation(limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
+  if( !suppress_vop )
+    push_virtual_operation(limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
 
   remove(order);
 }
