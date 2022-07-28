@@ -38,7 +38,7 @@ namespace hive { namespace protocol {
 
         custom_operation, // 15
 
-        report_over_production_operation, // 16
+        witness_block_approve_operation, // 16
 
         delete_comment_operation, // 17
         custom_json_operation, // 18
@@ -73,7 +73,6 @@ namespace hive { namespace protocol {
         update_proposal_operation, // 47
         collateralized_convert_operation, // 48
         recurrent_transfer_operation, // 49
-        witness_block_approve_operation, // 50
 
 #ifdef HIVE_ENABLE_SMT
         /// SMT operations
