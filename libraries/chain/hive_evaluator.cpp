@@ -2420,11 +2420,6 @@ void limit_order_cancel_evaluator::do_apply( const limit_order_cancel_operation&
   _db.cancel_order( _db.get_limit_order( o.owner, o.orderid ) );
 }
 
-void report_over_production_evaluator::do_apply( const report_over_production_operation& o )
-{
-  FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_4 ), "report_over_production_operation is disabled." );
-}
-
 void claim_account_evaluator::do_apply( const claim_account_operation& o )
 {
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ), "claim_account_operation is not enabled until hardfork 20." );
