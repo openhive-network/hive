@@ -98,6 +98,12 @@ void p2p_block_flow_control::on_failure( const fc::exception& e ) const
   trigger_promise();
 }
 
+void sync_block_flow_control::on_worker_done() const
+{
+  //log_stats(); many stats make no practical sense for sync blocks
+  //and the excess logging seems to be slowing down sync
+}
+
 void existing_block_flow_control::on_end_of_apply_block() const
 {
   block_flow_control::on_end_of_apply_block();
