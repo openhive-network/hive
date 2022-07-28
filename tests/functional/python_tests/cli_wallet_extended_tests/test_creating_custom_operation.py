@@ -14,9 +14,13 @@ def test_creating_custom_operation(node, wallet):
     CUSTOM_OPERATION_DATA_MAX_LENGTH = node.api.database.get_config()['HIVE_CUSTOM_OP_DATA_MAX_LENGTH']
     MAX_AUTHORITY_MEMBERSHIP = node.api.database.get_config()['HIVE_MAX_AUTHORITY_MEMBERSHIP']
 
-    # try to send data over CUSTOM_OPERATION_DATA_MAX_LENGTH from Hived config
+    '''
+       Try to send data over CUSTOM_OPERATION_DATA_MAX_LENGTH from Hived config. Multiply max value 2 times because 2
+       characters in hex is 1 byte. In this case 8192 * 2 * 0,5 of byte = 8192 bytes. To exeed this numer over 1 byte we 
+       have to add 2 more characters.
+    '''
     with pytest.raises(tt.exceptions.CommunicationError):
-        wallet.api.custom(['initminer'], 101, CUSTOM_OPERATION_DATA_MAX_LENGTH*3*'1')
+        wallet.api.custom(['initminer'], 101, ((CUSTOM_OPERATION_DATA_MAX_LENGTH*2)+2)*'1')
 
     auths = ['initminer', 'hive.fund', 'null']
     with wallet.in_single_transaction():
