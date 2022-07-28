@@ -5493,7 +5493,13 @@ uint32_t database::update_last_irreversible_block()
 
     try
     {
-      switch_forks(new_head_block);
+      detail::without_pending_transactions(*this, existing_block_flow_control(nullptr), std::move(_pending_tx), [&]() {
+        try
+        {
+          switch_forks(new_head_block);
+        }
+        FC_CAPTURE_AND_RETHROW()
+      });
     }
     catch (const fc::exception&)
     {
