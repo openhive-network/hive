@@ -523,12 +523,16 @@ struct impacted_balance_collector
   void operator()(const account_create_operation& o)
   {
     emplace_back(o.creator, -o.fee);
+    // fee only goes to null after HF20 (before that it becomes initial vests), but since
+    // transfer to null means burning, maybe we can live with that short lived difference in balance
     emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
   }
 
   void operator()(const account_create_with_delegation_operation& o)
   {
     emplace_back(o.creator, -o.fee);
+    // fee only goes to null after HF20 (before that it becomes initial vests), but since
+    // transfer to null means burning, maybe we can live with that short lived difference in balance
     emplace_back(account_name_type(HIVE_NULL_ACCOUNT), o.fee);
   }
 
