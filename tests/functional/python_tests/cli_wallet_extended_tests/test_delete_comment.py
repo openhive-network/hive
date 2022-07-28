@@ -25,4 +25,3 @@ def test_delete_comment_twice(node, wallet):
     wallet.api.delete_comment('alice', 'test-permlink')
     with pytest.raises(tt.exceptions.CommunicationError):
         wallet.api.delete_comment('alice', 'test-permlink')
-        
