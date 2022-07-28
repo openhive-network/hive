@@ -7,9 +7,9 @@ def test_witness(wallet):
     wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(500))
 
     _result = wallet.api.get_active_witnesses()
-    assert len(_result) > 1
+
+    assert len(_result) == 1
     assert _result[0] == 'initminer'
-    assert _result[1] == ''
 
     _result = wallet.api.list_witnesses('a', 4)
     assert len(_result) == 1
@@ -18,9 +18,9 @@ def test_witness(wallet):
     wallet.api.update_witness('alice', 'http:\\url.html', 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4', { 'account_creation_fee':'2789.030 TESTS', 'maximum_block_size' : 131072, 'hbd_interest_rate' : 1000 } )
 
     _result = wallet.api.get_active_witnesses()
-    assert len(_result) > 1
+
+    assert len(_result) == 1
     assert _result[0] == 'initminer'
-    assert _result[1] == ''
 
     _result = wallet.api.list_witnesses('a', 4)
     assert len(_result) == 2
