@@ -810,32 +810,6 @@ namespace hive { namespace protocol {
     }
   };
 
-
-  /**
-    * This operation is used to report a miner who signs two blocks
-    * at the same time. To be valid, the violation must be reported within
-    * HIVE_MAX_WITNESSES blocks of the head block (1 round) and the
-    * producer must be in the ACTIVE witness set.
-    *
-    * Users not in the ACTIVE witness set should not have to worry about their
-    * key getting compromised and being used to produced multiple blocks so
-    * the attacker can report it and steel their VESTS.
-    *
-    * The result of the operation is to transfer the full VESTS balance
-    * of the block producer to the reporter.
-    *
-    * DEPRECATED since HF4
-    */
-  struct report_over_production_operation : public base_operation
-  {
-    account_name_type    reporter;
-    signed_block_header  first_block;
-    signed_block_header  second_block;
-
-    void validate()const;
-  };
-
-
   /**
     * All account recovery requests come from a listed recovery account. This
     * is secure based on the assumption that only a trusted account should be
@@ -1183,7 +1157,6 @@ FC_REFLECT( hive::protocol::reset_account_operation, (reset_account)(account_to_
 FC_REFLECT( hive::protocol::set_reset_account_operation, (account)(current_reset_account)(reset_account) )
 
 
-FC_REFLECT( hive::protocol::report_over_production_operation, (reporter)(first_block)(second_block) )
 FC_REFLECT( hive::protocol::convert_operation, (owner)(requestid)(amount) )
 FC_REFLECT( hive::protocol::collateralized_convert_operation, (owner)(requestid)(amount) )
 FC_REFLECT( hive::protocol::feed_publish_operation, (publisher)(exchange_rate) )

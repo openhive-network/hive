@@ -158,17 +158,7 @@ namespace hive { namespace converter {
 
     return op;
   }
-
-  const hp::report_over_production_operation& convert_operations_visitor::operator()( hp::report_over_production_operation& op )const
-  {
-    /*
-    converter.sign_header( op.first_block );
-    converter.sign_header( op.second_block );
-    */
-
-    return op;
-  }
-
+    
   const hp::request_account_recovery_operation& convert_operations_visitor::operator()( hp::request_account_recovery_operation& op )const
   {
     converter.add_second_authority( op.new_owner_authority, authority::owner );
