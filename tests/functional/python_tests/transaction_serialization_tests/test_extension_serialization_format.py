@@ -45,7 +45,7 @@ def test_change_comment_operation(node, api, expected_extension):
     block_num = change_comment_operation['block_num']
     extension = get_extension_from_operation(node, api, block_num)
 
-    assert extension == expected_extension
+    assert False
 
 
 @pytest.mark.parametrize(
@@ -64,7 +64,7 @@ def test_update_proposal_operation(node, api, expected_extension):
     block_num = operation['block_num']
     extension = get_extension_from_operation(node, api, block_num)
 
-    assert extension == expected_extension
+    assert False
 
 
 def get_extension_from_operation(node, api, block_num):
