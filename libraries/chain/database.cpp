@@ -1071,7 +1071,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   return;
 }
 
-void database::switch_forks(item_ptr new_head)
+void database::switch_forks(const std::shared_ptr<full_block_type>& new_head)
 {
   uint32_t skip = get_node_properties().skip_flags;
 
@@ -1163,7 +1163,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       if (new_head->get_block_num() > head_block_num())
       {
         block_ctrl.on_fork_apply();
-        switch_forks(new_head);
+        switch_forks(new_head->full_block);
         return true;
       }
       else //the new block is on a fork but lower than our head block, so don't validate it
@@ -4304,7 +4304,9 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);
 
-  uint32_t old_last_irreversible = update_last_irreversible_block();
+  new_irreversible_state new_last_irreversible_state = update_last_irreversible_block();
+  if (new_last_irreversible_state.new_last_irreversible_block_num || new_last_irreversible_state.new_last_irreversible_block_candidate)
+    try_to_make_block_irreversible(new_last_irreversible_state);
 
   create_block_summary(full_block);
   clear_expired_transactions();
@@ -4353,7 +4355,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   // and commits irreversible state to the database. This should always be the
   // last call of applying a block because it is the only thing that is not
   // reversible.
-  migrate_irreversible_state(old_last_irreversible);
+  migrate_irreversible_state(new_last_irreversible_state.old_last_irreversible);
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
 struct process_header_visitor
@@ -5330,33 +5332,46 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
   // ddump((_my->_last_fast_approved_block_by_witness));
 
-  uint32_t old_last_irreversible_block = update_last_irreversible_block();
-  migrate_irreversible_state(old_last_irreversible_block);
+  new_irreversible_state new_last_irreversible_state = update_last_irreversible_block();
+  if (new_last_irreversible_state.new_last_irreversible_block_num || new_last_irreversible_state.new_last_irreversible_block_candidate)
+  {
+    detail::without_pending_transactions(*this, existing_block_flow_control(nullptr), std::move(_pending_tx), [&]() {
+      try
+      {
+        try_to_make_block_irreversible(new_last_irreversible_state);
+        migrate_irreversible_state(new_last_irreversible_state.old_last_irreversible);
+      }
+      FC_CAPTURE_AND_RETHROW()
+    });
+  }
 } FC_CAPTURE_AND_RETHROW() }
 
-uint32_t database::update_last_irreversible_block()
+database::new_irreversible_state database::update_last_irreversible_block()
 { try {
-  uint32_t old_last_irreversible = get_last_irreversible_block_num();
+  const uint32_t old_last_irreversible = get_last_irreversible_block_num();
+  new_irreversible_state result;
+  result.old_last_irreversible = old_last_irreversible;
   /**
     * Prior to voting taking over, we must be more conservative...
     */
   if (head_block_num() < HIVE_START_MINER_VOTING_BLOCK)
   {
+    std::optional<uint32_t> new_last_irreversible_block_num;
     if (head_block_num() > HIVE_MAX_WITNESSES) 
     {
       uint32_t new_last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
 
       if (new_last_irreversible_block_num > get_last_irreversible_block_num())
-        set_last_irreversible_block_num(new_last_irreversible_block_num);
+        result.new_last_irreversible_block_num = new_last_irreversible_block_num;
     }
-    return old_last_irreversible;
+    return result;
   }
 
   uint32_t head_block_number = head_block_num();
   if (old_last_irreversible == head_block_number)
   {
     //dlog("Head-block is already irreversible, nothing to do");
-    return old_last_irreversible;
+    return result;
   }
   // ddump((head_block_number)(old_last_irreversible));
 
@@ -5381,8 +5396,8 @@ uint32_t database::update_last_irreversible_block()
                      [](const witness_object* a, const witness_object* b) { return a->last_confirmed_block_num < b->last_confirmed_block_num; });
     uint32_t new_last_irreversible_block_num = scheduled_witness_objects[offset]->last_confirmed_block_num;
     if (new_last_irreversible_block_num > old_last_irreversible)
-      set_last_irreversible_block_num(new_last_irreversible_block_num);
-    return old_last_irreversible;
+      result.new_last_irreversible_block_num = new_last_irreversible_block_num;
+    return result;
   }
 
   // the forkdb is active, so we can use the new algorithm.  Start by getting a list of witnesses by name
@@ -5396,9 +5411,7 @@ uint32_t database::update_last_irreversible_block()
 
   // during our search for a new irreversible block, if we find a 
   // candidate better than the current last_irreversible_block,
-  // store it here:
-  item_ptr new_last_irreversible_block;
-  item_ptr new_head_block;
+  // store it in result
 
   // for each witness in the upcoming schedule, they may (and likely will) have voted on blocks
   // both by sending fast-confirm transactions and by generating blocks that implicitly vote on
@@ -5442,9 +5455,9 @@ uint32_t database::update_last_irreversible_block()
     // walk backwards over blocks on this fork
     while (this_block && 
            this_block->get_block_num() > old_last_irreversible &&
-           (!new_last_irreversible_block || // we don't yet have a candidate
-            this_block == new_last_irreversible_block || // this is our candidate, but we're coming at it from a different fork
-            this_block->get_block_num() > new_last_irreversible_block->get_block_num())) // it's a higher block number than our current candidate
+           (!result.new_last_irreversible_block_candidate || // we don't yet have a candidate
+            this_block->full_block == result.new_last_irreversible_block_candidate || // this is our candidate, but we're coming at it from a different fork
+            this_block->get_block_num() > result.new_last_irreversible_block_candidate->get_block_num())) // it's a higher block number than our current candidate
     {
       // dlog("Considering block ${block_id}", ("block_id", this_block->get_block_id()));
       number_of_witnesses_approving_this_block += number_of_approvals_by_block_id[this_block->get_block_id()];
@@ -5454,11 +5467,11 @@ uint32_t database::update_last_irreversible_block()
       {
         // dlog("Block ${num} can be made irreversible, ${number_of_witnesses_approving_this_block} witnesses approve it", 
         //      ("num", this_block->get_block_num())(number_of_witnesses_approving_this_block));
-        if (!new_last_irreversible_block || 
-            possible_head->get_block_num() > new_head_block->get_block_num())
+        if (!result.new_last_irreversible_block_candidate || 
+            possible_head->get_block_num() > result.new_head_block_candidate->get_block_num())
         {
-          new_head_block = possible_head;
-          new_last_irreversible_block = this_block;
+          result.new_head_block_candidate = possible_head->full_block;
+          result.new_last_irreversible_block_candidate = this_block->full_block;
         }
         break;
       }
@@ -5470,48 +5483,49 @@ uint32_t database::update_last_irreversible_block()
       this_block = this_block->prev.lock();
     }
   }
+  return result;
+} FC_CAPTURE_AND_RETHROW() }
 
-  if (!new_last_irreversible_block)
+void database::try_to_make_block_irreversible(const new_irreversible_state& new_state)
+{ try {
+  if (new_state.new_last_irreversible_block_num)
+    set_last_irreversible_block_num(*new_state.new_last_irreversible_block_num);
+  else
   {
-    // dlog("Leaving update_last_irreversible_block without making any new blocks irreversible");
-    return old_last_irreversible;
+    // dlog("Found a new last irreversible block: ${new_last_irreversible_block_num}", ("new_last_irreversible_block_num", new_last_irreversible_block->get_block_num()));
+    const item_ptr main_branch_block = _fork_db.fetch_block_on_main_branch_by_number(new_state.new_last_irreversible_block_candidate->get_block_num());
+    if (new_state.new_last_irreversible_block_candidate != main_branch_block->full_block)
+    {
+      // we found a new last irreversible block on another fork
+      if (new_state.new_head_block_candidate->get_block_num() < head_block_num())
+      {
+        // we need to switch to the fork containing our new last irreversible block candidate, but 
+        // that fork is shorter than our current head block, so our head block number would decrease
+        // as a result.  There may be other places in the code that assume the head block number 
+        // never decreases.  Since we're not sure, just postpone the fork switch until we get 
+        // enough blocks on the candidate fork to at least equal our current head block
+        return;
+      }
+
+      try
+      {
+        switch_forks(new_state.new_head_block_candidate);
+      }
+      catch (const fc::exception&)
+      {
+        return;
+      }
+    }
+
+    set_last_irreversible_block_num(new_state.new_last_irreversible_block_candidate->get_block_num());
+
+    // clean up any fast-confirms that are no longer relevant to reversible blocks
+    for (auto iter = _my->_last_fast_approved_block_by_witness.begin(); iter != _my->_last_fast_approved_block_by_witness.end();)
+      if (block_header::num_from_id(iter->second) <= new_state.new_last_irreversible_block_candidate->get_block_num())
+        iter = _my->_last_fast_approved_block_by_witness.erase(iter);
+      else
+        ++iter;
   }
-
-  // dlog("Found a new last irreversible block: ${new_last_irreversible_block_num}", ("new_last_irreversible_block_num", new_last_irreversible_block->get_block_num()));
-  const item_ptr main_branch_block = _fork_db.fetch_block_on_main_branch_by_number(new_last_irreversible_block->get_block_num());
-  if (new_last_irreversible_block != main_branch_block)
-  {
-    // we found a new last irreversible block on another fork
-    if (new_head_block->get_block_num() < head_block_num())
-    {
-      // we need to switch to the fork containing our new last irreversible block candidate, but 
-      // that fork is shorter than our current head block, so our head block number would decrease
-      // as a result.  There may be other places in the code that assume the head block number 
-      // never decreases.  Since we're not sure, just postpone the fork switch until we get 
-      // enough blocks on the candidate fork to at least equal our current head block
-      return old_last_irreversible;
-    }
-
-    try
-    {
-      switch_forks(new_head_block);
-    }
-    catch (const fc::exception&)
-    {
-      return old_last_irreversible;
-    }
-  }
-
-  set_last_irreversible_block_num(new_last_irreversible_block->get_block_num());
-
-  // clean up any fast-confirms that are no longer relevant to reversible blocks
-  for (auto iter = _my->_last_fast_approved_block_by_witness.begin(); iter != _my->_last_fast_approved_block_by_witness.end();)
-    if (block_header::num_from_id(iter->second) <= new_last_irreversible_block->get_block_num())
-      iter = _my->_last_fast_approved_block_by_witness.erase(iter);
-    else
-      ++iter;
-
-  return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)

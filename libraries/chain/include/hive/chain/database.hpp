@@ -705,7 +705,7 @@ namespace chain {
       optional< chainbase::database::session > _pending_tx_session;
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
-      void switch_forks(item_ptr new_head);
+      void switch_forks(const std::shared_ptr<full_block_type>& new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
@@ -740,7 +740,16 @@ namespace chain {
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
-      uint32_t update_last_irreversible_block();
+
+      struct new_irreversible_state
+      {
+        uint32_t old_last_irreversible;
+        std::optional<uint32_t> new_last_irreversible_block_num;
+        std::shared_ptr<full_block_type> new_last_irreversible_block_candidate;
+        std::shared_ptr<full_block_type> new_head_block_candidate;
+      };
+      new_irreversible_state update_last_irreversible_block();
+      void try_to_make_block_irreversible(const new_irreversible_state& new_state);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
       void clear_expired_orders();
