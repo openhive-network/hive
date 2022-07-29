@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       tx.operations.push_back( comment );
-      push_transaction( tx, init_account_priv_key, 0 );//cannot be steem_private_key
+      push_transaction( tx, init_account_priv_key );//cannot be steem_private_key
     }
     generate_block();
 
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       tx.operations.push_back( comment );
-      push_transaction( tx, init_account_priv_key, 0 );//cannot be alice_private_key
+      push_transaction( tx, init_account_priv_key );//cannot be alice_private_key
     }
     generate_block();
     
@@ -974,7 +974,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
         key_signers[k].sign( tx, this );
       for( int k = 0; k < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
         mixed_signers[k].sign( tx, this );
-      push_transaction( tx, 0 );
+      push_transaction( tx );
       tx.clear();
       generate_block();
 
@@ -1000,7 +1000,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
         mixed_signers[k].sign( tx, this );
       uint64_t start_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
-      push_transaction( tx, 0 );
+      push_transaction( tx );
       uint64_t stop_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
       time += stop_time - start_time;
@@ -1048,7 +1048,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     transfer.amount = ASSET( "10.000 TESTS" );
     transfer.memo = "First transfer";
     tx1.operations.push_back( transfer );
-    push_transaction( tx1, alice_private_key, 0 ); //t1
+    push_transaction( tx1, alice_private_key ); //t1
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     transfer.amount = ASSET( "5.000 TESTS" );
@@ -1067,7 +1067,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Reapply transaction that failed before putting it to pending" );
-    push_transaction( tx2, 0 ); //t2 becomes pending
+    push_transaction( tx2, fc::ecc::private_key(), 0 ); //t2 becomes pending
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "995.000 TESTS" ) );
     BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "5.000 TESTS" ) );
 

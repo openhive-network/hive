@@ -746,7 +746,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   trx.validate();
 
-  push_transaction(trx, ~0);
+  push_transaction(trx, fc::ecc::private_key(), ~0);
 
   trx.operations.clear();
   t.from = "bob";
@@ -756,7 +756,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.validate();
 
   BOOST_TEST_MESSAGE( "Verify that not-signing causes an exception" );
-  HIVE_REQUIRE_THROW( push_transaction(trx, 0), fc::exception );
+  HIVE_REQUIRE_THROW( push_transaction(trx), fc::exception );
 
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
   HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, bob_private_key}, 0), tx_duplicate_sig );
@@ -955,7 +955,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
     int miss_blocks = fc::minutes( 1 ).to_seconds() / HIVE_BLOCK_INTERVAL;
     auto witness = db->get_scheduled_witness( miss_blocks );
     auto block_time = db->get_slot_time( miss_blocks );
-    GENERATE_BLOCK( bp, block_time , witness, init_account_priv_key, 0 );
+    GENERATE_BLOCK( bp, block_time , witness, init_account_priv_key );
 
     BOOST_CHECK_EQUAL( db->head_block_num(), init_block_num + 1 );
     BOOST_CHECK( db->head_block_time() == block_time );
@@ -1130,14 +1130,14 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
       tx.operations.push_back( op );
     }
 
-    push_transaction( tx, init_account_priv_key, 0 );
+    push_transaction( tx, init_account_priv_key );
 
     // Second transaction, tx minus op is 78 (one less byte for operation vector size)
     // We need a 88 byte op. We need a 22 character memo (1 byte for length) 55 = 32 (old op) + 55 + 1
     op.memo = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123";
     tx.clear();
     tx.operations.push_back( op );
-    push_transaction( tx, init_account_priv_key, 0 );
+    push_transaction( tx, init_account_priv_key );
 
     generate_block();
 

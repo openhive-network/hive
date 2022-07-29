@@ -52,7 +52,7 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
   op.field = value; \
   trx.operations.back() = op; \
   op.field = temp; \
-  push_transaction( trx, ~0 ); \
+  push_transaction( trx, fc::ecc::private_key(), ~0 ); \
 }
 
 /*#define HIVE_REQUIRE_THROW( expr, exc_type )            \
@@ -200,14 +200,14 @@ TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  push_transaction( tx, 0 ); \
+  push_transaction( tx ); \
 }
 
 #define PUSH_OP_TWICE(OP,KEY) \
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  push_transaction( tx, 0 ); \
+  push_transaction( tx ); \
   push_transaction( tx, database::skip_transaction_dupe_check ); \
 }
 
@@ -215,7 +215,7 @@ TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
 { \
   signed_transaction tx; \
   OP2TX(OP,tx,KEY) \
-  HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), EXCEPTION ); \
+  HIVE_REQUIRE_THROW( push_transaction( tx ), EXCEPTION ); \
 }
 
 namespace hive { namespace chain {
@@ -335,8 +335,7 @@ struct database_fixture {
   );
 
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
-  void push_transaction( const signed_transaction& tx, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
-  full_transaction_ptr push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags, std::vector< signature_type >* signatures = nullptr );
+  full_transaction_ptr push_transaction( signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0, std::vector< signature_type >* signatures = nullptr );
   full_transaction_ptr push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags, std::vector< signature_type >* signatures = nullptr );
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );

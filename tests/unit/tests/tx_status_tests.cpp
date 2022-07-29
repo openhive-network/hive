@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
       tx.set_reference_block( dgpo.head_block_id );
         //normal database_fixture::push_transaction() does not set tapos - they all point to genesis
       tx.operations.push_back( op );
-      push_transaction( tx, key, 0 );
+      push_transaction( tx, key );
     };
 
     transfer_operation transfer;
