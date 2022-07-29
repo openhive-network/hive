@@ -426,9 +426,8 @@ const account_object& database_fixture::account_create(
     trx.operations.push_back( op );
 
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( trx, creator_key );
     trx.validate();
-    push_transaction( trx );
+    push_transaction( trx, creator_key );
     trx.clear();
 
     if( fee_remainder > 0 )
@@ -508,9 +507,8 @@ const witness_object& database_fixture::witness_create(
 
     trx.operations.push_back( op );
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( trx, owner_key );
     trx.validate();
-    push_transaction( trx );
+    push_transaction( trx, owner_key );
     trx.clear();
 
     return db->get_witness( owner );
@@ -629,12 +627,7 @@ void database_fixture::transfer(
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     trx.validate();
 
-    if( from == HIVE_INIT_MINER_NAME )
-    {
-      sign( trx, init_account_priv_key );
-    }
-
-    push_transaction( trx, fc::ecc::private_key(), ~0 );
+    push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
@@ -694,12 +687,7 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
 
     // This sign() call fixes some tests, like withdraw_vesting_apply, that use this method
     //   with debug_plugin such that trx may be re-applied with less generous skip flags.
-    if( from == HIVE_INIT_MINER_NAME )
-    {
-      sign( trx, init_account_priv_key );
-    }
-
-    push_transaction( trx, fc::ecc::private_key(), ~0 );
+    push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
@@ -717,12 +705,7 @@ void database_fixture::vest( const string& from, const share_type& amount )
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     trx.validate();
 
-    if( from == HIVE_INIT_MINER_NAME )
-    {
-      sign( trx, init_account_priv_key );
-    }
-
-    push_transaction( trx, fc::ecc::private_key(), ~0 );
+    push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(amount) )
 }
@@ -874,8 +857,7 @@ void database_fixture::post_comment_internal( const std::string& _author, const 
   signed_transaction trx;
   trx.operations.push_back( comment );
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( trx, _key );
-  push_transaction( trx );
+  push_transaction( trx, _key );
   trx.operations.clear();
 }
 
@@ -903,14 +885,8 @@ void database_fixture::vote( std::string _author, std::string _permlink, std::st
   signed_transaction trx;
   trx.operations.push_back( vote );
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( trx, _key );
-  push_transaction( trx );
+  push_transaction( trx, _key );
   trx.operations.clear();
-}
-
-void database_fixture::sign(signed_transaction& trx, const fc::ecc::private_key& key)
-{
-  trx.sign( key, db->get_chain_id(), default_sig_canon );
 }
 
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
@@ -1268,8 +1244,7 @@ void dhf_database_fixture::remove_proposal(account_name_type _deleter, flat_set<
   signed_transaction trx;
   trx.operations.push_back( rp );
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  sign( trx, _key );
-  push_transaction( trx );
+  push_transaction( trx, _key );
   trx.operations.clear();
 }
 
