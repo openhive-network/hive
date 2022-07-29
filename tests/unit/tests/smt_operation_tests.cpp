@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( bob_account, HIVE_SYMBOL ).amount.value == bob_balance.amount.value );
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( bob_account, HIVE_SYMBOL ).amount.value == bob_balance.amount.value );
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( bob_account, HIVE_SYMBOL ).amount.value == bob_balance.amount.value );
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_TEST_MESSAGE( "--- Test success creating limit order that will not be filled" );
 
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( alice_account, alice_symbol ).amount.value == alice_smt_balance.amount.value );
@@ -544,7 +544,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     op.orderid = 5;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_TEST_MESSAGE( "--- Test cancel order" );
 
@@ -620,7 +620,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( bob_account, HIVE_SYMBOL ).amount.value == bob_balance.amount.value );
@@ -635,7 +635,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( bob_account, HIVE_SYMBOL ).amount.value == bob_balance.amount.value );
@@ -649,7 +649,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( bob_account, HIVE_SYMBOL ).amount.value == bob_balance.amount.value );
@@ -663,7 +663,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_TEST_MESSAGE( "--- Test success creating limit order that will not be filled" );
 
@@ -694,7 +694,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
@@ -714,7 +714,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     tx.operations.clear();
     
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( db->get_balance( alice_account, alice_symbol ).amount.value == alice_smt_balance.amount.value );
@@ -1740,13 +1740,13 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     op.precision = 4;
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Failure resetting SMT with token emissions" );
     op.smt_creation_fee = ASSET( "0.000 TBD" );
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Failure deleting token emissions in wrong order" );
     op1.remove = true;
@@ -1754,7 +1754,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     tx.clear();
     tx.operations.push_back( op1 );
     tx.operations.push_back( op2 );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Success deleting token emissions" );
     tx.clear();
@@ -1802,7 +1802,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
 
     tx.set_expiration( db->head_block_time() + HIVE_BLOCK_INTERVAL * 10 );
     
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2589,21 +2589,21 @@ BOOST_AUTO_TEST_CASE( smt_set_runtime_parameters_apply )
     op.runtime_parameters.insert( smt_param_allow_downvotes() );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Failure with a non-existent asset symbol" );
     op.control_account = "alice";
     op.symbol = bob_symbol;
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Failure with wrong precision in asset symbol" );
     op.symbol = alice_symbol;
     op.symbol.asset_num++;
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( "--- Success updating runtime parameters" );
     op.runtime_parameters.clear();
@@ -3031,7 +3031,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     op.to = OBSOLETE_TREASURY_ACCOUNT;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception ); //still blocked even though old is no longer active treasury
+    BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception ); //still blocked even though old is no longer active treasury
     
     tx.operations.clear();
     validate_database();
@@ -3040,7 +3040,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     op.to = NEW_HIVE_TREASURY_ACCOUNT;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+    BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     
     tx.operations.clear();
     validate_database();

@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_validate )
 
     generate_block();
 
-    asset_symbol_type alice_symbol = create_smt("alice", alice_private_key, 0);
+    asset_symbol_type alice_symbol = create_smt("alice", alice_private_key );
 
     transfer_operation op;
     op.from = "alice";
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     generate_block();
 
     // Create SMT.
-    asset_symbol_type alice_symbol = create_smt("alice", alice_private_key, 0);
+    asset_symbol_type alice_symbol = create_smt("alice", alice_private_key );
     asset_symbol_type bob_symbol = create_smt("bob", bob_private_key, 1);
 
     // Give some SMT to creators.
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE( comment_votable_assers_validate )
     /// Create one more than limit to test negative cases
     for(size_t i = 0; i < SMT_MAX_VOTABLE_ASSETS + 1; ++i)
     {
-      asset_symbol_type smt = create_smt("alice", alice_private_key, 0);
+      asset_symbol_type smt = create_smt("alice", alice_private_key );
       smts[i] = std::move(smt);
     }
 
@@ -527,7 +527,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     //SMT doesn't exist
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
     tx.operations.clear();
     
 

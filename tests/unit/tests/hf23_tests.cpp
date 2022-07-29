@@ -1057,7 +1057,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       op.fill_or_kill = true;
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
-      HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key, 0 ), fc::exception );
+      HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
     }
     tx.clear();
 
