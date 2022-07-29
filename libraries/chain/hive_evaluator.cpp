@@ -3159,8 +3159,11 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   }
 }
 
-void witness_block_approve_evaluator::do_apply( const witness_block_approve_operation& op )
+void witness_block_approve_evaluator::do_apply(const witness_block_approve_operation& op)
 {
+  // This transaction si /updait's handled in database::process_fast_confirm_transaction
+  // and never reaches the 
+  FC_ASSERT(false, "This operation may not be included in a block");
 }
 
 } } // hive::chain
