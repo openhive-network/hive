@@ -893,12 +893,6 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
         _this->generate_block();
       }
 
-      void sign( signed_transaction& tx, database_fixture* _this ) const
-      {
-        for( auto& key : keys )
-          _this->sign( tx, key );
-      }
-
     } key_signers[ 2 * HIVE_MAX_AUTHORITY_MEMBERSHIP ],
       mixed_signers[ HIVE_MAX_AUTHORITY_MEMBERSHIP ];
 
@@ -970,11 +964,12 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
       account_update.account = "victim";
       account_update.owner = authority( 1, "thief", 1 );
       tx.operations.push_back( account_update );
+      std::vector< private_key_type >_keys;
       for( int k = 0; k < 2 * HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
-        key_signers[k].sign( tx, this );
+        std::copy( key_signers[k].keys.begin(), key_signers[k].keys.end(), std::back_inserter( _keys ) );
       for( int k = 0; k < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
-        mixed_signers[k].sign( tx, this );
-      push_transaction( tx );
+        std::copy( mixed_signers[k].keys.begin(), mixed_signers[k].keys.end(), std::back_inserter( _keys ) );
+      push_transaction( tx, _keys );
       tx.clear();
       generate_block();
 
@@ -994,13 +989,14 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
       recover.recent_owner_authority = victim_auth;
       std::swap( victim_auth, alternative_auth ); //change for next iteration
       tx.operations.push_back( recover );
+      _keys.clear();
       for( int k = 0; k < 2 * HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
-        key_signers[k].sign( tx, this );
+        std::copy( key_signers[k].keys.begin(), key_signers[k].keys.end(), std::back_inserter( _keys ) );
       for( int k = 0; k < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
-        mixed_signers[k].sign( tx, this );
+        std::copy( mixed_signers[k].keys.begin(), mixed_signers[k].keys.end(), std::back_inserter( _keys ) );
       uint64_t start_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
-      push_transaction( tx );
+      push_transaction( tx, _keys );
       uint64_t stop_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
       time += stop_time - start_time;
