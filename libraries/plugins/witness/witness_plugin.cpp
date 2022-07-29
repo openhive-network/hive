@@ -320,7 +320,8 @@ namespace detail {
     // TODO: we probably shouldn't broadcast anything if our head block is older than some threshold
     //       so we don't spam the network if we fall behind and are catching back up
     if (_db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) && 
-        note.block_num > _last_fast_confirmation_block_number)
+        note.block_num > _last_fast_confirmation_block_number &&
+        _production_enabled && _is_p2p_enabled)
     {
       std::set<account_name_type> scheduled_witnesses;
       const witness_schedule_object& wso_for_irreversibility = _db.get_witness_schedule_object_for_irreversibility();
