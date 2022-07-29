@@ -40,13 +40,14 @@ void block_flow_control::log_stats() const
   auto block_ts = block_header.timestamp;
   ilog( "Block stats:"
     "{\"num\":${nr},\"type\":\"${tp}\",\"id\":\"${id}\",\"ts\":\"${ts}\",\"bp\":\"${wit}\",\"txs\":${tx},\"size\":${s},\"offset\":${o},"
-    "\"before\":{\"inc\":${bi},\"ok\":${bo}},"
+    "\"before\":{\"inc\":${bi},\"ok\":${bo},\"auth\":${ba},\"rc\":${br}},"
     "\"after\":{\"exp\":${ae},\"fail\":${af},\"appl\":${aa},\"post\":${ap}},"
     "\"exec\":{\"offset\":${ef},\"pre\":${er},\"work\":${ew},\"post\":${eo},\"all\":${ea}}}",
     ( "nr", full_block->get_block_num() )( "tp", type )( "id", full_block->get_block_id() )( "ts", block_ts )
     ( "wit", block_header.witness )( "tx", full_block->get_full_transactions().size() )( "s", full_block->get_uncompressed_block_size() )
     ( "o", stats.get_ready_ts() - block_ts )
     ( "bi", stats.get_txs_processed_before_block() )( "bo", stats.get_txs_accepted_before_block() )
+    ( "ba", stats.get_txs_with_failed_auth_before_block() )( "br", stats.get_txs_with_no_rc_before_block() )
     ( "ae", stats.get_txs_expired_after_block() )( "af", stats.get_txs_failed_after_block() )
     ( "aa", stats.get_txs_reapplied_after_block() )( "ap", stats.get_txs_postponed_after_block() )
     ( "ef", stats.get_creation_ts() - block_ts )

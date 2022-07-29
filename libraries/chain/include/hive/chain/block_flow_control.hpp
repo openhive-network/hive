@@ -16,11 +16,13 @@ class block_stats
 public:
   block_stats() : creation( fc::time_point::now() ) {}
 
-  void on_start_work( uint32_t _inc_txs, uint32_t _ok_txs )
+  void on_start_work( uint32_t _inc_txs, uint32_t _ok_txs, uint32_t _fail_auth, uint32_t _fail_no_rc )
   {
     start_work = fc::time_point::now();
     total_inc_txs = _inc_txs;
     accepted_inc_txs = _ok_txs;
+    failed_auth_txs = _fail_auth;
+    failed_no_rc_txs = _fail_no_rc;
   }
 
   void on_end_work()
@@ -49,6 +51,8 @@ public:
 
   uint32_t get_txs_processed_before_block() const { return total_inc_txs; }
   uint32_t get_txs_accepted_before_block() const { return accepted_inc_txs; }
+  uint32_t get_txs_with_failed_auth_before_block() const { return failed_auth_txs; }
+  uint32_t get_txs_with_no_rc_before_block() const { return failed_no_rc_txs; }
   uint32_t get_txs_expired_after_block() const { return txs_expired; }
   uint32_t get_txs_failed_after_block() const { return txs_failed; }
   uint32_t get_txs_reapplied_after_block() const { return txs_reapplied; }
@@ -68,6 +72,10 @@ private:
   uint32_t total_inc_txs = 0;
   //number of new transactions accepted to pending before block (coming from API or P2P)
   uint32_t accepted_inc_txs = 0;
+  //number of new transactions that failed due to authorization before block (most likely old signature used)
+  uint32_t failed_auth_txs = 0;
+  //number of new transactions that failed due to lack of RC before block
+  uint32_t failed_no_rc_txs = 0;
   //number of expired transactions during pending reapplication
   uint32_t txs_expired = 0;
   //number of transactions that failed with exception (known transactions not included) during pending reapplication
@@ -100,9 +108,9 @@ public:
   virtual ~block_flow_control() = default;
 
   // when block related request is picked by worker thread
-  void on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs ) const
+  void on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs, uint32_t _fail_auth, uint32_t _fail_no_rc ) const
   {
-    stats.on_start_work( _inc_txs, _ok_txs );
+    stats.on_start_work( _inc_txs, _ok_txs, _fail_auth, _fail_no_rc );
     current_phase = phase::START;
   }
 

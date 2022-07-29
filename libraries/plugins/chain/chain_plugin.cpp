@@ -214,6 +214,8 @@ struct chain_plugin_impl::write_request_visitor
   //cumulative data on transactions since last block
   uint32_t         count_tx_pushed = 0;
   uint32_t         count_tx_applied = 0;
+  uint32_t         count_tx_failed_auth = 0;
+  uint32_t         count_tx_failed_no_rc = 0;
 
   chain_plugin_impl& cp;
   write_context* cxt = nullptr;
@@ -222,9 +224,11 @@ struct chain_plugin_impl::write_request_visitor
 
   void on_block( const block_flow_control* block_ctrl )
   {
-    block_ctrl->on_write_queue_pop( count_tx_pushed, count_tx_applied );
+    block_ctrl->on_write_queue_pop( count_tx_pushed, count_tx_applied, count_tx_failed_auth, count_tx_failed_no_rc );
     count_tx_pushed = 0;
     count_tx_applied = 0;
+    count_tx_failed_auth = 0;
+    count_tx_failed_no_rc = 0;
   }
 
   void operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
@@ -262,6 +266,16 @@ struct chain_plugin_impl::write_request_visitor
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       ++count_tx_applied;
+    }
+    catch( const hive::protocol::transaction_auth_exception& e )
+    {
+      tx_ctrl->on_failure( e );
+      ++count_tx_failed_auth;
+    }
+    catch( const hive::chain::not_enough_rc_exception& e )
+    {
+      tx_ctrl->on_failure( e );
+      ++count_tx_failed_no_rc;
     }
     catch( const fc::exception& e )
     {
