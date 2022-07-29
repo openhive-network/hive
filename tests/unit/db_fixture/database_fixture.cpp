@@ -653,22 +653,26 @@ void database_fixture::push_transaction( const signed_transaction& tx, uint32_t 
   test::_push_transaction(*db, tx, skip_flags, pack_type);
 }
 
-void database_fixture::push_transaction( const full_transaction_ptr& tx, uint32_t skip_flags /* = 0 */ )
+full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags, std::vector< signature_type >* signatures )
 {
-  db->push_transaction( tx, skip_flags );
+  return push_transaction( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, signatures );
 }
 
-void database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags )
+full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags, std::vector< signature_type >* signatures )
 {
-  sign( tx, key );
-  push_transaction( tx, skip_flags );
-}
+  full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
 
-void database_fixture::push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags )
-{
-  for( const auto& key : keys )
-    sign( tx, key );
-  push_transaction( tx, skip_flags );
+  _tx->sign_transaction( keys, db->get_chain_id(), fc::ecc::fc_canonical, hive::protocol::transaction_serialization_type::legacy );
+
+  if( signatures )
+  {
+    auto __tx = _tx->get_transaction();
+    std::copy( __tx.signatures.begin(), __tx.signatures.end(), std::back_inserter( *signatures ) );
+  }
+
+  db->push_transaction( _tx, skip_flags );
+
+  return _tx;
 }
 
 bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )

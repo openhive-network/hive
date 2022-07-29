@@ -99,14 +99,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     BOOST_TEST_MESSAGE(" -- transaction status tracking test" );
 
-    hive::protocol::pack_type pack = hive::protocol::pack_type::legacy;
-
-    auto _create_full_transaction = [pack, this]( signed_transaction& trx, const fc::ecc::private_key& key )
-    {
-      this->sign( trx, key );
-      return hive::chain::full_transaction_type::create_from_signed_transaction( trx, pack, false /* cache this transaction */) ;
-    };
-
     signed_transaction _tx0;
     transfer_operation op0;
     auto _tx0_expiration = db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION;
@@ -118,8 +110,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     // Create transaction 0
     _tx0.operations.push_back( op0 );
     _tx0.set_expiration( _tx0_expiration );
-    auto tx0 = _create_full_transaction( _tx0, alice_private_key );
-    push_transaction( tx0, 0 );
+    auto tx0 = push_transaction( _tx0, alice_private_key, 0 );
 
     // Tracking should not be enabled until we have reached TRANSCATION_STATUS_TRACK_AFTER_BLOCK - ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) blocks
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
@@ -151,8 +142,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     // Create transaction 1
     _tx1.operations.push_back( op1 );
     _tx1.set_expiration( _tx1_expiration );
-    auto tx1 = _create_full_transaction( _tx1, alice_private_key );
-    push_transaction( tx1, 0 );
+    auto tx1 = push_transaction( _tx1, alice_private_key, 0 );
 
     // Transaction 1 exists in the mem pool
     tso = db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
@@ -184,8 +174,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     _tx2.operations.push_back( op2 );
     _tx2.set_expiration( _tx2_expiration );
-    auto tx2 = _create_full_transaction( _tx2, alice_private_key );
-    push_transaction( tx2, 0 );
+    auto tx2 = push_transaction( _tx2, alice_private_key, 0 );
 
     // Create transaction 3
     signed_transaction _tx3;
@@ -198,8 +187,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     _tx3.operations.push_back( op3 );
     _tx3.set_expiration( _tx3_expiration );
-    auto tx3 = _create_full_transaction( _tx3, bob_private_key );
-    push_transaction( tx3, 0 );
+    auto tx3 = push_transaction( _tx3, alice_private_key, 0 );
 
     // Transaction 1 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
@@ -429,8 +417,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     _tx4.operations.push_back( op4 );
     _tx4.set_expiration( _tx4_expiration );
-    auto tx4 = _create_full_transaction( _tx4, alice_private_key );
-    push_transaction( tx4, 0 );
+    auto tx4 = push_transaction( _tx4, alice_private_key, 0 );
 
     generate_block();
 
@@ -457,8 +444,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     _tx5.operations.push_back( op5 );
     _tx5.set_expiration( _tx5_expiration );
-    auto tx5 = _create_full_transaction( _tx5, alice_private_key );
-    push_transaction( tx5, 0 );
+    auto tx5 = push_transaction( _tx5, alice_private_key, 0 );
 
     generate_blocks( TRANSACTION_STATUS_TEST_BLOCK_DEPTH + ( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL ) - 1 );
 
