@@ -688,15 +688,13 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
     tx.ref_block_prefix = 0;
     
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    PUSH_TX( *db, tx );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "proper ref_block_num, ref_block_prefix" );
 
     
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    PUSH_TX( *db, tx, database::skip_transaction_dupe_check );
+    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "ref_block_num=0, ref_block_prefix=12345678" );
 
@@ -704,8 +702,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
     tx.ref_block_prefix = 0x12345678;
     
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
 
     BOOST_TEST_MESSAGE( "ref_block_num=1, ref_block_prefix=12345678" );
 
@@ -713,8 +710,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
     tx.ref_block_prefix = 0x12345678;
     
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
 
     BOOST_TEST_MESSAGE( "ref_block_num=9999, ref_block_prefix=12345678" );
 
@@ -722,8 +718,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
     tx.ref_block_prefix = 0x12345678;
     
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
   }
   catch (fc::exception& e)
   {
