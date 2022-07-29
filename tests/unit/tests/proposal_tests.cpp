@@ -2207,7 +2207,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
 
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      HIVE_REQUIRE_THROW(push_transaction( tx, voter_01_key, 0 ), fc::exception);
+      HIVE_REQUIRE_THROW(push_transaction( tx, voter_01_key ), fc::exception);
       tx.operations.clear();
       
 
@@ -2229,7 +2229,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
 
       tx.operations.push_back( op );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      HIVE_REQUIRE_THROW(push_transaction( tx, voter_01_key, 0 ), fc::exception);
+      HIVE_REQUIRE_THROW(push_transaction( tx, voter_01_key ), fc::exception);
       tx.operations.clear();
       
 
@@ -2358,7 +2358,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_005 )
     signed_transaction tx;
     tx.operations.push_back( cpo );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW(push_transaction( tx, alice_private_key, 0 ), fc::exception);
+    HIVE_REQUIRE_THROW(push_transaction( tx, alice_private_key ), fc::exception);
     tx.operations.clear();
     
     validate_database();
@@ -2386,7 +2386,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_006 )
     signed_transaction tx;
     tx.operations.push_back( cpo );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW(push_transaction( tx, alice_private_key, 0 ), fc::exception);
+    HIVE_REQUIRE_THROW(push_transaction( tx, alice_private_key ), fc::exception);
     tx.operations.clear();
     
     validate_database();

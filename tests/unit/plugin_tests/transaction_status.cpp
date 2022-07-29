@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     _tx3.operations.push_back( op3 );
     _tx3.set_expiration( _tx3_expiration );
-    auto tx3 = push_transaction( _tx3, alice_private_key );
+    auto tx3 = push_transaction( _tx3, bob_private_key );
 
     // Transaction 1 exists in a block
     tso = db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );

@@ -56,12 +56,12 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = OBSOLETE_TREASURY_ACCOUNT;
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     }
     tx.clear();
 
@@ -72,12 +72,12 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to_account = OBSOLETE_TREASURY_ACCOUNT;
       op.percent = 50 * HIVE_1_PERCENT;
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to_account = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     }
     tx.clear();
 
@@ -88,22 +88,22 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = OBSOLETE_TREASURY_ACCOUNT;
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.amount = ASSET( "1.000 TBD" );
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = "alice";
@@ -120,12 +120,12 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = OBSOLETE_TREASURY_ACCOUNT;
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     }
     tx.clear();
 
