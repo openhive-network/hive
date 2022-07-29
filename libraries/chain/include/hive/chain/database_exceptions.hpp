@@ -74,7 +74,7 @@ namespace hive { namespace chain {
   FC_DECLARE_EXCEPTION( chain_exception, 4000000, "blockchain exception" )
   FC_DECLARE_DERIVED_EXCEPTION( database_query_exception,          hive::chain::chain_exception, 4010000, "database query exception" )
   FC_DECLARE_DERIVED_EXCEPTION( block_validate_exception,          hive::chain::chain_exception, 4020000, "block validation exception" )
-  FC_DECLARE_DERIVED_EXCEPTION( transaction_exception,             hive::chain::chain_exception, 4030000, "transaction validation exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_check_exception,       hive::chain::chain_exception, 4030000, "transaction validation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( operation_validate_exception,      hive::chain::chain_exception, 4040000, "operation validation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( operation_evaluate_exception,      hive::chain::chain_exception, 4050000, "operation evaluation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( utility_exception,                 hive::chain::chain_exception, 4060000, "utility method exception" )
@@ -87,8 +87,8 @@ namespace hive { namespace chain {
   FC_DECLARE_DERIVED_EXCEPTION( order_match_exception,             hive::chain::market_exception, 4120100, "order match exception" )
   FC_DECLARE_DERIVED_EXCEPTION( order_fill_exception,              hive::chain::market_exception, 4120100, "order fill exception" )
 
-  FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_exception, 4030100, "transaction expiration exception" )
-  FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_exception, 4030200, "transaction tapos exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_check_exception, 4030100, "transaction expiration exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_check_exception, 4030200, "transaction tapos exception" )
 
   FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   hive::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
 
