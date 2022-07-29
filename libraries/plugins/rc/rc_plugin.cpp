@@ -240,7 +240,7 @@ int64_t use_account_rcs(
     {
       if( db.is_in_control() )
       {
-        HIVE_ASSERT( has_mana, plugin_exception,
+        HIVE_ASSERT( has_mana, not_enough_rc_exception,
           "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
           ("account", account_name)
           ("rc_needed", rc)
