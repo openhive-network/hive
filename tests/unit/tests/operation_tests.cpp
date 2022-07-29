@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key, 0 ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Test failure when containing additional incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, 0 ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure when containing duplicate signatures" );
     tx.signatures.clear();
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, active_key, 0 ), tx_missing_owner_auth );
 
     BOOST_TEST_MESSAGE( "--- Test failure when owner key and active key are present" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {active_key, alice_private_key}, 0 ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure when incorrect signature" );
     tx.signatures.clear();
@@ -417,7 +417,7 @@ BOOST_AUTO_TEST_CASE( comment_authorities )
     push_transaction( tx, alice_post_key, 0 );
 
     BOOST_TEST_MESSAGE( "--- Test failure when signed by an additional signature not in the creator's authority" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_post_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure when signed by a signature not in the creator's authority" );
     tx.signatures.clear();
@@ -575,7 +575,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key, 0 ), fc::assert_exception );
     generate_block();
-    push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key, 0 );
 
     BOOST_TEST_MESSAGE( "--- Test failure posting withing 1 minute" );
 
@@ -600,7 +600,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     validate_database();
 
     generate_block();
-    push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key, 0 );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -1505,10 +1505,13 @@ BOOST_AUTO_TEST_CASE( signature_stripping )
 
     tx.operations.push_back( transfer_op );
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), tx_missing_active_auth );
-    signature_type alice_sig = tx.signatures.back();
-    HIVE_REQUIRE_THROW( push_transaction( tx, {bob_private_key, sam_private_key}, 0 ), tx_irrelevant_sig );
-    auto _it = tx.signatures.rbegin();
+    std::vector< signature_type > signatures_a;
+    std::vector< signature_type > signatures_b;
+
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0, &signatures_a ), tx_missing_active_auth );
+    signature_type alice_sig = signatures_a.back();
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key, sam_private_key}, 0, &signatures_b ), tx_irrelevant_sig );
+    auto _it = signatures_b.rbegin();
     signature_type sam_sig = *_it;
     ++_it;
     signature_type bob_sig = *_it;
@@ -1791,7 +1794,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
@@ -3776,7 +3779,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
@@ -4101,7 +4104,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
@@ -4538,7 +4541,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cancel_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     tx.signatures.clear();
@@ -4905,7 +4908,7 @@ BOOST_AUTO_TEST_CASE( change_recovery_account )
       // only Sam -> throw
       HIVE_REQUIRE_THROW( push_transaction( tx, new_owner_key, 0 ), fc::exception );
       // Alice+Sam -> OK
-      push_transaction( tx, recent_owner_key, 0 );
+      push_transaction( tx, {new_owner_key, recent_owner_key}, 0 );
     };
 
     auto request_account_recovery = [&]( const std::string& recovery_account, const fc::ecc::private_key& recovery_account_key, const std::string& account_to_recover, const public_key_type& new_owner_key )
