@@ -53,6 +53,7 @@ cleanup_hived_data_image:
 testnet_node_build:
   stage: build
   image: "$CI_REGISTRY_IMAGE/builder$BUILDER_IMAGE_TAG"
+  interruptible: true
   script:
     # TESTNET=ON HIVE_LINT=OFF
     - ./ciscripts/build.sh ON OFF
@@ -77,6 +78,7 @@ chain_test:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
+  interruptible: true
   variables:
     GIT_STRATEGY: none
   script:
@@ -98,6 +100,7 @@ plugin_test:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
+  interruptible: true
   variables:
     GIT_STRATEGY: none
   script:
@@ -152,6 +155,7 @@ beem_tests:
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
+  interruptible: true
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev python3-venv
     - export NUMBER_OF_PROCESSES=$(nproc)
@@ -433,6 +437,7 @@ transaction_serialization_testnet_tests:
 transaction_serialization_mainnet_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
+  interruptible: true
   variables:
     FF_NETWORK_PER_BUILD: 1
     PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
