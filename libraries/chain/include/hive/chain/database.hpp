@@ -740,7 +740,7 @@ namespace chain {
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
-      uint32_t update_last_irreversible_block();
+      uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
       void clear_expired_orders();

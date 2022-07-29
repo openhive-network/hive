@@ -1091,26 +1091,6 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
   tx_ctrl.rethrow_if_exception();
 }
 
-struct auto_scope
-{
-  auto_scope(std::function<void()> action) : _action(action), _do_action(true) {}
-  void cancel()
-  {
-    _do_action = false;
-  }
-
-  ~auto_scope()
-  {
-    if(_do_action)
-      _action();
-  }
-
-private:
-  std::function< void() > _action;
-  bool _do_action = false;
-};
-
-
 void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
   std::function< void( bool hf26_auth_fail )> on_full_trx, const lock_type lock /* = lock_type::boost */)
 { try {

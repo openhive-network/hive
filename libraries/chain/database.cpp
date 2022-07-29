@@ -4303,7 +4303,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);
 
-  uint32_t old_last_irreversible = update_last_irreversible_block();
+  uint32_t old_last_irreversible = update_last_irreversible_block(true);
 
   create_block_summary(full_block);
   clear_expired_transactions();
@@ -5329,11 +5329,11 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
   // ddump((_my->_last_fast_approved_block_by_witness));
 
-  uint32_t old_last_irreversible_block = update_last_irreversible_block();
+  uint32_t old_last_irreversible_block = update_last_irreversible_block(false);
   migrate_irreversible_state(old_last_irreversible_block);
 } FC_CAPTURE_AND_RETHROW() }
 
-uint32_t database::update_last_irreversible_block()
+uint32_t database::update_last_irreversible_block(bool currently_applying_a_block)
 { try {
   uint32_t old_last_irreversible = get_last_irreversible_block_num();
   /**
@@ -5491,12 +5491,24 @@ uint32_t database::update_last_irreversible_block()
       return old_last_irreversible;
     }
 
+    if (currently_applying_a_block)
+    {
+      // note: we don't think this case will ever happen, but:
+      // we shouldn't ever trigger a fork switch when this function is called near the end of
+      // _apply_block().  If it ever happens, we'll just delay the fork switch until the next
+      // time we get a new block or a fast-confirm operation.
+      return old_last_irreversible;
+    }
+
     try
     {
       detail::without_pending_transactions(*this, existing_block_flow_control(nullptr), std::move(_pending_tx), [&]() {
         try
         {
           switch_forks(new_head_block);
+          // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
+          // on the new fork, so we don't need to mark the block as irreversible here
+          return old_last_irreversible;
         }
         FC_CAPTURE_AND_RETHROW()
       });
@@ -5507,11 +5519,12 @@ uint32_t database::update_last_irreversible_block()
     }
   }
 
-  set_last_irreversible_block_num(new_last_irreversible_block->get_block_num());
+  // don't set last_irreversible_block to a block not yet processed (could happen during a fork switch)
+  set_last_irreversible_block_num(std::min(new_last_irreversible_block->get_block_num(), head_block_num()));
 
   // clean up any fast-confirms that are no longer relevant to reversible blocks
   for (auto iter = _my->_last_fast_approved_block_by_witness.begin(); iter != _my->_last_fast_approved_block_by_witness.end();)
-    if (block_header::num_from_id(iter->second) <= new_last_irreversible_block->get_block_num())
+    if (block_header::num_from_id(iter->second) <= get_last_irreversible_block_num())
       iter = _my->_last_fast_approved_block_by_witness.erase(iter);
     else
       ++iter;
