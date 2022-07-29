@@ -540,7 +540,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     op.symbol = alice_symbol;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( tx, alice_private_key, 0 );
+    push_transaction( tx, alice_private_key );
     tx.operations.clear();
     tx.signatures.clear();
   }
