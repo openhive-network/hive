@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     fund( "alice", asset( 1000000, any_smt_symbol ) );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     const auto& bucket_idx = db->get_index< bucket_index >().indices().get< by_bucket >();
     const auto& order_hist_idx = db->get_index< order_history_index >().indices().get< by_id >();
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     op.owner = "bob";
     op.amount_to_sell = ASSET( "1.500 TESTS" );
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     auto fill_order_b_time = db->head_block_time();
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     op.owner = "sam";
     op.amount_to_sell = ASSET( "1.000 TESTS" );
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     auto fill_order_c_time = db->head_block_time();
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     op.owner = "alice";
     op.amount_to_sell = asset( 500, any_smt_symbol );
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     op.owner = "bob";
     op.amount_to_sell = ASSET( "0.450 TESTS" );

@@ -762,7 +762,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     BOOST_REQUIRE_EQUAL( pre_tx_thief3_mana, thief3_rc.rc_manabar.current_mana );
     //remove transfer from tx
     tx.operations.pop_back();
-    tx.signatures.clear();
+    
     //now that transfer was removed it used to work ok despite total lack of RC mana, however
     //rc_multisig_recover_account test showed the dangers of such approach, therefore it was blocked
     //now there can be only one subsidized operation in tx and with no more than allowed limit of

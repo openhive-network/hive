@@ -876,7 +876,6 @@ void database_fixture::post_comment_internal( const std::string& _author, const 
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( trx, _key );
   push_transaction( trx );
-  trx.signatures.clear();
   trx.operations.clear();
 }
 
@@ -906,7 +905,6 @@ void database_fixture::vote( std::string _author, std::string _permlink, std::st
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( trx, _key );
   push_transaction( trx );
-  trx.signatures.clear();
   trx.operations.clear();
 }
 
@@ -1193,7 +1191,6 @@ int64_t dhf_database_fixture::create_proposal( std::string creator, std::string 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   push_transaction( tx, key );
-  tx.signatures.clear();
   tx.operations.clear();
 
   const auto& proposal_idx = db-> template get_index< proposal_index >().indices(). template get< by_proposal_id >();
@@ -1228,7 +1225,6 @@ void dhf_database_fixture::update_proposal(uint64_t proposal_id, std::string cre
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   push_transaction( tx, key );
-  tx.signatures.clear();
   tx.operations.clear();
 }
 
@@ -1274,7 +1270,6 @@ void dhf_database_fixture::remove_proposal(account_name_type _deleter, flat_set<
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   sign( trx, _key );
   push_transaction( trx );
-  trx.signatures.clear();
   trx.operations.clear();
 }
 
