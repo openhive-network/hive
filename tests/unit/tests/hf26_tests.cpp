@@ -76,8 +76,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
       signed_transaction tx;
       tx.operations.push_back( acc_create );
       tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      executor->sign( tx, alice_private_key );
-      PUSH_TX( *executor->db, tx, 0 );
+      executor->push_transaction( tx, alice_private_key );
 
       executor->vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ) );
 
@@ -95,15 +94,14 @@ BOOST_AUTO_TEST_CASE( update_operation )
 
         tx.operations.push_back( acc_update );
         tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-        executor->sign( tx, executor->generate_private_key( old_key ) );
 
         if( is_exception )
         {
-          HIVE_REQUIRE_THROW( PUSH_TX( *executor->db, tx, 0 ), fc::assert_exception );
+          HIVE_REQUIRE_THROW( executor->push_transaction( tx, executor->generate_private_key( old_key ) ), fc::assert_exception );
         }
         else
         {
-          PUSH_TX( *executor->db, tx, 0 );
+          executor->push_transaction( tx, executor->generate_private_key( old_key ) );
         }
 
         executor->generate_block();
@@ -276,7 +274,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
       executor->fund( "bob", 1000000 );
       executor->generate_block();
 
-      auto _get_trx = []( ptr_hardfork_database_fixture& executor, const std::vector<operation>& ops, const fc::ecc::private_key& private_key, hive::protocol::pack_type pack )
+      auto _get_trx = []( ptr_hardfork_database_fixture& executor, const std::vector<operation>& ops )
       {
         signed_transaction _result;
 
@@ -286,10 +284,6 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         }
 
         _result.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-        {
-          hive::protocol::serialization_mode_controller::pack_guard guard( pack );
-          executor->sign( _result, private_key );
-        }
 
         return _result;
       };
@@ -309,8 +303,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           auto _alice_balance_previous  = executor->get_balance( "alice" );
           auto _bob_balance_previous    = executor->get_balance( "bob" );
 
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::legacy );
-          PUSH_TX( *executor->db, _tx, 0 );
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::legacy );
 
           auto _alice_balance_after = executor->get_balance( "alice" );
           auto _bob_balance_after   = executor->get_balance( "bob" );
@@ -326,8 +320,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           auto _alice_balance_previous  = executor->get_balance( "alice" );
           auto _bob_balance_previous    = executor->get_balance( "bob" );
 
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
-          PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26);
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
 
           auto _alice_balance_after = executor->get_balance( "alice" );
           auto _bob_balance_after   = executor->get_balance( "bob" );
@@ -339,8 +333,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         }
         else
         {
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
-          HIVE_REQUIRE_THROW( PUSH_TX( *executor->db, _tx, 0 ), tx_missing_active_auth );
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
         }
       };
 
@@ -358,8 +352,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         _op.json_metadata    = "{\"foo\":\"bar\"}";
 
         {
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::legacy );
-          PUSH_TX( *executor->db, _tx, 0 );
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::legacy );
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "lemon" ) );
           BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "lemon" ) );
@@ -373,8 +367,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         {
           //It doesn't matter if it's hf26 or not because a `comment_operation` hasn't any asset.
           _op.permlink = "avocado";
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
-          PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26 );
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "avocado" ) );
           BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
@@ -390,15 +384,15 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
         if( is_hf26 )
         {
-          signed_transaction _tx = _get_trx( executor, { _op2 }, private_key, hive::protocol::pack_type::hf26 );
-          PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26 );
+          signed_transaction _tx = _get_trx( executor, { _op2 } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
 
           executor->generate_block();
         }
         else
         {
-          signed_transaction _tx = _get_trx( executor, { _op2 }, private_key, hive::protocol::pack_type::hf26 );
-          HIVE_REQUIRE_THROW( PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
+          signed_transaction _tx = _get_trx( executor, { _op2 } );
+          HIVE_REQUIRE_THROW( executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
         }
       };
 
@@ -410,8 +404,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         _op.account = "alice";
 
         {
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::legacy );
-          PUSH_TX( *executor->db, _tx, 0 );
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::legacy );
 
           executor->generate_block();
         }
@@ -419,8 +413,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         {
           //It doesn't matter if it's hf26 or not because a `decline_voting_rights_operation` hasn't any asset.
           _op.decline = false;
-          signed_transaction _tx = _get_trx( executor, { _op }, private_key, hive::protocol::pack_type::hf26 );
-          PUSH_TX( *executor->db, _tx, 0, hive::protocol::pack_type::hf26 );
+          signed_transaction _tx = _get_trx( executor, { _op } );
+          executor->push_transaction( _tx, private_key, 0, hive::protocol::pack_type::hf26 );
 
           executor->generate_block();
         }

@@ -647,19 +647,19 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   push_transaction(tx, key, 0);
 }
 
-full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags, std::vector< signature_type >* signatures )
+full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags, hive::protocol::pack_type pack_type, std::vector< signature_type >* signatures )
 {
   if( key == fc::ecc::private_key() )
-    return push_transaction( tx, std::vector<fc::ecc::private_key>(), skip_flags, signatures );
+    return push_transaction( tx, std::vector<fc::ecc::private_key>(), skip_flags, pack_type, signatures );
   else
-    return push_transaction( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, signatures );
+    return push_transaction( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, pack_type, signatures );
 }
 
-full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags, std::vector< signature_type >* signatures )
+full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags, hive::protocol::pack_type pack_type, std::vector< signature_type >* signatures )
 {
-  full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
+  full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
 
-  _tx->sign_transaction( keys, db->get_chain_id(), fc::ecc::fc_canonical, hive::protocol::transaction_serialization_type::legacy );
+  _tx->sign_transaction( keys, db->get_chain_id(), fc::ecc::fc_canonical, pack_type );
 
   if( signatures )
   {
@@ -1057,7 +1057,7 @@ void push_invalid_operation(const operation& invalid_op, const fc::ecc::private_
   tx.operations.push_back( invalid_op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.sign( key, db->get_chain_id(), fc::ecc::bip_0062 );
-  HIVE_REQUIRE_THROW( test::_push_transaction( *db, tx, database::skip_transaction_dupe_check ), fc::assert_exception );
+  HIVE_REQUIRE_THROW( db->push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check ), fc::assert_exception );
 }
 
 template< typename T >

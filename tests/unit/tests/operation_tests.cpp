@@ -1508,9 +1508,9 @@ BOOST_AUTO_TEST_CASE( signature_stripping )
     std::vector< signature_type > signatures_a;
     std::vector< signature_type > signatures_b;
 
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0, &signatures_a ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0, hive::protocol::pack_type::legacy, &signatures_a ), tx_missing_active_auth );
     signature_type alice_sig = signatures_a.back();
-    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key, sam_private_key}, 0, &signatures_b ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key, sam_private_key}, 0, hive::protocol::pack_type::legacy, &signatures_b ), tx_irrelevant_sig );
     auto _it = signatures_b.rbegin();
     signature_type sam_sig = *_it;
     ++_it;
