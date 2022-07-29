@@ -654,7 +654,7 @@ BOOST_AUTO_TEST_CASE( tapos )
     idump((b->get_block()));
     b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
-    trx.signatures.clear();
+    
     trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
     BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
   } catch (fc::exception& e) {
@@ -686,14 +686,14 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     tx.ref_block_num = 0;
     tx.ref_block_prefix = 0;
-    tx.signatures.clear();
+    
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
     PUSH_TX( *db, tx );
 
     BOOST_TEST_MESSAGE( "proper ref_block_num, ref_block_prefix" );
 
-    tx.signatures.clear();
+    
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
     PUSH_TX( *db, tx, database::skip_transaction_dupe_check );
@@ -702,7 +702,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     tx.ref_block_num = 0;
     tx.ref_block_prefix = 0x12345678;
-    tx.signatures.clear();
+    
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
     HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
@@ -711,7 +711,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     tx.ref_block_num = 1;
     tx.ref_block_prefix = 0x12345678;
-    tx.signatures.clear();
+    
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
     HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
@@ -720,7 +720,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     tx.ref_block_num = 9999;
     tx.ref_block_prefix = 0x12345678;
-    tx.signatures.clear();
+    
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     sign( tx, alice_private_key );
     HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );

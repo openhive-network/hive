@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     op.owner = "alice";
     op.amount_to_sell = ASSET( "1.000 TESTS" );
@@ -64,11 +64,11 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, , database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     validate_database();
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     op.owner = "alice";
     op.amount_to_sell = ASSET( "1.000 TESTS" );
@@ -111,11 +111,11 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     validate_database();
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     FUND( "bob", bob_smt_balance );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.owner = "alice";
     op.min_to_receive = alice_0;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = alice_0;
     op.min_to_receive = ASSET( "10.000 TESTS" ) ;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.min_to_receive = ASSET( "15.000 TBD" );
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION + 1 );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = ASSET( "10.000 TESTS" );
     op.min_to_receive = asset( 15000, alice_symbol );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     op.amount_to_sell = ASSET( "20.000 TESTS" );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.orderid = 2;
     op.fill_or_kill = true;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.min_to_receive = ASSET( "5.000 TESTS" );
     op.fill_or_kill = false;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = asset( 15000, alice_symbol );
     op.min_to_receive = ASSET( "10.000 TESTS" );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = ASSET( "5.000 TESTS" );
     op.min_to_receive = asset( 7500, alice_symbol );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = ASSET( "10.000 TESTS" );
     op.min_to_receive = asset( 11000, alice_symbol );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = asset( 12000, alice_symbol );
     op.min_to_receive = ASSET( "10.000 TESTS" );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     can.owner = "bob";
     can.orderid = 4;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( can );
     push_transaction( tx, bob_private_key );
 
@@ -418,7 +418,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = ASSET( "20.000 TESTS" );
     op.min_to_receive = asset( 22000, alice_symbol );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -427,7 +427,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     op.amount_to_sell = asset( 12000, alice_symbol );
     op.min_to_receive = ASSET( "10.000 TESTS" );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     FUND( "alice", asset( 100000, alice_symbol ) );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     limit_order_create_operation c;
     c.owner = "alice";
@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     op.orderid = 1;
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signature." );
@@ -500,11 +500,11 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     validate_database();
@@ -527,7 +527,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     const account_object& alice_account = db->get_account( "alice" );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     asset alice_smt_balance = asset( 1000000, alice_symbol );
     asset alice_balance = alice_account.get_balance();
@@ -555,14 +555,14 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     create.min_to_receive = asset( 7500, alice_symbol );
     create.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( create );
     push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 5 ) ) != limit_order_idx.end() );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -605,7 +605,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     FUND( "bob", bob_smt_balance );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
@@ -633,7 +633,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.exchange_rate.base = ASSET( "0.000 TESTS" );
     op.exchange_rate.quote = alice_0;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -647,7 +647,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = alice_0;
     op.exchange_rate = price( ASSET( "1.000 TESTS" ), asset( 1000, alice_symbol ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -661,7 +661,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.exchange_rate = price( ASSET( "2.000 TESTS" ), ASSET( "3.000 TBD" ) );
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION + 1 );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -671,7 +671,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = ASSET( "10.000 TESTS" );
     op.exchange_rate = price( ASSET( "2.000 TESTS" ), asset( 3000, alice_symbol ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -692,7 +692,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     op.amount_to_sell = ASSET( "20.000 TESTS" );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -712,7 +712,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.orderid = 2;
     op.fill_or_kill = true;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
 
@@ -731,7 +731,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.exchange_rate = price( asset( 3000, alice_symbol ), ASSET( "2.000 TESTS" ) );
     op.fill_or_kill = false;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -767,7 +767,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = asset( 15000, alice_symbol );
     op.exchange_rate = price( asset( 3000, alice_symbol ), ASSET( "2.000 TESTS" ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -796,7 +796,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = ASSET( "5.000 TESTS" );
     op.exchange_rate = price( ASSET( "2.000 TESTS" ), asset( 3000, alice_symbol ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -819,7 +819,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = ASSET( "10.000 TESTS" );
     op.exchange_rate = price( ASSET( "1.000 TESTS" ), asset( 1100, alice_symbol ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -828,7 +828,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = asset( 12000, alice_symbol );
     op.exchange_rate = price( asset( 1200, alice_symbol ), ASSET( "1.000 TESTS" ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -855,7 +855,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     can.owner = "bob";
     can.orderid = 4;
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( can );
     push_transaction( tx, bob_private_key );
 
@@ -869,7 +869,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = ASSET( "20.000 TESTS" );
     op.exchange_rate = price( ASSET( "1.000 TESTS" ), asset( 1100, alice_symbol ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
@@ -878,7 +878,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     op.amount_to_sell = asset( 12000, alice_symbol );
     op.exchange_rate = price( asset( 1200, alice_symbol ), ASSET( "1.000 TESTS" ) );
     tx.operations.clear();
-    tx.signatures.clear();
+    
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
@@ -1801,7 +1801,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     });
 
     tx.set_expiration( db->head_block_time() + HIVE_BLOCK_INTERVAL * 10 );
-    tx.signatures.clear();
+    
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW()
@@ -3016,7 +3016,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
 
     BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 5000, symbol ) );
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 5000, symbol ) );
-    tx.signatures.clear();
+    
     tx.operations.clear();
     validate_database();
 
@@ -3032,7 +3032,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception ); //still blocked even though old is no longer active treasury
-    tx.signatures.clear();
+    
     tx.operations.clear();
     validate_database();
 
@@ -3041,13 +3041,13 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::assert_exception );
-    tx.signatures.clear();
+    
     tx.operations.clear();
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test emptying an account" );
     op.to = "bob";
-    tx.signatures.clear();
+    
     tx.operations.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -3058,7 +3058,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test transferring non-existent funds" );
-    tx.signatures.clear();
+    
     tx.operations.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );

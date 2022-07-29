@@ -529,12 +529,12 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, 0 ), fc::exception );
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     //Try to elevate account
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     //Make transaction again. Everything is correct.
     op.symbol = alice_symbol;
@@ -542,7 +542,7 @@ BOOST_AUTO_TEST_CASE( setup_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
     tx.operations.clear();
-    tx.signatures.clear();
+    
   }
   FC_LOG_AND_RETHROW()
 }
