@@ -108,7 +108,7 @@ struct pending_transactions_restorer
             ++applied_txs;
           }
         }
-        catch( const transaction_exception& e )
+        catch( const transaction_check_exception& e )
         {
           dlog("Pending transaction became invalid after switching to block ${b} ${n} ${t}",
                ("b", _db.head_block_id())("n", _db.head_block_num())("t", _db.head_block_time()));
