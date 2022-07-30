@@ -377,4 +377,14 @@ namespace fc
       vo = var.get_object();
    }
 
+   void variant_object_builder::validate() const
+   {
+     std::set< string > keys;
+     for( auto& key_value : *buffer._key_value.get() )
+     {
+       auto insert_info = keys.insert( key_value.key() );
+       FC_ASSERT( insert_info.second, "Duplicated key in built variant_object" );
+     }
+   }
+
 } // namesapce fc

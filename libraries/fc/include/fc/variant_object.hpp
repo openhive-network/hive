@@ -7,6 +7,7 @@ namespace fc
 {
    using std::map;
    class mutable_variant_object;
+   class variant_object_builder;
    
    /**
     *  @ingroup Serializable
@@ -98,6 +99,7 @@ namespace fc
    private:
       std::shared_ptr< std::vector< entry > > _key_value;
       friend class mutable_variant_object;
+      friend class variant_object_builder;
    };
    /** @ingroup Serializable */
    void to_variant( const variant_object& var,  variant& vo );
@@ -257,5 +259,58 @@ namespace fc
          vo[itr->key()] = itr->value().as<T>();
    }
 
+
+   /**
+   *  @brief Builder for variant_object that does not waste time on checking each write.
+   *
+   *  Additional key-value pairs are inserted without explicitly enforcing uniqueness
+   *  (except for debug and testnet builds). The uniqueness must be ensured by the caller.
+   */
+   class variant_object_builder
+   {
+   public:
+      variant_object_builder() {}
+      variant_object_builder( string key, variant val )
+         : buffer( std::move( key ), std::move( val ) ) {}
+
+      template<typename T>
+      variant_object_builder( string key, T&& val )
+         : buffer( std::move( key ), std::forward<T>( val ) ) {}
+
+      void validate() const;
+
+      variant_object get() const
+      {
+#if defined IS_TEST_NET || !defined NDEBUG
+         validate();
+#endif
+         return buffer;
+      }
+
+      void append( string key, variant var )
+      {
+         buffer._key_value->emplace_back( std::move( key ), std::move( var ) );
+      }
+
+      variant_object_builder& operator()( string key, variant var )
+      {
+         append( std::move( key ), std::move( var ) );
+         return *this;
+      }
+      template<typename T>
+      variant_object_builder& operator()( string key, T&& var )
+      {
+         append( std::move( key ), variant( std::forward<T>( var ) ) );
+         return *this;
+      }
+
+      void reserve( size_t s )
+      {
+         buffer._key_value->reserve( s );
+      }
+
+   private:
+      variant_object buffer;
+   };
 } // namespace fc
 FC_REFLECT_TYPENAME(fc::variant_object)
