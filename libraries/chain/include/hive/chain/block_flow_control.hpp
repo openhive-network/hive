@@ -93,6 +93,22 @@ private:
 class block_flow_control
 {
 public:
+  enum class report_type
+  {
+    NONE, //no report
+    MINIMAL, //just basic block stats
+    REGULAR, //almost everything, useful for non-API nodes
+    FULL //everything, useful for API nodes
+  };
+  enum class report_output { DLOG, ILOG, NOTIFY };
+
+  static void set_auto_report( const std::string& _option_type, const std::string& _option_output );
+  static void set_auto_report( report_type _type, report_output _output )
+  {
+    auto_report_type = _type;
+    auto_report_output = _output;
+  }
+
   enum class phase
   {
     REQUEST, //request was just created - default
@@ -152,8 +168,7 @@ public:
   const std::shared_ptr<full_block_type>& get_full_block() const { return full_block; }
 
   const block_stats& get_stats() const { return stats; }
-  void log_stats() const;
-  void notify_stats() const;
+  fc::variant_object get_report( report_type rt ) const;
 
   phase get_phase() const { return current_phase; }
   bool finished() const { return current_phase == phase::END; }
@@ -176,6 +191,9 @@ protected:
   mutable bool was_ignored = false; //block was not applied because it was on shorter fork
 
   mutable fc::exception_ptr except; //filled in case of failure
+
+  static report_type auto_report_type; //type of automatic block stats reports (disabled for sync blocks)
+  static report_output auto_report_output; //output of automatic block stat reports
 };
 
 /**
