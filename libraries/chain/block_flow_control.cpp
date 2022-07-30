@@ -4,6 +4,32 @@
 
 namespace hive { namespace chain {
 
+block_flow_control::report_type block_flow_control::auto_report_type = block_flow_control::report_type::FULL;
+block_flow_control::report_output block_flow_control::auto_report_output = block_flow_control::report_output::ILOG;
+
+void block_flow_control::set_auto_report( const std::string& _option_type, const std::string& _option_output )
+{
+  if( _option_type == "NONE" )
+    auto_report_type = report_type::NONE;
+  else if( _option_type == "MINIMAL" )
+    auto_report_type = report_type::MINIMAL;
+  else if( _option_type == "REGULAR" )
+    auto_report_type = report_type::REGULAR;
+  else if( _option_type == "FULL" )
+    auto_report_type = report_type::FULL;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block stats report type" );
+
+  if( _option_output == "NOTIFY" )
+    auto_report_output = report_output::NOTIFY;
+  else if( _option_output == "ILOG" )
+    auto_report_output = report_output::ILOG;
+  else if( _option_output == "DLOG" )
+    auto_report_output = report_output::DLOG;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block stats report output" );
+}
+
 void block_flow_control::on_fork_db_insert() const
 {
   current_phase = phase::FORK_DB;
@@ -21,11 +47,28 @@ void block_flow_control::on_failure( const fc::exception& e ) const
 
 void block_flow_control::on_worker_done() const
 {
-  log_stats();
+  if( auto_report_type == report_type::NONE )
+    return;
+
+  switch( auto_report_output )
+  {
+  case report_output::NOTIFY:
+    hive::notify( "Block stats", "block_stats", get_report( auto_report_type ) );
+    break;
+  case report_output::ILOG:
+    ilog( "Block stats:${report}", ( "report", get_report( auto_report_type ) ) );
+    break;
+  default:
+    dlog( "Block stats:${report}", ( "report", get_report( auto_report_type ) ) );
+    break;
+  };
 }
 
-void block_flow_control::log_stats() const
+fc::variant_object block_flow_control::get_report( report_type rt ) const
 {
+  if( rt == report_type::NONE )
+    return fc::variant_object();
+
   const char* type = "";
   if( !finished() )
     type = "broken";
@@ -38,31 +81,59 @@ void block_flow_control::log_stats() const
 
   const auto& block_header = full_block->get_block_header();
   auto block_ts = block_header.timestamp;
-  ilog( "Block stats:"
-    "{\"num\":${nr},\"type\":\"${tp}\",\"id\":\"${id}\",\"ts\":\"${ts}\",\"bp\":\"${wit}\",\"txs\":${tx},\"size\":${s},\"offset\":${o},"
-    "\"before\":{\"inc\":${bi},\"ok\":${bo},\"auth\":${ba},\"rc\":${br}},"
-    "\"after\":{\"exp\":${ae},\"fail\":${af},\"appl\":${aa},\"post\":${ap}},"
-    "\"exec\":{\"offset\":${ef},\"pre\":${er},\"work\":${ew},\"post\":${eo},\"all\":${ea}}}",
-    ( "nr", full_block->get_block_num() )( "tp", type )( "id", full_block->get_block_id() )( "ts", block_ts )
-    ( "wit", block_header.witness )( "tx", full_block->get_full_transactions().size() )( "s", full_block->get_uncompressed_block_size() )
-    ( "o", stats.get_ready_ts() - block_ts )
-    ( "bi", stats.get_txs_processed_before_block() )( "bo", stats.get_txs_accepted_before_block() )
-    ( "ba", stats.get_txs_with_failed_auth_before_block() )( "br", stats.get_txs_with_no_rc_before_block() )
-    ( "ae", stats.get_txs_expired_after_block() )( "af", stats.get_txs_failed_after_block() )
-    ( "aa", stats.get_txs_reapplied_after_block() )( "ap", stats.get_txs_postponed_after_block() )
-    ( "ef", stats.get_creation_ts() - block_ts )
-    ( "er", stats.get_wait_time() )( "ew", stats.get_work_time() )
-    ( "eo", stats.get_cleanup_time() )( "ea", stats.get_total_time() )
-  );
-}
 
-void block_flow_control::notify_stats() const
-{
-  //TODO: supplement
-  //hive::notify( "Block stats",
-  // "num", block->block_num(),
-  // "type", ...
-  //);
+  fc::variant_object_builder report;
+  report
+    ( "num", full_block->get_block_num() )
+    ( "type", type );
+  if( rt != report_type::MINIMAL )
+  {
+    report
+      ( "id", full_block->get_block_id() )
+      ( "ts", block_ts )
+      ( "bp", block_header.witness );
+  }
+  report
+    ( "txs", full_block->get_full_transactions().size() )
+    ( "size", full_block->get_uncompressed_block_size() )
+    ( "offset", stats.get_ready_ts() - block_ts );
+  if( rt != report_type::MINIMAL )
+  {
+    fc::variant_object_builder before;
+    before
+      ( "inc", stats.get_txs_processed_before_block() )
+      ( "ok", stats.get_txs_accepted_before_block() );
+    if( rt == report_type::FULL )
+    {
+      before
+        ( "auth", stats.get_txs_with_failed_auth_before_block() )
+        ( "rc", stats.get_txs_with_no_rc_before_block() );
+    }
+    report( "before", before.get() );
+  }
+  if( rt != report_type::MINIMAL )
+  {
+    fc::variant_object_builder after;
+    after
+      ( "exp", stats.get_txs_expired_after_block() )
+      ( "fail", stats.get_txs_failed_after_block() )
+      ( "appl", stats.get_txs_reapplied_after_block() )
+      ( "post", stats.get_txs_postponed_after_block() );
+    report( "after", after.get() );
+  }
+  if( rt != report_type::MINIMAL )
+  {
+    fc::variant_object_builder exec;
+    exec
+      ( "offset", stats.get_creation_ts() - block_ts )
+      ( "pre", stats.get_wait_time() )
+      ( "work", stats.get_work_time() )
+      ( "post", stats.get_cleanup_time() )
+      ( "all", stats.get_total_time() );
+    report( "exec", exec.get() );
+  }
+
+  return report.get();
 }
 
 void generate_block_flow_control::on_fork_db_insert() const
@@ -101,7 +172,7 @@ void p2p_block_flow_control::on_failure( const fc::exception& e ) const
 
 void sync_block_flow_control::on_worker_done() const
 {
-  //log_stats(); many stats make no practical sense for sync blocks
+  //do not generate report: many stats make no practical sense for sync blocks
   //and the excess logging seems to be slowing down sync
 }
 
