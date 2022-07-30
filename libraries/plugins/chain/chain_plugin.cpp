@@ -774,6 +774,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("enable-block-log-compression", boost::program_options::value<bool>()->default_value(true), "Compress blocks using zstd as they're added to the block log" )
       ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
       ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
+      ("block-stats-report-type", bpo::value<string>()->default_value("FULL"), "Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes)." )
+      ("block-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put block stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -894,6 +896,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 #endif
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
   blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
+
+  block_flow_control::set_auto_report(options.at("block-stats-report-type").as<std::string>(),
+                                      options.at("block-stats-report-output").as<std::string>());
 
   if(my->benchmark_interval > 0)
   {
