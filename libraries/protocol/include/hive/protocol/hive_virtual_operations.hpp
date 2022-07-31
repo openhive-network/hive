@@ -48,22 +48,27 @@ struct author_reward_operation : public virtual_operation
   bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
 };
 
+/**
+  * Related to comment_operation and comment_vote_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: the reward is a fragment of curators' portion of comment reward depending on share of particular curator in overall
+  * curation power for the comment. Only generated when nonzero.
+  */
+struct curation_reward_operation : public virtual_operation
+{
+  curation_reward_operation() = default;
+  curation_reward_operation( const account_name_type& c, const asset& r, const account_name_type& a, const string& p, bool must_be_claimed )
+    : curator( c ), reward( r ), comment_author( a ), comment_permlink( p ), payout_must_be_claimed( must_be_claimed )
+  {}
+
+  account_name_type curator; //user that curated the comment (receiver of reward)
+  asset             reward; //(VESTS) curation reward
+  account_name_type comment_author; //author of curated comment
+  string            comment_permlink; //permlink of curated comment
+  bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
+};
 
 
-  struct curation_reward_operation : public virtual_operation
-  {
-    curation_reward_operation() = default;
-    curation_reward_operation( const string& c, const asset& r, const string& a, const string& p, bool must_be_claimed)
-      :curator(c), reward(r), comment_author(a), comment_permlink(p), payout_must_be_claimed(must_be_claimed) {}
-
-    account_name_type curator;
-    asset             reward;
-    account_name_type comment_author;
-    string            comment_permlink;
-    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
-    /// to be transferred to regular balance.
-    bool              payout_must_be_claimed = false;
-  };
 
 
   struct comment_reward_operation : public virtual_operation
