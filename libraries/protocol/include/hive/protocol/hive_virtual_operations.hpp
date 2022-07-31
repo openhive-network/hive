@@ -497,6 +497,26 @@ struct changed_recovery_account_operation : public virtual_operation
   account_name_type new_recovery_account; //new recovery account
 };
 
+/**
+  * Related to transfer_to_vesting_operation.
+  * Generated every time above operation is executed. Supplements it with amount of VESTS received.
+  * Note: power up immediately increases mana regeneration and vote power for comments, but there is a grace period before
+  * it activates as governance vote power.
+  * @see delayed_voting_operation
+  */
+struct transfer_to_vesting_completed_operation : public virtual_operation
+{
+  transfer_to_vesting_completed_operation() = default;
+  transfer_to_vesting_completed_operation( const account_name_type& f, const account_name_type& t, const asset& s, const asset& v )
+    : from_account( f ), to_account( t ), hive_vested( s ), vesting_shares_received( v )
+  {}
+
+  account_name_type from_account; //account that executed power up (source of hive_vested)
+  account_name_type to_account; //account that gets power up (receiver of vesting_shares_received)
+  asset             hive_vested; //(HIVE) liquid funds being turned into VESTS
+  asset             vesting_shares_received; //(VESTS) result of power up
+};
+
 
 
 
@@ -516,18 +536,6 @@ struct changed_recovery_account_operation : public virtual_operation
   };
 
 
-
-  struct transfer_to_vesting_completed_operation : public virtual_operation
-  {
-    transfer_to_vesting_completed_operation(){}
-    transfer_to_vesting_completed_operation( const string& f, const string& t, const asset& s, const asset& v )
-      :from_account(f), to_account(t), hive_vested(s), vesting_shares_received(v) {}
-
-    account_name_type from_account;
-    account_name_type to_account;
-    asset             hive_vested;
-    asset             vesting_shares_received;
-  };
 
   struct pow_reward_operation : public virtual_operation
   {
@@ -704,9 +712,9 @@ FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(perml
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
+FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
-FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
