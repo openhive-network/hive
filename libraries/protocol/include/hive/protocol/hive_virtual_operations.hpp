@@ -288,6 +288,16 @@ struct producer_reward_operation : public virtual_operation
   asset             vesting_shares; //(VESTS or HIVE) reward for block production (HIVE only during first 30 days after genesis)
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing potentially every block, but only if nonzero assets were burned. Triggered by removal of all
+  * assets from 'null' account balances.
+  */
+struct clear_null_account_balance_operation : public virtual_operation
+{
+  vector< asset >   total_cleared; //(HIVE, VESTS or HBD) nonzero assets burned on 'null' account
+};
+
 
 
 
@@ -393,11 +403,6 @@ struct producer_reward_operation : public virtual_operation
 
     account_name_type author;
     string            permlink;
-  };
-
-  struct clear_null_account_balance_operation : public virtual_operation
-  {
-    vector< asset >   total_cleared;
   };
 
   struct consolidate_treasury_balance_operation : public virtual_operation
@@ -601,6 +606,7 @@ FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) 
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
+FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -609,7 +615,6 @@ FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shar
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
-FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
