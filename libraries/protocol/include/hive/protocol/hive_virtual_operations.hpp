@@ -94,16 +94,24 @@ struct comment_reward_operation : public virtual_operation
   asset             beneficiary_payout_value; //(HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
 };
 
+/**
+  * Related to limit_order_create_operation and limit_order_create2_operation.
+  * Generated during block processing to indicate reward paid to the market makers on internal HIVE<->HBD market.
+  * No longer active after HF12.
+  * @see fill_order_operation
+  */
+struct liquidity_reward_operation : public virtual_operation
+{
+  liquidity_reward_operation() = default;
+  liquidity_reward_operation( const account_name_type& o, const asset& p )
+    : owner( o ), payout( p )
+  {}
+
+  account_name_type owner; //market maker (receiver of payout)
+  asset             payout; //(HIVE) reward for provided liquidity
+};
 
 
-  struct liquidity_reward_operation : public virtual_operation
-  {
-    liquidity_reward_operation( string o = string(), asset p = asset() )
-    :owner(o), payout(p) {}
-
-    account_name_type owner;
-    asset             payout;
-  };
 
 
   struct interest_operation : public virtual_operation
@@ -520,9 +528,9 @@ FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(a
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
+FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
-FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_hbd_balance) )
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
