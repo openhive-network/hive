@@ -533,6 +533,24 @@ struct pow_reward_operation : public virtual_operation
   asset             reward; //(VESTS or HIVE) reward for work (HIVE only during first 30 days after genesis)
 };
 
+/**
+  * Related to hardfork 1.
+  * Generated for every account with nonzero vesting balance.
+  * Note: due to too small precision of VESTS asset it was increased by 6 digits, meaning all underlying
+  * amounts had to be multiplied by million.
+  */
+struct vesting_shares_split_operation : public virtual_operation
+{
+  vesting_shares_split_operation() = default;
+  vesting_shares_split_operation( const account_name_type& o, const asset& old_vests, const asset& new_vests )
+    : owner( o ), vesting_shares_before_split( old_vests ), vesting_shares_after_split( new_vests )
+  {}
+
+  account_name_type owner; //affected account (source of vesting_shares_before_split and receiver of vesting_shares_after_split)
+  asset             vesting_shares_before_split; //(VESTS) balance before split
+  asset             vesting_shares_after_split; //(VESTS) balance after split
+};
+
 
 
 
@@ -552,17 +570,6 @@ struct pow_reward_operation : public virtual_operation
   };
 
 
-
-  struct vesting_shares_split_operation : public virtual_operation
-  {
-    vesting_shares_split_operation(){}
-    vesting_shares_split_operation( const string& o, const asset& old_vests, const asset& new_vests )
-      :owner(o), vesting_shares_before_split(old_vests), vesting_shares_after_split(new_vests) {}
-
-    account_name_type owner;
-    asset             vesting_shares_before_split;
-    asset             vesting_shares_after_split;
-  };
 
   struct account_created_operation : public virtual_operation
   {
@@ -720,9 +727,9 @@ FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
+FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
-FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
