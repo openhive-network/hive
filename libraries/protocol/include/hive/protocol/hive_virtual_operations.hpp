@@ -431,6 +431,23 @@ struct effective_comment_vote_operation : public virtual_operation
   asset             pending_payout = asset( 0, HBD_SYMBOL ); //(HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
 };
 
+/**
+  * Related to delete_comment_operation.
+  * Generated when delete_comment_operation was executed but ignored.
+  * Note: prior to HF19 it was possible to execute delete on comment that had net positive votes. Such operation was ignored.
+  * This is the moment this vop is generated.
+  */
+struct ineffective_delete_comment_operation : public virtual_operation
+{
+  ineffective_delete_comment_operation() = default;
+  ineffective_delete_comment_operation( const account_name_type& _author, const string& _permlink )
+    : author( _author ), permlink( _permlink )
+  {}
+
+  account_name_type author; //author of attempted-delete comment
+  string            permlink; //permlink of attempted-delete comment
+};
+
 
 
 
@@ -508,16 +525,6 @@ struct effective_comment_vote_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct ineffective_delete_comment_operation : public virtual_operation
-  {
-    ineffective_delete_comment_operation() = default;
-    ineffective_delete_comment_operation(const account_name_type& _author, const string& _permlink) :
-      author(_author), permlink(_permlink) {}
-
-    account_name_type author;
-    string            permlink;
   };
 
   struct dhf_conversion_operation : public virtual_operation
@@ -674,13 +681,13 @@ FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, (total_moved) )
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
+FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
-FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
