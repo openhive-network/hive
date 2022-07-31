@@ -320,6 +320,23 @@ struct proposal_pay_operation : public virtual_operation
   uint16_t          op_in_trx = 0; //operation index for proposal within above transaction [is it needed? does not look like the value description is correct]
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing every proposal maintenance period.
+  * Note: while the fund receives part of inflation every block, the amount is recorded aside and only when there are
+  * proposal payouts (when new funds matter), there is generation of this vop.
+  */
+struct dhf_funding_operation : public virtual_operation
+{
+  dhf_funding_operation() = default;
+  dhf_funding_operation( const account_name_type& f, const asset& v )
+    : treasury( f ), additional_funds( v )
+  {}
+
+  account_name_type treasury; //treasury account (receiver of additional_funds)
+  asset             additional_funds; //(HBD) portion inflation accumulated since previous maintenance period
+};
+
 
 
 
@@ -439,15 +456,6 @@ struct proposal_pay_operation : public virtual_operation
 
     account_name_type    voter;
     ushare_type          votes = 0;
-  };
-
-  struct dhf_funding_operation : public virtual_operation
-  {
-    dhf_funding_operation() {}
-    dhf_funding_operation( const account_name_type& f, const asset& v ) : treasury( f ), additional_funds( v ) {}
-
-    account_name_type treasury;
-    asset additional_funds;
   };
 
   struct dhf_conversion_operation : public virtual_operation
@@ -630,6 +638,7 @@ FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(au
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx) )
+FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -640,7 +649,6 @@ FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(pe
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
-FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
