@@ -640,6 +640,29 @@ struct fill_recurrent_transfer_operation : public virtual_operation
   uint16_t          remaining_executions = 0; //number of remaining pending transfers
 };
 
+/**
+  * Related to recurrent_transfer_operation.
+  * Generated during block processing instead of fill_recurrent_transfer_operation when there is not enought funds on from account.
+  * Note: failed transfers are not automatically repeated.
+  * Note: if too many consecutive transfers fail, whole recurrent transfer operation is discontinued.
+  * @see fill_recurrent_transfer_operation
+  */
+struct failed_recurrent_transfer_operation : public virtual_operation
+{
+  failed_recurrent_transfer_operation() = default;
+  failed_recurrent_transfer_operation( const account_name_type& f, const account_name_type& t, const asset& a, uint8_t cf, const string& m, uint16_t re, bool d )
+    : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions( re ), deleted( d )
+  {}
+
+  account_name_type from; //user that initiated the transfer (source of amount that has not enough balance to cover it)
+  account_name_type to; //user that is target of transfer (would be receiver of amount, but no transfer actually happened)
+  asset             amount; //(HIVE of HBD) amount that was scheduled for transferred in current iteration but failed
+  string            memo; //memo attached to the transfer
+  uint8_t           consecutive_failures = 0; //number of failed iterations
+  uint16_t          remaining_executions = 0; //number of remaining pending transfers
+  bool              deleted = false; //true if whole recurrent transfer was discontinued due to too many consecutive failures
+};
+
 
 
 
@@ -652,21 +675,6 @@ struct fill_recurrent_transfer_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct failed_recurrent_transfer_operation : public virtual_operation
-  {
-    failed_recurrent_transfer_operation() {}
-    failed_recurrent_transfer_operation( const account_name_type& f, const account_name_type& t, const asset& a, uint8_t cf, const string& m, uint16_t re, bool d )
-      : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions( re ), deleted( d ) {}
-
-    account_name_type from;
-    account_name_type to;
-    asset amount;
-    string memo;
-    uint8_t consecutive_failures = 0;
-    uint16_t remaining_executions = 0;
-    bool deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
   };
 
   struct producer_missed_operation : public virtual_operation
@@ -767,8 +775,8 @@ FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creato
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
-FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
+FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
 FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
 FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
