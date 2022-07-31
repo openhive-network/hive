@@ -715,19 +715,25 @@ struct proposal_fee_operation : public virtual_operation
   asset             fee; //(HBD) amount paid for proposal [should actually be part of create_proposal_operation but it's too late now]
 };
 
+/**
+  * Related to collateralized_convert_operation.
+  * Generated every time above operation is executed. Contains amount of HBD received right when the transfer actually happens.
+  * @see fill_collateralized_convert_request_operation
+  */
+struct collateralized_convert_immediate_conversion_operation : public virtual_operation
+{
+  collateralized_convert_immediate_conversion_operation() = default;
+  collateralized_convert_immediate_conversion_operation( const account_name_type& o, uint32_t rid, const asset& out )
+    : owner( o ), requestid( rid ), hbd_out( out )
+  {}
+
+  account_name_type owner; //user that requested conversion (receiver of hbd_out)
+  uint32_t          requestid; //id of the conversion request
+  asset             hbd_out; //(HBD) funds after conversion
+};
 
 
 
-  struct collateralized_convert_immediate_conversion_operation : public virtual_operation
-  {
-    collateralized_convert_immediate_conversion_operation() {}
-    collateralized_convert_immediate_conversion_operation( const account_name_type& o, uint32_t rid, const asset& out )
-      : owner( o ), requestid( rid ), hbd_out( out ) {}
-
-    account_name_type owner;
-    uint32_t requestid;
-    asset hbd_out;
-  };
 
   struct escrow_approved_operation : public virtual_operation
   {
