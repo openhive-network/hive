@@ -551,6 +551,27 @@ struct vesting_shares_split_operation : public virtual_operation
   asset             vesting_shares_after_split; //(VESTS) balance after split
 };
 
+/**
+  * Related to all acts of account creation, that is, creation of genesis accounts as well as operations:
+  * account_create_operation, account_create_with_delegation_operation, pow_operation, pow2_operation and create_claimed_account_operation.
+  * Generated every time one of above operations results in creation of new account (account is always created except for pow/pow2).
+  * Note: vops for genesis accounts are generated at the start of block #1.
+  */
+struct account_created_operation : public virtual_operation
+{
+  account_created_operation() = default;
+  account_created_operation( const account_name_type& new_account_name, const account_name_type& creator, const asset& _initial_vesting, const asset& _delegation )
+    : new_account_name( new_account_name ), creator( creator ), initial_vesting_shares( _initial_vesting ), initial_delegation( _delegation )
+  {
+    FC_ASSERT( creator != account_name_type(), "Every account should have a creator" );
+  }
+
+  account_name_type new_account_name; //newly created account (receiver of initial_vesting_shares)
+  account_name_type creator; //account that initiated new account creation (genesis and mined accounts are their own creators)
+  asset             initial_vesting_shares; //(VESTS) amount of initial vesting on new account (converted from creation fee prior to HF20)
+  asset             initial_delegation; //(VESTS) amount of extra voting power on new account due to delegation
+};
+
 
 
 
@@ -567,23 +588,6 @@ struct vesting_shares_split_operation : public virtual_operation
     asset             amount_in; //in HIVE
     asset             amount_out; //in HBD
     asset             excess_collateral; //in HIVE
-  };
-
-
-
-  struct account_created_operation : public virtual_operation
-  {
-    account_created_operation() {}
-    account_created_operation( const string& new_account_name, const string& creator, const asset& initial_vesting_shares, const asset& initial_delegation )
-      :new_account_name(new_account_name), creator(creator), initial_vesting_shares(initial_vesting_shares), initial_delegation(initial_delegation)
-    {
-      FC_ASSERT(creator.size(), "Every account should have a creator");
-    }
-
-    account_name_type new_account_name;
-    account_name_type creator;
-    asset             initial_vesting_shares;
-    asset             initial_delegation; // if created with account_create_with_delegation
   };
 
   struct limit_order_cancelled_operation : public virtual_operation
@@ -728,8 +732,8 @@ FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_re
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
-FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
+FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
