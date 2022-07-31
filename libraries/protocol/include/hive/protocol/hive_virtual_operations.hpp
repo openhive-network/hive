@@ -337,6 +337,29 @@ struct dhf_funding_operation : public virtual_operation
   asset             additional_funds; //(HBD) portion inflation accumulated since previous maintenance period
 };
 
+/**
+  * Related to hardfork 23 (HIVE inception hardfork).
+  * Generated for every account that did not receive HIVE airdrop.
+  */
+struct hardfork_hive_operation : public virtual_operation
+{
+  hardfork_hive_operation() = default;
+  //other_affected_accounts as well as assets transfered have to be filled during actual operation
+  hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury )
+    : account( acc ), treasury( _treasury ), hbd_transferred( 0, HBD_SYMBOL ), hive_transferred( 0, HIVE_SYMBOL ),
+    vests_converted( 0, VESTS_SYMBOL ), total_hive_from_vests( 0, HIVE_SYMBOL )
+  {}
+
+  account_name_type account; //account excluded from airdrop (source of amounts for airdrop)
+  account_name_type treasury; //treasury that received airdrop instead of account (receiver of funds)
+  std::vector< account_name_type >
+                    other_affected_accounts; //delegatees that lost delegations from account - filled before pre notification
+  asset             hbd_transferred; //(HBD) part of airdrop to treasury (sourced from various HBD balances on account)
+  asset             hive_transferred; //(HIVE) part of airdrop to treasury (sourced from various HIVE balances on account)
+  asset             vests_converted; //(VESTS) sum of all sources of VESTS on account
+  asset             total_hive_from_vests; //(HIVE) part of airdrop to treasury (sourced from conversion of vests_converted)
+};
+
 
 
 
@@ -466,26 +489,6 @@ struct dhf_funding_operation : public virtual_operation
     account_name_type treasury;
     asset hive_amount_in;
     asset hbd_amount_out;
-  };
-
-  // TODO : Fix legacy error itr != to_full_tag.end(): Invalid operation name: hardfork_hive {"n":"hardfork_hive"}
-  struct hardfork_hive_operation : public virtual_operation
-  {
-    hardfork_hive_operation() {}
-    //other_affected_accounts as well as assets transfered have to be filled during actual operation
-    hardfork_hive_operation( const account_name_type& acc, const account_name_type& _treasury )
-    : account( acc ), treasury( _treasury ), hbd_transferred( 0, HBD_SYMBOL ), hive_transferred( 0, HIVE_SYMBOL ),
-      vests_converted( 0, VESTS_SYMBOL ), total_hive_from_vests( 0, HIVE_SYMBOL )
-    {}
-
-    account_name_type account;
-    account_name_type treasury;
-    std::vector< account_name_type >
-                      other_affected_accounts; // delegatees that lost delegations from account - filled before pre notification
-    asset             hbd_transferred; // filled only in post notification
-    asset             hive_transferred; // filled only in post notification
-    asset             vests_converted; // Amount of converted vests - filled only in post notification
-    asset             total_hive_from_vests; // Resulting HIVE from conversion - filled only in post notification
   };
 
   struct hardfork_hive_restore_operation : public virtual_operation
@@ -639,6 +642,7 @@ FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
+FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -650,7 +654,6 @@ FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(perml
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
-FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
