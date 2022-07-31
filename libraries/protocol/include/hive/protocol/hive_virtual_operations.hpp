@@ -594,6 +594,29 @@ struct fill_collateralized_convert_request_operation : public virtual_operation
   asset             excess_collateral; //(HIVE) unused part of collateral returned to owner
 };
 
+/**
+  * Related to block processing or selected operations.
+  * Generated every time something occurs that would normally be only visible to node operators in their logs
+  * but might be interesting to general HIVE community. Such vops can be observed on account history of 'initminer'.
+  * Currently the following generate system warnings:
+  *  - unknown type of witness during block processing [should probably be FC_ASSERT]
+  *    indicates some problem in the code
+  *  - shortfall of collateral during finalization of HIVE->HBD conversion (@see fill_collateralized_convert_request_operation)
+  *    the community covers the difference in form of tiny amount of extra inflation
+  *  - artificial correction of internal price of HIVE due to hitting of HBD hard cap limit
+  *    every operation that involves conversion from HBD to HIVE will give output amount that is smaller than real world value
+  *  - noncanonical fee symbol used by witness [should disappear if it never happened as suggested by TODO message]
+  */
+struct system_warning_operation : public virtual_operation
+{
+  system_warning_operation() = default;
+  system_warning_operation( const string& _message )
+    : message( _message )
+  {}
+
+  string            message; //warning message
+};
+
 
 
 
@@ -606,15 +629,6 @@ struct fill_collateralized_convert_request_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct system_warning_operation : public virtual_operation
-  {
-    system_warning_operation() = default;
-    system_warning_operation( const string& _message )
-      : message( _message ) {}
-
-    string message;
   };
 
   struct fill_recurrent_transfer_operation : public virtual_operation
@@ -741,8 +755,8 @@ FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
-FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
+FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
