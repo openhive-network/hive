@@ -606,6 +606,7 @@ struct fill_collateralized_convert_request_operation : public virtual_operation
   *  - artificial correction of internal price of HIVE due to hitting of HBD hard cap limit
   *    every operation that involves conversion from HBD to HIVE will give output amount that is smaller than real world value
   *  - noncanonical fee symbol used by witness [should disappear if it never happened as suggested by TODO message]
+  *  - witnesses changed maximum block size
   */
 struct system_warning_operation : public virtual_operation
 {
@@ -615,6 +616,28 @@ struct system_warning_operation : public virtual_operation
   {}
 
   string            message; //warning message
+};
+
+/**
+  * Related to recurrent_transfer_operation.
+  * Generated during block processing starting in the block that included above operation and then after every period
+  * set in the operation until all transfers are executed, too many fail due to shortfall of funds or the transfer is cancelled.
+  * Note: in case of accumulation of very big amount of recurrent transfers to be executed in particular block, some
+  * are going to be postponed to next block(s) and so will be generation of this vop.
+  * @see failed_recurrent_transfer_operation
+  */
+struct fill_recurrent_transfer_operation : public virtual_operation
+{
+  fill_recurrent_transfer_operation() = default;
+  fill_recurrent_transfer_operation( const account_name_type& f, const account_name_type& t, const asset& a, const string& m, uint16_t re )
+    : from( f ), to( t ), amount( a ), memo( m ), remaining_executions( re )
+  {}
+
+  account_name_type from; //user that initiated the transfer (source of amount)
+  account_name_type to; //user that is target of transfer (receiver of amount)
+  asset             amount; //(HIVE of HBD) amount transferred in current iteration
+  string            memo; //memo attached to the transfer
+  uint16_t          remaining_executions = 0; //number of remaining pending transfers
 };
 
 
@@ -629,19 +652,6 @@ struct system_warning_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct fill_recurrent_transfer_operation : public virtual_operation
-  {
-    fill_recurrent_transfer_operation() {}
-    fill_recurrent_transfer_operation( const account_name_type& f, const account_name_type& t, const asset& a, const string& m, uint16_t re )
-      : from( f ), to( t ), amount( a ), memo( m ), remaining_executions( re ) {}
-
-    account_name_type from;
-    account_name_type to;
-    asset amount;
-    string memo;
-    uint16_t remaining_executions = 0;
   };
 
   struct failed_recurrent_transfer_operation : public virtual_operation
@@ -756,8 +766,8 @@ FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shar
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
-FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
+FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
 FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
