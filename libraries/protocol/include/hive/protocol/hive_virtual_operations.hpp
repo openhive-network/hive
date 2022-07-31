@@ -232,6 +232,22 @@ struct comment_payout_update_operation : public virtual_operation
   string            permlink; //permlink of comment
 };
 
+/**
+  * Related to delegate_vesting_shares_operation.
+  * Generated during block processing when process of returning removed or lowered vesting delegation is finished (after return period
+  * passed) and delegator received back his vests.
+  */
+struct return_vesting_delegation_operation : public virtual_operation
+{
+  return_vesting_delegation_operation() = default;
+  return_vesting_delegation_operation( const account_name_type& a, const asset& v )
+    : account( a ), vesting_shares( v )
+  {}
+
+  account_name_type account; //delegator (receiver of vesting_shares)
+  asset             vesting_shares; //(VESTS) returned delegation
+};
+
 
 
 
@@ -337,15 +353,6 @@ struct comment_payout_update_operation : public virtual_operation
 
     account_name_type author;
     string            permlink;
-  };
-
-  struct return_vesting_delegation_operation : public virtual_operation
-  {
-    return_vesting_delegation_operation() {}
-    return_vesting_delegation_operation( const account_name_type& a, const asset& v ) : account( a ), vesting_shares( v ) {}
-
-    account_name_type account;
-    asset             vesting_shares;
   };
 
   struct comment_benefactor_reward_operation : public virtual_operation
@@ -581,6 +588,7 @@ FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
+FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -589,7 +597,6 @@ FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shar
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
-FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
