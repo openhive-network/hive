@@ -172,6 +172,7 @@ struct fill_order_operation : public virtual_operation
   * Related to block processing.
   * Generated during block processing when witness is removed from active witnesses after it was detected he have missed
   * all blocks scheduled for him for last day. No longer active after HF20.
+  * @see producer_missed_operation
   */
 struct shutdown_witness_operation : public virtual_operation
 {
@@ -682,16 +683,23 @@ struct limit_order_cancelled_operation : public virtual_operation
   asset             amount_back; //(HIVE or HBD) remaining funds from original order that were not traded until cancellation
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing when witness failed to produce his block on time.
+  * @see shutdown_witness_operation
+  */
+struct producer_missed_operation : public virtual_operation
+{
+  producer_missed_operation() = default;
+  producer_missed_operation( const account_name_type& p )
+    : producer( p )
+  {}
+
+  account_name_type producer; //witness that failed to produce his block on time
+};
 
 
 
-  struct producer_missed_operation : public virtual_operation
-  {
-    producer_missed_operation() {}
-    producer_missed_operation( const account_name_type& p ) : producer( p ) {}
-
-    account_name_type producer;
-  };
 
   struct proposal_fee_operation : public virtual_operation
   {
