@@ -397,6 +397,17 @@ struct delayed_voting_operation : public virtual_operation
   ushare_type       votes = 0; //(VESTS satoshi) new governance vote power that just activated for voter
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing potentially every block, but only if there is nonzero transfer. Transfer occurs
+  * if there are assets on OBSOLETE_TREASURY_ACCOUNT ('steem.dao'). They are consolidated from all balances (per asset
+  * type) and moved to NEW_HIVE_TREASURY_ACCOUNT ('hive.fund').
+  */
+struct consolidate_treasury_balance_operation : public virtual_operation
+{
+  vector< asset >   total_moved; //(HIVE, VESTS or HBD) funds moved from old to new treasury
+};
+
 
 
 
@@ -502,11 +513,6 @@ struct delayed_voting_operation : public virtual_operation
 
     account_name_type author;
     string            permlink;
-  };
-
-  struct consolidate_treasury_balance_operation : public virtual_operation
-  {
-    vector< asset >   total_moved;
   };
 
   struct dhf_conversion_operation : public virtual_operation
@@ -661,6 +667,7 @@ FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) 
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
+FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, (total_moved) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -669,7 +676,6 @@ FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shar
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
-FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
