@@ -408,6 +408,29 @@ struct consolidate_treasury_balance_operation : public virtual_operation
   vector< asset >   total_moved; //(HIVE, VESTS or HBD) funds moved from old to new treasury
 };
 
+/**
+  * Related to vote_operation.
+  * Generated every time vote is cast for the first time or edited, but only as long as it is effective, that is,
+  * the target comment was not yet cashed out.
+  */
+struct effective_comment_vote_operation : public virtual_operation
+{
+  effective_comment_vote_operation() = default;
+  effective_comment_vote_operation( const account_name_type& _voter, const account_name_type& _author,
+    const string& _permlink, uint64_t _weight, int64_t _rshares, uint64_t _total_vote_weight )
+    : voter( _voter ), author( _author ), permlink( _permlink ), weight( _weight ), rshares( _rshares ),
+    total_vote_weight( _total_vote_weight )
+  {}
+
+  account_name_type voter; //account that casts a vote
+  account_name_type author; //author of comment voted on
+  string            permlink; //permlink of comment voted on
+  uint64_t          weight = 0; //weight of vote depending on when vote was cast and with what power
+  int64_t           rshares = 0; //power of the vote
+  uint64_t          total_vote_weight = 0; //sum of all vote weights on the target comment in the moment of casting current vote
+  asset             pending_payout = asset( 0, HBD_SYMBOL ); //(HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
+};
+
 
 
 
@@ -485,24 +508,6 @@ struct consolidate_treasury_balance_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct effective_comment_vote_operation : public virtual_operation
-  {
-    effective_comment_vote_operation() = default;
-    effective_comment_vote_operation(const account_name_type& _voter, const account_name_type& _author,
-      const string& _permlink, uint64_t _weight, int64_t _rshares, uint64_t _total_vote_weight)
-    : voter(_voter), author(_author), permlink(_permlink), weight(_weight), rshares(_rshares),
-      total_vote_weight(_total_vote_weight) {}
-
-    account_name_type voter;
-    account_name_type author;
-    string            permlink;
-    uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
-    int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
-    uint64_t          total_vote_weight = 0; ///< the total weight of voting rewards, used to calculate pro-rata share of curation payouts
-    //potential payout of related comment at the moment of this vote
-    asset             pending_payout = asset( 0, HBD_SYMBOL ); //supplemented by account history RocksDB plugin (needed by HiveMind)
   };
 
   struct ineffective_delete_comment_operation : public virtual_operation
@@ -668,13 +673,13 @@ FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_a
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, (total_moved) )
+FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
-FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
