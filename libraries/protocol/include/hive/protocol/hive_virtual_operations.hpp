@@ -517,6 +517,22 @@ struct transfer_to_vesting_completed_operation : public virtual_operation
   asset             vesting_shares_received; //(VESTS) result of power up
 };
 
+/**
+  * Related to pow_operation and pow2_operation.
+  * Generated every time one of above operations is executed (up to HF16).
+  * Note: pow2_operation could be executed up to HF17 but mining rewards were stopped after HF16.
+  */
+struct pow_reward_operation : public virtual_operation
+{
+  pow_reward_operation() = default;
+  pow_reward_operation( const account_name_type& w, const asset& r )
+    : worker( w ), reward( r )
+  {}
+
+  account_name_type worker; //(potentially new) witness that calculated PoW (receiver of reward)
+  asset             reward; //(VESTS or HIVE) reward for work (HIVE only during first 30 days after genesis)
+};
+
 
 
 
@@ -536,16 +552,6 @@ struct transfer_to_vesting_completed_operation : public virtual_operation
   };
 
 
-
-  struct pow_reward_operation : public virtual_operation
-  {
-    pow_reward_operation(){}
-    pow_reward_operation( const string& w, const asset& r )
-      :worker(w), reward(r) {}
-
-    account_name_type worker;
-    asset             reward;
-  };
 
   struct vesting_shares_split_operation : public virtual_operation
   {
@@ -713,9 +719,9 @@ FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
+FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
-FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
