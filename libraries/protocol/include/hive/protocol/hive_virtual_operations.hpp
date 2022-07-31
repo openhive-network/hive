@@ -698,20 +698,25 @@ struct producer_missed_operation : public virtual_operation
   account_name_type producer; //witness that failed to produce his block on time
 };
 
+/**
+  * Related to create_proposal_operation.
+  * Generated every time above operation is executed. Supplements it with paid fee.
+  */
+struct proposal_fee_operation : public virtual_operation
+{
+  proposal_fee_operation() = default;
+  proposal_fee_operation( const account_name_type& c, const account_name_type& t, uint32_t pid, const asset& f )
+    : creator( c ), treasury( t ), proposal_id( pid ), fee( f )
+  {}
+
+  account_name_type creator; //user that created proposal (source of fee)
+  account_name_type treasury; //treasury account (receiver of fee)
+  uint32_t          proposal_id; //id of proposal
+  asset             fee; //(HBD) amount paid for proposal [should actually be part of create_proposal_operation but it's too late now]
+};
 
 
 
-  struct proposal_fee_operation : public virtual_operation
-  {
-    proposal_fee_operation() {}
-    proposal_fee_operation( const account_name_type& c, const account_name_type& t, uint32_t pid, const asset& f )
-      : creator( c ), treasury( t ), proposal_id( pid ), fee( f ) {}
-
-    account_name_type creator;
-    account_name_type treasury;
-    uint32_t proposal_id;
-    asset fee;
-  };
 
   struct collateralized_convert_immediate_conversion_operation : public virtual_operation
   {
