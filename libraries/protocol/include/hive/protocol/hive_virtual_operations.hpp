@@ -663,19 +663,27 @@ struct failed_recurrent_transfer_operation : public virtual_operation
   bool              deleted = false; //true if whole recurrent transfer was discontinued due to too many consecutive failures
 };
 
+/**
+  * Related to limit_order_cancel_operation, limit_order_create_operation or limit_order_create2_operation.
+  * Generated every time existing limit order is cancelled. It happens on explicit call (first operation), or in rare case of
+  * filling limit order (second or third operation) when, after filling most of it, remaining funds are too small (would round
+  * to zero when sold). Finally also generated during block processing for orders that reached expiration time without being filled.
+  * @see fill_order_operation
+  */
+struct limit_order_cancelled_operation : public virtual_operation
+{
+  limit_order_cancelled_operation() = default;
+  limit_order_cancelled_operation( const account_name_type& _seller, uint32_t _order_id, const asset& _amount_back )
+    : seller( _seller ), orderid( _order_id ), amount_back( _amount_back )
+  {}
+
+  account_name_type seller; //user that placed an order (receiver of amount_back)
+  uint32_t          orderid = 0; //id of the order
+  asset             amount_back; //(HIVE or HBD) remaining funds from original order that were not traded until cancellation
+};
 
 
 
-  struct limit_order_cancelled_operation : public virtual_operation
-  {
-    limit_order_cancelled_operation() = default;
-    limit_order_cancelled_operation(const string& _seller, uint32_t _order_id, const asset& _amount_back)
-      :seller(_seller), orderid(_order_id), amount_back(_amount_back) {}
-
-    account_name_type seller;
-    uint32_t          orderid = 0;
-    asset             amount_back;
-  };
 
   struct producer_missed_operation : public virtual_operation
   {
@@ -776,7 +784,7 @@ FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owne
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
-FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
+FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
 FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
 FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
