@@ -91,30 +91,6 @@ struct remove_proposal_operation : public base_operation
   void get_required_active_authorities(flat_set<account_name_type>& a)const { a.insert(proposal_owner); }
 };
 
-/** Dedicated operation to be generated during proposal payment phase to left info in AH related to
-    funds transfer.
-*/
-struct proposal_pay_operation : public virtual_operation
-{
-  proposal_pay_operation() = default;
-  proposal_pay_operation( uint32_t _proposal_id, const account_name_type _receiver, const account_name_type _treasury, const asset& _payment,
-    transaction_id_type _trx_id, uint16_t _op_in_trx )
-    : proposal_id( _proposal_id ), receiver( _receiver ), payer( _treasury ), payment( _payment ), trx_id( _trx_id ), op_in_trx( _op_in_trx ) {}
-
-  uint32_t proposal_id = 0;
-
-  /// Name of the account which is paid for
-  account_name_type receiver;
-  /// Name of the treasury account that is source of payment
-  account_name_type payer;
-  /// Amount of HBD paid.
-  asset             payment;
-
-  /// Transaction id + position of operation where appeared a proposal being a source of given operation.
-  transaction_id_type trx_id;
-  uint16_t op_in_trx = 0;
-};
-
 } } // hive::protocol
 
 namespace fc {
@@ -189,6 +165,5 @@ FC_REFLECT( hive::protocol::create_proposal_operation, (creator)(receiver)(start
 FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions))
 FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( hive::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
-FC_REFLECT(hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx))
 FC_REFLECT( hive::protocol::update_proposal_end_date, (end_date) )
 

@@ -298,6 +298,28 @@ struct clear_null_account_balance_operation : public virtual_operation
   vector< asset >   total_cleared; //(HIVE, VESTS or HBD) nonzero assets burned on 'null' account
 };
 
+/**
+  * Related to create_proposal_operation.
+  * Generated during block processing during proposal maintenance in batches
+  * for each proposal that is chosen and receives funding.
+  */
+struct proposal_pay_operation : public virtual_operation
+{
+  proposal_pay_operation() = default;
+  proposal_pay_operation( uint32_t _proposal_id, const account_name_type& _receiver, const account_name_type& _treasury, const asset& _payment,
+    const transaction_id_type& _trx_id, uint16_t _op_in_trx )
+    : proposal_id( _proposal_id ), receiver( _receiver ), payer( _treasury ), payment( _payment ), trx_id( _trx_id ), op_in_trx( _op_in_trx )
+  {}
+
+  uint32_t          proposal_id = 0; //id of chosen proposal
+  account_name_type receiver; //account designated to receive funding (receiver of payment)
+  account_name_type payer; //treasury account, source of payment
+  asset             payment; //(HBD) paid amount
+
+  transaction_id_type trx_id; //id of transaction with proposal [is it needed? does not look like the value description is correct]
+  uint16_t          op_in_trx = 0; //operation index for proposal within above transaction [is it needed? does not look like the value description is correct]
+};
+
 
 
 
@@ -607,6 +629,7 @@ FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesti
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
+FC_REFLECT( hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
