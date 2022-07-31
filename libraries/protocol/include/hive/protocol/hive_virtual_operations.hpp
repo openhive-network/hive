@@ -572,23 +572,30 @@ struct account_created_operation : public virtual_operation
   asset             initial_delegation; //(VESTS) amount of extra voting power on new account due to delegation
 };
 
+/**
+  * Related to collateralized_convert_operation.
+  * Generated during block processing after conversion delay passes and HIVE is finally converted to HBD.
+  * Note: HBD is transferred immediately during execution of above operation, this vop is generated after actual
+  * price of conversion becomes known.
+  * @see collateralized_convert_immediate_conversion_operation
+  */
+struct fill_collateralized_convert_request_operation : public virtual_operation
+{
+  fill_collateralized_convert_request_operation() = default;
+  fill_collateralized_convert_request_operation( const account_name_type& o, const uint32_t id,
+    const HIVE_asset& in, const HBD_asset& out, const HIVE_asset& _excess_collateral )
+    : owner( o ), requestid( id ), amount_in( in ), amount_out( out ), excess_collateral( _excess_collateral )
+  {}
+
+  account_name_type owner; //user that requested conversion (receiver of excess_collateral)
+  uint32_t          requestid = 0; //id of the request
+  asset             amount_in; //(HIVE) source of conversion (part of collateral)
+  asset             amount_out; //(HBD) result of conversion (already transferred to owner when request was made)
+  asset             excess_collateral; //(HIVE) unused part of collateral returned to owner
+};
 
 
 
-  struct fill_collateralized_convert_request_operation : public virtual_operation
-  {
-    fill_collateralized_convert_request_operation() = default;
-    fill_collateralized_convert_request_operation( const account_name_type& o, const uint32_t id,
-      const HIVE_asset& in, const HBD_asset& out, const HIVE_asset& _excess_collateral )
-      :owner( o ), requestid( id ), amount_in( in ), amount_out( out ), excess_collateral( _excess_collateral )
-    {}
-
-    account_name_type owner;
-    uint32_t          requestid = 0;
-    asset             amount_in; //in HIVE
-    asset             amount_out; //in HBD
-    asset             excess_collateral; //in HIVE
-  };
 
   struct limit_order_cancelled_operation : public virtual_operation
   {
