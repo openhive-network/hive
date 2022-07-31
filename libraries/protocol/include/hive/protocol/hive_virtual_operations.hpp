@@ -129,6 +129,25 @@ struct interest_operation : public virtual_operation
   bool              is_saved_into_hbd_balance; //true when liquid balance was modified (not happening after HF25)
 };
 
+/**
+  * Related to withdraw_vesting_operation and set_withdraw_vesting_route_operation.
+  * Generated during block processing in batches for each active withdraw route (including implied
+  * from_account(VESTS)->from_account(HIVE)) each time vesting withdrawal period passes.
+  * Note: not generated for implied route when all funds were already distributed along explicit routes
+  */
+struct fill_vesting_withdraw_operation : public virtual_operation
+{
+  fill_vesting_withdraw_operation() = default;
+  fill_vesting_withdraw_operation( const account_name_type& f, const account_name_type& t, const asset& w, const asset& d )
+    : from_account( f ), to_account( t ), withdrawn( w ), deposited( d )
+  {}
+
+  account_name_type from_account; //user that activated power down
+  account_name_type to_account; //target of vesting route (potentially the same as from_account - receiver of deposited)
+  asset             withdrawn; //(VESTS) source amount
+  asset             deposited; //(HIVE or VESTS) [converted] target amount
+};
+
 
 
 
@@ -147,18 +166,6 @@ struct interest_operation : public virtual_operation
     asset             excess_collateral; //in HIVE
   };
 
-
-  struct fill_vesting_withdraw_operation : public virtual_operation
-  {
-    fill_vesting_withdraw_operation(){}
-    fill_vesting_withdraw_operation( const string& f, const string& t, const asset& w, const asset& d )
-      :from_account(f), to_account(t), withdrawn(w), deposited(d) {}
-
-    account_name_type from_account;
-    account_name_type to_account;
-    asset             withdrawn;
-    asset             deposited;
-  };
 
 
   struct transfer_to_vesting_completed_operation : public virtual_operation
@@ -538,9 +545,9 @@ FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_hbd_balance) )
+FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
-FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
