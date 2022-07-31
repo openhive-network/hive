@@ -734,8 +734,7 @@ struct collateralized_convert_immediate_conversion_operation : public virtual_op
 
 /**
   * Related to escrow_approve_operation.
-  * Generated when both agent and to accounts approved making the agent official escrow for pending escrow transfer
-  * (agent receives fee).
+  * Generated when both agent and to accounts approved pending escrow transfer (agent receives fee).
   * @see escrow_rejected_operation
   */
 struct escrow_approved_operation : public virtual_operation
@@ -747,30 +746,34 @@ struct escrow_approved_operation : public virtual_operation
 
   account_name_type from; //user that initiated escrow transfer
   account_name_type to; //user that is target of pending escrow transfer
-  account_name_type agent; //user that is an escrow of pending escrow transfer (receiver of fee)
+  account_name_type agent; //user that is an agent of pending escrow transfer (receiver of fee)
   uint32_t          escrow_id; //id of escrow transfer
   asset             fee; //(HIVE of HBD) fee paid to agent
 };
 
-
-
-
-  struct escrow_rejected_operation : public virtual_operation
-  {
-    escrow_rejected_operation() {}
-    escrow_rejected_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid,
-      const asset& d, const asset& h, const asset& f )
+/**
+  * Related to escrow_approve_operation and escrow_transfer_operation.
+  * Generated when pending escrow transfer is cancelled and user that initiated it receives all the funds back.
+  * It can happen with explicit rejection with use of first operation. Can also happen during block processing when either
+  * agent or to account failed to approve before ratification deadline.
+  * @see escrow_approved_operation
+  */
+struct escrow_rejected_operation : public virtual_operation
+{
+  escrow_rejected_operation() = default;
+  escrow_rejected_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid,
+    const asset& d, const asset& h, const asset& f )
     : from( in ), to( out ), agent( a ), escrow_id( eid ), hbd_amount( d ), hive_amount( h ), fee( f )
-    {}
+  {}
 
-    account_name_type from;
-    account_name_type to;
-    account_name_type agent;
-    uint32_t escrow_id;
-    asset hbd_amount;
-    asset hive_amount;
-    asset fee;
-  };
+  account_name_type from; //user that initiated escrow transfer (receiver of all the funds)
+  account_name_type to; //user that was target of cancelled escrow transfer
+  account_name_type agent; //user that was designated as agent of cancelled escrow transfer
+  uint32_t          escrow_id; //id of cancelled escrow transfer
+  asset             hbd_amount; //(HBD) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
+  asset             hive_amount; //(HIVE) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
+  asset             fee; //(HIVE of HBD) fee from cancelled escrow transfer (same amount as in escrow_transfer_operation)
+};
 
 } } //hive::protocol
 
