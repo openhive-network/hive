@@ -248,6 +248,31 @@ struct return_vesting_delegation_operation : public virtual_operation
   asset             vesting_shares; //(VESTS) returned delegation
 };
 
+/**
+  * Related to comment_operation and comment_options_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: the reward is a fragment of the author portion of comment reward depending on share assigned to benefactor
+  * in comment options (can be zero due to rounding).
+  * @see author_reward_operation
+  */
+struct comment_benefactor_reward_operation : public virtual_operation
+{
+  comment_benefactor_reward_operation() = default;
+  comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a,
+    const string& p, const asset& s, const asset& st, const asset& v, bool must_be_claimed )
+    : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ),
+    vesting_payout( v ), payout_must_be_claimed( must_be_claimed )
+  {}
+
+  account_name_type benefactor; //user assigned to receive share of author reward (receiver of payouts)
+  account_name_type author; //author of the comment
+  string            permlink; //permlink of the comment
+  asset             hbd_payout; //(HBD) part of reward
+  asset             hive_payout; //(HIVE) part of reward
+  asset             vesting_payout; //(VESTS) part of reward
+  bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
+};
+
 
 
 
@@ -353,26 +378,6 @@ struct return_vesting_delegation_operation : public virtual_operation
 
     account_name_type author;
     string            permlink;
-  };
-
-  struct comment_benefactor_reward_operation : public virtual_operation
-  {
-    comment_benefactor_reward_operation() {}
-    comment_benefactor_reward_operation( const account_name_type& b, const account_name_type& a,
-      const string& p, const asset& s, const asset& st, const asset& v, bool must_be_claimed )
-    : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ),
-      vesting_payout( v ), payout_must_be_claimed( must_be_claimed )
-    {}
-
-    account_name_type benefactor;
-    account_name_type author;
-    string            permlink;
-    asset             hbd_payout;
-    asset             hive_payout;
-    asset             vesting_payout;
-    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
-    /// to be transferred to regular balance.
-    bool              payout_must_be_claimed = false;
   };
 
   struct producer_reward_operation : public virtual_operation
@@ -589,6 +594,7 @@ FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amo
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
+FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -597,7 +603,6 @@ FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shar
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
-FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
