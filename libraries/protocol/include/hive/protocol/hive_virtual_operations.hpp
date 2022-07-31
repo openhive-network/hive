@@ -732,22 +732,28 @@ struct collateralized_convert_immediate_conversion_operation : public virtual_op
   asset             hbd_out; //(HBD) funds after conversion
 };
 
+/**
+  * Related to escrow_approve_operation.
+  * Generated when both agent and to accounts approved making the agent official escrow for pending escrow transfer
+  * (agent receives fee).
+  * @see escrow_rejected_operation
+  */
+struct escrow_approved_operation : public virtual_operation
+{
+  escrow_approved_operation() = default;
+  escrow_approved_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid, const asset& f )
+    : from( in ), to( out ), agent( a ), escrow_id( eid ), fee( f )
+  {}
+
+  account_name_type from; //user that initiated escrow transfer
+  account_name_type to; //user that is target of pending escrow transfer
+  account_name_type agent; //user that is an escrow of pending escrow transfer (receiver of fee)
+  uint32_t          escrow_id; //id of escrow transfer
+  asset             fee; //(HIVE of HBD) fee paid to agent
+};
 
 
 
-  struct escrow_approved_operation : public virtual_operation
-  {
-    escrow_approved_operation() {}
-    escrow_approved_operation( const account_name_type& in, const account_name_type& out, const account_name_type& a, uint32_t eid, const asset& f )
-      : from( in ), to( out ), agent( a ), escrow_id( eid ), fee( f )
-    {}
-
-    account_name_type from;
-    account_name_type to;
-    account_name_type agent;
-    uint32_t escrow_id;
-    asset fee;
-  };
 
   struct escrow_rejected_operation : public virtual_operation
   {
