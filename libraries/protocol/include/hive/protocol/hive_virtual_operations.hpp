@@ -25,23 +25,29 @@ struct fill_convert_request_operation : public virtual_operation
   asset             amount_out; //(HIVE) effect of conversion
 };
 
+/**
+  * Related to comment_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: the reward is the author portion of comment reward lowered by the rewards distributed towards beneficiaries
+  * (therefore it can be zero).
+  * @see comment_benefactor_reward_operation
+  */
+struct author_reward_operation : public virtual_operation
+{
+  author_reward_operation() = default;
+  author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool must_be_claimed )
+    : author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v ), curators_vesting_payout( c ), payout_must_be_claimed( must_be_claimed )
+  {}
 
-  struct author_reward_operation : public virtual_operation
-  {
-    author_reward_operation() = default;
-    author_reward_operation( const account_name_type& a, const string& p, const asset& s, const asset& st, const asset& v, const asset& c, bool must_be_claimed)
-      :author(a), permlink(p), hbd_payout(s), hive_payout(st), vesting_payout(v), curators_vesting_payout(c), payout_must_be_claimed(must_be_claimed) {}
+  account_name_type author; //author of the comment (receiver of hbd_payout, hive_payout, vesting_payout)
+  string            permlink; //permlink of the comment
+  asset             hbd_payout; //(HBD) part of reward
+  asset             hive_payout; //(HIVE) part of reward
+  asset             vesting_payout; //(VESTS) part of reward
+  asset             curators_vesting_payout; //(VESTS) curators' portion of comment reward (@see curation_reward_operation)
+  bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
+};
 
-    account_name_type author;
-    string            permlink;
-    asset             hbd_payout;
-    asset             hive_payout;
-    asset             vesting_payout;
-    asset             curators_vesting_payout;
-    /// If set to true, payout has been stored in the separate reward balance, and must be claimed
-    /// to be transferred to regular balance.
-    bool              payout_must_be_claimed = false;
-  };
 
 
   struct curation_reward_operation : public virtual_operation
