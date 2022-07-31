@@ -481,6 +481,22 @@ struct expired_account_notification_operation : public virtual_operation
   account_name_type account; //user whose governance votes were nullified
 };
 
+/**
+  * Related to change_recovery_account_operation.
+  * Generated during block processing after wait period for the recovery account change has passed and the change became active.
+  */
+struct changed_recovery_account_operation : public virtual_operation
+{
+  changed_recovery_account_operation() = default;
+  changed_recovery_account_operation( const account_name_type& acc, const account_name_type& oldrec, const account_name_type& newrec )
+    : account( acc ), old_recovery_account( oldrec ), new_recovery_account( newrec )
+  {}
+
+  account_name_type account; //used that requested recovery accout change
+  account_name_type old_recovery_account; //previous recovery account
+  account_name_type new_recovery_account; //new recovery account
+};
+
 
 
 
@@ -558,17 +574,6 @@ struct expired_account_notification_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct changed_recovery_account_operation : public virtual_operation
-  {
-    changed_recovery_account_operation() = default;
-    changed_recovery_account_operation( const account_name_type& acc, const account_name_type& oldrec, const account_name_type& newrec )
-      : account( acc ), old_recovery_account( oldrec ), new_recovery_account( newrec ) {}
-
-    account_name_type account;
-    account_name_type old_recovery_account;
-    account_name_type new_recovery_account;
   };
 
   struct system_warning_operation : public virtual_operation
@@ -698,13 +703,13 @@ FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(pe
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
+FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
-FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
