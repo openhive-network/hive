@@ -68,25 +68,32 @@ struct curation_reward_operation : public virtual_operation
   bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
 };
 
+/**
+  * Related to comment_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: for informational purposes only, shows summary of comment reward, does not indicate any transfers.
+  * @see curation_reward_operation
+  * @see comment_benefactor_reward_operation
+  * @see author_reward_operation
+  */
+struct comment_reward_operation : public virtual_operation
+{
+  comment_reward_operation() = default;
+  comment_reward_operation( const account_name_type& a, const string& pl, const HBD_asset& p, share_type ar,
+    const HBD_asset& tpv, const HBD_asset& cpv, const HBD_asset& bpv )
+    : author( a ), permlink( pl ), payout( p ), author_rewards( ar ),
+    total_payout_value( tpv ), curator_payout_value( cpv ), beneficiary_payout_value( bpv )
+  {}
 
+  account_name_type author; //author of the comment
+  string            permlink; //permlink of the comment
+  asset             payout; //(HBD) total value of comment reward recalculated to HBD
+  share_type        author_rewards; //(HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?]
+  asset             total_payout_value; //(HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  asset             curator_payout_value; //(HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  asset             beneficiary_payout_value; //(HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+};
 
-
-  struct comment_reward_operation : public virtual_operation
-  {
-    comment_reward_operation() = default;
-    comment_reward_operation( const account_name_type& a, const string& pl, const HBD_asset& p, share_type ar,
-                              const HBD_asset& tpv, const HBD_asset& cpv, const HBD_asset& bpv )
-      : author(a), permlink(pl), payout(p), author_rewards(ar),
-        total_payout_value( tpv ), curator_payout_value( cpv ), beneficiary_payout_value( bpv ) {}
-
-    account_name_type author;
-    string            permlink;
-    asset             payout;
-    share_type        author_rewards;
-    asset             total_payout_value;
-    asset             curator_payout_value;
-    asset             beneficiary_payout_value;
-  };
 
 
   struct liquidity_reward_operation : public virtual_operation
