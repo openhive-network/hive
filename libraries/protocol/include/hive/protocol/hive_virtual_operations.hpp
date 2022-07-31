@@ -168,6 +168,21 @@ struct fill_order_operation : public virtual_operation
   asset             open_pays; //(HBD or HIVE) amount paid to current_owner
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing when witness is removed from active witnesses after it was detected he have missed
+  * all blocks scheduled for him for last day. No longer active after HF20.
+  */
+struct shutdown_witness_operation : public virtual_operation
+{
+  shutdown_witness_operation() = default;
+  shutdown_witness_operation( const account_name_type& o )
+    : owner( o )
+  {}
+
+  account_name_type owner; //witness that was shut down
+};
+
 
 
 
@@ -235,16 +250,6 @@ struct fill_order_operation : public virtual_operation
     asset             initial_vesting_shares;
     asset             initial_delegation; // if created with account_create_with_delegation
   };
-
-
-  struct shutdown_witness_operation : public virtual_operation
-  {
-    shutdown_witness_operation(){}
-    shutdown_witness_operation( const string& o ):owner(o) {}
-
-    account_name_type owner;
-  };
-
 
   struct limit_order_cancelled_operation : public virtual_operation
   {
@@ -553,12 +558,12 @@ FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_hbd_balance) )
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
+FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
-FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
