@@ -148,6 +148,26 @@ struct fill_vesting_withdraw_operation : public virtual_operation
   asset             deposited; //(HIVE or VESTS) [converted] target amount
 };
 
+/**
+  * Related to limit_order_create_operation and limit_order_create2_operation.
+  * Generated during one of above operations when order on internal market is partially or fully matched
+  * (each match generates separate vop).
+  */
+struct fill_order_operation : public virtual_operation
+{
+  fill_order_operation() = default;
+  fill_order_operation( const account_name_type& c_o, uint32_t c_id, const asset& c_p, const account_name_type& o_o, uint32_t o_id, const asset& o_p )
+    : current_owner( c_o ), current_orderid( c_id ), current_pays( c_p ), open_owner( o_o ), open_orderid( o_id ), open_pays( o_p )
+  {}
+
+  account_name_type current_owner; //user that recently created order (taker - receiver of open_pays)
+  uint32_t          current_orderid = 0; //id of fresh order
+  asset             current_pays; //(HIVE or HBD) amount paid to open_owner
+  account_name_type open_owner; //user that had his order on the market (maker - receiver of current_pays)
+  uint32_t          open_orderid = 0; //id of waiting order
+  asset             open_pays; //(HBD or HIVE) amount paid to current_owner
+};
+
 
 
 
@@ -225,20 +245,6 @@ struct fill_vesting_withdraw_operation : public virtual_operation
     account_name_type owner;
   };
 
-
-  struct fill_order_operation : public virtual_operation
-  {
-    fill_order_operation(){}
-    fill_order_operation( const string& c_o, uint32_t c_id, const asset& c_p, const string& o_o, uint32_t o_id, const asset& o_p )
-    :current_owner(c_o), current_orderid(c_id), current_pays(c_p), open_owner(o_o), open_orderid(o_id), open_pays(o_p) {}
-
-    account_name_type current_owner;
-    uint32_t          current_orderid = 0;
-    asset             current_pays;
-    account_name_type open_owner;
-    uint32_t          open_orderid = 0;
-    asset             open_pays;
-  };
 
   struct limit_order_cancelled_operation : public virtual_operation
   {
@@ -546,13 +552,13 @@ FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
 FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_hbd_balance) )
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
+FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
-FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
