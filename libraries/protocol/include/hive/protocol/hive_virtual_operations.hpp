@@ -7,6 +7,10 @@
 
 namespace hive { namespace protocol {
 
+/**
+  * Related to convert_operation.
+  * Generated during block processing after conversion delay passes and HBD is converted to HIVE.
+  */
 struct fill_convert_request_operation : public virtual_operation
 {
   fill_convert_request_operation() = default;
@@ -14,12 +18,19 @@ struct fill_convert_request_operation : public virtual_operation
     : owner( o ), requestid( id ), amount_in( in ), amount_out( out )
   {}
 
-  account_name_type owner;
-  uint32_t          requestid = 0;
-  asset             amount_in; //in HBD
-  asset             amount_out; //in HIVE
+  account_name_type owner; //user that requested conversion (receiver of amount_out)
+  uint32_t          requestid = 0; //id of the request
+  asset             amount_in; //(HBD) source of conversion
+  asset             amount_out; //(HIVE) effect of conversion
 };
 
+/**
+  * Related to comment_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: the reward is the author portion of comment reward lowered by the rewards distributed towards beneficiaries
+  * (therefore it can be zero).
+  * @see comment_benefactor_reward_operation
+  */
 struct author_reward_operation : public virtual_operation
 {
   author_reward_operation() = default;
@@ -27,17 +38,21 @@ struct author_reward_operation : public virtual_operation
     : author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v ), curators_vesting_payout( c ), payout_must_be_claimed( must_be_claimed )
   {}
 
-  account_name_type author;
-  string            permlink;
-  asset             hbd_payout;
-  asset             hive_payout;
-  asset             vesting_payout;
-  asset             curators_vesting_payout;
-  /// If set to true, payout has been stored in the separate reward balance, and must be claimed
-  /// to be transferred to regular balance.
-  bool              payout_must_be_claimed = false;
+  account_name_type author; //author of the comment (receiver of hbd_payout, hive_payout, vesting_payout)
+  string            permlink; //permlink of the comment
+  asset             hbd_payout; //(HBD) part of reward
+  asset             hive_payout; //(HIVE) part of reward
+  asset             vesting_payout; //(VESTS) part of reward
+  asset             curators_vesting_payout; //(VESTS) curators' portion of comment reward (@see curation_reward_operation)
+  bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
 };
 
+/**
+  * Related to comment_operation and comment_vote_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: the reward is a fragment of curators' portion of comment reward depending on share of particular curator in overall
+  * curation power for the comment. Only generated when nonzero.
+  */
 struct curation_reward_operation : public virtual_operation
 {
   curation_reward_operation() = default;
@@ -45,15 +60,21 @@ struct curation_reward_operation : public virtual_operation
     : curator( c ), reward( r ), comment_author( a ), comment_permlink( p ), payout_must_be_claimed( must_be_claimed )
   {}
 
-  account_name_type curator;
-  asset             reward;
-  account_name_type comment_author;
-  string            comment_permlink;
-  /// If set to true, payout has been stored in the separate reward balance, and must be claimed
-  /// to be transferred to regular balance.
-  bool              payout_must_be_claimed = false;
+  account_name_type curator; //user that curated the comment (receiver of reward)
+  asset             reward; //(VESTS) curation reward
+  account_name_type comment_author; //author of curated comment
+  string            comment_permlink; //permlink of curated comment
+  bool              payout_must_be_claimed = false; //true if payouts require use of claim_reward_balance_operation
 };
 
+/**
+  * Related to comment_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: for informational purposes only, shows summary of comment reward, does not indicate any transfers.
+  * @see curation_reward_operation
+  * @see comment_benefactor_reward_operation
+  * @see author_reward_operation
+  */
 struct comment_reward_operation : public virtual_operation
 {
   comment_reward_operation() = default;
@@ -63,26 +84,38 @@ struct comment_reward_operation : public virtual_operation
     total_payout_value( tpv ), curator_payout_value( cpv ), beneficiary_payout_value( bpv )
   {}
 
-  account_name_type author;
-  string            permlink;
-  asset             payout;
-  share_type        author_rewards;
-  asset             total_payout_value;
-  asset             curator_payout_value;
-  asset             beneficiary_payout_value;
+  account_name_type author; //author of the comment
+  string            permlink; //permlink of the comment
+  asset             payout; //(HBD) total value of comment reward recalculated to HBD
+  share_type        author_rewards; //(HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?]
+  asset             total_payout_value; //(HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  asset             curator_payout_value; //(HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
+  asset             beneficiary_payout_value; //(HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
 };
 
+/**
+  * Related to limit_order_create_operation and limit_order_create2_operation.
+  * Generated during block processing to indicate reward paid to the market makers on internal HIVE<->HBD market.
+  * No longer active after HF12.
+  * @see fill_order_operation
+  */
 struct liquidity_reward_operation : public virtual_operation
 {
   liquidity_reward_operation() = default;
-  liquidity_reward_operation( const account_name_type& o, asset p )
+  liquidity_reward_operation( const account_name_type& o, const asset& p )
     : owner( o ), payout( p )
   {}
 
-  account_name_type owner;
-  asset             payout;
+  account_name_type owner; //market maker (receiver of payout)
+  asset             payout; //(HIVE) reward for provided liquidity
 };
 
+/**
+  * Related to any operation that modifies HBD liquid or savings balance (including block processing).
+  * Generated when operation modified HBD balance and account received interest payment.
+  * Interest is stored in related balance (liquid when liquid was modified, savings when savings was modified).
+  * Note: since HF25 interest is not calculated nor paid on liquid balance.
+  */
 struct interest_operation : public virtual_operation
 {
   interest_operation() = default;
@@ -90,10 +123,15 @@ struct interest_operation : public virtual_operation
     : owner( o ), interest( i )
   {}
 
-  account_name_type owner;
-  asset             interest;
+  account_name_type owner; //user that had his HBD balance modified (receiver of interest)
+  asset             interest; //(HBD) amount of interest paid
 };
 
+/**
+  * Related to withdraw_vesting_operation and set_withdraw_vesting_route_operation.
+  * Generated during block processing in batches for each active withdraw route (including implied
+  * from_account(VESTS)->from_account(HIVE)) each time vesting withdrawal period passes.
+  */
 struct fill_vesting_withdraw_operation : public virtual_operation
 {
   fill_vesting_withdraw_operation() = default;
@@ -101,12 +139,17 @@ struct fill_vesting_withdraw_operation : public virtual_operation
     : from_account( f ), to_account( t ), withdrawn( w ), deposited( d )
   {}
 
-  account_name_type from_account;
-  account_name_type to_account;
-  asset             withdrawn;
-  asset             deposited;
+  account_name_type from_account; //user that activated power down
+  account_name_type to_account; //target of vesting route (potentially the same as from_account - receiver of deposited)
+  asset             withdrawn; //(VESTS) source amount
+  asset             deposited; //(HIVE or VESTS) [converted] target amount
 };
 
+/**
+  * Related to limit_order_create_operation and limit_order_create2_operation.
+  * Generated during one of above operations when order on internal market is partially or fully matched
+  * (each match generates separate vop).
+  */
 struct fill_order_operation : public virtual_operation
 {
   fill_order_operation() = default;
@@ -114,14 +157,19 @@ struct fill_order_operation : public virtual_operation
     : current_owner( c_o ), current_orderid( c_id ), current_pays( c_p ), open_owner( o_o ), open_orderid( o_id ), open_pays( o_p )
   {}
 
-  account_name_type current_owner;
-  uint32_t          current_orderid = 0;
-  asset             current_pays;
-  account_name_type open_owner;
-  uint32_t          open_orderid = 0;
-  asset             open_pays;
+  account_name_type current_owner; //user that recently created order (taker - receiver of open_pays)
+  uint32_t          current_orderid = 0; //id of fresh order
+  asset             current_pays; //(HIVE or HBD) amount paid to open_owner
+  account_name_type open_owner; //user that had his order on the market (maker - receiver of current_pays)
+  uint32_t          open_orderid = 0; //id of waiting order
+  asset             open_pays; //(HBD or HIVE) amount paid to current_owner
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing when witness is removed from active witnesses after it was detected he have missed
+  * all blocks scheduled for him for last day. No longer active after HF20.
+  */
 struct shutdown_witness_operation : public virtual_operation
 {
   shutdown_witness_operation() = default;
@@ -129,9 +177,14 @@ struct shutdown_witness_operation : public virtual_operation
     : owner( o )
   {}
 
-  account_name_type owner;
+  account_name_type owner; //witness that was shut down
 };
 
+/**
+  * Related to transfer_from_savings_operation.
+  * Generated during block processing after savings withdraw time has passed and requested amount
+  * was transfered from savings to liquid balance.
+  */
 struct fill_transfer_from_savings_operation : public virtual_operation
 {
   fill_transfer_from_savings_operation() = default;
@@ -139,13 +192,17 @@ struct fill_transfer_from_savings_operation : public virtual_operation
     : from( f ), to( t ), amount( a ), request_id( r ), memo( m )
   {}
 
-  account_name_type from;
-  account_name_type to;
-  asset             amount;
-  uint32_t          request_id = 0;
-  string            memo;
+  account_name_type from; //user that initiated transfer from savings
+  account_name_type to; //user that was specified to receive funds (receiver of amount)
+  asset             amount; //(HIVE or HBD) funds transfered from savings
+  uint32_t          request_id = 0; //id of transfer request
+  string            memo; //memo attached to transfer request
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing every time new hardfork is activated. Many related vops can follow.
+  */
 struct hardfork_operation : public virtual_operation
 {
   hardfork_operation() = default;
@@ -153,9 +210,14 @@ struct hardfork_operation : public virtual_operation
     : hardfork_id( hf_id )
   {}
 
-  uint32_t          hardfork_id = 0;
+  uint32_t          hardfork_id = 0; //number of hardfork
 };
 
+/**
+  * Related to comment_operation.
+  * Generated during block processing after cashout time passes even if there are no rewards.
+  * Note: prior to HF17 comment could have multiple cashout windows.
+  */
 struct comment_payout_update_operation : public virtual_operation
 {
   comment_payout_update_operation() = default;
@@ -163,10 +225,15 @@ struct comment_payout_update_operation : public virtual_operation
     : author( a ), permlink( p )
   {}
 
-  account_name_type author;
-  string            permlink;
+  account_name_type author; //author of comment
+  string            permlink; //permlink of comment
 };
 
+/**
+  * Related to delegate_vesting_shares_operation.
+  * Generated during block processing when process of returning removed or lowered vesting delegation is finished (after return period
+  * passed) and delegator received back his vests.
+  */
 struct return_vesting_delegation_operation : public virtual_operation
 {
   return_vesting_delegation_operation() = default;
@@ -174,10 +241,17 @@ struct return_vesting_delegation_operation : public virtual_operation
     : account( a ), vesting_shares( v )
   {}
 
-  account_name_type account;
-  asset             vesting_shares;
+  account_name_type account; //delegator (receiver of vesting_shares)
+  asset             vesting_shares; //(VESTS) returned delegation
 };
 
+/**
+  * Related to comment_operation and comment_options_operation.
+  * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+  * Note: the reward is a fragment of the author portion of comment reward depending on share assigned to benefactor
+  * in comment options (can be zero due to rounding).
+  * @see author_reward_operation
+  */
 struct comment_benefactor_reward_operation : public virtual_operation
 {
   comment_benefactor_reward_operation() = default;
@@ -185,14 +259,18 @@ struct comment_benefactor_reward_operation : public virtual_operation
     : benefactor( b ), author( a ), permlink( p ), hbd_payout( s ), hive_payout( st ), vesting_payout( v )
   {}
 
-  account_name_type benefactor;
-  account_name_type author;
-  string            permlink;
-  asset             hbd_payout;
-  asset             hive_payout;
-  asset             vesting_payout;
+  account_name_type benefactor; //user assigned to receive share of author reward (receiver of payouts)
+  account_name_type author; //author of the comment
+  string            permlink; //permlink of the comment
+  asset             hbd_payout; //(HBD) part of reward
+  asset             hive_payout; //(HIVE) part of reward
+  asset             vesting_payout; //(VESTS) part of reward
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing every block for current witness.
+  */
 struct producer_reward_operation : public virtual_operation
 {
   producer_reward_operation() = default;
@@ -200,18 +278,25 @@ struct producer_reward_operation : public virtual_operation
     : producer( p ), vesting_shares( v )
   {}
 
-  account_name_type producer;
-  asset             vesting_shares;
+  account_name_type producer; //witness (receiver of vesting_shares)
+  asset             vesting_shares; //(VESTS or HIVE) reward for block production (HIVE only during first 30 days after genesis)
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing potentially every block, but only if nonzero assets were burned. Triggered by removal of all
+  * assets from 'null' account balances.
+  */
 struct clear_null_account_balance_operation : public virtual_operation
 {
-  vector< asset >   total_cleared;
+  vector< asset >   total_cleared; //(HIVE, VESTS or HBD) nonzero assets burned on 'null' account
 };
 
-/** Dedicated operation to be generated during proposal payment phase to left info in AH related to
-    funds transfer.
-*/
+/**
+  * Related to create_proposal_operation.
+  * Generated during block processing during proposal maintenance in batches
+  * for each proposal that is chosen and receives funding.
+  */
 struct proposal_pay_operation : public virtual_operation
 {
   proposal_pay_operation() = default;
@@ -220,20 +305,21 @@ struct proposal_pay_operation : public virtual_operation
     : proposal_id( _proposal_id ), receiver( _receiver ), payer( _treasury ), payment( _payment ), trx_id( _trx_id ), op_in_trx( _op_in_trx )
   {}
 
-  uint32_t          proposal_id = 0;
+  uint32_t          proposal_id = 0; //id of chosen proposal
+  account_name_type receiver; //account designated to receive funding (receiver of payment)
+  account_name_type payer; //treasury account, source of payment
+  asset             payment; //(HBD) paid amount
 
-  /// Name of the account which is paid for
-  account_name_type receiver;
-  /// Name of the treasury account that is source of payment
-  account_name_type payer;
-  /// Amount of HBD paid.
-  asset             payment;
-
-  /// Transaction id + position of operation where appeared a proposal being a source of given operation.
-  transaction_id_type trx_id;
-  uint16_t          op_in_trx = 0;
+  transaction_id_type trx_id; //id of transaction with proposal [is it needed? does not look like the value description is correct]
+  uint16_t          op_in_trx = 0; //operation index for proposal within above transaction [is it needed? does not look like the value description is correct]
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing every proposal maintenance period.
+  * Note: while the fund receives part of inflation every block, the amount is recorded aside and only when there are
+  * proposal payouts (when new funds matter), there is generation of this vop.
+  */
 struct sps_fund_operation : public virtual_operation
 {
   sps_fund_operation() = default;
@@ -241,11 +327,14 @@ struct sps_fund_operation : public virtual_operation
     : fund_account( _fund ), additional_funds( v )
   {}
 
-  account_name_type fund_account;
-  asset             additional_funds;
+  account_name_type fund_account; //treasury account (receiver of additional_funds)
+  asset             additional_funds; //(HBD) portion inflation accumulated since previous maintenance period
 };
 
-// TODO : Fix legacy error itr != to_full_tag.end(): Invalid operation name: hardfork_hive {"n":"hardfork_hive"}
+/**
+  * Related to hardfork 23 (HIVE inception hardfork).
+  * Generated for every account that did not receive HIVE airdrop.
+  */
 struct hardfork_hive_operation : public virtual_operation
 {
   hardfork_hive_operation() = default;
@@ -254,14 +343,21 @@ struct hardfork_hive_operation : public virtual_operation
     : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st ), vests_converted( v ), total_hive_from_vests( cs )
   {}
 
-  account_name_type account;
-  account_name_type treasury;
-  asset             hbd_transferred;
-  asset             hive_transferred;
-  asset             vests_converted; // Amount of converted vests
-  asset             total_hive_from_vests; // Resulting HIVE from conversion
+  account_name_type account; //account excluded from airdrop (source of amounts for airdrop)
+  account_name_type treasury; //treasury that received airdrop instead of account (receiver of funds)
+  asset             hbd_transferred; //(HBD) part of airdrop to treasury (sourced from various HBD balances on account)
+  asset             hive_transferred; //(HIVE) part of airdrop to treasury (sourced from various HIVE balances on account)
+  asset             vests_converted; //(VESTS) sum of all sources of VESTS on account
+  asset             total_hive_from_vests; //(HIVE) part of airdrop to treasury (sourced from conversion of vests_converted)
 };
 
+/**
+  * Related to hardfork 24.
+  * Generated for every account that was excluded from HF23 airdrop but won appeal.
+  * Note: the late airdrop did not apply properly since HIVE that the accounts should receive did not account for
+  * HIVE from converted VESTS. [how was it resolved?]
+  * @see hardfork_hive_operation
+  */
 struct hardfork_hive_restore_operation : public virtual_operation
 {
   hardfork_hive_restore_operation() = default;
@@ -269,12 +365,18 @@ struct hardfork_hive_restore_operation : public virtual_operation
     : account( acc ), treasury( _treasury ), hbd_transferred( s ), hive_transferred( st )
   {}
 
-  account_name_type account;
-  account_name_type treasury;
-  asset             hbd_transferred;
-  asset             hive_transferred;
+  account_name_type account; //account to receive late airdrop (receiver of funds)
+  account_name_type treasury; //treasury, source of late airdrop
+  asset             hbd_transferred; //(HBD) part of airdrop (equals related hardfork_hive_operation.hbd_transferred)
+  asset             hive_transferred; //(HIVE) part of airdrop (equals related hardfork_hive_operation.hive_transferred)
 };
 
+/**
+  * Related to transfer_to_vesting_operation.
+  * Generated during block processing every time part of fairly fresh VESTS becomes active part of governance vote for the account.
+  * Note: after account receives new VESTS there is a grace period before those VESTS are accounted for when
+  * it comes to governance vote power. This vop is generated at the end of that period.
+  */
 struct delayed_voting_operation : public virtual_operation
 {
   delayed_voting_operation() = default;
@@ -282,15 +384,26 @@ struct delayed_voting_operation : public virtual_operation
     : voter( _voter ), votes( _votes )
   {}
 
-  account_name_type voter;
-  ushare_type       votes = 0;
+  account_name_type voter; //account with fairly fresh VESTS
+  ushare_type       votes = 0; //(VESTS satoshi) new governance vote power that just activated for voter
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing potentially every block, but only if there is nonzero transfer. Transfer occurs
+  * if there are assets on OBSOLETE_TREASURY_ACCOUNT ('steem.dao'). They are consolidated from all balances (per asset
+  * type) and moved to NEW_HIVE_TREASURY_ACCOUNT ('hive.fund').
+  */
 struct consolidate_treasury_balance_operation : public virtual_operation
 {
-  vector< asset >   total_moved;
+  vector< asset >   total_moved; //(HIVE, VESTS or HBD) funds moved from old to new treasury
 };
 
+/**
+  * Related to vote_operation.
+  * Generated every time vote is cast for the first time or edited, but only as long as it is effective, that is,
+  * the target comment was not yet cashed out.
+  */
 struct effective_comment_vote_operation : public virtual_operation
 {
   effective_comment_vote_operation() = default;
@@ -298,16 +411,21 @@ struct effective_comment_vote_operation : public virtual_operation
     : voter( _voter ), author( _author ), permlink( _permlink )
   {}
 
-  account_name_type voter;
-  account_name_type author;
-  string            permlink;
-  uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
-  int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
-  uint64_t          total_vote_weight = 0; ///< the total weight of voting rewards, used to calculate pro-rata share of curation payouts
-  //potential payout of related comment at the moment of this vote
-  asset             pending_payout = asset( 0, HBD_SYMBOL ); //supplemented by account history RocksDB plugin (needed by HiveMind)
+  account_name_type voter; //account that casts a vote
+  account_name_type author; //author of comment voted on
+  string            permlink; //permlink of comment voted on
+  uint64_t          weight = 0; //weight of vote depending on when vote was cast and with what power
+  int64_t           rshares = 0; //power of the vote
+  uint64_t          total_vote_weight = 0; //sum of all vote weights on the target comment in the moment of casting current vote
+  asset             pending_payout = asset( 0, HBD_SYMBOL ); //(HBD) estimated reward on target comment; supplemented by AH RocksDB plugin
 };
 
+/**
+  * Related to delete_comment_operation.
+  * Generated when delete_comment_operation was executed but ignored.
+  * Note: prior to HF19 it was possible to execute delete on comment that had net positive votes. Such operation was ignored.
+  * This is the moment this vop is generated.
+  */
 struct ineffective_delete_comment_operation : public virtual_operation
 {
   ineffective_delete_comment_operation() = default;
@@ -315,10 +433,15 @@ struct ineffective_delete_comment_operation : public virtual_operation
     : author( _author ), permlink( _permlink )
   {}
 
-  account_name_type author;
-  string            permlink;
+  account_name_type author; //author of attempted-delete comment
+  string            permlink; //permlink of attempted-delete comment
 };
 
+/**
+  * Related to block processing.
+  * Generated during block processing every day during daily proposal maintenance.
+  * Note: portion of HIVE on treasury balance is converted to HBD and thus increases funds available for proposals.
+  */
 struct sps_convert_operation : public virtual_operation
 {
   sps_convert_operation() = default;
@@ -326,11 +449,16 @@ struct sps_convert_operation : public virtual_operation
     : fund_account( f ), hive_amount_in( c ), hbd_amount_out( a )
   {}
 
-  account_name_type fund_account;
-  asset hive_amount_in;
-  asset hbd_amount_out;
+  account_name_type fund_account; //treasury (source of hive_amount_in and receiver of hbd_amount_out)
+  asset             hive_amount_in; //(HIVE) source of conversion
+  asset             hbd_amount_out; //(HBD) effect of conversion
 };
 
+/**
+  * Related to governance voting: account_witness_vote_operation, account_witness_proxy_operation and update_proposal_votes_operation.
+  * Generated during block processing when user did not cast any governance vote for very long time. Such user is considered not
+  * interested in governance and therefore his previous votes are nullified.
+  */
 struct expired_account_notification_operation : public virtual_operation
 {
   expired_account_notification_operation() = default;
@@ -338,9 +466,13 @@ struct expired_account_notification_operation : public virtual_operation
     : account( acc )
   {}
 
-  account_name_type account;
+  account_name_type account; //user whose governance votes were nullified
 };
 
+/**
+  * Related to change_recovery_account_operation.
+  * Generated during block processing after wait period for the recovery account change has passed and the change became active.
+  */
 struct changed_recovery_account_operation : public virtual_operation
 {
   changed_recovery_account_operation() = default;
@@ -348,11 +480,18 @@ struct changed_recovery_account_operation : public virtual_operation
     : account( acc ), old_recovery_account( oldrec ), new_recovery_account( newrec )
   {}
 
-  account_name_type account;
-  account_name_type old_recovery_account;
-  account_name_type new_recovery_account;
+  account_name_type account; //used that requested recovery accout change
+  account_name_type old_recovery_account; //previous recovery account
+  account_name_type new_recovery_account; //new recovery account
 };
 
+/**
+  * Related to transfer_to_vesting_operation.
+  * Generated every time above operation is executed. Supplements it with amount of VESTS received.
+  * Note: power up immediately increases mana regeneration and vote power for comments, but there is a grace period before
+  * it activates as governance vote power.
+  * @see delayed_voting_operation
+  */
 struct transfer_to_vesting_completed_operation : public virtual_operation
 {
   transfer_to_vesting_completed_operation() = default;
@@ -360,12 +499,17 @@ struct transfer_to_vesting_completed_operation : public virtual_operation
     : from_account( f ), to_account( t ), hive_vested( s ), vesting_shares_received( v )
   {}
 
-  account_name_type from_account;
-  account_name_type to_account;
-  asset             hive_vested;
-  asset             vesting_shares_received;
+  account_name_type from_account; //account that executed power up (source of hive_vested)
+  account_name_type to_account; //account that gets power up (receiver of vesting_shares_received)
+  asset             hive_vested; //(HIVE) liquid funds being turned into VESTS
+  asset             vesting_shares_received; //(VESTS) result of power up
 };
 
+/**
+  * Related to pow_operation and pow2_operation.
+  * Generated every time one of above operations is executed (up to HF16).
+  * Note: pow2_operation could be executed up to HF17 but mining rewards were stopped after HF16.
+  */
 struct pow_reward_operation : public virtual_operation
 {
   pow_reward_operation() = default;
@@ -373,10 +517,16 @@ struct pow_reward_operation : public virtual_operation
     : worker( w ), reward( r )
   {}
 
-  account_name_type worker;
-  asset             reward;
+  account_name_type worker; //(potentially new) witness that calculated PoW (receiver of reward)
+  asset             reward; //(VESTS or HIVE) reward for work (HIVE only during first 30 days after genesis)
 };
 
+/**
+  * Related to hardfork 1.
+  * Generated for every account with nonzero vesting balance.
+  * Note: due to too small precision of VESTS asset it was increased by 6 digits, meaning all underlying
+  * amounts had to be multiplied by million.
+  */
 struct vesting_shares_split_operation : public virtual_operation
 {
   vesting_shares_split_operation() = default;
@@ -384,11 +534,15 @@ struct vesting_shares_split_operation : public virtual_operation
     : owner( o ), vesting_shares_before_split( old_vests ), vesting_shares_after_split( new_vests )
   {}
 
-  account_name_type owner;
-  asset             vesting_shares_before_split;
-  asset             vesting_shares_after_split;
+  account_name_type owner; //affected account (source of vesting_shares_before_split and receiver of vesting_shares_after_split)
+  asset             vesting_shares_before_split; //(VESTS) balance before split
+  asset             vesting_shares_after_split; //(VESTS) balance after split
 };
 
+/**
+  * Related to account_create_operation and account_create_with_delegation_operation.
+  * Generated every time one of above operations is executed.
+  */
 struct account_created_operation : public virtual_operation
 {
   account_created_operation() = default;
@@ -396,12 +550,18 @@ struct account_created_operation : public virtual_operation
     : new_account_name( new_account_name ), creator( creator ), initial_vesting_shares( initial_vesting_shares ), initial_delegation( initial_delegation )
   {}
 
-  account_name_type new_account_name;
-  account_name_type creator;
-  asset             initial_vesting_shares;
-  asset             initial_delegation; // if created with account_create_with_delegation
+  account_name_type new_account_name; //newly created account (receiver of initial_vesting_shares)
+  account_name_type creator; //account that initiated new account creation
+  asset             initial_vesting_shares; //(VESTS) amount of initial vesting on new account (converted from creation fee prior to HF20)
+  asset             initial_delegation; //(VESTS) amount of extra voting power on new account due to delegation
 };
 
+/**
+  * Related to collateralized_convert_operation.
+  * Generated during block processing after conversion delay passes and HIVE is finally converted to HBD.
+  * Note: HBD is transferred immediately during execution of above operation, this vop is generated after actual
+  * price of conversion becomes known.
+  */
 struct fill_collateralized_convert_request_operation : public virtual_operation
 {
   fill_collateralized_convert_request_operation() = default;
@@ -410,13 +570,26 @@ struct fill_collateralized_convert_request_operation : public virtual_operation
     : owner( o ), requestid( id ), amount_in( in ), amount_out( out ), excess_collateral( _excess_collateral )
   {}
 
-  account_name_type owner;
-  uint32_t          requestid = 0;
-  asset             amount_in; //in HIVE
-  asset             amount_out; //in HBD
-  asset             excess_collateral; //in HIVE
+  account_name_type owner; //user that requested conversion (receiver of excess_collateral)
+  uint32_t          requestid = 0; //id of the request
+  asset             amount_in; //(HIVE) source of conversion (part of collateral)
+  asset             amount_out; //(HBD) result of conversion (already transferred to owner when request was made)
+  asset             excess_collateral; //(HIVE) unused part of collateral returned to owner
 };
 
+/**
+  * Related to block processing or selected operations.
+  * Generated every time something occurs that would normally be only visible to node operators in their logs
+  * but might be interesting to general HIVE community. Such vops can be observed on account history of 'initminer'.
+  * Currently the following generate system warnings:
+  *  - unknown type of witness during block processing [should probably be FC_ASSERT]
+  *    indicates some problem in the code
+  *  - shortfall of collateral during finalization of HIVE->HBD conversion (@see fill_collateralized_convert_request_operation)
+  *    the community covers the difference in form of tiny amount of extra inflation
+  *  - artificial correction of internal price of HIVE due to hitting of HBD hard cap limit
+  *    every operation that involves conversion from HBD to HIVE will give output amount that is smaller than real world value
+  *  - noncanonical fee symbol used by witness [should disappear if it never happened as suggested by TODO message]
+  */
 struct system_warning_operation : public virtual_operation
 {
   system_warning_operation() = default;
@@ -424,9 +597,17 @@ struct system_warning_operation : public virtual_operation
     : message( _message )
   {}
 
-  string            message;
+  string            message; //warning message
 };
 
+/**
+  * Related to recurrent_transfer_operation.
+  * Generated during block processing starting in the block that included above operation and then after every period
+  * set in the operation until all transfers are executed, too many fail due to shortfall of funds or the transfer is cancelled.
+  * Note: in case of accumulation of very big amount of recurrent transfers to be executed in particular block, some
+  * are going to be postponed to next block(s) and so will be generation of this vop.
+  * @see failed_recurrent_transfer_operation
+  */
 struct fill_recurrent_transfer_operation : public virtual_operation
 {
   fill_recurrent_transfer_operation() = default;
@@ -434,13 +615,20 @@ struct fill_recurrent_transfer_operation : public virtual_operation
     : from( f ), to( t ), amount( a ), memo( m ), remaining_executions( re )
   {}
 
-  account_name_type from;
-  account_name_type to;
-  asset             amount;
-  string            memo;
-  uint16_t          remaining_executions = 0;
+  account_name_type from; //user that initiated the transfer (source of amount)
+  account_name_type to; //user that is target of transfer (receiver of amount)
+  asset             amount; //(HIVE of HBD) amount transferred in current iteration
+  string            memo; //memo attached to the transfer
+  uint16_t          remaining_executions = 0; //number of remaining pending transfers
 };
 
+/**
+  * Related to recurrent_transfer_operation.
+  * Generated during block processing instead of fill_recurrent_transfer_operation when there is not enought funds on from account.
+  * Note: failed transfers are not automatically repeated.
+  * Note: if too many consecutive transfers fail, whole recurrent transfer operation is discontinued.
+  * @see fill_recurrent_transfer_operation
+  */
 struct failed_recurrent_transfer_operation : public virtual_operation
 {
   failed_recurrent_transfer_operation() = default;
@@ -448,13 +636,13 @@ struct failed_recurrent_transfer_operation : public virtual_operation
     : from( f ), to( t ), amount( a ), memo( m ), consecutive_failures( cf ), remaining_executions( re ), deleted( d )
   {}
 
-  account_name_type from;
-  account_name_type to;
-  asset             amount;
-  string            memo;
-  uint8_t           consecutive_failures = 0;
-  uint16_t          remaining_executions = 0;
-  bool              deleted = false; // Indicates that the recurrent transfer was deleted due to too many consecutive failures
+  account_name_type from; //user that initiated the transfer (source of amount that has not enough balance to cover it)
+  account_name_type to; //user that is target of transfer (would be receiver of amount, but no transfer actually happened)
+  asset             amount; //(HIVE of HBD) amount that was scheduled for transferred in current iteration but failed
+  string            memo; //memo attached to the transfer
+  uint8_t           consecutive_failures = 0; //number of failed iterations
+  uint16_t          remaining_executions = 0; //number of remaining pending transfers
+  bool              deleted = false; //true if whole recurrent transfer was discontinued due to too many consecutive failures
 };
 
 } } //hive::protocol
