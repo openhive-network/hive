@@ -183,6 +183,25 @@ struct shutdown_witness_operation : public virtual_operation
   account_name_type owner; //witness that was shut down
 };
 
+/**
+  * Related to transfer_from_savings_operation.
+  * Generated during block processing after savings withdraw time has passed and requested amount
+  * was transfered from savings to liquid balance.
+  */
+struct fill_transfer_from_savings_operation : public virtual_operation
+{
+  fill_transfer_from_savings_operation() = default;
+  fill_transfer_from_savings_operation( const account_name_type& f, const account_name_type& t, const asset& a, const uint32_t r, const string& m )
+    : from( f ), to( t ), amount( a ), request_id( r ), memo( m )
+  {}
+
+  account_name_type from; //user that initiated transfer from savings
+  account_name_type to; //user that was specified to receive funds (receiver of amount)
+  asset             amount; //(HIVE or HBD) funds transfered from savings
+  uint32_t          request_id = 0; //id of transfer request
+  string            memo; //memo attached to transfer request
+};
+
 
 
 
@@ -260,19 +279,6 @@ struct shutdown_witness_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct fill_transfer_from_savings_operation : public virtual_operation
-  {
-    fill_transfer_from_savings_operation() {}
-    fill_transfer_from_savings_operation( const account_name_type& f, const account_name_type& t, const asset& a, const uint32_t r, const string& m )
-      :from(f), to(t), amount(a), request_id(r), memo(m) {}
-
-    account_name_type from;
-    account_name_type to;
-    asset             amount;
-    uint32_t          request_id = 0;
-    string            memo;
   };
 
   struct hardfork_operation : public virtual_operation
@@ -559,13 +565,13 @@ FC_REFLECT( hive::protocol::interest_operation, (owner)(interest)(is_saved_into_
 FC_REFLECT( hive::protocol::fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
 FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
+FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
-FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
 FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
