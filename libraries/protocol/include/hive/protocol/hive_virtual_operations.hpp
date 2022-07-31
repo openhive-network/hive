@@ -216,6 +216,22 @@ struct hardfork_operation : public virtual_operation
   uint32_t          hardfork_id = 0; //number of hardfork
 };
 
+/**
+  * Related to comment_operation.
+  * Generated during block processing after cashout time passes even if there are no rewards.
+  * Note: prior to HF17 comment could have multiple cashout windows.
+  */
+struct comment_payout_update_operation : public virtual_operation
+{
+  comment_payout_update_operation() = default;
+  comment_payout_update_operation( const account_name_type& a, const string& p )
+    : author( a ), permlink( p )
+  {}
+
+  account_name_type author; //author of comment
+  string            permlink; //permlink of comment
+};
+
 
 
 
@@ -293,15 +309,6 @@ struct hardfork_operation : public virtual_operation
     account_name_type seller;
     uint32_t          orderid = 0;
     asset             amount_back;
-  };
-
-  struct comment_payout_update_operation : public virtual_operation
-  {
-    comment_payout_update_operation() {}
-    comment_payout_update_operation( const account_name_type& a, const string& p ) : author( a ), permlink( p ) {}
-
-    account_name_type author;
-    string            permlink;
   };
 
   struct effective_comment_vote_operation : public virtual_operation
@@ -573,13 +580,13 @@ FC_REFLECT( hive::protocol::fill_order_operation, (current_owner)(current_orderi
 FC_REFLECT( hive::protocol::shutdown_witness_operation, (owner) )
 FC_REFLECT( hive::protocol::fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::protocol::hardfork_operation, (hardfork_id) )
+FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::protocol::pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::protocol::vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back))
-FC_REFLECT( hive::protocol::comment_payout_update_operation, (author)(permlink) )
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesting_shares) )
