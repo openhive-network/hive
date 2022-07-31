@@ -126,7 +126,7 @@ struct interest_operation : public virtual_operation
 
   account_name_type owner; //user that had his HBD balance modified (receiver of interest)
   asset             interest; //(HBD) amount of interest paid
-  bool              is_saved_into_hbd_balance; //true when liquid balance was modified (not happening after HF25)
+  bool              is_saved_into_hbd_balance = false; //true when liquid balance was modified (not happening after HF25)
 };
 
 /**
@@ -711,7 +711,7 @@ struct proposal_fee_operation : public virtual_operation
 
   account_name_type creator; //user that created proposal (source of fee)
   account_name_type treasury; //treasury account (receiver of fee)
-  uint32_t          proposal_id; //id of proposal
+  uint32_t          proposal_id = 0; //id of proposal
   asset             fee; //(HBD) amount paid for proposal [should actually be part of create_proposal_operation but it's too late now]
 };
 
@@ -728,7 +728,7 @@ struct collateralized_convert_immediate_conversion_operation : public virtual_op
   {}
 
   account_name_type owner; //user that requested conversion (receiver of hbd_out)
-  uint32_t          requestid; //id of the conversion request
+  uint32_t          requestid = 0; //id of the conversion request
   asset             hbd_out; //(HBD) funds after conversion
 };
 
@@ -747,7 +747,7 @@ struct escrow_approved_operation : public virtual_operation
   account_name_type from; //user that initiated escrow transfer
   account_name_type to; //user that is target of pending escrow transfer
   account_name_type agent; //user that is an agent of pending escrow transfer (receiver of fee)
-  uint32_t          escrow_id; //id of escrow transfer
+  uint32_t          escrow_id = 0; //id of escrow transfer
   asset             fee; //(HIVE of HBD) fee paid to agent
 };
 
@@ -769,7 +769,7 @@ struct escrow_rejected_operation : public virtual_operation
   account_name_type from; //user that initiated escrow transfer (receiver of all the funds)
   account_name_type to; //user that was target of cancelled escrow transfer
   account_name_type agent; //user that was designated as agent of cancelled escrow transfer
-  uint32_t          escrow_id; //id of cancelled escrow transfer
+  uint32_t          escrow_id = 0; //id of cancelled escrow transfer
   asset             hbd_amount; //(HBD) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
   asset             hive_amount; //(HIVE) funds from cancelled escrow transfer (same amount as in escrow_transfer_operation)
   asset             fee; //(HIVE of HBD) fee from cancelled escrow transfer (same amount as in escrow_transfer_operation)
