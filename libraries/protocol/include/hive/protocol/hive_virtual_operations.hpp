@@ -8,6 +8,24 @@
 
 namespace hive { namespace protocol {
 
+/**
+  * Related to convert_operation.
+  * Generated during block processing after conversion delay passes and HBD is converted to HIVE.
+  */
+struct fill_convert_request_operation : public virtual_operation
+{
+  fill_convert_request_operation() = default;
+  fill_convert_request_operation( const account_name_type& o, const uint32_t id, const HBD_asset& in, const HIVE_asset& out )
+    : owner( o ), requestid( id ), amount_in( in ), amount_out( out )
+  {}
+
+  account_name_type owner; //user that requested conversion (receiver of amount_out)
+  uint32_t          requestid = 0; //id of the request
+  asset             amount_in; //(HBD) source of conversion
+  asset             amount_out; //(HIVE) effect of conversion
+};
+
+
   struct author_reward_operation : public virtual_operation
   {
     author_reward_operation() = default;
@@ -78,19 +96,6 @@ namespace hive { namespace protocol {
     account_name_type owner;
     asset             interest;
     bool              is_saved_into_hbd_balance;
-  };
-
-
-  struct fill_convert_request_operation : public virtual_operation
-  {
-    fill_convert_request_operation() = default;
-    fill_convert_request_operation( const account_name_type& o, const uint32_t id, const HBD_asset& in, const HIVE_asset& out )
-      :owner(o), requestid(id), amount_in(in), amount_out(out) {}
-
-    account_name_type owner;
-    uint32_t          requestid = 0;
-    asset             amount_in; //in HBD
-    asset             amount_out; //in HIVE
   };
 
   struct fill_collateralized_convert_request_operation : public virtual_operation
@@ -493,10 +498,10 @@ namespace hive { namespace protocol {
 
 } } //hive::protocol
 
+FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
 FC_REFLECT( hive::protocol::author_reward_operation, (author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(curators_vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::curation_reward_operation, (curator)(reward)(comment_author)(comment_permlink)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::comment_reward_operation, (author)(permlink)(payout)(author_rewards)(total_payout_value)(curator_payout_value)(beneficiary_payout_value) )
-FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::liquidity_reward_operation, (owner)(payout) )
