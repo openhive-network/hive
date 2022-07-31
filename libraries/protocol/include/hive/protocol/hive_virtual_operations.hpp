@@ -380,6 +380,23 @@ struct hardfork_hive_restore_operation : public virtual_operation
   asset             hive_transferred; //(HIVE) part of airdrop (equals related hardfork_hive_operation.hive_transferred)
 };
 
+/**
+  * Related to transfer_to_vesting_operation.
+  * Generated during block processing every time part of fairly fresh VESTS becomes active part of governance vote for the account.
+  * Note: after account receives new VESTS there is a grace period before those VESTS are accounted for when
+  * it comes to governance vote power. This vop is generated at the end of that period.
+  */
+struct delayed_voting_operation : public virtual_operation
+{
+  delayed_voting_operation() = default;
+  delayed_voting_operation( const account_name_type& _voter, const ushare_type _votes )
+    : voter( _voter ), votes( _votes )
+  {}
+
+  account_name_type voter; //account with fairly fresh VESTS
+  ushare_type       votes = 0; //(VESTS satoshi) new governance vote power that just activated for voter
+};
+
 
 
 
@@ -490,15 +507,6 @@ struct hardfork_hive_restore_operation : public virtual_operation
   struct consolidate_treasury_balance_operation : public virtual_operation
   {
     vector< asset >   total_moved;
-  };
-
-  struct delayed_voting_operation : public virtual_operation
-  {
-    delayed_voting_operation(){}
-    delayed_voting_operation( const account_name_type& _voter, const ushare_type _votes ) : voter( _voter ), votes( _votes ) {}
-
-    account_name_type    voter;
-    ushare_type          votes = 0;
   };
 
   struct dhf_conversion_operation : public virtual_operation
@@ -652,6 +660,7 @@ FC_REFLECT( hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(paye
 FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
+FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owner)(requestid)(amount_in)(amount_out)(excess_collateral) )
 FC_REFLECT( hive::protocol::account_created_operation, (new_account_name)(creator)(initial_vesting_shares)(initial_delegation) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
@@ -661,7 +670,6 @@ FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_bac
 FC_REFLECT( hive::protocol::effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout))
 FC_REFLECT( hive::protocol::ineffective_delete_comment_operation, (author)(permlink))
 FC_REFLECT( hive::protocol::consolidate_treasury_balance_operation, ( total_moved ) )
-FC_REFLECT( hive::protocol::delayed_voting_operation, (voter)(votes) )
 FC_REFLECT( hive::protocol::dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
 FC_REFLECT( hive::protocol::expired_account_notification_operation, (account) )
 FC_REFLECT( hive::protocol::changed_recovery_account_operation, (account)(old_recovery_account)(new_recovery_account) )
