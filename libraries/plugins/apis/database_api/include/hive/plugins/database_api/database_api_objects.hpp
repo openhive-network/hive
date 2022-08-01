@@ -16,7 +16,7 @@ using namespace hive::chain;
 
 struct api_reward_fund_object
 {
-  api_reward_fund_object() {};
+  api_reward_fund_object() = default;
   api_reward_fund_object( const reward_fund_object& o, const database& db ):
     id( o.get_id() ),
     name( o.name ),
@@ -33,13 +33,13 @@ struct api_reward_fund_object
   reward_fund_id_type     id;
   reward_fund_name_type   name;
   asset                   reward_balance;
-  uint128_t               recent_claims;
+  uint128_t               recent_claims = 0;
   time_point_sec          last_update;
-  uint128_t               content_constant;
-  uint16_t                percent_curation_rewards;
-  uint16_t                percent_content_rewards;
-  protocol::curve_id      author_reward_curve;
-  protocol::curve_id      curation_reward_curve;
+  uint128_t               content_constant = 0;
+  uint16_t                percent_curation_rewards = 0;
+  uint16_t                percent_content_rewards = 0;
+  protocol::curve_id      author_reward_curve = protocol::quadratic;
+  protocol::curve_id      curation_reward_curve = protocol::quadratic;
 };
 
 struct api_witness_vote_object
