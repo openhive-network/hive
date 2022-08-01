@@ -32,6 +32,9 @@ install( TARGETS
 
 add_executable( sign_transaction sign_transaction.cpp )
 
+# needed to correctly print crash stacktrace
+set_target_properties(sign_transaction PROPERTIES ENABLE_EXPORTS true)
+
 target_link_libraries( sign_transaction
                        PRIVATE hive_chain hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
@@ -138,6 +141,10 @@ install( TARGETS
 )
 
 add_executable( compress_block_log compress_block_log.cpp )
+
+# needed to correctly print crash stacktrace
+set_target_properties(compress_block_log PROPERTIES ENABLE_EXPORTS true)
+
 target_include_directories( compress_block_log PRIVATE ${BROTLI_INCLUDE_DIRS})
 target_link_libraries( compress_block_log
                        PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIB} ${PLATFORM_SPECIFIC_LIBS})
