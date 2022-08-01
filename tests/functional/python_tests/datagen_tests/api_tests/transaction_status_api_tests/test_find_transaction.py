@@ -27,13 +27,14 @@ def test_find_existing_transaction(node, wallet):
 
 
 def test_find_too_old_transaction(node, wallet):
-    response = node.api.transaction_status.find_transaction(transaction_id='0000000000000000000000000000000000000000',
-                                                            expiration=date_from_now(weeks=-24))
+    unknown_id = '0000000000000000000000000000000000000000'
+    response = node.api.transaction_status.find_transaction(transaction_id=unknown_id, expiration=date_from_now(weeks=-24))
     assert response['status'] == 'too_old'
 
 
 def test_find_unknown_transaction(node, wallet):
-    response = node.api.transaction_status.find_transaction(transaction_id='0000000000000000000000000000000000000000')
+    unknown_id = '0000000000000000000000000000000000000000'
+    response = node.api.transaction_status.find_transaction(transaction_id=unknown_id)
     assert response['status'] == 'unknown'
 
 
