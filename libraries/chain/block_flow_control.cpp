@@ -66,7 +66,7 @@ void block_flow_control::on_worker_done() const
 
 fc::variant_object block_flow_control::get_report( report_type rt ) const
 {
-  if( rt == report_type::NONE )
+  if( rt == report_type::NONE || full_block == nullptr )
     return fc::variant_object();
 
   const char* type = "";
