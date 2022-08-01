@@ -5153,12 +5153,12 @@ void database::update_global_dynamic_data( const signed_block& b )
 { try {
   const dynamic_global_property_object& _dgp = get_dynamic_global_properties();
 
-  uint32_t missed_blocks = 0;
-  if( head_block_time() != fc::time_point_sec() )
+  uint32_t missed_blocks = get_slot_at_time( b.timestamp );
+;
+  assert( missed_blocks != 0 );
+  missed_blocks--;
+  if( head_block_num() != 0 )
   {
-    missed_blocks = get_slot_at_time( b.timestamp );
-    assert( missed_blocks != 0 );
-    missed_blocks--;
     for( uint32_t i = 0; i < missed_blocks; ++i )
     {
       const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
