@@ -2816,7 +2816,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     BOOST_TEST_MESSAGE( "Generating blocks up to comment payout" );
 
-    db_plugin->debug_generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
+    generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
 
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
@@ -2841,7 +2841,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     validate_database();
 
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_blocks( debug_key, 1, database::skip_witness_signature );
 
     BOOST_TEST_MESSAGE( "Checking printing HBD has stopped" );
     BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), 0 );
@@ -2853,7 +2853,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     BOOST_REQUIRE_EQUAL( alice_hive.amount.value, 0 );
 
     BOOST_TEST_MESSAGE( "Pay out comment and check rewards are paid as HIVE" );
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_blocks( debug_key, 1, database::skip_witness_signature );
 
     validate_database();
 
@@ -2886,7 +2886,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     validate_database();
 
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_blocks( debug_key, 1, database::skip_witness_signature );
     BOOST_REQUIRE( dgpo.get_hbd_print_rate() < HIVE_100_PERCENT );
 
     auto last_print_rate = dgpo.get_hbd_print_rate();
@@ -2896,7 +2896,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       BOOST_REQUIRE( dgpo.get_hbd_print_rate() >= last_print_rate );
       last_print_rate = dgpo.get_hbd_print_rate();
-      db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+      generate_blocks( debug_key, 1, database::skip_witness_signature );
       if( db->head_block_num() % 1000 == 0 )
         validate_database();
     }
