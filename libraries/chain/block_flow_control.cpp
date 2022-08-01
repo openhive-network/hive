@@ -26,6 +26,9 @@ void block_flow_control::on_worker_done() const
 
 void block_flow_control::log_stats() const
 {
+  if( full_block == nullptr )
+    return;
+
   const char* type = "";
   if( !finished() )
     type = "broken";
