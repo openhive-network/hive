@@ -92,19 +92,22 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
     void debug_generate_blocks(
       debug_generate_blocks_return& ret,
-      const debug_generate_blocks_args& args );
+      const debug_generate_blocks_args& args,
+      bool immediate_generation );
 
     uint32_t debug_generate_blocks(
       const std::string& debug_key,
       uint32_t count,
-      uint32_t skip = hive::chain::database::skip_nothing,
-      uint32_t miss_blocks = 0
+      uint32_t skip,
+      uint32_t miss_blocks,
+      bool immediate_generation
       );
     uint32_t debug_generate_blocks_until(
       const std::string& debug_key,
       const fc::time_point_sec& head_block_time,
       bool generate_sparsely,
-      uint32_t skip = hive::chain::database::skip_nothing
+      uint32_t skip,
+      bool immediate_generation
       );
 
     void set_json_object_stream( const std::string& filename );
