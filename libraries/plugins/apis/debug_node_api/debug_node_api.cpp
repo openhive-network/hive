@@ -97,13 +97,13 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks )
 {
   debug_generate_blocks_return ret;
-  _debug_node.debug_generate_blocks( ret, args );
+  _debug_node.debug_generate_blocks( ret, args, false ); // Here use chain_plugin like generation, to have correct synchronization between API and chain threads
   return ret;
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 {
-  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing ) };
+  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing, false ) };
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_pop_block )
