@@ -30,13 +30,14 @@ public:
     end_work = fc::time_point::now();
   }
 
-  void on_cleanup( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs )
+  void on_cleanup( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib )
   {
     end_cleanup = fc::time_point::now();
     txs_expired = _exp_txs;
     txs_failed = _fail_txs;
     txs_reapplied = _ok_txs;
     txs_postponed = _post_txs;
+    last_irreversible_block_num = _lib;
   }
 
   fc::microseconds get_wait_time() const { return start_work - creation; }
@@ -57,6 +58,8 @@ public:
   uint32_t get_txs_failed_after_block() const { return txs_failed; }
   uint32_t get_txs_reapplied_after_block() const { return txs_reapplied; }
   uint32_t get_txs_postponed_after_block() const { return txs_postponed; }
+
+  uint32_t get_last_irreversible_block_num() const { return last_irreversible_block_num; }
 
 private:
   //time of arrival for P2P, time of request for new block
@@ -84,6 +87,8 @@ private:
   uint32_t txs_reapplied = 0;
   //number of transactions that were not touched during pending reapplication due to time limit
   uint32_t txs_postponed = 0;
+  //last irreversible block at the time block work was done
+  uint32_t last_irreversible_block_num = 0;
 };
 
 /**
@@ -153,9 +158,9 @@ public:
   virtual void on_end_of_apply_block() const;
 
   // after reapplication of pending transactions
-  void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs ) const
+  void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const
   {
-    stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs );
+    stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
     if( !except )
       current_phase = phase::END;
   }

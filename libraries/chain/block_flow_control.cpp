@@ -50,16 +50,24 @@ void block_flow_control::on_worker_done() const
   if( auto_report_type == report_type::NONE )
     return;
 
-  switch( auto_report_output )
+  fc::variant_object report = get_report(auto_report_type);
+  switch (auto_report_output)
   {
   case report_output::NOTIFY:
-    hive::notify( "Block stats", "block_stats", get_report( auto_report_type ) );
+    hive::notify("Block stats", "block_stats", report);
     break;
   case report_output::ILOG:
-    ilog( "Block stats:${report}", ( "report", get_report( auto_report_type ) ) );
+    ilog("Block stats:${report}", (report));
     break;
   default:
-    dlog( "Block stats:${report}", ( "report", get_report( auto_report_type ) ) );
+    dlog("Block stats:${report}", (report));
+    if (fc::logger::get("default").is_enabled(fc::log_level::info))
+      fc::logger::get("default").log(fc::log_message(FC_LOG_CONTEXT(info), 
+                                                     "#${num} lib:${lib} ${type} ${bp} txs:${txs} size:${size} offset:${offset} "
+                                                     "before:{inc:${inc} ok:${ok}} "
+                                                     "after:{exp:${exp} fail:${fail} appl:${appl} post:${post}} "
+                                                     "exec:{offset:${offset} pre:${pre} work:${work} post:${post} all:${all}} "
+                                                     "id:${id} ts:${ts}", report));
     break;
   };
 }
@@ -85,6 +93,7 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
   fc::variant_object_builder report;
   report
     ( "num", full_block->get_block_num() )
+    ("lib", stats.get_last_irreversible_block_num())
     ( "type", type );
   if( rt != report_type::MINIMAL )
   {
