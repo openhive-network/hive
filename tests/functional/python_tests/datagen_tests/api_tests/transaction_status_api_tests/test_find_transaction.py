@@ -2,7 +2,6 @@ import time
 from ......local_tools import date_from_now
 
 
-
 def test_find_existing_transaction(node, wallet):
     wallet.api.set_transaction_expiration(90)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
@@ -38,11 +37,9 @@ def test_find_unknown_transaction(node, wallet):
     assert response['status'] == 'unknown'
 
 
-def test_try(node, wallet):
-    wallet.api.set_transaction_expiration(3)
-    transaction = wallet.api.create_account('initminer', 'alice', '{}')
-    transaction_id = transaction['transaction_id']
-    q = node.api.transaction_status.find_transaction(transaction_id=transaction_id)
-    time.sleep(15)
-    q2 = node.api.transaction_status.find_transaction(transaction_id=transaction_id)
-    print()
+def test_find_expired_irreversible_transaction(sped_up_node, wallet):
+    unknown_id = '0000000000000000000000000000000000000001'
+    sped_up_node.wait_number_of_blocks(1260)
+    node_time = sped_up_node.api.database.get_dynamic_global_properties()['time']
+    response = sped_up_node.api.transaction_status.find_transaction(transaction_id=unknown_id, expiration=node_time)
+    assert response['status'] == 'expired_irreversible'
