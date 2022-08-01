@@ -277,6 +277,11 @@ struct database_fixture {
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
                       int miss_blocks = 0);
 
+  uint32_t generate_blocks( const std::string& debug_key, uint32_t count, uint32_t skip );
+
+  uint32_t generate_blocks_until( const std::string& debug_key, const fc::time_point_sec& head_block_time,
+    bool generate_sparsely, uint32_t skip );
+
   /**
     * @brief Generates block_count blocks
     * @param block_count number of blocks to generate
