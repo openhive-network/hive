@@ -18,6 +18,9 @@ if(ENABLE_PROFILING)
     message( INFO "Profiling enabled" )
 endif()
 
+# needed to correctly print crash stacktrace
+set_target_properties(hived PROPERTIES ENABLE_EXPORTS true)
+
 target_link_libraries( hived PRIVATE
    "-static-libstdc++ -static-libgcc"
    appbase

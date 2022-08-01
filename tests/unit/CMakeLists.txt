@@ -267,6 +267,9 @@ add_boost_test( chain_test
    undo_tests/undo_generate_blocks
 )
 
+# needed to correctly print crash stacktrace
+set_target_properties(chain_test PROPERTIES ENABLE_EXPORTS true)
+
 target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
 file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
@@ -295,6 +298,9 @@ add_boost_test( plugin_test
     direct_rc_delegation/rc_delegation_regeneration
     direct_rc_delegation/rc_delegation_removal_no_rc
 )
+
+# needed to correctly print crash stacktrace
+set_target_properties(plugin_test PROPERTIES ENABLE_EXPORTS true)
 
 target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 

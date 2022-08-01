@@ -12,6 +12,9 @@ else()
 
   FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS atomic )
 
+  # needed to correctly print crash stacktrace
+  set_target_properties(blockchain_converter PROPERTIES ENABLE_EXPORTS true)
+
   target_link_libraries( blockchain_converter PRIVATE
                         "-static-libstdc++ -static-libgcc"
                         hive_utilities hive_protocol hive_chain appbase fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS}
