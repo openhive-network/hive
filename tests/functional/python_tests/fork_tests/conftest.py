@@ -1,11 +1,52 @@
-from typing import Dict
+from typing import Dict, List
 
 import pytest
 
 import test_tools as tt
 
 from ..local_tools import prepare_witnesses
+from .local_tools import connect_sub_networks
 from test_tools.__private.user_handles import WitnessNodeHandle
+
+def prepared_sub_networks(sub_networks_sizes : list) -> Dict:
+
+    assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
+    cnt               = 0
+    all_witness_names = []
+    sub_networks      = []
+    init_node         = None
+
+    for sub_networks_size in sub_networks_sizes:
+        tt.logger.info(f'Preparing sub-network nr: {cnt} that consists of {sub_networks_size} nodes')
+
+        witness_names = [f'witness-{cnt}-{i}' for i in range(sub_networks_size)]
+        all_witness_names += witness_names
+
+        sub_network = tt.Network()  # TODO: Add network name prefix, e.g. AlphaNetwork0 (Alpha- is custom prefix)
+        if cnt == 0:
+            init_node = tt.InitNode(network = sub_network)
+        sub_networks.append(sub_network)
+        tt.WitnessNode(witnesses = witness_names, network = sub_network)
+        tt.ApiNode(network = sub_network)
+
+        cnt += 1
+
+    # Run
+    connect_sub_networks(sub_networks)
+
+    tt.logger.info('Running networks, waiting for live...')
+
+    for sub_network in sub_networks:
+        assert sub_network is not None
+        sub_network.run()
+
+    prepare_witnesses(init_node, all_witness_names)
+
+    return sub_networks
+
+@pytest.fixture(scope="package")
+def prepared_sub_networks_18_3() -> Dict:
+    yield { 'sub-networks': prepared_sub_networks([18, 3]) }
 
 @pytest.fixture(scope="package")
 def prepared_networks() -> Dict:

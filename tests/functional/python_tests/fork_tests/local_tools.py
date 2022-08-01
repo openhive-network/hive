@@ -35,3 +35,30 @@ def assert_no_duplicates(node, *nodes):
         wallet = tt.Wallet(attach_to=node)
         check_account_history_duplicates(node, wallet)
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
+
+
+def connect_sub_networks(sub_networks : list):
+    tt.logger.info('Connecting sub-networks')
+    if len(sub_networks) > 1:
+        current_sub_network = None
+        for sub_network in sub_networks:
+            if current_sub_network is None:
+                current_sub_network = sub_network
+            else:
+                assert (current_sub_network is not None) and (sub_network is not None)
+
+                current_sub_network.connect_with(sub_network)
+                current_sub_network = sub_network
+
+def disconnect_sub_networks(sub_networks : list):
+    tt.logger.info('Disconnecting sub-networks')
+    if len(sub_networks) > 1:
+        current_sub_network = None
+        for sub_network in sub_networks:
+            if current_sub_network is None:
+                current_sub_network = sub_network
+            else:
+                assert (current_sub_network is not None) and (sub_network is not None)
+
+                current_sub_network.disconnect_from(sub_network)
+                current_sub_network = sub_network
