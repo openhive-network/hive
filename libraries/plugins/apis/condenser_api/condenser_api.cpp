@@ -1147,7 +1147,13 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    return _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
+    auto _recurrent_transfers = _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
+    find_recurrent_transfers_return _result;
+
+    for( auto& recurrent_transfer : _recurrent_transfers )
+      _result.emplace_back( hive::protocol::serializer_wrapper<database_api::api_recurrent_transfer_object>{ recurrent_transfer, transaction_serialization_type::legacy } );
+
+    return _result;
   }
 
   void condenser_api_impl::on_post_apply_block( const block_notification& note )
