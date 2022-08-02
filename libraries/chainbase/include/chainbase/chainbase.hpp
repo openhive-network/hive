@@ -356,15 +356,40 @@ namespace chainbase {
       template<typename Modifier>
       void modify( const value_type& obj, Modifier&& m ) {
         on_modify( obj );
+
+        fc::exception_ptr fc_exception_ptr;
+        std::exception_ptr std_exception_ptr;
+
+        auto safe_modifier = [&m, &fc_exception_ptr, &std_exception_ptr](value_type& obj) {
+          try
+          {
+            m(obj);
+          }
+          catch(const fc::exception& e)
+          {
+            fc_exception_ptr = e.dynamic_copy_exception();
+          }
+          catch(...)
+          {
+            std_exception_ptr = std::current_exception();
+          }
+        };
+
         auto itr = _indices.iterator_to( obj );
-        auto ok = _indices.modify( itr, std::forward<Modifier>( m ) );
-        if( !ok )
+
+        auto ok = _indices.modify( itr, safe_modifier);
+
+        if(fc_exception_ptr)
+          fc_exception_ptr->dynamic_rethrow_exception();
+        else if(std_exception_ptr)
+          std::rethrow_exception(std_exception_ptr);
+
+        if(!ok)
         {
           std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
           CHAINBASE_THROW_EXCEPTION(std::logic_error(
             "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
         }
-
       }
 
       void remove( const value_type& obj ) {
