@@ -1834,6 +1834,74 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
+{
+  bool expected_exception_found = false;
+
+  try
+  {
+    BOOST_TEST_MESSAGE("Testing exception throw during rc_account modify");
+    inject_hardfork(HIVE_BLOCKCHAIN_VERSION.minor_v());
+    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
+    skip_flags.skip_reject_not_enough_rc = 0;
+    skip_flags.skip_reject_unknown_delta_vests = 0;
+    rc_plugin->set_rc_plugin_skip_flags(skip_flags);
+
+    ACTORS((dave))
+    generate_block();
+    vest("initminer", "dave", ASSET("70000.000 TESTS")); //<- change that amount to tune RC cost
+    fund("dave", ASSET("1000.000 TESTS"));
+
+    generate_block();
+
+    const auto& dave_rc = db->get< rc_account_object, by_name >("dave");
+
+    BOOST_TEST_MESSAGE("Clear RC on dave");
+    clear_mana(db_plugin, dave_rc);
+
+    transfer_operation transfer;
+    transfer.from = "dave";
+    transfer.to = "initminer";
+    transfer.amount = ASSET("0.001 TESTS ");
+    transfer.memo = "test";
+
+    signed_transaction tx;
+    tx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+    tx.operations.push_back(transfer);
+    sign(tx, dave_private_key);
+
+    try
+    {
+      BOOST_TEST_MESSAGE("Attempting to push transaction");
+      push_transaction(tx, 0);
+    }
+    catch(const hive::chain::not_enough_rc_exception& e)
+    {
+      BOOST_TEST_MESSAGE("Caught exception...");
+      const auto& saved_log = e.get_log();
+
+      for(const auto& msg : saved_log)
+      {
+        fc::variant_object data = msg.get_data();
+        if(data.contains("rc_account"))
+        {
+          expected_exception_found =  true;
+          const fc::variant_object& rc_account_data = data["rc_account"].get_object();
+          BOOST_REQUIRE_EQUAL(rc_account_data["account"].as_string(), "dave");
+          break;
+        }
+      }
+    }
+
+    /// Find dave RC account once again and verify pointers to chain object (they should match)
+    const auto* dave_rc2 = db->find< rc_account_object, by_name >("dave");
+    BOOST_REQUIRE_EQUAL(&dave_rc, dave_rc2);
+  }
+  FC_LOG_AND_RETHROW()
+  
+  BOOST_REQUIRE_EQUAL(expected_exception_found, true);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
