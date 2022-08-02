@@ -455,6 +455,18 @@ namespace hive { namespace chain {
     std::tie(head_block_offset, attributes) = detail::split_block_start_pos_with_flags(head_block_offset_with_flags);
     size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
 
+    FC_ASSERT(
+      HIVE_MIN_BLOCK_SIZE <= raw_data_size && raw_data_size <= HIVE_MAX_BLOCK_SIZE,
+      "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes",
+      (raw_data_size)
+    );
+
+    FC_ASSERT(
+      (size_t)(block_log_size) > (head_block_offset - sizeof(head_block_offset)),
+      "block log file is corrupted, head block offset is greater than file size; block_log_size=${block_log_size}, head_block_offset=${head_block_offset}",
+      (block_log_size)(head_block_offset)
+    );
+
     std::unique_ptr<char[]> raw_data(new char[raw_data_size]);
     auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, raw_data.get(), raw_data_size, head_block_offset);
     FC_ASSERT(total_read == raw_data_size);
