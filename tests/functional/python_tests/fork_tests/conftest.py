@@ -40,13 +40,12 @@ def prepared_sub_networks(sub_networks_sizes : list) -> Dict:
         assert sub_network is not None
         sub_network.run()
 
-    prepare_witnesses(init_node, all_witness_names)
-
-    return sub_networks
+    witness_details = prepare_witnesses(init_node, all_witness_names)
+    return sub_networks, witness_details
 
 @pytest.fixture(scope="package")
 def prepared_sub_networks_18_3() -> Dict:
-    yield { 'sub-networks': prepared_sub_networks([18, 3]) }
+    yield { 'sub-networks-data': prepared_sub_networks([18, 3]) }
 
 @pytest.fixture(scope="package")
 def prepared_networks() -> Dict:
