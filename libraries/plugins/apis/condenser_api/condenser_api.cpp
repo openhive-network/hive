@@ -194,7 +194,13 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _block_api, "block_api_plugin not enabled." );
-    return _block_api->get_block_header( { args[0].as< uint32_t >() } ).header;
+    get_block_header_return result;
+    auto _header = _block_api->get_block_header( { args[0].as< uint32_t >() } ).header;
+
+    if( _header )
+      result = hive::protocol::serializer_wrapper<block_header>{ *_header, transaction_serialization_type::legacy };
+
+    return result;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_block )
