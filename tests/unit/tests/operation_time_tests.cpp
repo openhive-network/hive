@@ -1346,6 +1346,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       auto implied_route = vops[0].get< fill_vesting_withdraw_operation >();
       auto route_sam = vops[1].get< fill_vesting_withdraw_operation >();
       auto route_bob = vops[2].get< fill_vesting_withdraw_operation >();
+      BOOST_REQUIRE( is_effective_operation( implied_route ) );
       BOOST_REQUIRE( implied_route.to_account == alice.get_name() );
       BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
       BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
@@ -1400,6 +1401,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       const auto& sam = db->get_account( "sam" );
 
       // check vops - unlike previous time, this time there is no vop for implied route, since its "power" is 0%
+      // note: the vop for implied route is actually emitted, but AH filters it out when it is not effective (see issue #337)
       auto vops = get_last_operations( 2 );
       auto route_sam = vops[0].get< fill_vesting_withdraw_operation >();
       auto route_bob = vops[1].get< fill_vesting_withdraw_operation >();
