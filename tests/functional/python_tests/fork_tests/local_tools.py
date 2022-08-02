@@ -38,7 +38,6 @@ def assert_no_duplicates(node, *nodes):
 
 
 def connect_sub_networks(sub_networks : list):
-    tt.logger.info('Connecting sub-networks')
     if len(sub_networks) > 1:
         current_sub_network = None
         for sub_network in sub_networks:
@@ -51,7 +50,6 @@ def connect_sub_networks(sub_networks : list):
                 current_sub_network = sub_network
 
 def disconnect_sub_networks(sub_networks : list):
-    tt.logger.info('Disconnecting sub-networks')
     if len(sub_networks) > 1:
         current_sub_network = None
         for sub_network in sub_networks:
@@ -62,3 +60,52 @@ def disconnect_sub_networks(sub_networks : list):
 
                 current_sub_network.disconnect_from(sub_network)
                 current_sub_network = sub_network
+
+def enable_witnesses(wallet : tt.Wallet, witness_details : list):
+    with wallet.in_single_transaction():
+        for witness_detail in witness_details:
+            name = witness_detail[0]
+            key = witness_detail[1]
+            wallet.api.update_witness(
+                name, "https://" + name,
+                key,
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+            )
+
+def disable_witnesses(wallet : tt.Wallet, witness_details : list):
+    key = 'TST5NUU7M7pmqMpMHUwscgUBMuwLQE56MYwCLF7q9ZGB6po1DMNoG'
+    with wallet.in_single_transaction():
+        for witness_detail in witness_details:
+            name = witness_detail[0]
+            wallet.api.update_witness(
+                name, "https://" + name,
+                key,
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+            )
+
+def get_last_head_block_number(blocks : list):
+    return blocks[len(blocks) - 1][0]
+
+def get_last_irreversible_block_num(blocks : list):
+    return blocks[len(blocks) - 1][1]
+
+def get_part_of_witness_details(witness_details : list, start, length : int):
+    assert start >= 0 and start + length <= len(witness_details)
+    new_witness_details = []
+    for i in range(start, start + length):
+        new_witness_details.append(witness_details[i])
+    return new_witness_details
+
+def info(msg : str, wallet : tt.Wallet):
+    info    = wallet.api.info()
+    hb      = info['head_block_number']
+    lib     = info['last_irreversible_block_num']
+    tt.logger.info(f'msg: {msg} head_block_number: {hb} last_irreversible_block_num: {lib}')
+    return hb, lib
+
+def wait(blocks, majority_blocks, majority_wallet, minority_blocks, minority_wallet, majority_api_node):
+    for i in range(blocks):
+        majority_blocks.append( info('M', majority_wallet) )
+        minority_blocks.append( info('m', minority_wallet) )
+        majority_api_node.wait_number_of_blocks(1)
+        tt.logger.info(f'{i+1}/{blocks} blocks')

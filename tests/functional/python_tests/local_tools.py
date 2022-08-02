@@ -60,24 +60,4 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
 
     # with fast confirm, irreversible will usually be = head
     # assert irreversible + 10 < head
-    return witness_details
-
-def enable_witnesses(wallet : tt.Wallet, witness_details : list):
-    for witness_detail in witness_details:
-        name = witness_detail[0]
-        key = witness_detail[1]
-        wallet.api.update_witness(
-            name, "https://" + name,
-            key,
-            {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
-        )
-
-def disable_witnesses(wallet : tt.Wallet, witness_details : list):
-    key = 'TST5NUU7M7pmqMpMHUwscgUBMuwLQE56MYwCLF7q9ZGB6po1DMNoG'
-    for witness_detail in witness_details:
-        name = witness_detail[0]
-        wallet.api.update_witness(
-            name, "https://" + name,
-            key,
-            {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
-        )
+    return witness_details, wallet
