@@ -19,7 +19,9 @@ def info(msg : str, wallet : tt.Wallet):
     return hb, lib
 
 def test_fast_confirmation_fork(prepared_sub_networks_18_3):
-    sub_networks = prepared_sub_networks_18_3['sub-networks']
+    sub_networks_data   = prepared_sub_networks_18_3['sub-networks-data']
+    sub_networks        = sub_networks_data[0]
+    witness_details     = sub_networks_data[1]
     assert len(sub_networks) == 2
 
     majority_api_node = sub_networks[0].node('ApiNode0')
