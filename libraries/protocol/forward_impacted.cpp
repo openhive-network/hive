@@ -232,8 +232,11 @@ struct get_impacted_account_visitor
 
   void operator()( const fill_vesting_withdraw_operation& op )
   {
-    _impacted.insert( op.from_account );
-    _impacted.insert( op.to_account );
+    if( !op.is_empty_implied_route() )
+    {
+      _impacted.insert( op.from_account );
+      _impacted.insert( op.to_account );
+    }
   }
 
   void operator()( const transfer_to_vesting_completed_operation& op )

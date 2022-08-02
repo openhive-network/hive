@@ -143,6 +143,8 @@ namespace hive { namespace protocol {
 
   bool is_virtual_operation( const operation& op );
 
+  bool is_effective_operation( const operation& op );
+
 } } // hive::protocol
 
 namespace fc

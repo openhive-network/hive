@@ -142,6 +142,8 @@ struct fill_vesting_withdraw_operation : public virtual_operation
     : from_account( f ), to_account( t ), withdrawn( w ), deposited( d )
   {}
 
+  bool is_empty_implied_route() const { return withdrawn.amount.value == 0; } //see issue #337
+
   account_name_type from_account; //user that activated power down
   account_name_type to_account; //target of vesting route (potentially the same as from_account - receiver of deposited)
   asset             withdrawn; //(VESTS) source amount

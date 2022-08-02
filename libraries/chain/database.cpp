@@ -2704,8 +2704,9 @@ void database::process_vesting_withdrawals()
 
     auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
     operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_hive );
-    if( to_convert.value != 0 )
-      pre_push_virtual_operation( vop );
+    //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
+    //and only now we are going to update that account's VESTS (see issue #337)
+    pre_push_virtual_operation( vop );
 
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
@@ -2756,8 +2757,7 @@ void database::process_vesting_withdrawals()
         adjust_proxied_witness_votes( from_account, -to_withdraw );
     }
 
-    if( to_convert.value != 0 )
-      post_push_virtual_operation( vop );
+    post_push_virtual_operation( vop );
   }
   if( _benchmark_dumper.is_enabled() && count )
     _benchmark_dumper.end( "processing", "hive::protocol::withdraw_vesting_operation", count );
