@@ -456,7 +456,7 @@ namespace hive { namespace chain {
     size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
 
     FC_ASSERT(
-      HIVE_MIN_BLOCK_SIZE <= raw_data_size && raw_data_size <= HIVE_MAX_BLOCK_SIZE,
+      raw_data_size <= HIVE_MAX_BLOCK_SIZE,
       "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes",
       (raw_data_size)
     );
