@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:count <= 1000: You can only ask for 1000 blocks at a timerethrow"
+}
