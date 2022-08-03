@@ -79,7 +79,7 @@ struct list_object_args_type
 /* get_config */
 
 typedef void_type          get_config_args;
-typedef fc::variant_object get_config_return;
+typedef fc::mutable_variant_object get_config_return;
 
 /* get_version */
 typedef void_type          get_version_args;
