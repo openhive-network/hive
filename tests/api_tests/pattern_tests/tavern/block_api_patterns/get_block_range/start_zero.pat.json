@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:starting_block_num > 0: Invalid starting block numberrethrow"
+}
