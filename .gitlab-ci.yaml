@@ -483,7 +483,7 @@ transaction_serialization_mainnet_tests:
     - hived-for-tests
 
 .message_format_tests:
-  image: python:3.8-slim-bullseye
+  image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
   variables:
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
   script:
