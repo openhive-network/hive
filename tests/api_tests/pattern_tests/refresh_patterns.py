@@ -27,6 +27,10 @@ def load_yaml(filename : str) -> dict:
 	with open(filename, 'rt') as file:
 		return safe_load(file.read().replace('!', ''))
 
+def is_negative(loaded_yaml : dict) -> bool:
+	response : dict = loaded_yaml['stages'][0]['response']['verify_response_with']
+	return ( 'extra_kwargs' in response and response['extra_kwargs'].get('error_response', False) )
+
 def create_pattern(url : str, tav_file : str, directory : str):
 	PATTERN_FILE = tav_file.split('.')[0] + '.pat.json' + SUFIX
 	TAVERN_FILE = join(directory, tav_file)
@@ -39,7 +43,7 @@ def create_pattern(url : str, tav_file : str, directory : str):
 	assert output.status_code == 200
 	parsed = output.json()
 
-	if '_negative' in directory:
+	if is_negative(test_options):
 		assert 'error' in parsed, f'while processing {TAVERN_FILE}, no "error" found in result: {parsed}' + '\n' + f'{request}'
 		parsed = parsed['error']
 		if 'data' in parsed:
