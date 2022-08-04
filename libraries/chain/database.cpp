@@ -1141,10 +1141,6 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
   const std::shared_ptr< full_block_type >& full_block = block_ctrl.get_full_block();
 
-#ifdef IS_TEST_NET
-  FC_ASSERT(full_block->get_block_num() < TESTNET_BLOCK_LIMIT, "Testnet block limit exceeded");
-#endif /// IS_TEST_NET
-
   uint32_t skip = get_node_properties().skip_flags;
   //uint32_t skip_undo_db = skip & skip_undo_block;
 
