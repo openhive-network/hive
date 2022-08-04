@@ -37,6 +37,15 @@ def prepared_networks() -> Dict:
     tt.WitnessNode(witnesses=[f'witness{i}-beta' for i in range(8, 10)], network=beta_net)
     tt.ApiNode(network=beta_net)
 
+    for node in [*alpha_net.nodes, *beta_net.nodes]:
+        node.config.webserver_thread_pool_size="2"
+        node.config.blockchain_thread_pool_size=2
+        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr,p2p"} '\
+                                  '{"name":"user","level":"debug","appender":"stderr,p2p"} '\
+                                  '{"name":"chainlock","level":"debug","appender":"p2p"} '\
+                                  '{"name":"sync","level":"debug","appender":"p2p"} '\
+                                  '{"name":"p2p","level":"debug","appender":"p2p"}'
+
     # Run
     alpha_net.connect_with(beta_net)
 
