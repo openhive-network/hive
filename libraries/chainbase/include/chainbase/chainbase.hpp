@@ -317,7 +317,9 @@ namespace chainbase {
         auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
 
         if( !insert_result.second ) {
-          CHAINBASE_THROW_EXCEPTION( std::logic_error("could not insert object, most likely a uniqueness constraint was violated") );
+          std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
         }
 
         ++_next_id;
@@ -356,7 +358,13 @@ namespace chainbase {
         on_modify( obj );
         auto itr = _indices.iterator_to( obj );
         auto ok = _indices.modify( itr, std::forward<Modifier>( m ) );
-        if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+        if( !ok )
+        {
+          std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+        }
+
       }
 
       void remove( const value_type& obj ) {
@@ -378,13 +386,21 @@ namespace chainbase {
 
         for(auto objectI = begin; objectI != end;)
         {
-          processor(*objectI);
+          bool allow_removal = processor(*objectI);
 
           auto nextI = objectI;
           ++nextI;
-          auto successor = idx.erase(objectI);
-          FC_ASSERT(successor == nextI);
-          objectI = successor;
+          if(allow_removal)
+          {
+            auto successor = idx.erase(objectI);
+            FC_ASSERT(successor == nextI);
+            objectI = successor;
+          }
+          else
+          {
+            /// Move to the next object
+            objectI = nextI;
+          }
         }
       }
 
@@ -487,18 +503,38 @@ namespace chainbase {
             ok = _indices.emplace( std::move( item.second ) ).second;
           }
 
-          if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+          if( !ok )
+          {
+            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            CHAINBASE_THROW_EXCEPTION(std::logic_error(
+              "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: "
+                + type_name));
+          }
         }
 
         for( const auto& id : head.new_ids )
         {
-          _indices.erase( _indices.find( id ) );
+          auto position = _indices.find(id);
+
+          if(position == _indices.end())
+          {
+            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            CHAINBASE_THROW_EXCEPTION(std::logic_error("unable to find object with id: " +
+              std::to_string(id) + "in the index holding types: " + type_name));
+          }
+
+            _indices.erase( position );
         }
         _next_id = head.old_next_id;
 
         for( auto& item : head.removed_values ) {
           bool ok = _indices.emplace( std::move( item.second ) ).second;
-          if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not restore object, most likely a uniqueness constraint was violated" ) );
+          if( !ok )
+          {
+            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            CHAINBASE_THROW_EXCEPTION(std::logic_error(
+              "Could not restore object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+          }
         }
 
         _stack.pop_back();
