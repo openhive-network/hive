@@ -13,13 +13,6 @@ def create_and_cancel_vesting_delegation(wallet, delegator, delegatee):
     wallet.api.delegate_vesting_shares(delegator, delegatee, tt.Asset.Vest(0))
 
 
-def create_proposal(wallet, account_name):
-    wallet.api.post_comment(account_name, 'test-permlink', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
-    # create proposal with permlink pointing to comment
-    wallet.api.create_proposal(account_name, account_name, date_from_now(weeks=2), date_from_now(weeks=50),
-                               tt.Asset.Tbd(5), 'test subject', 'test-permlink')
-
-
 def generate_sig_digest(transaction: dict, private_key: str):
     # sig_digest is mix of chain_id and transaction data. To get it, it's necessary to run sign_transaction executable file
     output = subprocess.check_output([os.environ['SIGN_TRANSACTION_PATH']],

@@ -2,6 +2,14 @@ from datetime import datetime, timedelta
 
 import pytest
 from typing import Literal
+import test_tools as tt
+
+
+def create_proposal(wallet, account_name):
+    wallet.api.post_comment(account_name, 'test-permlink', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
+    # create proposal with permlink pointing to comment
+    wallet.api.create_proposal(account_name, account_name, date_from_now(weeks=2), date_from_now(weeks=50),
+                               tt.Asset.Tbd(5), 'test subject', 'test-permlink')
 
 
 def date_from_now(*, weeks):
