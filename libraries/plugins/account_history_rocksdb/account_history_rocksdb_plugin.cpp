@@ -1973,39 +1973,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
   auto itr = volatile_idx.begin();
 
-  // it is unlikely we get here but flush storage in this case
-  if(itr != volatile_idx.end() && itr->block < block_num)
-  {
-    flushStorage();
-
-    while(itr != volatile_idx.end() && itr->block < block_num)
-    {
-      auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
-      {
-        return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id );
-      };
-      std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
-      find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
-        [&ops](const rocksdb_operation_object& op)
-        {
-          ops.emplace(op);
-        }
-      );
-
-      uint32_t this_itr_block = itr->block;
-      while(itr != volatile_idx.end() && itr->block == this_itr_block)
-      {
-        rocksdb_operation_object obj(*itr);
-        // check that operation is already stored as irreversible as it will be not imported
-        FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
-        hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
-        wlog("prevented importing duplicate operation from block ${block} when handling irreversible block ${irreversible}, operation: ${op}",
-          ("block", obj.block)("irreversible", block_num)("op", fc::json::to_string(op)));
-        itr++;
-      }
-    }
-  }
-
   /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
   auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
 
