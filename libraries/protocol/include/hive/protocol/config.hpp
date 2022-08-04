@@ -67,9 +67,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_INIT_SUPPLY                      (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
 #define HIVE_HBD_INIT_SUPPLY                  (int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ))
 
-/// Allows to limit number of total produced blocks.
-#define TESTNET_BLOCK_LIMIT                   (3000000)
-
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
 #define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD    (60*60) /// 1 hour
