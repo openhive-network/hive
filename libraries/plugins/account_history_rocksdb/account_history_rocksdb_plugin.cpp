@@ -1282,11 +1282,15 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   fc::optional< uint64_t > nextElementAfterLimit;
   uint32_t lastFoundBlock = 0;
 
+  uint32_t lookupUpperBound = blockRangeEnd;
+
   if(include_reversible)
   {
     auto collection = collectReversibleOps(&collectedReversibleRangeBegin, &collectedReversibleRangeEnd,
       &collectedIrreversibleBlock);
     reversibleOps = std::move(collection);
+
+    dlog("EnumVirtualOps for blockRangeBegin: ${b}, blockRangeEnd: ${e}, irreversible block: ${i}",("b", blockRangeBegin)("e", blockRangeEnd)("i", collectedIrreversibleBlock));
 
     if(blockRangeBegin > collectedIrreversibleBlock)
     {
@@ -1321,14 +1325,19 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     }
 
     /// Partial case: rangeBegin is <= collectedIrreversibleBlock but blockRangeEnd > collectedIrreversibleBlock
-    if(blockRangeEnd > collectedIrreversibleBlock)
+    if(lookupUpperBound > collectedIrreversibleBlock)
     {
-      blockRangeEnd = collectedIrreversibleBlock; /// strip processing to irreversible subrange
       hasTrailingReversibleBlocks = true;
+      lookupUpperBound = collectedIrreversibleBlock+1; /// strip processing to full irreversible subrange
+    }
+    else if(lookupUpperBound == collectedIrreversibleBlock)
+    {
+      hasTrailingReversibleBlocks = false;
+      lookupUpperBound = collectedIrreversibleBlock; /// strip processing to irreversible subrange (excluding LIB)
     }
   }
 
-  op_by_block_num_slice_t upperBoundSlice(block_op_id_pair(blockRangeEnd, 0));
+  op_by_block_num_slice_t upperBoundSlice(block_op_id_pair(lookupUpperBound, 0));
 
   op_by_block_num_slice_t rangeBeginSlice(block_op_id_pair(blockRangeBegin, lastProcessedOperationId));
 
@@ -1337,10 +1346,14 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
 
   std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[Columns::OPERATION_BY_BLOCK]));
 
+  dlog("Looking RocksDB storage for blocks from range: <${b}, ${e})", ("b", blockRangeBegin)("e", lookupUpperBound));
+
   for(it->Seek(rangeBeginSlice); it->Valid(); it->Next())
   {
     auto keySlice = it->key();
     const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
+
+    dlog("Found op. in block: ${b}", ("b", key.first));
 
     /// Accept only virtual operations
     if(key.second.is_virtual())
@@ -1568,7 +1581,7 @@ void account_history_rocksdb_plugin::impl::load_lib()
 
 void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
 {
-  //ilog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); too frequent
+  dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
   _cached_irreversible_block.store(lib);
   auto s = _writeBuffer.Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
   checkStatus( s );
@@ -1953,7 +1966,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
   else
   {
     auto txs = _mainDb.get_tx_status();
-    _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
+    const auto& newOp = _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
     {
       o.trx_id = n.trx_id;
       o.block = n.block;
@@ -1968,6 +1981,9 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       o.impacted.insert( o.impacted.end(), impacted.begin(), impacted.end() );
       o.transaction_status = txs;
     });
+
+    dlog("Adding operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", newOp.get_id())("b", n.block)
+      ("txs", to_string(txs))("body", fc::json::to_string(n.op)));
   }
 }
 
@@ -2019,8 +2035,10 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       }
       else
       {
-        wlog("Skipped operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
-          ("txs", to_string(txs)));
+        auto op = fc::raw::unpack_from_buffer< hive::protocol::operation >(operation.serialized_op);
+
+        wlog("Skipped operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", operation.get_id())("b", operation.block)
+          ("txs", to_string(txs))("body", fc::json::to_string(op)));
 
         return false; /// Disallow object erasing inside move_to_external_storage internals
       }
