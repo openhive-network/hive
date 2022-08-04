@@ -512,9 +512,7 @@ public:
       _self
     );
 
-    is_processed_block_mtx_locked.store(false);
     _cached_irreversible_block.store(0);
-    _currently_processed_block.store(0);
     _cached_reindex_point = 0;
 
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
@@ -879,11 +877,6 @@ private:
   unsigned int                     _collectedOpsWriteLimit = 1;
 
   /// <summary>
-  /// Information if mutex is locked/unlocked.
-  /// </summary>
-  std::atomic_bool   is_processed_block_mtx_locked;
-
-  /// <summary>
   /// Last block of most recent reindex - all such blocks are in inreversible storage already, since
   /// the data is put there directly during reindex (it also means there is no volatile data for such
   /// blocks), but _cached_irreversible_block might point to earlier block because it reflects
@@ -895,23 +888,6 @@ private:
   /// Block being irreversible atm.
   /// </summary>
   std::atomic_uint                 _cached_irreversible_block;
-  /// <summary>
-  ///  Block currently processed by node
-  /// </summary>
-  std::atomic_uint                 _currently_processed_block;
-  /// <summary>
-  ///  Allows to hold API threads trying to read data coming from currently processed block until it will
-  ///  finish its processing and data will be complete.
-  /// </summary>
-  mutable std::mutex               _currently_processed_block_mtx;
-
-  mutable std::condition_variable  _currently_processed_block_cv;
-  /// <summary>
-  /// Controls MT access to the volatile_operation_index being cleared during `on_irreversible_block` handler execution.
-  /// </summary>
-  mutable std::mutex               _currently_persisted_irreversible_mtx;
-  std::atomic_uint                 _currently_persisted_irreversible_block{0};
-  mutable std::condition_variable  _currently_persisted_irreversible_cv;
 
   account_filter                   _filter;
   flat_set<std::string>            _op_list;
@@ -1074,81 +1050,43 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 {
   FC_ASSERT(*blockRangeBegin < *blockRangeEnd, "Wrong block range");
 
-  unsigned int cpib = _currently_persisted_irreversible_block;
-  if( cpib > 0 && cpib >= *blockRangeBegin && cpib <= *blockRangeEnd )
+  return _mainDb.with_read_lock([this, blockRangeBegin, blockRangeEnd, collectedIrreversibleBlock]() -> std::vector<rocksdb_operation_object>
   {
-    ilog( "Awaiting for the end of save current irreversible block ${b} block, requested by call: [${rb}, ${re})",
-      ( "b", cpib )( "rb", *blockRangeBegin )( "re", *blockRangeEnd ) );
-
-    /** Api requests data of currently saved irreversible block, so it must wait for the end of storage and cleanup of
-    *   volatile ops container.
-    */
-    std::unique_lock<std::mutex> lk(_currently_persisted_irreversible_mtx);
-
-    _currently_persisted_irreversible_cv.wait( lk, [this, blockRangeBegin, blockRangeEnd]() -> bool
+    *collectedIrreversibleBlock = _cached_irreversible_block;
+    if( *collectedIrreversibleBlock < _cached_reindex_point )
     {
-      unsigned int cpib = _currently_persisted_irreversible_block;
-      return cpib < *blockRangeBegin || cpib > *blockRangeEnd;
-    } );
+      wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
+        ( "a", *collectedIrreversibleBlock )( "b", _cached_reindex_point ) );
+      *collectedIrreversibleBlock = _cached_reindex_point;
+    }
 
-    ilog("Resumed evaluation a range containing currently just written irreversible block, requested by call: [${rb}, ${re})",
-      ("rb", *blockRangeBegin)("re", *blockRangeEnd));
-  }
+    if( *blockRangeEnd < *collectedIrreversibleBlock )
+      return std::vector<rocksdb_operation_object>();
 
-  *collectedIrreversibleBlock = _cached_irreversible_block;
-  if( *collectedIrreversibleBlock < _cached_reindex_point )
-  {
-    wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
-      ( "a", *collectedIrreversibleBlock )( "b", _cached_reindex_point ) );
-    *collectedIrreversibleBlock = _cached_reindex_point;
-  }
+    std::vector<rocksdb_operation_object> retVal;
 
-  if( *blockRangeEnd < *collectedIrreversibleBlock )
-    return std::vector<rocksdb_operation_object>();
+      const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+      retVal.reserve(volatileIdx.size());
 
-  unsigned int cpb = _currently_processed_block;
-  if( cpb > 0 && cpb >= *blockRangeBegin && cpb <= *blockRangeEnd )
-  {
-    ilog( "Awaiting for the end of evaluation of ${b} block, requested by call: [${rb}, ${re})",
-      ( "b", cpb )( "rb", *blockRangeBegin )( "re", *blockRangeEnd ) );
-    /** Api requests data of currently processed (evaluated) block, so it must wait for the end of evaluation
-    *   to collect all contained operations.
-    */
-    std::unique_lock<std::mutex> lk(_currently_processed_block_mtx);
+      auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
+      for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
+      {
+        uint64_t opId = opIterator->op_in_trx;
+        opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
 
-    _currently_processed_block_cv.wait( lk, [this, blockRangeBegin, blockRangeEnd]() -> bool
+        rocksdb_operation_object persistentOp(*opIterator);
+        persistentOp.id = opId;
+        retVal.emplace_back(std::move(persistentOp));
+      }
+
+    if(retVal.empty() == false)
     {
-      unsigned int cpb = _currently_processed_block;
-      return cpb < *blockRangeBegin || cpb > *blockRangeEnd;
-    } );
+      *blockRangeBegin = retVal.front().block;
+      *blockRangeEnd = retVal.back().block + 1;
+    }
 
-    ilog("Resumed evaluation a range containing currently processed block, requested by call: [${rb}, ${re})",
-      ("rb", *blockRangeBegin)("re", *blockRangeEnd));
-  }
-
-  std::vector<rocksdb_operation_object> retVal;
-  const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
-
-  retVal.reserve(volatileIdx.size());
-
-  auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
-  for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
-  {
-    uint64_t opId = opIterator->op_in_trx;
-    opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
-
-    rocksdb_operation_object persistentOp(*opIterator);
-    persistentOp.id = opId;
-    retVal.emplace_back(std::move(persistentOp));
-  }
-
-  if(retVal.empty() == false)
-  {
-    *blockRangeBegin = retVal.front().block;
-    *blockRangeEnd = retVal.back().block + 1;
-  }
-
-  return retVal;
+    return retVal;
+  });
 }
 
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
@@ -1235,7 +1173,7 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
   if(number_of_irreversible_ops < start)
   {
     uint32_t collectedIrreversibleBlock = 0;
-    uint32_t rangeBegin = _mainDb.get_last_irreversible_block_num();
+    uint32_t rangeBegin = _cached_irreversible_block;
     if( BOOST_UNLIKELY( rangeBegin == 0) )
       rangeBegin = 1;
     uint32_t rangeEnd = _mainDb.head_block_num() + 1;
@@ -1506,17 +1444,23 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
 
   if(include_reversible)
   {
-    const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
-
-    for(auto opIterator = volatileIdx.begin(); opIterator != volatileIdx.end(); ++opIterator)
+    return _mainDb.with_read_lock([this, &trxId, blockNo, txInBlock]() -> bool
     {
-      if( opIterator->trx_id == trxId)
+      const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+
+      for(auto opIterator = volatileIdx.begin(); opIterator != volatileIdx.end(); ++opIterator)
       {
-        *blockNo = opIterator->block;
-        *txInBlock = opIterator->trx_in_block;
-        return true;
+        if(opIterator->trx_id == trxId)
+        {
+          *blockNo = opIterator->block;
+          *txInBlock = opIterator->trx_in_block;
+          return true;
+        }
       }
+
+      return false;
     }
+    );
   }
 
   return false;
@@ -2021,84 +1965,71 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       ( "nb", block_num )( "ob", static_cast< uint32_t >(_cached_irreversible_block) ) );
   }
 
+  /// Here is made assumption, that thread processing block/transaction and sending this notification ALREADY holds write lock.
+  /// Usually this lock is held by chain_plugin::start_write_processing() function (the write_processing thread).
+
   auto& volatileOpsGenericIndex = _mainDb.get_mutable_index<volatile_operation_index>();
 
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
   auto itr = volatile_idx.begin();
 
-  _currently_persisted_irreversible_block.store(block_num);
-
+  // it is unlikely we get here but flush storage in this case
+  if(itr != volatile_idx.end() && itr->block < block_num)
   {
-    std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
+    flushStorage();
 
-    // it is unlikely we get here but flush storage in this case
-    if(itr != volatile_idx.end() && itr->block < block_num)
+    while(itr != volatile_idx.end() && itr->block < block_num)
     {
-      flushStorage();
-
-      while(itr != volatile_idx.end() && itr->block < block_num)
+      auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
       {
-        auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
+        return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id );
+      };
+      std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
+      find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
+        [&ops](const rocksdb_operation_object& op)
         {
-          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id );
-        };
-        std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
-        find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
-          [&ops](const rocksdb_operation_object& op)
-          {
-            ops.emplace(op);
-          }
-        );
-
-        uint32_t this_itr_block = itr->block;
-        while(itr != volatile_idx.end() && itr->block == this_itr_block)
-        {
-          rocksdb_operation_object obj(*itr);
-          // check that operation is already stored as irreversible as it will be not imported
-          FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
-          hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
-          wlog("prevented importing duplicate operation from block ${block} when handling irreversible block ${irreversible}, operation: ${op}",
-            ("block", obj.block)("irreversible", block_num)("op", fc::json::to_string(op)));
-          itr++;
+          ops.emplace(op);
         }
+      );
+
+      uint32_t this_itr_block = itr->block;
+      while(itr != volatile_idx.end() && itr->block == this_itr_block)
+      {
+        rocksdb_operation_object obj(*itr);
+        // check that operation is already stored as irreversible as it will be not imported
+        FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
+        hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
+        wlog("prevented importing duplicate operation from block ${block} when handling irreversible block ${irreversible}, operation: ${op}",
+          ("block", obj.block)("irreversible", block_num)("op", fc::json::to_string(op)));
+        itr++;
       }
     }
-
-    /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
-    auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
-
-    FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
-
-    auto moveRangeEndI = volatile_idx.upper_bound(block_num);
-    FC_ASSERT( block_num > _cached_reindex_point || moveRangeBeginI == moveRangeEndI,
-      "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
-      ( "b", block_num )( "r", _cached_reindex_point ) );
-
-    volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
-      {
-        rocksdb_operation_object obj(operation);
-        importOperation(obj, operation.impacted);
-      }
-    );
-
-    update_lib(block_num);
-    //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
   }
 
-  _currently_persisted_irreversible_block.store(0);
-  _currently_persisted_irreversible_cv.notify_all();
+  /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
+  auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
+
+  FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
+
+  auto moveRangeEndI = volatile_idx.upper_bound(block_num);
+  FC_ASSERT( block_num > _cached_reindex_point || moveRangeBeginI == moveRangeEndI,
+    "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
+    ( "b", block_num )( "r", _cached_reindex_point ) );
+
+  volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
+    {
+      rocksdb_operation_object obj(operation);
+      importOperation(obj, operation.impacted);
+    }
+  );
+
+  update_lib(block_num);
+  //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
 }
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
 {
   if(_reindexing) return;
-
-  _currently_processed_block.store(bn.block_num);
-  if( !is_processed_block_mtx_locked )
-  {
-    is_processed_block_mtx_locked.store( true );
-    _currently_processed_block_mtx.lock();
-  }
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
@@ -2211,15 +2142,6 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   }
 
   if(_reindexing) return;
-
-  _currently_processed_block.store(0);
-  if( is_processed_block_mtx_locked )
-  {
-    is_processed_block_mtx_locked.store(false);
-    _currently_processed_block_mtx.unlock();
-  }
-
-  _currently_processed_block_cv.notify_all();
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
