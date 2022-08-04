@@ -8,6 +8,15 @@ from .local_tools import assert_no_duplicates
 import test_tools as tt
 
 def test_fast_confirmation_fork_00(prepared_sub_networks_3_18):
+    # start - A network (consists of a 'minority' network(3 witnesses) + a 'majority' network(18 witnesses) produces blocks
+
+    # - the network is splitted into 2 sub networks: 6 witnesses(the 'minority' network) + 18 witnesses(the 'majority' network)
+    # - wait '10' blocks( using the majority API node ) - as a result a chain of blocks in the 'majority' network is longer than the 'minority' network
+    # - 2 sub networks are merged
+    # - wait '5' blocks( using the majority API node )
+
+    # Finally the 'minority' network received blocks from the 'majority' network
+
     sub_networks_data   = prepared_sub_networks_3_18['sub-networks-data']
     sub_networks        = sub_networks_data[0]
     witness_details     = sub_networks_data[1]
@@ -34,12 +43,16 @@ def test_fast_confirmation_fork_00(prepared_sub_networks_3_18):
 
     assert get_last_head_block_number(majority_blocks)      > get_last_head_block_number(minority_blocks)
     assert get_last_irreversible_block_num(majority_blocks) > get_last_irreversible_block_num(minority_blocks)
+    last_head_block_majority                                = get_last_head_block_number(majority_blocks)
 
     tt.logger.info(f'Reconnect sub networks - start')
     connect_sub_networks(sub_networks)
-    wait(10, majority_blocks, majority_wallet, minority_blocks, minority_wallet, majority_api_node)
+    wait(5, majority_blocks, majority_wallet, minority_blocks, minority_wallet, majority_api_node)
 
     assert get_last_head_block_number(majority_blocks)      == get_last_head_block_number(minority_blocks)
     assert get_last_irreversible_block_num(majority_blocks) == get_last_irreversible_block_num(minority_blocks)
+    last_lib                                                = get_last_irreversible_block_num(minority_blocks)
+
+    assert last_lib > last_head_block_majority
 
     assert_no_duplicates(minority_api_node, majority_api_node)
