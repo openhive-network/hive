@@ -1885,6 +1885,28 @@ void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const c
     );
 }
 
+std::string to_string(hive::chain::database::transaction_status txs)
+{
+  switch(txs)
+  {
+    case hive::chain::database::TX_STATUS_NONE:
+      return "TX_STATUS_NONE";
+    case hive::chain::database::TX_STATUS_UNVERIFIED:
+      return "TX_STATUS_UNVERIFIED";
+    case hive::chain::database::TX_STATUS_PENDING:
+      return "TX_STATUS_PENDING";
+    case hive::chain::database::TX_STATUS_BLOCK:
+      return "TX_STATUS_BLOCK";
+    case hive::chain::database::TX_STATUS_INC_BLOCK:
+      return "TX_STATUS_INC_BLOCK";
+    case hive::chain::database::TX_STATUS_GEN_BLOCK:
+      return "TX_STATUS_INC_BLOCK";
+  }
+  FC_ASSERT(false);
+
+  return "broken tx status";
+}
+
 void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operation_notification& n)
 {
   if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !n.virtual_op)
@@ -1930,6 +1952,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
   }
   else
   {
+    auto txs = _mainDb.get_tx_status();
     _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
     {
       o.trx_id = n.trx_id;
@@ -1943,6 +1966,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       fc::datastream< char* > ds( o.serialized_op.data(), size );
       fc::raw::pack( ds, n.op );
       o.impacted.insert( o.impacted.end(), impacted.begin(), impacted.end() );
+      o.transaction_status = txs;
     });
   }
 }
@@ -1971,7 +1995,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   auto& volatileOpsGenericIndex = _mainDb.get_mutable_index<volatile_operation_index>();
 
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
-  auto itr = volatile_idx.begin();
 
   /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
   auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
@@ -1983,10 +2006,24 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
     "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
     ( "b", block_num )( "r", _cached_reindex_point ) );
 
-  volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
+  volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> bool
     {
-      rocksdb_operation_object obj(operation);
-      importOperation(obj, operation.impacted);
+      auto txs = static_cast<hive::chain::database::transaction_status>(operation.transaction_status);
+      if(txs & hive::chain::database::TX_STATUS_BLOCK)
+      {
+        dlog("Flushing operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
+          ("txs", to_string(txs)));
+        rocksdb_operation_object obj(operation);
+        importOperation(obj, operation.impacted);
+        return true; /// Allow move_to_external_storage internals to erase this object
+      }
+      else
+      {
+        wlog("Skipped operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
+          ("txs", to_string(txs)));
+
+        return false; /// Disallow object erasing inside move_to_external_storage internals
+      }
     }
   );
 
