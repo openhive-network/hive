@@ -1,13 +1,7 @@
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
-* text=eol=lf
-*.sql text
-*.py text
-*.cpp text
-*.c text
-*.h text
-*.hpp text
+* text=auto eol=lf
 
 ###############################################################################
 # Set default behavior for command prompt diff.
