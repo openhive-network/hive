@@ -37,6 +37,7 @@ class volatile_operation_object : public object< volatile_operation_object_type,
     buffer_type                              serialized_op;
     chainbase::t_vector< account_name_type > impacted;
     bool                                     is_virtual = false;
+    uint8_t                                  transaction_status = 0;
 };
 
 typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
@@ -91,7 +92,7 @@ typedef multi_index_container<
 
 } } } // hive::plugins::account_history_rocksdb
 
-FC_REFLECT( hive::plugins::account_history_rocksdb::volatile_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op)(impacted) )
+FC_REFLECT( hive::plugins::account_history_rocksdb::volatile_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op)(impacted)(transaction_status) )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::account_history_rocksdb::volatile_operation_object, hive::plugins::account_history_rocksdb::volatile_operation_index )
 
 FC_REFLECT( hive::plugins::account_history_rocksdb::rocksdb_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op) )
