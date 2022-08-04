@@ -3584,7 +3584,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     BOOST_TEST_MESSAGE( "--- Test failure - conversion with duplicate id" );
     op.amount = ASSET( "1000.000 TESTS" );
-    HIVE_REQUIRE_CHAINBASE_ASSERT( push_transaction( op, alice_private_key ), "could not insert object, most likely a uniqueness constraint was violated" );
+    HIVE_REQUIRE_CHAINBASE_ASSERT( push_transaction( op, alice_private_key ), "could not insert object, most likely a uniqueness constraint was violated inside index holding types: hive::chain::collateralized_convert_request_object" );
 
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
