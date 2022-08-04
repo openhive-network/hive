@@ -13,7 +13,7 @@ def test_fast_confirmation_fork_00(prepared_sub_networks_3_18):
     # - the network is splitted into 2 sub networks: 6 witnesses(the 'minority' network) + 18 witnesses(the 'majority' network)
     # - wait '10' blocks( using the majority API node ) - as a result a chain of blocks in the 'majority' network is longer than the 'minority' network
     # - 2 sub networks are merged
-    # - wait '5' blocks( using the majority API node )
+    # - wait 'N' blocks( using the majority API node ) until both sub networks have the same last irreversible block
 
     # Finally the 'minority' network received blocks from the 'majority' network
 
@@ -45,14 +45,18 @@ def test_fast_confirmation_fork_00(prepared_sub_networks_3_18):
     assert get_last_irreversible_block_num(majority_blocks) > get_last_irreversible_block_num(minority_blocks)
     last_head_block_majority                                = get_last_head_block_number(majority_blocks)
 
+    old_majority_last_lib = get_last_irreversible_block_num(majority_blocks)
     tt.logger.info(f'Reconnect sub networks - start')
     connect_sub_networks(sub_networks)
-    wait(5, majority_blocks, majority_wallet, minority_blocks, minority_wallet, majority_api_node)
+    while True:
+        wait(1, majority_blocks, majority_wallet, minority_blocks, minority_wallet, majority_api_node)
 
-    assert get_last_head_block_number(majority_blocks)      == get_last_head_block_number(minority_blocks)
-    assert get_last_irreversible_block_num(majority_blocks) == get_last_irreversible_block_num(minority_blocks)
-    last_lib                                                = get_last_irreversible_block_num(minority_blocks)
+        majority_last_lib = get_last_irreversible_block_num(majority_blocks)
 
-    assert last_lib > last_head_block_majority
+        assert old_majority_last_lib + 1 == majority_last_lib
+        old_majority_last_lib = majority_last_lib
+
+        if majority_last_lib == get_last_irreversible_block_num(minority_blocks):
+            break
 
     assert_no_duplicates(minority_api_node, majority_api_node)

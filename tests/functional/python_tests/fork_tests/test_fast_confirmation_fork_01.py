@@ -17,7 +17,7 @@ def test_fast_confirmation_fork_01(prepared_sub_networks_6_17):
     # - 14 witnesses are enabled( using the minority API node )
     # - wait '5' blocks( using the minority API node )
     # - 2 sub networks are merged
-    # - wait '5' blocks( using the majority API node )
+    # - wait 'N' blocks( using the minority API node ) until both sub networks have the same last irreversible block
 
     # Finally 'majority' network received blocks from 'minority' network
 
@@ -77,15 +77,18 @@ def test_fast_confirmation_fork_01(prepared_sub_networks_6_17):
 
     assert last_lib_01 == last_lib_04
 
+    old_minority_last_head_block = get_last_head_block_number(minority_blocks)
     tt.logger.info(f'Reconnect sub networks')
     connect_sub_networks(sub_networks)
-    wait(5, majority_blocks, majority_wallet, minority_blocks, minority_wallet, majority_api_node)
+    while True:
+        wait(1, majority_blocks, majority_wallet, minority_blocks, minority_wallet, minority_api_node)
 
-    assert get_last_head_block_number(majority_blocks)      == get_last_head_block_number(minority_blocks)
-    assert get_last_irreversible_block_num(majority_blocks) == get_last_irreversible_block_num(minority_blocks)
-    last_lib_05                                             = get_last_irreversible_block_num(minority_blocks)
+        minority_last_head_block = get_last_head_block_number(minority_blocks)
 
-    assert last_lib_01              < last_lib_05
-    assert last_head_block_minority < last_lib_05
+        assert old_minority_last_head_block + 1 == minority_last_head_block
+
+        majority_last_lib = get_last_irreversible_block_num(majority_blocks)
+        if get_last_irreversible_block_num(majority_blocks) == get_last_irreversible_block_num(minority_blocks):
+            break
 
     assert_no_duplicates(minority_api_node, majority_api_node)
