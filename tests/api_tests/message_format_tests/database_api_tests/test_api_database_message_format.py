@@ -3,8 +3,9 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import create_account_and_fund_it, create_and_cancel_vesting_delegation, create_proposal,\
-    date_from_now, generate_sig_digest, prepare_escrow, request_account_recovery, transfer_and_withdraw_from_savings
+from .local_tools import create_account_and_fund_it, create_and_cancel_vesting_delegation, date_from_now, \
+    generate_sig_digest, prepare_escrow, request_account_recovery, transfer_and_withdraw_from_savings
+from ..local_tools import create_proposal
 
 
 def test_find_account_recovery_requests(node, wallet):
