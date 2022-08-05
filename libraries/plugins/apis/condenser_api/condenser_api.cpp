@@ -179,11 +179,13 @@ namespace detail
   condenser_api_impl::legacy_substitutes_type condenser_api_impl::create_legacy_substitutes()
   {
     using _asset_type = hive::protocol::serializer_wrapper<hive::protocol::asset>;
+    using _asset_symbol_type = hive::protocol::serializer_wrapper<hive::protocol::asset_symbol_type>;
+
     legacy_substitutes_type _result
     {
-      { "VESTS_SYMBOL",             fc::variant{ _asset_type{ asset(0, VESTS_SYMBOL),     transaction_serialization_type::legacy } } },
-      { "HIVE_SYMBOL",              fc::variant{ _asset_type{ asset(0, HIVE_SYMBOL),      transaction_serialization_type::legacy } } },
-      { "HBD_SYMBOL",               fc::variant{ _asset_type{ asset(0, HBD_SYMBOL),       transaction_serialization_type::legacy } } },
+      {"VESTS_SYMBOL",             fc::variant{ legacy_asset::from_asset( asset(0, VESTS_SYMBOL) ).asset_num_to_string() } },
+      {"HIVE_SYMBOL",              fc::variant{ legacy_asset::from_asset( asset(0, HIVE_SYMBOL) ).asset_num_to_string() } },
+      {"HBD_SYMBOL",               fc::variant{ legacy_asset::from_asset( asset(0, HBD_SYMBOL) ).asset_num_to_string() } },
       {"HIVE_MINING_REWARD",        fc::variant{ _asset_type{ HIVE_MINING_REWARD,         transaction_serialization_type::legacy } } },
       {"HIVE_MIN_LIQUIDITY_REWARD", fc::variant{ _asset_type{ HIVE_MIN_LIQUIDITY_REWARD,  transaction_serialization_type::legacy } } },
       {"HIVE_MIN_CONTENT_REWARD",   fc::variant{ _asset_type{ HIVE_MIN_CONTENT_REWARD,    transaction_serialization_type::legacy } } },
