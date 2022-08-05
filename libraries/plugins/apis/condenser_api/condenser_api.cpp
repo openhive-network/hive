@@ -40,8 +40,16 @@ namespace detail
 
   class condenser_api_impl
   {
+    private:
+
+      using legacy_substitutes_type = std::map<std::string, fc::variant>;
+      const legacy_substitutes_type legacy_substitutes;
+
+      legacy_substitutes_type create_legacy_substitutes();
+
     public:
       condenser_api_impl() :
+        legacy_substitutes( create_legacy_substitutes() ),
         _chain( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() ),
         _db( _chain.db() )
       {
@@ -168,6 +176,27 @@ namespace detail
       boost::mutex                                                      _mtx;
   };
 
+  condenser_api_impl::legacy_substitutes_type condenser_api_impl::create_legacy_substitutes()
+  {
+    using _asset_type = hive::protocol::serializer_wrapper<hive::protocol::asset>;
+    legacy_substitutes_type _result
+    {
+      { "VESTS_SYMBOL",             fc::variant{ _asset_type{ asset(0, VESTS_SYMBOL),     transaction_serialization_type::legacy } } },
+      { "HIVE_SYMBOL",              fc::variant{ _asset_type{ asset(0, HIVE_SYMBOL),      transaction_serialization_type::legacy } } },
+      { "HBD_SYMBOL",               fc::variant{ _asset_type{ asset(0, HBD_SYMBOL),       transaction_serialization_type::legacy } } },
+      {"HIVE_MINING_REWARD",        fc::variant{ _asset_type{ HIVE_MINING_REWARD,         transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_LIQUIDITY_REWARD", fc::variant{ _asset_type{ HIVE_MIN_LIQUIDITY_REWARD,  transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_CONTENT_REWARD",   fc::variant{ _asset_type{ HIVE_MIN_CONTENT_REWARD,    transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_CURATE_REWARD",    fc::variant{ _asset_type{ HIVE_MIN_CURATE_REWARD,     transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_PRODUCER_REWARD",  fc::variant{ _asset_type{ HIVE_MIN_PRODUCER_REWARD,   transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_POW_REWARD",       fc::variant{ _asset_type{ HIVE_MIN_POW_REWARD,        transaction_serialization_type::legacy } } },
+      {"HIVE_ACTIVE_CHALLENGE_FEE", fc::variant{ _asset_type{ HIVE_ACTIVE_CHALLENGE_FEE,  transaction_serialization_type::legacy } } },
+      {"HIVE_OWNER_CHALLENGE_FEE",  fc::variant{ _asset_type{ HIVE_OWNER_CHALLENGE_FEE,   transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_PAYOUT_HBD",       fc::variant{ _asset_type{ HIVE_MIN_PAYOUT_HBD,        transaction_serialization_type::legacy } } }
+    };
+    return _result;
+  }
+
   DEFINE_API_IMPL( condenser_api_impl, get_version )
   {
     CHECK_ARG_SIZE( 0 )
@@ -233,37 +262,16 @@ namespace detail
     return result;
   }
 
-  void make_legacy_correction( fc::mutable_variant_object& object )
-  {
-    using _asset_type = hive::protocol::serializer_wrapper<hive::protocol::asset>;
-    static std::map<std::string, fc::variant> legacy_items
-    {
-      { "VESTS_SYMBOL",             fc::variant{ _asset_type{ asset(0, VESTS_SYMBOL),     transaction_serialization_type::legacy } } },
-      { "HIVE_SYMBOL",              fc::variant{ _asset_type{ asset(0, HIVE_SYMBOL),      transaction_serialization_type::legacy } } },
-      { "HBD_SYMBOL",               fc::variant{ _asset_type{ asset(0, HBD_SYMBOL),       transaction_serialization_type::legacy } } },
-      {"HIVE_MINING_REWARD",        fc::variant{ _asset_type{ HIVE_MINING_REWARD,         transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_LIQUIDITY_REWARD", fc::variant{ _asset_type{ HIVE_MIN_LIQUIDITY_REWARD,  transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_CONTENT_REWARD",   fc::variant{ _asset_type{ HIVE_MIN_CONTENT_REWARD,    transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_CURATE_REWARD",    fc::variant{ _asset_type{ HIVE_MIN_CURATE_REWARD,     transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_PRODUCER_REWARD",  fc::variant{ _asset_type{ HIVE_MIN_PRODUCER_REWARD,   transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_POW_REWARD",       fc::variant{ _asset_type{ HIVE_MIN_POW_REWARD,        transaction_serialization_type::legacy } } },
-      {"HIVE_ACTIVE_CHALLENGE_FEE", fc::variant{ _asset_type{ HIVE_ACTIVE_CHALLENGE_FEE,  transaction_serialization_type::legacy } } },
-      {"HIVE_OWNER_CHALLENGE_FEE",  fc::variant{ _asset_type{ HIVE_OWNER_CHALLENGE_FEE,   transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_PAYOUT_HBD",       fc::variant{ _asset_type{ HIVE_MIN_PAYOUT_HBD,        transaction_serialization_type::legacy } } }
-    };
-
-    for( auto& item : legacy_items )
-    {
-      object.set( item.first, item.second );
-    }
-  }
-
   DEFINE_API_IMPL( condenser_api_impl, get_config )
   {
     CHECK_ARG_SIZE( 0 )
 
     auto _result = _database_api->get_config( {} );
-    make_legacy_correction( _result );
+
+    for( auto& item : legacy_substitutes )
+    {
+      _result.set( item.first, item.second );
+    }
 
     return _result;
   }
