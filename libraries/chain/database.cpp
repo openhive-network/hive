@@ -5304,11 +5304,11 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
     return;
   }
   
+  const uint32_t new_approved_block_number = block_header::num_from_id( block_approve_op.block_id );
   if (auto iter = _my->_last_fast_approved_block_by_witness.find(block_approve_op.witness);
       iter != _my->_last_fast_approved_block_by_witness.end())
   {
     const uint32_t previous_approved_block_number = block_header::num_from_id(iter->second);
-    const uint32_t new_approved_block_number = block_header::num_from_id(block_approve_op.block_id);
     if (new_approved_block_number <= previous_approved_block_number)
     {
       ilog("Received a fast-confirm from witness ${witness} for block #${new_approved_block_number}, "
@@ -5318,6 +5318,8 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
     }
   }
   _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
+  dlog( "Accepted fast-confirm from witness ${w} for block #${nr} (${id})", ( "w", block_approve_op.witness )
+    ( "nr", new_approved_block_number )( "id", block_approve_op.block_id ) );
   // ddump((_my->_last_fast_approved_block_by_witness));
 
   uint32_t old_last_irreversible_block = update_last_irreversible_block(false);
