@@ -435,9 +435,9 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
   return asset_num;
 }
 
-std::string asset_num_to_string( uint32_t asset_num )
+std::string legacy_asset::asset_num_to_string() const
 {
-  switch( asset_num )
+  switch( symbol.asset_num )
   {
 #ifdef IS_TEST_NET
     case HIVE_ASSET_NUM_HIVE:
@@ -483,7 +483,7 @@ string legacy_asset::to_string()const
     // leading 1.
     result += "." + fc::to_string(prec + fract).erase(0,1);
   }
-  return result + " " + asset_num_to_string( symbol.asset_num );
+  return result + " " + asset_num_to_string();
 }
 
 legacy_asset legacy_asset::from_string( const string& from )

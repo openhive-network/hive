@@ -121,6 +121,8 @@ namespace hive { namespace protocol {
         return legacy_asset( a );
       }
 
+      std::string asset_num_to_string() const;
+
       string to_string()const;
       static legacy_asset from_string( const string& from );
 
