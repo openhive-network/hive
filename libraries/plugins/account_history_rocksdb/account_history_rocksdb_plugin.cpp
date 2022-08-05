@@ -2144,8 +2144,6 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
       }
     }
   }
-
-  if(_reindexing) return;
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
