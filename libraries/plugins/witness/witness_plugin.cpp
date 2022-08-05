@@ -368,7 +368,7 @@ namespace detail {
                 keys.emplace_back( private_key_itr->second );
                 full_transaction->sign_transaction( keys, _db.get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::hf26 );
 
-                ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
+                //ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
                 uint32_t skip = _db.get_node_properties().skip_flags;
 
                 _db.push_transaction(full_transaction, skip);
