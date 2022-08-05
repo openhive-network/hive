@@ -488,14 +488,6 @@ public:
       _self
     );
 
-    _on_pre_apply_block_conn = _mainDb.add_pre_apply_block_handler(
-      [&](const block_notification& bn)
-      {
-        on_pre_apply_block(bn);
-      },
-      _self
-    );
-
     _on_post_apply_block_conn = _mainDb.add_post_apply_block_handler(
       [&](const block_notification& bn)
       {
@@ -523,7 +515,6 @@ public:
 
     chain::util::disconnect_signal(_on_pre_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
-    chain::util::disconnect_signal(_on_pre_apply_block_conn);
     chain::util::disconnect_signal(_on_post_apply_block_conn);
     chain::util::disconnect_signal(_on_fail_apply_block_conn);
     shutdownDb();
@@ -810,7 +801,6 @@ private:
   void on_irreversible_block( uint32_t block_num );
 
   void on_post_apply_block(const block_notification& bn);
-  void on_pre_apply_block(const  block_notification& bn);
 
   void collectOptions(const bpo::variables_map& options);
 
@@ -850,7 +840,6 @@ private:
 
   boost::signals2::connection      _on_pre_apply_operation_con;
   boost::signals2::connection      _on_irreversible_block_conn;
-  boost::signals2::connection      _on_pre_apply_block_conn;
   boost::signals2::connection      _on_post_apply_block_conn;
   boost::signals2::connection      _on_fail_apply_block_conn;
 
@@ -2045,11 +2034,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 
   update_lib(block_num);
   //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
-}
-
-void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
-{
-  if(_reindexing) return;
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
