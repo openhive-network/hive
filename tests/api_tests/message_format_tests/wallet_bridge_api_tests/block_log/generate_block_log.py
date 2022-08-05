@@ -46,7 +46,8 @@ def prepare_node_with_witnesses(witnesses_names):
             )
 
     tt.logger.info('Waiting for next witness schedule...')
-    node.wait_for_block_with_number(22)
+    node.wait_for_block_with_number(22+21) # activation of HF26 makes current schedule also a future one,
+                                           # so we have to wait two terms for the witnesses to activate
 
     return node, wallet
 
