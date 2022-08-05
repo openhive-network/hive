@@ -400,36 +400,20 @@ void update_witness_schedule(database& db)
       {
         //dlog("Has hardfork 1_26, generating a future shuffled witness schedule");
 
-        // there are two cases: if this is the first time we've run after the hardfork, the `future_witness_schedule_object` 
-        // object will not yet exist.  We should first compute the new `current_shuffled_witnesses`, then run again 
-        // to fill the `future_witness_schedule_object`.
+        // if this is the first time we've run after the hardfork, the `future_witness_schedule_object`
+        // that was created during hardfork activation will be a copy of `current_shuffled_witnesses`.
         //
         // every time after that, `future_witness_schedule_object` will already have the next HIVE_MAX_WITNESSES ready,
         // so we should swap that into `current_shuffled_witnesses` and then compute the new set into 
         // `future_witness_schedule_object`
-        try
-        {
-          const witness_schedule_object& future_wso = db.get_future_witness_schedule_object();
-
-          // the normal case, promote future witnesses to current
-          db.modify(wso, [&](witness_schedule_object& witness_schedule)
-          {
-            witness_schedule.copy_values_from(future_wso);
-          });
-        }
-        catch (const fc::key_not_found_exception&)
-        {
-          // first call after hard fork
-          // update the current witness schedule first, then initialize the future
-          // witness schedule as a copy of the (new) current schedule
-          update_witness_schedule4(db, wso);
-          db.create<witness_schedule_object>([&](witness_schedule_object& future_witness_schedule)
-          {
-            future_witness_schedule.copy_values_from(wso);
-          });
-        }
-
         const witness_schedule_object& future_wso = db.get_future_witness_schedule_object();
+
+        // promote future witnesses to current
+        db.modify(wso, [&](witness_schedule_object& witness_schedule)
+        {
+          witness_schedule.copy_values_from(future_wso);
+        } );
+
         update_witness_schedule4(db, future_wso);
         return;
       }
