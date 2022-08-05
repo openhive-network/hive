@@ -93,7 +93,7 @@ namespace hive { namespace chain {
   FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   hive::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
 
   // defined here and not in rc_plugin, because it is interesting to observe transactions failing due to that reason
-  FC_DECLARE_DERIVED_EXCEPTION( not_enough_rc_exception,           hive::chain::plugin_exception, 4100100, "there are no blocks to pop" )
+  FC_DECLARE_DERIVED_EXCEPTION( not_enough_rc_exception,           hive::chain::plugin_exception, 4100100, "payer has not enough RC mana for transaction" )
 
   HIVE_DECLARE_OP_BASE_EXCEPTIONS( transfer );
 //   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( from_account_not_whitelisted, transfer, 1, "owner mismatch" )
