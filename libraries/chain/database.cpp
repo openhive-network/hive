@@ -5271,14 +5271,9 @@ void database::update_signing_witness(const witness_object& signing_witness, con
 const witness_schedule_object& database::get_witness_schedule_object_for_irreversibility() const
 {
   if (has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE))
-    try
-    {
-      return get_future_witness_schedule_object();
-    }
-    catch (const fc::key_not_found_exception&)
-    {
-    }
-  return get_witness_schedule_object();
+    return get_future_witness_schedule_object();
+  else
+    return get_witness_schedule_object();
 }
 
 void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
@@ -6750,6 +6745,11 @@ void database::apply_hardfork( uint32_t hardfork )
         gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF26;
         gpo.hbd_start_percent = HIVE_HBD_START_PERCENT_HF26;
       } );
+      const auto& fwso = create<witness_schedule_object>( [&]( witness_schedule_object& future_witness_schedule )
+      {
+        future_witness_schedule.copy_values_from( get_witness_schedule_object() );
+      } );
+      FC_ASSERT( fwso.get_id() == 1, "Unexpected id allocated to future witness schedule object" );
       break;
     }
     case HIVE_SMT_HARDFORK:
