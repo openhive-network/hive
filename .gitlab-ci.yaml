@@ -363,7 +363,7 @@ live_sync_tests:
       junit: tests/functional/python_tests/live_sync_tests/report.xml
   tags:
     - public-runner-docker
-    
+
 network_broadcast_tests:
   stage: test
   extends: .test_tools_based
