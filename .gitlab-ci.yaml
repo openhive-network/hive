@@ -82,8 +82,8 @@ chain_test:
   variables:
     GIT_STRATEGY: none
   script:
-    - timeout 15m ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
-  timeout: 20min
+    - timeout 23m ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+  timeout: 28min
   artifacts:
     reports:
       junit: chain_test_results.xml
@@ -105,8 +105,8 @@ plugin_test:
     GIT_STRATEGY: none
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - timeout 4m ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
-  timeout: 9min
+    - timeout 6m ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
+  timeout: 11min
   artifacts:
     reports:
       junit: plugin_test_results.xml
@@ -141,8 +141,8 @@ beem_tests:
   script:
     - *beem_setup
     - cd tests/functional/python_tests/dhf_tests
-    - timeout 12m pytest -n ${NUMBER_OF_PROCESSES} --durations 0 --junitxml="./report.xml"
-  timeout: 17min
+    - timeout 18m pytest -n ${NUMBER_OF_PROCESSES} --durations 0 --junitxml="./report.xml"
+  timeout: 23min
   artifacts:
     reports:
       junit: tests/functional/python_tests/dhf_tests/report.xml
@@ -179,8 +179,8 @@ cli_wallet_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/cli_wallet
-    - timeout 20m pytest --junitxml="./report.xml"
-  timeout: 25min
+    - timeout 30m pytest --junitxml="./report.xml"
+  timeout: 35min
   tags:
     - public-runner-docker
   artifacts:
@@ -196,8 +196,8 @@ hived_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/hived
-    - timeout 14m pytest --junitxml="./report.xml"
-  timeout: 19min
+    - timeout 21m pytest --junitxml="./report.xml"
+  timeout: 26min
   tags:
     - public-runner-docker
   artifacts:
@@ -213,8 +213,8 @@ cli_wallet_extended_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/cli_wallet_extended_tests
-    - timeout 7m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 12min
+    - timeout 11m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 16min
   artifacts:
     reports:
       junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
@@ -230,8 +230,8 @@ fork_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/fork_tests
-    - timeout 15m pytest --junitxml="./report.xml"
-  timeout: 20min
+    - timeout 23m pytest --junitxml="./report.xml"
+  timeout: 28min
   artifacts:
     reports:
       junit: tests/functional/python_tests/fork_tests/report.xml
@@ -249,8 +249,8 @@ hf26_tests:
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
   script:
     - cd tests/functional/python_tests/hf26_tests
-    - timeout 13m pytest -n auto --junitxml="./report.xml"
-  timeout: 18min
+    - timeout 20m pytest -n auto --junitxml="./report.xml"
+  timeout: 25min
   artifacts:
     reports:
       junit: tests/functional/python_tests/hf26_tests/report.xml
@@ -269,8 +269,8 @@ live_sync_tests:
   script:
     - apt-get update -y && apt-get install -y tox
     - cd tests/functional/python_tests/live_sync_tests
-    - timeout 7m tox
-  timeout: 12min
+    - timeout 11m tox
+  timeout: 16min
   artifacts:
     reports:
       junit: tests/functional/python_tests/live_sync_tests/report.xml
@@ -286,8 +286,8 @@ network_broadcast_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/network_broadcast_tests
-    - timeout 4m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 9min
+    - timeout 6m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 11min
   artifacts:
     reports:
       junit: tests/functional/python_tests/network_broadcast_tests/report.xml
@@ -303,8 +303,8 @@ test_tools_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/test_tools/tests
-    - timeout 15m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 20min
+    - timeout 23m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 28min
   artifacts:
     reports:
       junit: tests/test_tools/tests/report.xml
@@ -320,8 +320,8 @@ rc_direct_delegations_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/direct_rc_delegations_tests
-    - timeout 8m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 13min
+    - timeout 12m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 17min
   artifacts:
     reports:
       junit: tests/functional/python_tests/direct_rc_delegations_tests/report.xml
@@ -342,8 +342,8 @@ message_format_testnet_tests:
   script:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
-    - timeout 15m pytest --timeout=840 -m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)" -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 17min
+    - timeout 24m pytest --timeout=1380 -m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)" -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 28min
   artifacts:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
@@ -361,8 +361,8 @@ datagen_api_tests:
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
   script:
     - cd tests/functional/python_tests/datagen_tests/api_tests/
-    - timeout 5m pytest --timeout=240 --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 10min
+    - timeout 9m pytest --timeout=480 --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 13min
   artifacts:
     reports:
       junit: tests/functional/python_tests/datagen_tests/api_tests/report.xml
@@ -395,9 +395,9 @@ patterns_tests:
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
-    - timeout 22m ./run_tests.sh hived-instance:8090 `git rev-parse --show-toplevel`
+    - timeout 33m ./run_tests.sh hived-instance:8090 `git rev-parse --show-toplevel`
 
-  timeout: 27min
+  timeout: 38min
   artifacts:
     when: always
     reports:
@@ -426,8 +426,8 @@ transaction_serialization_testnet_tests:
     - cd libfaketime && make
     - export LIBFAKETIME_PATH=`pwd`/src/libfaketime.so.1
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests
-    - timeout 10m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml" -m testnet
-  timeout: 15min
+    - timeout 15m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml" -m testnet
+  timeout: 20min
   artifacts:
     reports:
       junit: tests/functional/python_tests/transaction_serialization_tests/report.xml
@@ -463,9 +463,9 @@ transaction_serialization_mainnet_tests:
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet
-    - timeout 18m pytest -n ${NUMBER_OF_PROCESSES} -m mainnet_5m --junitxml="./report.xml" --http-endpoint='hived-instance:8090' --ws-endpoint='hived-instance:8090' --wallet-path="$CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet"
+    - timeout 27m pytest -n ${NUMBER_OF_PROCESSES} -m mainnet_5m --junitxml="./report.xml" --http-endpoint='hived-instance:8090' --ws-endpoint='hived-instance:8090' --wallet-path="$CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet"
 
-  timeout: 23min
+  timeout: 32min
 
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -490,8 +490,8 @@ transaction_serialization_mainnet_tests:
     - export NUMBER_OF_PROCESSES=$(nproc)
     - pip3 install pytest pytest-xdist "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
     - cd tests/api_tests/message_format_tests
-    - timeout 20m pytest -n ${NUMBER_OF_PROCESSES} -m ${NODE_TYPE} --junitxml="./report.xml" --http-endpoint=${NODE_ADDRESS}
-  timeout: 25min
+    - timeout 30m pytest -n ${NUMBER_OF_PROCESSES} -m ${NODE_TYPE} --junitxml="./report.xml" --http-endpoint=${NODE_ADDRESS}
+  timeout: 35min
   artifacts:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
