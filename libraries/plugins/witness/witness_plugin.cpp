@@ -356,18 +356,21 @@ namespace detail {
                 op.witness = witness_name;
                 op.block_id = note.block_id;
 
-                signed_transaction tx;
+                transaction tx;
                 uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
                 const block_id_type reference_block_id = last_irreversible_block ? _db.get_block_id_for_num(last_irreversible_block) : _db.head_block_id();
                 tx.set_reference_block(reference_block_id);
                 tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2);
                 tx.operations.push_back( op );
-                tx.sign(private_key_itr->second, _db.get_chain_id(), fc::ecc::fc_canonical);
+
+                full_transaction_ptr full_transaction = full_transaction_type::create_from_transaction( tx, hive::protocol::pack_type::hf26 );
+                std::vector< hive::protocol::private_key_type > keys;
+                keys.emplace_back( private_key_itr->second );
+                full_transaction->sign_transaction( keys, _db.get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::hf26 );
 
                 ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
                 uint32_t skip = _db.get_node_properties().skip_flags;
 
-                std::shared_ptr<full_transaction_type> full_transaction = full_transaction_type::create_from_signed_transaction(tx, hive::protocol::serialization_mode_controller::get_current_pack(), false);
                 _db.push_transaction(full_transaction, skip);
                 appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
               }
@@ -670,7 +673,7 @@ void witness_plugin::plugin_shutdown()
   {
     if( !my->_is_p2p_enabled )
     {
-      ilog("Witness plugin is not enabled, beause P2P plugin is disabled...");
+      ilog("Witness plugin is not enabled, because P2P plugin is disabled...");
       return;
     }
 
