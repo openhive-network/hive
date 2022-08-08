@@ -3,7 +3,7 @@ from typing import Literal
 
 import test_tools as tt
 
-from ...local_tools import date_from_now
+from ...local_tools import create_account_and_fund_it, date_from_now
 
 
 def create_proposal(wallet, account_name):
@@ -27,3 +27,14 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
         [pytest.param((name,), marks=getattr(pytest.mark, name)) for name in node_names],
         indirect=['prepared_node'],
     )
+
+
+def prepare_escrow(wallet, *, sender: str) -> None:
+    create_account_and_fund_it(wallet, sender, tests=tt.Asset.Test(100), vests=tt.Asset.Test(100),
+                               tbds=tt.Asset.Tbd(100))
+
+    for name in ['receiver', 'agent']:
+        wallet.api.create_account(sender, name, '{}')
+
+    wallet.api.escrow_transfer(sender, 'receiver', 'agent', 1, tt.Asset.Tbd(25), tt.Asset.Test(50), tt.Asset.Tbd(1),
+                               date_from_now(weeks=48), date_from_now(weeks=50), '{}')
