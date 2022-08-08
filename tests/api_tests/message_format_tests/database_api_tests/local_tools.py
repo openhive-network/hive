@@ -5,12 +5,6 @@ import subprocess
 import test_tools as tt
 
 
-def create_and_cancel_vesting_delegation(wallet, delegator, delegatee):
-    wallet.api.delegate_vesting_shares(delegator, delegatee, tt.Asset.Vest(5))
-    # delegation of 0 removes the delegation
-    wallet.api.delegate_vesting_shares(delegator, delegatee, tt.Asset.Vest(0))
-
-
 def generate_sig_digest(transaction: dict, private_key: str):
     # sig_digest is mix of chain_id and transaction data. To get it, it's necessary to run sign_transaction executable file
     output = subprocess.check_output([os.environ['SIGN_TRANSACTION_PATH']],
