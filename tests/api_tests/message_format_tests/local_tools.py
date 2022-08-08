@@ -6,6 +6,12 @@ import test_tools as tt
 from ...local_tools import create_account_and_fund_it, date_from_now
 
 
+def create_and_cancel_vesting_delegation(wallet, delegator, delegatee):
+    wallet.api.delegate_vesting_shares(delegator, delegatee, tt.Asset.Vest(5))
+    # delegation of 0 removes the delegation
+    wallet.api.delegate_vesting_shares(delegator, delegatee, tt.Asset.Vest(0))
+
+
 def create_proposal(wallet, account_name):
     wallet.api.post_comment(account_name, 'test-permlink', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
     # create proposal with permlink pointing to comment
