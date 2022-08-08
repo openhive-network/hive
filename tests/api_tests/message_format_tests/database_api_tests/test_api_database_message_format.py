@@ -4,9 +4,9 @@ import pytest
 import test_tools as tt
 
 
-from .local_tools import create_and_cancel_vesting_delegation, generate_sig_digest, prepare_escrow,\
+from .local_tools import create_and_cancel_vesting_delegation, generate_sig_digest,\
     request_account_recovery, transfer_and_withdraw_from_savings
-from ..local_tools import create_proposal
+from ..local_tools import create_proposal, prepare_escrow
 from ....local_tools import create_account_and_fund_it, date_from_now
 
 
