@@ -108,8 +108,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     op.min_to_receive = asset( 500, any_smt_symbol );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, sam_private_key );
-    push_transaction( tx );
+    push_transaction( tx, sam_private_key );
 
     generate_blocks( db->head_block_time() + 60 );
 
