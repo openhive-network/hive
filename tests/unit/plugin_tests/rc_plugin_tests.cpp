@@ -1420,9 +1420,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( recover );
-    sign( tx, alice_owner_key );
-    sign( tx, alice_new_owner_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {alice_owner_key, alice_new_owner_key} );
     tx.clear();
     alice_owner_key = alice_new_owner_key;
     check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
@@ -1448,9 +1446,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     recover.new_owner_authority = authority( 1, bob_new_owner_key.get_public_key(), 1, generate_private_key( "bob_new_owner2" ).get_public_key(), 1 );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( recover );
-    sign( tx, bob_owner_key );
-    sign( tx, bob_new_owner_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, {bob_owner_key, bob_new_owner_key} );
     tx.clear();
     bob_owner_key = bob_new_owner_key;
     check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
@@ -1698,8 +1694,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     //delegation.delegatee = "diana";
     //delegation.vesting_shares = ASSET( "5.000000 VESTS" );
     //tx.operations.push_back( delegation );
-    sign( tx, barry_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, barry_private_key );
     tx.clear();
     auto barry_diff_usage = pending_data.get_differential_usage();
     BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_history_bytes ], 0 );
@@ -1766,8 +1761,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     tx.operations.push_back( witness );
     witness.url = "https://alice.has.cat";
     tx.operations.push_back( witness );
-    sign( tx, alice_private_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     tx.clear();
     auto alice_state_usage = pending_data.get_pending_usage()[ resource_state_bytes ];
     generate_block();
@@ -1829,12 +1823,11 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
     signed_transaction tx;
     tx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
     tx.operations.push_back(transfer);
-    sign(tx, dave_private_key);
 
     try
     {
       BOOST_TEST_MESSAGE("Attempting to push transaction");
-      push_transaction(tx, 0);
+      push_transaction(tx, dave_private_key);
     }
     catch(const hive::chain::not_enough_rc_exception& e)
     {

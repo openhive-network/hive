@@ -10024,7 +10024,7 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
       tx.operations.push_back( op );
 
       BOOST_TEST_MESSAGE( "--- Test failure when no account is not a witness" );
-      HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), tx_missing_witness_auth );
+      HIVE_REQUIRE_THROW( push_transaction( tx ), tx_missing_witness_auth );
     }
 
     witness_block_approve_operation op;
@@ -10036,28 +10036,23 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
     tx.operations.push_back( op );
 
     BOOST_TEST_MESSAGE( "--- Test failure when no signatures" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), tx_missing_witness_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx ), tx_missing_witness_auth );
 
     BOOST_TEST_MESSAGE( "--- Test failure when signed by a signature not in the account's authority" );
-    sign( tx, bob_post_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), tx_missing_witness_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_post_key ), tx_missing_witness_auth );
 
     BOOST_TEST_MESSAGE( "--- Test failure when duplicate signatures" );
     tx.signatures.clear();
-    sign( tx, alice_witness_key );
-    sign( tx, alice_witness_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), tx_duplicate_sig );
+
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_witness_key, alice_witness_key} ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure when signed by an additional signature not in the creator's authority" );
     tx.signatures.clear();
-    sign( tx, alice_witness_key );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( push_transaction( tx, 0 ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_witness_key, alice_private_key} ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test success with witness signature" );
     tx.signatures.clear();
-    sign( tx, alice_witness_key );
-    push_transaction( tx, 0 );
+    push_transaction( tx, alice_witness_key );
 
     validate_database();
   }
