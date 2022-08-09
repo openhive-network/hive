@@ -11,5 +11,5 @@ def node():
 
 
 @pytest.fixture
-def wallet(node):
-    return tt.Wallet(attach_to=node)
+def wallet(prepared_node):
+    return tt.Wallet(attach_to=prepared_node)
