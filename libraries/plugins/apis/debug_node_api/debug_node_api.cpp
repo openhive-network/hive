@@ -33,6 +33,7 @@ class debug_node_api_impl
       (debug_set_hardfork)
       (debug_has_hardfork)
       (debug_get_json_schema)
+      (debug_throw_exception)
     )
 
     chain::database& _db;
@@ -144,6 +145,12 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_json_schema )
   return { _db.get_json_schema() };
 }
 
+DEFINE_API_IMPL( debug_node_api_impl, debug_throw_exception )
+{
+  _debug_node.allow_throw_exception = args.throw_exception;
+  return {};
+}
+
 } // detail
 
 debug_node_api::debug_node_api(): my( new detail::debug_node_api_impl() )
@@ -163,6 +170,7 @@ DEFINE_LOCKLESS_APIS( debug_node_api,
   (debug_set_hardfork)
   (debug_has_hardfork)
   (debug_get_json_schema)
+  (debug_throw_exception)
 )
 
 } } } // hive::plugins::debug_node
