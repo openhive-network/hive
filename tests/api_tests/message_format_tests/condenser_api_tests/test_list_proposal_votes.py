@@ -4,8 +4,10 @@ from ..local_tools import run_for, create_proposal
 from ....local_tools import create_account_and_fund_it
 
 
+# This test is not performed on 5 million blocklog because proposals feature was introduced after block with number
+# 5000000. See the readme.md file in this directory for further explanation.
 @run_for('testnet', 'mainnet_64m')
-def test_list_proposal_votes_in_testnet_and_mainnet_64m(prepared_node, should_prepare):
+def test_list_proposal_votes(prepared_node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=prepared_node)
         create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100), tbds=tt.Asset.Tbd(300))
