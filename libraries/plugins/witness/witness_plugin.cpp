@@ -64,6 +64,7 @@ namespace detail {
 
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
+    void on_finish_push_block( const chain::block_notification& note );
 
     void schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop();
@@ -82,6 +83,7 @@ namespace detail {
     chain::database&              _db;
     boost::signals2::connection   _post_apply_block_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
+    boost::signals2::connection   _finish_push_block_conn;
 
     std::shared_ptr< witness::block_producer >                         _block_producer;
     uint32_t _last_fast_confirmation_block_number = 0;
@@ -311,7 +313,10 @@ namespace detail {
         break;
       _db.remove(*it);
     }
+  }
 
+  void witness_plugin_impl::on_finish_push_block(const block_notification& note)
+  {
     // Broadcast a transaction to let the other witnesses know we've accepted this block for fast 
     // confirmation.
     // I think it's called multiple times during a fork switch, which isn't what we want, so
@@ -330,7 +335,7 @@ namespace detail {
 
       for (const account_name_type& witness_name : _witnesses)
       {
-        // dlog("In on_post_apply_block(), checking witness ${witness_name}", (witness_name));
+        // dlog("In on_finish_push_block(), checking witness ${witness_name}", (witness_name));
         if (witness_name != note.full_block->get_block().witness && 
             scheduled_witnesses.find(witness_name) != scheduled_witnesses.end())
           try
@@ -627,6 +632,8 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
   my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler(
     [&]( const chain::operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0);
+  my->_finish_push_block_conn = my->_db.add_finish_push_block_handler(
+    [&]( const chain::block_notification& note ){ my->on_finish_push_block( note ); }, *this, 0 );
 
   //if a producing witness, allow up to 1/3 of the block interval for writing blocks/transactions (2x a normal node)
   if( my->_witnesses.size() && my->_private_keys.size() )
@@ -677,6 +684,7 @@ void witness_plugin::plugin_shutdown()
 
     chain::util::disconnect_signal( my->_post_apply_block_conn );
     chain::util::disconnect_signal( my->_pre_apply_operation_conn );
+    chain::util::disconnect_signal( my->_finish_push_block_conn );
 
     my->_timer.cancel();
   }

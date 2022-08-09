@@ -12,6 +12,8 @@ from test_tools.__private.user_handles.get_implementation import get_implementat
 from test_tools.__private.wait_for import wait_for_event
 from tests.functional.python_tests.fork_tests.local_tools import get_time_offset_from_iso_8601
 
+from ..local_tools import prepare_witnesses
+from .local_tools import connect_sub_networks
 
 def get_time_offset_from_file(file: Path):
     with open(file, 'r') as f:
@@ -94,3 +96,55 @@ def prepared_networks() -> Dict:
         'Alpha': alpha_net,
         'Beta': beta_net,
     }
+
+def prepared_sub_networks(sub_networks_sizes : list) -> Dict:
+
+    assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
+    cnt               = 0
+    all_witness_names = []
+    sub_networks      = []
+    init_node         = None
+
+    for sub_networks_size in sub_networks_sizes:
+        tt.logger.info(f'Preparing sub-network nr: {cnt} that consists of {sub_networks_size} nodes')
+
+        witness_names = [f'witness-{cnt}-{i}' for i in range(sub_networks_size)]
+        all_witness_names += witness_names
+
+        sub_network = tt.Network()  # TODO: Add network name prefix, e.g. AlphaNetwork0 (Alpha- is custom prefix)
+        if cnt == 0:
+            init_node = tt.InitNode(network = sub_network)
+        sub_networks.append(sub_network)
+        tt.WitnessNode(witnesses = witness_names, network = sub_network)
+        tt.ApiNode(network = sub_network)
+
+        cnt += 1
+
+    # Run
+    connect_sub_networks(sub_networks)
+
+    tt.logger.info('Running networks, waiting for live...')
+
+    for sub_network in sub_networks:
+        assert sub_network is not None
+        sub_network.run()
+
+    initminer_public_key = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'
+    init_wallet = prepare_witnesses(init_node, all_witness_names, initminer_public_key)
+    return sub_networks, all_witness_names, init_wallet
+
+@pytest.fixture(scope="package")
+def prepared_sub_networks_10_11() -> Dict:
+    yield { 'sub-networks-data': prepared_sub_networks([10, 11]) }
+
+@pytest.fixture(scope="package")
+def prepared_sub_networks_3_18() -> Dict:
+    yield { 'sub-networks-data': prepared_sub_networks([3, 18]) }
+
+@pytest.fixture(scope="package")
+def prepared_sub_networks_6_17() -> Dict:
+    yield { 'sub-networks-data': prepared_sub_networks([6, 17]) }
+
+@pytest.fixture(scope="package")
+def prepared_sub_networks_1_3_17() -> Dict:
+    yield { 'sub-networks-data': prepared_sub_networks([1, 3, 17]) }

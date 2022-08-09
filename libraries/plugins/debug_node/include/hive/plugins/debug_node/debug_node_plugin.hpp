@@ -118,6 +118,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
     bool logging = true;
 
+    bool allow_throw_exception = false;
+
   private:
     void on_post_apply_block( const hive::chain::block_notification& note );
 

@@ -392,13 +392,14 @@ namespace chain {
       void notify_post_apply_transaction( const transaction_notification& note );
       void notify_pre_apply_custom_operation( const custom_operation_notification& note );
       void notify_post_apply_custom_operation( const custom_operation_notification& note );
-
+      void notify_finish_push_block( const block_notification& note );
 
       using apply_required_action_handler_t = std::function< void(const required_action_notification&) >;
       using apply_optional_action_handler_t = std::function< void(const optional_action_notification&) >;
       using apply_operation_handler_t = std::function< void(const operation_notification&) >;
       using apply_transaction_handler_t = std::function< void(const transaction_notification&) >;
       using apply_block_handler_t = std::function< void(const block_notification&) >;
+      using push_block_handler_t = std::function< void(const block_notification&) >;
       using apply_custom_operation_handler_t = std::function< void(const custom_operation_notification&) >;
       using irreversible_block_handler_t = std::function< void(uint32_t) >;
       using switch_fork_handler_t = std::function< void(uint32_t) >;
@@ -445,7 +446,7 @@ namespace chain {
       boost::signals2::connection add_generate_optional_actions_handler ( const generate_optional_actions_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
-
+      boost::signals2::connection add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
 
       boost::signals2::connection add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
       /// <summary>
@@ -960,6 +961,10 @@ namespace chain {
       fc::signal<void(const comment_reward_notification&)>          _comment_reward_signal;
 
       fc::signal<void()> _end_of_syncing_signal;
+      /**
+        *  This signal is emitted when pushing block is completely finished
+        */
+      fc::signal<void(const block_notification&)>           _finish_push_block_signal;
   };
 
   struct reindex_notification

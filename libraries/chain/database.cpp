@@ -1024,6 +1024,7 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
       {
         result = _push_block( block_ctrl );
         block_ctrl.on_end_of_apply_block();
+        notify_finish_push_block( full_block );
       }
       FC_CAPTURE_AND_RETHROW((new_block))
 
@@ -1539,6 +1540,11 @@ void database::notify_pre_apply_custom_operation( const custom_operation_notific
 void database::notify_post_apply_custom_operation( const custom_operation_notification& note )
 {
   HIVE_TRY_NOTIFY( _post_apply_custom_operation_signal, note )
+}
+
+void database::notify_finish_push_block( const block_notification& note )
+{
+  HIVE_TRY_NOTIFY( _finish_push_block_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -5160,6 +5166,12 @@ boost::signals2::connection database::add_post_reindex_handler(const reindex_han
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");
+}
+
+boost::signals2::connection database::add_finish_push_block_handler( const push_block_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl<false>(_finish_push_block_signal, func, plugin, group, "block");
 }
 
 boost::signals2::connection database::add_generate_optional_actions_handler(const generate_optional_actions_handler_t& func,

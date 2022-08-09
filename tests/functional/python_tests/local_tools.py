@@ -7,7 +7,7 @@ import test_tools as tt
 def parse_datetime(datetime_: str) -> datetime:
     return datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
 
-def prepare_witnesses( init_node, all_witness_names : List[str] ):
+def prepare_witnesses( init_node, all_witness_names : List[str], key : str = None ):
 
     tt.logger.info('Attaching wallets...')
     wallet = tt.Wallet(attach_to=init_node)
@@ -22,7 +22,10 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
     # Prepare witnesses on blockchain
     with wallet.in_single_transaction():
         for name in all_witness_names:
-            wallet.api.create_account('initminer', name, '')
+            if key is None:
+                wallet.api.create_account('initminer', name, '')
+            else:
+                wallet.api.create_account_with_keys('initminer', name, '', key, key, key, key)
     with wallet.in_single_transaction():
         for name in all_witness_names:
             wallet.api.transfer_to_vesting("initminer", name, tt.Asset.Test(1000))
@@ -56,3 +59,4 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
 
     # with fast confirm, irreversible will usually be = head
     # assert irreversible + 10 < head
+    return wallet

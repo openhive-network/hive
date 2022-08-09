@@ -2,6 +2,7 @@
 
 #include <hive/plugins/witness/block_producer.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 #include <fc/io/buffered_iostream.hpp>
 #include <fc/io/fstream.hpp>
@@ -323,6 +324,9 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
 {
   try
   {
+  if( allow_throw_exception )
+    HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
+
   if( !_debug_updates.empty() )
     apply_debug_updates();
   }
