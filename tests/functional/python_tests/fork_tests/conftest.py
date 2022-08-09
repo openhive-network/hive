@@ -44,6 +44,10 @@ def prepared_sub_networks(sub_networks_sizes : list) -> Dict:
     return sub_networks, all_witness_names, init_wallet
 
 @pytest.fixture(scope="package")
+def prepared_sub_networks_10_11() -> Dict:
+    yield { 'sub-networks-data': prepared_sub_networks([10, 11]) }
+
+@pytest.fixture(scope="package")
 def prepared_sub_networks_3_18() -> Dict:
     yield { 'sub-networks-data': prepared_sub_networks([3, 18]) }
 

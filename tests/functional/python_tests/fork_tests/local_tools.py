@@ -117,7 +117,7 @@ def append(log1 : fork_log, log3 : fork_log, log2 : fork_log):
     log1.collector.append( info(log2.name, log2.wallet) )
     log1.collector.append( info(log3.name, log3.wallet) )
 
-def wait(blocks, log1 : fork_log, log3 : fork_log, log2 : fork_log, api_node):
+def wait_v2(blocks, log1 : fork_log, log3 : fork_log, log2 : fork_log, api_node):
     for i in range(blocks):
         append(log1, log2, log3)
         api_node.wait_number_of_blocks(1)
