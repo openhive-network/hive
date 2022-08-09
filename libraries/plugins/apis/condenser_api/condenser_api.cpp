@@ -179,7 +179,6 @@ namespace detail
   condenser_api_impl::legacy_substitutes_type condenser_api_impl::create_legacy_substitutes()
   {
     using _asset_type = hive::protocol::serializer_wrapper<hive::protocol::asset>;
-    using _asset_symbol_type = hive::protocol::serializer_wrapper<hive::protocol::asset_symbol_type>;
 
     legacy_substitutes_type _result
     {
@@ -1184,7 +1183,13 @@ namespace detail
     list_args.status          = args.size() > 4 ?
       args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
 
-    return _database_api->list_proposal_votes( list_args ).proposal_votes;
+    auto _proposal_votes = _database_api->list_proposal_votes( list_args ).proposal_votes;
+    list_proposal_votes_return _result;
+
+    for( auto& vote : _proposal_votes )
+      _result.emplace_back( hive::protocol::serializer_wrapper<database_api::api_proposal_vote_object>{ vote, transaction_serialization_type::legacy } );
+
+    return _result;
   }
 
 
