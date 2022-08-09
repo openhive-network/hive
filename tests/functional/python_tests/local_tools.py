@@ -19,7 +19,6 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
     tt.logger.info('Wait for block 43 (to fulfill required 33% of witness participation)')
     init_node.wait_for_block_with_number(43)
 
-    witness_details = []
     # Prepare witnesses on blockchain
     with wallet.in_single_transaction():
         for name in all_witness_names:
@@ -29,12 +28,9 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
             wallet.api.transfer_to_vesting("initminer", name, tt.Asset.Test(1000))
     with wallet.in_single_transaction():
         for name in all_witness_names:
-            key = tt.Account(name).public_key
-            witness_details.append( (name, key) )
-
             wallet.api.update_witness(
                 name, "https://" + name,
-                key,
+                tt.Account(name).public_key,
                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
             )
 
@@ -60,4 +56,4 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
 
     # with fast confirm, irreversible will usually be = head
     # assert irreversible + 10 < head
-    return witness_details, wallet
+    return wallet

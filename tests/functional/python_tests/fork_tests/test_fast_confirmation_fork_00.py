@@ -19,7 +19,6 @@ def test_fast_confirmation_fork_00(prepared_sub_networks_3_18):
 
     sub_networks_data   = prepared_sub_networks_3_18['sub-networks-data']
     sub_networks        = sub_networks_data[0]
-    witness_details     = sub_networks_data[1]
     assert len(sub_networks) == 2
 
     minority_api_node = sub_networks[0].node('ApiNode0')
