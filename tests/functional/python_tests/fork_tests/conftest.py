@@ -1,11 +1,52 @@
-from typing import Dict
+from datetime import datetime, timezone
+from pathlib import Path
+import time
+from typing import Dict, Iterable
 
 import pytest
 
 import test_tools as tt
+from test_tools.__private.init_node import InitNode
+from test_tools.__private.user_handles.get_implementation import get_implementation
 
-from ..local_tools import prepare_witnesses
-from test_tools.__private.user_handles import WitnessNodeHandle
+from test_tools.__private.wait_for import wait_for_event
+from tests.functional.python_tests.fork_tests.local_tools import get_time_offset_from_iso_8601
+
+
+def get_time_offset_from_file(file: Path):
+    with open(file, 'r') as f:
+        timestamp = f.read()
+    timestamp = timestamp.strip()
+    time_offset = get_time_offset_from_iso_8601(timestamp)
+    return time_offset
+
+
+def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
+    time_offset = get_time_offset_from_file(blocklog_directory/'timestamp')
+    block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
+
+    tt.logger.info('Running nodes...')
+
+    nodes = [node for network in networks for node in network.nodes]
+    nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
+    init_node: InitNode = get_implementation(nodes[0])
+    endpoint = init_node.get_p2p_endpoint()
+    for node in nodes[1:]:
+        node.config.p2p_seed_node.append(endpoint)
+        node.run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
+
+    for network in networks:
+        network.is_running = True
+
+    deadline = time.time() + InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT
+    for node in nodes:
+        tt.logger.debug(f'Waiting for {node} to be live...')
+        wait_for_event(
+            get_implementation(node)._Node__notifications.live_mode_entered_event,
+            deadline=deadline,
+            exception_message='Live mode not activated on time.'
+        )
+
 
 @pytest.fixture(scope="package")
 def prepared_networks() -> Dict:
@@ -37,31 +78,17 @@ def prepared_networks() -> Dict:
     tt.WitnessNode(witnesses=[f'witness{i}-beta' for i in range(8, 10)], network=beta_net)
     tt.ApiNode(network=beta_net)
 
-    for node in [*alpha_net.nodes, *beta_net.nodes]:
-        node.config.webserver_thread_pool_size="2"
-        node.config.blockchain_thread_pool_size=2
-        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr,p2p"} '\
-                                  '{"name":"user","level":"debug","appender":"stderr,p2p"} '\
-                                  '{"name":"chainlock","level":"debug","appender":"p2p"} '\
-                                  '{"name":"sync","level":"debug","appender":"p2p"} '\
-                                  '{"name":"p2p","level":"debug","appender":"p2p"}'
+    blocklog_directory = Path(__file__).parent / 'block_log'
+    run_networks([alpha_net, beta_net], blocklog_directory)
 
-    # Run
-    alpha_net.connect_with(beta_net)
+    wallet = tt.Wallet(attach_to=init_node)
 
-
-    tt.logger.info('Running networks, waiting for live...')
-    alpha_net.run()
-    beta_net.run()
-
-    # tt.logger.info('Disabling fast confirm on all witnesses')
-    # for node in alpha_net.nodes + beta_net.nodes:
-    #     if isinstance(node, WitnessNodeHandle):
-    #         tt.logger.error('Disabling fast confirm')
-    #         node.disable_fast_confirm()
-
-    prepare_witnesses(init_node, all_witness_names)
-
+    # Network should be set up at this time, with 21 active witnesses, enough participation rate
+    # and irreversible block number lagging behind around 15-20 blocks head block number
+    result = wallet.api.info()
+    irreversible = result["last_irreversible_block_num"]
+    head = result["head_block_num"]
+    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
 
     yield {
         'Alpha': alpha_net,

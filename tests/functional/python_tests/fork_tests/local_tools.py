@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import test_tools as tt
 
 
@@ -35,3 +37,13 @@ def assert_no_duplicates(node, *nodes):
         wallet = tt.Wallet(attach_to=node)
         check_account_history_duplicates(node, wallet)
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
+
+
+def get_time_offset_from_iso_8601(timestamp: str) -> str:
+    current_time = datetime.now(timezone.utc)
+    new_time = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+
+    # reduce node start delay from 10s, caused test fails
+    difference = round(new_time.timestamp()-current_time.timestamp()) - 5
+    time_offset = f'{difference}s'
+    return time_offset
