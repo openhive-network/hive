@@ -1,5 +1,5 @@
 import test_tools as tt
-
+from typing import List
 
 def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
     """
@@ -112,14 +112,15 @@ class fork_log:
         self.collector  = []
         self.wallet     = wallet
 
-def append(log1 : fork_log, log3 : fork_log, log2 : fork_log):
-    log1.collector.append( info(log1.name, log1.wallet) )
-    log1.collector.append( info(log2.name, log2.wallet) )
-    log1.collector.append( info(log3.name, log3.wallet) )
+    def append(self):
+        self.collector.append( info(self.name, self.wallet) )
 
-def wait_v2(blocks, log1 : fork_log, log3 : fork_log, log2 : fork_log, api_node):
+def wait_v2(blocks, log : List[fork_log], api_node):
     for i in range(blocks):
-        append(log1, log2, log3)
+
+        for current in log:
+            current.append()
+
         api_node.wait_number_of_blocks(1)
         tt.logger.info(f'{i+1}/{blocks} blocks')
 

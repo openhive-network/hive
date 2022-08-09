@@ -7,19 +7,30 @@ def test_obi_throw_exception(prepared_sub_networks_10_11):
     assert len(sub_networks) == 2
 
     api_node_0      = sub_networks[0].node('ApiNode0')
-    api_node_1      = sub_networks[1].node('ApiNode1')
     witness_node_0  = sub_networks[0].node('WitnessNode0')
 
-    api_log_0       = fork_log("a0", tt.Wallet(attach_to = api_node_0))
-    api_log_1       = fork_log("a1", tt.Wallet(attach_to = api_node_1))
-    witness_log_0   = fork_log("w0", tt.Wallet(attach_to = witness_node_0))
+    api_node_1      = sub_networks[1].node('ApiNode1')
+    witness_node_1  = sub_networks[1].node('WitnessNode1')
 
-    wait_v2(1, api_log_0, api_log_1, witness_log_0, api_node_0)
+    logs = []
 
+    logs.append(fork_log("a0", tt.Wallet(attach_to = api_node_0)))
+    logs.append(fork_log("w0", tt.Wallet(attach_to = witness_node_0)))
+
+    logs.append(fork_log("a1", tt.Wallet(attach_to = api_node_1)))
+    logs.append(fork_log("w1", tt.Wallet(attach_to = witness_node_1)))
+
+    blocks = 10
+
+    tt.logger.info(f'Before an exception')
+    wait_v2(blocks, logs, api_node_0)
+
+    tt.logger.info(f'Artificial exception is thrown during {blocks} blocks generation')
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception = True)
 
-    wait_v2(5, api_log_0, api_log_1, witness_log_0, api_node_0)
+    wait_v2(blocks, logs, api_node_0)
 
+    tt.logger.info(f'Artificial exception is disabled')
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception = False)
 
-    wait_v2(5, api_log_0, api_log_1, witness_log_0, api_node_0)
+    wait_v2(blocks, logs, api_node_0)
