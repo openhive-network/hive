@@ -48,7 +48,7 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
         )
 
 
-@pytest.fixture(scope="package")
+@pytest.fixture
 def prepared_networks() -> Dict:
     """
     Fixture consists of 1 init node, 8 witness nodes and 2 api nodes.
