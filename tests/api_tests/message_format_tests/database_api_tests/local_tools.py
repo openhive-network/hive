@@ -2,8 +2,6 @@ import json
 import os
 import subprocess
 
-import test_tools as tt
-
 
 def generate_sig_digest(transaction: dict, private_key: str):
     # sig_digest is mix of chain_id and transaction data. To get it, it's necessary to run sign_transaction executable file
@@ -11,8 +9,3 @@ def generate_sig_digest(transaction: dict, private_key: str):
                                      input=f'{{ "tx": {json.dumps(transaction)}, '
                                            f'"wif": "{private_key}" }}'.encode(encoding='utf-8')).decode('utf-8')
     return json.loads(output)['result']['sig_digest']
-
-
-def transfer_and_withdraw_from_savings(wallet, account_name):
-    wallet.api.transfer_to_savings(account_name, account_name, tt.Asset.Test(50), 'test transfer to savings')
-    wallet.api.transfer_from_savings(account_name, 124, account_name, tt.Asset.Test(5), 'test transfer from savings')
