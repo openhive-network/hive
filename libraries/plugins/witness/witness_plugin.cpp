@@ -61,7 +61,6 @@ namespace detail {
       _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _block_producer( std::make_shared< witness::block_producer >( _db ) )
       {}
-
     void on_post_apply_block( const chain::block_notification& note );
     void on_pre_apply_operation( const chain::operation_notification& note );
 
@@ -87,6 +86,7 @@ namespace detail {
     uint32_t _last_fast_confirmation_block_number = 0;
 
     std::atomic<bool> _enable_fast_confirm = true;
+    std::atomic<bool> _debug_disable_production  = false;
   };
 
   class witness_generate_block_flow_control final : public generate_block_flow_control
@@ -402,6 +402,13 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop()
   {
+#ifdef IS_TEST_NET
+    if(_debug_disable_production.load(std::memory_order_relaxed) == true)
+    {
+      schedule_production_loop();
+      return block_production_condition::production_disabled;
+    }
+#endif
     if( fc::time_point::now() < fc::time_point(HIVE_GENESIS_TIME) )
     {
       wlog( "waiting until genesis time to produce block: ${t}", ("t",HIVE_GENESIS_TIME) );
@@ -463,6 +470,8 @@ namespace detail {
         elog( "exception producing block" );
         break;
       case block_production_condition::wait_for_genesis:
+        break;
+      case block_production_condition::production_disabled:
         break;
     }
 
@@ -566,6 +575,22 @@ bool witness_plugin::is_fast_confirm_enabled() const
   return my->_enable_fast_confirm.load(std::memory_order_relaxed);
 }
 
+void witness_plugin::enable_production()
+{
+  my->_production_enabled = true;
+  my->_debug_disable_production.store(false, std::memory_order_relaxed);
+}
+
+void witness_plugin::disable_production()
+{
+  my->_debug_disable_production.store(true, std::memory_order_relaxed);
+}
+
+bool witness_plugin::is_production_enabled() const
+{
+  return !my->_debug_disable_production.load(std::memory_order_relaxed);
+}
+
 void witness_plugin::set_program_options(
   boost::program_options::options_description& cli,
   boost::program_options::options_description& cfg)
@@ -578,6 +603,10 @@ void witness_plugin::set_program_options(
         ("name of witness controlled by this node (e.g. " + witness_id_example + " )" ).c_str() )
       ("private-key", bpo::value<vector<string>>()->composing()->multitoken(), "WIF PRIVATE KEY to be used by one or more witnesses or miners" )
       ("witness-skip-enforce-bandwidth", bpo::value<bool>()->default_value( true ), "Skip enforcing bandwidth restrictions. Default is true in favor of rc_plugin." )
+      ("enable-fast-confirm", bpo::value<bool>()->default_value( true ), "Enable fast confirmation")
+#ifdef IS_TEST_NET
+      ("debug-disable-production", bpo::value<bool>()->default_value( false ), "Switch to enable/disable block production, can be changed later via debug_node_api.")
+#endif
       ;
   cli.add_options()
       ("enable-stale-production", bpo::bool_switch()->default_value( false ), "Enable block production, even if the chain is stale.")
@@ -622,6 +651,12 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   }
   if ( my->_required_witness_participation < DEFAULT_WITNESS_PARTICIPATION * HIVE_1_PERCENT)
     wlog("warning: required witness participation=${required_witness_participation}, normally this should be set to ${default_witness_participation}",("required_witness_participation",my->_required_witness_participation / HIVE_1_PERCENT)("default_witness_participation",DEFAULT_WITNESS_PARTICIPATION));
+
+  my->_enable_fast_confirm.store( options.at( "enable-fast-confirm" ).as< bool >(), std::memory_order_relaxed );
+
+#ifdef IS_TEST_NET
+  my->_debug_disable_production = options.at( "debug-disable-production" ).as< bool >();
+#endif
 
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [&]( const chain::block_notification& note ){ my->on_post_apply_block( note ); }, *this, 0 );
