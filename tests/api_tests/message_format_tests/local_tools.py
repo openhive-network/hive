@@ -52,3 +52,8 @@ def prepare_escrow(wallet, *, sender: str) -> None:
 
     wallet.api.escrow_transfer(sender, 'receiver', 'agent', 1, tt.Asset.Tbd(25), tt.Asset.Test(50), tt.Asset.Tbd(1),
                                date_from_now(weeks=48), date_from_now(weeks=50), '{}')
+
+
+def transfer_and_withdraw_from_savings(wallet, account_name):
+    wallet.api.transfer_to_savings(account_name, account_name, tt.Asset.Test(50), 'test transfer to savings')
+    wallet.api.transfer_from_savings(account_name, 124, account_name, tt.Asset.Test(5), 'test transfer from savings')
