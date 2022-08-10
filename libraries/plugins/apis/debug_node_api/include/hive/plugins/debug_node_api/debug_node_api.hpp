@@ -70,6 +70,15 @@ struct debug_get_json_schema_return
   std::string schema;
 };
 
+typedef void_type debug_enable_block_production_args;
+typedef void_type debug_enable_block_production_return;
+
+typedef void_type debug_disable_block_production_args;
+typedef void_type debug_disable_block_production_return;
+
+typedef void_type debug_is_block_production_enabled_args;
+typedef bool debug_is_block_production_enabled_return;
+
 
 class debug_node_api
 {
@@ -103,6 +112,9 @@ class debug_node_api
       (debug_set_hardfork)
       (debug_has_hardfork)
       (debug_get_json_schema)
+      (debug_enable_block_production)
+      (debug_disable_block_production)
+      (debug_is_block_production_enabled)
     )
 
   private:

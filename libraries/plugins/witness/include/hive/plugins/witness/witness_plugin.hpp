@@ -31,7 +31,8 @@ namespace block_production_condition
     lag = 6,
     consecutive = 7,
     wait_for_genesis = 8,
-    exception_producing_block = 9
+    exception_producing_block = 9,
+    production_disabled = 10
   };
 }
 
@@ -50,6 +51,10 @@ public:
   void enable_fast_confirm();
   void disable_fast_confirm();
   bool is_fast_confirm_enabled() const;
+
+  void enable_production();
+  void disable_production();
+  bool is_production_enabled() const;
 
   static const std::string& name() { static std::string name = HIVE_WITNESS_PLUGIN_NAME; return name; }
 
