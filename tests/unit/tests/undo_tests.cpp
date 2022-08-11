@@ -459,7 +459,6 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     push_transaction( tx, bob_private_key );
     generate_blocks( 1 );
     tx.operations.clear();
-    
 
     generate_blocks( 1 );
 
@@ -480,7 +479,6 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     tx.operations.clear();
-    
 
     generate_blocks( 1 );
 
@@ -499,7 +497,6 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     tx.operations.clear();
-    
   }
   FC_LOG_AND_RETHROW()
 }

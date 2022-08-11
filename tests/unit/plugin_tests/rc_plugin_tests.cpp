@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       tx.operations.push_back( comment );
-      push_transaction( tx, init_account_priv_key );//cannot be steem_private_key
+      push_transaction( tx, init_account_priv_key ); //cannot be steem_private_key
     }
     generate_block();
 
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       tx.operations.push_back( op );
       tx.operations.push_back( comment );
-      push_transaction( tx, init_account_priv_key );//cannot be alice_private_key
+      push_transaction( tx, init_account_priv_key ); //cannot be alice_private_key
     }
     generate_block();
     
