@@ -1789,7 +1789,6 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
     tx.operations.clear();
-    
 
     {
       auto recent_ops = get_last_operations( 1 );
@@ -1886,7 +1885,6 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
     tx.operations.clear();
-    
 
     {
       auto recent_ops = get_last_operations( 1 );
@@ -1967,7 +1965,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_01_key );
       tx.operations.clear();
-      
 
       auto found = proposal_vote_idx.find( boost::make_tuple( voter_01, id_proposal_00 ) );
       BOOST_REQUIRE( found->voter == voter_01 );
@@ -1985,7 +1982,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_01_key );
       tx.operations.clear();
-      
 
       auto found = proposal_vote_idx.find( boost::make_tuple( voter_01, id_proposal_00 ) );
       BOOST_REQUIRE( found == proposal_vote_idx.end() );
@@ -2041,7 +2037,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_01_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_01 );
@@ -2070,7 +2065,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_02_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_02 );
@@ -2093,7 +2087,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_02_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_02 );
@@ -2116,7 +2109,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_01_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_01 );
@@ -2139,7 +2131,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_01_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_01 );
@@ -2164,7 +2155,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_02_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_02 );
@@ -2187,7 +2177,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       push_transaction( tx, voter_01_key );
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_01 );
@@ -2209,7 +2198,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       HIVE_REQUIRE_THROW(push_transaction( tx, voter_01_key ), fc::exception);
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_01 );
@@ -2231,7 +2219,6 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       HIVE_REQUIRE_THROW(push_transaction( tx, voter_01_key ), fc::exception);
       tx.operations.clear();
-      
 
       int32_t cnt = 0;
       auto found = proposal_vote_idx.find( voter_01 );
@@ -2360,7 +2347,6 @@ BOOST_AUTO_TEST_CASE( create_proposal_005 )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     HIVE_REQUIRE_THROW(push_transaction( tx, alice_private_key ), fc::exception);
     tx.operations.clear();
-    
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -2388,7 +2374,6 @@ BOOST_AUTO_TEST_CASE( create_proposal_006 )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     HIVE_REQUIRE_THROW(push_transaction( tx, alice_private_key ), fc::exception);
     tx.operations.clear();
-    
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -3978,7 +3963,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
 
     push_transaction( tx, alice_private_key );
     tx.operations.clear();
-    
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( creator );
@@ -4063,7 +4047,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    
 
     HIVE_REQUIRE_THROW( update_proposal(50, creator, daily_pay, subject, permlink, alice_private_key), fc::exception);
     HIVE_REQUIRE_THROW( update_proposal(-50, creator, daily_pay, subject, permlink, alice_private_key), fc::exception);
@@ -4110,7 +4093,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto proposal = proposal_idx.find( creator );
@@ -4159,7 +4141,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto proposal = proposal_idx.find( creator );
@@ -4211,7 +4192,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto proposal = proposal_idx.find( creator );
@@ -4264,7 +4244,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto proposal = proposal_idx.find( creator );
@@ -4319,7 +4298,6 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
     push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto proposal = proposal_idx.find( creator );
