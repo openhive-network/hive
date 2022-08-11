@@ -1570,7 +1570,7 @@ void account_history_rocksdb_plugin::impl::load_lib()
 
 void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
 {
-  dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
+  //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
   _cached_irreversible_block.store(lib);
   auto s = _writeBuffer.Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
   checkStatus( s );
@@ -1955,7 +1955,8 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
   else
   {
     auto txs = _mainDb.get_tx_status();
-    const auto& newOp = _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
+    //const auto& newOp =
+    _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
     {
       o.trx_id = n.trx_id;
       o.block = n.block;
@@ -1971,8 +1972,8 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       o.transaction_status = txs;
     });
 
-    dlog("Adding operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", newOp.get_id())("b", n.block)
-      ("txs", to_string(txs))("body", fc::json::to_string(n.op)));
+    //dlog("Adding operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", newOp.get_id())("b", n.block)
+    //  ("txs", to_string(txs))("body", fc::json::to_string(n.op)));
   }
 }
 
@@ -2016,8 +2017,8 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       auto txs = static_cast<hive::chain::database::transaction_status>(operation.transaction_status);
       if(txs & hive::chain::database::TX_STATUS_BLOCK)
       {
-        dlog("Flushing operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
-          ("txs", to_string(txs)));
+        //dlog("Flushing operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
+        //  ("txs", to_string(txs)));
         rocksdb_operation_object obj(operation);
         importOperation(obj, operation.impacted);
         return true; /// Allow move_to_external_storage internals to erase this object
