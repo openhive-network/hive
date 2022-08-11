@@ -1969,7 +1969,10 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
       fc::datastream< char* > ds( o.serialized_op.data(), size );
       fc::raw::pack( ds, n.op );
       o.impacted.insert( o.impacted.end(), impacted.begin(), impacted.end() );
-      o.transaction_status = txs;
+      if( txs == database::TX_STATUS_NONE && o.is_virtual ) //vop from automatic state processing
+        o.transaction_status = database::TX_STATUS_BLOCK;
+      else
+        o.transaction_status = txs;
     });
 
     //dlog("Adding operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", newOp.get_id())("b", n.block)
