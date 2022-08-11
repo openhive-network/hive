@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
 
     //Create SMT and give some SMT to creator.
     signed_transaction tx;
-    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 0 );
 
     tx.operations.clear();
 
@@ -60,13 +60,13 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, , database::skip_transaction_dupe_check ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     validate_database();
   }
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
 
     //Create SMT and give some SMT to creator.
     signed_transaction tx;
-    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 0 );
 
     tx.operations.clear();
 
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, bob_private_key}, database::skip_transaction_dupe_check ), tx_irrelevant_sig );
@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "--- Test failure with duplicate signature" );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), tx_duplicate_sig );
+    HIVE_REQUIRE_THROW( push_transaction( tx, {alice_private_key, alice_private_key}, database::skip_transaction_dupe_check ), tx_duplicate_sig );
 
     BOOST_TEST_MESSAGE( "--- Test failure with additional incorrect signature" );
     
@@ -1363,7 +1363,7 @@ BOOST_AUTO_TEST_CASE( smt_create_duplicate )
     BOOST_TEST_MESSAGE( "Testing: smt_create_duplicate" );
 
     ACTORS( (alice) )
-    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 0 );
 
     // We add the NAI back to the pool to ensure the test does not fail because the NAI is not in the pool
     db->modify( db->get< nai_pool_object >(), [&] ( nai_pool_object& obj )
@@ -1405,7 +1405,7 @@ BOOST_AUTO_TEST_CASE( smt_create_duplicate_different_users )
     BOOST_TEST_MESSAGE( "Testing: smt_create_duplicate_different_users" );
 
     ACTORS( (alice)(bob) )
-    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 0 );
 
     // We add the NAI back to the pool to ensure the test does not fail because the NAI is not in the pool
     db->modify( db->get< nai_pool_object >(), [&] ( nai_pool_object& obj )
@@ -1773,7 +1773,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_removal )
     BOOST_TEST_MESSAGE( "Testing: smt_nai_pool_removal" );
 
     ACTORS( (alice) )
-    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key );
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 0 );
 
     // Ensure the NAI does not exist in the pool after being registered
     BOOST_REQUIRE( !db->get< nai_pool_object >().contains( alice_symbol ) );

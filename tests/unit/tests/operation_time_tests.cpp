@@ -1304,7 +1304,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     op.percent = HIVE_1_PERCENT * 50 + 1;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_TEST_MESSAGE( "Test from_account receiving no withdraw" );
 
@@ -1425,7 +1425,6 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
       for( int j = 0; j < 7; j++ )
       {
         txs[j].operations.clear();
-        txs[j].signatures.clear();
         ops[j].exchange_rate = price( ops[j].exchange_rate.base, asset( ops[j].exchange_rate.quote.amount + 10, HIVE_SYMBOL ) );
         txs[j].set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
         txs[j].operations.push_back( ops[j] );

@@ -640,28 +640,21 @@ void database_fixture::push_transaction( const operation& op, const fc::ecc::pri
   push_transaction(tx, key, 0);
 }
 
-full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags, hive::protocol::pack_type pack_type, std::vector< signature_type >* signatures )
+full_transaction_ptr database_fixture::push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key,
+  uint32_t skip_flags, hive::protocol::pack_type pack_type, fc::ecc::canonical_signature_type _sig_type )
 {
   if( key == fc::ecc::private_key() )
-    return push_transaction( tx, std::vector<fc::ecc::private_key>(), skip_flags, pack_type, signatures );
+    return push_transaction( tx, std::vector<fc::ecc::private_key>(), skip_flags, pack_type, _sig_type );
   else
-    return push_transaction( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, pack_type, signatures );
+    return push_transaction( tx, std::vector<fc::ecc::private_key>{ key }, skip_flags, pack_type, _sig_type );
 }
 
-full_transaction_ptr database_fixture::push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags, hive::protocol::pack_type pack_type, std::vector< signature_type >* signatures )
+full_transaction_ptr database_fixture::push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
+  uint32_t skip_flags, hive::protocol::pack_type pack_type, fc::ecc::canonical_signature_type _sig_type )
 {
   full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
-
-  _tx->sign_transaction( keys, db->get_chain_id(), fc::ecc::fc_canonical, pack_type );
-
-  if( signatures )
-  {
-    auto __tx = _tx->get_transaction();
-    std::copy( __tx.signatures.begin(), __tx.signatures.end(), std::back_inserter( *signatures ) );
-  }
-
+  _tx->sign_transaction( keys, db->get_chain_id(), _sig_type, pack_type );
   db->push_transaction( _tx, skip_flags );
-
   return _tx;
 }
 
@@ -1027,13 +1020,14 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
   FC_LOG_AND_RETHROW();
 }
 
-void push_invalid_operation(const operation& invalid_op, const fc::ecc::private_key& key, database* db)
+template< typename T >
+void t_smt_database_fixture< T >::push_invalid_operation( const operation& invalid_op, const fc::ecc::private_key& key )
 {
   signed_transaction tx;
   tx.operations.push_back( invalid_op );
-  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  tx.sign( key, db->get_chain_id(), fc::ecc::bip_0062 );
-  HIVE_REQUIRE_THROW( db->push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check ), fc::assert_exception );
+  tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  HIVE_REQUIRE_THROW( this->push_transaction( tx, fc::ecc::private_key(), database::skip_transaction_dupe_check,
+    hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ), fc::assert_exception );
 }
 
 template< typename T >
@@ -1051,11 +1045,11 @@ void t_smt_database_fixture< T >::create_conflicting_smt( const asset_symbol_typ
   // Fail due to the same nai & precision.
   smt_create_operation op_same;
   set_create_op( &op_same, control_account_name, existing_smt.to_nai(), existing_smt.decimals(), *this->db );
-  push_invalid_operation( op_same, key, this->db );
+  push_invalid_operation( op_same, key );
   // Fail due to the same nai (though different precision).
   smt_create_operation op_same_nai;
   set_create_op( &op_same_nai, control_account_name, existing_smt.to_nai(), existing_smt.decimals() == 0 ? 1 : 0, *this->db );
-  push_invalid_operation (op_same_nai, key, this->db );
+  push_invalid_operation( op_same_nai, key );
 }
 
 template< typename T >

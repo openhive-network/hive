@@ -335,8 +335,12 @@ struct database_fixture {
   );
 
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
-  full_transaction_ptr push_transaction( signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), std::vector< signature_type >* signatures = nullptr );
-  full_transaction_ptr push_transaction( signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), std::vector< signature_type >* signatures = nullptr );
+  full_transaction_ptr push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(),
+    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
+    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
+  full_transaction_ptr push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
+    uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
+    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
@@ -454,6 +458,8 @@ struct t_smt_database_fixture : public T
   std::array<asset_symbol_type, 3> create_smt_3(const char* control_account_name, const fc::ecc::private_key& key);
   /// Tries to create SMTs with too big precision or invalid name.
   void create_invalid_smt( const char* control_account_name, const fc::ecc::private_key& key );
+
+  void push_invalid_operation( const operation& invalid_op, const fc::ecc::private_key& key );
   /// Tries to create SMTs matching existing one. First attempt with matching precision, second one with different (but valid) precision.
   void create_conflicting_smt( const asset_symbol_type existing_smt, const char* control_account_name, const fc::ecc::private_key& key );
 
