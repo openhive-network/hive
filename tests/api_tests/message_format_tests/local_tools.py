@@ -19,6 +19,14 @@ def create_proposal(wallet, account_name):
                                tt.Asset.Tbd(5), 'test subject', 'test-permlink')
 
 
+def request_account_recovery(wallet, account_name):
+    recovery_account_key = tt.Account('initminer').public_key
+    # 'initminer' account is listed as recovery_account in 'alice' and only he has 'power' to recover account.
+    # That's why initminer's key is in new 'alice' authority.
+    authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[recovery_account_key, 1]]}
+    wallet.api.request_account_recovery('initminer', account_name, authority)
+
+
 def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
     """
     Runs decorated test for each node specified as parameter.
