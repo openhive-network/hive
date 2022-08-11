@@ -989,14 +989,13 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
       recover.recent_owner_authority = victim_auth;
       std::swap( victim_auth, alternative_auth ); //change for next iteration
       tx.operations.push_back( recover );
-      _keys.clear();
-      for( int k = 0; k < 2 * HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
-        std::copy( key_signers[k].keys.begin(), key_signers[k].keys.end(), std::back_inserter( _keys ) );
-      for( int k = 0; k < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++k )
-        std::copy( mixed_signers[k].keys.begin(), mixed_signers[k].keys.end(), std::back_inserter( _keys ) );
+
+      // sign transaction outside of time measurement
+      full_transaction_ptr _ftx = full_transaction_type::create_from_signed_transaction( tx, pack_type::hf26, false );
+      _ftx->sign_transaction( _keys, db->get_chain_id(), fc::ecc::fc_canonical, pack_type::hf26 );
       uint64_t start_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
-      push_transaction( tx, _keys );
+      db->push_transaction( _ftx, 0 );
       uint64_t stop_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
       time += stop_time - start_time;
