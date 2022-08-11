@@ -13,14 +13,6 @@ def generate_sig_digest(transaction: dict, private_key: str):
     return json.loads(output)['result']['sig_digest']
 
 
-def request_account_recovery(wallet, account_name):
-    recovery_account_key = tt.Account('initminer').public_key
-    # 'initminer' account is listed as recovery_account in 'alice' and only he has 'power' to recover account.
-    # That's why initminer's key is in new 'alice' authority.
-    authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[recovery_account_key, 1]]}
-    wallet.api.request_account_recovery('initminer', account_name, authority)
-
-
 def transfer_and_withdraw_from_savings(wallet, account_name):
     wallet.api.transfer_to_savings(account_name, account_name, tt.Asset.Test(50), 'test transfer to savings')
     wallet.api.transfer_from_savings(account_name, 124, account_name, tt.Asset.Test(5), 'test transfer from savings')
