@@ -328,15 +328,16 @@ def test_recover_account(replayed_node, wallet_with_pattern_name, verify_pattern
 
     initminer_owner_key = tt.Account('initminer').public_key
     authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[initminer_owner_key, 1]]}
-    new_authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[initminer_owner_key, 1]]}
+
+    thief_owner_key = tt.Account('thief').public_key
 
     alice_owner_key = tt.Account('alice').public_key
     recent_authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[alice_owner_key, 1]]}
 
     for transaction in [
+        wallet.api.update_account_auth_key('alice', 'owner', thief_owner_key, 3, broadcast=False),  # Account theft
         wallet.api.request_account_recovery('initminer', 'alice', authority, broadcast=False),
-        wallet.api.update_account_auth_key('alice', 'owner', alice_owner_key, 3, broadcast=False),
-        wallet.api.recover_account('alice', recent_authority, new_authority, broadcast=False),
+        wallet.api.recover_account('alice', recent_authority, authority, broadcast=False),
     ]:
         replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
