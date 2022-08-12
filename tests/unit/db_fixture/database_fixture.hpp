@@ -191,31 +191,30 @@ do {                                                              \
   db->adjust_supply( amount ); \
   generate_block();
 
-#define OP2TX(OP,TX,KEY) \
+#define OP2TX(OP,TX) \
 TX.operations.push_back( OP ); \
-TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION ); \
-TX.sign( KEY, db->get_chain_id(), fc::ecc::bip_0062 );
+TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
 #define PUSH_OP(OP,KEY) \
 { \
   signed_transaction tx; \
-  OP2TX(OP,tx,KEY) \
-  push_transaction( tx ); \
+  OP2TX(OP,tx) \
+  push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ); \
 }
 
 #define PUSH_OP_TWICE(OP,KEY) \
 { \
   signed_transaction tx; \
-  OP2TX(OP,tx,KEY) \
-  push_transaction( tx ); \
-  push_transaction( tx, database::skip_transaction_dupe_check ); \
+  OP2TX(OP,tx) \
+  push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ); \
+  push_transaction( tx, KEY, database::skip_transaction_dupe_check, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ); \
 }
 
 #define FAIL_WITH_OP(OP,KEY,EXCEPTION) \
 { \
   signed_transaction tx; \
-  OP2TX(OP,tx,KEY) \
-  HIVE_REQUIRE_THROW( push_transaction( tx ), EXCEPTION ); \
+  OP2TX(OP,tx) \
+  HIVE_REQUIRE_THROW( push_transaction( tx, KEY, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 ), EXCEPTION ); \
 }
 
 namespace hive { namespace chain {
@@ -626,7 +625,8 @@ namespace test
     const fc::ecc::private_key& _key, uint32_t _skip = 0 );
   bool _push_block( database& db, const block_header& header, const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, const fc::ecc::private_key& signer, uint32_t skip_flags = 0 );
   bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
-  void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
+  void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0,
+    hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
 }
 
 } }
