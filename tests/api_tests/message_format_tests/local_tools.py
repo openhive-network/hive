@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
-
 import pytest
 from typing import Literal
+
 import test_tools as tt
+
+from ...local_tools import date_from_now
 
 
 def create_proposal(wallet, account_name):
@@ -10,11 +11,6 @@ def create_proposal(wallet, account_name):
     # create proposal with permlink pointing to comment
     wallet.api.create_proposal(account_name, account_name, date_from_now(weeks=2), date_from_now(weeks=50),
                                tt.Asset.Tbd(5), 'test subject', 'test-permlink')
-
-
-def date_from_now(*, weeks):
-    future_data = datetime.now() + timedelta(weeks=weeks)
-    return future_data.strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):

@@ -2,8 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import create_account_and_fund_it, date_from_now
 from .local_tools import run_for_all_cases, create_alice_and_bob_accounts_with_received_rewards
+from .....local_tools import create_account_and_fund_it, date_from_now
 
 
 @pytest.mark.testnet
