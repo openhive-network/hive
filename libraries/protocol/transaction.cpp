@@ -62,7 +62,7 @@ transaction_id_type transaction::id() const
   memcpy(result._hash, h._hash, std::min(sizeof(result), sizeof(h)));
   return result;
 }
-
+/*
 const signature_type& signed_transaction::sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type )
 {
   digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
@@ -75,7 +75,7 @@ signature_type signed_transaction::sign( const private_key_type& key, const chai
   digest_type h = sig_digest( chain_id, hive::protocol::serialization_mode_controller::get_current_pack() );
   return key.sign_compact( h, canon_type );
 }
-
+*/
 void transaction::set_expiration( fc::time_point_sec expiration_time )
 {
     expiration = expiration_time;

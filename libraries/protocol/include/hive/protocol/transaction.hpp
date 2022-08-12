@@ -58,9 +58,9 @@ using fc::ecc::canonical_signature_type;
     signed_transaction( const transaction& trx = transaction() )
       : transaction(trx){}
 
-    const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ );
+    //const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ );
 
-    signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ )const;
+    //signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ )const;
 
     set<public_key_type> get_required_signatures(
       const chain_id_type& chain_id,
