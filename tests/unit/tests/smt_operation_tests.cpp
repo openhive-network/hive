@@ -1794,7 +1794,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
     ACTORS( (alice) )
 
     fund( "alice", 10 * 1000 * 1000 );
-    this->generate_block();
+    generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     convert( "alice", ASSET( "10000.000 TESTS" ) );
@@ -1805,25 +1805,23 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
       smt_create_operation op;
       signed_transaction tx;
 
-      op.symbol = get_new_smt_symbol( 0, this->db );
+      op.symbol = get_new_smt_symbol( 0, db );
       op.precision = op.symbol.decimals();
       op.smt_creation_fee = db->get_dynamic_global_properties().smt_creation_fee;
       op.control_account = "alice";
 
       tx.operations.push_back( op );
-      tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.sign( alice_private_key, this->db->get_chain_id(), fc::ecc::bip_0062 );
-
-      this->push_transaction( tx );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      push_transaction( tx, alice_private_key, 0, hive::protocol::pack_type::hf26, fc::ecc::bip_0062 );
 
       BOOST_REQUIRE( npo.num_available_nais == SMT_MAX_NAI_POOL_COUNT - i );
       BOOST_REQUIRE( npo.nais[ npo.num_available_nais ] == asset_symbol_type() );
     }
 
     // At this point, there should be no available NAIs
-    HIVE_REQUIRE_THROW( get_new_smt_symbol( 0, this->db ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( get_new_smt_symbol( 0, db ), fc::assert_exception );
 
-    this->generate_block();
+    generate_block();
 
     // We should end with a full NAI pool after block generation
     BOOST_REQUIRE( npo.num_available_nais == SMT_MAX_NAI_POOL_COUNT );

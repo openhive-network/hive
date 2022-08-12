@@ -678,8 +678,6 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
     trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     trx.validate();
 
-    // This sign() call fixes some tests, like withdraw_vesting_apply, that use this method
-    //   with debug_plugin such that trx may be re-applied with less generous skip flags.
     push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
     trx.clear();
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
@@ -932,9 +930,7 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
 
     tx.operations.push_back( op );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062 );
-
-    this->push_transaction( tx );
+    this->push_transaction( tx, key, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 );
 
     this->generate_block();
   }
@@ -1001,8 +997,7 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
     tx.operations.push_back( op1 );
     tx.operations.push_back( op2 );
     tx.set_expiration( this->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.sign( key, this->db->get_chain_id(), fc::ecc::bip_0062 );
-    this->push_transaction( tx );
+    this->push_transaction( tx, key, 0, hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::bip_0062 );
 
     this->generate_block();
 
@@ -1672,9 +1667,16 @@ bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint3
   return db.push_block( block_ctrl, skip_flags);
 }
 
-void _push_transaction( database& db, const signed_transaction& tx, uint32_t skip_flags /* = 0 */, hive::protocol::pack_type pack_type /* = hive::protocol::pack_type::legacy */ )
+void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags,
+  hive::protocol::pack_type pack_type, fc::ecc::canonical_signature_type _sig_type )
 { try {
-  db.push_transaction(hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false), skip_flags );
+  full_transaction_ptr _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
+
+  if( key == fc::ecc::private_key() )
+    _ftx->sign_transaction( std::vector<fc::ecc::private_key>(), db.get_chain_id(), _sig_type, pack_type );
+  else
+    _ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db.get_chain_id(), _sig_type, pack_type );
+  db.push_transaction( _ftx, skip_flags );
 } FC_CAPTURE_AND_RETHROW((tx)) }
 
 } // hive::chain::test

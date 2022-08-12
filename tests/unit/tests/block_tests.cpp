@@ -305,8 +305,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     cop.active = cop.owner;
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    PUSH_TX( db1, trx );
+    PUSH_TX( db1, trx, init_account_priv_key );
     //*/
     // generate blocks
     // db1 : A
@@ -329,7 +328,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     db1.clear_pending(); // clear it so that we can verify it was properly removed from pending state.
     HIVE_REQUIRE_THROW(db1.get(alice_id), std::exception);
 
-    PUSH_TX( db2, trx );
+    PUSH_TX( db2, trx, init_account_priv_key );
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
@@ -454,8 +453,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
           signed_transaction trx;
           trx.operations.push_back(fast_confirm_op);
           trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-          trx.sign(init_account_priv_key, db2.get_chain_id(), fc::ecc::fc_canonical);
-          PUSH_TX(db2, trx);
+          PUSH_TX(db2, trx, init_account_priv_key);
         }
     }
     BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
@@ -529,8 +527,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
           signed_transaction trx;
           trx.operations.push_back(fast_confirm_op);
           trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-          trx.sign(init_account_priv_key, db2.get_chain_id(), fc::ecc::fc_canonical);
-          PUSH_TX(db2, trx);
+          PUSH_TX(db2, trx, init_account_priv_key);
         }
     }
 
@@ -574,8 +571,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     cop.active = cop.owner;
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    PUSH_TX( db1, trx, skip_sigs );
+    PUSH_TX( db1, trx, init_account_priv_key, skip_sigs );
 
     trx = decltype(trx)();
     transfer_operation t;
@@ -584,17 +580,16 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     t.amount = asset(500,HIVE_SYMBOL);
     trx.operations.push_back(t);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    PUSH_TX( db1, trx, skip_sigs );
+    PUSH_TX( db1, trx, init_account_priv_key, skip_sigs );
 
-    HIVE_CHECK_THROW(PUSH_TX( db1, trx, skip_sigs ), fc::exception);
+    HIVE_CHECK_THROW(PUSH_TX( db1, trx, init_account_priv_key, skip_sigs ), fc::exception);
 
     auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, skip_sigs );
     PUSH_BLOCK( db2, b, skip_sigs );
 
-    HIVE_CHECK_THROW(PUSH_TX( db1, trx, skip_sigs ), fc::exception);
-    HIVE_CHECK_THROW(PUSH_TX( db2, trx, skip_sigs ), fc::exception);
+    HIVE_CHECK_THROW(PUSH_TX( db1, trx, init_account_priv_key, skip_sigs ), fc::exception);
+    HIVE_CHECK_THROW(PUSH_TX( db2, trx, init_account_priv_key, skip_sigs ), fc::exception);
     BOOST_CHECK_EQUAL(db1.get_balance( "alice", HIVE_SYMBOL ).amount.value, 500);
     BOOST_CHECK_EQUAL(db2.get_balance( "alice", HIVE_SYMBOL ).amount.value, 500);
   } catch (fc::exception& e) {
@@ -631,11 +626,10 @@ BOOST_AUTO_TEST_CASE( tapos )
     cop.active = cop.owner;
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
 
     BOOST_TEST_MESSAGE( "Pushing Pending Transaction" );
     idump((trx));
-    PUSH_TX(db1, trx);
+    PUSH_TX( db1, trx, init_account_priv_key );
     BOOST_TEST_MESSAGE( "Generating a block" );
     b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
@@ -647,15 +641,13 @@ BOOST_AUTO_TEST_CASE( tapos )
     t.amount = asset(50,HIVE_SYMBOL);
     trx.operations.push_back(t);
     trx.set_expiration( db1.head_block_time() + fc::seconds(2) );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
     idump((trx)(db1.head_block_time()));
     b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
     idump((b->get_block()));
     b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
+    BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, init_account_priv_key, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
