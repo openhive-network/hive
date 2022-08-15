@@ -256,27 +256,53 @@ namespace chainbase {
     * In C++ the only way to implement finally is to create a class
     * with a destructor, so that's what we do here.
     */
-  template <typename IntType>
+  class session_int_incrementer
+  {
+  public:
+    session_int_incrementer(int32_t& target) :
+      _target(&target)
+    {
+      ++*_target;
+    }
+    session_int_incrementer(session_int_incrementer&& rhs) :
+      _target(rhs._target)
+    {
+      rhs._target = nullptr;
+    }
+    ~session_int_incrementer()
+    {
+      if (_target)
+        --*_target;
+    }
+
+  private:
+    int32_t* _target;
+  };
+
   class int_incrementer
   {
-    public:
-      int_incrementer( IntType& target) : _target(target)
+  public:
+    int_incrementer(std::atomic<int32_t>& target, const char* const lock_type, uint32_t lock_serial_number) :
+      _target(target),
+      _start_locking(fc::time_point::now()),
+      _lock_type(lock_type),
+      _lock_serial_number(lock_serial_number)
     {
-      ++_target;
-      _start_locking = fc::time_point::now();
+      _target.fetch_add(1, std::memory_order_relaxed);
     }
-      int_incrementer( int_incrementer& ii) : _target(ii._target), _start_locking(ii._start_locking) { ++_target; }
-      ~int_incrementer()
-      {
-        --_target;
-        fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
-        fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase_lock", ("held", lock_duration.count()));
-      }
-      int32_t get()const { return _target; }
+    ~int_incrementer()
+    {
+      _target.fetch_sub(1, std::memory_order_relaxed);
+      fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
+      fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase ${_lock_type} lock (#${_lock_serial_number})", ("held", lock_duration.count())(_lock_type)(_lock_serial_number));
+    }
+    int32_t get() const { return _target; }
 
-    private:
-      IntType& _target;
-      fc::time_point _start_locking;
+  private:
+    std::atomic<int32_t>& _target;
+    fc::time_point _start_locking;
+    const char* const _lock_type; // will be either "read" or "write"
+    uint32_t _lock_serial_number; // allows us to associate the "locking" log with the "releasing" log
   };
 
   /**
@@ -949,7 +975,7 @@ namespace chainbase {
           session( session&& s )
             : _index_sessions( std::move(s._index_sessions) ),
               _revision( s._revision ),
-              _session_incrementer( s._session_incrementer )
+              _session_incrementer(std::move(s._session_incrementer))
           {}
 
           session( vector<std::unique_ptr<abstract_session>>&& s, int32_t& session_count )
@@ -988,7 +1014,7 @@ namespace chainbase {
 
           vector< std::unique_ptr<abstract_session> > _index_sessions;
           int64_t _revision = -1;
-          int_incrementer<int32_t> _session_incrementer;
+          session_int_incrementer _session_incrementer;
       };
 
       session start_undo_session();
@@ -1192,26 +1218,32 @@ namespace chainbase {
       template< typename Lambda >
       auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
-                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
+        uint32_t lock_serial_number = _next_read_lock_serial_number.fetch_add(1, std::memory_order_relaxed);
+        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
         read_lock lock(_rw_lock, boost::defer_lock_t());
 
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        int_incrementer<std::atomic<int32_t>> ii(_read_lock_count);
+        int_incrementer ii(_read_lock_count, "read", lock_serial_number);
 #endif
 
         if (wait_for_microseconds == fc::microseconds())
           lock.lock();
         else if (!lock.try_lock_for(boost::chrono::microseconds(wait_for_microseconds.count())))
         {
-          fc_wlog(fc::logger::get("chainlock"),"timedout getting chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
-                  ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
+          fc_wlog(fc::logger::get("chainlock"),"timedout getting chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})",
+                  ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                  ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                  (lock_serial_number));
           CHAINBASE_THROW_EXCEPTION( lock_exception() );
         }
 
-        fc_dlog(fc::logger::get("chainlock"), "_read_lock_count=${_read_lock_count}", 
-                ("_read_lock_count", _read_lock_count.load()));
+        fc_dlog(fc::logger::get("chainlock"), "_read_lock_count=${_read_lock_count} (#${lock_serial_number})", 
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
 
         return callback();
       }
@@ -1219,17 +1251,22 @@ namespace chainbase {
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}", 
-                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
+        uint32_t lock_serial_number = _next_write_lock_serial_number.fetch_add(1, std::memory_order_relaxed);
+        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
         write_lock lock(_rw_lock, boost::defer_lock_t());
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        int_incrementer<std::atomic<int32_t>> ii(_write_lock_count);
+        int_incrementer ii(_write_lock_count, "write", lock_serial_number);
 #endif
 
         lock.lock();
-        fc_wlog(fc::logger::get("chainlock"),"got chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count}",
-                ("_read_lock_count", _read_lock_count.load())("_write_lock_count", _write_lock_count.load()));
+        fc_wlog(fc::logger::get("chainlock"),"got chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})",
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
 
         return callback();
       }
@@ -1311,6 +1348,8 @@ namespace chainbase {
 
       std::atomic<int32_t>                                        _read_lock_count = {0};
       std::atomic<int32_t>                                        _write_lock_count = {0};
+      std::atomic<uint32_t>                                       _next_read_lock_serial_number = {0};
+      std::atomic<uint32_t>                                       _next_write_lock_serial_number = {0};
       bool                                                        _enable_require_locking = false;
 
       bool                                                        _is_open = false;
