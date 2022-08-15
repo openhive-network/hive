@@ -178,9 +178,11 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       {
         uint32_t skip_flags = ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures;
         std::shared_ptr< chain::p2p_block_flow_control > p2p_block_ctrl;
+#if 0 // for debugging, generate block stats for sync too
         if( sync_mode )
           p2p_block_ctrl = std::make_shared< chain::sync_block_flow_control >( full_block, skip_flags );
         else
+#endif
           p2p_block_ctrl = std::make_shared< chain::p2p_block_flow_control >( full_block, skip_flags );
         result = chain.accept_block( p2p_block_ctrl, sync_mode );
       }

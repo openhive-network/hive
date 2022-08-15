@@ -163,8 +163,18 @@ struct pending_transactions_restorer
     _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, _db.get_last_irreversible_block_num() );
     if (postponed_txs || expired_txs)
     {
-      wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
-           (postponed_txs)(applied_txs)(expired_txs));
+      if (postponed_txs <= 1000)
+        wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
+             (postponed_txs)(applied_txs)(expired_txs));
+      else
+      {
+        elog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
+             (postponed_txs)(applied_txs)(expired_txs));
+        elog("Dumping up to 10k postponed transactions");
+        for (const std::shared_ptr<full_transaction_type>& full_transaction : _db._pending_tx)
+          elog("${transaction}", ("transaction", full_transaction->get_transaction()));
+        elog("Dumping postponed transactions");
+      }
     }
   }
 

@@ -238,9 +238,11 @@ struct chain_plugin_impl::write_request_visitor
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
+      BOOST_SCOPE_EXIT(this_, time_before_pushing_block, &statsd_timer) { 
+        this_->cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
+        STATSD_STOP_TIMER("chain", "write_time", "push_block")
+      } BOOST_SCOPE_EXIT_END
       cp.db.push_block( *p2p_block_ctrl.get(), p2p_block_ctrl->get_skip_flags() );
-      cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
-      STATSD_STOP_TIMER("chain", "write_time", "push_block")
     }
     catch( const fc::exception& e )
     {

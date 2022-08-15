@@ -58,31 +58,34 @@ shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block
   });
 }
 
-void  fork_database::_push_block(const item_ptr& item)
+void fork_database::_push_block(const item_ptr& item)
 {
   if (_head) // make sure the block is within the range that we are caching
   {
     FC_ASSERT(item->get_block_num() > std::max<int64_t>(0, int64_t(_head->get_block_num()) - _max_size),
               "attempting to push a block that is too old",
               ("item->num", item->get_block_num())("head", _head->get_block_num())("max_size", _max_size));
-  }
-  //if we can't link the new item all the way back to genesis block,
-  // throw an unlinkable block exception
-  if (_head && item->previous_id() != block_id_type())
-  {
-    auto& index = _index.get<block_id>();
-    auto itr = index.find(item->previous_id());
-    HIVE_ASSERT(itr != index.end(), unlinkable_block_exception, "block does not link to known chain");
-    FC_ASSERT(!(*itr)->invalid);
-    item->prev = *itr;
+
+    //if we can't link the new item all the way back to genesis block,
+    // throw an unlinkable block exception
+    const block_id_type& previous_id = item->previous_id();
+    if (previous_id != block_id_type())
+    {
+      const auto& index = _index.get<block_id>();
+      const auto itr = index.find(previous_id);
+      HIVE_ASSERT(itr != index.end(), unlinkable_block_exception, "block does not link to known chain: previous_id = ${previous_id}", (previous_id));
+      FC_ASSERT(!(*itr)->invalid);
+      item->prev = *itr;
+    }
   }
   
   _index.insert(item);
   // if we don't have a head block or this is the next block or on a longer fork than our head block
   //   make this the new head block
-  if( !_head || item->get_block_num() > _head->get_block_num() ) _head = item;
+  if (!_head || item->get_block_num() > _head->get_block_num())
+    _head = item;
 
-  _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
+  _push_next(item); //check for any unlinked blocks that can now be linked to our fork
 }
 
 shared_ptr<fork_item> fork_database::head()const 
@@ -177,22 +180,25 @@ bool fork_database::is_known_block(const block_id_type& id)const
   });
 }
 
-item_ptr fork_database::fetch_block_unlocked(const block_id_type& id)const
+item_ptr fork_database::fetch_block_unlocked(const block_id_type& id, bool search_linked_blocks_only)const
 {
   auto& index = _index.get<block_id>();
   auto itr = index.find(id);
-  if( itr != index.end() )
+  if (itr != index.end())
     return *itr;
-  auto& unlinked_index = _unlinked_index.get<block_id>();
-  auto unlinked_itr = unlinked_index.find(id);
-  if( unlinked_itr != unlinked_index.end() )
-    return *unlinked_itr;
+  if (!search_linked_blocks_only)
+  {
+    const auto& unlinked_index = _unlinked_index.get<block_id>();
+    const auto unlinked_itr = unlinked_index.find(id);
+    if (unlinked_itr != unlinked_index.end())
+      return *unlinked_itr;
+  }
   return item_ptr();
 }
 
-item_ptr fork_database::fetch_block(const block_id_type& id)const
+item_ptr fork_database::fetch_block(const block_id_type& id, bool search_linked_blocks_only)const
 {
-  return with_read_lock([&]() { return fetch_block_unlocked(id); });
+  return with_read_lock([&]() { return fetch_block_unlocked(id, search_linked_blocks_only); });
 }
 
 vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)const
@@ -307,6 +313,10 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
       second_branch = second_branch->prev.lock();
       FC_ASSERT(second_branch);
     }
+    //this puts the common node on both branches (first_branch and second_branch will be pointing to same block)
+    //switch_forks assumed the common node wasn't included, for now I've changed switch_forks, but
+    //maybe more efficient to not include the common node and restore code in switch_forks.
+    //Only other function that uses this is just some uncalled debug function it appears, so either choice looks ok
     if( first_branch && second_branch )
     {
       result.first.push_back(first_branch);
@@ -476,7 +486,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
       // be in the fork database, but it's not.  A well-behaved peer
       // shouldn't cause this situation
       // maybe throw here???
-      //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num)(reference_point));
+      edump((last_irreversible_block_num)(reference_point_block_num)(_head->get_block_id())(reference_point));
       FC_THROW("Unable to construct a useful synopsis because we can't find the reference block in the fork database");
     }
 

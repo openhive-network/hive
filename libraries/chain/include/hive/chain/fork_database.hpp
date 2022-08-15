@@ -71,8 +71,8 @@ namespace hive { namespace chain {
       void                             remove(block_id_type b);
       void                             set_head(item_ptr h);
       bool                             is_known_block(const block_id_type& id)const;
-      item_ptr                         fetch_block_unlocked(const block_id_type& id)const;
-      item_ptr                         fetch_block(const block_id_type& id)const;
+      item_ptr                         fetch_block_unlocked(const block_id_type& id, bool search_linked_blocks_only = false)const;
+      item_ptr                         fetch_block(const block_id_type& id, bool search_linked_blocks_only = false) const;
       vector<item_ptr>                 fetch_block_by_number_unlocked(uint32_t num) const;
       vector<item_ptr>                 fetch_block_by_number(uint32_t n)const;
       vector<item_ptr>                 fetch_heads() const;

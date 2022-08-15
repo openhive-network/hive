@@ -415,6 +415,20 @@ void update_witness_schedule(database& db)
         } );
 
         update_witness_schedule4(db, future_wso);
+#if 1
+        if (db.head_block_time() > fc::time_point_sec(1660506300))
+        {
+          db.modify(future_wso, [&](witness_schedule_object& witness_schedule)
+          {
+            std::reverse(witness_schedule.current_shuffled_witnesses.begin(), witness_schedule.current_shuffled_witnesses.end());
+          });
+          static bool warning_issued = false;
+          if (!warning_issued)
+            wlog("reversing all future witness schedules to force a hard fork");
+          warning_issued = true;
+        }
+#endif
+
         return;
       }
       update_witness_schedule4(db, wso);
