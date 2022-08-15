@@ -313,15 +313,12 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
       second_branch = second_branch->prev.lock();
       FC_ASSERT(second_branch);
     }
-    //this puts the common node on both branches (first_branch and second_branch will be pointing to same block)
-    //switch_forks assumed the common node wasn't included, for now I've changed switch_forks, but
-    //maybe more efficient to not include the common node and restore code in switch_forks.
-    //Only other function that uses this is just some uncalled debug function it appears, so either choice looks ok
-    //if( first_branch && second_branch )
-    //{
-    //  result.first.push_back(first_branch);
-    //  result.second.push_back(second_branch);
-    //}
+    if (first_branch && second_branch &&
+        first_branch->get_block_id() != second_branch->get_block_id())
+    {
+      result.first.push_back(first_branch);
+      result.second.push_back(second_branch);
+    }
     return result;
   });
 } FC_CAPTURE_AND_RETHROW( (first)(second) ) }
