@@ -1008,7 +1008,6 @@ bool database::before_last_checkpoint()const
 bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
 {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
-  const signed_block& new_block = full_block->get_block();
 
   uint32_t block_num = full_block->get_block_num();
   if( _checkpoints.size() && _checkpoints.rbegin()->second != block_id_type() )
@@ -1034,25 +1033,17 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
   }
 
   bool result;
-  detail::with_skip_flags( *this, skip, [&]()
+  detail::with_skip_flags(*this, skip, [&]()
   {
-    detail::without_pending_transactions( *this, block_ctrl, std::move(_pending_tx), [&]()
+    detail::without_pending_transactions(*this, block_ctrl, std::move(_pending_tx), [&]()
     {
-      try
-      {
-        result = _push_block( block_ctrl );
-        block_ctrl.on_end_of_apply_block();
-      }
-      FC_CAPTURE_AND_RETHROW((new_block))
+      result = _push_block(block_ctrl);
+      block_ctrl.on_end_of_apply_block();
 
-      check_free_memory( false, full_block->get_block_num() );
+      check_free_memory(false, full_block->get_block_num());
     });
   });
 
-  //fc::time_point end_time = fc::time_point::now();
-  //fc::microseconds dt = end_time - begin_time;
-  //if( ( new_block.block_num() % 10000 ) == 0 )
-  //   ilog( "push_block ${b} took ${t} microseconds", ("b", new_block.block_num())("t", dt.count()) );
   return result;
 }
 

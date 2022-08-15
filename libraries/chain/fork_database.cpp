@@ -58,31 +58,34 @@ shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block
   });
 }
 
-void  fork_database::_push_block(const item_ptr& item)
+void fork_database::_push_block(const item_ptr& item)
 {
   if (_head) // make sure the block is within the range that we are caching
   {
     FC_ASSERT(item->get_block_num() > std::max<int64_t>(0, int64_t(_head->get_block_num()) - _max_size),
               "attempting to push a block that is too old",
               ("item->num", item->get_block_num())("head", _head->get_block_num())("max_size", _max_size));
-  }
-  //if we can't link the new item all the way back to genesis block,
-  // throw an unlinkable block exception
-  if (_head && item->previous_id() != block_id_type())
-  {
-    auto& index = _index.get<block_id>();
-    auto itr = index.find(item->previous_id());
-    HIVE_ASSERT(itr != index.end(), unlinkable_block_exception, "block does not link to known chain");
-    FC_ASSERT(!(*itr)->invalid);
-    item->prev = *itr;
+
+    //if we can't link the new item all the way back to genesis block,
+    // throw an unlinkable block exception
+    const block_id_type& previous_id = item->previous_id();
+    if (previous_id != block_id_type())
+    {
+      const auto& index = _index.get<block_id>();
+      const auto itr = index.find(previous_id);
+      HIVE_ASSERT(itr != index.end(), unlinkable_block_exception, "block does not link to known chain: previous_id = ${previous_id}", (previous_id));
+      FC_ASSERT(!(*itr)->invalid);
+      item->prev = *itr;
+    }
   }
   
   _index.insert(item);
   // if we don't have a head block or this is the next block or on a longer fork than our head block
   //   make this the new head block
-  if( !_head || item->get_block_num() > _head->get_block_num() ) _head = item;
+  if (!_head || item->get_block_num() > _head->get_block_num())
+    _head = item;
 
-  _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
+  _push_next(item); //check for any unlinked blocks that can now be linked to our fork
 }
 
 shared_ptr<fork_item> fork_database::head()const 
