@@ -2557,14 +2557,14 @@ namespace graphene { namespace net {
     // If the peer isn't yet syncing with us, this is just a synopsis of our active blockchain
     // If the peer is syncing with us, it is a synopsis of our active blockchain plus the
     //    blocks the peer has already told us it has
-    std::vector<item_hash_t> node_impl::create_blockchain_synopsis_for_peer( const peer_connection* peer )
+    std::vector<item_hash_t> node_impl::create_blockchain_synopsis_for_peer(const peer_connection* peer)
     {
       VERIFY_CORRECT_THREAD();
-      item_hash_t reference_point = peer->last_block_delegate_has_seen;
+      const item_hash_t reference_point = peer->last_block_delegate_has_seen;
 
       uint32_t number_of_blocks_after_reference_point = peer->ids_of_items_to_get.size();
       std::vector<item_hash_t> synopsis = _delegate->get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
-      if( number_of_blocks_after_reference_point )
+      if (number_of_blocks_after_reference_point)
       {
         // then the synopsis is incomplete, add the missing elements from ids_of_items_to_get
         uint32_t first_block_num_in_ids_to_get = _delegate->get_block_number(peer->ids_of_items_to_get.front());
@@ -2576,7 +2576,7 @@ namespace graphene { namespace net {
 
         do
         {
-          if( low_block_num >= first_block_num_in_ids_to_get )
+          if (low_block_num >= first_block_num_in_ids_to_get)
           {
             auto idx = low_block_num - first_block_num_in_ids_to_get;
             FC_ASSERT(idx < peer->ids_of_items_to_get.size());
@@ -2584,21 +2584,21 @@ namespace graphene { namespace net {
           }
           low_block_num += (true_high_block_num - low_block_num + 2 ) / 2;
         }
-        while ( low_block_num <= true_high_block_num );
+        while (low_block_num <= true_high_block_num);
         assert(synopsis.back() == peer->ids_of_items_to_get.back());
       }
       dlog("leaving create_blockchain_synopsis_for_peer");
       return synopsis;
     }
 
-    void node_impl::fetch_next_batch_of_item_ids_from_peer( peer_connection* peer, bool reset_fork_tracking_data_for_peer /* = false */ )
+    void node_impl::fetch_next_batch_of_item_ids_from_peer(peer_connection* peer, bool reset_fork_tracking_data_for_peer /* = false */)
     {
       VERIFY_CORRECT_THREAD();
       //don't fetch another batch of ids while waiting for a previously requested batch
       if (peer->item_ids_requested_from_peer)
         return;
 
-      if( reset_fork_tracking_data_for_peer )
+      if (reset_fork_tracking_data_for_peer)
       {
         peer->last_block_delegate_has_seen = item_hash_t();
         peer->last_block_time_delegate_has_seen = _delegate->get_block_time(item_hash_t());

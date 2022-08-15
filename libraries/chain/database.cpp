@@ -516,7 +516,7 @@ bool database::is_known_block(const block_id_type& id)const
 //no chainbase lock required, but fork database read lock is required
 bool database::is_known_block_unlocked(const block_id_type& id)const
 { try {
-  if (_fork_db.fetch_block_unlocked(id))
+  if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
     return true;
 
   std::shared_ptr<full_block_type> full_block_from_block_log = _block_log.read_block_by_num(protocol::block_header::num_from_id(id));

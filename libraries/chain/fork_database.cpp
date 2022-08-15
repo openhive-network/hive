@@ -177,22 +177,25 @@ bool fork_database::is_known_block(const block_id_type& id)const
   });
 }
 
-item_ptr fork_database::fetch_block_unlocked(const block_id_type& id)const
+item_ptr fork_database::fetch_block_unlocked(const block_id_type& id, bool search_linked_blocks_only)const
 {
   auto& index = _index.get<block_id>();
   auto itr = index.find(id);
-  if( itr != index.end() )
+  if (itr != index.end())
     return *itr;
-  auto& unlinked_index = _unlinked_index.get<block_id>();
-  auto unlinked_itr = unlinked_index.find(id);
-  if( unlinked_itr != unlinked_index.end() )
-    return *unlinked_itr;
+  if (!search_linked_blocks_only)
+  {
+    const auto& unlinked_index = _unlinked_index.get<block_id>();
+    const auto unlinked_itr = unlinked_index.find(id);
+    if (unlinked_itr != unlinked_index.end())
+      return *unlinked_itr;
+  }
   return item_ptr();
 }
 
-item_ptr fork_database::fetch_block(const block_id_type& id)const
+item_ptr fork_database::fetch_block(const block_id_type& id, bool search_linked_blocks_only)const
 {
-  return with_read_lock([&]() { return fetch_block_unlocked(id); });
+  return with_read_lock([&]() { return fetch_block_unlocked(id, search_linked_blocks_only); });
 }
 
 vector<item_ptr> fork_database::fetch_block_by_number_unlocked(uint32_t num)const
@@ -476,7 +479,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
       // be in the fork database, but it's not.  A well-behaved peer
       // shouldn't cause this situation
       // maybe throw here???
-      //edump((last_irreversible_block_num)(reference_point_block_num)(_head->num)(reference_point));
+      //edump((last_irreversible_block_num)(reference_point_block_num)(_head->get_block_id())(reference_point));
       FC_THROW("Unable to construct a useful synopsis because we can't find the reference block in the fork database");
     }
 
