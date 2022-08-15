@@ -310,7 +310,8 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
       second_branch = second_branch->prev.lock();
       FC_ASSERT(second_branch);
     }
-    if( first_branch && second_branch )
+    if (first_branch && second_branch &&
+        first_branch->get_block_id() != second_branch->get_block_id())
     {
       result.first.push_back(first_branch);
       result.second.push_back(second_branch);
