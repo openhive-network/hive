@@ -152,21 +152,21 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
 { try {
   if( shutdown_helper.get_running().load() )
   {
-    action_catcher ac( shutdown_helper.get_running(), shutdown_helper.get_state( HIVE_P2P_BLOCK_HANDLER ) );
+    action_catcher ac(shutdown_helper.get_running(), shutdown_helper.get_state(HIVE_P2P_BLOCK_HANDLER));
 
     uint32_t head_block_num = chain.db().head_block_num_from_fork_db();
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
-          "chain pushing sync block #${block_num} ${block_hash}, head is ${head}",
+          "chain pushing sync block #${block_num} ${block_hash}, head is ${head_block_num}",
           ("block_num", full_block->get_block_num())
           ("block_hash", full_block->get_block_id())
-          ("head", head_block_num));
+          (head_block_num));
     else
       fc_ilog(fc::logger::get("sync"),
-          "chain pushing block #${block_num} ${block_hash}, head is ${head}",
+          "chain pushing block #${block_num} ${block_hash}, head is ${head_block_num}",
           ("block_num", full_block->get_block_num())
           ("block_hash", full_block->get_block_id())
-          ("head", head_block_num));
+          (head_block_num));
 
     try
     {
@@ -176,13 +176,13 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       // leave that peer connected so that they can get sync blocks from us
       bool result = false;
       {
-        uint32_t skip_flags = ( block_producer | force_validate ) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures;
-        std::shared_ptr< chain::p2p_block_flow_control > p2p_block_ctrl;
-        if( sync_mode )
-          p2p_block_ctrl = std::make_shared< chain::sync_block_flow_control >( full_block, skip_flags );
+        uint32_t skip_flags = (block_producer | force_validate) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures;
+        std::shared_ptr<chain::p2p_block_flow_control> p2p_block_ctrl;
+        if (sync_mode)
+          p2p_block_ctrl = std::make_shared<chain::sync_block_flow_control>(full_block, skip_flags);
         else
-          p2p_block_ctrl = std::make_shared< chain::p2p_block_flow_control >( full_block, skip_flags );
-        result = chain.accept_block( p2p_block_ctrl, sync_mode );
+          p2p_block_ctrl = std::make_shared<chain::p2p_block_flow_control>(full_block, skip_flags);
+        result = chain.accept_block(p2p_block_ctrl, sync_mode);
       }
 
       if (!sync_mode)
@@ -201,15 +201,14 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
     catch (const chain::unlinkable_block_exception& e)
     {
       // translate to a graphene::net exception
-      fc_elog(fc::logger::get("sync"), "Error when pushing block, current head block is ${head}:\n${e}",
-              ("e", e.to_detail_string())
-              ("head", head_block_num));
+      fc_elog(fc::logger::get("sync"), "Error when pushing block:\n${e}",
+              ("e", e.to_detail_string()));
       elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
     }
     catch (const fc::exception& e)
     {
-      //fc_elog(fc::logger::get("sync"), "Error when pushing block, current head block is ${head}:\n${e}", ("e", e.to_detail_string()) ("head", head_block_num));
+      //fc_elog(fc::logger::get("sync"), "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       //elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       if (e.code() == 4080000)
       {
