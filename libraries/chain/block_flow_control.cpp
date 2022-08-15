@@ -42,6 +42,7 @@ void block_flow_control::on_end_of_apply_block() const
 
 void block_flow_control::on_failure( const fc::exception& e ) const
 {
+  stats.on_end_work();
   except = e.dynamic_copy_exception();
 }
 
