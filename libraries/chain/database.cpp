@@ -635,6 +635,7 @@ std::vector<std::shared_ptr<full_block_type>> database::fetch_block_range( const
 } FC_LOG_AND_RETHROW() }
 
 //no chainbase lock required
+#if 0
 std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head_of_fork ) const
 { try {
   pair<fork_database::branch_type, fork_database::branch_type> branches = _fork_db.fetch_branch_from(head_block_id(), head_of_fork);
@@ -651,7 +652,8 @@ std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head
     result.emplace_back(fork_block->get_block_id());
   result.emplace_back(branches.first.back()->previous_id());
   return result;
-} FC_CAPTURE_AND_RETHROW() }
+} FC_CAPTURE_AND_RETRHOW() }
+#endif
 
 chain_id_type database::get_chain_id() const
 {
@@ -1074,29 +1076,31 @@ void database::switch_forks(item_ptr new_head)
   std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
     wlog(" - ${id}", ("id", item->get_block_id()));
   });
-  wlog(" - ${id} (block before first block in branch, should be common)", ("id", new_branch.back()->previous_id()));
+  auto common_block_id = new_branch.back()->previous_id();
+  wlog(" - ${common_block_id} (block before first block in branch, should be common)", (common_block_id));
 
-  wlog("Source branch block ids:");
-  std::for_each(old_branch.begin(), old_branch.end(), [](const item_ptr& item) {
-    wlog(" - ${id}", ("id", item->get_block_id()));
-  });
-  wlog(" - ${id} (block before first block in branch, should be common)", ("id", old_branch.back()->previous_id()));
-
-
-  try
+  if (old_branch.size())
   {
-    // pop blocks until we hit the common ancestor block
-    //wrong, moved back one block too many: while (head_block_id() != old_branch.back()->previous_id())
-    while (head_block_id() != old_branch.back()->get_block_id())
+    wlog("Source branch block ids:");
+    std::for_each(old_branch.begin(), old_branch.end(), [](const item_ptr& item) {
+                  wlog(" - ${id}", ("id", item->get_block_id()));
+                  });
+    //wlog(" - ${id} (block before first block in branch, should be common)", ("id", old_branch.back()->previous_id()));
+    try
     {
-      const block_id_type id_being_popped = head_block_id();
-      wlog(" - Popping block ${id_being_popped}", (id_being_popped));
-      pop_block();
-      wlog(" - Popped block ${id_being_popped}", (id_being_popped));
+      // pop blocks until we hit the common ancestor block
+      while (head_block_id() != old_branch.back()->previous_id())
+        //while (head_block_id() != old_branch.back()->get_block_id())
+      {
+        const block_id_type id_being_popped = head_block_id();
+        wlog(" - Popping block ${id_being_popped}", (id_being_popped));
+        pop_block();
+        wlog(" - Popped block ${id_being_popped}", (id_being_popped));
+      }
+      wlog("Done popping blocks");
     }
-    wlog("Done popping blocks");
+    FC_LOG_AND_RETHROW()
   }
-  FC_LOG_AND_RETHROW()
 
   notify_switch_fork(head_block_num());
 
@@ -1133,7 +1137,7 @@ void database::switch_forks(item_ptr new_head)
       try
       {
         // pop all blocks from the bad fork
-        while (head_block_id() != old_branch.back()->previous_id())
+        while (head_block_id() != common_block_id)
         {
           wlog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
           pop_block();
@@ -1143,22 +1147,25 @@ void database::switch_forks(item_ptr new_head)
       FC_LOG_AND_RETHROW()
       notify_switch_fork(head_block_num());
 
-      // restore all blocks from the good fork
-      wlog("restoring blocks from original fork");
-      for (auto ritr = old_branch.rbegin(); ritr != old_branch.rend(); ++ritr)
+      // restore any popped blocks from the good fork
+      if (old_branch.size())
       {
-        wlog("- restoring block ${id}", ("id", (*ritr)->get_block_id()));
-        BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-        // even though those blocks were already processed before, it is safer to treat them as completely new,
-        // especially since alternative would be to treat them as replayed blocks, but that would be misleading
-        // since replayed blocks are already irreversible, while these are clearly reversible
-        set_tx_status(database::TX_STATUS_INC_BLOCK);
-        _fork_db.set_head(*ritr);
-        auto session = start_undo_session();
-        apply_block((*ritr)->full_block, skip);
-        session.push();
+        wlog("restoring blocks from original fork");
+        for (auto ritr = old_branch.rbegin(); ritr != old_branch.rend(); ++ritr)
+        {
+          wlog("- restoring block ${id}", ("id", (*ritr)->get_block_id()));
+          BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+            // even though those blocks were already processed before, it is safer to treat them as completely new,
+            // especially since alternative would be to treat them as replayed blocks, but that would be misleading
+            // since replayed blocks are already irreversible, while these are clearly reversible
+            set_tx_status(database::TX_STATUS_INC_BLOCK);
+          _fork_db.set_head(*ritr);
+          auto session = start_undo_session();
+          apply_block((*ritr)->full_block, skip);
+          session.push();
+        }
+        wlog("done restoring blocks from original fork");
       }
-      wlog("done restoring blocks from original fork");
       delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
     }
   }
