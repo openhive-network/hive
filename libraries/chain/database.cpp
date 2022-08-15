@@ -634,25 +634,6 @@ std::vector<std::shared_ptr<full_block_type>> database::fetch_block_range( const
   return result;
 } FC_LOG_AND_RETHROW() }
 
-//no chainbase lock required
-std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head_of_fork ) const
-{ try {
-  pair<fork_database::branch_type, fork_database::branch_type> branches = _fork_db.fetch_branch_from(head_block_id(), head_of_fork);
-  if( !((branches.first.back()->previous_id() == branches.second.back()->previous_id())) )
-  {
-    edump( (head_of_fork)
-          (head_block_id())
-          (branches.first.size())
-          (branches.second.size()) );
-    assert(branches.first.back()->previous_id() == branches.second.back()->previous_id());
-  }
-  std::vector< block_id_type > result;
-  for( const item_ptr& fork_block : branches.second )
-    result.emplace_back(fork_block->get_block_id());
-  result.emplace_back(branches.first.back()->previous_id());
-  return result;
-} FC_CAPTURE_AND_RETHROW() }
-
 chain_id_type database::get_chain_id() const
 {
   return hive_chain_id;
@@ -1075,19 +1056,45 @@ void database::switch_forks(item_ptr new_head)
 {
   uint32_t skip = get_node_properties().skip_flags;
 
-  wlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
+  dlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
+  dlog("Before switching, head_block_id is ${id}", ("id", head_block_id()));
   auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), head_block_id());
 
-  // pop blocks until we hit the common ancestor block
-  while (head_block_id() != old_branch.back()->previous_id())
-    pop_block();
+  dlog("Destination branch block ids:");
+  std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
+    dlog(" - ${id}", ("id", item->get_block_id()));
+  });
+  auto common_block_id = new_branch.back()->previous_id();
+  dlog(" - ${common_block_id} (block before first block in branch, should be common)", (common_block_id));
+
+  if (old_branch.size())
+  {
+    dlog("Source branch block ids:");
+    std::for_each(old_branch.begin(), old_branch.end(), [](const item_ptr& item) {
+      dlog(" - ${id}", ("id", item->get_block_id()));
+    });
+
+    try
+    {
+      // pop blocks until we hit the common ancestor block
+      while (head_block_id() != old_branch.back()->previous_id())
+      {
+        const block_id_type id_being_popped = head_block_id();
+        dlog(" - Popping block ${id_being_popped}", (id_being_popped));
+        pop_block();
+        dlog(" - Popped block ${id_being_popped}", (id_being_popped));
+      }
+      dlog("Done popping blocks");
+    }
+    FC_LOG_AND_RETHROW()
+  }
 
   notify_switch_fork(head_block_num());
 
   // push all blocks on the new fork
   for (auto ritr = new_branch.rbegin(); ritr != new_branch.rend(); ++ritr)
   {
-    ilog("pushing blocks from fork ${n} ${id}", ("n", (*ritr)->get_block_num())("id", (*ritr)->get_block_id()));
+    ilog("pushing block #${block_num} from new fork, id ${id}", ("block_num", (*ritr)->get_block_num())("id", (*ritr)->get_block_id()));
     std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
     try
     {
@@ -1113,38 +1120,53 @@ void database::switch_forks(item_ptr new_head)
         ++ritr;
       }
 
-      // pop all blocks from the bad fork
-      while (head_block_id() != old_branch.back()->previous_id())
-        pop_block();
+      try
+      {
+        // pop all blocks from the bad fork
+        while (head_block_id() != common_block_id)
+        {
+          dlog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
+          pop_block();
+        }
+        dlog(" - reverting to previous chain, done popping blocks");
+      }
+      FC_LOG_AND_RETHROW()
       notify_switch_fork(head_block_num());
 
-      // restore all blocks from the good fork
-      for (auto ritr = old_branch.rbegin(); ritr != old_branch.rend(); ++ritr)
+      // restore any popped blocks from the good fork
+      if (old_branch.size())
       {
-        BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-        // even though those blocks were already processed before, it is safer to treat them as completely new,
-        // especially since alternative would be to treat them as replayed blocks, but that would be misleading
-        // since replayed blocks are already irreversible, while these are clearly reversible
-        set_tx_status(database::TX_STATUS_INC_BLOCK);
-        _fork_db.set_head(*ritr);
-        auto session = start_undo_session();
-        apply_block((*ritr)->full_block, skip);
-        session.push();
+        dlog("restoring blocks from original fork");
+        for (auto ritr = old_branch.rbegin(); ritr != old_branch.rend(); ++ritr)
+        {
+          dlog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
+          BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+          // even though those blocks were already processed before, it is safer to treat them as completely new,
+          // especially since alternative would be to treat them as replayed blocks, but that would be misleading
+          // since replayed blocks are already irreversible, while these are clearly reversible
+          set_tx_status(database::TX_STATUS_INC_BLOCK);
+          _fork_db.set_head(*ritr);
+          auto session = start_undo_session();
+          apply_block((*ritr)->full_block, skip);
+          session.push();
+        }
+        dlog("done restoring blocks from original fork");
       }
       delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
     }
   }
+  dlog("done pushing blocks from new fork");
   hive::notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
 bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
-  const std::shared_ptr< full_block_type >& full_block = block_ctrl.get_full_block();
+  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
 
   uint32_t skip = get_node_properties().skip_flags;
   //uint32_t skip_undo_db = skip & skip_undo_block;
 
-  if( !(skip&skip_fork_db) )
+  if (!(skip & skip_fork_db))
   {
     shared_ptr<fork_item> new_head = _fork_db.push_block(full_block);
     block_ctrl.on_fork_db_insert();
@@ -1159,6 +1181,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       if (new_head->get_block_num() > head_block_num())
       {
         block_ctrl.on_fork_apply();
+        dlog("calling switch_forks() from _push_block()");
         switch_forks(new_head);
         return true;
       }
@@ -1264,17 +1287,40 @@ void database::pop_block()
 {
   try
   {
-    _pending_tx_session.reset();
+    try
+    {
+      _pending_tx_session.reset();
+    }
+    FC_CAPTURE_AND_RETHROW()
+
     block_id_type head_id = head_block_id();
 
     /// save the head block so we can recover its transactions
-    std::shared_ptr<full_block_type> full_head_block = fetch_block_by_id(head_id);
+    std::shared_ptr<full_block_type> full_head_block;
+    try
+    {
+      full_head_block = fetch_block_by_id(head_id);
+    }
+    FC_CAPTURE_AND_RETHROW()
+
     HIVE_ASSERT(full_head_block, pop_empty_chain, "there are no blocks to pop");
 
-    _fork_db.pop_block();
-    undo();
+    try
+    {
+      _fork_db.pop_block();
+    }
+    FC_CAPTURE_AND_RETHROW()
+    try
+    {
+      undo();
+    }
+    FC_CAPTURE_AND_RETHROW()
 
-    _popped_tx.insert(_popped_tx.begin(), full_head_block->get_full_transactions().begin(), full_head_block->get_full_transactions().end());
+    try
+    {
+      _popped_tx.insert(_popped_tx.begin(), full_head_block->get_full_transactions().begin(), full_head_block->get_full_transactions().end());
+    }
+    FC_CAPTURE_AND_RETHROW()
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -5313,13 +5359,14 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
     {
       ilog("Received a fast-confirm from witness ${witness} for block #${new_approved_block_number}, "
            "but we already have a fast-confirm for a block #${previous_approved_block_number} which is at least as new, ignoring",
+           ("witness", block_approve_op.witness)
            (previous_approved_block_number)(new_approved_block_number));
       return;
     }
   }
   _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
-  dlog( "Accepted fast-confirm from witness ${w} for block #${nr} (${id})", ( "w", block_approve_op.witness )
-    ( "nr", new_approved_block_number )( "id", block_approve_op.block_id ) );
+  dlog("Accepted fast-confirm from witness ${witness} for block #${new_approved_block_number} (${id})", ("witness", block_approve_op.witness)
+       (new_approved_block_number)("id", block_approve_op.block_id));
   // ddump((_my->_last_fast_approved_block_by_witness));
 
   uint32_t old_last_irreversible_block = update_last_irreversible_block(false);
@@ -5498,6 +5545,7 @@ uint32_t database::update_last_irreversible_block(bool currently_applying_a_bloc
       detail::without_pending_transactions(*this, existing_block_flow_control(nullptr), std::move(_pending_tx), [&]() {
         try
         {
+          dlog("calling switch_forks() from update_last_irreversible_block()");
           switch_forks(new_head_block);
           // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
           // on the new fork, so we don't need to mark the block as irreversible here
