@@ -415,7 +415,7 @@ void update_witness_schedule(database& db)
         } );
 
         update_witness_schedule4(db, future_wso);
-#if 1
+#if 0
         if (db.head_block_time() > fc::time_point_sec(1660506300))
         {
           db.modify(future_wso, [&](witness_schedule_object& witness_schedule)
