@@ -72,6 +72,84 @@ testnet_node_build:
      - hived-for-tests
      - hived
 
+mirrornet_node_build:
+  stage: build
+  extends: .prepare_hived_data_5m_image
+  interruptible: true
+  variables:
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: "$HIVED_CI_IMGBUILDER_PASSWORD"
+    IMAGE_TAG: "$CI_COMMIT_SHA"
+    SOURCES_DIR: "."
+    REGISTRY_URL: "$CI_REGISTRY_IMAGE"
+    BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+  script:
+    - echo "Building hived in mirrornet mode"
+    - ./scripts/ci-helpers/build_instance.sh
+      "$IMAGE_TAG"
+      "$SOURCES_DIR"
+      "$REGISTRY_URL"
+      --network-type="mirrornet"
+      --export-binaries="$BINARIES_DIR"
+  artifacts:
+    paths:
+      - "$BINARIES_DIR"
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
+mirrornet_replay_test:
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
+  needs: [ "mirrornet_node_build" ]
+  variables:
+    BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+    BLOCK_LOG_SOURCE_DIR: "/blockchain"
+    NUMBER_OF_BLOCKS: 5000000
+    CHAIN_ID: 42
+    SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+    MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
+    MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
+  interruptible: true
+  before_script:
+    - export NUMBER_OF_PROCESSES=8
+    - mkdir -p "$MAINNET_TRUNCATED_DIR"
+    - mkdir -p "$MIRRORNET_WORKING_DIR/blockchain/"
+    - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
+    - cd "$BINARIES_DIR"
+  script:
+    - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
+    - time ./compress_block_log
+      -i "$BLOCK_LOG_SOURCE_DIR"
+      -o "$MAINNET_TRUNCATED_DIR"
+      --decompress
+      -n $NUMBER_OF_BLOCKS
+      --jobs $NUMBER_OF_PROCESSES
+    - echo "Converting block log to mirrornet format with $NUMBER_OF_PROCESSES processes"
+    - time ./blockchain_converter
+      --plugin block_log_conversion
+      -i "$MAINNET_TRUNCATED_DIR/block_log"
+      -o "$MIRRORNET_WORKING_DIR/blockchain/block_log"
+      --chain-id $CHAIN_ID
+      --private-key "$SKELETON_KEY"
+      --use-same-key
+      --jobs $NUMBER_OF_PROCESSES
+    - echo "Starting hived replay"
+    - ./hived
+      -d "$MIRRORNET_WORKING_DIR"
+      --chain-id $CHAIN_ID
+      --skeleton-key "$SKELETON_KEY"
+      --set-benchmark-interval 100000
+      --force-replay
+      --stop-replay-at-block $NUMBER_OF_BLOCKS
+      --exit-before-sync | tee hived-replay.log
+  artifacts:
+    paths:
+      - "$BINARIES_DIR/*.log"
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
 chain_test:
   stage: test
   needs:
