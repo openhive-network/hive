@@ -517,7 +517,11 @@ void webserver_plugin_impl::handle_http_request(websocket_local_server_type* ser
 
 } // detail
 
-webserver_plugin::webserver_plugin() {}
+webserver_plugin::webserver_plugin()
+{
+  set_pre_shutdown_order(webserver_order);
+}
+
 webserver_plugin::~webserver_plugin() {}
 
 void webserver_plugin::set_program_options( options_description&, options_description& cfg )
@@ -610,9 +614,15 @@ void webserver_plugin::plugin_startup()
   }
 }
 
+void webserver_plugin::plugin_pre_shutdown()
+{
+  ilog("Shutting down webserver_plugin...");
+  my->stop_webserver();
+}
+
 void webserver_plugin::plugin_shutdown()
 {
-  my->stop_webserver();
+  // everything moved to pre_shutdown
 }
 
 } } } // hive::plugins::webserver
