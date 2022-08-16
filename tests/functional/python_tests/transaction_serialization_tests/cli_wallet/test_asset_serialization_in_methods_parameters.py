@@ -2,8 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import create_account_and_fund_it, date_from_now
 from .local_tools import run_for_all_cases, create_alice_and_bob_accounts_with_received_rewards
+from .....local_tools import create_account_and_fund_it, date_from_now
 
 
 @pytest.mark.testnet
@@ -217,7 +217,6 @@ def test_convert_hbd(prepared_wallet, convert_tbd_amount):
 @run_for_all_cases(estimate_hive_amount=tt.Asset.Test(100))
 def test_estimate_hive_collateral(prepared_wallet, estimate_hive_amount):
     prepared_wallet.api.estimate_hive_collateral(estimate_hive_amount)
-
 
 
 @pytest.mark.testnet
