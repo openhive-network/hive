@@ -36,8 +36,11 @@ namespace appbase {
       };
 
       enum pre_shutdown_order {
-        basic_order = 0,  ///most plugins don't need to be prepared before another plugins, therefore it doesn't matter when they will be closed
-        p2p_order   = 1   ///p2p plugin has to reject/break all connections at the start
+        basic_order = 0,    ///< most plugins don't need to be prepared before another plugins, therefore it doesn't matter when they will be closed
+        p2p_order   = 1,    ///< p2p plugin has to reject/break all connections at the start
+        webserver_order = 2 ///< shutdown webserver and make sure all API calls are finished before stopping other plugins
+                            // (needs to be done before p2p is shut down in cases like when network_broadcast_api is enabled, because
+                            //  those API calls call into the p2p plugin to do their broadcasting)
       };
 
       virtual ~abstract_plugin(){}
