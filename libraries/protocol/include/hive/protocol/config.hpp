@@ -139,6 +139,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_EARLY_VOTING_SECONDS_HF25           (24 * 60 * 60) /// 24 hours
 #define HIVE_MID_VOTING_SECONDS_HF25             (48 * 60 * 60) /// 48 hours
 
+#define HIVE_FEED_INTERVAL_BLOCKS             (HIVE_BLOCKS_PER_HOUR)
+
 #endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
@@ -326,7 +328,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_BLOCK_SIZE              (2*1024*1024)
 #define HIVE_MIN_BLOCK_SIZE                   115
 #define HIVE_BLOCKS_PER_HOUR                  (60*60/HIVE_BLOCK_INTERVAL)
-#define HIVE_FEED_INTERVAL_BLOCKS             (HIVE_BLOCKS_PER_HOUR)
 #define HIVE_FEED_HISTORY_WINDOW_PRE_HF_16    (24*7) /// 7 days * 24 hours per day
 #define HIVE_FEED_HISTORY_WINDOW              (12*7) // 3.5 days
 #define HIVE_MAX_FEED_AGE_SECONDS             (60*60*24*7) // 7 days
