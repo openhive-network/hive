@@ -11,6 +11,7 @@
 // This is checked by get_config_check.sh called from Dockerfile
 
 #define HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR"
+#define HIVE_BLOCK_INTERVAL                   3
 
 #ifdef USE_ALTERNATE_CHAIN_ID
 
@@ -24,15 +25,15 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #else
 
-/// Mainnet 
+/// Mainnet
 #define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR
 
 #endif /// USE_ALTERNATE_CHAIN_ID
 
 #define HIVE_INIT_PUBLIC_KEY (hive::protocol::public_key_type(HIVE_INIT_PUBLIC_KEY_STR))
-
-#ifdef IS_TEST_NET
+#if true
+// #ifdef IS_TEST_NET
 
 #ifdef HIVE_ENABLE_SMT
   #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 27, 0) )
@@ -82,6 +83,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 (configuration_data.get_hive_reverse_auction_window_seconds())
 #define HIVE_EARLY_VOTING_SECONDS_HF25           (configuration_data.get_hive_early_voting_seconds())
 #define HIVE_MID_VOTING_SECONDS_HF25             (configuration_data.get_hive_mid_voting_seconds())
+
+#define HIVE_FEED_INTERVAL_BLOCKS                (60 / HIVE_BLOCK_INTERVAL)
 
 #else // IS LIVE HIVE NETWORK
 
@@ -148,7 +151,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
 #define HIVE_1_BASIS_POINT                    (HIVE_100_PERCENT/10000) // 0.01%
 
-#define HIVE_BLOCK_INTERVAL                   3
 #define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
