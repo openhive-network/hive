@@ -239,8 +239,8 @@ fork_tests:
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   script:
     - cd tests/functional/python_tests/fork_tests
-    - timeout 23m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
-  timeout: 28min
+    - timeout 8m pytest -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+  timeout: 13min
   artifacts:
     reports:
       junit: tests/functional/python_tests/fork_tests/report.xml
