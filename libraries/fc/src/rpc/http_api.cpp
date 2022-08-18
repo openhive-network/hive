@@ -7,7 +7,8 @@ http_api_connection::~http_api_connection()
 {
 }
 
-http_api_connection::http_api_connection()
+http_api_connection::http_api_connection( const std::string& _url )
+   : _url(_url)
 {
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
@@ -60,8 +61,9 @@ variant http_api_connection::send_call(
    string method_name,
    variants args /* = variants() */ )
 {
-   // HTTP has no way to do this, so do nothing
-   return variant();
+   idump( (api_id)(method_name)(args) );
+   auto request = _rpc_state.start_remote_call(  "call", {api_id, std::move(method_name), std::move(args) } );
+   return do_request(request);
 }
 
 variant http_api_connection::send_call(
@@ -69,16 +71,18 @@ variant http_api_connection::send_call(
    string method_name,
    variants args /* = variants() */ )
 {
-   // HTTP has no way to do this, so do nothing
-   return variant();
+   idump( (api_name)(method_name)(args) );
+   auto request = _rpc_state.start_remote_call(  "call", {std::move(api_name), std::move(method_name), std::move(args) } );
+   return do_request(request);
 }
 
 variant http_api_connection::send_callback(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   // HTTP has no way to do this, so do nothing
-   return variant();
+   idump( (callback_id)(args) );
+   auto request = _rpc_state.start_remote_call( "callback", {callback_id, std::move(args) } );
+   return do_request(request);
 }
 
 void http_api_connection::send_notice(
@@ -86,7 +90,42 @@ void http_api_connection::send_notice(
    variants args /* = variants() */ )
 {
    // HTTP has no way to do this, so do nothing
+   wlog("Calling notice on http api");
    return;
+}
+
+fc::variant http_api_connection::do_request(
+   const fc::rpc::request& request
+)
+{
+   idump( (request) );
+
+   try
+   {
+      _connection.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
+   }
+   catch( const fc::exception& e )
+   {
+      try
+      {
+         _connection.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
+      } FC_CAPTURE_AND_RETHROW( (_url) )
+   }
+
+   std::vector< char > _body = _connection.request( "POST", _url, fc::json::to_string(request) ).body;
+
+   const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() } );
+
+   idump((message));
+
+   const auto _reply = message.as<fc::rpc::response>();
+
+   _rpc_state.handle_reply( _reply );
+
+   if( _reply.error )
+      FC_THROW("${error}", ("error", *_reply.error)("data", message));
+
+   return *_reply.result;
 }
 
 void http_api_connection::on_request( const fc::http::request& req, const fc::http::server::response& resp )
