@@ -19,9 +19,7 @@ def wallet(node) -> tt.Wallet:
 
 @pytest.fixture
 def creator(node) -> tt.Account:
-    result = tt.Account('initminer', with_keys=False)
-    result.private_key = node.config.private_key
-    return result
+    return tt.Account('initminer')
 
 
 def create_funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -> funded_account_info:
