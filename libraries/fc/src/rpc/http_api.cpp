@@ -44,6 +44,9 @@ http_api_connection::http_api_connection( const std::string& url, bool skip_cert
       _is_ip_url = true;
    }
 
+http_api_connection::http_api_connection( const std::string& _url )
+   : _url(_url)
+{
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
@@ -131,6 +134,38 @@ void http_api_connection::send_notice(
 fc::variant http_api_connection::do_request(
    const fc::rpc::request& request
 )
+{
+   idump( (request) );
+
+   try
+   {
+      _connection.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
+   }
+   catch( const fc::exception& e )
+   {
+      try
+      {
+         _connection.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
+      } FC_CAPTURE_AND_RETHROW( (_url) )
+   }
+
+   std::vector< char > _body = _connection.request( "POST", _url, fc::json::to_string(request) ).body;
+
+   const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() } );
+
+   idump((message));
+
+   const auto _reply = message.as<fc::rpc::response>();
+
+   _rpc_state.handle_reply( _reply );
+
+   if( _reply.error )
+      FC_THROW("${error}", ("error", *_reply.error)("data", message));
+
+   return *_reply.result;
+}
+
+void http_api_connection::on_request( const fc::http::request& req, const fc::http::server::response& resp )
 {
    idump( (request) );
 

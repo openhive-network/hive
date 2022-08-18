@@ -10,14 +10,13 @@
 #include <fc/network/ip.hpp>
 #include <fc/network/resolve.hpp>
 
-#include <memory>
-
 namespace fc { namespace rpc {
 
    class http_api_connection : public http_base_api_connection
    {
       public:
-         http_api_connection( const std::string& url, bool skip_cert_check = false );
+         http_api_connection( const std::string& _url );
+         ~http_api_connection();
 
          virtual variant send_call(
             api_id_type api_id,
@@ -40,9 +39,9 @@ namespace fc { namespace rpc {
       protected:
          fc::variant do_request( const fc::rpc::request& request );
 
-         bool               _skip_cert_check;
-         fc::url            _url;
-         bool               _is_ip_url;
+         fc::url                          _url;
+         fc::http::connection             _connection;
+         fc::rpc::state                   _rpc_state;
    };
 
 } } // namespace fc::rpc

@@ -97,7 +97,7 @@ int main( int argc, char** argv )
       ("version,v", "Print git revision sha of this cli_wallet build.")
       ("offline,o", "Run the wallet in offline mode.")
       ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
-      ("server-http-rpc-endpoint,p", bpo::value<string>()->default_value("http://127.0.0.1:8080"), "Server http RPC endpoint")
+      ("server-http-rpc-endpoint,p", bpo::value<string>()->default_value("127.0.0.1:8080"), "Server http RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
@@ -307,7 +307,8 @@ int main( int argc, char** argv )
       }
       else
       {
-        wlog("Using unimplemented http API connection!");
+        // wlog("Using unimplemented http API connection!");
+        // TODO: Handle https and maybe pre-resolve url
       }
 
       opt_api_t ws_remote_api;
@@ -320,7 +321,7 @@ int main( int argc, char** argv )
       }
       else if( wdata.http_server.size() )
       {
-        auto http_apic = std::make_shared<fc::rpc::http_api_connection>();
+        auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.http_server);
         http_remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
       }
 
@@ -416,6 +417,8 @@ int main( int argc, char** argv )
       _http_server->listen( fc::ip::endpoint::from_string( options.at( "rpc-http-endpoint" ).as<string>() ) );
       ilog( "Listening for incoming HTTP RPC requests on ${endpoint}", ( "endpoint", _http_server->get_local_endpoint() ) );
 
+      auto _endpoint = fc::ip::endpoint::from_string( wdata.http_server );
+
       //
       // due to implementation, on_request() must come AFTER listen()
       //
@@ -430,8 +433,8 @@ int main( int argc, char** argv )
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
-          std::shared_ptr< fc::rpc::http_base_api_connection > conn =
-            std::make_shared< fc::rpc::http_base_api_connection>();
+          std::shared_ptr< fc::rpc::http_api_connection > conn =
+            std::make_shared< fc::rpc::http_api_connection>( _endpoint );
           conn->register_api( wapi );
           conn->on_request( req, resp );
 
