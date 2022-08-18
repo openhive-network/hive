@@ -85,7 +85,10 @@ struct wallet_data
 {
   vector<char>              cipher_keys; /** encrypted keys */
 
-  string                    server_url;
+  string                    ws_server;
+  string                    http_server;
+  string                    ws_user;
+  string                    ws_password;
 
   bool                      offline = false;
 };
@@ -109,7 +112,8 @@ class wallet_api
 {
   public:
     wallet_api( const wallet_data& initial_data, const chain_id_type& _hive_chain_id,
-        const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api,
+        const fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>& remote_api_ws,
+        const fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>& remote_api_http,
         fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter,
         transaction_serialization_type transaction_serialization, const std::string& store_transaction );
     virtual ~wallet_api();

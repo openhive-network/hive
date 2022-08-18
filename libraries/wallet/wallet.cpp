@@ -204,6 +204,38 @@ struct op_prototype_visitor
   }
 };
 
+class wallet_bridge_api_conn_impl
+{
+public:
+  using api_t = fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >;
+
+  wallet_bridge_api_conn_impl(
+      const fc::optional<api_t>& remote_api_ws,
+      const fc::optional<api_t>& remote_api_http
+  ) : remote_api_ws(remote_api_ws), remote_api_http(remote_api_http) {}
+
+  ~wallet_bridge_api_conn_impl() = default;
+
+  api_t::vtable_type& operator*()const
+  {
+    return *this->operator->();
+  }
+
+  api_t::vtable_type* operator->()const
+  {
+    if( remote_api_ws )
+      return remote_api_ws->operator->();
+    else if( remote_api_http )
+      return remote_api_http->operator->();
+    else
+      FC_ASSERT( false, "At least one endpoint has to be configured in order to call remote api" );
+  }
+
+private:
+  fc::optional<api_t> remote_api_ws;
+  fc::optional<api_t> remote_api_http;
+};
+
 class wallet_api_impl
 {
   public:
@@ -237,11 +269,12 @@ class wallet_api_impl
 public:
   wallet_api& self;
   wallet_api_impl( wallet_api& s, const wallet_data& initial_data, const chain_id_type& hive_chain_id,
-      const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api,
+      const fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>& remote_api_ws,
+      const fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>& remote_api_http,
       transaction_serialization_type transaction_serialization,
     const std::string& store_transaction ) : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ),
     _chosen_transaction_serialization(transaction_serialization),
-    _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
+    _remote_wallet_bridge_api(remote_api_ws, remote_api_http), _store_transaction(store_transaction)
   {
     wallet_transaction_serialization::transaction_serialization = transaction_serialization;
     serialization_mode_controller::set_pack( transaction_serialization );
@@ -954,14 +987,14 @@ public:
     FC_CAPTURE_AND_LOG(())
   }
 
-  string                                                         _wallet_filename;
-  wallet_data                                                    _wallet;
-  chain_id_type                                                  _hive_chain_id;
-  transaction_serialization_type                                 _chosen_transaction_serialization;
-  map<public_key_type,string>                                    _keys;
-  fc::sha512                                                     _checksum;
-  fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api > _remote_wallet_bridge_api;
-  uint32_t                                                       _tx_expiration_seconds = 30;
+  string                                                    _wallet_filename;
+  wallet_data                                               _wallet;
+  chain_id_type                                             _hive_chain_id;
+  transaction_serialization_type                            _chosen_transaction_serialization;
+  map<public_key_type,string>                               _keys;
+  fc::sha512                                                _checksum;
+  wallet_bridge_api_conn_impl                               _remote_wallet_bridge_api;
+  uint32_t                                                  _tx_expiration_seconds = 30;
 
   flat_map<string, operation>                                    _prototype_ops;
 
@@ -1006,10 +1039,11 @@ wallet_signed_transaction wallet_api_impl::build_claim_account_creation(const st
 namespace hive { namespace wallet {
 
 wallet_api::wallet_api(const wallet_data& initial_data, const chain_id_type& hive_chain_id,
-    const fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >& remote_api,
+    const fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>& remote_api_ws,
+    const fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>& remote_api_http,
     fc::promise< int >::ptr& exit_promise, bool is_daemon, output_formatter_type _output_formatter,
     transaction_serialization_type transaction_serialization, const std::string& store_transaction )
-  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api, transaction_serialization, store_transaction)), exit_promise(exit_promise), is_daemon(is_daemon), output_formatter(_output_formatter)
+  : my(new detail::wallet_api_impl(*this, initial_data, hive_chain_id, remote_api_ws, remote_api_http, transaction_serialization, store_transaction)), exit_promise(exit_promise), is_daemon(is_daemon), output_formatter(_output_formatter)
 {
 }
 
