@@ -97,6 +97,7 @@ int main( int argc, char** argv )
       ("version,v", "Print git revision sha of this cli_wallet build.")
       ("offline,o", "Run the wallet in offline mode.")
       ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
+      ("server-http-rpc-endpoint,p", bpo::value<string>()->default_value("http://127.0.0.1:8080"), "Server http RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
@@ -208,14 +209,25 @@ int main( int argc, char** argv )
 
     // but allow CLI to override
     if( !options.at("server-rpc-endpoint").defaulted() )
+    {
+      wdata.http_server.clear();
       wdata.ws_server = options.at("server-rpc-endpoint").as<std::string>();
+      idump((wdata.ws_server));
+    }
+
+    // but allow CLI to override
+    if( !options.at("server-http-rpc-endpoint").defaulted() )
+    {
+      wdata.ws_server.clear();
+      wdata.http_server = options.at("server-http-rpc-endpoint").as<std::string>();
+      idump((wdata.http_server));
+    }
 
     // Override wallet data
     wdata.offline = options.count( "offline" );
 
-    fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
-    idump((wdata.ws_server));
-    fc::http::websocket_connection_ptr con;
+    fc::http::websocket_client ws_client( options["cert-authority"].as<std::string>() );
+    fc::http::websocket_connection_ptr ws_con;
 
     std::shared_ptr<wallet_api> wapiptr;
     boost::signals2::scoped_connection closed_connection;
@@ -251,46 +263,72 @@ int main( int argc, char** argv )
       daemon_mode_enabled = true;
     }
 
-    if( wdata.offline )
+    using opt_api_t = fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>;
+
+    if( wdata.offline || (wdata.ws_server.size() == 0 && wdata.http_server.size() == 0) )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, daemon_mode_enabled, get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, opt_api_t{}, opt_api_t{}, exit_promise, daemon_mode_enabled, get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
     }
     else
     {
-      for (;;)
+      if( wdata.ws_server.size() )
       {
-        try
+        for (;;)
         {
-          con = client.connect( wdata.ws_server );
-        }
-        catch (const fc::exception& e)
-        {
-          if (!options.count("retry-server-connection"))
-            throw;
-        }
-        if (con)
-          break;
-        else
-        {
-          wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
-          fc::usleep(fc::seconds(10));
+          try
+          {
+            ws_con = ws_client.connect( wdata.ws_server );
+          }
+          catch (const fc::exception& e)
+          {
+            if (!options.count("retry-server-connection"))
+              throw;
+          }
+          if (ws_con)
+            break;
+          else
+          {
+            wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
+            fc::usleep(fc::seconds(10));
+          }
         }
       }
-      auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
-      auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
+      else
+      {
+        wlog("Using unimplemented http API connection!");
+      }
+
+      opt_api_t ws_remote_api;
+      opt_api_t http_remote_api;
+
+      if( wdata.ws_server.size() )
+      {
+        auto ws_apic = std::make_shared<fc::rpc::websocket_api_connection>(*ws_con);
+        ws_remote_api = ws_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
+      }
+      else if( wdata.http_server.size() )
+      {
+        auto http_apic = std::make_shared<fc::rpc::http_api_connection>();
+        http_remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
+      }
 
       output_formatter_type output_format;
       if( daemon_mode_enabled )
         output_format = get_output_formatter( options, output_formatter_type::none );
       else
         output_format = get_output_formatter( options, output_formatter_type::text );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, daemon_mode_enabled, output_format, _transaction_serialization, _store_transaction );
-      closed_connection = con->closed.connect([=]{
-        cerr << "Server has disconnected us.\n";
-        wallet_cli->stop();
-      });
-      (void)(closed_connection);
+
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, ws_remote_api, http_remote_api, exit_promise, daemon_mode_enabled, output_format, _transaction_serialization, _store_transaction );
+
+      if( ws_remote_api )
+      {
+        closed_connection = ws_con->closed.connect([=]{
+          cerr << "Server has disconnected us.\n";
+          wallet_cli->stop();
+        });
+        (void)(closed_connection);
+      }
     }
 
     wallet_cli->set_on_termination_handler( sig_handler );
