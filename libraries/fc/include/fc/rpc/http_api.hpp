@@ -5,13 +5,16 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/rpc/api_connection.hpp>
 #include <fc/rpc/state.hpp>
+#include <fc/network/url.hpp>
+#include <fc/network/ip.hpp>
+#include <fc/network/resolve.hpp>
 
 namespace fc { namespace rpc {
 
    class http_api_connection : public api_connection
    {
       public:
-         http_api_connection();
+         http_api_connection( const std::string& _url );
          ~http_api_connection();
 
          virtual variant send_call(
@@ -33,6 +36,11 @@ namespace fc { namespace rpc {
             const fc::http::request& req,
             const fc::http::server::response& resp );
 
+      protected:
+         fc::variant do_request( const fc::rpc::request& request );
+
+         fc::url                          _url;
+         fc::http::connection             _connection;
          fc::rpc::state                   _rpc_state;
    };
 
