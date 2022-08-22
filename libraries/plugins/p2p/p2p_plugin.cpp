@@ -655,7 +655,7 @@ void p2p_plugin::plugin_startup()
     if( my->max_connections )
     {
       if( my->config.find( "maximum_number_of_connections" ) != my->config.end() )
-        ilog( "Overriding advanded_node_parameters[ \"maximum_number_of_connections\" ] with ${cons}", ("cons", my->max_connections) );
+        ilog( "Overriding advanced_node_parameters[ \"maximum_number_of_connections\" ] with ${cons}", ("cons", my->max_connections) );
 
       my->config.set( "maximum_number_of_connections", fc::variant( my->max_connections ) );
     }
