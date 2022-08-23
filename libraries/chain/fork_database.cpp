@@ -166,8 +166,8 @@ void fork_database::set_max_size( uint32_t s )
 
 size_t fork_database::get_size() const
 {
-  return _index.size() * sizeof( decltype( _index )::final_node_type ) +
-    _unlinked_index.size() * sizeof( decltype( _unlinked_index )::final_node_type );
+  return _index.size() * sizeof( decltype( _index )::MULTIINDEX_NODE_TYPE ) +
+    _unlinked_index.size() * sizeof( decltype( _unlinked_index )::MULTIINDEX_NODE_TYPE );
 }
 
 bool fork_database::is_known_block(const block_id_type& id)const
