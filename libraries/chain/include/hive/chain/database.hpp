@@ -256,6 +256,8 @@ namespace chain {
                                                                         fc::microseconds wait_for_microseconds = fc::microseconds() );
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
+      size_t get_fork_db_size() const { return _fork_db.get_size(); }
+
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
       /// Returns current chain-id being in use depending on applied HF

@@ -15,8 +15,8 @@ namespace hive { namespace chain {
 decoded_block_storage_type::decoded_block_storage_type()
 {
   number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
-  // if (number_of_instances_created.load() % 10000 == 0)
-  //   ilog("Currently ${count} decoded_block_storage_types in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
+  if (number_of_instances_created.load() % 10000 == 0)
+    ilog("Currently ${count} decoded_block_storage_types in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
 
 decoded_block_storage_type::~decoded_block_storage_type()
@@ -27,8 +27,8 @@ decoded_block_storage_type::~decoded_block_storage_type()
 full_block_type::full_block_type()
 {
   number_of_instances_created.fetch_add(1, std::memory_order_relaxed);
-  // if (number_of_instances_created.load() % 10000 == 0)
-  //   ilog("Currently ${count} full_blocks in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
+  if (number_of_instances_created.load() % 10000 == 0)
+    ilog("Currently ${count} full_blocks in memory", ("count", number_of_instances_created.load() - number_of_instances_destroyed.load()));
 }
 
 full_block_type::~full_block_type()

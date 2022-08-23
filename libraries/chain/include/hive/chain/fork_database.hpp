@@ -124,6 +124,7 @@ namespace hive { namespace chain {
       > fork_multi_index_type;
 
       void set_max_size( uint32_t s );
+      size_t get_size() const;
 
 #define DEBUG_FORKDB_LOCK_TIMES
       class int_incrementer2
