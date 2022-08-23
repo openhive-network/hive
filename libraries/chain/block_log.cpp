@@ -598,7 +598,13 @@ namespace hive { namespace chain {
                                                          compressed_block_data, compressed_block_size);
     if (ZSTD_isError(uncompressed_block_size))
       FC_THROW("Error decompressing block with zstd");
-    return std::make_tuple(std::move(uncompressed_block_data), uncompressed_block_size);
+    
+    FC_ASSERT(uncompressed_block_size <= HIVE_MAX_BLOCK_SIZE);
+
+    /// Return a buffer adjusted to actual block size, since such buffers can be accumulated at caller side...
+    std::unique_ptr<char[]> actual_buffer(new char[uncompressed_block_size]);
+    memcpy(actual_buffer.get(), uncompressed_block_data.get(), uncompressed_block_size);
+    return std::make_tuple(std::move(actual_buffer), uncompressed_block_size);
   }
 
   /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_block_zstd(const char* compressed_block_data,
