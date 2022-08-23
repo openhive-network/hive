@@ -712,6 +712,7 @@ namespace graphene { namespace net {
 
       void send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block);
       uint32_t get_number_of_handle_message_calls_in_progress();
+      void discard_abandoned_sync_blocks();
       void process_backlog_of_sync_blocks();
       void trigger_process_backlog_of_sync_blocks();
       void process_block_during_sync(peer_connection* originating_peer, const std::shared_ptr<full_block_type>& full_block);
@@ -3284,6 +3285,8 @@ namespace graphene { namespace net {
         trigger_fetch_items_loop();
       }
 
+      discard_abandoned_sync_blocks();
+
       schedule_peer_for_deletion(originating_peer_ptr);
     } //on_connection_closed
 
@@ -3478,6 +3481,24 @@ namespace graphene { namespace net {
           ++calls_iter;
       }
       return _handle_message_calls_in_progress.size();
+    }
+    
+    void node_impl::discard_abandoned_sync_blocks()
+    {
+      std::set<block_id_type> block_ids_still_referenced;
+      for (const peer_connection_ptr& peer : _active_connections)
+        for (const block_id_type& block_id : peer->ids_of_items_to_get)
+          block_ids_still_referenced.insert(block_id);
+      unsigned discarded_count = 0;
+      for (auto iter = _received_sync_items.begin(); iter != _received_sync_items.end();)
+        if (block_ids_still_referenced.find((*iter)->get_block_id()) == block_ids_still_referenced.end())
+        {
+          iter = _received_sync_items.erase(iter);
+          ++discarded_count;
+        }
+        else
+          ++iter;
+      // fc_ilog(fc::logger::get("default"), "Currently discarding ${discarded_count} unreferenced sync blocks", (discarded_count));
     }
 
     void node_impl::process_backlog_of_sync_blocks()
