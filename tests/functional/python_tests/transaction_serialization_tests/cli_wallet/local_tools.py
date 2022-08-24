@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import inspect
 from typing import Callable, Dict, Iterable
@@ -17,7 +19,7 @@ def __serialize_modern(assets: Iterable) -> Iterable[Dict]:
     return (asset.as_nai() for asset in assets)
 
 
-def run_for_all_cases(**assets):
+def run_for_all_cases(**assets: tt.AnyAsset):
     """
     Runs decorated test four times:
     - asserts that wallet with matching assets doesn't raise any exception:
