@@ -1,6 +1,7 @@
 #include <fc/network/tcp_socket.hpp>
 #include <fc/network/ip.hpp>
 #include <fc/network/tcp_socket_io_hooks.hpp>
+#include <fc/network/have_so_reuseport.hpp>
 #include <fc/fwd_impl.hpp>
 #include <fc/asio.hpp>
 #include <fc/log/logger.hpp>
