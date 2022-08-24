@@ -1,0 +1,1 @@
+[{"pos": 1, "block": 1, "id": "0000000000000000000000000000000000000000", "op": {"type": "hardfork_operation", "value": {"hardfork_id": 1}}}, {"pos": 2, "block": 1, "id": "0000000000000000000000000000000000000000", "op": {"type": "hardfork_operation", "value": {"hardfork_id": 2}}}]
