@@ -352,6 +352,8 @@ endif(ENABLE_INSTALLER)
 
 if( BUILD_HIVE_TESTNET )
   MESSAGE( STATUS "\n\n             CONFIGURED FOR TEST NETWORK             \n\n" )
+elseif( HIVE_CONVERTER_BUILD )
+  MESSAGE( STATUS "\n\n             CONFIGURED FOR ALTERNATE NETWORK             \n\n" )
 else()
   MESSAGE( STATUS "\n\n             CONFIGURED FOR HIVE NETWORK             \n\n" )
 endif()
