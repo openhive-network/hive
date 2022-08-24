@@ -3,34 +3,90 @@
 
 namespace fc { namespace rpc {
 
-[[ noreturn ]] variant http_base_api_connection::send_call(
+   http_base_api_connection::http_base_api_connection()
+   {
+      _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
+      {
+         // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
+         // it should be consolidated into one place instead of copy-pasted
+         FC_ASSERT( args.size() == 3 && args[2].is_array() );
+         api_id_type api_id;
+         if( args[0].is_string() )
+         {
+            variants subargs;
+            subargs.push_back( args[0] );
+            variant subresult = this->receive_call( 1, "get_api_by_name", subargs );
+            api_id = subresult.as_uint64();
+         }
+         else
+            api_id = args[0].as_uint64();
+
+         return this->receive_call(
+            api_id,
+            args[1].as_string(),
+            args[2].get_array() );
+      } );
+
+      _rpc_state.add_method( "notice", [this]( const variants& args ) -> variant
+      {
+         FC_ASSERT( args.size() == 2 && args[1].is_array() );
+         this->receive_notice(
+            args[0].as_uint64(),
+            args[1].get_array() );
+         return variant();
+      } );
+
+      _rpc_state.add_method( "callback", [this]( const variants& args ) -> variant
+      {
+         FC_ASSERT( args.size() == 2 && args[1].is_array() );
+         this->receive_callback(
+            args[0].as_uint64(),
+            args[1].get_array() );
+         return variant();
+      } );
+
+      _rpc_state.on_unhandled( [&]( const std::string& method_name, const variants& args )
+      {
+         return this->receive_call( 0, method_name, args );
+      } );
+   }
+
+variant http_base_api_connection::send_call(
    api_id_type api_id,
    string method_name,
    variants args )
    {
-      FC_ASSERT( false, "Using unimplemented send_call method from the http base api" );
+      elog( "Using unimplemented send_call method from the http base api" );
+
+      return variant{};
    }
 
-[[ noreturn ]] variant http_base_api_connection::send_call(
+variant http_base_api_connection::send_call(
    string api_name,
    string method_name,
    variants args )
    {
-      FC_ASSERT( false, "Using unimplemented send_call method from the http base api" );
+      elog( "Using unimplemented send_call method from the http base api" );
+
+      return variant{};
    }
 
-[[ noreturn ]] variant http_base_api_connection::send_callback(
+variant http_base_api_connection::send_callback(
    uint64_t callback_id,
    variants args )
    {
-      FC_ASSERT( false, "Using unimplemented send_call method from the http base api" );
+      elog( "Using unimplemented send_callback method from the http base api" );
+
+      return variant{};
    }
 
-[[ noreturn ]] void http_base_api_connection::send_notice(
+void http_base_api_connection::send_notice(
    uint64_t callback_id,
    variants args )
    {
-      FC_ASSERT( false, "Using unimplemented send_call method from the http base api" );
+      elog( "Using unimplemented send_notice method from the http base api" );
+
+      return;
    }
 
 void http_base_api_connection::on_request( const fc::http::request& req, const fc::http::server::response& resp )
