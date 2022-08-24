@@ -3,13 +3,26 @@
 
 namespace fc { namespace rpc {
 
-http_api_connection::~http_api_connection()
+fc::http::connection_base& http_api_connection::get_connection()
 {
+   if( is_ssl )
+      return _ssl_connection;
+   else
+      return _http_connection;
 }
 
+
 http_api_connection::http_api_connection( const std::string& _url )
-   : _url(_url)
 {
+   this->_url = fc::url{ _url };
+
+   if( this->_url.proto() == "http" )
+      this->is_ssl = false;
+   else if( this->_url.proto() == "https" )
+      this->is_ssl = true;
+   else
+      FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())("url", _url) );
+
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
@@ -102,17 +115,17 @@ fc::variant http_api_connection::do_request(
 
    try
    {
-      _connection.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
+      get_connection().connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
    }
    catch( const fc::exception& e )
    {
       try
       {
-         _connection.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
+         get_connection().connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
       } FC_CAPTURE_AND_RETHROW( (_url) )
    }
 
-   std::vector< char > _body = _connection.request( "POST", _url, fc::json::to_string(request) ).body;
+   std::vector< char > _body = get_connection().request( "POST", _url, fc::json::to_string(request) ).body;
 
    const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() } );
 

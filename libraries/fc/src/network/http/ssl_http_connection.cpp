@@ -8,7 +8,7 @@
 #include <fc/network/url.hpp>
 #include <boost/algorithm/string.hpp>
 
-   int fc::http::connection::impl::read_until( char* buffer, char* end, char c ) {
+   int fc::http::ssl_connection::impl::read_until( char* buffer, char* end, char c ) {
       char* p = buffer;
      // try {
           while( p < end && 1 == sock.readsome(p,1) ) {
@@ -25,7 +25,7 @@
       return (p-buffer);
    }
 
-   fc::http::reply fc::http::connection::impl::parse_reply() {
+   fc::http::reply fc::http::ssl_connection::impl::parse_reply() {
       fc::http::reply rep;
       try {
         std::vector<char> line(1024*8);
@@ -61,19 +61,21 @@
       } 
    }
 
+
+
 namespace fc { namespace http {
 
-         connection::connection()
-         :my( new connection::impl() ){}
+         ssl_connection::ssl_connection()
+         :my( new ssl_connection::impl() ){}
 
 
 // used for clients
-void       connection::connect_to( const fc::ip::endpoint& ep ) {
+void       ssl_connection::connect_to( const fc::ip::endpoint& ep ) {
   my->sock.close();
   my->sock.connect_to( my->ep = ep );
 }
 
-http::reply connection::request( const fc::string& method, 
+http::reply ssl_connection::request( const fc::string& method, 
                                 const fc::string& url, 
                                 const fc::string& body, const headers& he ) {
 	
@@ -107,17 +109,17 @@ http::reply connection::request( const fc::string& method,
       return my->parse_reply();
   } catch ( ... ) {
       my->sock.close();
-      FC_THROW_EXCEPTION( exception, "Error Sending HTTP Request" ); // TODO: provide more info
-   //  return http::reply( http::reply::InternalServerError ); // TODO: replace with connection error
+      FC_THROW_EXCEPTION( exception, "Error Sending HTTPS Request" ); // TODO: provide more info
+   //  return http::reply( http::reply::InternalServerError ); // TODO: replace with ssl_connection error
   }
 }
 
 // used for servers
-fc::tcp_socket& connection::get_socket()const {
+fc::tcp_ssl_socket& ssl_connection::get_socket()const {
   return my->sock;
 }
 
-http::request    connection::read_request()const {
+http::request    ssl_connection::read_request()const {
   http::request req;
   req.remote_endpoint = fc::variant(get_socket().remote_endpoint()).as_string();
   std::vector<char> line(1024*8);
@@ -154,44 +156,6 @@ http::request    connection::read_request()const {
     my->sock.read( req.body.data(), req.body.size() );
   }
   return req;
-}
-
-fc::string request::get_header( const fc::string& key )const {
-  for( auto itr = headers.begin(); itr != headers.end(); ++itr ) {
-    if( boost::iequals(itr->key, key) ) { return itr->val; } 
-  }
-  return fc::string();
-}
-std::vector<header> parse_urlencoded_params( const fc::string& f ) {
-  int num_args = 0;
-  for( size_t i = 0; i < f.size(); ++i ) {
-    if( f[i] == '=' ) ++num_args;
-  }
-  std::vector<header> h(num_args);
-  int arg = 0;
-  for( size_t i = 0; i < f.size(); ++i ) {
-    while( f[i] != '=' && i < f.size() ) {
-      if( f[i] == '%' ) { 
-        h[arg].key += char((fc::from_hex(f[i+1]) << 4) | fc::from_hex(f[i+2]));
-        i += 3;
-      } else {
-          h[arg].key += f[i];
-          ++i;
-      }
-    }
-    ++i;
-    while( i < f.size() && f[i] != '&' ) {
-      if( f[i] == '%' ) { 
-        h[arg].val += char((fc::from_hex(f[i+1]) << 4) | fc::from_hex(f[i+2]));
-        i += 3;
-      } else {
-        h[arg].val += f[i] == '+' ? ' ' : f[i];
-        ++i;
-      }
-    }
-    ++arg;
-  }
-  return h;
 }
 
 } } // fc::http

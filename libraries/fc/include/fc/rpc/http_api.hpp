@@ -9,13 +9,14 @@
 #include <fc/network/ip.hpp>
 #include <fc/network/resolve.hpp>
 
+#include <memory>
+
 namespace fc { namespace rpc {
 
    class http_api_connection : public api_connection
    {
       public:
          http_api_connection( const std::string& _url );
-         ~http_api_connection();
 
          virtual variant send_call(
             api_id_type api_id,
@@ -36,12 +37,19 @@ namespace fc { namespace rpc {
             const fc::http::request& req,
             const fc::http::server::response& resp );
 
+      private:
+         bool is_ssl;
+
+         fc::http::connection _http_connection;
+         fc::http::ssl_connection _ssl_connection;
+
       protected:
          fc::variant do_request( const fc::rpc::request& request );
 
-         fc::url                          _url;
-         fc::http::connection             _connection;
-         fc::rpc::state                   _rpc_state;
+         fc::http::connection_base& get_connection();
+
+         fc::url            _url;
+         fc::rpc::state     _rpc_state;
    };
 
 } } // namespace fc::rpc
