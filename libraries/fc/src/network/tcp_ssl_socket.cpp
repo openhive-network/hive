@@ -1,7 +1,6 @@
 #include <fc/network/tcp_socket.hpp>
 #include <fc/network/ip.hpp>
 #include <fc/network/tcp_socket_io_hooks.hpp>
-#include <fc/network/have_so_reuseport.hpp>
 #include <fc/fwd_impl.hpp>
 #include <fc/asio.hpp>
 #include <fc/log/logger.hpp>
@@ -19,19 +18,10 @@ namespace fc {
   class tcp_ssl_socket::impl : public tcp_ssl_socket_io_hooks {
     public:
       impl() :
-        ssl_context(boost::asio::ssl::context::tlsv12_client),
+        ssl_context(boost::asio::ssl::context::tls),
         _sock(fc::asio::default_io_service(), ssl_context),
         _io_hooks(this)
-      {
-        ssl_context.set_default_verify_paths();
-        ssl_context.set_options(boost::asio::ssl::context::default_workarounds |
-                      boost::asio::ssl::context::no_sslv2 |
-                      boost::asio::ssl::context::no_sslv3 |
-                      boost::asio::ssl::context::no_tlsv1 |
-                      boost::asio::ssl::context::no_tlsv1_1 |
-                      boost::asio::ssl::context::single_dh_use);
-        _sock.set_verify_mode( boost::asio::ssl::verify_peer );
-      }
+      {}
       ~impl()
       {
         if( _sock.next_layer().is_open() )
@@ -88,15 +78,9 @@ namespace fc {
   }
 
 
-  tcp_ssl_socket::tcp_ssl_socket()
-  : my( std::make_shared< impl >() ) {};
+  tcp_ssl_socket::tcp_ssl_socket(){};
 
   tcp_ssl_socket::~tcp_ssl_socket(){};
-
-  void tcp_ssl_socket::set_verify_peer( bool verify )
-  {
-    my->_sock.set_verify_mode( verify ? boost::asio::ssl::verify_peer : boost::asio::ssl::verify_none );
-  }
 
   void tcp_ssl_socket::open()
   {
@@ -161,15 +145,8 @@ namespace fc {
     return my->_io_hooks->readsome(my->_sock, buf, len, offset);
   }
 
-  void tcp_ssl_socket::connect_to( const fc::ip::endpoint& remote_endpoint, const std::string& hostname ) {
+  void tcp_ssl_socket::connect_to( const fc::ip::endpoint& remote_endpoint ) {
     fc::asio::tcp::connect(my->_sock.next_layer(), fc::asio::tcp::endpoint( boost::asio::ip::address_v4(remote_endpoint.get_address()), remote_endpoint.port() ) );
-    my->_sock.set_verify_callback(boost::asio::ssl::rfc2818_verification(hostname));
-    my->_sock.set_verify_depth(10);
-		if (!SSL_set_tlsext_host_name(my->_sock.native_handle(), hostname.c_str()))
-		{
-			boost::system::error_code ec{ static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category() };
-			throw boost::system::system_error{ ec };
-		}
     my->_sock.handshake(boost::asio::ssl::stream_base::client);
   }
 

@@ -4,8 +4,6 @@
 #include <fc/io/iostream.hpp>
 #include <fc/time.hpp>
 
-#include <memory>
-
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -14,6 +12,13 @@ namespace fc {
 
   class tcp_socket_io_hooks;
   class tcp_ssl_socket_io_hooks;
+
+  namespace detail
+  {
+#if defined(__APPLE__) || defined(__linux__)
+    static bool have_so_reuseport = true;
+#endif
+  }
 
   class tcp_socket : public virtual iostream
   {
@@ -57,7 +62,11 @@ namespace fc {
     private:
       friend class tcp_server;
       class impl;
-      std::shared_ptr< impl > my;
+      #if BOOST_VERSION >= 107000
+      fc::fwd<impl,0x70> my;
+      #else
+      fc::fwd<impl,0x54> my;
+      #endif
   };
   typedef std::shared_ptr<tcp_socket> tcp_socket_ptr;
 
@@ -67,9 +76,7 @@ namespace fc {
       tcp_ssl_socket();
       virtual ~tcp_ssl_socket();
 
-      void set_verify_peer( bool verify );
-
-      void     connect_to( const fc::ip::endpoint& remote_endpoint, const std::string& hostname );
+      void     connect_to( const fc::ip::endpoint& remote_endpoint );
       void     bind( const fc::ip::endpoint& local_endpoint );
       void     enable_keep_alives(const fc::microseconds& interval);
       void     set_io_hooks(tcp_ssl_socket_io_hooks* new_hooks);
@@ -105,7 +112,11 @@ namespace fc {
     private:
       friend class tcp_server;
       class impl;
-      std::shared_ptr< impl > my;
+      #if BOOST_VERSION >= 107000
+      fc::fwd<impl,0x178> my;
+      #else
+      fc::fwd<impl,0x15C> my;
+      #endif
   };
   typedef std::shared_ptr<tcp_ssl_socket> tcp_ssl_socket_ptr;
 

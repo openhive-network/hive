@@ -8,19 +8,7 @@
 #include <fc/network/url.hpp>
 #include <boost/algorithm/string.hpp>
 
-namespace fc { namespace http {
-
-  class ssl_connection::impl
-  {
-  public:
-    fc::tcp_ssl_socket sock;
-    fc::ip::endpoint ep;
-    std::string hostname;
-    int read_until( char* buffer, char* end, char c = '\n' );
-    fc::http::reply parse_reply();
-  };
-
-   int ssl_connection::impl::read_until( char* buffer, char* end, char c ) {
+   int fc::http::ssl_connection::impl::read_until( char* buffer, char* end, char c ) {
       char* p = buffer;
      // try {
           while( p < end && 1 == sock.readsome(p,1) ) {
@@ -37,8 +25,8 @@ namespace fc { namespace http {
       return (p-buffer);
    }
 
-   reply ssl_connection::impl::parse_reply() {
-      reply rep;
+   fc::http::reply fc::http::ssl_connection::impl::parse_reply() {
+      fc::http::reply rep;
       try {
         std::vector<char> line(1024*8);
         int s = read_until( line.data(), line.data()+line.size(), ' ' ); // HTTP/1.1
@@ -47,7 +35,7 @@ namespace fc { namespace http {
         s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
         
         while( (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
-          header h;
+          fc::http::header h;
           char* end = line.data();
           while( *end != ':' )++end;
           h.key = fc::string(line.data(),end);
@@ -73,16 +61,18 @@ namespace fc { namespace http {
       } 
    }
 
-  ssl_connection::ssl_connection()
-  :my( new ssl_connection::impl() ){}
 
-  ssl_connection::~ssl_connection(){}
+
+namespace fc { namespace http {
+
+         ssl_connection::ssl_connection()
+         :my( new ssl_connection::impl() ){}
 
 
 // used for clients
-void       ssl_connection::connect_to( const fc::ip::endpoint& ep, const std::string& hostname ) {
+void       ssl_connection::connect_to( const fc::ip::endpoint& ep ) {
   my->sock.close();
-  my->sock.connect_to( my->ep = ep, my->hostname = hostname );
+  my->sock.connect_to( my->ep = ep );
 }
 
 http::reply ssl_connection::request( const fc::string& method, 
@@ -92,7 +82,7 @@ http::reply ssl_connection::request( const fc::string& method,
   fc::url parsed_url(url);
   if( !my->sock.is_open() ) {
     wlog( "Re-open socket!" );
-    my->sock.connect_to( my->ep, my->hostname );
+    my->sock.connect_to( my->ep );
   }
   try {
       fc::stringstream req;

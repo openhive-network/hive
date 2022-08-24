@@ -5,48 +5,26 @@
 
 namespace fc { namespace rpc {
 
-http_api_connection::http_api_connection( const std::string& url, bool skip_cert_check )
-   : _skip_cert_check( skip_cert_check )
+fc::http::connection_base& http_api_connection::get_connection()
 {
-   const auto apply_default_port_if_required = [&]( uint16_t def_port ) -> void {
-      if( !this->_url.port().valid() )
-      {
-         fc::mutable_url port_change = fc::move( this->_url );
-         port_change.set_port( def_port );
-
-         this->_url = fc::move( port_change );
-      }
-   };
-
-   this->_url = fc::url{ url };
-
-   if( this->_url.proto() == "http" )
-   {
-      this->is_ssl = false;
-      apply_default_port_if_required( 80 );
-   }
-   else if( this->_url.proto() == "https" )
-   {
-      this->is_ssl = true;
-      apply_default_port_if_required( 443 );
-   }
+   if( is_ssl )
+      return _ssl_connection;
    else
-      FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())(url) );
+      return _http_connection;
+}
 
-   try
-   {
-      fc::resolve( *this->_url.host(), *this->_url.port() ); // First try to resolve the domain name
-
-      _is_ip_url = false;
-   }
-   catch( const fc::exception& e )
-   {
-      _is_ip_url = true;
-   }
 
 http_api_connection::http_api_connection( const std::string& _url )
-   : _url(_url)
 {
+   this->_url = fc::url{ _url };
+
+   if( this->_url.proto() == "http" )
+      this->is_ssl = false;
+   else if( this->_url.proto() == "https" )
+      this->is_ssl = true;
+   else
+      FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())("url", _url) );
+
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
@@ -139,17 +117,17 @@ fc::variant http_api_connection::do_request(
 
    try
    {
-      _connection.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
+      get_connection().connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
    }
    catch( const fc::exception& e )
    {
       try
       {
-         _connection.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
+         get_connection().connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
       } FC_CAPTURE_AND_RETHROW( (_url) )
    }
 
-   std::vector< char > _body = _connection.request( "POST", _url, fc::json::to_string(request) ).body;
+   std::vector< char > _body = get_connection().request( "POST", _url, fc::json::to_string(request) ).body;
 
    const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() } );
 
