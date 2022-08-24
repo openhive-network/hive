@@ -249,8 +249,10 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
      src/crypto/restartable_sha256.cpp
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
+     src/network/tcp_ssl_socket.cpp
      src/network/udp_socket.cpp
      src/network/http/http_connection.cpp
+     src/network/http/ssl_http_connection.cpp
      src/network/http/http_server.cpp
      src/network/http/websocket.cpp
      src/network/ntp.cpp
