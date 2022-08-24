@@ -1,0 +1,7 @@
+
+Gets the account balance information for all accounts for which this wallet
+has a private key
+
+Returns
+    table with HIVE, VESTS and HBD balances for all accounts for which this
+	wallet has a private key
