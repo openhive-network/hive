@@ -13,11 +13,6 @@
 
 namespace fc {
 
-  namespace detail
-  {
-    bool have_so_reuseport = true;
-  }
-
   class tcp_socket::impl : public tcp_socket_io_hooks {
     public:
       impl() :
@@ -221,14 +216,14 @@ namespace fc {
 # endif
     // OSX needs SO_REUSEPORT in addition to SO_REUSEADDR.
     // This probably needs to be set for any BSD
-    if (detail::have_so_reuseport)
+    if (fc::detail::have_so_reuseport)
     {
       int reuseport_value = 1;
       if (setsockopt(my->_sock.native_handle(), SOL_SOCKET, SO_REUSEPORT,
                      (char*)&reuseport_value, sizeof(reuseport_value)) < 0)
       {
         if (errno == ENOPROTOOPT)
-          detail::have_so_reuseport = false;
+          fc::detail::have_so_reuseport = false;
         else
           wlog("Error setting SO_REUSEPORT");
       }
@@ -334,14 +329,14 @@ namespace fc {
 #if defined(__APPLE__) || (defined(__linux__) && defined(SO_REUSEPORT))
     // OSX needs SO_REUSEPORT in addition to SO_REUSEADDR.
     // This probably needs to be set for any BSD
-    if (detail::have_so_reuseport)
+    if (fc::detail::have_so_reuseport)
     {
       int reuseport_value = 1;
       if (setsockopt(my->_accept.native_handle(), SOL_SOCKET, SO_REUSEPORT,
                      (char*)&reuseport_value, sizeof(reuseport_value)) < 0)
       {
         if (errno == ENOPROTOOPT)
-          detail::have_so_reuseport = false;
+          fc::detail::have_so_reuseport = false;
         else
           wlog("Error setting SO_REUSEPORT");
       }
