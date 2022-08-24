@@ -233,6 +233,7 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
      src/interprocess/mmap_struct.cpp
      src/interprocess/file_mutex.cpp
      src/rpc/cli.cpp
+     src/rpc/http_base_api.cpp
      src/rpc/http_api.cpp
      src/rpc/json_connection.cpp
      src/rpc/state.cpp
