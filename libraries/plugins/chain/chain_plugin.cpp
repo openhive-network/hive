@@ -651,11 +651,16 @@ void chain_plugin_impl::open()
   }
   catch( const fc::exception& e )
   {
+    /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
+    blockchain_worker_thread_pool::get_instance().shutdown();
+
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( "If you know what you are doing you can skip this check and force open the database using `--force-open`." );
     wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
     wlog( " Error: ${e}", ("e", e) );
     hive::notify_hived_status("exitting with open database error");
+    
+    /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
     exit(EXIT_FAILURE);
   }
 }

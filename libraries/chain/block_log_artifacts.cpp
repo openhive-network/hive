@@ -218,6 +218,7 @@ private:
   bool load_header();
   void flush_header() const;
 
+  /// Returns true if generation has been completed, false otherwise
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
   
   void truncate_file(uint32_t last_block);
@@ -297,9 +298,11 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
 
       /// Generate artifacts file only if some blocks are present in pointed block_log.
       if (head_block_num > 0)
+      {
         generate_file(source_block_provider, 1, head_block_num);
+        _header.head_block_num = head_block_num;
+      }
 
-      _header.head_block_num = head_block_num;
       flush_header();
     }
     else
@@ -332,9 +335,9 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
              ("first_block", _header.head_block_num + 1)("last_block", head_block_num));
         /// Artifact file is too short - we need to resume its generation
         generate_file(source_block_provider, _header.head_block_num + 1, head_block_num);
-
         /// head_block_num must be updated
         _header.head_block_num = head_block_num;
+
         flush_header();
       }
       else
@@ -366,8 +369,8 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
         flush_header();
 
         generate_file(source_block_provider, 1, head_block_num);
-
         _header.head_block_num = head_block_num;
+
         flush_header();
       }
     }
@@ -423,6 +426,8 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
   uint64_t time_begin = timestamp_ms();
   uint32_t block_count = last_block - first_block + 1;
 
+  uint32_t interrupted_at_block = 0;
+
   std::mutex queue_mutex;
   std::condition_variable queue_condition;
   struct full_block_with_artifacts
@@ -456,15 +461,24 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
         while (!appbase::app().is_interrupt_request() && !full_block_queue.pop(work_raw_ptr))
           queue_condition.wait(lock);
         if (appbase::app().is_interrupt_request() || !work_raw_ptr)
+        {
+          if(work_raw_ptr != nullptr)
+            interrupted_at_block = work_raw_ptr->full_block->get_block_num();
           break;
+        }
         queue_size.fetch_sub(1, std::memory_order_relaxed);
 #else
         while (!appbase::app().is_interrupt_request() && full_block_queue.empty())
           queue_condition.wait(lock);
-        if (appbase::app().is_interrupt_request())
-          break;
         work_raw_ptr = full_block_queue.front();
         full_block_queue.pop();
+        if (appbase::app().is_interrupt_request())
+        {
+          if(work_raw_ptr != nullptr)
+            interrupted_at_block = work_raw_ptr->full_block->get_block_num();
+          break;
+        }
+
         if (!work_raw_ptr)
           break;
 #endif
@@ -509,7 +523,10 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
         queue_condition.wait(lock);
     }
     if (appbase::app().is_interrupt_request())
+    {
+      interrupted_at_block = full_block->get_block_num();
       return false;
+    }
 
     full_block_queue.push(new full_block_with_artifacts{full_block, block_pos, attributes});
     queue_size.fetch_add(1, std::memory_order_relaxed);
@@ -518,7 +535,10 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
     while (!appbase::app().is_interrupt_request() && full_block_queue.size() >= max_blocks_to_prefetch)
       queue_condition.wait(lock);
     if (appbase::app().is_interrupt_request())
+    {
+      interrupted_at_block = full_block->get_block_num();
       return false;
+    }
 
     full_block_queue.push(new full_block_with_artifacts{full_block, block_pos, attributes});
 #endif
@@ -537,7 +557,10 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
   uint64_t time_end = timestamp_ms();
   auto elapsed_time = time_end - time_begin;
 
-  ilog("Block artifact file generation finished. ${block_count} blocks processed in time: ${elapsed_time} ms", (block_count)(elapsed_time));
+  if(interrupted_at_block != 0)
+    FC_THROW("Block artifact file generation has been INTERRUPTED at block: ${b} and is INCOMPLETE. Execution can't be continued...", ("b", interrupted_at_block));
+  else
+    ilog("Block artifact file generation finished. ${block_count} blocks processed in time: ${elapsed_time} ms", (block_count)(elapsed_time));
 }
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
@@ -615,6 +638,8 @@ block_log_artifacts::artifacts_t block_log_artifacts::read_block_artifacts(uint3
     artifacts = chunk_buffer->unpack_data(block_num);
     artifacts.block_serialized_data_size = calculate_block_serialized_data_size(next_chunk, *chunk_buffer);
   });
+
+  FC_ASSERT(artifacts.block_id != block_id_type(), "Broken block id - probably artifact file is damaged");
 
   return artifacts;
 }
