@@ -229,8 +229,6 @@ struct chain_plugin_impl::write_request_visitor
     count_tx_applied = 0;
     count_tx_failed_auth = 0;
     count_tx_failed_no_rc = 0;
-    if( ( block_ctrl->get_full_block()->get_block_num() % 28800 ) == 0 )
-      ilog( "fork db size = ${fdb}", ( "fdb", cp.db.get_fork_db_size() ) );
   }
 
   void operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
