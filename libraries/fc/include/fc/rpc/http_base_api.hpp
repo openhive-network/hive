@@ -16,7 +16,7 @@ namespace fc { namespace rpc {
    class http_base_api_connection : public api_connection
    {
       public:
-         http_base_api_connection();
+         http_base_api_connection() = default;
          virtual ~http_base_api_connection() = default;
 
          virtual variant send_call(

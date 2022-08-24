@@ -37,9 +37,6 @@ namespace fc { namespace rpc {
       private:
          bool is_ssl;
 
-      private:
-         bool is_ssl;
-
          fc::http::connection _http_connection;
          fc::http::ssl_connection _ssl_connection;
 
@@ -49,7 +46,6 @@ namespace fc { namespace rpc {
          fc::http::connection_base& get_connection();
 
          fc::url            _url;
-         fc::rpc::state     _rpc_state;
    };
 
 } } // namespace fc::rpc

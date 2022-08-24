@@ -96,8 +96,7 @@ int main( int argc, char** argv )
       ("help,h", "Print this help message and exit.")
       ("version,v", "Print git revision sha of this cli_wallet build.")
       ("offline,o", "Run the wallet in offline mode.")
-      ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
-      ("server-http-rpc-endpoint,p", bpo::value<string>()->default_value("127.0.0.1:8080"), "Server http RPC endpoint")
+      ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server RPC endpoint (can be http(s) or ws(s))")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
@@ -210,17 +209,8 @@ int main( int argc, char** argv )
     // but allow CLI to override
     if( !options.at("server-rpc-endpoint").defaulted() )
     {
-      wdata.http_server.clear();
-      wdata.ws_server = options.at("server-rpc-endpoint").as<std::string>();
-      idump((wdata.ws_server));
-    }
-
-    // but allow CLI to override
-    if( !options.at("server-http-rpc-endpoint").defaulted() )
-    {
-      wdata.ws_server.clear();
-      wdata.http_server = options.at("server-http-rpc-endpoint").as<std::string>();
-      idump((wdata.http_server));
+      wdata.server_url = options.at("server-rpc-endpoint").as<std::string>();
+      idump((wdata.server_url));
     }
 
     // Override wallet data
@@ -263,22 +253,26 @@ int main( int argc, char** argv )
       daemon_mode_enabled = true;
     }
 
-    using opt_api_t = fc::optional<fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >>;
+    using api_t = fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >;
 
-    if( wdata.offline || (wdata.ws_server.size() == 0 && wdata.http_server.size() == 0) )
+    bool use_ws = wdata.server_url.find("ws") == 0;
+
+    api_t _remote_api;
+
+    if( wdata.offline || wdata.server_url.size() == 0 )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, opt_api_t{}, opt_api_t{}, exit_promise, daemon_mode_enabled, get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, api_t{}, exit_promise, daemon_mode_enabled, get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
     }
     else
     {
-      if( wdata.ws_server.size() )
+      if( use_ws )
       {
         for (;;)
         {
           try
           {
-            ws_con = ws_client.connect( wdata.ws_server );
+            ws_con = ws_client.connect( wdata.server_url );
           }
           catch (const fc::exception& e)
           {
@@ -299,30 +293,10 @@ int main( int argc, char** argv )
       }
       else
       {
-        if( options.count( "skip-cert-check" ) )
-          wlog("Skipping https certificate check!");
-
-        auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.server_url, options.count( "skip-cert-check" ));
-        _remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-      }
-      else
-      {
-        // wlog("Using unimplemented http API connection!");
         // TODO: Handle https and maybe pre-resolve url
-      }
 
-      opt_api_t ws_remote_api;
-      opt_api_t http_remote_api;
-
-      if( wdata.ws_server.size() )
-      {
-        auto ws_apic = std::make_shared<fc::rpc::websocket_api_connection>(*ws_con);
-        ws_remote_api = ws_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
-      }
-      else if( wdata.http_server.size() )
-      {
-        auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.http_server);
-        http_remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
+        auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.server_url);
+        _remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
       }
 
       output_formatter_type output_format;
@@ -330,10 +304,9 @@ int main( int argc, char** argv )
         output_format = get_output_formatter( options, output_formatter_type::none );
       else
         output_format = get_output_formatter( options, output_formatter_type::text );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, _remote_api, exit_promise, daemon_mode_enabled, output_format, _transaction_serialization, _store_transaction );
 
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, ws_remote_api, http_remote_api, exit_promise, daemon_mode_enabled, output_format, _transaction_serialization, _store_transaction );
-
-      if( ws_remote_api )
+      if( use_ws )
       {
         closed_connection = ws_con->closed.connect([=]{
           cerr << "Server has disconnected us.\n";
@@ -417,8 +390,6 @@ int main( int argc, char** argv )
       _http_server->listen( fc::ip::endpoint::from_string( options.at( "rpc-http-endpoint" ).as<string>() ) );
       ilog( "Listening for incoming HTTP RPC requests on ${endpoint}", ( "endpoint", _http_server->get_local_endpoint() ) );
 
-      auto _endpoint = fc::ip::endpoint::from_string( wdata.http_server );
-
       //
       // due to implementation, on_request() must come AFTER listen()
       //
@@ -433,8 +404,8 @@ int main( int argc, char** argv )
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
-          std::shared_ptr< fc::rpc::http_api_connection > conn =
-            std::make_shared< fc::rpc::http_api_connection>( _endpoint );
+          std::shared_ptr< fc::rpc::http_base_api_connection > conn =
+            std::make_shared< fc::rpc::http_base_api_connection>();
           conn->register_api( wapi );
           conn->on_request( req, resp );
 

@@ -13,13 +13,6 @@ namespace fc {
   class tcp_socket_io_hooks;
   class tcp_ssl_socket_io_hooks;
 
-  namespace detail
-  {
-#if defined(__APPLE__) || defined(__linux__)
-    static bool have_so_reuseport = true;
-#endif
-  }
-
   class tcp_socket : public virtual iostream
   {
     public:
