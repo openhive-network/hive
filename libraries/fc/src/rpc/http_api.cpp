@@ -119,6 +119,8 @@ fc::variant http_api_connection::do_request(
    }
    catch( const fc::exception& e )
    {
+      ilog("Error resolving host '${url}': ${what}. Trying ip endpoint connection", ("url", _url)("what", e.to_detail_string())("error", e));
+
       try
       {
          get_connection().connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
