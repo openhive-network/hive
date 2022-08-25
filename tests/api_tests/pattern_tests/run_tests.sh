@@ -20,7 +20,7 @@ fi
 
 tox -e tavern --                                 \
     --tb=line                                    \
-    -n 5                                         \
+    -n 8                                         \
     --cache-clear                                \
     -p no:logging                                \
     --show-capture=log                           \
