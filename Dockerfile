@@ -93,9 +93,12 @@ SHELL ["/bin/bash", "-c"]
 USER hived
 WORKDIR /home/hived
 
-COPY --from=build /home/hived/build/programs/hived/hived /home/hived/build/programs/cli_wallet/cli_wallet \
+COPY --from=build \
+  /home/hived/build/programs/hived/hived \
+  /home/hived/build/programs/cli_wallet/cli_wallet \
   /home/hived/build/programs/util/compress_block_log \
   /home/hived/build/programs/util/truncate_block_log \
+  /home/hived/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived/build/tests/unit/* /home/hived/bin/
 
 COPY --from=build /home/hived/hive/scripts/common.sh ./scripts/common.sh
