@@ -509,8 +509,10 @@ bool database::is_known_block(const block_id_type& id)const
   if (_fork_db.fetch_block(id))
     return true;
 
-  std::shared_ptr<full_block_type> full_block_from_block_log = _block_log.read_block_by_num(protocol::block_header::num_from_id(id));
-  return full_block_from_block_log ? full_block_from_block_log->get_block_id() == id : false;
+  auto requested_block_num = protocol::block_header::num_from_id(id);
+  auto read_block_id = _block_log.read_block_id_by_num(requested_block_num);
+
+  return read_block_id != block_id_type() && read_block_id == id;
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required, but fork database read lock is required
@@ -519,8 +521,10 @@ bool database::is_known_block_unlocked(const block_id_type& id)const
   if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
     return true;
 
-  std::shared_ptr<full_block_type> full_block_from_block_log = _block_log.read_block_by_num(protocol::block_header::num_from_id(id));
-  return full_block_from_block_log ? full_block_from_block_log->get_block_id() == id : false;
+  auto requested_block_num = protocol::block_header::num_from_id(id);
+  auto read_block_id = _block_log.read_block_id_by_num(requested_block_num);
+
+  return read_block_id != block_id_type() && read_block_id == id;
 } FC_CAPTURE_AND_RETHROW() }
 
 /**
@@ -559,10 +563,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
       return fitem->get_block_id();
 
     // Next we check if block_log has it. Irreversible blocks are here.
-    std::shared_ptr<full_block_type> full_block_from_block_log = _block_log.read_block_by_num(block_num);
-    if (full_block_from_block_log)
-      return full_block_from_block_log->get_block_id();
-    return block_id_type(); //this block_num couldn't be found
+    return _block_log.read_block_id_by_num(block_num);
   }
   FC_CAPTURE_AND_RETHROW( (block_num) )
 }
@@ -7308,14 +7309,14 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
   if (block_number_needed_from_block_log)
   {
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
-    std::shared_ptr<full_block_type> full_block = _block_log.read_block_by_num(*block_number_needed_from_block_log);
-    assert(full_block);
+    auto read_block_id = _block_log.read_block_id_by_num(*block_number_needed_from_block_log);
+
     if (reference_point_block_num == *block_number_needed_from_block_log)
     {
       // we're getting this block from the database because it's the reference point,
       // not because it's the last irreversible.
       // We can only do this if the reference point really is in the blockchain
-      if (full_block->get_block_id() == reference_point)
+      if (read_block_id == reference_point)
         synopsis.insert(synopsis.begin(), reference_point);
       else
       {
@@ -7328,7 +7329,9 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
       }
     }
     else
-      synopsis.insert(synopsis.begin(), full_block->get_block_id());
+    {
+      synopsis.insert(synopsis.begin(), read_block_id);
+    }
   }
   return synopsis;
 }
@@ -7356,8 +7359,8 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
 
 
   // Next we check if block_log has it. Irreversible blocks are here.
-  std::shared_ptr<full_block_type> full_block = _block_log.read_block_by_num(block_num);
-  return full_block && block_id == full_block->get_block_id();
+  auto read_block_id = _block_log.read_block_id_by_num(block_num);
+  return block_id == read_block_id;
 } FC_CAPTURE_AND_RETHROW() }
 
 // used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and generates 
@@ -7444,10 +7447,8 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
        block_num <= last_block_from_block_log_in_reply;
        ++block_num)
   {
-    std::shared_ptr<full_block_type> full_block = _block_log.read_block_by_num(block_num);
-    assert(full_block);
     uint32_t index_in_result = block_num - first_block_num_in_reply;
-    result[index_in_result] = full_block->get_block_id();
+    result[index_in_result] = _block_log.read_block_id_by_num(block_num);
   }
 
   if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 
