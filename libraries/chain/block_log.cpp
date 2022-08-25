@@ -341,6 +341,25 @@ namespace hive { namespace chain {
     return decompress_raw_block(raw_block_data.get(), raw_block_size, attributes);
   }
 
+  hive::protocol::block_id_type block_log::read_block_id_by_num(uint32_t block_num) const
+  {
+    std::shared_ptr<full_block_type> head_block = my->head;
+
+    /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
+    if(block_num == 0 || !head_block || block_num > head_block->get_block_num())
+      return hive::protocol::block_id_type();
+
+    if(block_num == head_block->get_block_num())
+      return head_block->get_block_id();
+
+    block_log_artifacts::artifacts_t block_artifacts = my->_artifacts->read_block_artifacts(block_num);
+
+//    auto block = read_block_by_num(block_num);
+//    FC_ASSERT(block->get_block_id() != block_artifacts.block_id);
+
+    return block_artifacts.block_id;
+  }
+
   std::shared_ptr<full_block_type> block_log::read_block_by_num( uint32_t block_num )const
   {
     try
