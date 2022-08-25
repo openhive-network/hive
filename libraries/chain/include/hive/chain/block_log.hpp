@@ -77,6 +77,10 @@ namespace hive { namespace chain {
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t>&& raw_block_data_tuple);
       static std::tuple<std::unique_ptr<char[]>, size_t> decompress_raw_block(const char* raw_block_data, size_t raw_block_size, block_attributes_t attributes);
 
+      /** Allows to read just block_id for block identified by given block number. 
+      *   \warning Can return empty `block_id_type` if block_num is out of valid range.
+      */
+      hive::protocol::block_id_type    read_block_id_by_num(uint32_t block_num) const;
       std::shared_ptr<full_block_type> read_block_by_num(uint32_t block_num) const;
       std::shared_ptr<full_block_type> read_block_by_offset(uint64_t offset, size_t size, block_attributes_t attributes) const;
       std::vector<std::shared_ptr<full_block_type>> read_block_range_by_num(uint32_t first_block_num, uint32_t count) const;
