@@ -26,4 +26,5 @@ tox -e tavern --                                 \
     --show-capture=log                           \
     --junitxml=results.xml                       \
     -W ignore::pytest.PytestDeprecationWarning   \
+    -W ignore::DeprecationWarning                \
     -k "${TEST_NAMES}"
