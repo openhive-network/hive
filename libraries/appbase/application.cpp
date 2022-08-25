@@ -90,7 +90,9 @@ void io_handler::attach_signals()
   /** To avoid killing process by broken pipe and continue regular app shutdown.
     *  Useful for usecase: `hived | tee hived.log` and pressing Ctrl+C
     **/
+  #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
+  #endif
 
   signals = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT, SIGTERM ) );
   signals->async_wait([ this ](const boost::system::error_code& err, int signal_number ) {
