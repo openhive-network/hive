@@ -124,10 +124,5 @@ popd
 if [ ! -z "${EXPORT_PATH}" ];
 then
   "$SCRIPTPATH/export-binaries.sh" ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} "${EXPORT_PATH}"
-  docker build -o "${EXPORT_PATH}" - << EOF
-    FROM scratch
-    COPY --from=${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} /home/hived/bin/ /
-EOF
-
 fi
 
