@@ -20,10 +20,10 @@ fi
 
 tox -e tavern --                                 \
     --tb=line                                    \
-    --workers 5                                  \
+    -n 5                                         \
     --cache-clear                                \
     -p no:logging                                \
     --show-capture=log                           \
     --junitxml=results.xml                       \
     -W ignore::pytest.PytestDeprecationWarning   \
-    --tests-per-worker auto -k "${TEST_NAMES}"
+    -k "${TEST_NAMES}"
