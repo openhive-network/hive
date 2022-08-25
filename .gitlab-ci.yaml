@@ -520,11 +520,6 @@ transaction_serialization_mainnet_tests:
   image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
   interruptible: true
   variables:
-    FF_NETWORK_PER_BUILD: 1
-    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
-    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
-    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
-    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: prepare_hived_data_image
