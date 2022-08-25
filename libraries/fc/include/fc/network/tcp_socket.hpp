@@ -52,7 +52,7 @@ namespace fc {
       friend class tcp_server;
       class impl;
       #ifdef _WIN64
-      fc::fwd<impl,0x81> my;
+      fc::fwd<impl,0xc0> my;
       #else
         #if BOOST_VERSION >= 107000
         fc::fwd<impl,0x70> my;
