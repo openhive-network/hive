@@ -473,15 +473,13 @@ patterns_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - apt update
-    - apt install -y git
     - pip install tox
     - pip install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
 
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
-    - timeout 33m ./run_tests.sh hived-instance:8090 `git rev-parse --show-toplevel`
+    - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR"
 
   timeout: 38min
   artifacts:
