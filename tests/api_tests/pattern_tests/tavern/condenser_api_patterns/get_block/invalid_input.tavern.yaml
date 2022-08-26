@@ -3,6 +3,7 @@
 
   marks:
     - patterntest
+    - negative
 
   includes:
     - !include ../../common.yaml
@@ -17,10 +18,13 @@
         json:
           jsonrpc: "2.0"
           id: 1
-          method: "condenser_api.get_block_header"
-          params: [ 1000000 ]
+          method: "condenser_api.get_block"
+          params: ["zzzz"]
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
-
+          extra_kwargs:
+            error_response: True
+            ignore_tags:
+              - data
