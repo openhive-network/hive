@@ -12,7 +12,17 @@
 #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+#ifdef _WIN64
+#include <windows.h>
+#ifndef MADV_WILLNEED
+#define MADV_WILLNEED 0x3
+#endif
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 02000000        /* set close_on_exec */
+#endif
+#endif
 #define MMAP_BLOCK_IO
+
 
 #ifdef MMAP_BLOCK_IO
 #include <sys/types.h>
@@ -71,7 +81,12 @@ namespace hive { namespace chain {
     {
       for (;;)
       {
+#ifdef _WIN64
+        lseek(fd,offset,SEEK_CUR);
+        ssize_t bytes_written = write(fd, buf, nbyte);
+#else
         ssize_t bytes_written = pwrite(fd, buf, nbyte, offset);
+#endif
         if (bytes_written == -1)
           FC_THROW("Error writing ${nbytes} to file at offset ${offset}: ${error}", 
                    ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
@@ -88,7 +103,12 @@ namespace hive { namespace chain {
       size_t total_read = 0;
       for (;;)
       {
+#ifdef _WIN64
+        lseek(fd,offset,SEEK_CUR);
+        ssize_t bytes_read = read(fd, buf, nbyte);
+#else
         ssize_t bytes_read = pread(fd, buf, nbyte, offset);
+#endif
         if (bytes_read == -1)
           FC_THROW("Error reading ${nbytes} from file at offset ${offset}: ${error}", 
                    ("nbyte", nbyte)("offset", offset)("error", strerror(errno)));
@@ -468,7 +488,7 @@ namespace hive { namespace chain {
       if (ftruncate(new_index_fd, block_index_size) == -1)
         FC_THROW("Error resizing rebuilt block index file: ${error}", ("error", strerror(errno)));
 
-#ifdef MMAP_BLOCK_IO
+#if defined( MMAP_BLOCK_IO) && !defined(_WIN64)
       //memory map for block log
       char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
       if (block_log_ptr == (char*)-1)
@@ -491,7 +511,7 @@ namespace hive { namespace chain {
         uint64_t block_pos;
         uint64_t higher_block_pos;
         higher_block_pos = block_log_offset_of_block_pos;
-#ifdef MMAP_BLOCK_IO
+#if defined( MMAP_BLOCK_IO) && !defined(_WIN64)
         //read next block pos offset from the block log
         memcpy(&block_pos, block_log_ptr + block_log_offset_of_block_pos, sizeof(block_pos));
         // write it to the right location in the new index file
@@ -515,7 +535,7 @@ namespace hive { namespace chain {
         return;
       }
 
-#ifdef MMAP_BLOCK_IO
+#if defined( MMAP_BLOCK_IO) && !defined(_WIN64)
       if (munmap(block_log_ptr, my->block_log_size) == -1)
         elog("error unmapping block_log: ${error}",("error",strerror(errno)));
       if (munmap(block_index_ptr, block_index_size) == -1)
