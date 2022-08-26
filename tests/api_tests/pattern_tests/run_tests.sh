@@ -9,7 +9,7 @@ else
 fi
 export TAVERN_DIR="$2/tests/api_tests/pattern_tests/"
 
-default_testname_pat="block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
+default_testname_pat="(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
 if [[ "$3" == "direct_call_hafah" ]]; then
     export IS_DIRECT_CALL_HAFAH=TRUE
     TEST_NAMES="account_history_api_"
