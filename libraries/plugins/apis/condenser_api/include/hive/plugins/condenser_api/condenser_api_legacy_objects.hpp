@@ -122,7 +122,7 @@ struct legacy_signed_block
       legacy_signed_transaction& legcy_tx = transactions.emplace_back( legacy_signed_transaction( t ) );
 
       legcy_tx.transaction_id = b.transaction_ids[tx_no];
-      legcy_tx.transaction_num = tx_no;
+      legcy_tx.transaction_num = tx_no++;
       legcy_tx.block_num = block_num;
     }
 
