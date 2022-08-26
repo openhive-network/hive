@@ -381,6 +381,7 @@ public:
       result["server_hive_revision"] = v.hive_revision;
       result["server_fc_revision"] = v.fc_revision;
       result["server_chain_id"] = v.chain_id;
+      result["server_url"] = _wallet.ws_server;
     }
     catch( fc::exception& )
     {
