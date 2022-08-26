@@ -473,7 +473,7 @@ patterns_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - pip install tox
+    - pip install tox==3.25.1
     - pip install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
 
   script:
