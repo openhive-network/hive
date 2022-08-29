@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import time
 from typing import Dict, Iterable
+import os
 
 import pytest
 
@@ -12,7 +13,7 @@ from test_tools.__private.user_handles.get_implementation import get_implementat
 from test_tools.__private.wait_for import wait_for_event
 from tests.functional.python_tests.fork_tests.local_tools import get_time_offset_from_iso_8601
 
-from ..local_tools import prepare_witnesses
+from ..local_tools import init_network
 from .local_tools import connect_sub_networks
 
 def get_time_offset_from_file(file: Path):
@@ -49,6 +50,13 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
             exception_message='Live mode not activated on time.'
         )
 
+def display_info(wallet):
+    # Network should be set up at this time, with 21 active witnesses, enough participation rate
+    # and irreversible block number lagging behind around 15-20 blocks head block number
+    result = wallet.api.info()
+    irreversible = result["last_irreversible_block_num"]
+    head = result["head_block_num"]
+    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
 
 @pytest.fixture
 def prepared_networks() -> Dict:
@@ -85,21 +93,18 @@ def prepared_networks() -> Dict:
 
     wallet = tt.Wallet(attach_to=init_node)
 
-    # Network should be set up at this time, with 21 active witnesses, enough participation rate
-    # and irreversible block number lagging behind around 15-20 blocks head block number
-    result = wallet.api.info()
-    irreversible = result["last_irreversible_block_num"]
-    head = result["head_block_num"]
-    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
+    display_info(wallet)
 
     yield {
         'Alpha': alpha_net,
         'Beta': beta_net,
     }
 
-def prepared_sub_networks(sub_networks_sizes : list) -> Dict:
+def prepared_sub_networks(sub_networks_sizes : list, allow_generate_block_log : bool = False, block_log_directory_name : str = None) -> Dict:
 
     assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
+    assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
+
     cnt               = 0
     all_witness_names = []
     sub_networks      = []
@@ -130,16 +135,28 @@ def prepared_sub_networks(sub_networks_sizes : list) -> Dict:
         sub_network.run()
 
     initminer_public_key = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'
-    init_wallet = prepare_witnesses(init_node, all_witness_names, initminer_public_key)
+    init_wallet = init_network(init_node, all_witness_names, initminer_public_key, allow_generate_block_log, block_log_directory_name)
+
+    display_info(init_wallet)
+
+    if allow_generate_block_log:
+        return None, None, None
+
     return sub_networks, all_witness_names, init_wallet
+
+def allow_generate_block_log():
+    return int(os.environ.get('GENERATE_FORK_BLOCK_LOG', None)) == 1
+
+def create_block_log_directory_name(name : str):
+    return str(Path(__file__).parent.absolute()) + '/' + name
 
 @pytest.fixture(scope="package")
 def prepared_sub_networks_10_11() -> Dict:
     yield { 'sub-networks-data': prepared_sub_networks([10, 11]) }
 
 @pytest.fixture(scope="package")
-def prepared_sub_networks_3_18() -> Dict:
-    yield { 'sub-networks-data': prepared_sub_networks([3, 18]) }
+def prepared_fork_2_sub_networks_00() -> Dict:
+    yield { 'sub-networks-data': prepared_sub_networks([3, 18], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_2_sub_networks_00')) }
 
 @pytest.fixture(scope="package")
 def prepared_sub_networks_6_17() -> Dict:

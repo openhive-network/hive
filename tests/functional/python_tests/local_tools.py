@@ -2,12 +2,18 @@ from datetime import datetime
 
 from typing import List
 
+from pathlib import Path
+
+import os
+
 import test_tools as tt
 
 def parse_datetime(datetime_: str) -> datetime:
     return datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
 
-def prepare_witnesses( init_node, all_witness_names : List[str], key : str = None ):
+def init_network( init_node, all_witness_names : List[str], key : str = None, allow_generate_block_log : bool = False, block_log_directory_name : str = None):
+
+    tt.logger.info(f"block_log directory name: {block_log_directory_name} allow generate block_log: {allow_generate_block_log}")
 
     tt.logger.info('Attaching wallets...')
     wallet = tt.Wallet(attach_to=init_node)
@@ -50,13 +56,21 @@ def prepare_witnesses( init_node, all_witness_names : List[str], key : str = Non
     tt.logger.info('Wait 21 blocks (when every witness sign at least one block)')
     init_node.wait_number_of_blocks(21)
 
-    # Network should be set up at this time, with 21 active witnesses, enough participation rate
-    # and irreversible block number lagging behind around 15-20 blocks head block number
-    result = wallet.api.info()
-    irreversible = result["last_irreversible_block_num"]
-    head = result["head_block_num"]
-    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
+    if allow_generate_block_log:
+        result = wallet.api.info()
+        head_block_num = result['head_block_number']
+        timestamp = init_node.api.block.get_block(block_num=head_block_num)['block']['timestamp']
+        tt.logger.info(f'head block timestamp: {timestamp}')
 
-    # with fast confirm, irreversible will usually be = head
-    # assert irreversible + 10 < head
+        if os.path.exists(block_log_directory_name):
+            Path(block_log_directory_name + '/block_log').unlink(missing_ok=True)
+        else:
+            os.mkdir(block_log_directory_name)
+
+        init_node.close()
+        init_node.get_block_log(include_index=False).copy_to(block_log_directory_name)
+
+        with open(block_log_directory_name + '/timestamp', 'w') as f:
+            f.write(f'{timestamp}')
+
     return wallet

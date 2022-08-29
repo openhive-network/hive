@@ -9,7 +9,7 @@ import test_tools as tt
 
 from ..local_tools import parse_datetime
 
-from ..local_tools import prepare_witnesses
+from ..local_tools import init_network
 
 def prepare_network(witnesses_number: int, network_name : str, allow_create_init_node : bool, allow_create_api_node : bool):
     tt.logger.info(f'Prototypes of nodes(init, witness, api) are created...')
@@ -39,7 +39,7 @@ def prepare_environment(hard_fork_26_time):
     environment_variables: Optional[Dict] = {'HIVE_HF26_TIME': f'{date_as_seconds}'}
     alpha_net.run(environment_variables)
 
-    prepare_witnesses(init_node, all_witness_names)
+    init_network(init_node, all_witness_names)
 
     return alpha_net
 
@@ -67,7 +67,7 @@ def prepare_environment_with_2_sub_networks(hard_fork_26_time_alpha, hard_fork_2
     #June 1, 2022 7:41:41 AM
     beta_net.run(environment_variables_beta)
 
-    prepare_witnesses(init_node, all_witness_names)
+    init_network(init_node, all_witness_names)
 
     return alpha_net, beta_net
 

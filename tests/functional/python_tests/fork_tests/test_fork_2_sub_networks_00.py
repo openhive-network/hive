@@ -1,7 +1,7 @@
 from .local_tools import assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
 import test_tools as tt
 
-def test_fork_2_sub_networks_00(prepared_sub_networks_3_18):
+def test_fork_2_sub_networks_00(prepared_fork_2_sub_networks_00):
     # start - A network (consists of a 'minority' network(3 witnesses) + a 'majority' network(18 witnesses) produces blocks
 
     # - the network is splitted into 2 sub networks: 6 witnesses(the 'minority' network) + 18 witnesses(the 'majority' network)
@@ -11,7 +11,7 @@ def test_fork_2_sub_networks_00(prepared_sub_networks_3_18):
 
     # Finally the 'minority' network gets blocks from the 'majority' network
 
-    sub_networks_data   = prepared_sub_networks_3_18['sub-networks-data']
+    sub_networks_data   = prepared_fork_2_sub_networks_00['sub-networks-data']
     sub_networks        = sub_networks_data[0]
     assert len(sub_networks) == 2
 
