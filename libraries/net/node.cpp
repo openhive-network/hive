@@ -3726,8 +3726,6 @@ namespace graphene { namespace net {
         }
         message_propagation_data propagation_data{message_receive_time, message_validated_time, originating_peer->node_id};
         broadcast(full_block, propagation_data);
-        _block_message_cache.block_accepted();
-        _transaction_message_cache.block_accepted();
 
         if (is_hard_fork_block(block_num))
         {
@@ -5536,6 +5534,13 @@ namespace graphene { namespace net {
       _block_message_cache.cache_message(full_block, propagation_data);
       _new_block_inventory.insert(full_block);
       trigger_advertise_inventory_loop();
+
+      /** Trigger block_accepted methods to potentially flush caches in both cases:
+          - when node receives a block,
+          - just produce (broadcast) block (as single block producer node in the network)
+      */
+      _block_message_cache.block_accepted();
+      _transaction_message_cache.block_accepted();
     }
 
     void node_impl::broadcast(const std::shared_ptr<full_transaction_type>& full_transaction, const message_propagation_data& propagation_data)
