@@ -108,7 +108,9 @@ docker build --target=base_instance \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}base_instance${BLOCK_LOG_SUFFIX}:base_instance-${BUILD_IMAGE_TAG} -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
+  --build-arg MAX_BUILD_JOBS=${MAX_BUILD_JOBS:-0} \
+  -t ${REGISTRY}base_instance${BLOCK_LOG_SUFFIX}:base_instance-${BUILD_IMAGE_TAG} -f Dockerfile .
 
 # Build the image containing only binaries and be ready to start running hived instance, operating on mounted volummes pointing instance datadir and shm_dir
 docker build --target=instance \
@@ -116,7 +118,9 @@ docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
+  --build-arg MAX_BUILD_JOBS=${MAX_BUILD_JOBS:-0} \
+  -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance${BLOCK_LOG_SUFFIX}:instance-${BUILD_IMAGE_TAG} -f Dockerfile .
 
 
 popd
