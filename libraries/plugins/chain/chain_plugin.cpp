@@ -10,6 +10,7 @@
 #include <hive/utilities/notifications.hpp>
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>
+#include <hive/utilities/memory_usage.hpp>
 
 #include <fc/string.hpp>
 #include <fc/io/json.hpp>
@@ -924,6 +925,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
           ("pm", measure.peak_mem) );
 
         hive::notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+
+        const size_t virtual_memory_usage = get_current_virtual_memory();
+        ilog( "Memory usage report at block ${n}, used memory usage: ${virtual_memory_usage}", ("n", note.block_num)("virtual_memory_usage"));
+        hive::notify("hived_memory_usage", "virtual_memory", virtual_memory_usage);
+
       }
     }, *this, 0);
   }
