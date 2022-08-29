@@ -30,8 +30,12 @@ HIVED_BINARY_DIR="../build"
 HIVED_SOURCE_DIR="."
 CMAKE_ARGS=()
 
-JOBS=$(nproc)
-JOBS=$(( JOBS > 10 ? 10 : JOBS ))
+JOBS=${MAX_BUILD_JOBS:-0}
+
+if [[ ${JOBS} -eq 0 ]]; then
+  JOBS=$(nproc)
+fi
+
 echo "Build will use $JOBS concurrent jobs..."
 
 add_cmake_arg () {
@@ -76,7 +80,7 @@ pushd "$abs_build_dir"
 pwd
 cmake -DCMAKE_BUILD_TYPE=Release -GNinja "${CMAKE_ARGS[@]}" "$abs_src_dir"
 
-ninja "$@"
+ninja -j ${JOBS} "$@"
 
 popd
 
