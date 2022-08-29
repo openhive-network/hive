@@ -196,7 +196,7 @@ plugin_test:
     - public-runner-docker
 
 .beem_setup : &beem_setup
-  - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
+  - git clone --depth=1 --single-branch --branch pbatko/update-requests-version https://gitlab.syncad.com/hive/beem.git
   - python3 -m venv venv/
   - . venv/bin/activate
   - python3 -m pip install --upgrade pip
