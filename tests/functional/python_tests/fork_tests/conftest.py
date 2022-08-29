@@ -100,10 +100,8 @@ def prepared_networks() -> Dict:
         'Beta': beta_net,
     }
 
-def prepared_sub_networks(sub_networks_sizes : list, allow_generate_block_log : bool = False, block_log_directory_name : str = None) -> Dict:
-
+def prepare_nodes(sub_networks_sizes : list) -> list:
     assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
-    assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
 
     cnt               = 0
     all_witness_names = []
@@ -124,6 +122,10 @@ def prepared_sub_networks(sub_networks_sizes : list, allow_generate_block_log : 
         tt.ApiNode(network = sub_network)
 
         cnt += 1
+    return sub_networks, init_node, all_witness_names
+
+def prepare_sub_networks_generation(sub_networks_sizes : list, block_log_directory_name : str = None) -> Dict:
+    sub_networks, init_node, all_witness_names = prepare_nodes(sub_networks_sizes)
 
     # Run
     connect_sub_networks(sub_networks)
@@ -135,33 +137,66 @@ def prepared_sub_networks(sub_networks_sizes : list, allow_generate_block_log : 
         sub_network.run()
 
     initminer_public_key = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'
-    init_wallet = init_network(init_node, all_witness_names, initminer_public_key, allow_generate_block_log, block_log_directory_name)
+    init_network(init_node, all_witness_names, initminer_public_key, block_log_directory_name)
+
+    return None, None, None
+
+def prepare_sub_networks_launch(sub_networks_sizes : list, block_log_directory_name : str = None) -> Dict:
+    sub_networks, init_node, all_witness_names = prepare_nodes(sub_networks_sizes)
+
+    run_networks(sub_networks, Path(block_log_directory_name))
+
+    init_wallet = tt.Wallet(attach_to=init_node)
 
     display_info(init_wallet)
 
-    if allow_generate_block_log:
-        return None, None, None
-
     return sub_networks, all_witness_names, init_wallet
 
+def prepare_sub_networks(sub_networks_sizes : list, allow_generate_block_log : bool = False, block_log_directory_name : str = None) -> Dict:
+    assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
+
+    if allow_generate_block_log:
+        return prepare_sub_networks_generation(sub_networks_sizes, block_log_directory_name)
+    else:
+        return prepare_sub_networks_launch(sub_networks_sizes, block_log_directory_name)
+
 def allow_generate_block_log():
-    return int(os.environ.get('GENERATE_FORK_BLOCK_LOG', None)) == 1
+    status = os.environ.get('GENERATE_FORK_BLOCK_LOG', None)
+    if status is None:
+        return False
+    return int(status) == 1
 
 def create_block_log_directory_name(name : str):
     return str(Path(__file__).parent.absolute()) + '/' + name
 
-@pytest.fixture(scope="package")
-def prepared_sub_networks_10_11() -> Dict:
-    yield { 'sub-networks-data': prepared_sub_networks([10, 11]) }
+@pytest.fixture
+def prepare_sub_networks_10_11() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([10, 11]) }
 
-@pytest.fixture(scope="package")
-def prepared_fork_2_sub_networks_00() -> Dict:
-    yield { 'sub-networks-data': prepared_sub_networks([3, 18], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_2_sub_networks_00')) }
+@pytest.fixture
+def prepare_fork_2_sub_networks_00() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([3, 18], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_2_sub_networks_00')) }
 
-@pytest.fixture(scope="package")
-def prepared_sub_networks_6_17() -> Dict:
-    yield { 'sub-networks-data': prepared_sub_networks([6, 17]) }
+@pytest.fixture
+def prepare_fork_2_sub_networks_01() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([6, 17], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_2_sub_networks_01')) }
 
-@pytest.fixture(scope="package")
-def prepared_sub_networks_1_3_17() -> Dict:
-    yield { 'sub-networks-data': prepared_sub_networks([1, 3, 17]) }
+@pytest.fixture
+def prepare_fork_2_sub_networks_02() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([6, 17], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_2_sub_networks_02')) }
+
+@pytest.fixture
+def prepare_fork_2_sub_networks_03() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([3, 18], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_2_sub_networks_03')) }
+
+@pytest.fixture
+def prepare_obi_throw_exception_00() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([10, 11], allow_generate_block_log(), create_block_log_directory_name('block_log_obi_throw_exception_00')) }
+
+@pytest.fixture
+def prepare_obi_throw_exception_01() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([10, 11], allow_generate_block_log(), create_block_log_directory_name('block_log_obi_throw_exception_01')) }
+
+@pytest.fixture
+def prepare_obi_throw_exception_02() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([10, 11], allow_generate_block_log(), create_block_log_directory_name('block_log_obi_throw_exception_02')) }

@@ -114,7 +114,7 @@ def info(msg : str, wallet : tt.Wallet):
     info    = wallet.api.info()
     hb      = info['head_block_number']
     lib     = info['last_irreversible_block_num']
-    tt.logger.info(f'msg: {msg} head_block_number: {hb} last_irreversible_block_num: {lib}')
+    tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib}')
     return hb, lib
 
 class fork_log:

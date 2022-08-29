@@ -11,9 +11,7 @@ import test_tools as tt
 def parse_datetime(datetime_: str) -> datetime:
     return datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
 
-def init_network( init_node, all_witness_names : List[str], key : str = None, allow_generate_block_log : bool = False, block_log_directory_name : str = None):
-
-    tt.logger.info(f"block_log directory name: {block_log_directory_name} allow generate block_log: {allow_generate_block_log}")
+def init_network( init_node, all_witness_names : List[str], key : str = None, block_log_directory_name : str = None):
 
     tt.logger.info('Attaching wallets...')
     wallet = tt.Wallet(attach_to=init_node)
@@ -56,12 +54,12 @@ def init_network( init_node, all_witness_names : List[str], key : str = None, al
     tt.logger.info('Wait 21 blocks (when every witness sign at least one block)')
     init_node.wait_number_of_blocks(21)
 
-    if allow_generate_block_log:
-        result = wallet.api.info()
-        head_block_num = result['head_block_number']
-        timestamp = init_node.api.block.get_block(block_num=head_block_num)['block']['timestamp']
-        tt.logger.info(f'head block timestamp: {timestamp}')
+    result = wallet.api.info()
+    head_block_num = result['head_block_number']
+    timestamp = init_node.api.block.get_block(block_num=head_block_num)['block']['timestamp']
+    tt.logger.info(f'head block timestamp: {timestamp}')
 
+    if block_log_directory_name is not None:
         if os.path.exists(block_log_directory_name):
             Path(block_log_directory_name + '/block_log').unlink(missing_ok=True)
         else:
