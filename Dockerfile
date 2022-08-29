@@ -55,6 +55,9 @@ ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
 ARG HIVE_LINT=OFF
 ENV HIVE_LINT=${HIVE_LINT}
 
+ARG MAX_BUILD_JOBS=0
+ENV MAX_BUILD_JOBS=${MAX_BUILD_JOBS}
+
 USER hived
 WORKDIR /home/hived
 SHELL ["/bin/bash", "-c"] 
@@ -108,7 +111,7 @@ ADD ./docker/docker_entrypoint.sh .
 RUN sudo -n mkdir -p /home/hived/bin && sudo -n mkdir -p /home/hived/shm_dir && \
   sudo -n mkdir -p /home/hived/datadir && sudo -n chown -Rc hived:hived /home/hived/
 
-VOLUME [/home/hived/datadir, /home/hived/shm_dir]
+VOLUME /home/hived/datadir /home/hived/shm_dir
 
 STOPSIGNAL SIGINT 
 
