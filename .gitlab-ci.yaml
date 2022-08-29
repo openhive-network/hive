@@ -15,6 +15,11 @@ variables:
   TEST_IMAGE_TAG: "@sha256:991f5c225ea66dccabd43ae18ebe9cc4c90dc2b14d80625202f96e041c832ac6"
   #points to our clone of python:3.8-slim-bullseye
   PYTHON_BULLSEYE_TAG: "@sha256:c4dc24a9761fe0a7b3f498fe677e8129ab0a62d72a3beae5ea899482f104a962"
+
+  # Allows to limit number of build jobs executed concurrently (to avoid runner overload during multiple pipelines execution)
+  # see scripts/build.sh for details
+  MAX_BUILD_JOBS: 10
+
   # Versions of Python packages
   PYTEST_VERSION: "7.1.2"
   PYTEST_XDIST_VERSION: "2.5.0"
