@@ -22,11 +22,12 @@
 
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
 #include <stdio.h>
+#include <fstream>
 
 #endif
 
 #else
-#error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
+#error "Cannot define get_current_virtual_memory( ) for an unknown OS."
 #endif
 
 
@@ -78,10 +79,10 @@ size_t getPeakRSS( )
 
 
 /**
- * Returns the current resident set size (physical memory use) measured
+ * Returns the current virtual set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-size_t getCurrentRSS( )
+size_t get_current_virtual_memory()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -96,22 +97,18 @@ size_t getCurrentRSS( )
     if ( task_info( mach_task_self( ), MACH_TASK_BASIC_INFO,
         (task_info_t)&info, &infoCount ) != KERN_SUCCESS )
         return (size_t)0L;      /* Can't access? */
-    return (size_t)info.resident_size;
+    return (size_t)info.virtual_size;
 
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
     /* Linux ---------------------------------------------------- */
-    long rss = 0L;
-    FILE* fp = NULL;
-    if ( (fp = fopen( "/proc/self/statm", "r" )) == NULL )
-        return (size_t)0L;      /* Can't open? */
-    if ( fscanf( fp, "%*s%ld", &rss ) != 1 )
-    {
-        fclose( fp );
-        return (size_t)0L;      /* Can't read? */
-    }
-    fclose( fp );
-    return (size_t)rss * (size_t)sysconf( _SC_PAGESIZE);
+    size_t virt{0};
+    std::ifstream statm{"/proc/self/statm"};
+    if(!statm.good())
+        return virt;      /* Can't read? */
 
+    statm >> virt;
+    statm.close();
+    return virt;
 #else
     /* AIX, BSD, Solaris, and Unknown OS ------------------------ */
     return (size_t)0L;          /* Unsupported. */
