@@ -149,7 +149,7 @@ def list_proposals(node, start_date, status):
     for proposal in proposals:
         ret.append("{}:{}".format(proposal.get("id", "Error"), proposal.get("total_votes", "Error")))
         votes.append(int(proposal.get("total_votes", -1)))
-    logger.info("Listing proposals with status {} (id:total_votes): {}".format(status, ",".join(ret)))
+    logger.info("Listing proposals with status {} (id:total_votes): {}".format(status, ",".join(ret)), stacklevel=2)
     return votes
 
 
@@ -165,7 +165,7 @@ def print_balance(node, accounts):
             hbd = hbd.get("amount")
         balances_str.append("{}:{}".format(acnt["name"], hbd))
         balances.append(hbd)
-    logger.info("Balances ==> {}".format(",".join(balances_str)))
+    logger.info("Balances ==> {}".format(",".join(balances_str)), stacklevel=2)
     return balances
 
 
