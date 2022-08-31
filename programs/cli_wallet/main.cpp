@@ -34,6 +34,7 @@
 #include <fc/io/stdio.hpp>
 #include <fc/network/http/server.hpp>
 #include <fc/network/http/websocket.hpp>
+#include <fc/network/url.hpp>
 #include <fc/rpc/cli.hpp>
 #include <fc/rpc/http_api.hpp>
 #include <fc/rpc/websocket_api.hpp>
@@ -295,15 +296,20 @@ int main( int argc, char** argv )
     for( auto& name_formatter : wallet_formatter::get_result_formatters() )
       wallet_cli->format_result( name_formatter.first, name_formatter.second );
 
+    fc::url _server{ wdata.ws_server };
+
+    std::string _server_str = wdata.offline ? "offline" :
+      _server.host().value() + ':' + std::to_string( _server.port().value() );
+
     if( wapiptr->is_new() )
     {
       std::cout << "Please use the set_password method to initialize a new wallet before continuing\n";
-      wallet_cli->set_prompt( "new >>> " );
+      wallet_cli->set_prompt( "new@" + _server_str + " >>> " );
     } else
-      wallet_cli->set_prompt( "locked >>> " );
+      wallet_cli->set_prompt( "locked@" + _server_str + " >>> " );
 
     boost::signals2::scoped_connection locked_connection(wapiptr->lock_changed.connect([&](bool locked) {
-      wallet_cli->set_prompt(  locked ? "locked >>> " : "unlocked >>> " );
+      wallet_cli->set_prompt(  locked ? "locked@" + _server_str + " >>> " : "unlocked@" + _server_str + " >>> " );
     }));
 
     auto _websocket_server = std::make_shared<fc::http::websocket_server>();
