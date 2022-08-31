@@ -299,7 +299,7 @@ int main( int argc, char** argv )
     fc::url _server{ wdata.ws_server };
 
     std::string _server_str = wdata.offline ? "offline" :
-      _server.host().value() + ':' + std::to_string( _server.port().value() );
+      _server.host().value() + (_server.port().valid() ? (':' + std::to_string( _server.port().value() )) : "");
 
     if( wapiptr->is_new() )
     {
