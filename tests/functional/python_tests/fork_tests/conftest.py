@@ -94,3 +94,42 @@ def prepared_networks() -> Dict:
         'Alpha': alpha_net,
         'Beta': beta_net,
     }
+
+
+@pytest.fixture
+def prepared_networks_witnesses_18_2() -> Dict:
+    """
+    Fixture consists of 1 init node, 8 witness nodes and 2 api nodes.
+    After fixture creation there are 21 active witnesses, and last irreversible block
+    is behind head block like in real network.
+    """
+
+    tt.logger.info('Preparing fixture prepared_networks')
+    alpha_witness_names = [f'witness{i}-alpha' for i in range(10)]
+    beta_witness_names = [f'witness{i}-beta' for i in range(10)]
+    all_witness_names = alpha_witness_names + beta_witness_names
+
+    # Create first network
+    alpha_net = tt.Network()  # TODO: Add network name prefix, e.g. AlphaNetwork0 (Alpha- is custom prefix)
+    tt.WitnessNode(witnesses=alpha_witness_names+beta_witness_names[:8], network=alpha_net)
+
+    # Create second network
+    beta_net = tt.Network()  # TODO: Add network name prefix, e.g. AlphaNetwork0 (Alpha- is custom prefix)
+    tt.WitnessNode(witnesses=beta_witness_names[8:], network=beta_net)
+
+    blocklog_directory = Path(__file__).parent / 'block_log'
+    run_networks([alpha_net, beta_net], blocklog_directory)
+
+    wallet = tt.Wallet(attach_to=alpha_net.nodes[0])
+
+    # Network should be set up at this time, with 21 active witnesses, enough participation rate
+    # and irreversible block number lagging behind around 15-20 blocks head block number
+    result = wallet.api.info()
+    irreversible = result["last_irreversible_block_num"]
+    head = result["head_block_num"]
+    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
+
+    yield {
+        'Alpha': alpha_net,
+        'Beta': beta_net,
+    }
