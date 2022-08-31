@@ -289,6 +289,9 @@ cli_wallet_tests:
   script:
     - cd tests/functional/python_tests/cli_wallet
     - *run-pytest
+    # RUN TESTS ON HF25. REMOVE AFTER HARDFORK26!!!
+    - export HIVE_HF26_TIME=1906530101  # Distant future (1 June 2030), to make sure that node is in HF25.
+    - *run-pytest
   tags:
     - public-runner-docker
   artifacts:
@@ -322,9 +325,12 @@ cli_wallet_extended_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    PYTEST_TIMEOUT_MINUTES: 11
+    PYTEST_TIMEOUT_MINUTES: 14
   script:
     - cd tests/functional/python_tests/cli_wallet_extended_tests
+    - *run-pytest
+    # RUN TESTS ON HF25. REMOVE AFTER HARDFORK26!!!
+    - export HIVE_HF26_TIME=1906530101  # Distant future (1 June 2030), to make sure that node is in HF25.
     - *run-pytest
   artifacts:
     reports:
