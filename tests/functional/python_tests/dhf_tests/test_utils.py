@@ -6,7 +6,7 @@ from ... import hive_utils
 # create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, accounts):
     for account in accounts:
-        tt.logger.info("Creating account: {}".format(account["name"]))
+        tt.logger.info(f"Creating account: {account['name']}")
         node.create_account(
             account["name"],
             owner_key=account["public_key"],
@@ -25,7 +25,7 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
     from beem.account import Account
 
     for acnt in accounts:
-        tt.logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt["name"], amount, asset))
+        tt.logger.info(f"Transfer to vesting from {from_account} to {acnt['name']} amount {amount} {asset}")
         acc = Account(from_account, hive_instance=node)
         acc.transfer_to_vesting(amount, to=acnt["name"], asset=asset)
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
@@ -37,7 +37,7 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif
     from beem.account import Account
 
     for acnt in accounts:
-        tt.logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt["name"], amount, asset))
+        tt.logger.info(f"Transfer from {from_account} to {acnt['name']} amount {amount} {asset}")
         acc = Account(from_account, hive_instance=node)
         acc.transfer(acnt["name"], amount, asset, memo="initial transfer")
     if wif is not None:
@@ -49,7 +49,7 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif
 def transfer_assets_to_treasury(node, from_account, treasury_account, amount, asset, wif=None):
     from beem.account import Account
 
-    tt.logger.info("Transfer from {} to {} amount {} {}".format(from_account, treasury_account, amount, asset))
+    tt.logger.info(f"Transfer from {from_account} to {treasury_account} amount {amount} {asset}")
     acc = Account(from_account, hive_instance=node)
     acc.transfer(treasury_account, amount, asset, memo="initial transfer")
     if wif is not None:
@@ -59,7 +59,7 @@ def transfer_assets_to_treasury(node, from_account, treasury_account, amount, as
 
 
 def get_permlink(account):
-    return "hivepy-proposal-title-{}".format(account)
+    return f"hivepy-proposal-title-{account}"
 
 
 def create_posts(node, accounts, wif=None):
@@ -75,8 +75,8 @@ def create_posts(node, accounts, wif=None):
             )
         )
         node.post(
-            "Hivepy proposal title [{}]".format(acnt["name"]),
-            "Hivepy proposal body [{}]".format(acnt["name"]),
+            f"Hivepy proposal title [{acnt['name']}]",
+            f"Hivepy proposal body [{acnt['name']}]",
             acnt["name"],
             permlink=get_permlink(acnt["name"]),
             tags="proposals",
@@ -111,7 +111,7 @@ def create_proposals(node, proposals, wif=None):
                 "start_date": proposal["start_date"],
                 "end_date": proposal["end_date"],
                 "daily_pay": proposal["daily_pay"],
-                "subject": "Proposal from account {}".format(proposal["creator"]),
+                "subject": f"Proposal from account {proposal['creator']}",
                 "permlink": get_permlink(proposal["creator"]),
             }
         )
@@ -128,7 +128,7 @@ def vote_proposals(node, accounts, wif=None):
 
     for acnt in accounts:
         proposal_set = [x for x in range(0, len(accounts))]
-        tt.logger.info("Account {} voted for proposals: {}".format(acnt["name"], ",".join(str(x) for x in proposal_set)))
+        tt.logger.info(f"Account {acnt['name']} voted for proposals: {','.join(str(x) for x in proposal_set)}")
         op = Update_proposal_votes(**{"voter": acnt["name"], "proposal_ids": proposal_set, "approve": True})
         node.finalizeOp(op, acnt["name"], "active")
     if wif is not None:
@@ -142,9 +142,9 @@ def list_proposals(node, start_date, status):
     ret = []
     votes = []
     for proposal in proposals:
-        ret.append("{}:{}".format(proposal.get("id", "Error"), proposal.get("total_votes", "Error")))
+        ret.append(f"{proposal.get('id', 'Error')}:{proposal.get('total_votes', 'Error')}")
         votes.append(int(proposal.get("total_votes", -1)))
-    tt.logger.info("Listing proposals with status {} (id:total_votes): {}".format(status, ",".join(ret)))
+    tt.logger.info(f"Listing proposals with status {status} (id:total_votes): {','.join(ret)}")
     return votes
 
 
@@ -158,9 +158,9 @@ def print_balance(node, accounts):
         hbd = ret.get("hbd_balance", None)
         if hbd is not None:
             hbd = hbd.get("amount")
-        balances_str.append("{}:{}".format(acnt["name"], hbd))
+        balances_str.append(f"{acnt['name']}:{hbd}")
         balances.append(hbd)
-    tt.logger.info("Balances ==> {}".format(",".join(balances_str)))
+    tt.logger.info(f"Balances ==> {','.join(balances_str)}")
     return balances
 
 
