@@ -1,12 +1,16 @@
+from typing import Final
+
 import test_tools as tt
 
 from ... import hive_utils
+
+STACK_LEVEL: Final[int] = 2
 
 
 # create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, accounts):
     for account in accounts:
-        tt.logger.info(f"Creating account: {account['name']}")
+        tt.logger.info(f"Creating account: {account['name']}", stacklevel=STACK_LEVEL)
         node.create_account(
             account["name"],
             owner_key=account["public_key"],
@@ -25,7 +29,9 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
     from beem.account import Account
 
     for acnt in accounts:
-        tt.logger.info(f"Transfer to vesting from {from_account} to {acnt['name']} amount {amount} {asset}")
+        tt.logger.info(
+            f"Transfer to vesting from {from_account} to {acnt['name']} amount {amount} {asset}", stacklevel=STACK_LEVEL
+        )
         acc = Account(from_account, hive_instance=node)
         acc.transfer_to_vesting(amount, to=acnt["name"], asset=asset)
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
@@ -37,7 +43,9 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif
     from beem.account import Account
 
     for acnt in accounts:
-        tt.logger.info(f"Transfer from {from_account} to {acnt['name']} amount {amount} {asset}")
+        tt.logger.info(
+            f"Transfer from {from_account} to {acnt['name']} amount {amount} {asset}", stacklevel=STACK_LEVEL
+        )
         acc = Account(from_account, hive_instance=node)
         acc.transfer(acnt["name"], amount, asset, memo="initial transfer")
     if wif is not None:
@@ -49,7 +57,9 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif
 def transfer_assets_to_treasury(node, from_account, treasury_account, amount, asset, wif=None):
     from beem.account import Account
 
-    tt.logger.info(f"Transfer from {from_account} to {treasury_account} amount {amount} {asset}")
+    tt.logger.info(
+        f"Transfer from {from_account} to {treasury_account} amount {amount} {asset}", stacklevel=STACK_LEVEL
+    )
     acc = Account(from_account, hive_instance=node)
     acc.transfer(treasury_account, amount, asset, memo="initial transfer")
     if wif is not None:
@@ -63,7 +73,7 @@ def get_permlink(account):
 
 
 def create_posts(node, accounts, wif=None):
-    tt.logger.info("Creating posts...")
+    tt.logger.info("Creating posts...", stacklevel=STACK_LEVEL)
     for acnt in accounts:
         tt.logger.info(
             "New post ==> ({},{},{},{},{})".format(
@@ -72,7 +82,8 @@ def create_posts(node, accounts, wif=None):
                 acnt["name"],
                 get_permlink(acnt["name"]),
                 "proposals",
-            )
+            ),
+            stacklevel=STACK_LEVEL,
         )
         node.post(
             f"Hivepy proposal title [{acnt['name']}]",
@@ -88,7 +99,7 @@ def create_posts(node, accounts, wif=None):
 
 
 def create_proposals(node, proposals, wif=None):
-    tt.logger.info("Creating proposals...")
+    tt.logger.info("Creating proposals...", stacklevel=STACK_LEVEL)
     from beembase.operations import Create_proposal
 
     for proposal in proposals:
@@ -101,7 +112,8 @@ def create_proposals(node, proposals, wif=None):
                 proposal["daily_pay"],
                 "Proposal from account {}".format(proposal["creator"]),
                 get_permlink(proposal["creator"]),
-            )
+            ),
+            stacklevel=STACK_LEVEL,
         )
 
         op = Create_proposal(
@@ -123,12 +135,15 @@ def create_proposals(node, proposals, wif=None):
 
 
 def vote_proposals(node, accounts, wif=None):
-    tt.logger.info("Voting proposals...")
+    tt.logger.info("Voting proposals...", stacklevel=STACK_LEVEL)
     from beembase.operations import Update_proposal_votes
 
     for acnt in accounts:
         proposal_set = [x for x in range(0, len(accounts))]
-        tt.logger.info(f"Account {acnt['name']} voted for proposals: {','.join(str(x) for x in proposal_set)}")
+        tt.logger.info(
+            f"Account {acnt['name']} voted for proposals: {','.join(str(x) for x in proposal_set)}",
+            stacklevel=STACK_LEVEL,
+        )
         op = Update_proposal_votes(**{"voter": acnt["name"], "proposal_ids": proposal_set, "approve": True})
         node.finalizeOp(op, acnt["name"], "active")
     if wif is not None:
@@ -144,7 +159,7 @@ def list_proposals(node, start_date, status):
     for proposal in proposals:
         ret.append(f"{proposal.get('id', 'Error')}:{proposal.get('total_votes', 'Error')}")
         votes.append(int(proposal.get("total_votes", -1)))
-    tt.logger.info(f"Listing proposals with status {status} (id:total_votes): {','.join(ret)}")
+    tt.logger.info(f"Listing proposals with status {status} (id:total_votes): {','.join(ret)}", stacklevel=STACK_LEVEL)
     return votes
 
 
@@ -160,7 +175,7 @@ def print_balance(node, accounts):
             hbd = hbd.get("amount")
         balances_str.append(f"{acnt['name']}:{hbd}")
         balances.append(hbd)
-    tt.logger.info(f"Balances ==> {','.join(balances_str)}")
+    tt.logger.info(f"Balances ==> {','.join(balances_str)}", stacklevel=STACK_LEVEL)
     return balances
 
 
@@ -194,7 +209,7 @@ def calculate_propsal_budget(node, treasury, wif=None) -> int:
         period = date_from_iso(node.get_dynamic_global_properties(False)["next_maintenance_time"]) - timedelta(
             seconds=4
         )
-        tt.logger.info(f"Fast-forwarding to: {date_to_iso(period)}")
+        tt.logger.info(f"Fast-forwarding to: {date_to_iso(period)}", stacklevel=STACK_LEVEL)
         hive_utils.debug_generate_blocks_until(node.rpc.url, wif, date_to_iso(period), False)
 
     v = int(print_balance(node, [{"name": treasury}])[0])
