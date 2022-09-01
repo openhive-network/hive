@@ -7,6 +7,9 @@
 
 #include <hive/plugins/json_rpc/utility.hpp>
 
+#define DATABASE_API_DEFAULT_QUERY_LIMIT 0
+#define DATABASE_API_SINGLE_QUERY_LIMIT 1000
+
 namespace hive { namespace plugins { namespace database_api {
 
 using protocol::account_name_type;
@@ -24,6 +27,7 @@ enum class withdraw_route_type
 
 enum sort_order_type
 {
+  not_set,
   by_name,
   by_proxy,
   by_next_vesting_withdrawal,
@@ -60,7 +64,7 @@ enum sort_order_type
   by_voter_proposal,
   by_proposal_voter,
   by_contributor,
-  by_symbol_id,
+  by_symbol_id
 };
 
 enum order_direction_type
@@ -71,9 +75,9 @@ enum order_direction_type
 
 struct list_object_args_type
 {
-  fc::variant       start;
-  uint32_t          limit;
-  sort_order_type   order;
+  fc::variant                         start;
+  uint32_t                            limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
+  fc::enum_type<int, sort_order_type> order;
 };
 
 /* get_config */
@@ -174,10 +178,10 @@ struct get_active_witnesses_return
 
 struct list_accounts_args
 {
-  fc::variant       start;
-  uint32_t          limit;
-  sort_order_type   order;
-  bool              delayed_votes_active = true;
+  fc::variant                         start;
+  uint32_t                            limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
+  fc::enum_type<int, sort_order_type> order;
+  bool                                delayed_votes_active = true;
 };
 
 struct list_accounts_return
@@ -200,7 +204,7 @@ typedef list_accounts_return find_accounts_return;
 struct list_owner_histories_args
 {
   fc::variant       start;
-  uint32_t          limit;
+  uint32_t          limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 };
 
 struct list_owner_histories_return
@@ -283,8 +287,8 @@ struct list_withdraw_vesting_routes_return
 
 struct find_withdraw_vesting_routes_args
 {
-  account_name_type account;
-  sort_order_type   order;
+  account_name_type                   account;
+  fc::enum_type<int, sort_order_type> order;
 };
 
 typedef list_withdraw_vesting_routes_return find_withdraw_vesting_routes_return;
@@ -474,7 +478,7 @@ typedef list_limit_orders_return find_limit_orders_return;
 
 struct get_order_book_args
 {
-  uint32_t          limit;
+  uint32_t limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 };
 
 typedef order_book get_order_book_return;
@@ -488,18 +492,18 @@ struct list_proposals_args
   fc::variant start;
 
   // query limit
-  uint32_t limit = 0;
+  uint32_t limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 
   // name of the field by which results will be sorted.
-  sort_order_type order;
+  fc::enum_type<int, sort_order_type> order;
 
   // sorting order (ascending or descending) of the result vector. Default is ascending
-  order_direction_type order_direction;
+  fc::enum_type<int, order_direction_type> order_direction;
 
   // result will contain only data with status flag set to this value. Default is all
-  proposal_status status;
+  fc::enum_type<int, proposal_status> status;
 
-    // result will contain only data from given index, start value will be ignored
+  // result will contain only data from given index, start value will be ignored
   fc::optional<uint64_t> last_id = fc::optional<uint64_t>();
 };
 
@@ -704,6 +708,7 @@ struct is_known_transaction_return
 FC_REFLECT_ENUM( hive::plugins::database_api::withdraw_route_type, (incoming)(outgoing)(all) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
+  (not_set)
   (by_name)
   (by_proxy)
   (by_next_vesting_withdrawal)
@@ -897,10 +902,10 @@ FC_REFLECT( hive::plugins::database_api::list_proposal_votes_return,
   (proposal_votes) )
 
 FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_return,
-            (recurrent_transfers) )
+  (recurrent_transfers) )
 
 FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_args,
-            (from) )
+  (from) )
 
 FC_REFLECT( hive::plugins::database_api::get_transaction_hex_args,
   (trx) )
@@ -966,7 +971,7 @@ FC_REFLECT( hive::plugins::database_api::find_smt_token_emissions_args,
 #endif
 
 FC_REFLECT( hive::plugins::database_api::is_known_transaction_args,
-   (id) )
+  (id) )
 
 FC_REFLECT( hive::plugins::database_api::is_known_transaction_return,
-   (is_known) )
+  (is_known) )

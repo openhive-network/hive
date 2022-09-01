@@ -5,8 +5,6 @@
 #include <hive/plugins/database_api/database_api_args.hpp>
 #include <hive/plugins/database_api/database_api_objects.hpp>
 
-#define DATABASE_API_SINGLE_QUERY_LIMIT 1000
-
 namespace hive { namespace plugins { namespace database_api {
 
 class database_api_impl;
