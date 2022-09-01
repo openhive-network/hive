@@ -368,7 +368,7 @@ DEFINE_API_IMPL( database_api_impl, get_feed_history )
 
 DEFINE_API_IMPL( database_api_impl, list_witnesses )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_witnesses_return result;
   result.witnesses.reserve( args.limit );
@@ -417,7 +417,8 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
 
 DEFINE_API_IMPL( database_api_impl, find_witnesses )
 {
-  FC_ASSERT( args.owners.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.owners.size() && args.owners.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of witnesses to find not filled or too big" );
 
   find_witnesses_return result;
 
@@ -434,7 +435,7 @@ DEFINE_API_IMPL( database_api_impl, find_witnesses )
 
 DEFINE_API_IMPL( database_api_impl, list_witness_votes )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_witness_votes_return result;
   result.votes.reserve( args.limit );
@@ -497,7 +498,7 @@ DEFINE_API_IMPL( database_api_impl, get_active_witnesses )
 
 DEFINE_API_IMPL( database_api_impl, list_accounts )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_accounts_return result;
   result.accounts.reserve( args.limit );
@@ -553,7 +554,8 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
 DEFINE_API_IMPL( database_api_impl, find_accounts )
 {
   find_accounts_return result;
-  FC_ASSERT( args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of accounts to find not filled or too big" );
 
   for( auto& a : args.accounts )
   {
@@ -570,7 +572,7 @@ DEFINE_API_IMPL( database_api_impl, find_accounts )
 
 DEFINE_API_IMPL( database_api_impl, list_owner_histories )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_owner_histories_return result;
   result.owner_auths.reserve( args.limit );
@@ -607,7 +609,7 @@ DEFINE_API_IMPL( database_api_impl, find_owner_histories )
 
 DEFINE_API_IMPL( database_api_impl, list_account_recovery_requests )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_account_recovery_requests_return result;
   result.requests.reserve( args.limit );
@@ -645,7 +647,8 @@ DEFINE_API_IMPL( database_api_impl, list_account_recovery_requests )
 DEFINE_API_IMPL( database_api_impl, find_account_recovery_requests )
 {
   find_account_recovery_requests_return result;
-  FC_ASSERT( args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of affected accounts to find not filled or too big" );
 
   for( auto& a : args.accounts )
   {
@@ -663,7 +666,7 @@ DEFINE_API_IMPL( database_api_impl, find_account_recovery_requests )
 
 DEFINE_API_IMPL( database_api_impl, list_change_recovery_account_requests )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_change_recovery_account_requests_return result;
   result.requests.reserve( args.limit );
@@ -701,7 +704,8 @@ DEFINE_API_IMPL( database_api_impl, list_change_recovery_account_requests )
 DEFINE_API_IMPL( database_api_impl, find_change_recovery_account_requests )
 {
   find_change_recovery_account_requests_return result;
-  FC_ASSERT( args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of affected accounts to find not filled or too big");
 
   for( auto& a : args.accounts )
   {
@@ -719,7 +723,7 @@ DEFINE_API_IMPL( database_api_impl, find_change_recovery_account_requests )
 
 DEFINE_API_IMPL( database_api_impl, list_escrows )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_escrows_return result;
   result.escrows.reserve( args.limit );
@@ -777,7 +781,7 @@ DEFINE_API_IMPL( database_api_impl, find_escrows )
 
 DEFINE_API_IMPL( database_api_impl, list_withdraw_vesting_routes )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_withdraw_vesting_routes_return result;
   result.routes.reserve( args.limit );
@@ -857,7 +861,7 @@ DEFINE_API_IMPL( database_api_impl, find_withdraw_vesting_routes )
 
 DEFINE_API_IMPL( database_api_impl, list_savings_withdrawals )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_savings_withdrawals_return result;
   result.withdrawals.reserve( args.limit );
@@ -926,7 +930,7 @@ DEFINE_API_IMPL( database_api_impl, find_savings_withdrawals )
 
 DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_vesting_delegations_return result;
   result.delegations.reserve( args.limit );
@@ -983,7 +987,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 
 DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_vesting_delegation_expirations_return result;
   result.delegations.reserve( args.limit );
@@ -1051,7 +1055,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 
 DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_hbd_conversion_requests_return result;
   result.requests.reserve( args.limit );
@@ -1118,7 +1122,7 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 
 DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_collateralized_conversion_requests_return result;
   result.requests.reserve( args.limit );
@@ -1185,7 +1189,7 @@ DEFINE_API_IMPL( database_api_impl, find_collateralized_conversion_requests )
 
 DEFINE_API_IMPL( database_api_impl, list_decline_voting_rights_requests )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_decline_voting_rights_requests_return result;
   result.requests.reserve( args.limit );
@@ -1222,7 +1226,8 @@ DEFINE_API_IMPL( database_api_impl, list_decline_voting_rights_requests )
 
 DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
 {
-  FC_ASSERT( args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of affected accounts to find not filled or too big");
   find_decline_voting_rights_requests_return result;
 
   for( auto& a : args.accounts )
@@ -1245,7 +1250,8 @@ DEFINE_API_IMPL( database_api_impl, find_decline_voting_rights_requests )
 
 DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
 {
-  FC_ASSERT(args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT);
+  FC_ASSERT( 0 < args.comments.size() && args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of comments to find not filled or too big" );
 
   get_comment_pending_payouts_return retval;
   retval.cashout_infos.reserve(args.comments.size());
@@ -1272,7 +1278,8 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
 /* Comments */
 DEFINE_API_IMPL( database_api_impl, find_comments )
 {
-  FC_ASSERT( args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.comments.size() && args.comments.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of comments to find not filled or too big" );
   find_comments_return result;
   result.comments.reserve( args.comments.size() );
 
@@ -1310,7 +1317,7 @@ DEFINE_API_IMPL( database_api_impl, find_votes )
 
 DEFINE_API_IMPL( database_api_impl, list_limit_orders )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_limit_orders_return result;
   result.orders.reserve( args.limit );
@@ -1366,7 +1373,7 @@ DEFINE_API_IMPL( database_api_impl, find_limit_orders )
 
 DEFINE_API_IMPL( database_api_impl, get_order_book )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
   get_order_book_return result;
 
   auto max_sell = price::max( HBD_SYMBOL, HIVE_SYMBOL );
@@ -1451,7 +1458,7 @@ bool filter_proposal_status( const proposal_object& po, proposal_status filter, 
 DEFINE_API_IMPL( database_api_impl, list_proposals )
 {
   using variants = std::vector< fc::variant >;
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_proposals_return result;
   result.proposals.reserve( args.limit );
@@ -1604,7 +1611,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
 DEFINE_API_IMPL( database_api_impl, find_proposals )
 {
-  FC_ASSERT( args.proposal_ids.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.proposal_ids.size() && args.proposal_ids.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of proposals to find not filled or too big" );
   std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
   {
     FC_ASSERT( id >= 0, "The proposal id can't be negative" );
@@ -1632,7 +1640,7 @@ DEFINE_API_IMPL( database_api_impl, find_proposals )
 
 DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   auto get_proposal_id = [&](const fc::optional<int64_t>& obj) -> api_id_type
   {
@@ -1711,7 +1719,8 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
   const auto &idx = _db.get_index<chain::recurrent_transfer_index, chain::by_from_id>();
   auto itr = idx.find(from_account_id);
 
-  while (itr != idx.end() && itr->from_id == from_account_id && result.recurrent_transfers.size() <= DATABASE_API_SINGLE_QUERY_LIMIT) {
+  while (itr != idx.end() && itr->from_id == from_account_id && result.recurrent_transfers.size() <= DATABASE_API_SINGLE_QUERY_LIMIT)
+  {
     const auto& to_account = _db.get_account( itr->to_id );
     result.recurrent_transfers.emplace_back(*itr, from_account->name, to_account.name);
     ++itr;
@@ -1865,7 +1874,7 @@ DEFINE_API_IMPL( database_api_impl, get_nai_pool )
 
 DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_smt_contributions_return result;
   result.contributions.reserve( args.limit );
@@ -1959,7 +1968,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_contributions )
 
 DEFINE_API_IMPL( database_api_impl, list_smt_tokens )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_smt_tokens_return result;
   result.tokens.reserve( args.limit );
@@ -2018,7 +2027,8 @@ DEFINE_API_IMPL( database_api_impl, list_smt_tokens )
 
 DEFINE_API_IMPL( database_api_impl, find_smt_tokens )
 {
-  FC_ASSERT( args.symbols.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.symbols.size() && args.symbols.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of tokens to find not filled or too big" );
 
   find_smt_tokens_return result;
   result.tokens.reserve( args.symbols.size() );
@@ -2037,7 +2047,7 @@ DEFINE_API_IMPL( database_api_impl, find_smt_tokens )
 
 DEFINE_API_IMPL( database_api_impl, list_smt_token_emissions )
 {
-  FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_smt_token_emissions_return result;
   result.token_emissions.reserve( args.limit );
