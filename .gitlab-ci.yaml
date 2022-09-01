@@ -19,6 +19,7 @@ variables:
   PYTEST_VERSION: "7.1.2"
   PYTEST_XDIST_VERSION: "2.5.0"
   PYTEST_TIMEOUT_VERSION: "2.1.0"
+  PYTEST_RERUN_FAILURES_VERSION: "10.2"
 
 include: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
@@ -596,3 +597,21 @@ message_format_mainnet_64m_tests:
     # Run this job, only when environment variable "RUN_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M" is set
     - if: $RUN_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M == "TRUE"
       when: always
+
+foundation_layer_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  script:
+    - pip install pytest-rerunfailures==${PYTEST_RERUN_FAILURES_VERSION}
+    - cd tests/functional/python_tests/foundation_layer_tests
+    - timeout 4m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((3*60)) --junitxml="./report.xml"
+  timeout: 5min
+  artifacts:
+    reports:
+      junit: tests/functional/python_tests/foundation_layer_tests/report.xml
+  tags:
+    - public-runner-docker
