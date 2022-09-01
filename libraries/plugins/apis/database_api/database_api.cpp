@@ -409,7 +409,7 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -465,7 +465,7 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -545,7 +545,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -638,7 +638,7 @@ DEFINE_API_IMPL( database_api_impl, list_account_recovery_requests )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -695,7 +695,7 @@ DEFINE_API_IMPL( database_api_impl, list_change_recovery_account_requests )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -754,7 +754,7 @@ DEFINE_API_IMPL( database_api_impl, list_escrows )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -811,7 +811,7 @@ DEFINE_API_IMPL( database_api_impl, list_withdraw_vesting_routes )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -850,7 +850,7 @@ DEFINE_API_IMPL( database_api_impl, find_withdraw_vesting_routes )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -904,7 +904,7 @@ DEFINE_API_IMPL( database_api_impl, list_savings_withdrawals )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -958,7 +958,7 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1026,7 +1026,7 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1092,7 +1092,7 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1159,7 +1159,7 @@ DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1218,7 +1218,7 @@ DEFINE_API_IMPL( database_api_impl, list_decline_voting_rights_requests )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1347,7 +1347,7 @@ DEFINE_API_IMPL( database_api_impl, list_limit_orders )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1603,7 +1603,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1701,7 +1701,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -1941,7 +1941,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
     }
 // #endif
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -2019,7 +2019,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_tokens )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
@@ -2074,7 +2074,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_token_emissions )
       break;
     }
     default:
-      FC_ASSERT( false, "Unknown or unsupported sort order" );
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
   }
 
   return result;
