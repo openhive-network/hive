@@ -1,5 +1,7 @@
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
+#include <appbase/application.hpp>
+
 #include <fc/thread/thread.hpp>
 
 #include <boost/lockfree/queue.hpp>
@@ -41,12 +43,25 @@ struct blockchain_worker_thread_pool::impl
 
   bool p2p_force_validate = false;
 
+  bool allow_enqueue_work() const;
+  bool is_running() const;
+
   bool dequeue_work(work_request_type*& work_request_ptr);
 
   void perform_work(const std::weak_ptr<full_block_type>& full_block, data_source_type data_source);
   void perform_work(const std::weak_ptr<full_transaction_type>& full_transaction, data_source_type data_source);
   void thread_function();
 };
+
+bool blockchain_worker_thread_pool::impl::allow_enqueue_work() const
+{
+  return !threads.empty() && is_running();
+}
+
+bool blockchain_worker_thread_pool::impl::is_running() const
+{
+  return running.load(std::memory_order_relaxed) && !appbase::app().is_interrupt_request();
+}
 
 bool blockchain_worker_thread_pool::impl::dequeue_work(work_request_type*& work_request_ptr)
 {
@@ -59,15 +74,15 @@ void blockchain_worker_thread_pool::impl::thread_function()
   work_request_type* work_request_raw_ptr = nullptr;
   while (true)
   {
-    if (!running.load(std::memory_order_relaxed))
+    if (!is_running())
       return;
     if (!dequeue_work(work_request_raw_ptr))
     {
       // queue was empty, wait for work
       std::unique_lock<std::mutex> lock(work_queue_mutex);
-      while (running.load(std::memory_order_relaxed) && !dequeue_work(work_request_raw_ptr))
+      while (is_running() && !dequeue_work(work_request_raw_ptr))
         work_queue_condition_variable.wait(lock);
-      if (!running.load(std::memory_order_relaxed))
+      if (!is_running())
         return;
     }
 
@@ -293,7 +308,7 @@ namespace
 
 void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_block_type>& full_block, data_source_type data_source)
 {
-  if (my->threads.empty())
+  if (!my->allow_enqueue_work())
     return;
   std::unique_ptr<impl::work_request_type> work_request(new impl::work_request_type{full_block, data_source});
   impl::priority_type priority = get_priority_for_block(data_source);
@@ -309,7 +324,7 @@ void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_bloc
 
 void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_transaction_type>& full_transaction, data_source_type data_source)
 {
-  if (my->threads.empty())
+  if (!my->allow_enqueue_work())
     return;
   std::unique_ptr<impl::work_request_type> work_request(new impl::work_request_type{full_transaction, data_source});
   impl::priority_type priority = get_priority_for_transaction(data_source);
@@ -324,7 +339,7 @@ void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_tran
 
 void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source)
 {
-  if (my->threads.empty())
+  if (!my->allow_enqueue_work())
     return;
   // build a list of work requests
   std::vector<std::unique_ptr<impl::work_request_type>> work_requests;
