@@ -26,10 +26,6 @@
 using std::string;
 using std::vector;
 
-#define HIVE_P2P_NUMBER_THREAD_SENSITIVE_ACTIONS 2
-#define HIVE_P2P_BLOCK_HANDLER 0
-#define HIVE_P2P_TRANSACTION_HANDLER 1
-
 namespace hive { namespace plugins { namespace p2p {
 
 using appbase::app;
@@ -80,7 +76,7 @@ class p2p_plugin_impl : public graphene::net::node_delegate
 public:
 
   p2p_plugin_impl( plugins::chain::chain_plugin& c )
-    : shutdown_helper( "P2P plugin", HIVE_P2P_NUMBER_THREAD_SENSITIVE_ACTIONS, { "HIVE_P2P_BLOCK_HANDLER", "HIVE_P2P_TRANSACTION_HANDLER" } ), chain( c )
+    : shutdown_helper( "P2P plugin" ), chain( c )
   {
   }
   virtual ~p2p_plugin_impl()
@@ -150,9 +146,9 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
 
 bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool sync_mode)
 { try {
-  if( shutdown_helper.get_running().load() )
+  if( shutdown_helper.is_running() )
   {
-    action_catcher ac(shutdown_helper.get_running(), shutdown_helper.get_state(HIVE_P2P_BLOCK_HANDLER));
+    action_catcher ac( shutdown_helper, hive_p2p_handler_type::HIVE_P2P_BLOCK_HANDLER );
 
     uint32_t head_block_num = chain.db().head_block_num_from_fork_db();
     if (sync_mode)
@@ -231,11 +227,11 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
 
 void p2p_plugin_impl::handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
 {
-  if (shutdown_helper.get_running().load())
+  if (shutdown_helper.is_running())
   {
     try
     {
-      action_catcher ac(shutdown_helper.get_running(), shutdown_helper.get_state(HIVE_P2P_TRANSACTION_HANDLER));
+      action_catcher ac( shutdown_helper, hive_p2p_handler_type::HIVE_P2P_TRANSACTION_HANDLER );
 
       chain.accept_transaction(full_transaction, chain::chain_plugin::lock_type::fc);
 
