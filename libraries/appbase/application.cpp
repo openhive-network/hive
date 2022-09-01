@@ -359,29 +359,32 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
   }
 }
 
-void application::pre_shutdown()
+void application::pre_shutdown( std::string& actual_plugin_name )
 {
   std::cout << "Before shutting down...\n";
 
   for( auto& plugin : pre_shutdown_plugins )
   {
+    actual_plugin_name = plugin->get_name();
     plugin->pre_shutdown();
   }
 
   pre_shutdown_plugins.clear();
 }
 
-void application::shutdown() {
+void application::shutdown( std::string& actual_plugin_name ) {
 
   std::cout << "Shutting down...\n";
 
   for(auto ritr = running_plugins.rbegin();
       ritr != running_plugins.rend(); ++ritr) {
+    actual_plugin_name = (*ritr)->get_name();
     (*ritr)->shutdown();
   }
   for(auto ritr = running_plugins.rbegin();
       ritr != running_plugins.rend(); ++ritr) {
-    plugins.erase((*ritr)->get_name());
+    actual_plugin_name = (*ritr)->get_name();
+    plugins.erase( actual_plugin_name );
   }
   running_plugins.clear();
   initialized_plugins.clear();
@@ -390,22 +393,42 @@ void application::shutdown() {
 
 void application::finish()
 {
+  std::string _actual_plugin_name;
+
+  auto plugin_exception_info = [&_actual_plugin_name]()
+  {
+    std::cerr << "Plugin: "<< _actual_plugin_name <<" raised an exception..."<< "\n";
+  };
+
   try
   {
-    pre_shutdown();
-    shutdown();
+    std::cout << "Executing `pre shutdown` for all plugins..." << "\n";
+    pre_shutdown( _actual_plugin_name );
+
+    std::cout << "Executing `shutdown` for all plugins..." << "\n";
+    shutdown( _actual_plugin_name );
   }
   catch ( const boost::exception& e )
   {
+    plugin_exception_info();
     std::cerr << boost::diagnostic_information(e) << "\n";
   }
   catch( std::exception& e )
   {
-    std::cout << ("exception: ") << e.what() << std::endl;
+    plugin_exception_info();
+    std::cerr << ("exception: ") << e.what() << std::endl;
   }
   catch(...)
   {
-    std::cout << "application shutdown: unknown error exception." << std::endl;
+    plugin_exception_info();
+    try
+    {
+      std::rethrow_exception( std::current_exception() );
+    }
+    catch( const std::exception& e )
+    {
+      std::cerr << ("exception: ") << e.what() << std::endl;
+    }
   }
 }
 

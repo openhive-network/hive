@@ -79,8 +79,8 @@ namespace appbase {
 
       void startup();
 
-      void pre_shutdown();
-      void shutdown();
+      void pre_shutdown( std::string& actual_plugin_name );
+      void shutdown( std::string& actual_plugin_name );
 
       void finish();
 
