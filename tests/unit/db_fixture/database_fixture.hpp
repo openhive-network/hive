@@ -607,7 +607,8 @@ struct json_rpc_database_fixture : public database_fixture
     hive::plugins::json_rpc::json_rpc_plugin* rpc_plugin;
 
     fc::variant get_answer( std::string& request );
-    void review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id );
+    void review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id,
+      const char* message = nullptr );
 
   public:
 
@@ -615,7 +616,8 @@ struct json_rpc_database_fixture : public database_fixture
     virtual ~json_rpc_database_fixture();
 
     void make_array_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true );
-    fc::variant make_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true );
+    fc::variant make_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true,
+      const char* message = nullptr );
     void make_positive_request( std::string& request );
 };
 

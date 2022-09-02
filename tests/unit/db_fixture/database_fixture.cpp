@@ -1562,7 +1562,8 @@ void check_id_equal( const fc::variant& id_a, const fc::variant& id_b )
   }
 }
 
-void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id )
+void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail,
+  fc::optional< fc::variant > id, const char* message )
 {
   fc::variant_object error;
   int64_t answer_code;
@@ -1586,6 +1587,8 @@ void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code
     BOOST_REQUIRE( answer_code == code );
     if( is_warning )
       BOOST_TEST_MESSAGE( error["message"].as_string() );
+    if( message != nullptr )
+      BOOST_CHECK_EQUAL( error[ "message" ].as_string(), message );
   }
   else
   {
@@ -1619,7 +1622,8 @@ void json_rpc_database_fixture::make_array_request( std::string& request, int64_
   }
 }
 
-fc::variant json_rpc_database_fixture::make_request( std::string& request, int64_t code, bool is_warning, bool is_fail )
+fc::variant json_rpc_database_fixture::make_request( std::string& request, int64_t code, bool is_warning, bool is_fail,
+  const char* message )
 {
   fc::variant answer = get_answer( request );
   BOOST_REQUIRE( answer.is_object() );
@@ -1631,7 +1635,7 @@ fc::variant json_rpc_database_fixture::make_request( std::string& request, int64
   }
   catch( ... ) {}
 
-  review_answer( answer, code, is_warning, is_fail, id );
+  review_answer( answer, code, is_warning, is_fail, id, message );
 
   return answer;
 }
