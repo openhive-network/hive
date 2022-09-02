@@ -27,7 +27,6 @@ enum class withdraw_route_type
 
 enum sort_order_type
 {
-  not_set,
   by_name,
   by_proxy,
   by_next_vesting_withdrawal,
@@ -64,7 +63,9 @@ enum sort_order_type
   by_voter_proposal,
   by_proposal_voter,
   by_contributor,
-  by_symbol_id
+  by_symbol_id,
+  not_set //< keep it as last (it would be better if it was first == 0, however people are using enums
+    //not just with names, but with values as well and those would change if not_set was made first
 };
 
 enum order_direction_type
@@ -77,7 +78,7 @@ struct list_object_args_type
 {
   fc::variant                         start;
   uint32_t                            limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
-  fc::enum_type<int, sort_order_type> order;
+  fc::enum_type<int, sort_order_type> order = not_set;
 };
 
 /* get_config */
@@ -180,7 +181,7 @@ struct list_accounts_args
 {
   fc::variant                         start;
   uint32_t                            limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
-  fc::enum_type<int, sort_order_type> order;
+  fc::enum_type<int, sort_order_type> order = not_set;
   bool                                delayed_votes_active = true;
 };
 
@@ -288,7 +289,7 @@ struct list_withdraw_vesting_routes_return
 struct find_withdraw_vesting_routes_args
 {
   account_name_type                   account;
-  fc::enum_type<int, sort_order_type> order;
+  fc::enum_type<int, sort_order_type> order = not_set;
 };
 
 typedef list_withdraw_vesting_routes_return find_withdraw_vesting_routes_return;
@@ -495,7 +496,7 @@ struct list_proposals_args
   uint32_t limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 
   // name of the field by which results will be sorted.
-  fc::enum_type<int, sort_order_type> order;
+  fc::enum_type<int, sort_order_type> order = not_set;
 
   // sorting order (ascending or descending) of the result vector. Default is ascending
   fc::enum_type<int, order_direction_type> order_direction;
@@ -708,7 +709,6 @@ struct is_known_transaction_return
 FC_REFLECT_ENUM( hive::plugins::database_api::withdraw_route_type, (incoming)(outgoing)(all) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
-  (not_set)
   (by_name)
   (by_proxy)
   (by_next_vesting_withdrawal)
@@ -745,7 +745,8 @@ FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_voter_proposal)
   (by_proposal_voter)
   (by_contributor)
-  (by_symbol_id) )
+  (by_symbol_id)
+  (not_set) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::order_direction_type,
   (ascending)
