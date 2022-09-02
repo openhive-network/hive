@@ -64,7 +64,7 @@ CORRECT_VALUES = [
         ([-10], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
-        ([''], 0, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1000, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
@@ -122,7 +122,7 @@ def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by
         (['true'], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
-        ([''], -1, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 0, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1001, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 'true', ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 

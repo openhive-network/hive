@@ -19,7 +19,7 @@ CORRECT_VALUES = [
         ('100', 100),
 
         # LIMIT
-        (WITNESSES_NAMES[0], 0),
+        (WITNESSES_NAMES[0], 1),
         (WITNESSES_NAMES[0], 1000),
 ]
 
@@ -38,7 +38,7 @@ def test_list_witnesses_with_correct_value(witness_account, limit, replayed_node
 @pytest.mark.parametrize(
     'witness_account, limit', [
         # LIMIT
-        (WITNESSES_NAMES[0], -1),
+        (WITNESSES_NAMES[0], 0),
         (WITNESSES_NAMES[0], 1001),
     ]
 )
