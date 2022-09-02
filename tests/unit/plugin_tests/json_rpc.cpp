@@ -255,21 +255,6 @@ BOOST_AUTO_TEST_CASE( positive_validation )
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"params\":{\"accounts\":[\"init_miner\"]}, \"id\":14}";
     make_positive_request( request );
 
-    request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\", {}], \"id\":15}";
-    make_positive_request( request );
-
-    request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\"], \"id\":15}";
-    make_positive_request( request );
-
-    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"params\":{\"accounts\":[\"init_miner\"]}, \"id\":17}";
-    make_positive_request( request );
-
-    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"params\":{}, \"id\":16}";
-    make_positive_request( request );
-
-    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"id\":18}";
-    make_positive_request( request );
-
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"condenser_api\", \"get_accounts\", [[\"init_miner\"]]], \"id\":6}";
     make_positive_request( request );
 
@@ -287,6 +272,46 @@ BOOST_AUTO_TEST_CASE( positive_validation )
 
     request = "{\"jsonrpc\": \"2.0\", \"method\": \"block_api.get_block\", \"params\": {\"block_num\":0}, \"id\": 11}";
     make_positive_request( request );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( database_api_negative )
+{
+  try
+  {
+    std::string request;
+    const char* message = nullptr;
+
+    // empty list of accounts to find
+    message = "Assert Exception:0 < args.accounts.size() && args.accounts.size() <= DATABASE_API_SINGLE_QUERY_LIMIT: list of accounts to find not filled or too big";
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\", {}], \"id\":15}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"call\", \"params\":[\"database_api\", \"find_accounts\"], \"id\":15}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"params\":{}, \"id\":16}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.find_accounts\", \"id\":18}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    // limit cannot be (default) 0
+    message = "Assert Exception:0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT: limit not set or too big";
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":0}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    // order not set
+    message = "Assert Exception:false: Unknown or unsupported sort order 'not_set'";
+
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":10}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
   }
   FC_LOG_AND_RETHROW()
 }
