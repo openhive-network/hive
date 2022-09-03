@@ -1056,26 +1056,27 @@ void database::switch_forks(const item_ptr new_head)
 {
   uint32_t skip = get_node_properties().skip_flags;
 
-  dlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
+  BOOST_SCOPE_EXIT(void) { ilog("Done fork switch"); } BOOST_SCOPE_EXIT_END
+  ilog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
   const block_id_type original_head_block_id = head_block_id();
   const uint32_t original_head_block_number = head_block_num();
-  dlog("Before switching, head_block_id is ${original_head_block_id}", (original_head_block_id));
+  ilog("Before switching, head_block_id is ${original_head_block_id}", (original_head_block_id));
   const auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), original_head_block_id);
 
-  dlog("Destination branch block ids:");
+  ilog("Destination branch block ids:");
   std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
-    dlog(" - ${id}", ("id", item->get_block_id()));
+    ilog(" - ${id}", ("id", item->get_block_id()));
   });
   const block_id_type common_block_id = new_branch.back()->previous_id();
   const uint32_t common_block_number = new_branch.back()->get_block_num() - 1;
 
-  dlog(" - ${common_block_id} (block before first block in branch, should be common)", (common_block_id));
+  ilog(" - ${common_block_id} (block before first block in branch, should be common)", (common_block_id));
 
   if (old_branch.size())
   {
-    dlog("Source branch block ids:");
+    ilog("Source branch block ids:");
     std::for_each(old_branch.begin(), old_branch.end(), [](const item_ptr& item) {
-      dlog(" - ${id}", ("id", item->get_block_id()));
+      ilog(" - ${id}", ("id", item->get_block_id()));
     });
 
     try
@@ -1084,11 +1085,11 @@ void database::switch_forks(const item_ptr new_head)
       while (head_block_id() != old_branch.back()->previous_id())
       {
         const block_id_type id_being_popped = head_block_id();
-        dlog(" - Popping block ${id_being_popped}", (id_being_popped));
+        ilog(" - Popping block ${id_being_popped}", (id_being_popped));
         pop_block();
-        dlog(" - Popped block ${id_being_popped}", (id_being_popped));
+        ilog(" - Popped block ${id_being_popped}", (id_being_popped));
       }
-      dlog("Done popping blocks");
+      ilog("Done popping blocks");
     }
     FC_LOG_AND_RETHROW()
   }
@@ -1137,10 +1138,10 @@ void database::switch_forks(const item_ptr new_head)
           // pop all blocks from the bad fork
           while (head_block_id() != common_block_id)
           {
-            dlog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
+            ilog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
             pop_block();
           }
-          dlog(" - reverting to previous chain, done popping blocks");
+          ilog(" - reverting to previous chain, done popping blocks");
         }
         FC_LOG_AND_RETHROW()
         notify_switch_fork(head_block_num());
@@ -1148,10 +1149,10 @@ void database::switch_forks(const item_ptr new_head)
         // restore any popped blocks from the good fork
         if (old_branch.size())
         {
-          dlog("restoring blocks from original fork");
+          ilog("restoring blocks from original fork");
           for (auto ritr = old_branch.crbegin(); ritr != old_branch.crend(); ++ritr)
           {
-            dlog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
+            ilog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
             BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
             // even though those blocks were already processed before, it is safer to treat them as completely new,
             // especially since alternative would be to treat them as replayed blocks, but that would be misleading
@@ -1162,13 +1163,13 @@ void database::switch_forks(const item_ptr new_head)
             apply_block((*ritr)->full_block, skip);
             session.push();
           }
-          dlog("done restoring blocks from original fork");
+          ilog("done restoring blocks from original fork");
         }
       }
       delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
     }
   }
-  dlog("done pushing blocks from new fork");
+  ilog("done pushing blocks from new fork");
   hive::notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
