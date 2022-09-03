@@ -1040,32 +1040,35 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
 
 void database::_maybe_warn_multiple_production( uint32_t height )const
 {
-  auto blocks = _fork_db.fetch_block_by_number( height );
-  if( blocks.size() > 1 )
+  const auto blocks = _fork_db.fetch_block_by_number(height);
+  if (blocks.size() > 1)
   {
-    vector< std::pair< account_name_type, fc::time_point_sec > > witness_time_pairs;
-    witness_time_pairs.reserve( blocks.size() );
+    vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
+    witness_time_pairs.reserve(blocks.size());
     for (const auto& b : blocks)
       witness_time_pairs.push_back(std::make_pair(b->get_block_header().witness, b->get_block_header().timestamp));
 
-    ilog( "Encountered block num collision at block ${n} due to a fork, witnesses are: ${w}", ("n", height)("w", witness_time_pairs) );
+    ilog("Encountered block num collision at block ${height} due to a fork, witnesses are: ${witness_time_pairs}", (height)(witness_time_pairs));
   }
-  return;
 }
 
-void database::switch_forks(item_ptr new_head)
+void database::switch_forks(const item_ptr new_head)
 {
   uint32_t skip = get_node_properties().skip_flags;
 
   dlog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
-  dlog("Before switching, head_block_id is ${id}", ("id", head_block_id()));
-  auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), head_block_id());
+  const block_id_type original_head_block_id = head_block_id();
+  const uint32_t original_head_block_number = head_block_num();
+  dlog("Before switching, head_block_id is ${original_head_block_id}", (original_head_block_id));
+  const auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), original_head_block_id);
 
   dlog("Destination branch block ids:");
   std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
     dlog(" - ${id}", ("id", item->get_block_id()));
   });
-  auto common_block_id = new_branch.back()->previous_id();
+  const block_id_type common_block_id = new_branch.back()->previous_id();
+  const uint32_t common_block_number = new_branch.back()->get_block_num() - 1;
+
   dlog(" - ${common_block_id} (block before first block in branch, should be common)", (common_block_id));
 
   if (old_branch.size())
@@ -1093,7 +1096,7 @@ void database::switch_forks(item_ptr new_head)
   notify_switch_fork(head_block_num());
 
   // push all blocks on the new fork
-  for (auto ritr = new_branch.rbegin(); ritr != new_branch.rend(); ++ritr)
+  for (auto ritr = new_branch.crbegin(); ritr != new_branch.crend(); ++ritr)
   {
     ilog("pushing block #${block_num} from new fork, id ${id}", ("block_num", (*ritr)->get_block_num())("id", (*ritr)->get_block_id()));
     std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
@@ -1114,6 +1117,7 @@ void database::switch_forks(item_ptr new_head)
     if (delayed_exception_to_avoid_yield_in_catch)
     {
       wlog("exception thrown while switching forks ${e}", ("e", delayed_exception_to_avoid_yield_in_catch->to_detail_string()));
+
       // remove the rest of new_branch from the fork_db, those blocks are invalid
       while (ritr != new_branch.rend())
       {
@@ -1121,37 +1125,45 @@ void database::switch_forks(item_ptr new_head)
         ++ritr;
       }
 
-      try
+      // our fork switch has failed.  That could mean that we are now on a shorter fork than we started on,
+      // and we should switch back to the original fork because longer == good.  But it's also possible that
+      // the bad block was late in the fork, and even without the bad blocks the new fork is longer so we 
+      // should stay.  And a third possibility is that the fork is shorter, but one of the blocks on the fork
+      // became irreversible, so switching back is no longer an option.
+      if (get_last_irreversible_block_num() < common_block_number && head_block_num() < original_head_block_number)
       {
-        // pop all blocks from the bad fork
-        while (head_block_id() != common_block_id)
+        try
         {
-          dlog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
-          pop_block();
+          // pop all blocks from the bad fork
+          while (head_block_id() != common_block_id)
+          {
+            dlog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
+            pop_block();
+          }
+          dlog(" - reverting to previous chain, done popping blocks");
         }
-        dlog(" - reverting to previous chain, done popping blocks");
-      }
-      FC_LOG_AND_RETHROW()
-      notify_switch_fork(head_block_num());
+        FC_LOG_AND_RETHROW()
+        notify_switch_fork(head_block_num());
 
-      // restore any popped blocks from the good fork
-      if (old_branch.size())
-      {
-        dlog("restoring blocks from original fork");
-        for (auto ritr = old_branch.rbegin(); ritr != old_branch.rend(); ++ritr)
+        // restore any popped blocks from the good fork
+        if (old_branch.size())
         {
-          dlog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
-          BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-          // even though those blocks were already processed before, it is safer to treat them as completely new,
-          // especially since alternative would be to treat them as replayed blocks, but that would be misleading
-          // since replayed blocks are already irreversible, while these are clearly reversible
-          set_tx_status(database::TX_STATUS_INC_BLOCK);
-          _fork_db.set_head(*ritr);
-          auto session = start_undo_session();
-          apply_block((*ritr)->full_block, skip);
-          session.push();
+          dlog("restoring blocks from original fork");
+          for (auto ritr = old_branch.crbegin(); ritr != old_branch.crend(); ++ritr)
+          {
+            dlog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
+            BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+            // even though those blocks were already processed before, it is safer to treat them as completely new,
+            // especially since alternative would be to treat them as replayed blocks, but that would be misleading
+            // since replayed blocks are already irreversible, while these are clearly reversible
+            set_tx_status(database::TX_STATUS_INC_BLOCK);
+            _fork_db.set_head(*ritr);
+            auto session = start_undo_session();
+            apply_block((*ritr)->full_block, skip);
+            session.push();
+          }
+          dlog("done restoring blocks from original fork");
         }
-        dlog("done restoring blocks from original fork");
       }
       delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
     }
@@ -5374,7 +5386,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   migrate_irreversible_state(old_last_irreversible_block);
 } FC_CAPTURE_AND_RETHROW() }
 
-uint32_t database::update_last_irreversible_block(bool currently_applying_a_block)
+uint32_t database::update_last_irreversible_block(const bool currently_applying_a_block)
 { try {
   uint32_t old_last_irreversible = get_last_irreversible_block_num();
   /**
@@ -5534,7 +5546,6 @@ uint32_t database::update_last_irreversible_block(bool currently_applying_a_bloc
 
     if (currently_applying_a_block)
     {
-      // note: we don't think this case will ever happen, but:
       // we shouldn't ever trigger a fork switch when this function is called near the end of
       // _apply_block().  If it ever happens, we'll just delay the fork switch until the next
       // time we get a new block or a fast-confirm operation.

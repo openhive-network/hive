@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     for( uint32_t i = 0; i < 10; ++i )
     {
       auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
-        init_account_priv_key, database::skip_nothing );
+                               init_account_priv_key, database::skip_nothing );
       try {
         PUSH_BLOCK( db2, b );
       } FC_CAPTURE_AND_RETHROW( ("db2") );
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     for( uint32_t i = 10; i < 13; ++i )
     {
       auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
-        init_account_priv_key, database::skip_nothing );
+                               init_account_priv_key, database::skip_nothing );
     }
     string db1_tip = db1.head_block_id().str();
     uint32_t next_slot = 3;
@@ -248,14 +248,16 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       BOOST_CHECK_EQUAL(db2.head_block_id().str(), b->get_block_id().str());
     }
 
+    string db2_block_13_id = db2.head_block_id().str();
     //The two databases are on distinct forks now, but at the same height. Make a block on db2, make it invalid, then
-    //pass it to db1 and assert that db1 doesn't switch to the new fork.
+    //pass it to db1 and assert that db1 successfully switches to the new fork, but only as far as block 13, the last
+    //valid block
     std::shared_ptr<full_block_type> good_block;
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db2.head_block_num(), 13u);
     {
       auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
-        init_account_priv_key, database::skip_nothing );
+                               init_account_priv_key, database::skip_nothing );
       good_block = b;
       auto bad_block_header = b->get_block_header();
       auto bad_block_txs = b->get_full_transactions();
@@ -266,9 +268,9 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       HIVE_CHECK_THROW(PUSH_BLOCK( db1, bad_block_header, bad_block_txs, init_account_priv_key ), fc::exception);
     }
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
-    BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
+    BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2_block_13_id);
 
-    // assert that db1 switches to new fork with good block
+    // assert that db1 accepts the good version of block 14
     BOOST_CHECK_EQUAL(db2.head_block_num(), 14u);
     PUSH_BLOCK( db1, good_block );
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2.head_block_id().str());

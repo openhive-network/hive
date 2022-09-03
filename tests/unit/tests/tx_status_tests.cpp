@@ -702,14 +702,8 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     check.expect( expectation::inc_block( expectation::POST_TX ) );
     check.expect( expectation::inc_block( expectation::EXECUTE_HARD_FAIL ) );
     check.expect( expectation::inc_block( expectation::FAIL_BLOCK ) );
-    //now the mechanism should pop transaction from block 0 (block 1 is dropped as failing),
-    //reapply block 0' ...
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0'
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    //...and then try to reapply popped transaction which will fail on insufficient balance
-    //like it did before
+    //reapplying block 1 failed, but we'll stay on block 0 because it was at least as long as the 0' fork
+    //...and then try to reapply popped transaction from 0' which will fail on insufficient balance
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     {
       auto block = reality1[1];
