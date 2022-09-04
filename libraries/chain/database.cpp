@@ -1178,8 +1178,9 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
 
   const uint32_t skip = get_node_properties().skip_flags;
+  std::vector<std::shared_ptr<full_block_type>> blocks;
 
-  if (!(skip & skip_fork_db))
+  if (!(skip & skip_fork_db)) //if fork checking enabled
   {
     const item_ptr new_head = _fork_db.push_block(full_block);
     block_ctrl.on_fork_db_insert();
@@ -1193,69 +1194,46 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       return false;
     }
 
-    // In the normal case where we're pushing a block that directly builds off the current head
-    // block, we skip this if-block and go straight to applying the block normally
-    if (new_head->previous_id() != head_block_id()) //if new_head not building directly off head block
+    //if new_head indirectly builds off the current head_block
+    // then there's no fork switch, we're just linking in previously unlinked blocks to the main branch
+    for (item_ptr block = new_head;
+         block->get_block_num() > head_block_num();
+         block = block->prev.lock())
+      blocks.push_back(block->full_block);
+    //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
+    if (blocks.back()->get_block_header().previous != head_block_id())
     {
-      //if new_head indirectly builds off the current head_block
-      // then there's no fork switch, we're just linking in previously unlinked blocks to the main branch
-      std::vector<item_ptr> blocks;
-      for (item_ptr block = new_head;
-           block->get_block_num() > head_block_num();
-           block = block->prev.lock())
-        blocks.push_back(block);
-      if (blocks.back()->previous_id() == head_block_id())
-      {
-        block_ctrl.on_fork_apply();
-        for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
-        {
-          try
-          {
-            BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-            set_tx_status(database::TX_STATUS_INC_BLOCK);
-            auto session = start_undo_session();
-            block_ctrl.on_fork_normal();
-            apply_block((*iter)->full_block, skip);
-            session.push();
-          }
-          catch (const fc::exception& e)
-          {
-            elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
-            // remove this block, and all blocks on the fork after it, from the fork database
-            for (; iter != blocks.crend(); ++iter)
-              _fork_db.remove((*iter)->get_block_id());
-            throw;
-          }
-        }
-        return true;
-      }
-      else //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
-      {
-        block_ctrl.on_fork_apply();
-        ilog("calling switch_forks() from _push_block()");
-        switch_forks(new_head);
-        return true;
-      }
-    } //if not building off current head block
-  } //if fork checking enabled
-
-  //we are either not doing fork checking, or more likely, we are building off our head block
-  try
-  {
-    BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-    set_tx_status( database::TX_STATUS_INC_BLOCK );
-    auto session = start_undo_session();
-    block_ctrl.on_fork_normal();
-    apply_block(full_block, skip);
-    session.push();
+      block_ctrl.on_fork_apply();
+      ilog("calling switch_forks() from _push_block()");
+      switch_forks(new_head);
+      return true;
+    }
   }
-  catch( const fc::exception& e )
-  {
-    elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
-    _fork_db.remove(full_block->get_block_id());
-    throw;
-  }
+  else //fork checking not enabled, just try to push the new block
+    blocks.push_back(full_block);
 
+  //we are building off our head block, try to add the block(s)
+  block_ctrl.on_fork_normal();
+  for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
+  {
+    try
+    {
+      BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
+      set_tx_status(database::TX_STATUS_INC_BLOCK);
+
+      auto session = start_undo_session();
+      apply_block(*iter, skip);
+      session.push();
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
+      // remove failed block, and all blocks on the fork after it, from the fork database
+      for (; iter != blocks.crend(); ++iter)
+        _fork_db.remove((*iter)->get_block_id());
+      throw;
+    }
+  }
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
