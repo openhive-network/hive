@@ -1177,53 +1177,67 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
 
-  uint32_t skip = get_node_properties().skip_flags;
-  //uint32_t skip_undo_db = skip & skip_undo_block;
+  const uint32_t skip = get_node_properties().skip_flags;
+  std::vector<std::shared_ptr<full_block_type>> blocks;
 
-  if (!(skip & skip_fork_db))
+  if (!(skip & skip_fork_db)) //if fork checking enabled
   {
-    shared_ptr<fork_item> new_head = _fork_db.push_block(full_block);
+    const item_ptr new_head = _fork_db.push_block(full_block);
     block_ctrl.on_fork_db_insert();
     _maybe_warn_multiple_production( new_head->get_block_num() );
 
-    //If the head block from the longest chain does not build off of the current head, we need to switch forks.
-    //(if the new block builds off our head block, this check will skip the fork-switching code)
-    if (new_head->previous_id() != head_block_id())
+    // if the new head block is at a lower height than our head block,
+    // it is on a shorter fork, so don't validate it
+    if (new_head->get_block_num() <= head_block_num())
+    { 
+      block_ctrl.on_fork_ignore();
+      return false;
+    }
+
+    //if new_head indirectly builds off the current head_block
+    // then there's no fork switch, we're just linking in previously unlinked blocks to the main branch
+    for (item_ptr block = new_head;
+         block->get_block_num() > head_block_num();
+         block = block->prev.lock())
     {
-      //If the newly pushed block is the same height as head, we get head back in new_head
-      //Only switch forks if new_head is actually higher than head
-      if (new_head->get_block_num() > head_block_num())
-      {
-        block_ctrl.on_fork_apply();
-        dlog("calling switch_forks() from _push_block()");
-        switch_forks(new_head);
-        return true;
-      }
-      else //the new block is on a fork but lower than our head block, so don't validate it
-      {
-        block_ctrl.on_fork_ignore();
-        return false;
-      }
-    } //if not building off current head block
-  } //if fork checking enabled
-
-  //we are either not doing fork checking, or more likely, we are building off our head block
-  try
-  {
-    BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-    set_tx_status( database::TX_STATUS_INC_BLOCK );
-    auto session = start_undo_session();
-    block_ctrl.on_fork_normal();
-    apply_block(full_block, skip);
-    session.push();
+      blocks.push_back(block->full_block);
+      if (block->get_block_num() == 1) //prevent crash backing up to null in for-loop
+        break;
+    }
+    //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
+    if (blocks.back()->get_block_header().previous != head_block_id())
+    {
+      block_ctrl.on_fork_apply();
+      ilog("calling switch_forks() from _push_block()");
+      switch_forks(new_head);
+      return true;
+    }
   }
-  catch( const fc::exception& e )
-  {
-    elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
-    _fork_db.remove(full_block->get_block_id());
-    throw;
-  }
+  else //fork checking not enabled, just try to push the new block
+    blocks.push_back(full_block);
 
+  //we are building off our head block, try to add the block(s)
+  block_ctrl.on_fork_normal();
+  for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
+  {
+    try
+    {
+      BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
+      set_tx_status(database::TX_STATUS_INC_BLOCK);
+
+      auto session = start_undo_session();
+      apply_block(*iter, skip);
+      session.push();
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
+      // remove failed block, and all blocks on the fork after it, from the fork database
+      for (; iter != blocks.crend(); ++iter)
+        _fork_db.remove((*iter)->get_block_id());
+      throw;
+    }
+  }
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
