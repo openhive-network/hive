@@ -1199,7 +1199,11 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     for (item_ptr block = new_head;
          block->get_block_num() > head_block_num();
          block = block->prev.lock())
+    {
       blocks.push_back(block->full_block);
+      if (block->get_block_num() == 1) //prevent crash backing up to null in for-loop
+        break;
+    }
     //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
     if (blocks.back()->get_block_header().previous != head_block_id())
     {
