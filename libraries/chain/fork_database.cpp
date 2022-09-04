@@ -58,7 +58,7 @@ shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block
   });
 }
 
-void  fork_database::_push_block(const item_ptr& item)
+void fork_database::_push_block(const item_ptr& item)
 {
   if (_head) // make sure the block is within the range that we are caching
   {
@@ -80,9 +80,10 @@ void  fork_database::_push_block(const item_ptr& item)
   _index.insert(item);
   // if we don't have a head block or this is the next block or on a longer fork than our head block
   //   make this the new head block
-  if( !_head || item->get_block_num() > _head->get_block_num() ) _head = item;
+  if (!_head || item->get_block_num() > _head->get_block_num())
+    _head = item;
 
-  _push_next( item ); //check for any unlinked blocks that can now be linked to our fork
+  _push_next(item); // check for any unlinked blocks that can now be linked to our fork
 }
 
 shared_ptr<fork_item> fork_database::head()const 

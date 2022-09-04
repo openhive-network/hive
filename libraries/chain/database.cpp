@@ -1177,32 +1177,74 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
 
-  uint32_t skip = get_node_properties().skip_flags;
-  //uint32_t skip_undo_db = skip & skip_undo_block;
+  const uint32_t skip = get_node_properties().skip_flags;
 
   if (!(skip & skip_fork_db))
   {
-    shared_ptr<fork_item> new_head = _fork_db.push_block(full_block);
+    const item_ptr new_head = _fork_db.push_block(full_block);
     block_ctrl.on_fork_db_insert();
     _maybe_warn_multiple_production( new_head->get_block_num() );
 
-    //If the head block from the longest chain does not build off of the current head, we need to switch forks.
-    //(if the new block builds off our head block, this check will skip the fork-switching code)
+    // In the normal case where we're pushing a block that directly builds off the current head
+    // block, we can skip straight to applying the block normally
     if (new_head->previous_id() != head_block_id())
     {
-      //If the newly pushed block is the same height as head, we get head back in new_head
-      //Only switch forks if new_head is actually higher than head
-      if (new_head->get_block_num() > head_block_num())
+      // The head block from the longest chain does not build off of the current head,  it could
+      // mean either:
+      // - the block is on a fork, but that fork is still shorter than the main branch, so we 
+      //   don't have any reason to switch to it
+      // - we need to switch forks, meaning the the new head builds off a block before our current
+      //   head, so we'll have to pop our current head before applying the new fork
+      // - the block we were pushing allowed us to link in some unlinked blocks.  new_head will be
+      //   the highest-numbered of chain of unlinked blocks, which builds off full_block which
+      //   builds off the current head.
+    
+      // If the newly pushed block is the same height as head, we get head back in new_head
+      // Only switch forks if new_head is actually higher than head
+      if (new_head->get_block_num() <= head_block_num())
+      {
+        // the new block is on a fork but lower than our head block, so don't validate it
+        block_ctrl.on_fork_ignore();
+        return false;
+      }
+
+      std::vector<item_ptr> blocks;
+      for (item_ptr block = new_head;
+           block->get_block_num() > head_block_num();
+           block = block->prev.lock())
+        blocks.push_back(block);
+      if (blocks.back()->previous_id() == head_block_id())
+      {
+        // then there's no fork switch, we've just linked in a longer chain
+        block_ctrl.on_fork_apply();
+        for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
+        {
+          try
+          {
+            BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+            set_tx_status(database::TX_STATUS_INC_BLOCK);
+            auto session = start_undo_session();
+            block_ctrl.on_fork_normal();
+            apply_block((*iter)->full_block, skip);
+            session.push();
+          }
+          catch (const fc::exception& e)
+          {
+            elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
+            // remove this block, and all blocks on the fork after it, from the fork database
+            for (; iter != blocks.crend(); ++iter)
+              _fork_db.remove((*iter)->get_block_id());
+            throw;
+          }
+        }
+        return true;
+      }
+      else
       {
         block_ctrl.on_fork_apply();
         dlog("calling switch_forks() from _push_block()");
         switch_forks(new_head);
         return true;
-      }
-      else //the new block is on a fork but lower than our head block, so don't validate it
-      {
-        block_ctrl.on_fork_ignore();
-        return false;
       }
     } //if not building off current head block
   } //if fork checking enabled
