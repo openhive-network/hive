@@ -23,7 +23,8 @@ class config:
 		self.market_history_bucket_size = '[15,60,300,3600,86400]'
 		self.market_history_buckets_per_size = '5760'
 		self.p2p_seed_node = '127.0.0.1:2001'
-		self.statsd_batchsize = '1'
+		self.rc_skip_reject_not_enough_rc = '0'
+		self.rc_compute_historical_rc = '0'
 		self.tags_start_promoted = '0'
 		self.tags_skip_startup_update = '0'
 		self.transaction_status_block_depth = '64000'
@@ -91,7 +92,7 @@ def validate_address(val : str) -> bool:
 		val = val.strip()
 		address, port = val.split(":")
 		port = int(port)
-		
+
 		assert port >= 0
 		assert port < 0xffff
 
@@ -102,7 +103,7 @@ def validate_address(val : str) -> bool:
 				x = int(part)
 				assert x >= 0
 				assert x <= 255
-		
+
 		try:
 			validate_address(address)
 		except:
