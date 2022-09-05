@@ -30,7 +30,7 @@ unsigned long long read_u64_value_from(FILE* input, const char* key, unsigned ke
   return 0;
 }
 
-bool benchmark_dumper::read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual)
+bool benchmark_dumper::read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual, uint64_t* current_residential)
 {
   const char* procPath = "/proc/self/status";
   FILE* input = fopen(procPath, "re");
@@ -47,6 +47,7 @@ bool benchmark_dumper::read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* 
 
   *peak_virtual = read_u64_value_from( input, "VmPeak:", 7, error_callback );
   *current_virtual = read_u64_value_from( input, "VmSize:", 7, error_callback );
+  *current_residential = read_u64_value_from( input, "VmRSS:", 7, error_callback );
 
   fclose(input);
   return true;
