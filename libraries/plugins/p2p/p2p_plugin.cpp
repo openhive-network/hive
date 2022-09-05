@@ -183,13 +183,15 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
 
       if (!sync_mode)
       {
-        fc::microseconds offset = fc::time_point::now() - full_block->get_block_header().timestamp;
-        STATSD_TIMER("p2p", "offset", "block_arrival", offset, 1.0f)
+        const fc::microseconds offset = fc::time_point::now() - full_block->get_block_header().timestamp;
+        auto timer = hive::notify_hived_timer("p2p/offset/block_arrival");
+        timer.start = full_block->get_block_header().timestamp;
+
         ilog("Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms",
-             ("t", full_block->get_block().transactions.size())
-             ("b", full_block->get_block_num())
-             ("w", full_block->get_block_header().witness)
-             ("l", offset.count() / 1000));
+          ("t", full_block->get_block().transactions.size())
+          ("b", full_block->get_block_num())
+          ("w", full_block->get_block_header().witness)
+          ("l", offset.count() / 1000));
       }
 
       return result;

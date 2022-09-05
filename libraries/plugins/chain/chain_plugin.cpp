@@ -114,7 +114,7 @@ class chain_plugin_impl
 {
   public:
     chain_plugin_impl() {}
-    ~chain_plugin_impl() 
+    ~chain_plugin_impl()
     {
       stop_write_processing();
       if(dumper_post_apply_block.connected()) dumper_post_apply_block.disconnect();
@@ -242,12 +242,11 @@ struct chain_plugin_impl::write_request_visitor
         throw fc::exception(fc::canceled_exception_code, "interrupted by user");
       }
 
-      STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
+      const auto timer = hive::notify_hived_timer("chain_plugin/write_time/push_block");
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      BOOST_SCOPE_EXIT(this_, time_before_pushing_block, &statsd_timer) { 
+      BOOST_SCOPE_EXIT(this_, time_before_pushing_block) {
         this_->cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
-        STATSD_STOP_TIMER("chain", "write_time", "push_block")
       } BOOST_SCOPE_EXIT_END
       cp.db.push_block( *p2p_block_ctrl.get(), p2p_block_ctrl->get_skip_flags() );
     }
@@ -267,12 +266,11 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
-      STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
+      const auto _ = hive::notify_hived_timer("chain_plugin/write_time/push_transaction");
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
       cp.db.push_transaction( tx_ctrl->get_full_transaction() );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
-      STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
       ++count_tx_applied;
     }
@@ -306,10 +304,9 @@ struct chain_plugin_impl::write_request_visitor
       if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
-      STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
+      const auto _ = hive::notify_hived_timer("chain_plugin/write_time/generate_block");
       on_block( generate_block_ctrl.get() );
       cp.block_generator->generate_block( generate_block_ctrl.get() );
-      STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
     }
     catch( const fc::exception& e )
     {
@@ -367,6 +364,7 @@ void chain_plugin_impl::start_write_processing()
       fc::time_point last_popped_item_time = fc::time_point::now();
       fc::time_point last_msg_time = last_popped_item_time;
       fc::time_point wait_start_time = last_popped_item_time;
+      auto notification_timer = hive::notify_hived_timer("chain_plugin/time_since_last_block/from_p2p");
 
       hive::notify_hived_status("syncing");
       while (true)
@@ -377,6 +375,7 @@ void chain_plugin_impl::start_write_processing()
         fc::microseconds time_since_last_message_printed = loop_start_time - last_msg_time;
         if (time_since_last_popped_item > block_wait_max_time && time_since_last_message_printed > block_wait_max_time)
         {
+          notification_timer.reset();
           wlog("No P2P data (block/transaction) received in last ${t} seconds... peer_count=${peer_count}", ("t", block_wait_max_time.to_seconds())("peer_count", peer_count.load()));
           last_msg_time = loop_start_time; /// To avoid log pollution
         }
@@ -398,6 +397,7 @@ void chain_plugin_impl::start_write_processing()
           // otherwise, we woke because the write_queue is non-empty
           cxt = write_queue.front();
           write_queue.pop();
+          notification_timer.reset();
         }
 
         cumulative_time_waiting_for_work += fc::time_point::now() - wait_start_time;
@@ -417,7 +417,7 @@ void chain_plugin_impl::start_write_processing()
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
-          STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
+          const auto _ = hive::notify_hived_timer("chain_plugin/lock_time/write_lock");
           while (true)
           {
             req_visitor.cxt = cxt;
@@ -478,11 +478,11 @@ void chain_plugin_impl::start_write_processing()
           float percent_unknown = (time_since_last_report - total_recorded_times).count() / (float)time_since_last_report.count() * 100.f;
 
           std::ostringstream report;
-          report << std::setprecision(2) << std::fixed 
+          report << std::setprecision(2) << std::fixed
                  << "waiting for work: " << percent_waiting_for_work
-                 << "%, waiting for locks: " << percent_waiting_for_locks 
-                 << "%, processing transactions: " << percent_processing_transactions 
-                 << "%, processing blocks: " << percent_processing_blocks 
+                 << "%, waiting for locks: " << percent_waiting_for_locks
+                 << "%, processing transactions: " << percent_processing_transactions
+                 << "%, processing blocks: " << percent_processing_blocks
                  << "%, unknown: " << percent_unknown << "%";
           wlog("${report}", ("report", report.str()));
 
@@ -671,7 +671,7 @@ void chain_plugin_impl::open()
     wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
     wlog( " Error: ${e}", ("e", e) );
     hive::notify_hived_status("exitting with open database error");
-    
+
     /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
     exit(EXIT_FAILURE);
   }
@@ -1083,7 +1083,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     --call_count;
     fc_dlog(fc::logger::get("chainlock"), "<-- accept_transaction_calls_in_progress: ${call_count}", (call_count));
   } BOOST_SCOPE_EXIT_END
-  
+
   if (lock == lock_type::boost)
   {
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));
