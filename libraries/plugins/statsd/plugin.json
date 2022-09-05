@@ -1,5 +1,0 @@
-{
-   "plugin_name": "statsd",
-   "plugin_namespace": "statsd",
-   "plugin_project": "statsd_plugin"
-}

@@ -1,6 +1,5 @@
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/p2p/p2p_default_seeds.hpp>
-#include <hive/plugins/statsd/utility.hpp>
 
 #include <graphene/net/node.hpp>
 #include <graphene/net/exceptions.hpp>

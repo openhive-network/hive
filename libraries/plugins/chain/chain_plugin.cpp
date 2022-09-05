@@ -4,7 +4,6 @@
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/statsd/utility.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/notifications.hpp>
@@ -155,7 +154,6 @@ class chain_plugin_impl
     bool                             validate_invariants = false;
     bool                             dump_memory_details = false;
     bool                             benchmark_is_enabled = false;
-    bool                             statsd_on_replay = false;
     uint32_t                         stop_replay_at = 0;
     bool                             exit_after_replay = false;
     bool                             exit_before_sync = false;
@@ -561,15 +559,6 @@ bool chain_plugin_impl::start_replay_processing()
 
 void chain_plugin_impl::initial_settings()
 {
-  if( statsd_on_replay )
-  {
-    auto statsd = appbase::app().find_plugin< hive::plugins::statsd::statsd_plugin >();
-    if( statsd != nullptr )
-    {
-      statsd->start_logging();
-    }
-  }
-
   ilog( "Starting chain with shared_file_size: ${n} bytes", ("n", shared_memory_size) );
 
   if(resync)
@@ -879,11 +868,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   this->my->setup_benchmark_dumper();
   my->benchmark_is_enabled = (options.count( "advanced-benchmark" ) != 0);
 
-  if( options.count( "statsd-record-on-replay" ) )
-  {
-    my->statsd_on_replay = options.at( "statsd-record-on-replay" ).as< bool >();
-  }
-
 #ifdef USE_ALTERNATE_CHAIN_ID
   if( options.count( "chain-id" ) )
   {
@@ -1117,7 +1101,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
 void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
   std::function< void( bool hf26_auth_fail )> on_full_trx, const lock_type lock /* = lock_type::boost */)
 { try {
-  result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
+  result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26,true /* cache this transaction */);
   on_full_trx( false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
   blockchain_worker_thread_pool::get_instance().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
