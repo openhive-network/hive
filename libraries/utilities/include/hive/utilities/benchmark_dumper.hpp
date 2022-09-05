@@ -59,13 +59,14 @@ public:
   class measurement
   {
   public:
-    void set(uint32_t bn, int64_t rm, int32_t cs, uint64_t cm, uint64_t pm)
+    void set(uint32_t bn, int64_t rm, int32_t cs, uint64_t cm, uint64_t pm, uint64_t rss)
     {
       block_number = bn;
       real_ms = rm;
       cpu_ms = cs;
       current_mem = cm;
       peak_mem = pm;
+      current_rss = rss;
     }
 
   public:
@@ -74,6 +75,7 @@ public:
     int32_t  cpu_ms = 0;
     uint64_t current_mem = 0;
     uint64_t peak_mem = 0;
+    uint64_t current_rss = 0;
     index_memory_details_cntr_t index_memory_details_cntr;
   };
 
@@ -106,8 +108,8 @@ public:
     validate_is_initialized();
     uint64_t current_virtual = 0;
     uint64_t peak_virtual = 0;
-    read_mem(_pid, &current_virtual, &peak_virtual);
-  
+    uint64_t current_residential = 0;
+    read_mem(_pid, &current_virtual, &peak_virtual, &current_residential);
     fc::time_point current_sys_time = fc::time_point::now();
     clock_t current_cpu_time = clock();
 
@@ -116,7 +118,8 @@ public:
             (current_sys_time - _last_sys_time).count()/1000, // real_ms
             int((current_cpu_time - _last_cpu_time) * 1000 / CLOCKS_PER_SEC), // cpu_ms
             current_virtual,
-            peak_virtual );
+            peak_virtual,
+            current_residential);
     get_indexes_memory_details(data.index_memory_details_cntr, true);
 
     _last_sys_time = current_sys_time;
@@ -127,7 +130,8 @@ public:
       (_last_sys_time - _init_sys_time).count()/1000,
       int((_last_cpu_time - _init_cpu_time) * 1000 / CLOCKS_PER_SEC),
       current_virtual,
-      peak_virtual );
+      peak_virtual,
+      current_residential);
 
     dump(false, get_indexes_memory_details);
 
@@ -176,7 +180,7 @@ public:
   }
 
 private:
-  bool read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual);
+  bool read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual, uint64_t* current_residential);
   bool is_file_available() const { return !_file_name.empty(); }
   void validate_is_initialized() const { FC_ASSERT( is_initialized(), "dumper is not initialized, first call initialize()" ); }
 
@@ -202,7 +206,7 @@ FC_REFLECT( hive::utilities::benchmark_dumper::database_object_sizeof_t,
         (object_name)(object_size) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::measurement,
-        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(index_memory_details_cntr) )
+        (block_number)(real_ms)(cpu_ms)(current_mem)(peak_mem)(current_rss)(index_memory_details_cntr) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::TAllData,
         (database_object_sizeofs)(measurements)(total_measurement) )
