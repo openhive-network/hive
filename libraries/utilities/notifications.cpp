@@ -15,6 +15,19 @@ namespace flags{
 
   const char* notifiations_filter()
   {
+    /*
+      notification filter can work in one of two modes:
+
+        - send all that matches given regex, ex [config.ini]:
+
+          notifications-filter = (jsonrpc/.*)                    # sends only jsonrpc timings
+          notifications-filter = (hived_status|benchmark)        # sends only notification with current hived status and multiindex stats
+
+        - send all that doesn't match given regex, ex [config.ini]:
+
+          notifications-filter = !(benchmark)                    # sends all, except benchmark notifications
+          notifications-filter = !(hived_status|jsonrpc/.*)      # sends all, except these with current hived status and jsonrpc timings
+    */
     return "notifications-filter";
   }
 }
@@ -90,8 +103,11 @@ void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_po
 
     network = std::make_unique<network_broadcaster>(address_pool, on_send);
 
-    if (!regex.empty())
-      this->name_filter = std::regex(regex);
+    if (!regex.empty() && !(regex.size() == 1 && regex[0] == notification_handler::exclude_matching_sign))
+    {
+      this->exclude_matching = (regex[0] == notification_handler::exclude_matching_sign);
+      this->name_filter = std::regex(regex.substr(static_cast<size_t>(this->exclude_matching)));
+    }
   }
 }
 

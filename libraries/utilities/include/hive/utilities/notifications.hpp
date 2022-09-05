@@ -110,7 +110,16 @@ public:
     if (!is_broadcasting_active())
       return;
 
-    if(this->name_filter.valid() && !std::regex_match(name, *this->name_filter) )
+    /*
+      +------------+----------+----------+
+      |    XOR     | match[F] | match[T] |
+      +------------+----------+----------+
+      | exclude[F] |   STOP   |   SEND   |
+      +------------+----------+----------+
+      | exclude[T] |   SEND   |   STOP   |
+      +------------+----------+----------+
+    */
+    if(this->name_filter.valid() && !(std::regex_match(name, *this->name_filter) ^ this->exclude_matching))
       return;
 
     on_send(notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...));
@@ -122,6 +131,9 @@ private:
   signal_t on_send;
   std::unique_ptr<network_broadcaster> network;
   fc::optional<std::regex> name_filter;
+  bool exclude_matching;
+
+  const static fc::string::value_type exclude_matching_sign{'!'};
 
   bool is_broadcasting_active() const;
 };
