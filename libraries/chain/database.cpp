@@ -1124,7 +1124,7 @@ void database::switch_forks(const item_ptr new_head)
     {
       BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
       // we have to treat blocks from fork as not validated
-      set_tx_status(database::TX_STATUS_INC_BLOCK);
+      set_tx_status(database::TX_STATUS_P2P_BLOCK);
       _fork_db.set_head(*ritr);
       auto session = start_undo_session();
       apply_block((*ritr)->full_block, skip);
@@ -1176,7 +1176,7 @@ void database::switch_forks(const item_ptr new_head)
             // even though those blocks were already processed before, it is safer to treat them as completely new,
             // especially since alternative would be to treat them as replayed blocks, but that would be misleading
             // since replayed blocks are already irreversible, while these are clearly reversible
-            set_tx_status(database::TX_STATUS_INC_BLOCK);
+            set_tx_status(database::TX_STATUS_P2P_BLOCK);
             _fork_db.set_head(*ritr);
             auto session = start_undo_session();
             apply_block((*ritr)->full_block, skip);
@@ -1242,7 +1242,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     try
     {
       BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
-      set_tx_status(database::TX_STATUS_INC_BLOCK);
+      set_tx_status(database::TX_STATUS_P2P_BLOCK);
 
       // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
       // with what we're applying.  If we're only appending a single block, the forkdb's head block

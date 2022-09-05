@@ -1899,8 +1899,8 @@ std::string to_string(hive::chain::database::transaction_status txs)
       return "TX_STATUS_PENDING";
     case hive::chain::database::TX_STATUS_BLOCK:
       return "TX_STATUS_BLOCK";
-    case hive::chain::database::TX_STATUS_INC_BLOCK:
-      return "TX_STATUS_INC_BLOCK";
+    case hive::chain::database::TX_STATUS_P2P_BLOCK:
+      return "TX_STATUS_P2P_BLOCK";
     case hive::chain::database::TX_STATUS_GEN_BLOCK:
       return "TX_STATUS_GEN_BLOCK";
   }
