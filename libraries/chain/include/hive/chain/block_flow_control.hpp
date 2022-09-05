@@ -161,7 +161,7 @@ public:
   void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const
   {
     stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
-    if( !except )
+    if( !except && current_phase == phase::APPLIED )
       current_phase = phase::END;
   }
 
