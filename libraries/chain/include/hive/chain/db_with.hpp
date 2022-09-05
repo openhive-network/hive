@@ -75,10 +75,9 @@ struct pending_transactions_restorer
     auto head_block_time = _db.head_block_time();
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
 
-#if !defined(IS_TEST_NET) || defined NDEBUG //especially during debugging that limit is highly problematic
     auto start = fc::time_point::now();
-#endif
-    bool apply_trxs = true;
+    bool in_sync = ( start - _block_ctrl.get_block_timestamp() ) < HIVE_UP_TO_DATE_MARGIN__PENDING_TXS;
+    bool apply_trxs = in_sync;
     uint32_t applied_txs = 0;
     uint32_t postponed_txs = 0;
     uint32_t expired_txs = 0;
@@ -161,7 +160,7 @@ struct pending_transactions_restorer
     } );
 
     _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, _db.get_last_irreversible_block_num() );
-    if (postponed_txs || expired_txs)
+    if( in_sync && ( postponed_txs || expired_txs ) )
     {
       wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
            (postponed_txs)(applied_txs)(expired_txs));
