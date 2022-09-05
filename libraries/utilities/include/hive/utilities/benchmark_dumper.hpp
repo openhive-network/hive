@@ -36,7 +36,7 @@ public:
     std::string    index_name;
     size_t         index_size = 0;
     size_t         item_sizeof = 0;
-    /// Additional (ie dynamic container) allocations held in all stored items 
+    /// Additional (ie dynamic container) allocations held in all stored items
     size_t         item_additional_allocation = 0;
     /// Additional memory used for container internal structures (like tree nodes).
     size_t         additional_container_allocation = 0;
@@ -110,7 +110,7 @@ public:
   
     fc::time_point current_sys_time = fc::time_point::now();
     clock_t current_cpu_time = clock();
-  
+
     measurement data;
     data.set( block_number,
             (current_sys_time - _last_sys_time).count()/1000, // real_ms
@@ -118,7 +118,7 @@ public:
             current_virtual,
             peak_virtual );
     get_indexes_memory_details(data.index_memory_details_cntr, true);
-  
+
     _last_sys_time = current_sys_time;
     _last_cpu_time = current_cpu_time;
     _total_blocks = block_number;
@@ -158,7 +158,7 @@ public:
       );
     }
 
-    if(is_file_available()) 
+    if(is_file_available())
     {
       const fc::path path(_file_name);
       try

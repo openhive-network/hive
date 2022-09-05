@@ -63,7 +63,7 @@ void block_flow_control::on_worker_done() const
   default:
     dlog("Block stats:${report}", (report));
     if (fc::logger::get("default").is_enabled(fc::log_level::info))
-      fc::logger::get("default").log(fc::log_message(FC_LOG_CONTEXT(info), 
+      fc::logger::get("default").log(fc::log_message(FC_LOG_CONTEXT(info),
                                                      "#${num} lib:${lib} ${type} ${bp} txs:${txs} size:${size} offset:${offset} "
                                                      "before:{inc:${inc} ok:${ok}} "
                                                      "after:{exp:${exp} fail:${fail} appl:${appl} post:${post}} "

@@ -11,7 +11,7 @@
 #include <boost/algorithm/string.hpp>
 
 
-class fc::http::connection::impl 
+class fc::http::connection::impl
 {
   public:
    fc::tcp_socket sock;
@@ -44,7 +44,7 @@ class fc::http::connection::impl
         s = read_until( line.data(), line.data()+line.size(), ' ' ); // CODE
         rep.status = static_cast<int>(to_int64(fc::string(line.data())));
         s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
-        
+
         while( (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
           fc::http::header h;
           char* end = line.data();
@@ -69,7 +69,7 @@ class fc::http::connection::impl
         sock.close();
         rep.status = http::reply::InternalServerError;
         return rep;
-      } 
+      }
    }
 };
 
@@ -88,10 +88,10 @@ void       connection::connect_to( const fc::ip::endpoint& ep ) {
   my->sock.connect_to( my->ep = ep );
 }
 
-http::reply connection::request( const fc::string& method, 
-                                const fc::string& url, 
+http::reply connection::request( const fc::string& method,
+                                const fc::string& url,
                                 const fc::string& body, const headers& he ) {
-	
+
   fc::url parsed_url(url);
   if( !my->sock.is_open() ) {
     wlog( "Re-open socket!" );
@@ -107,7 +107,7 @@ http::reply connection::request( const fc::string& method,
           req << i->key <<": " << i->val<<"\r\n";
       }
       if( body.size() ) req << "Content-Length: "<< body.size() << "\r\n";
-      req << "\r\n"; 
+      req << "\r\n";
       fc::string head = req.str();
 
       my->sock.write( head.c_str(), head.size() );
@@ -141,7 +141,7 @@ http::request    connection::read_request()const {
   s = my->read_until( line.data(), line.data()+line.size(), ' ' ); // PATH
   req.path = line.data();
   s = my->read_until( line.data(), line.data()+line.size(), '\n' ); // HTTP/1.0
-  
+
   while( (s = my->read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
     fc::http::header h;
     char* end = line.data();
@@ -162,7 +162,7 @@ http::request    connection::read_request()const {
        req.domain = h.val;
     }
   }
-  // TODO: some common servers won't give a Content-Length, they'll use 
+  // TODO: some common servers won't give a Content-Length, they'll use
   // Transfer-Encoding: chunked.  handle that here.
 
   if( req.body.size() ) {
@@ -173,7 +173,7 @@ http::request    connection::read_request()const {
 
 fc::string request::get_header( const fc::string& key )const {
   for( auto itr = headers.begin(); itr != headers.end(); ++itr ) {
-    if( boost::iequals(itr->key, key) ) { return itr->val; } 
+    if( boost::iequals(itr->key, key) ) { return itr->val; }
   }
   return fc::string();
 }
@@ -186,7 +186,7 @@ std::vector<header> parse_urlencoded_params( const fc::string& f ) {
   int arg = 0;
   for( size_t i = 0; i < f.size(); ++i ) {
     while( f[i] != '=' && i < f.size() ) {
-      if( f[i] == '%' ) { 
+      if( f[i] == '%' ) {
         h[arg].key += char((fc::from_hex(f[i+1]) << 4) | fc::from_hex(f[i+2]));
         i += 3;
       } else {
@@ -196,7 +196,7 @@ std::vector<header> parse_urlencoded_params( const fc::string& f ) {
     }
     ++i;
     while( i < f.size() && f[i] != '&' ) {
-      if( f[i] == '%' ) { 
+      if( f[i] == '%' ) {
         h[arg].val += char((fc::from_hex(f[i+1]) << 4) | fc::from_hex(f[i+2]));
         i += 3;
       } else {

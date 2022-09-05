@@ -315,7 +315,7 @@ struct chain_plugin_impl::write_request_visitor
       generate_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
         "Unexpected exception while generating block."), std::current_exception() ) );
     }
-    generate_block_ctrl->on_worker_done();
+  generate_block_ctrl->on_worker_done();
   }
 };
 
