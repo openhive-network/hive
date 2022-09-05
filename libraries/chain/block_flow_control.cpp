@@ -79,7 +79,7 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
     return fc::variant_object();
 
   const char* type = "";
-  if( !finished() )
+  if( !finished() || except )
     type = "broken";
   else if( forked() )
     type = "forked";
@@ -94,7 +94,7 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
   fc::variant_object_builder report;
   report
     ( "num", full_block->get_block_num() )
-    ("lib", stats.get_last_irreversible_block_num())
+    ( "lib", stats.get_last_irreversible_block_num() )
     ( "type", type );
   if( rt != report_type::MINIMAL )
   {
