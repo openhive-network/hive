@@ -170,6 +170,7 @@ public:
   // at the end of processing in worker thread (called even if there was exception earlier)
   virtual void on_worker_done() const;
 
+  virtual fc::time_point_sec get_block_timestamp() const = 0;
   const std::shared_ptr<full_block_type>& get_full_block() const { return full_block; }
 
   const block_stats& get_stats() const { return stats; }
@@ -217,7 +218,6 @@ public:
   void attach_promise( const std::shared_ptr<boost::promise<void>>& _p ) { prom = _p; }
   void store_produced_block( const std::shared_ptr<full_block_type>& _block ) { full_block = _block; }
 
-  const fc::time_point_sec& get_block_timestamp() const { return block_ts; }
   const protocol::account_name_type& get_witness_owner() const { return witness_owner; }
   const fc::ecc::private_key& get_block_signing_private_key() const { return block_signing_private_key; }
   uint32_t get_skip_flags() const { return skip; }
@@ -225,6 +225,8 @@ public:
   virtual void on_fork_db_insert() const override; //to be supplemented with broadcast in witness_plugin
   virtual void on_end_of_apply_block() const override final;
   virtual void on_failure( const fc::exception& e ) const override final;
+
+  virtual fc::time_point_sec get_block_timestamp() const override final { return block_ts; }
 
 protected:
   virtual const char* buffer_type() const override final { return "gen"; }
@@ -249,7 +251,7 @@ class p2p_block_flow_control : public block_flow_control
 {
 public:
   p2p_block_flow_control( const std::shared_ptr<full_block_type>& _block, uint32_t _skip )
-    : block_flow_control( _block ), skip( _skip ) {}
+    : block_flow_control( _block ), skip( _skip ) { FC_ASSERT( _block ); }
   virtual ~p2p_block_flow_control() = default;
 
   void attach_promise( const fc::promise<void>::ptr& _p ) { prom = _p; }
@@ -258,6 +260,8 @@ public:
 
   virtual void on_end_of_apply_block() const override final;
   virtual void on_failure( const fc::exception& e ) const override final;
+
+  virtual fc::time_point_sec get_block_timestamp() const override final;
 
 private:
   virtual const char* buffer_type() const override { return "p2p"; }
@@ -294,10 +298,12 @@ class existing_block_flow_control : public block_flow_control
 {
 public:
   existing_block_flow_control( const std::shared_ptr<full_block_type>& _block )
-    : block_flow_control( _block ) {}
+    : block_flow_control( _block ) { FC_ASSERT( _block ); }
   virtual ~existing_block_flow_control() = default;
 
   virtual void on_end_of_apply_block() const override final;
+
+  virtual fc::time_point_sec get_block_timestamp() const override final;
 
 protected:
   virtual const char* buffer_type() const override final { return "old"; }
