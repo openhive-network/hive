@@ -184,6 +184,9 @@ void sync_block_flow_control::on_worker_done() const
 {
   //do not generate report: many stats make no practical sense for sync blocks
   //and the excess logging seems to be slowing down sync
+  //...with exception to last couple blocks of syncing
+  if( full_block && ( fc::time_point::now() - full_block->get_block_header().timestamp ) < HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS )
+    block_flow_control::on_worker_done();
 }
 
 void existing_block_flow_control::on_end_of_apply_block() const

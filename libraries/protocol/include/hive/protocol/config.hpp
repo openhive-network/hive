@@ -403,6 +403,12 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_ONE_DAY_SECONDS                  (60*60*24) // One day in seconds
 
+// How close to current time the block has to be to be considered for fast-confirm transactions,
+// automatic generation of block-stat reports and application of pending transactions
+#define HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM  (fc::seconds(60))
+#define HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS   (fc::seconds(20))
+#define HIVE_UP_TO_DATE_MARGIN__PENDING_TXS   (fc::seconds(20))
+
 /**
  *  Reserved Account IDs with special meaning
  */
