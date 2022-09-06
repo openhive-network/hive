@@ -25,6 +25,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 
@@ -538,6 +539,137 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
     BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
     BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db->head_block_id());
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
+    throw;
+  }
+}
+
+BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fixture)
+{
+  try
+  {
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    BOOST_TEST_MESSAGE("Generating several rounds of blocks to allow our real witnesses to become active");
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    generate_blocks(63);
+    // dump_witnesses("db1", *db);
+    // dump_blocks("db1", *db);
+    BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
+
+    // create a second, empty, database that we will first bring in sync with the 
+    // fixture's database, then we will trigger a fork and test how it resolves.
+    // we'll call the fixture's database "db1"
+    database db2;
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+    open_test_database(db2, dir2.path());
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    // dump_witnesses("db2", db2);
+    // dump_blocks("db2", db2);
+
+    BOOST_TEST_MESSAGE("Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db->head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = db->fetch_block_by_number(block_num);
+      PUSH_BLOCK(db2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
+    BOOST_TEST_MESSAGE("db: head block is " << db->head_block_id().str());
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    // dump_witnesses("db2", db2);
+    // dump_blocks("db2", db2);
+    BOOST_TEST_MESSAGE("db2 last_irreversible_block is " << db2.get_last_irreversible_block_num());
+
+    // db1 and db2 are now in sync, but their last_irreversible should be about 15 blocks old.  Go ahead and
+    // use fast-confirms to bring the last_irreversible up to the current head block.
+    // (this isn't strictly necessary to achieve the goal of this test case, but it's probably more 
+    // representative of how the blockchains will look in real life)
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for all blocks " << db2.get_last_irreversible_block_num());
+      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = db->fetch_block_by_number(db->head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          push_transaction(fast_confirm_op, init_account_priv_key);
+
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+          PUSH_TX(db2, trx, init_account_priv_key);
+        }
+    }
+    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
+
+    // now we want to create the next two blocks, but simulate the case where the blocks arrive
+    // in the wrong order: i.e., we:
+    // - receive all the fast-confirms for block 66
+    // - we receive block 67
+    // - we receive block 66
+
+    // generate block 66 in db1, but don't propagate it to db2
+    generate_blocks(1);
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for block 66 for all witnesses " << db2.get_last_irreversible_block_num());
+      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = db->fetch_block_by_number(db->head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming block 66 with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          push_transaction(fast_confirm_op, init_account_priv_key);
+
+          // push the fast-confirms to db2, which doesn't yet have block 66
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+          PUSH_TX(db2, trx, init_account_priv_key);
+        }
+    }
+    BOOST_REQUIRE_EQUAL(db->head_block_num(), 66);
+    BOOST_REQUIRE_EQUAL(db2.head_block_num(), 65);
+    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), 66);
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 65);
+
+    // generate block 67 in db1, propagate it to db2.  it will be pushed to the forkdb's unlinked index
+    generate_blocks(1);
+    BOOST_REQUIRE_THROW(PUSH_BLOCK(db2, db->fetch_block_by_number(67)), hive::chain::unlinkable_block_exception);
+
+    // nothing should have changed
+    BOOST_REQUIRE_EQUAL(db2.head_block_num(), 65);
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 65);
+
+    PUSH_BLOCK(db2, db->fetch_block_by_number(66));
+
+    // pushing block 66 has linked in block 67, so db2 should apply both blocks.  It already has the
+    // fast-confirms for block 66, so it should become irreverisble immediately.
+    BOOST_REQUIRE_EQUAL(db2.head_block_num(), 67);
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 66);
   }
   catch (const fc::exception& e)
   {

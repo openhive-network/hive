@@ -1225,6 +1225,12 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
       set_tx_status(database::TX_STATUS_INC_BLOCK);
 
+      // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
+      // with what we're applying.  If we're only appending a single block, the forkdb's head block
+      // should already be correct
+      if (blocks.size() > 1)
+        _fork_db.set_head(_fork_db.fetch_block((*iter)->get_block_id(), true));
+
       auto session = start_undo_session();
       apply_block(*iter, skip);
       session.push();
@@ -5609,11 +5615,10 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
   {
     const dynamic_global_property_object& dpo = get_dynamic_global_properties();
 
-    auto fork_head = _fork_db.head();
-    if( fork_head )
-    {
-      FC_ASSERT( fork_head->get_block_num() == dpo.head_block_number, "Fork Head: ${f} Chain Head: ${c}", ("f",fork_head->get_block_num())("c", dpo.head_block_number) );
-    }
+    const auto fork_head = _fork_db.head();
+    if (fork_head)
+      FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
+                ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
 
     if( !( get_node_properties().skip_flags & skip_block_log ) )
     {
