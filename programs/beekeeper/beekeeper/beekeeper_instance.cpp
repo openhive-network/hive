@@ -158,11 +158,16 @@ namespace beekeeper {
     return instance_started;
   }
 
-  void beekeeper_instance::save_connection_details( const collector_t& values )
+  boost::filesystem::path beekeper_instance::create_wallet_filename( const std::string& wallet_name ) const
+  {
+    return wallet_directory / ( wallet_name + file_ext );
+  }
+
+  void beekeper_instance::save_connection_details( const fc::string& type, const fc::string& endpoint, const uint16_t port )
   {
     if( instance_started )
     {
-      auto _json = fc::json::to_string( values.value );
+      auto _json = fc::json::to_string( fc::mutable_variant_object("type", type)("address", endpoint)("port", port) );
       write_to_file( connection_file, _json );
     }
   }

@@ -31,6 +31,9 @@ using collector_t = hive::utilities::notifications::collector_t;
 class webserver_plugin : public appbase::plugin< webserver_plugin >
 {
   public:
+    using on_webserver_address_set_signature_t = void(const fc::string, const fc::string, const uint16_t);
+    using on_webserver_address_set_t = std::function<on_webserver_address_set_signature_t>;
+
     webserver_plugin();
     virtual ~webserver_plugin();
 
@@ -42,7 +45,7 @@ class webserver_plugin : public appbase::plugin< webserver_plugin >
 
     void start_webserver();
 
-    boost::signals2::connection add_connection( std::function<void(const collector_t&)> func );
+    boost::signals2::connection add_connection( on_webserver_address_set_t func );
 
   protected:
     virtual void plugin_initialize(const variables_map& options) override;

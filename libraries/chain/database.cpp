@@ -1200,7 +1200,7 @@ void database::switch_forks(const item_ptr new_head)
     }
   }
   ilog("done pushing blocks from new fork");
-  appbase::app().notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
+  appbase::app().notify("switching_forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
 bool database::_push_block(const block_flow_control& block_ctrl)
@@ -5216,12 +5216,12 @@ void database::update_global_dynamic_data( const signed_block& b )
         } );
       }
     }
-    
+
     if (missed_blocks != 0)
     {
       fc::microseconds loop_time = fc::time_point::now() - start_time;
       if( loop_time.count() > 1000000ll ) // Report delay longer than 1s.
-        ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
+        ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)",
           (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
     }
   }

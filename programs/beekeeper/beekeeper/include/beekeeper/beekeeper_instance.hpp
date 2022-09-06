@@ -45,6 +45,6 @@ namespace beekeeper
 
       bool start() override;
 
-      void save_connection_details( const collector_t& values );
+      void save_connection_details( const fc::string& type, const fc::string& endpoint, const uint16_t port );
   };
 }

@@ -145,7 +145,7 @@ class webserver_base
     virtual void stop_webserver() = 0;
     virtual ~webserver_base() {};
 
-    virtual boost::signals2::connection add_connection( std::function<void(const collector_t&)> ) = 0;
+    virtual boost::signals2::connection add_connection( webserver_plugin::on_webserver_address_set_t ) = 0;
 
     optional< tcp::endpoint >                                 http_endpoint;
     optional< boost::asio::local::stream_protocol::endpoint > unix_endpoint;
@@ -191,9 +191,8 @@ class webserver_plugin_impl : public webserver_base
 
     plugins::json_rpc::json_rpc_plugin* api = nullptr;
 
-    using signal_t = boost::signals2::signal<void(const collector_t &)>;
-    signal_t listen;
-    boost::signals2::connection add_connection( std::function<void(const collector_t&)> func ) override;
+    boost::signals2::signal<webserver_plugin::on_webserver_address_set_signature_t> listen;
+    boost::signals2::connection add_connection( webserver_plugin::on_webserver_address_set_t func ) override;
 
   private:
     void update_http_endpoint();
@@ -223,16 +222,14 @@ void webserver_plugin_impl<websocket_server_type>::prepare_threads()
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::notify( const std::string& type, const optional< tcp::endpoint >& endpoint )
 {
-  collector_t collector;
-
-  collector.assign_values(
+  listen(type, endpoint->address().to_string(), endpoint->port());
+  appbase::app().notify( "server_listening",
+  // {
     "type",     type,
     "address",  endpoint->address().to_string(),
     "port",     endpoint->port()
+  // }
   );
-
-  listen( collector );
-  appbase::app().notify( "webserver listening", std::move( collector ) );
 };
 
 template<typename websocket_server_type>
@@ -551,7 +548,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_request(websocket
 }
 
 template<typename websocket_server_type>
-boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_connection( std::function<void(const collector_t&)> func )
+boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_connection( webserver_plugin::on_webserver_address_set_t func )
 {
   return listen.connect( func );
 }
@@ -662,7 +659,7 @@ void webserver_plugin::start_webserver()
   my->start_webserver();
 }
 
-boost::signals2::connection webserver_plugin::add_connection( std::function<void(const collector_t &)> func )
+boost::signals2::connection webserver_plugin::add_connection( webserver_plugin::on_webserver_address_set_t func )
 {
   return my->add_connection( func );
 }

@@ -726,7 +726,7 @@ void application::setup_notifications(const boost::program_options::variables_ma
 
 void scope_guarded_timer::send_notif()
 {
-  appbase::app().dynamic_notify("timer",
+  appbase::app().notify("timer",
   //{
     "name",     this->timer_name,
     "unit",     "ms",

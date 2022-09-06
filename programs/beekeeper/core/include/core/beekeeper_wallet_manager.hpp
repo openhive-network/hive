@@ -147,6 +147,8 @@ public:
    */
   void close_session( const string& token );
 
+  void save_connection_details( const fc::string& type, const fc::string& endpoint, const uint16_t port );
+
 private:
 
   seconds_type unlock_timeout = 900;
