@@ -358,7 +358,7 @@ fork_tests:
 
 hf26_tests:
   stage: test
-  extends: .test_tools_based
+  extends: .test_tools_based_with_faketime
   needs:
     - job: testnet_node_build
       artifacts: true
