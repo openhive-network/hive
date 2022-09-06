@@ -262,7 +262,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         }
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
 
-        hive::notify( "webserver listening",
+        hive::notify( "server_listening",
       // {
           "type", "WS",
           "address", ws_endpoint->address().to_string(),
@@ -303,7 +303,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         update_http_endpoint();
         ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
 
-        hive::notify( "webserver listening",
+        hive::notify( "server_listening",
         // {
             "type", "HTTP",
             "address", http_endpoint->address().to_string(),

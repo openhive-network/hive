@@ -1189,7 +1189,7 @@ void database::switch_forks(const item_ptr new_head)
     }
   }
   ilog("done pushing blocks from new fork");
-  hive::notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
+  hive::notify("switching_forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
 bool database::_push_block(const block_flow_control& block_ctrl)

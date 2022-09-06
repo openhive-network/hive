@@ -529,9 +529,9 @@ void p2p_plugin::plugin_startup()
     });
     my->node->sync_from(graphene::net::item_id(graphene::net::block_message_type, block_id), std::vector<uint32_t>());
     ilog("P2P node listening at ${ep}", ("ep", my->node->get_actual_listening_endpoint()));
-    hive::notify( "P2P listening",
+    hive::notify( "server_listening",
     // {
-        "type", "p2p",
+        "type", "P2P",
         "address", static_cast<fc::string>(my->node->get_actual_listening_endpoint().get_address()),
         "port", my->node->get_actual_listening_endpoint().port()
     // }

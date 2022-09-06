@@ -55,7 +55,7 @@ void block_flow_control::on_worker_done() const
   switch (auto_report_output)
   {
   case report_output::NOTIFY:
-    hive::notify("Block stats", "block_stats", report);
+    hive::notify("block_stats", "report", report);
     break;
   case report_output::ILOG:
     ilog("Block stats:${report}", (report));
