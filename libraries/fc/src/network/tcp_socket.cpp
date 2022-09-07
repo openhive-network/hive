@@ -84,7 +84,8 @@ namespace fc {
     return my->_sock.is_open();
   }
 
-  tcp_socket::tcp_socket(){};
+  tcp_socket::tcp_socket()
+    : my( std::make_shared< impl >() ) {}
 
   tcp_socket::~tcp_socket(){};
 
@@ -302,29 +303,24 @@ namespace fc {
   void tcp_server::close() {
     if( my && my->_accept.is_open() )
       my->_accept.close();
-    delete my;
-    my = nullptr;
+    my.reset();
   }
-  tcp_server::tcp_server()
-  :my(nullptr) {
-  }
-  tcp_server::~tcp_server() {
-    delete my;
-  }
+  tcp_server::tcp_server(){}
+  tcp_server::~tcp_server() {}
 
 
   void tcp_server::accept( tcp_socket& s )
   {
     try
     {
-      FC_ASSERT( my != nullptr );
+      FC_ASSERT( my.get() );
       fc::asio::tcp::accept( my->_accept, s.my->_sock  );
     } FC_RETHROW_EXCEPTIONS( warn, "Unable to accept connection on socket." );
   }
   void tcp_server::set_reuse_address(bool enable /* = true */)
   {
     if( !my )
-      my = new impl;
+      my = std::make_shared< impl >();
     boost::asio::ip::tcp::acceptor::reuse_address option(enable);
     my->_accept.set_option(option);
 #if defined(__APPLE__) || (defined(__linux__) && defined(SO_REUSEPORT))
@@ -348,7 +344,7 @@ namespace fc {
   int tcp_server::set_receive_buffer_size(int new_receive_buffer_size)
   {
     if( !my )
-      my = new impl;
+      my = std::make_shared< impl >();
     //read and log old receive_buffer_size
     boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
     my->_accept.get_option(old_receive_buffer_reading);
@@ -368,7 +364,7 @@ namespace fc {
   int tcp_server::set_send_buffer_size(int new_send_buffer_size)
   {
     if( !my )
-      my = new impl;
+      my = std::make_shared< impl >();
     //read and log old send_buffer_size
     boost::asio::socket_base::send_buffer_size old_send_buffer_reading;
     my->_accept.get_option(old_send_buffer_reading);
@@ -388,7 +384,7 @@ namespace fc {
   bool tcp_server::get_no_delay()
   {
     if (!my)
-      my = new impl;
+      my = std::make_shared< impl >();
     boost::asio::ip::tcp::no_delay option;
     my->_accept.get_option(option);
     return option.value();
@@ -397,7 +393,7 @@ namespace fc {
   void tcp_server::set_no_delay(bool no_delay_flag)
   {
     if (!my)
-      my = new impl;
+      my = std::make_shared< impl >();
     boost::asio::ip::tcp::no_delay option(no_delay_flag);
     my->_accept.set_option(option);
   }
@@ -405,7 +401,7 @@ namespace fc {
   void tcp_server::listen( uint16_t port )
   {
     if( !my )
-      my = new impl;
+      my = std::make_shared< impl >();
     try
     {
       my->_accept.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4(), port));
@@ -416,7 +412,7 @@ namespace fc {
   void tcp_server::listen( const fc::ip::endpoint& ep )
   {
     if( !my )
-      my = new impl;
+      my = std::make_shared< impl >();
     try
     {
       my->_accept.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::from_string((string)ep.get_address()), ep.port()));

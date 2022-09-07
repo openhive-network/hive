@@ -79,7 +79,8 @@ namespace fc {
   }
 
 
-  tcp_ssl_socket::tcp_ssl_socket(){};
+  tcp_ssl_socket::tcp_ssl_socket()
+  : my( std::make_shared< impl >() ) {};
 
   tcp_ssl_socket::~tcp_ssl_socket(){};
 
