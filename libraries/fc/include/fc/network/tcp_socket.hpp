@@ -4,6 +4,8 @@
 #include <fc/io/iostream.hpp>
 #include <fc/time.hpp>
 
+#include <memory>
+
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -55,11 +57,7 @@ namespace fc {
     private:
       friend class tcp_server;
       class impl;
-      #if BOOST_VERSION >= 107000
-      fc::fwd<impl,0x70> my;
-      #else
-      fc::fwd<impl,0x54> my;
-      #endif
+      std::shared_ptr< impl > my;
   };
   typedef std::shared_ptr<tcp_socket> tcp_socket_ptr;
 
@@ -105,11 +103,7 @@ namespace fc {
     private:
       friend class tcp_server;
       class impl;
-      #if BOOST_VERSION >= 107000
-      fc::fwd<impl,0x178> my;
-      #else
-      fc::fwd<impl,0x15C> my;
-      #endif
+      std::shared_ptr< impl > my;
   };
   typedef std::shared_ptr<tcp_ssl_socket> tcp_ssl_socket_ptr;
 
