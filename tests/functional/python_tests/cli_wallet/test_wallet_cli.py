@@ -9,7 +9,8 @@ def test_help_option():
         '--help', '--version', '--offline', '--server-rpc-endpoint',
         '--cert-authority', '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint',
         '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock', '--daemon',
-        '--rpc-http-allowip', '--wallet-file', '--chain-id', '--output-formatter', '--transaction-serialization', '--store-transaction'
+        '--rpc-http-allowip', '--wallet-file', '--chain-id', '--output-formatter', '--transaction-serialization',
+        '--store-transaction', '--use-legacy-prompt'
     ]
 
     cli_wallet_path = tt.paths_to_executables.get_path_of('cli_wallet')
