@@ -22,7 +22,9 @@ class fc::http::connection::impl
    int read_until( char* buffer, char* end, char c = '\n' ) {
       char* p = buffer;
      // try {
+          elog("starting readsome");
           while( p < end && 1 == sock.readsome(p,1) ) {
+            elog("reading ${n} byte", ("n", (p - buffer)));
             if( *p == c ) {
               *p = '\0';
               return (p - buffer)-1;
@@ -40,12 +42,18 @@ class fc::http::connection::impl
       fc::http::reply rep;
       try {
         std::vector<char> line(1024*8);
+        elog("started reading of reply");
         int s = read_until( line.data(), line.data()+line.size(), ' ' ); // HTTP/1.1
+        elog("1 line: ${lin}", ("lin", static_cast<const char*>(line.data())));
         s = read_until( line.data(), line.data()+line.size(), ' ' ); // CODE
+        elog("2 line: ${lin}", ("lin", static_cast<const char*>(line.data())));
         rep.status = static_cast<int>(to_int64(fc::string(line.data())));
+        elog("3 line: ${lin}", ("lin", static_cast<const char*>(line.data())));
         s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
+        elog("4 line: ${lin}", ("lin", static_cast<const char*>(line.data())));
 
-        while( (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
+        elog("status: ${s} ?= ${r}", ("s", rep.status)("r", reply::NoContent));
+        while( rep.status != reply::NoContent && (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
           fc::http::header h;
           char* end = line.data();
           while( *end != ':' )++end;
@@ -60,7 +68,7 @@ class fc::http::connection::impl
              rep.body.resize( static_cast<size_t>(to_uint64( fc::string(h.val) ) ));
           }
         }
-        if( rep.body.size() ) {
+        if( rep.status != reply::NoContent && rep.body.size() ) {
           sock.read( rep.body.data(), rep.body.size() );
         }
         return rep;
@@ -90,7 +98,7 @@ void       connection::connect_to( const fc::ip::endpoint& ep ) {
 
 http::reply connection::request( const fc::string& method,
                                 const fc::string& url,
-                                const fc::string& body, const headers& he ) {
+                                const fc::string& body, const headers& he, const bool wait_for_response ) {
 
   fc::url parsed_url(url);
   if( !my->sock.is_open() ) {
@@ -119,7 +127,12 @@ http::reply connection::request( const fc::string& method,
       }
     //  fc::cerr.flush();
 
-      return my->parse_reply();
+    if(!wait_for_response)
+    {
+      my->sock.close();
+      return http::reply{};
+    }
+    return my->parse_reply();
   } catch ( ... ) {
       my->sock.close();
       FC_THROW_EXCEPTION( exception, "Error Sending HTTP Request" ); // TODO: provide more info

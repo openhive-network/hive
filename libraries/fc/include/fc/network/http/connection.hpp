@@ -25,13 +25,16 @@ namespace fc {
         enum status_code {
             OK                  = 200,
             RecordCreated       = 201,
+            NoContent           = 204,
             BadRequest          = 400,
             NotAuthorized       = 401,
             NotFound            = 404,
             Found               = 302,
-            InternalServerError = 500
+            InternalServerError = 500,
+
+            NotSet              = -1
         };
-        reply( status_code c = OK):status(c){}
+        reply( status_code c = status_code::NotSet):status(c){}
         int                     status;
         std::vector<header>      headers;
         std::vector<char>        body;
@@ -61,7 +64,7 @@ namespace fc {
          ~connection();
          // used for clients
          void         connect_to( const fc::ip::endpoint& ep );
-         http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
+         http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers(), const bool wait_for_response = true);
 
          // used for servers
          fc::tcp_socket& get_socket()const;

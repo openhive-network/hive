@@ -130,7 +130,7 @@ void notification_handler::network_broadcaster::broadcast(const notification_t &
       {
         fc::http::connection_ptr con{new fc::http::connection{}};
         con->connect_to(address.first);
-        con->request("PUT", "", fc::json::to_string(notification));
+        con->request("PUT", "", fc::json::to_string(notification), fc::http::headers(), false);
       }
     });
 
