@@ -1,0 +1,44 @@
+[
+  [
+    6101,
+    {
+      "block": 1337175,
+      "op": [
+        "feed_publish",
+        {
+          "exchange_rate": {
+            "base": "0.237 HBD",
+            "quote": "1.000 HIVE"
+          },
+          "publisher": "blocktrades"
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-05-10T22:06:36",
+      "trx_id": "2cccd6b21a642bba0d56c6c133874c808df26e17",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    6165,
+    {
+      "block": 1338414,
+      "op": [
+        "feed_publish",
+        {
+          "exchange_rate": {
+            "base": "0.246 HBD",
+            "quote": "1.000 HIVE"
+          },
+          "publisher": "blocktrades"
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-05-10T23:08:39",
+      "trx_id": "9414f7c21a3ce6e3c069b59465396ebf7f615363",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ]
+]

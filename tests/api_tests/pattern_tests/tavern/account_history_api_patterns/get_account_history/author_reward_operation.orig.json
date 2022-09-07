@@ -1,0 +1,199 @@
+{
+  "history": [
+    [
+      18069,
+      {
+        "block": 3426457,
+        "op": {
+          "type": "author_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "curators_vesting_payout": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "hbd_payout": {
+              "amount": "21",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "hive_payout": {
+              "amount": "0",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "permlink": "this-piston-rocks-public-steem-steem-api-for-piston-users-and-developers",
+            "vesting_payout": {
+              "amount": "29859881",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-22T20:47:30",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      18082,
+      {
+        "block": 3426576,
+        "op": {
+          "type": "author_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "curators_vesting_payout": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "hbd_payout": {
+              "amount": "28",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "hive_payout": {
+              "amount": "0",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "permlink": "changelog-python-steem-0-2rc1",
+            "vesting_payout": {
+              "amount": "34124528",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-22T20:53:33",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      18185,
+      {
+        "block": 3427233,
+        "op": {
+          "type": "author_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "curators_vesting_payout": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "hbd_payout": {
+              "amount": "27",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "hive_payout": {
+              "amount": "0",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "permlink": "python-steem-0-1",
+            "vesting_payout": {
+              "amount": "34115256",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-22T21:26:42",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      18603,
+      {
+        "block": 3431278,
+        "op": {
+          "type": "author_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "curators_vesting_payout": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "hbd_payout": {
+              "amount": "17",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "hive_payout": {
+              "amount": "0",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "permlink": "steem-api",
+            "vesting_payout": {
+              "amount": "25551869",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-23T00:50:54",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 2
+      }
+    ],
+    [
+      18934,
+      {
+        "block": 3436603,
+        "op": {
+          "type": "author_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "curators_vesting_payout": {
+              "amount": "833208256",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "hbd_payout": {
+              "amount": "1037",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "hive_payout": {
+              "amount": "0",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "permlink": "re-thecryptodrive-steemit-whales-stockpile-sp-government-spending-analogy-and-the-solution-revealed-20160722t051308630z",
+            "vesting_payout": {
+              "amount": "1279569822",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-23T05:19:36",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": 278
+      }
+    ]
+  ]
+}

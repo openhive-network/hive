@@ -1,4 +1,5 @@
 #include <hive/protocol/authority.hpp>
+#include <hive/protocol/config.hpp>
 
 namespace hive { namespace protocol {
 
@@ -42,8 +43,8 @@ void authority::validate()const
   }
 }
 
-
-bool is_valid_account_name( const string& name )
+namespace detail {
+account_name_validity check_account_name( const string& name )
 {
 #if HIVE_MIN_ACCOUNT_NAME_LENGTH < 3
 #error This is_valid_account_name implementation implicitly enforces minimum name length of 3.
@@ -51,10 +52,10 @@ bool is_valid_account_name( const string& name )
 
   const size_t len = name.size();
   if( len < HIVE_MIN_ACCOUNT_NAME_LENGTH )
-    return false;
+    return account_name_validity::too_short;
 
   if( len > HIVE_MAX_ACCOUNT_NAME_LENGTH )
-    return false;
+    return account_name_validity::too_long;
 
   size_t begin = 0;
   while( true )
@@ -63,7 +64,7 @@ bool is_valid_account_name( const string& name )
     if( end == std::string::npos )
       end = len;
     if( end - begin < 3 )
-      return false;
+      return account_name_validity::invalid_sequence;
     switch( name[begin] )
     {
       case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h':
@@ -72,7 +73,7 @@ bool is_valid_account_name( const string& name )
       case 'y': case 'z':
         break;
       default:
-        return false;
+        return account_name_validity::invalid_sequence;
     }
     switch( name[end-1] )
     {
@@ -84,7 +85,7 @@ bool is_valid_account_name( const string& name )
       case '8': case '9':
         break;
       default:
-        return false;
+        return account_name_validity::invalid_sequence;
     }
     for( size_t i=begin+1; i<end-1; i++ )
     {
@@ -99,14 +100,20 @@ bool is_valid_account_name( const string& name )
         case '-':
           break;
         default:
-          return false;
+          return account_name_validity::invalid_sequence;
       }
     }
     if( end == len )
       break;
     begin = end+1;
   }
-  return true;
+  return account_name_validity::valid;
+}
+} // namespace detail
+
+bool is_valid_account_name( const string& name )
+{
+  return detail::check_account_name( name ) == account_name_validity::valid;
 }
 
 bool operator == ( const authority& a, const authority& b )

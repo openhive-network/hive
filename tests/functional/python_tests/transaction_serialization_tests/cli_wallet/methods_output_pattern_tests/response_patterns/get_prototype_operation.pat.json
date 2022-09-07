@@ -1,0 +1,1 @@
+["account_create", {"fee": "0.000 HIVE", "creator": "", "new_account_name": "", "owner": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "active": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "posting": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "memo_key": "STM1111111111111111111111111111111114T1Anm", "json_metadata": ""}]

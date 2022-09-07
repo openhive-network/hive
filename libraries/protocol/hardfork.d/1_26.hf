@@ -1,0 +1,31 @@
+#ifndef HIVE_HARDFORK_1_26
+#define HIVE_HARDFORK_1_26 26
+
+long next_hf_time();
+
+#define HIVE_HARDFORK_1_26_TIME next_hf_time()
+
+#define HIVE_HARDFORK_1_26_VERSION hive::protocol::hardfork_version( 1, 26 )
+
+//no more 3s limit on votes
+#define HIVE_HARDFORK_1_26_NO_VOTE_COOLDOWN (HIVE_HARDFORK_1_26)
+//dust votes are votes
+#define HIVE_HARDFORK_1_26_DUST_VOTE_FIX (HIVE_HARDFORK_1_26)
+//no more penalty for vote edit - works as if it was new vote
+#define HIVE_HARDFORK_1_26_NO_VOTE_EDIT_PENALTY (HIVE_HARDFORK_1_26)
+//hard limit on HBD-to-virtual_supply ratio increased
+#define HIVE_HARDFORK_1_26_HBD_HARD_CAP (HIVE_HARDFORK_1_26)
+//prevent underflow during reward calculation when chain is reactivated after > 15 days (TODO: remove it after HF26)
+#define HIVE_HARDFORK_1_26_CLAIM_UNDERFLOW (HIVE_HARDFORK_1_26)
+//it's possible to change an authorization twice per hour
+#define HIVE_HARDFORK_1_26_AUTH_UPDATE (HIVE_HARDFORK_1_26)
+//some checks that were soft-forked for couple hardforks already (f.e. disabling custom binary) become hardforked
+#define HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS (HIVE_HARDFORK_1_26)
+//new serialization for assets is allowed
+#define HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION (HIVE_HARDFORK_1_26)
+//always compute a full witness slate into the future
+#define HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE (HIVE_HARDFORK_1_26)
+//enable fast confirmation operation
+#define HIVE_HARDFORK_1_26_FAST_CONFIRMATION (HIVE_HARDFORK_1_26)
+
+#endif

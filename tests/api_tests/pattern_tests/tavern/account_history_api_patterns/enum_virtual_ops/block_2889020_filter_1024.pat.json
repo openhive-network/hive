@@ -1,0 +1,22 @@
+{
+  "next_block_range_begin": 2889021,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 2889019,
+      "op": {
+        "type": "hardfork_operation",
+        "value": {
+          "hardfork_id": 7
+        }
+      },
+      "op_in_trx": 2,
+      "operation_id": 3768965,
+      "timestamp": "2016-07-04T00:00:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

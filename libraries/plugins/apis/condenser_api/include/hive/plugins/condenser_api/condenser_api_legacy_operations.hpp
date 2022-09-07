@@ -2,11 +2,13 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/operations.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/witness_objects.hpp>
 
-#include <hive/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <hive/protocol/asset.hpp>
+
+#include <fc/exception/exception.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {
 
@@ -36,9 +38,6 @@ namespace hive { namespace plugins { namespace condenser_api {
 
   typedef vector< legacy_comment_options_extensions > legacy_comment_options_extensions_type;
 
-  typedef static_variant<void_t, protocol::update_proposal_end_date> legacy_update_proposal_extensions;
-  typedef vector< legacy_update_proposal_extensions > legacy_update_proposal_extensions_type;
-
   typedef static_variant<
         protocol::pow2,
         protocol::equihash_pow
@@ -63,7 +62,6 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef custom_binary_operation                legacy_custom_binary_operation;
   typedef limit_order_cancel_operation           legacy_limit_order_cancel_operation;
   typedef pow_operation                          legacy_pow_operation;
-  typedef report_over_production_operation       legacy_report_over_production_operation;
   typedef request_account_recovery_operation     legacy_request_account_recovery_operation;
   typedef recover_account_operation              legacy_recover_account_operation;
   typedef reset_account_operation                legacy_reset_account_operation;
@@ -79,13 +77,14 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef clear_null_account_balance_operation   legacy_clear_null_account_balance_operation;
   typedef consolidate_treasury_balance_operation legacy_consolidate_treasury_balance_operation;
   typedef delayed_voting_operation               legacy_delayed_voting_operation;
-  typedef sps_convert_operation                  legacy_sps_convert_operation;
   typedef expired_account_notification_operation legacy_expired_account_notification_operation;
   typedef changed_recovery_account_operation     legacy_changed_recovery_account_operation;
   typedef system_warning_operation               legacy_system_warning_operation;
   typedef ineffective_delete_comment_operation   legacy_ineffective_delete_comment_operation;
   typedef fill_recurrent_transfer_operation      legacy_fill_recurrent_transfer_operation;
   typedef failed_recurrent_transfer_operation    legacy_failed_recurrent_transfer_operation;
+  typedef producer_missed_operation              legacy_producer_missed_operation;
+  typedef witness_block_approve_operation        legacy_witness_block_approve_operation;
 
   struct legacy_price
   {
@@ -174,7 +173,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       creator( op.creator ),
       initial_vesting_shares(legacy_asset::from_asset( op.initial_vesting_shares )),
       initial_delegation(legacy_asset::from_asset( op.initial_delegation ))
-    {}
+    {
+      FC_ASSERT(creator.size(), "Every account should have a creator");
+    }
 
     operator account_created_operation()const
     {
@@ -515,12 +516,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       subject( op.subject ),
       permlink( op.permlink)
     {
-      for( const auto& e : op.extensions )
-      {
-        legacy_update_proposal_extensions ext;
-        e.visit( convert_to_legacy_static_variant< legacy_update_proposal_extensions >( ext ) );
-        extensions.push_back( e );
-      }
+      extensions.insert( op.extensions.begin(), op.extensions.end() );
     }
 
     operator update_proposal_operation()const
@@ -540,8 +536,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset daily_pay;
     string subject;
     string permlink;
-    time_point_sec end_date;
-    legacy_update_proposal_extensions_type extensions;
+    hive::protocol::update_proposal_extensions_type extensions;
   };
 
   struct legacy_withdraw_vesting_operation
@@ -1069,6 +1064,29 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      open_pays;
   };
 
+  struct legacy_limit_order_cancelled_operation
+  {
+    legacy_limit_order_cancelled_operation() {}
+    legacy_limit_order_cancelled_operation( const limit_order_cancelled_operation& op ) :
+      seller( op.seller ),
+      orderid( op.orderid ),
+      amount_back( legacy_asset::from_asset( op.amount_back ) )
+    {}
+
+    operator limit_order_cancelled_operation()const
+    {
+      limit_order_cancelled_operation op;
+      op.seller = seller;
+      op.orderid = orderid;
+      op.amount_back = amount_back;
+      return op;
+    }
+
+    account_name_type seller;
+    uint32_t          orderid = 0;
+    legacy_asset      amount_back;
+  };
+
   struct legacy_fill_transfer_from_savings_operation
   {
     legacy_fill_transfer_from_savings_operation() {}
@@ -1127,7 +1145,8 @@ namespace hive { namespace plugins { namespace condenser_api {
       permlink( op.permlink ),
       hbd_payout( legacy_asset::from_asset( op.hbd_payout ) ),
       hive_payout( legacy_asset::from_asset( op.hive_payout ) ),
-      vesting_payout( legacy_asset::from_asset( op.vesting_payout ) )
+      vesting_payout( legacy_asset::from_asset( op.vesting_payout ) ),
+      payout_must_be_claimed( op.payout_must_be_claimed )
     {}
 
     operator comment_benefactor_reward_operation()const
@@ -1139,6 +1158,7 @@ namespace hive { namespace plugins { namespace condenser_api {
       op.hbd_payout = hbd_payout;
       op.hive_payout = hive_payout;
       op.vesting_payout = vesting_payout;
+      op.payout_must_be_claimed = payout_must_be_claimed;
       return op;
     }
 
@@ -1148,6 +1168,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     legacy_asset      hbd_payout;
     legacy_asset      hive_payout;
     legacy_asset      vesting_payout;
+    bool              payout_must_be_claimed = false;
   };
 
   struct legacy_producer_reward_operation
@@ -1269,22 +1290,22 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t             op_in_trx = 0;
   };
 
-  struct legacy_sps_fund_operation
+  struct legacy_dhf_funding_operation
   {
-    legacy_sps_fund_operation() {}
-    legacy_sps_fund_operation( const sps_fund_operation& op ) :
-      fund_account( op.fund_account ), additional_funds( legacy_asset::from_asset( op.additional_funds ) )
+    legacy_dhf_funding_operation() {}
+    legacy_dhf_funding_operation( const dhf_funding_operation& op ) :
+      treasury( op.treasury ), additional_funds( legacy_asset::from_asset( op.additional_funds ) )
     {}
 
-    operator sps_fund_operation()const
+    operator dhf_funding_operation()const
     {
-      sps_fund_operation op;
-      op.fund_account = fund_account;
+      dhf_funding_operation op;
+      op.treasury = treasury;
       op.additional_funds = additional_funds;
       return op;
     }
 
-    account_name_type fund_account;
+    account_name_type treasury;
     legacy_asset additional_funds;
   };
 
@@ -1292,7 +1313,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   {
     legacy_hardfork_hive_operation() {}
     legacy_hardfork_hive_operation( const hardfork_hive_operation& op ) :
-      account( op.account ), treasury( op.treasury ),
+      account( op.account ), treasury( op.treasury ), other_affected_accounts( op.other_affected_accounts ),
       hbd_transferred( legacy_asset::from_asset( op.hbd_transferred ) ),
       hive_transferred( legacy_asset::from_asset( op.hive_transferred ) ),
       vests_converted( legacy_asset::from_asset( op.vests_converted ) ),
@@ -1301,9 +1322,10 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     operator hardfork_hive_operation()const
     {
-      legacy_hardfork_hive_operation op;
+      hardfork_hive_operation op;
       op.account = account;
       op.treasury = treasury;
+      op.other_affected_accounts = other_affected_accounts;
       op.hbd_transferred = hbd_transferred;
       op.hive_transferred = hive_transferred;
       op.vests_converted = vests_converted;
@@ -1313,6 +1335,8 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     account_name_type account;
     account_name_type treasury;
+    std::vector< account_name_type >
+                      other_affected_accounts;
     legacy_asset      hbd_transferred;
     legacy_asset      hive_transferred;
     legacy_asset      vests_converted;
@@ -1330,7 +1354,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 
     operator hardfork_hive_restore_operation()const
     {
-      legacy_hardfork_hive_restore_operation op;
+      hardfork_hive_restore_operation op;
       op.account = account;
       op.treasury = treasury;
       op.hbd_transferred = hbd_transferred;
@@ -1407,6 +1431,142 @@ namespace hive { namespace plugins { namespace condenser_api {
     uint16_t          executions = 0;
   };
 
+  struct legacy_dhf_conversion_operation
+  {
+    legacy_dhf_conversion_operation() {}
+    legacy_dhf_conversion_operation( const dhf_conversion_operation& op ) :
+      treasury( op.treasury ),
+      hive_amount_in( legacy_asset::from_asset( op.hive_amount_in ) ),
+      hbd_amount_out( legacy_asset::from_asset( op.hbd_amount_out ) )
+    {}
+
+    operator dhf_conversion_operation()const
+    {
+      dhf_conversion_operation op;
+      op.treasury = treasury;
+      op.hive_amount_in = hive_amount_in;
+      op.hbd_amount_out = hbd_amount_out;
+      return op;
+    }
+
+    account_name_type treasury;
+    legacy_asset      hive_amount_in;
+    legacy_asset      hbd_amount_out;
+  };
+
+  struct legacy_proposal_fee_operation
+  {
+    legacy_proposal_fee_operation() {}
+    legacy_proposal_fee_operation( const proposal_fee_operation& op ) :
+      creator( op.creator ),
+      treasury( op.treasury ),
+      proposal_id( op.proposal_id ),
+      fee( legacy_asset::from_asset( op.fee ) )
+    {}
+
+    operator proposal_fee_operation()const
+    {
+      proposal_fee_operation op;
+      op.creator = creator;
+      op.treasury = treasury;
+      op.proposal_id = proposal_id;
+      op.fee = fee;
+      return op;
+    }
+
+    account_name_type creator;
+    account_name_type treasury;
+    uint32_t          proposal_id = 0;
+    legacy_asset      fee;
+  };
+
+  struct legacy_collateralized_convert_immediate_conversion_operation
+  {
+    legacy_collateralized_convert_immediate_conversion_operation() {}
+    legacy_collateralized_convert_immediate_conversion_operation( const collateralized_convert_immediate_conversion_operation& op ) :
+      owner( op.owner ),
+      requestid( op.requestid ),
+      hbd_out( legacy_asset::from_asset( op.hbd_out ) )
+    {}
+
+    operator collateralized_convert_immediate_conversion_operation()const
+    {
+      collateralized_convert_immediate_conversion_operation op;
+      op.owner = owner;
+      op.requestid = requestid;
+      op.hbd_out = hbd_out;
+      return op;
+    }
+
+    account_name_type owner;
+    uint32_t requestid = 0;
+    legacy_asset hbd_out;
+  };
+
+  struct legacy_escrow_approved_operation
+  {
+    legacy_escrow_approved_operation() {}
+    legacy_escrow_approved_operation( const escrow_approved_operation& op ) :
+      from( op.from ),
+      to( op.to ),
+      agent( op.agent ),
+      escrow_id( op.escrow_id ),
+      fee( legacy_asset::from_asset( op.fee ) )
+    {}
+
+    operator escrow_approved_operation()const
+    {
+      escrow_approved_operation op;
+      op.from = from;
+      op.to = to;
+      op.agent = agent;
+      op.escrow_id = escrow_id;
+      op.fee = fee;
+      return op;
+    }
+
+    account_name_type from;
+    account_name_type to;
+    account_name_type agent;
+    uint32_t escrow_id;
+    legacy_asset fee;
+  };
+
+  struct legacy_escrow_rejected_operation
+  {
+    legacy_escrow_rejected_operation() {}
+    legacy_escrow_rejected_operation( const escrow_rejected_operation& op ) :
+      from( op.from ),
+      to( op.to ),
+      agent( op.agent ),
+      escrow_id( op.escrow_id ),
+      hbd_amount( legacy_asset::from_asset( op.hbd_amount ) ),
+      hive_amount( legacy_asset::from_asset( op.hive_amount ) ),
+      fee( legacy_asset::from_asset( op.fee ) )
+    {}
+
+    operator escrow_rejected_operation()const
+    {
+      escrow_rejected_operation op;
+      op.from = from;
+      op.to = to;
+      op.agent = agent;
+      op.escrow_id = escrow_id;
+      op.hbd_amount = hbd_amount;
+      op.hive_amount = hive_amount;
+      op.fee = fee;
+      return op;
+    }
+
+    account_name_type from;
+    account_name_type to;
+    account_name_type agent;
+    uint32_t escrow_id;
+    legacy_asset hbd_amount;
+    legacy_asset hive_amount;
+    legacy_asset fee;
+  };
+
   typedef fc::static_variant<
         legacy_vote_operation,
         legacy_comment_operation,
@@ -1424,7 +1584,6 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_account_witness_proxy_operation,
         legacy_pow_operation,
         legacy_custom_operation,
-        legacy_report_over_production_operation,
         legacy_delete_comment_operation,
         legacy_custom_json_operation,
         legacy_comment_options_operation,
@@ -1474,12 +1633,12 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_producer_reward_operation,
         legacy_clear_null_account_balance_operation,
         legacy_proposal_pay_operation,
-        legacy_sps_fund_operation,
+        legacy_dhf_funding_operation,
         legacy_hardfork_hive_operation,
         legacy_hardfork_hive_restore_operation,
         legacy_delayed_voting_operation,
         legacy_consolidate_treasury_balance_operation,
-        legacy_sps_convert_operation,
+        legacy_dhf_conversion_operation,
         legacy_expired_account_notification_operation,
         legacy_changed_recovery_account_operation,
         legacy_transfer_to_vesting_completed_operation,
@@ -1492,7 +1651,14 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_ineffective_delete_comment_operation,
         legacy_recurrent_transfer_operation,
         legacy_fill_recurrent_transfer_operation,
-        legacy_failed_recurrent_transfer_operation
+        legacy_failed_recurrent_transfer_operation,
+        legacy_producer_missed_operation,
+        legacy_limit_order_cancelled_operation, //was missing from the list (should be much earlier but see comment above)
+        legacy_proposal_fee_operation,
+        legacy_collateralized_convert_immediate_conversion_operation,
+        legacy_escrow_approved_operation,
+        legacy_escrow_rejected_operation,
+        legacy_witness_block_approve_operation
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1520,7 +1686,6 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const custom_binary_operation& op )const                  { l_op = op; return true; }
     bool operator()( const limit_order_cancel_operation& op )const             { l_op = op; return true; }
     bool operator()( const pow_operation& op )const                            { l_op = op; return true; }
-    bool operator()( const report_over_production_operation& op )const         { l_op = op; return true; }
     bool operator()( const request_account_recovery_operation& op )const       { l_op = op; return true; }
     bool operator()( const recover_account_operation& op )const                { l_op = op; return true; }
     bool operator()( const reset_account_operation& op )const                  { l_op = op; return true; }
@@ -1536,12 +1701,14 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const clear_null_account_balance_operation& op )const     { l_op = op; return true; }
     bool operator()( const consolidate_treasury_balance_operation& op )const   { l_op = op; return true; }
     bool operator()( const delayed_voting_operation& op )const                 { l_op = op; return true; }
-    bool operator()( const sps_convert_operation& op )const                    { l_op = op; return true; }
     bool operator()( const expired_account_notification_operation& op )const   { l_op = op; return true; }
     bool operator()( const changed_recovery_account_operation& op )const       { l_op = op; return true; }
+    bool operator()( const system_warning_operation& op )const                 { l_op = op; return true; }
     bool operator()( const ineffective_delete_comment_operation& op )const     { l_op = op; return true; }
     bool operator()( const fill_recurrent_transfer_operation& op )const        { l_op = op; return true; }
     bool operator()( const failed_recurrent_transfer_operation& op )const      { l_op = op; return true; }
+    bool operator()( const producer_missed_operation& op )const                { l_op = op; return true; }
+    bool operator()( const witness_block_approve_operation& op )const          { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
@@ -1723,6 +1890,12 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const limit_order_cancelled_operation& op )const
+    {
+      l_op = legacy_limit_order_cancelled_operation( op );
+      return true;
+    }
+
     bool operator()( const fill_transfer_from_savings_operation& op )const
     {
       l_op = legacy_fill_transfer_from_savings_operation( op );
@@ -1783,9 +1956,9 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
-    bool operator()( const sps_fund_operation& op )const
+    bool operator()( const dhf_funding_operation& op )const
     {
-      l_op = legacy_sps_fund_operation( op );
+      l_op = legacy_dhf_funding_operation( op );
       return true;
     }
 
@@ -1813,9 +1986,41 @@ namespace hive { namespace plugins { namespace condenser_api {
       return true;
     }
 
+    bool operator()( const dhf_conversion_operation& op )const
+    {
+      l_op = legacy_dhf_conversion_operation( op );
+      return true;
+    }
+
+    bool operator()( const proposal_fee_operation& op )const
+    {
+      l_op = legacy_proposal_fee_operation( op );
+      return true;
+    }
+
+    bool operator()( const collateralized_convert_immediate_conversion_operation& op )const
+    {
+      l_op = legacy_collateralized_convert_immediate_conversion_operation( op );
+      return true;
+    }
+
+    bool operator()( const escrow_approved_operation& op )const
+    {
+      l_op = legacy_escrow_approved_operation( op );
+      return true;
+    }
+
+    bool operator()( const escrow_rejected_operation& op )const
+    {
+      l_op = legacy_escrow_rejected_operation( op );
+      return true;
+    }
+
+#ifdef HIVE_ENABLE_SMT
     // Should only be SMT ops
     template< typename T >
     bool operator()( const T& )const { return false; }
+#endif
 };
 
 struct convert_from_legacy_operation_visitor
@@ -1974,6 +2179,11 @@ struct convert_from_legacy_operation_visitor
     return operation( fill_order_operation( op ) );
   }
 
+  operation operator()( const legacy_limit_order_cancelled_operation& op )const
+  {
+    return operation( limit_order_cancelled_operation( op ) );
+  }
+
   operation operator()( const legacy_fill_transfer_from_savings_operation& op )const
   {
     return operation( fill_transfer_from_savings_operation( op ) );
@@ -2024,9 +2234,9 @@ struct convert_from_legacy_operation_visitor
     return operation( proposal_pay_operation( op ) );
   }
 
-  operation operator()( const legacy_sps_fund_operation& op )const
+  operation operator()( const legacy_dhf_funding_operation& op )const
   {
-    return operation( sps_fund_operation( op ) );
+    return operation( dhf_funding_operation( op ) );
   }
 
   operation operator()( const legacy_hardfork_hive_operation& op )const
@@ -2049,6 +2259,31 @@ struct convert_from_legacy_operation_visitor
     return operation( recurrent_transfer_operation( op ) );
   }
 
+  operation operator()( const legacy_dhf_conversion_operation& op )const
+  {
+    return operation( dhf_conversion_operation( op ) );
+  }
+
+  operation operator()( const legacy_proposal_fee_operation& op )const
+  {
+    return operation( proposal_fee_operation( op ) );
+  }
+
+  operation operator()( const legacy_collateralized_convert_immediate_conversion_operation& op )const
+  {
+    return operation( collateralized_convert_immediate_conversion_operation( op ) );
+  }
+
+  operation operator()( const legacy_escrow_approved_operation& op )const
+  {
+    return operation( escrow_approved_operation( op ) );
+  }
+
+  operation operator()( const legacy_escrow_rejected_operation& op )const
+  {
+    return operation( escrow_rejected_operation( op ) );
+  }
+
   template< typename T >
   operation operator()( const T& t )const
   {
@@ -2062,15 +2297,6 @@ namespace fc {
 
 void to_variant( const hive::plugins::condenser_api::legacy_operation&, fc::variant& );
 void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_operation& );
-
-void to_variant( const hive::plugins::condenser_api::legacy_comment_options_extensions&, fc::variant& );
-void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_comment_options_extensions& );
-
-void to_variant( const hive::plugins::condenser_api::legacy_pow2_work&, fc::variant& );
-void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_pow2_work& );
-
-void to_variant( const hive::plugins::condenser_api::legacy_update_proposal_extensions&, fc::variant& );
-void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_update_proposal_extensions& );
 
 struct from_old_static_variant
 {
@@ -2250,20 +2476,26 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_liquidity_reward_operation, (ow
 FC_REFLECT( hive::plugins::condenser_api::legacy_interest_operation, (owner)(interest) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_vesting_withdraw_operation, (from_account)(to_account)(withdrawn)(deposited) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_order_operation, (current_owner)(current_orderid)(current_pays)(open_owner)(open_orderid)(open_pays) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_limit_order_cancelled_operation, (seller)(orderid)(amount_back) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_fill_transfer_from_savings_operation, (from)(to)(amount)(request_id)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_return_vesting_delegation_operation, (account)(vesting_shares) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_claim_account_operation, (creator)(fee)(extensions) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_vesting_shares_split_operation, (owner)(vesting_shares_before_split)(vesting_shares_after_split) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_pow_reward_operation, (worker)(reward) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(trx_id)(op_in_trx) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_sps_fund_operation, (fund_account)(additional_funds) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions) )
-FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_effective_comment_vote_operation, (voter)(author)(permlink)(weight)(rshares)(total_vote_weight)(pending_payout) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_dhf_conversion_operation, (treasury)(hive_amount_in)(hbd_amount_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_approved_operation, (from)(to)(agent)(escrow_id)(fee) )
+FC_REFLECT( hive::plugins::condenser_api::legacy_escrow_rejected_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee) )
 
 FC_REFLECT_TYPENAME( hive::plugins::condenser_api::legacy_operation )

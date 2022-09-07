@@ -4,11 +4,11 @@
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/validation.hpp>
 #include <hive/protocol/legacy_asset.hpp>
+#include <hive/protocol/json_string.hpp>
 
 #include <fc/crypto/equihash.hpp>
 
 namespace hive { namespace protocol {
-
   void validate_auth_size( const authority& a );
 
   struct account_create_operation : public base_operation
@@ -20,7 +20,7 @@ namespace hive { namespace protocol {
     authority         active;
     authority         posting;
     public_key_type   memo_key;
-    string            json_metadata;
+    json_string       json_metadata;
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(creator); }
@@ -37,7 +37,7 @@ namespace hive { namespace protocol {
     authority         active;
     authority         posting;
     public_key_type   memo_key;
-    string            json_metadata;
+    json_string       json_metadata;
 
     extensions_type   extensions;
 
@@ -53,7 +53,7 @@ namespace hive { namespace protocol {
     optional< authority >         active;
     optional< authority >         posting;
     public_key_type               memo_key;
-    string                        json_metadata;
+    json_string                   json_metadata;
 
     void validate()const;
 
@@ -71,8 +71,8 @@ namespace hive { namespace protocol {
     optional< authority >         active;
     optional< authority >         posting;
     optional< public_key_type >   memo_key;
-    string                        json_metadata;
-    string                        posting_json_metadata;
+    json_string                   json_metadata;
+    json_string                   posting_json_metadata;
 
     extensions_type               extensions;
 
@@ -98,7 +98,7 @@ namespace hive { namespace protocol {
 
     string            title;
     string            body;
-    string            json_metadata;
+    json_string       json_metadata;
 
     void validate()const;
     void get_required_posting_authorities( flat_set<account_name_type>& a )const{ a.insert(author); }
@@ -245,7 +245,7 @@ namespace hive { namespace protocol {
     authority         active;
     authority         posting;
     public_key_type   memo_key;
-    string            json_metadata;
+    json_string       json_metadata;
     extensions_type   extensions;
 
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( creator ); }
@@ -328,7 +328,7 @@ namespace hive { namespace protocol {
     time_point_sec    ratification_deadline;
     time_point_sec    escrow_expiration;
 
-    string            json_meta;
+    json_string       json_meta;
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
@@ -586,7 +586,6 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_auths ) a.insert(i); }
   };
 
-
   /** serves the same purpose as custom_operation but also supports required posting authorities. Unlike custom_operation,
     * this operation is designed to be human readable/developer friendly.
     **/
@@ -595,7 +594,7 @@ namespace hive { namespace protocol {
     flat_set< account_name_type > required_auths;
     flat_set< account_name_type > required_posting_auths;
     custom_id_type                id; ///< must be less than 32 characters long
-    string                        json; ///< must be proper utf8 / JSON string.
+    json_string                   json; ///< must be proper utf8 / JSON string.
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_auths ) a.insert(i); }
@@ -681,7 +680,7 @@ namespace hive { namespace protocol {
     void  validate()const;
     void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
 
-    price             get_price()const { return amount_to_sell / min_to_receive; }
+    price             get_price()const { return price( amount_to_sell, min_to_receive ); }
 
     pair< asset_symbol_type, asset_symbol_type > get_market()const
     {
@@ -810,32 +809,6 @@ namespace hive { namespace protocol {
       }
     }
   };
-
-
-  /**
-    * This operation is used to report a miner who signs two blocks
-    * at the same time. To be valid, the violation must be reported within
-    * HIVE_MAX_WITNESSES blocks of the head block (1 round) and the
-    * producer must be in the ACTIVE witness set.
-    *
-    * Users not in the ACTIVE witness set should not have to worry about their
-    * key getting compromised and being used to produced multiple blocks so
-    * the attacker can report it and steel their VESTS.
-    *
-    * The result of the operation is to transfer the full VESTS balance
-    * of the block producer to the reporter.
-    *
-    * DEPRECATED since HF4
-    */
-  struct report_over_production_operation : public base_operation
-  {
-    account_name_type    reporter;
-    signed_block_header  first_block;
-    signed_block_header  second_block;
-
-    void validate()const;
-  };
-
 
   /**
     * All account recovery requests come from a listed recovery account. This
@@ -1121,8 +1094,60 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
   };
 
+  struct witness_block_approve_operation : public base_operation
+  {
+    account_name_type witness;
+    block_id_type     block_id;
+
+    void validate()const;
+    void get_required_witness_signatures( flat_set<account_name_type>& a )const{ a.insert(witness); }
+  };
+
   } } // hive::protocol
 
+
+namespace fc
+{
+  using hive::protocol::comment_options_extension;
+  template<>
+  struct serialization_functor< comment_options_extension >
+  {
+    bool operator()( const fc::variant& v, comment_options_extension& s ) const
+    {
+      return extended_serialization_functor< comment_options_extension >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< comment_options_extension >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< comment_options_extension >().create( v );
+    }
+  };
+
+  using hive::protocol::pow2_work;
+  template<>
+  struct serialization_functor< pow2_work >
+  {
+    bool operator()( const fc::variant& v, pow2_work& s ) const
+    {
+      return extended_serialization_functor< pow2_work >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< pow2_work >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< pow2_work >().create( v );
+    }
+  };
+}
 
 FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
 FC_REFLECT( hive::protocol::transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
@@ -1132,7 +1157,6 @@ FC_REFLECT( hive::protocol::reset_account_operation, (reset_account)(account_to_
 FC_REFLECT( hive::protocol::set_reset_account_operation, (account)(current_reset_account)(reset_account) )
 
 
-FC_REFLECT( hive::protocol::report_over_production_operation, (reporter)(first_block)(second_block) )
 FC_REFLECT( hive::protocol::convert_operation, (owner)(requestid)(amount) )
 FC_REFLECT( hive::protocol::collateralized_convert_operation, (owner)(requestid)(amount) )
 FC_REFLECT( hive::protocol::feed_publish_operation, (publisher)(exchange_rate) )
@@ -1236,3 +1260,4 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );

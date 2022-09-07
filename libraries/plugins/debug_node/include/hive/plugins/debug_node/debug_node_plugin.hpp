@@ -2,6 +2,7 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/chain/full_block.hpp>
 
 #include <fc/variant_object.hpp>
 
@@ -69,29 +70,44 @@ class debug_node_plugin : public plugin< debug_node_plugin >
         it = _debug_updates.emplace( head_id, std::vector< std::function< void( chain::database& ) > >() ).first;
       it->second.emplace_back( callback );
 
-      fc::optional<chain::signed_block> head_block = db.fetch_block_by_id( head_id );
-      FC_ASSERT( head_block.valid() );
+      std::shared_ptr<hive::chain::full_block_type> head_block = db.fetch_block_by_id(head_id);
+      FC_ASSERT(head_block);
 
       // What the last block does has been changed by adding to node_property_object, so we have to re-apply it
       db.pop_block();
-      db.push_block( *head_block, skip );
+      // ABW: this is highly problematic, since popping block moves all its transactions to popped list,
+      // which means they will be reapplied after push_block calls post-apply block notification (which
+      // calls apply_debug_updates). It means the order between transactions and debug update changes
+      // which can lead to exceptions (that will be fully handled inside HIVE_TRY_NOTIFY, so if you don't
+      // pay attention to log messages, you won't notice). Maybe a better way would be to create debug
+      // operation (that would only work in testnet configuration) or a custom_operation that would be
+      // observed and handled by debug plugin. Such solution would also mean it is possible to interweave
+      // normal transactions and debug updates in single block (f.e. account created, debug filled with
+      // currency, followed by transfer to another account and that repeated for another pair of accounts
+      // - currently it would not work, because there can only be one debug update per block and it is
+      // not applied where it was called in relation to rest of transactions).
+      hive::chain::existing_block_flow_control block_ctrl( head_block );
+      db.push_block( block_ctrl, skip );
     }
 
     void debug_generate_blocks(
       debug_generate_blocks_return& ret,
-      const debug_generate_blocks_args& args );
+      const debug_generate_blocks_args& args,
+      bool immediate_generation );
 
     uint32_t debug_generate_blocks(
       const std::string& debug_key,
       uint32_t count,
-      uint32_t skip = hive::chain::database::skip_nothing,
-      uint32_t miss_blocks = 0
+      uint32_t skip,
+      uint32_t miss_blocks,
+      bool immediate_generation
       );
     uint32_t debug_generate_blocks_until(
       const std::string& debug_key,
       const fc::time_point_sec& head_block_time,
       bool generate_sparsely,
-      uint32_t skip = hive::chain::database::skip_nothing
+      uint32_t skip,
+      bool immediate_generation
       );
 
     void set_json_object_stream( const std::string& filename );

@@ -23,11 +23,11 @@ namespace fc {
     public:
       typedef T value_type;
 
-      optional():_valid(false){}
+      optional(): _value{ 0 }, _valid(false) {}
       ~optional(){ reset(); }
 
       optional( optional& o )
-      :_valid(false) 
+        :_value{ 0 }, _valid(false)
       {
         if( o._valid ) new (ptr()) T( *o );
         _valid = o._valid;
@@ -41,7 +41,7 @@ namespace fc {
       }
 
       optional( optional&& o )
-      :_valid(false) 
+      : _value{ 0 }, _valid(false)
       {
         if( o._valid ) new (ptr()) T( fc::move(*o) );
         _valid = o._valid;
@@ -50,7 +50,7 @@ namespace fc {
 
       template<typename U>
       optional( const optional<U>& o )
-      :_valid(false) 
+      : _value{ 0 }, _valid(false)
       {
         if( o._valid ) new (ptr()) T( *o );
         _valid = o._valid;
@@ -58,18 +58,18 @@ namespace fc {
 
       template<typename U>
       optional( optional<U>& o )
-      :_valid(false) 
+        : _value{ 0 }, _valid(false)
       {
-        if( o._valid )
+        if(o._valid)
         {
-          new (ptr()) T( *o );
+          new (ptr()) T(*o);
         }
         _valid = o._valid;
       }
 
       template<typename U>
       optional( optional<U>&& o )
-      :_valid(false) 
+      : _value{ 0 }, _valid(false)
       {
         if( o._valid ) new (ptr()) T( fc::move(*o) );
         _valid = o._valid;
@@ -95,11 +95,11 @@ namespace fc {
       template<typename U>
       optional& operator=( optional<U>& o ) {
         if (this != &o) {
-          if( _valid && o._valid ) { 
+          if( _valid && o._valid ) {
             ref() = *o;
           } else if( !_valid && o._valid ) {
-             new (ptr()) T( *o );
-             _valid = true;
+            new (ptr()) T( *o );
+            _valid = true;
           } else if (_valid) {
             reset();
           }
@@ -108,20 +108,6 @@ namespace fc {
       }
       template<typename U>
       optional& operator=( const optional<U>& o ) {
-        if (this != &o) {
-          if( _valid && o._valid ) { 
-            ref() = *o;
-          } else if( !_valid && o._valid ) {
-             new (ptr()) T( *o );
-             _valid = true;
-          } else if (_valid) {
-            reset();
-          }
-        }
-        return *this;
-      }
-
-      optional& operator=( optional& o ) {
         if (this != &o) {
           if( _valid && o._valid ) { 
             ref() = *o;
@@ -194,6 +180,12 @@ namespace fc {
       T&       operator*()      { assert(_valid); return ref(); }
       const T& operator*()const { assert(_valid); return ref(); }
 
+      T&       value()      { return **this; }
+      const T& value()const { return **this; }
+
+      T&       value_or(T& default_value)            { return _valid ? **this : default_value; }
+      const T& value_or(const T& default_value)const { return _valid ? **this : default_value; }
+
       T*       operator->()      
       { 
          assert(_valid);
@@ -236,6 +228,7 @@ namespace fc {
       const T& ref()const { return *ptr(); }
       T*       ptr()      { void* v = &_value[0]; return static_cast<T*>(v); }
       const T* ptr()const { const void* v = &_value[0]; return static_cast<const T*>(v); }
+
 
       // force alignment... to 8 byte boundaries 
       double _value[((sizeof(T)+7)/8)];

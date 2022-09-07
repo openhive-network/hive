@@ -1,4 +1,5 @@
 #include <hive/protocol/asset.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -299,13 +300,15 @@ asset operator * ( const asset& a, const price& b )
   }
 }
 
-price operator / ( const asset& base, const asset& quote )
-{ try {
-  return price( base, quote );
-} FC_CAPTURE_AND_RETHROW( (base)(quote) ) }
+price price::max( asset_symbol_type base, asset_symbol_type quote )
+{
+  return price( asset( share_type(HIVE_MAX_SATOSHIS), base ), asset( share_type(1), quote) );
+}
 
-price price::max( asset_symbol_type base, asset_symbol_type quote ) { return asset( share_type(HIVE_MAX_SATOSHIS), base ) / asset( share_type(1), quote); }
-price price::min( asset_symbol_type base, asset_symbol_type quote ) { return asset( 1, base ) / asset( HIVE_MAX_SATOSHIS, quote); }
+price price::min( asset_symbol_type base, asset_symbol_type quote )
+{
+  return price( asset( 1, base ), asset( HIVE_MAX_SATOSHIS, quote) );
+}
 
 bool price::is_null() const { return *this == price(); }
 
@@ -344,40 +347,261 @@ asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_sym
   }
 }
 
+uint32_t string_to_asset_num( const char* p, uint8_t decimals )
+{
+  while( true )
+  {
+    switch( *p )
+    {
+      case ' ':  case '\t':  case '\n':  case '\r':
+        ++p;
+        continue;
+      default:
+        break;
+    }
+    break;
+  }
+
+  // [A-Z]
+  uint32_t asset_num = 0;
+  switch( *p )
+  {
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I':
+    case 'J': case 'K': case 'L': case 'M': case 'N': case 'O': case 'P': case 'Q': case 'R':
+    case 'S': case 'T': case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
+    {
+      // [A-Z]{1,6}
+      int shift = 0;
+      uint64_t name_u64 = 0;
+      while( true )
+      {
+        if( ((*p) >= 'A') && ((*p) <= 'Z') )
+        {
+          FC_ASSERT( shift < 64, "Cannot parse asset symbol" );
+          name_u64 |= uint64_t(*p) << shift;
+          shift += 8;
+          ++p;
+          continue;
+        }
+        break;
+      }
+      switch( name_u64 )
+      {
+#ifndef IS_TEST_NET
+        /// Has same value as HIVE_SYMBOL_U64
+        case OBSOLETE_SYMBOL_U64:
+#endif /// IS_TEST_NET
+        case HIVE_SYMBOL_U64:
+          FC_ASSERT( decimals == 3, "Incorrect decimal places" );
+          asset_num = HIVE_ASSET_NUM_HIVE;
+          break;
+#ifndef IS_TEST_NET
+        /// Has same value as HBD_SYMBOL_U64
+        case OBD_SYMBOL_U64:
+#endif ///IS_TEST_NET
+        case HBD_SYMBOL_U64:
+          FC_ASSERT( decimals == 3, "Incorrect decimal places" );
+          asset_num = HIVE_ASSET_NUM_HBD;
+          break;
+        case VESTS_SYMBOL_U64:
+          FC_ASSERT( decimals == 6, "Incorrect decimal places" );
+          asset_num = HIVE_ASSET_NUM_VESTS;
+          break;
+        default:
+          FC_ASSERT( false, "Cannot parse asset symbol" );
+      }
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Cannot parse asset symbol" );
+  }
+
+  // \s*\0
+  while( true )
+  {
+    switch( *p )
+    {
+      case ' ':  case '\t':  case '\n':  case '\r':
+        ++p;
+        continue;
+      case '\0':
+        break;
+      default:
+        FC_ASSERT( false, "Cannot parse asset symbol" );
+    }
+    break;
+  }
+
+  return asset_num;
+}
+
+std::string legacy_asset::asset_num_to_string() const
+{
+  switch( symbol.asset_num )
+  {
+#ifdef IS_TEST_NET
+    case HIVE_ASSET_NUM_HIVE:
+      return "TESTS";
+    case HIVE_ASSET_NUM_HBD:
+      return "TBD";
+#else
+    case HIVE_ASSET_NUM_HIVE:
+      return "HIVE";
+    case HIVE_ASSET_NUM_HBD:
+      return "HBD";
+#endif
+    case HIVE_ASSET_NUM_VESTS:
+      return "VESTS";
+    default:
+      return "UNKN"; // SMTs will return this symbol if returned as a legacy asset
+  }
+}
+
+int64_t precision( const asset_symbol_type& symbol )
+{
+  static int64_t table[] = {
+              1, 10, 100, 1000, 10000,
+              100000, 1000000, 10000000, 100000000ll,
+              1000000000ll, 10000000000ll,
+              100000000000ll, 1000000000000ll,
+              10000000000000ll, 100000000000000ll
+              };
+  uint8_t d = symbol.decimals();
+  return table[ d ];
+}
+
+string legacy_asset::to_string()const
+{
+  int64_t prec = precision(symbol);
+  string result = fc::to_string(amount.value / prec);
+  if( prec > 1 )
+  {
+    auto fract = amount.value % prec;
+    // prec is a power of ten, so for example when working with
+    // 7.005 we have fract = 5, prec = 1000.  So prec+fract=1005
+    // has the correct number of zeros and we can simply trim the
+    // leading 1.
+    result += "." + fc::to_string(prec + fract).erase(0,1);
+  }
+  return result + " " + asset_num_to_string();
+}
+
+legacy_asset legacy_asset::from_string( const string& from )
+{
+  try
+  {
+    string s = fc::trim( from );
+    auto space_pos = s.find( ' ' );
+    auto dot_pos = s.find( '.' );
+
+    FC_ASSERT( space_pos != std::string::npos );
+
+    legacy_asset result;
+
+    string str_symbol = s.substr( space_pos + 1 );
+
+    if( dot_pos != std::string::npos )
+    {
+      FC_ASSERT( space_pos > dot_pos );
+
+      auto intpart = s.substr( 0, dot_pos );
+      auto fractpart = "1" + s.substr( dot_pos + 1, space_pos - dot_pos - 1 );
+      uint8_t decimals = uint8_t( fractpart.size() - 1 );
+
+      result.symbol.asset_num = string_to_asset_num( str_symbol.c_str(), decimals );
+
+      int64_t prec = precision( result.symbol );
+
+      //Max amount = 9223372036854775.807 HIVE/HBD
+      //`inpart` * `prec` can cause overflow, better is to emulate multiplication using additional zeros
+      auto _prec = std::to_string( prec );
+      if( !_prec.empty() )
+        intpart += _prec.substr( 1 );
+
+      result.amount = fc::to_int64( intpart );
+
+      int64_t _new_value = fc::to_int64( fractpart ) - prec;
+
+      //adding `_new_value` can cause overflow, better is to check sum before addition
+      int64_t check = result.amount.value + _new_value;
+      bool overflow_a = result.amount.value > 0 && _new_value > 0 && check < 0;
+      bool overflow_b = result.amount.value < 0 && _new_value < 0 && check > 0;
+      if( overflow_a || overflow_b )
+        FC_THROW_EXCEPTION( fc::parse_error_exception, "Couldn't parse int64_t" );
+      else
+        result.amount.value += _new_value;
+    }
+    else
+    {
+      auto intpart = s.substr( 0, space_pos );
+      result.amount = fc::to_int64( intpart );
+      result.symbol.asset_num = string_to_asset_num( str_symbol.c_str(), 0 );
+    }
+    return result;
+  }
+  FC_CAPTURE_AND_RETHROW( (from) )
+}
+
 } } // hive::protocol
 
 namespace fc {
+
   void to_variant( const hive::protocol::asset& var, fc::variant& vo )
   {
-    try
+    if( hive::protocol::serialization_mode_controller::legacy_enabled() )
+      to_variant( hive::protocol::legacy_asset( var ), vo );
+    else
     {
-      variant v = mutable_variant_object( ASSET_AMOUNT_KEY, boost::lexical_cast< std::string >( var.amount.value ) )
-                              ( ASSET_PRECISION_KEY, uint64_t( var.symbol.decimals() ) )
-                              ( ASSET_NAI_KEY, var.symbol.to_nai_string() );
-      vo = v;
-    } FC_CAPTURE_AND_RETHROW()
+      try
+      {
+        variant v = mutable_variant_object( ASSET_AMOUNT_KEY, boost::lexical_cast< std::string >( var.amount.value ) )
+                                ( ASSET_PRECISION_KEY, uint64_t( var.symbol.decimals() ) )
+                                ( ASSET_NAI_KEY, var.symbol.to_nai_string() );
+        vo = v;
+      } FC_CAPTURE_AND_RETHROW()
+    }
+  }
+
+  void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var )
+  {
+    var = a.to_string();
   }
 
   void from_variant( const fc::variant& var, hive::protocol::asset& vo )
   {
     try
     {
-      FC_ASSERT( var.is_object(), "Asset has to be treated as object." );
+      if( hive::protocol::serialization_mode_controller::legacy_enabled() )
+      {
+        hive::protocol::legacy_asset a;
+        from_variant( var, a );
+        vo = a.to_asset();
+      }
+      else
+      {
+        FC_ASSERT( var.is_object(), "Asset has to be treated as object." );
 
-      const auto& v_object = var.get_object();
+        const auto& v_object = var.get_object();
 
-      FC_ASSERT( v_object.contains( ASSET_AMOUNT_KEY ), "Amount field doesn't exist." );
-      FC_ASSERT( v_object[ ASSET_AMOUNT_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_AMOUNT_KEY) );
-      vo.amount = boost::lexical_cast< int64_t >( v_object[ ASSET_AMOUNT_KEY ].as< std::string >() );
-      FC_ASSERT( vo.amount >= 0, "Asset amount cannot be negative" );
+        FC_ASSERT( v_object.contains( ASSET_AMOUNT_KEY ), "Amount field doesn't exist." );
+        FC_ASSERT( v_object[ ASSET_AMOUNT_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_AMOUNT_KEY) );
+        vo.amount = boost::lexical_cast< int64_t >( v_object[ ASSET_AMOUNT_KEY ].as< std::string >() );
+        FC_ASSERT( vo.amount >= 0, "Asset amount cannot be negative" );
 
-      FC_ASSERT( v_object.contains( ASSET_PRECISION_KEY ), "Precision field doesn't exist." );
-      FC_ASSERT( v_object[ ASSET_PRECISION_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_PRECISION_KEY) );
+        FC_ASSERT( v_object.contains( ASSET_PRECISION_KEY ), "Precision field doesn't exist." );
+        FC_ASSERT( v_object[ ASSET_PRECISION_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_PRECISION_KEY) );
 
-      FC_ASSERT( v_object.contains( ASSET_NAI_KEY ), "NAI field doesn't exist." );
-      FC_ASSERT( v_object[ ASSET_NAI_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_NAI_KEY) );
+        FC_ASSERT( v_object.contains( ASSET_NAI_KEY ), "NAI field doesn't exist." );
+        FC_ASSERT( v_object[ ASSET_NAI_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_NAI_KEY) );
 
-      vo.symbol = hive::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_PRECISION_KEY ].as< uint8_t >() );
+        vo.symbol = hive::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_PRECISION_KEY ].as< uint8_t >() );
+      }
     } FC_CAPTURE_AND_RETHROW()
   }
+
+  void from_variant( const fc::variant& var, hive::protocol::legacy_asset& a )
+  {
+    a = hive::protocol::legacy_asset::from_string( var.as_string() );
+  }
+
 }

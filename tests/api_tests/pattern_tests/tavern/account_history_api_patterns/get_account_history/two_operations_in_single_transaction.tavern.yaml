@@ -1,0 +1,27 @@
+---
+  test_name: Hived
+  # desc: verifies is `op_in_trx` properly set in `cca53b3301da8bec2cbe54a10e15eb7d2de04c75` trx. see hive#184
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        timeout: !int "{timeout:d}"
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account": "a-m3001", "start": -1, "limit": 1000}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern

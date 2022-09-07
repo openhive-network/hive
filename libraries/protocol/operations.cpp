@@ -32,6 +32,20 @@ bool is_virtual_operation( const operation& op )
   return op.visit( is_vop_visitor() );
 }
 
+struct is_effective_op_visitor
+{
+  typedef bool result_type;
+
+  template<typename T>
+  bool operator()( T&& v )const { return true; }
+  bool operator()( const fill_vesting_withdraw_operation& op )const { return !op.is_empty_implied_route(); }
+};
+
+bool is_effective_operation( const operation& op )
+{
+  return op.visit( is_effective_op_visitor() );
+}
+
 } } // hive::protocol
 
 HIVE_DEFINE_OPERATION_TYPE( hive::protocol::operation )

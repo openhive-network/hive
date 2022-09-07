@@ -59,6 +59,7 @@ namespace graphene { namespace net {
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
     */
+   #define  DEFAULT_MAX_BLOCK_IDS_TO_FETCH 10000
    class node_delegate
    {
       public:
@@ -92,8 +93,7 @@ namespace graphene { namespace net {
           *  @throws exception if error validating the item, otherwise the item is
           *          safe to broadcast on.
           */
-         virtual bool handle_block( const graphene::net::block_message& blk_msg, bool sync_mode,
-                                    std::vector<fc::uint160_t>& contained_transaction_message_ids ) = 0;
+         virtual bool handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) = 0;
 
          /**
           *  @brief Called when a new transaction comes in from the network
@@ -101,7 +101,7 @@ namespace graphene { namespace net {
           *  @throws exception if error validating the item, otherwise the item is
           *          safe to broadcast on.
           */
-         virtual void handle_transaction( const graphene::net::trx_message& trx_msg ) = 0;
+         virtual void handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) = 0;
 
          /**
           *  @brief Called when a new message comes in from the network other than a
@@ -111,7 +111,7 @@ namespace graphene { namespace net {
           *  @throws exception if error validating the item, otherwise the item is
           *          safe to broadcast on.
           */
-         virtual void handle_message( const message& message_to_process ) = 0;
+         virtual void handle_message(const message& message_to_process) = 0;
 
          /**
           *  Assuming all data elements are ordered in some way, this method should
@@ -122,12 +122,13 @@ namespace graphene { namespace net {
           */
          virtual std::vector<item_hash_t> get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
                                                         uint32_t& remaining_item_count,
-                                                        uint32_t limit = 2000) = 0;
+                                                        uint32_t limit = DEFAULT_MAX_BLOCK_IDS_TO_FETCH) = 0;
 
          /**
-          *  Given the hash of the requested data, fetch the body.
+          *  Given the block id, return the block itself
+          *  returns nullptr if the block is not present in our blockchain/fork database
           */
-         virtual message get_item( const item_id& id ) = 0;
+         virtual std::shared_ptr<full_block_type> get_full_block(const block_id_type&) = 0;
 
          /**
           * Returns a synopsis of the blockchain used for syncing.
@@ -180,6 +181,7 @@ namespace graphene { namespace net {
 
          virtual void error_encountered(const std::string& message, const fc::oexception& error) = 0;
 
+         virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) = 0;
    };
 
    /**
@@ -212,19 +214,19 @@ namespace graphene { namespace net {
 
         void close();
 
-        void      set_node_delegate( node_delegate* del );
+        void set_node_delegate(node_delegate* del);
 
-        void      load_configuration( const fc::path& configuration_directory );
+        void load_configuration(const fc::path& configuration_directory);
 
-        virtual void      listen_to_p2p_network();
-        virtual void      connect_to_p2p_network();
+        virtual void listen_to_p2p_network(std::function<bool()> break_callback);
+        virtual void connect_to_p2p_network();
 
         /**
          *  Add endpoint to internal level_map database of potential nodes
          *  to attempt to connect to.  This database is consulted any time
          *  the number connected peers falls below the target.
          */
-        void      add_node( const fc::ip::endpoint& ep );
+        void add_node(const fc::ip::endpoint& ep);
 
         /**
          *  Attempt to connect to the specified endpoint immediately.
@@ -235,7 +237,7 @@ namespace graphene { namespace net {
          *  Specifies the network interface and port upon which incoming
          *  connections should be accepted.
          */
-        void      listen_on_endpoint( const fc::ip::endpoint& ep, bool wait_if_not_available );
+        void listen_on_endpoint(const fc::ip::endpoint& ep, bool wait_if_not_available);
 
         /**
          *  Call with true to enable listening for incoming connections
@@ -250,7 +252,7 @@ namespace graphene { namespace net {
          *                               available.  If false and the port is not available,
          *                               just choose a random available port
          */
-        void      listen_on_port(uint16_t port, bool wait_if_not_available);
+        void listen_on_port(uint16_t port, bool wait_if_not_available);
 
         /**
          * Returns the endpoint the node is listening on.  This is usually the same
@@ -271,19 +273,16 @@ namespace graphene { namespace net {
          *  Add message to outgoing inventory list, notify peers that
          *  I have a message ready.
          */
-        virtual void  broadcast( const message& item_to_broadcast );
-        virtual void  broadcast_transaction( const signed_transaction& trx )
-        {
-           broadcast( trx_message(trx) );
-        }
+        virtual void broadcast(const std::shared_ptr<full_block_type>& full_block);
+        virtual void broadcast(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction);
 
         /**
          *  Node starts the process of fetching all items after item_id of the
          *  given item_type.   During this process messages are not broadcast.
          */
-        virtual void      sync_from(const item_id& current_head_block, const std::vector<uint32_t>& hard_fork_block_numbers);
+        virtual void sync_from(const item_id& current_head_block, const std::vector<uint32_t>& hard_fork_block_numbers);
 
-        bool      is_connected() const;
+        bool is_connected() const;
 
         void set_advanced_node_parameters(const fc::variant_object& params);
         node_configuration get_advanced_node_parameters()const;
@@ -315,15 +314,16 @@ namespace graphene { namespace net {
     public:
       ~simulated_network();
       simulated_network(const std::string& user_agent) : node(user_agent) {}
-      void      listen_to_p2p_network() override {}
-      void      connect_to_p2p_network() override {}
-      void      connect_to_endpoint(const fc::ip::endpoint& ep) override {}
+      void listen_to_p2p_network(std::function<bool()> break_callback) override {}
+      void connect_to_p2p_network() override {}
+      void connect_to_endpoint(const fc::ip::endpoint& ep) override {}
 
       fc::ip::endpoint get_actual_listening_endpoint() const override { return fc::ip::endpoint(); }
 
-      void      sync_from(const item_id& current_head_block, const std::vector<uint32_t>& hard_fork_block_numbers) override {}
-      void      broadcast(const message& item_to_broadcast) override;
-      void      add_node_delegate(node_delegate* node_delegate_to_add);
+      void sync_from(const item_id& current_head_block, const std::vector<uint32_t>& hard_fork_block_numbers) override {}
+      void broadcast(const std::shared_ptr<full_block_type>& full_block) override;
+      void broadcast(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction) override;
+      void add_node_delegate(node_delegate* node_delegate_to_add);
 
       virtual uint32_t get_connection_count() const override { return 8; }
     private:
@@ -339,4 +339,4 @@ namespace graphene { namespace net {
 } } // graphene::net
 
 FC_REFLECT(graphene::net::message_propagation_data, (received_time)(validated_time)(originating_peer));
-FC_REFLECT( graphene::net::peer_status, (version)(host)(info) );
+FC_REFLECT(graphene::net::peer_status, (version)(host)(info));

@@ -2,9 +2,12 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/condenser_api/condenser_api_legacy_operations.hpp>
 
+#include <hive/plugins/account_history_api/annotated_signed_transaction.hpp>
 #include <hive/plugins/block_api/block_api_objects.hpp>
 
 namespace hive { namespace plugins { namespace condenser_api {
+
+using hive::plugins::account_history::annotated_signed_transaction;
 
 FC_TODO( "Remove when automated actions are created" )
 typedef static_variant<
@@ -111,9 +114,16 @@ struct legacy_signed_block
       extensions.push_back( ext );
     }
 
+    uint32_t block_num = b.block_num();
+    uint32_t tx_no = 0;
+
     for( const auto& t : b.transactions )
     {
-      transactions.push_back( legacy_signed_transaction( t ) );
+      legacy_signed_transaction& legcy_tx = transactions.emplace_back( legacy_signed_transaction( t ) );
+
+      legcy_tx.transaction_id = b.transaction_ids[tx_no];
+      legcy_tx.transaction_num = tx_no++;
+      legcy_tx.block_num = block_num;
     }
 
     transaction_ids.insert( transaction_ids.end(), b.transaction_ids.begin(), b.transaction_ids.end() );
@@ -150,13 +160,6 @@ struct legacy_signed_block
 };
 
 } } } // hive::plugins::condenser_api
-
-namespace fc {
-
-void to_variant( const hive::plugins::condenser_api::legacy_block_header_extensions&, fc::variant& );
-void from_variant( const fc::variant&, hive::plugins::condenser_api::legacy_block_header_extensions& );
-
-}
 
 FC_REFLECT( hive::plugins::condenser_api::legacy_signed_transaction,
         (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions)(signatures)(transaction_id)(block_num)(transaction_num) )

@@ -1,0 +1,33 @@
+{
+  "history": [
+    [
+      15191,
+      {
+        "block": 3327426,
+        "op": {
+          "type": "fill_convert_request_operation",
+          "value": {
+            "amount_in": {
+              "amount": "2000000",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "amount_out": {
+              "amount": "605143",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "owner": "xeroc",
+            "requestid": 1468315395
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-19T09:23:18",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "history": [
+    [
+      0,
+      {
+        "block": 3525762,
+        "op": {
+          "type": "account_create_operation",
+          "value": {
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM6czU1DqnJHuZP1EakhqcdoQXcVYfC6tyn2zqSDxiGRjBUkKHAS",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "creator": "steem",
+            "fee": {
+              "amount": "3000",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "json_metadata": "",
+            "memo_key": "STM59bv5TCBTp4Dxg9wsxAxgjY6gCxF2uNvfAyW7c75mER1RhjqoJ",
+            "new_account_name": "singapore",
+            "owner": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM6nbSFUgHG4rjDskbaHwSYy2rtmJez7exiQGd8CKFamUKRLNbHB",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM7Cc29Zkd7wGF9KEaxjrdiJHNDupJh5WAVCTNaRPUDVxo79WQFB",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-26T08:25:39",
+        "trx_id": "4793b3ae537e4fec7600787849f905b4c5421570",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      1,
+      {
+        "block": 3525762,
+        "op": {
+          "type": "account_created_operation",
+          "value": {
+            "creator": "steem",
+            "initial_delegation": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "initial_vesting_shares": {
+              "amount": "12373786546",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "new_account_name": "singapore"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-26T08:25:39",
+        "trx_id": "4793b3ae537e4fec7600787849f905b4c5421570",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

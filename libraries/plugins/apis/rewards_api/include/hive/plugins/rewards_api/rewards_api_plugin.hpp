@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 #include <hive/plugins/rewards_api/rewards_api.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 

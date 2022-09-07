@@ -1,0 +1,42 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.broadcast_transaction"
+          params: [
+            { 'expiration': '2020-11-05T12:58:10',
+              'extensions': [ ],
+              'operations': [ [ 'request_account_recovery',
+                { 'account_to_recover': 'tulpa',
+                  'extensions': [ ],
+                  'new_owner_authority': { 'account_auths': [ ],
+                                           'key_auths': [ [ 'STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS',
+                                                            '1' ] ],
+                                           'weight_threshold': 1 },
+                  'recovery_account': 'nalesnik' } ] ],
+              'ref_block_num': 55551,
+              'ref_block_prefix': 276291495,
+              'signatures': [ '204f2dc529f3e884a77ee3e849d0f8c03ff9ec0d9af08894427d15c74eea4dcead50bc2bd23ac188cfb5975acc5a89cb1df1474e42d47d54ac993ed240fdb3f955' ] }
+          ]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            error_response: true
+            ignore_tags: ['timestamp']

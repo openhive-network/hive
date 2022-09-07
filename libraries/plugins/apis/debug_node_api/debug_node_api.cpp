@@ -64,26 +64,27 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
       skip_flags = skip_flags | chain::database::skip_validate_invariants;
     for( uint32_t i=0; i<count; i++ )
     {
-      fc::optional< chain::signed_block > block;
+      std::shared_ptr<hive::chain::full_block_type> full_block;
       try
       {
-        block = log.read_block_by_num( first_block + i );
-        if (!block)
+        full_block = log.read_block_by_num( first_block + i );
+        if (!full_block)
           FC_THROW("Unable to read block ${block_num}", ("block_num", first_block + i));
       }
       catch( const fc::exception& e )
       {
-        elog( "Could not read block ${i} of ${n}", ("i", i)("n", count) );
+        elog("Could not read block ${i} of ${count}", (i)(count));
         continue;
       }
 
       try
       {
-        _db.push_block( *block, skip_flags );
+        hive::chain::existing_block_flow_control block_ctrl( full_block );
+        _db.push_block( block_ctrl, skip_flags );
       }
-      catch( const fc::exception& e )
+      catch (const fc::exception& e)
       {
-        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", block->block_num())("bid", block->id())("i", i)("n", count) );
+        elog( "Got exception pushing block ${bn} : ${bid} (${i} of ${n})", ("bn", full_block->get_block_num())("bid", full_block->get_block_id())("i", i)("n", count) );
         elog( "Exception backtrace: ${bt}", ("bt", e.to_detail_string()) );
       }
     }
@@ -96,18 +97,18 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks )
 {
   debug_generate_blocks_return ret;
-  _debug_node.debug_generate_blocks( ret, args );
+  _debug_node.debug_generate_blocks( ret, args, false ); // Here use chain_plugin like generation, to have correct synchronization between API and chain threads
   return ret;
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 {
-  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing ) };
+  return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing, false ) };
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_pop_block )
 {
-  return { _db.fetch_block_by_number( _db.head_block_num() ) };
+  return { _db.fetch_block_by_number(_db.head_block_num())->get_block() }; 
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_witness_schedule )

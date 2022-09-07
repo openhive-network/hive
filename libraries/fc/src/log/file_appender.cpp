@@ -20,6 +20,7 @@ namespace fc {
          ofstream                   out;
          boost::mutex               slock;
 
+         fc::optional<time_point>   last_log_message_timestamp;
       private:
          future<void>               _rotation_task;
          time_point_sec             _current_file_start_time;
@@ -162,6 +163,25 @@ namespace fc {
    {
       std::stringstream line;
       line << appender::format_time_as_string(m.get_context().get_timestamp(), my->cfg.time_format);
+
+      if (my->cfg.delta_times)
+      {
+        fc::optional<fc::time_point> last_log_message_timestamp;
+        {
+          fc::scoped_lock<boost::mutex> lock( my->slock );
+          last_log_message_timestamp = my->last_log_message_timestamp;
+          my->last_log_message_timestamp = m.get_context().get_timestamp();
+        }
+
+        if (last_log_message_timestamp)
+        {
+          microseconds time_since_last_message = m.get_context().get_timestamp() - *last_log_message_timestamp;
+          line << " Δ" << std::setw(7) << time_since_last_message.count() << "µs ";
+        }
+        else
+          line << "            ";
+      }
+
       line << " " << std::setw( 21 ) << (m.get_context().get_task_name()).c_str() << " ";
 
       string method_name = m.get_context().get_method();

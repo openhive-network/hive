@@ -173,11 +173,17 @@ struct post_operation_visitor
         if( account == nullptr )
           continue;
 
-        db.create< key_lookup_object >( [&]( key_lookup_object& o )
+        public_key_type new_key (HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR);
+
+        auto existing_key = db.find< key_lookup_object, by_key >(boost::make_tuple(new_key, account->name));
+        if(existing_key == nullptr)
         {
-          o.key = public_key_type( "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR" );
-          o.account = account->name;
-        });
+          db.create< key_lookup_object >([&](key_lookup_object& o)
+            {
+              o.key = new_key;
+              o.account = account->name;
+            });
+        }
       }
     }
   }

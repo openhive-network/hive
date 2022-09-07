@@ -1,10 +1,20 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import annotations
+
 import logging
 from junit_xml import TestCase
 import time
+from typing import TYPE_CHECKING
 import sys
 import traceback
+
+from test_tools.__private.communication import CustomJsonEncoder
+
+if TYPE_CHECKING:
+  from typing import Union
+  import test_tools as tt
+
 
 DEFAULT_LOG_FORMAT = '%(asctime)-15s - %(name)s - %(levelname)s - %(message)s'
 DEFAULT_LOG_LEVEL = logging.INFO
@@ -16,7 +26,7 @@ logger.setLevel(DEFAULT_LOG_LEVEL)
 def send_rpc_query(target_node : str, payload : dict) -> dict:
   from requests import post
   from json import dumps
-  resp = post(target_node, data = dumps(payload))
+  resp = post(target_node, data=dumps(payload, cls=CustomJsonEncoder))
   if resp.status_code != 200:
     print(resp.json())
     raise Exception("{} returned non 200 code".format(payload["method"]))
@@ -38,7 +48,7 @@ def get_current_block_number(source_node) -> int:
   from json import dumps, loads
 
   try:
-    resp = post(source_node, data = dumps(payload))
+    resp = post(source_node, data=dumps(payload, cls=CustomJsonEncoder))
     if resp.status_code != 200:
       return -1
     data = resp.json()["result"]
@@ -65,7 +75,7 @@ def wait_n_blocks(source_node : str, blocks : int, timeout : int = 60):
   if cntr >= timeout:
     raise TimeoutError("Timeout in waiting for blocks. Hived is not running?")
 
-def debug_generate_blocks(target_node : str, debug_key : str, count : int) -> dict:
+def debug_generate_blocks(target_node: str, debug_key: Union[str, tt.PrivateKey], count: int) -> dict:
   if count < 0:
     raise ValueError("Count must be a positive non-zero number")
   payload = {
@@ -82,7 +92,11 @@ def debug_generate_blocks(target_node : str, debug_key : str, count : int) -> di
   }
   return send_rpc_query(target_node, payload)
 
-def debug_generate_blocks_until(target_node : str, debug_key : str, timestamp : str, generate_sparsely : bool = True) -> dict:
+
+def debug_generate_blocks_until(target_node: str,
+                                debug_key: Union[str, tt.PrivateKey],
+                                timestamp: str,
+                                generate_sparsely: bool = True) -> dict:
   payload = {
     "jsonrpc": "2.0",
     "id" : get_random_id(),
@@ -122,7 +136,12 @@ def debug_set_hardfork(target_node : str, hardfork_id : int) -> dict:
   }
   return send_rpc_query(target_node, payload)
 
-def debug_quick_block_skip_with_step( node, debug_key, blocks, block_step, safe_block_offset : int = 100) -> None:
+
+def debug_quick_block_skip_with_step(node,
+                                     debug_key: Union[str, tt.PrivateKey],
+                                     blocks,
+                                     block_step,
+                                     safe_block_offset: int = 100) -> None:
   currently_processed = blocks
   while currently_processed > 0:
     if currently_processed - block_step <= 0:
@@ -355,38 +374,3 @@ def junit_test_case(method):
             junit_test_cases.append(test_case)
     return log_test_case
 
-# calculating md5 checsums for all files
-def get_index_checksums(path : str):
-  from subprocess import run, PIPE
-  import os
-
-  # gather files and paths for md5sum
-  files = run(["find", path, "-type", "f" ], stdout=PIPE).stdout.decode('utf-8').splitlines()
-  temp_files = []
-  for file in files:
-    if file.find('snapshot-manifest') < 0:
-      temp_files.append(file)
-  files = temp_files
-  
-  # calculate md5sum
-  files_with_md5 = dict()
-  for file in files:
-    md5, _, output = run(["md5sum", file ], stdout=PIPE).stdout.decode('utf-8').strip().split(' ')
-    output = os.path.split(os.path.split(output)[0])[1]
-    files_with_md5[output] = md5
-
-  return files_with_md5
-
-# return list of missmatched indexes
-def compare_snapshots(path_to_first_snapshot : str, path_to_second_snapshot : str) -> list:
-  first_ret = get_index_checksums(path_to_first_snapshot)
-  second_ret = get_index_checksums(path_to_second_snapshot)
-
-  keys = first_ret.keys()
-  ret = []
-  for key in keys:
-    first_md5 = first_ret[key]
-    second_md5 = second_ret[key]
-    if first_md5 != second_md5:
-      ret.append(key)
-  return ret

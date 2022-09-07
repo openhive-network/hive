@@ -1,0 +1,11 @@
+---
+  name: Common test values
+  description: Common values for tests
+
+  variables:
+    heavy_timeout: 50
+    timeout: 100
+    service:
+      proto: http
+      server: "{tavern.env_vars.HIVEMIND_ADDRESS}"
+      port: "{tavern.env_vars.HIVEMIND_PORT}"

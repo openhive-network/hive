@@ -1,6 +1,8 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 #include <appbase/application.hpp>
+
+#include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
@@ -91,7 +93,7 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
     json_rpc_plugin();
     virtual ~json_rpc_plugin();
 
-    APPBASE_PLUGIN_REQUIRES();
+    APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) );
     virtual void set_program_options( options_description&, options_description& ) override;
 
     static const std::string& name() { static std::string name = HIVE_JSON_RPC_PLUGIN_NAME; return name; }

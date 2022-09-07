@@ -1,5 +1,5 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
+#include <chainbase/forward_declarations.hpp>
 #include <appbase/application.hpp>
 
 #include <boost/config.hpp>

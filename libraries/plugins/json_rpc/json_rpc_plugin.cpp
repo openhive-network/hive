@@ -3,6 +3,8 @@
 
 #include <hive/plugins/statsd/utility.hpp>
 
+#include <hive/protocol/misc_utilities.hpp>
+
 #include <boost/algorithm/string.hpp>
 
 #include <fc/log/logger_config.hpp>
@@ -11,10 +13,13 @@
 #include <fc/io/fstream.hpp>
 
 #include <chainbase/chainbase.hpp>
+#include <hive/chain/fork_database.hpp>
 
 #define ENABLE_JSON_RPC_LOG
 
 namespace hive { namespace plugins { namespace json_rpc {
+
+using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
 
 namespace detail
 {
@@ -173,9 +178,11 @@ namespace detail
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
+
+      chain::database& _db;
   };
 
-  json_rpc_plugin_impl::json_rpc_plugin_impl() {}
+  json_rpc_plugin_impl::json_rpc_plugin_impl(): _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
   json_rpc_plugin_impl::~json_rpc_plugin_impl() {}
 
   void json_rpc_plugin_impl::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
@@ -338,10 +345,45 @@ namespace detail
               if( call )
               {
                 STATSD_START_TIMER( "jsonrpc", "api", method_name, 1.0f );
-                response.result = (*call)( func_args );
+
+                if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+                {
+                  try
+                  {
+                    response.result = (*call)( func_args );
+                  }
+                  catch( fc::bad_cast_exception& e )
+                  {
+                    if( method_name == "network_broadcast_api.broadcast_transaction" ||
+                        method_name == "database_api.verify_authority"
+                      )
+                    {
+                      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+                      ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", method_name) );
+                      response.result = (*call)( func_args );
+                    }
+                    else
+                    {
+                      throw e;
+                    }
+                  }
+                  catch(...)
+                  {
+                    auto eptr = std::current_exception();
+                    std::rethrow_exception( eptr );
+                  }
+                }
+                else
+                {
+                  response.result = (*call)( func_args );
+                }
               }
             }
             catch( chainbase::lock_exception& e )
+            {
+              response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
+            }
+            catch( chain::forkdb_lock_exception& e )
             {
               response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
             }
@@ -435,7 +477,7 @@ using detail::json_rpc_error;
 using detail::json_rpc_response;
 using detail::json_rpc_logger;
 
-json_rpc_plugin::json_rpc_plugin() : my( new detail::json_rpc_plugin_impl() ) {}
+json_rpc_plugin::json_rpc_plugin(){}
 json_rpc_plugin::~json_rpc_plugin() {}
 
 void json_rpc_plugin::set_program_options( options_description& , options_description& cfg)
@@ -447,6 +489,8 @@ void json_rpc_plugin::set_program_options( options_description& , options_descri
 
 void json_rpc_plugin::plugin_initialize( const variables_map& options )
 {
+  my = std::make_unique< detail::json_rpc_plugin_impl >();
+
   my->initialize();
 
   if( options.count( "log-json-rpc" ) )

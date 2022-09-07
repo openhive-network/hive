@@ -11,39 +11,11 @@ class chain_api_impl
     chain_api_impl() : _chain( appbase::app().get_plugin<chain_plugin>() ) {}
 
     DECLARE_API_IMPL(
-      (push_block)
       (push_transaction) )
 
   private:
     chain_plugin& _chain;
 };
-
-DEFINE_API_IMPL( chain_api_impl, push_block )
-{
-  push_block_return result;
-
-  result.success = false;
-
-  try
-  {
-    _chain.accept_block(args.block, args.currently_syncing, chain::database::skip_nothing);
-    result.success = true;
-  }
-  catch (const fc::exception& e)
-  {
-    result.error = e.to_detail_string();
-  }
-  catch (const std::exception& e)
-  {
-    result.error = e.what();
-  }
-  catch (...)
-  {
-    result.error = "uknown error";
-  }
-
-  return result;
-}
 
 DEFINE_API_IMPL( chain_api_impl, push_transaction )
 {
@@ -53,7 +25,8 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
   try
   {
-    _chain.accept_transaction(args);
+    full_transaction_ptr dummy;
+    _chain.determine_encoding_and_accept_transaction( dummy, args );
     result.success = true;
   }
   catch (const fc::exception& e)
@@ -66,7 +39,7 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
   }
   catch (...)
   {
-    result.error = "uknown error";
+    result.error = "unknown error";
   }
 
   return result;
@@ -82,7 +55,6 @@ chain_api::chain_api(): my( new detail::chain_api_impl() )
 chain_api::~chain_api() {}
 
 DEFINE_LOCKLESS_APIS( chain_api,
-  (push_block)
   (push_transaction)
 )
 

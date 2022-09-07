@@ -11,7 +11,7 @@
 namespace fc {
   class microseconds {
     public:
-        explicit microseconds( int64_t c = 0) :_count(c){}
+        explicit microseconds( int64_t c = 0) noexcept : _count(c){}
         static microseconds maximum() { return microseconds(0x7fffffffffffffffll); }
         friend microseconds operator + (const  microseconds& l, const microseconds& r ) { return microseconds(l._count+r._count); }
         friend microseconds operator - (const  microseconds& l, const microseconds& r ) { return microseconds(l._count-r._count); }

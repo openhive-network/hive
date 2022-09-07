@@ -1,0 +1,23 @@
+{
+  "block_num": 3940273,
+  "expiration": "2016-08-09T20:00:12",
+  "extensions": [],
+  "operations": [
+    [
+      "vote",
+      {
+        "author": "yonuts",
+        "permlink": "2b9ynb-eyes-wide-shut-the-truth-behind-the-marijuana-policy-in-the-netherlands",
+        "voter": "krabgat",
+        "weight": 10000
+      }
+    ]
+  ],
+  "ref_block_num": 8082,
+  "ref_block_prefix": 2858053413,
+  "signatures": [
+    "204e1899178eb44222a5574d6deed59f0477a0681fdb2f5256b114262c7c99797653367465f88a0c6840d41f517e63423af33632a2ef79477b9c20355b5e042947"
+  ],
+  "transaction_id": "5e94c696f1dfabff10d170bdc1d7648537347ee7",
+  "transaction_num": 0
+}

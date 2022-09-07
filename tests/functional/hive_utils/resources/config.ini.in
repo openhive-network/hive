@@ -18,6 +18,8 @@ account-history-rocksdb-path = "blockchain/account-history-rocksdb-storage"
 
 # Where to export data (NONE to discard)
 block-data-export-file = NONE
+# Skip exporting when extra block data is empty
+block-data-skip-empty = 0
 
 # How often to print out block_log_info (default 1 day)
 block-log-info-print-interval-seconds = 86400
@@ -31,10 +33,10 @@ block-log-info-print-file = ILOG
 # the location of the chain shared memory files (absolute path or relative to application data dir)
 shared-file-dir = "blockchain"
 
-# Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.
+# Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.
 shared-file-size = 8G
 
-# A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%). Full node is 9900 (99%)
+# A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%).
 shared-file-full-threshold = 0
 
 # A 2 precision percentage (0-10000) that defines how quickly to scale the shared memory file. When autoscaling occurs the file's size will be increased by this percent. Setting this to 0 disables autoscaling. Recommended value is between 1000-2000 (10-20%)
@@ -57,9 +59,6 @@ p2p-seed-node = 127.0.0.1:2001
 
 # Skip rejecting transactions when account has insufficient RCs. This is not recommended.
 rc-skip-reject-not-enough-rc = 0
-
-# Generate historical resource credits
-rc-compute-historical-rc = 0
 
 # Size to batch statsd messages.
 statsd-batchsize = 1

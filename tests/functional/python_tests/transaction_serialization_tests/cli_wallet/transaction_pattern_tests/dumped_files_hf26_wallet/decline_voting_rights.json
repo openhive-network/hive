@@ -1,0 +1,1 @@
+{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"decline_voting_rights_operation","value":{"account":"initminer","decline":true}}],"extensions":[],"signatures":["202b760ca56e6715ca2c80473120aae9256ec2fe0c0ddd4e9f5801e717994d77006b4bd84bb35fa933d57f82f790075fed321a11d7e03943edf181dc5b57b0841f"]}

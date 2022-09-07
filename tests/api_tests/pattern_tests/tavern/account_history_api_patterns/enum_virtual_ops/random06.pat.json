@@ -1,0 +1,82 @@
+{
+  "next_block_range_begin": 4975730,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 4975728,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "jrcornel",
+          "pending_payout": {
+            "amount": "0",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "re-lifeisawesome-perspective-is-everything-20160914t232411689z",
+          "rshares": 2894871753,
+          "total_vote_weight": "13340584767947174",
+          "voter": "jrcornel",
+          "weight": "200108771519207"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 19632366,
+      "timestamp": "2016-09-14T23:24:36",
+      "trx_id": "d83cbc75a467f2ed0950168aad6bf5a36f9d8104",
+      "trx_in_block": 1,
+      "virtual_op": true
+    },
+    {
+      "block": 4975728,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "gavvet",
+          "pending_payout": {
+            "amount": "353441",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "dogs-and-me-featuring-fred703-as-author",
+          "rshares": "31449520132",
+          "total_vote_weight": "17568859184136296014",
+          "voter": "talanhorne",
+          "weight": "328603351517985"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 19632368,
+      "timestamp": "2016-09-14T23:24:36",
+      "trx_id": "a4fa0ad7b5103374f16d6e3d03857a0f2971de4e",
+      "trx_in_block": 2,
+      "virtual_op": true
+    },
+    {
+      "block": 4975729,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "someguy123",
+          "pending_payout": {
+            "amount": "47573",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "for-witnesses-instant-price-feed-script",
+          "rshares": 2022966642,
+          "total_vote_weight": "15896435663338918938",
+          "voter": "cryptoeasy",
+          "weight": "149465436504542"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 19632372,
+      "timestamp": "2016-09-14T23:24:39",
+      "trx_id": "c4d0c7e8c38e3cca0f716d526cafc01d79e56bec",
+      "trx_in_block": 1,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

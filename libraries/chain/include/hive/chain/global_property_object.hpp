@@ -163,9 +163,9 @@ namespace hive { namespace chain {
 
       uint16_t content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF16;
       uint16_t vesting_reward_percent = HIVE_VESTING_FUND_PERCENT_HF16;
-      uint16_t sps_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF0;
+      uint16_t proposal_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF0;
 
-      asset sps_interval_ledger = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
+      asset dhf_interval_ledger = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
 
       uint16_t downvote_pool_percent = 0;
 
@@ -233,8 +233,8 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (next_daily_maintenance_time)
           (content_reward_percent)
           (vesting_reward_percent)
-          (sps_fund_percent)
-          (sps_interval_ledger)
+          (proposal_fund_percent)
+          (dhf_interval_ledger)
           (downvote_pool_percent)
           (current_remove_threshold)
           (max_consecutive_recurrent_transfer_failures)

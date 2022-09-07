@@ -1,0 +1,28 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest # works on fullsync
+    - xfail # "status": "unknown"
+
+  includes:
+    - !include ../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "transaction_status_api.find_transaction"
+          params: {
+            "transaction_id": "048227e5bf601c05240becc3ed265c0766a763a8",
+          }
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern

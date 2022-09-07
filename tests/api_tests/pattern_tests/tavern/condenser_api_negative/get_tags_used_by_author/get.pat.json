@@ -1,0 +1,23 @@
+{
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "condenser_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 814,
+          "method": "get_tags_used_by_author",
+          "timestamp": "2021-08-30T10:49:22"
+        },
+        "data": {},
+        "format": "_tags_api: tags_api_plugin not enabled."
+      }
+    ]
+  },
+  "message": "Assert Exception:_tags_api: tags_api_plugin not enabled."
+}

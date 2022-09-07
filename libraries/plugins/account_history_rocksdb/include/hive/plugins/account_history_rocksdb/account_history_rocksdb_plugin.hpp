@@ -47,12 +47,18 @@ public:
     std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const;
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo, uint32_t* txInBlock) const;
 
+  // makes plugin remove database on startup - useful for tests where each test needs fresh database
+  void set_destroy_database_on_startup( bool set = true ) { _destroyOnStartup = set; }
+  // makes plugin remove database on shutdown - useful for tests where each test needs fresh database
+  void set_destroy_database_on_shutdown( bool set = true ) { _destroyOnShutdown = set; }
+
 private:
   class impl;
 
   std::unique_ptr<impl> _my;
   uint32_t              _blockLimit = 0;
-  bool                  _doImmediateImport = false;
+  bool                  _destroyOnStartup = false;
+  bool                  _destroyOnShutdown = false;
 };
 
 

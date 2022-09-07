@@ -1,0 +1,1410 @@
+{
+  "buckets": [
+    {
+      "hive": {
+        "close": 638967,
+        "high": 1,
+        "low": 751,
+        "open": 33000,
+        "volume": 633560581
+      },
+      "id": 4,
+      "non_hive": {
+        "close": 200000,
+        "high": 1,
+        "low": 99,
+        "open": 6105,
+        "volume": 190179911
+      },
+      "open": "2016-07-04T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1000000,
+        "high": 6,
+        "low": 30957,
+        "open": 638967,
+        "volume": 472846288
+      },
+      "id": 2187,
+      "non_hive": {
+        "close": 296999,
+        "high": 2,
+        "low": 8513,
+        "open": 200000,
+        "volume": 139311448
+      },
+      "open": "2016-07-05T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1490,
+        "high": 3,
+        "low": 1489516,
+        "open": 10000,
+        "volume": 557689494
+      },
+      "id": 3232,
+      "non_hive": {
+        "close": 401,
+        "high": 1,
+        "low": 388764,
+        "open": 2970,
+        "volume": 152389270
+      },
+      "open": "2016-07-06T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1248498,
+        "high": 2,
+        "low": 4,
+        "open": 1271000,
+        "volume": 578758827
+      },
+      "id": 4120,
+      "non_hive": {
+        "close": 412003,
+        "high": 1,
+        "low": 1,
+        "open": 341898,
+        "volume": 175109781
+      },
+      "open": "2016-07-07T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 2997,
+        "high": 2,
+        "low": 537068,
+        "open": 1000000,
+        "volume": 2251234264
+      },
+      "id": 4835,
+      "non_hive": {
+        "close": 1004,
+        "high": 1,
+        "low": 155749,
+        "open": 301000,
+        "volume": 718887099
+      },
+      "open": "2016-07-08T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 10000000,
+        "high": 13235,
+        "low": 1640149,
+        "open": 37794,
+        "volume": 2189640825
+      },
+      "id": 5883,
+      "non_hive": {
+        "close": 6108000,
+        "high": 9000,
+        "low": 543377,
+        "open": 12661,
+        "volume": 839764094
+      },
+      "open": "2016-07-09T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 9681699,
+        "high": 1,
+        "low": 236504,
+        "open": 200000,
+        "volume": 1805284141
+      },
+      "id": 6878,
+      "non_hive": {
+        "close": 6766171,
+        "high": 1,
+        "low": 82776,
+        "open": 122180,
+        "volume": 1183573803
+      },
+      "open": "2016-07-10T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 26401,
+        "high": 1,
+        "low": 13333160,
+        "open": 100000,
+        "volume": 1325679741
+      },
+      "id": 7644,
+      "non_hive": {
+        "close": 25081,
+        "high": 1,
+        "low": 5999924,
+        "open": 56000,
+        "volume": 959491012
+      },
+      "open": "2016-07-11T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 4970826,
+        "high": 4970826,
+        "low": 17997,
+        "open": 100000,
+        "volume": 1349632620
+      },
+      "id": 8370,
+      "non_hive": {
+        "close": 11830566,
+        "high": 11830566,
+        "low": 16557,
+        "open": 95500,
+        "volume": 1952715444
+      },
+      "open": "2016-07-12T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 8924644,
+        "high": 3,
+        "low": 153145,
+        "open": 2119,
+        "volume": 2080098858
+      },
+      "id": 9321,
+      "non_hive": {
+        "close": 26327701,
+        "high": 11,
+        "low": 76572,
+        "open": 5000,
+        "volume": "5954589735"
+      },
+      "open": "2016-07-13T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 74981,
+        "high": 23,
+        "low": 1,
+        "open": 12015784,
+        "volume": "5373349596"
+      },
+      "id": 10917,
+      "non_hive": {
+        "close": 277056,
+        "high": 100,
+        "low": 1,
+        "open": 35446563,
+        "volume": "17121076896"
+      },
+      "open": "2016-07-14T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 500000,
+        "high": 2,
+        "low": 1,
+        "open": 184,
+        "volume": 500190948
+      },
+      "id": 13328,
+      "non_hive": {
+        "close": 1577500,
+        "high": 9,
+        "low": 2,
+        "open": 580,
+        "volume": 1728074095
+      },
+      "open": "2016-07-15T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1000,
+        "high": 8,
+        "low": 251232,
+        "open": 10000,
+        "volume": 232810303
+      },
+      "id": 14214,
+      "non_hive": {
+        "close": 3008,
+        "high": 30,
+        "low": 678326,
+        "open": 32168,
+        "volume": 754555214
+      },
+      "open": "2016-07-16T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 224605,
+        "high": 2,
+        "low": 1,
+        "open": 10000,
+        "volume": 138790218
+      },
+      "id": 14673,
+      "non_hive": {
+        "close": 696275,
+        "high": 8,
+        "low": 2,
+        "open": 28600,
+        "volume": 404890309
+      },
+      "open": "2016-07-17T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 225395,
+        "high": 8,
+        "low": 1,
+        "open": 10000,
+        "volume": 257620866
+      },
+      "id": 15421,
+      "non_hive": {
+        "close": 635569,
+        "high": 29,
+        "low": 2,
+        "open": 32000,
+        "volume": 799340145
+      },
+      "open": "2016-07-18T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 250964,
+        "high": 21,
+        "low": 1,
+        "open": 3546,
+        "volume": 295678919
+      },
+      "id": 16722,
+      "non_hive": {
+        "close": 780500,
+        "high": 76,
+        "low": 2,
+        "open": 10000,
+        "volume": 913055011
+      },
+      "open": "2016-07-19T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 39624,
+        "high": 2,
+        "low": 1,
+        "open": 95109,
+        "volume": 319437282
+      },
+      "id": 18375,
+      "non_hive": {
+        "close": 113943,
+        "high": 8,
+        "low": 2,
+        "open": 283236,
+        "volume": 957290486
+      },
+      "open": "2016-07-20T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1000,
+        "high": 3,
+        "low": 1,
+        "open": 9,
+        "volume": 675189108
+      },
+      "id": 20101,
+      "non_hive": {
+        "close": 2694,
+        "high": 10,
+        "low": 2,
+        "open": 28,
+        "volume": 1882621722
+      },
+      "open": "2016-07-21T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 6970,
+        "high": 3,
+        "low": 1,
+        "open": 13641,
+        "volume": 739116548
+      },
+      "id": 21765,
+      "non_hive": {
+        "close": 19698,
+        "high": 11,
+        "low": 2,
+        "open": 36745,
+        "volume": 2075810928
+      },
+      "open": "2016-07-22T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 40520,
+        "high": 1,
+        "low": 1,
+        "open": 2834,
+        "volume": 936388404
+      },
+      "id": 23208,
+      "non_hive": {
+        "close": 137101,
+        "high": 4,
+        "low": 2,
+        "open": 8009,
+        "volume": 2839224482
+      },
+      "open": "2016-07-23T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 2013,
+        "high": 2,
+        "low": 1,
+        "open": 2704,
+        "volume": 725390050
+      },
+      "id": 24639,
+      "non_hive": {
+        "close": 7313,
+        "high": 10,
+        "low": 3,
+        "open": 9150,
+        "volume": 2489143277
+      },
+      "open": "2016-07-24T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1512,
+        "high": 4,
+        "low": 1,
+        "open": 19058,
+        "volume": 1578916695
+      },
+      "id": 26075,
+      "non_hive": {
+        "close": 5244,
+        "high": 18,
+        "low": 3,
+        "open": 69100,
+        "volume": "5670629301"
+      },
+      "open": "2016-07-25T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 86,
+        "high": 2,
+        "low": 10000,
+        "open": 34910,
+        "volume": 639846146
+      },
+      "id": 27279,
+      "non_hive": {
+        "close": 281,
+        "high": 10,
+        "low": 30000,
+        "open": 121071,
+        "volume": 2215485605
+      },
+      "open": "2016-07-26T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 100,
+        "high": 1,
+        "low": 100000,
+        "open": 1827,
+        "volume": 25957986
+      },
+      "id": 28394,
+      "non_hive": {
+        "close": 326,
+        "high": 6,
+        "low": 250000,
+        "open": 5964,
+        "volume": 82360531
+      },
+      "open": "2016-07-27T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 555,
+        "high": 3,
+        "low": 1,
+        "open": 2103,
+        "volume": 16666443
+      },
+      "id": 29927,
+      "non_hive": {
+        "close": 1666,
+        "high": 12,
+        "low": 2,
+        "open": 6842,
+        "volume": 49433794
+      },
+      "open": "2016-07-28T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 57471,
+        "high": 2,
+        "low": 1,
+        "open": 39620,
+        "volume": 37595761
+      },
+      "id": 30822,
+      "non_hive": {
+        "close": 133332,
+        "high": 8,
+        "low": 2,
+        "open": 118861,
+        "volume": 90670715
+      },
+      "open": "2016-07-29T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 348,
+        "high": 5,
+        "low": 1,
+        "open": 10827,
+        "volume": 8442124
+      },
+      "id": 31908,
+      "non_hive": {
+        "close": 1013,
+        "high": 17,
+        "low": 2,
+        "open": 25120,
+        "volume": 21888811
+      },
+      "open": "2016-07-30T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 24642,
+        "high": 3,
+        "low": 1,
+        "open": 53,
+        "volume": 5647139
+      },
+      "id": 32598,
+      "non_hive": {
+        "close": 71675,
+        "high": 11,
+        "low": 2,
+        "open": 156,
+        "volume": 16617843
+      },
+      "open": "2016-07-31T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 56502,
+        "high": 3,
+        "low": 1,
+        "open": 46221,
+        "volume": 10291597
+      },
+      "id": 33214,
+      "non_hive": {
+        "close": 159788,
+        "high": 10,
+        "low": 2,
+        "open": 134481,
+        "volume": 29371173
+      },
+      "open": "2016-08-01T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 4800,
+        "high": 6,
+        "low": 1,
+        "open": 83,
+        "volume": 24795240
+      },
+      "id": 33970,
+      "non_hive": {
+        "close": 11378,
+        "high": 19,
+        "low": 2,
+        "open": 235,
+        "volume": 65236050
+      },
+      "open": "2016-08-02T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1765,
+        "high": 1,
+        "low": 1,
+        "open": 149805,
+        "volume": 11732862
+      },
+      "id": 34845,
+      "non_hive": {
+        "close": 4414,
+        "high": 3,
+        "low": 2,
+        "open": 371516,
+        "volume": 28660731
+      },
+      "open": "2016-08-03T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 22045,
+        "high": 3,
+        "low": 1,
+        "open": 1631,
+        "volume": 23662783
+      },
+      "id": 35596,
+      "non_hive": {
+        "close": 49601,
+        "high": 9,
+        "low": 2,
+        "open": 3935,
+        "volume": 54783225
+      },
+      "open": "2016-08-04T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 81894,
+        "high": 4,
+        "low": 1,
+        "open": 46,
+        "volume": 8258457
+      },
+      "id": 36467,
+      "non_hive": {
+        "close": 187553,
+        "high": 11,
+        "low": 2,
+        "open": 103,
+        "volume": 19016076
+      },
+      "open": "2016-08-05T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 577,
+        "high": 1,
+        "low": 1,
+        "open": 2261,
+        "volume": 12488457
+      },
+      "id": 37101,
+      "non_hive": {
+        "close": 1320,
+        "high": 3,
+        "low": 2,
+        "open": 5200,
+        "volume": 28282259
+      },
+      "open": "2016-08-06T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 98,
+        "high": 1,
+        "low": 1,
+        "open": 2541,
+        "volume": 15585071
+      },
+      "id": 37666,
+      "non_hive": {
+        "close": 230,
+        "high": 3,
+        "low": 2,
+        "open": 5807,
+        "volume": 35505922
+      },
+      "open": "2016-08-07T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 45471,
+        "high": 1,
+        "low": 1,
+        "open": 1474,
+        "volume": 22428227
+      },
+      "id": 38251,
+      "non_hive": {
+        "close": 98674,
+        "high": 3,
+        "low": 2,
+        "open": 3597,
+        "volume": 49419291
+      },
+      "open": "2016-08-08T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 415,
+        "high": 1,
+        "low": 1,
+        "open": 467,
+        "volume": 13863754
+      },
+      "id": 39228,
+      "non_hive": {
+        "close": 792,
+        "high": 3,
+        "low": 1,
+        "open": 1008,
+        "volume": 28915901
+      },
+      "open": "2016-08-09T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 84496,
+        "high": 3,
+        "low": 2,
+        "open": 176,
+        "volume": 4875427
+      },
+      "id": 39909,
+      "non_hive": {
+        "close": 158008,
+        "high": 8,
+        "low": 3,
+        "open": 370,
+        "volume": 9609697
+      },
+      "open": "2016-08-10T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 9838,
+        "high": 18,
+        "low": 1,
+        "open": 112,
+        "volume": 46934318
+      },
+      "id": 40280,
+      "non_hive": {
+        "close": 15250,
+        "high": 37,
+        "low": 1,
+        "open": 211,
+        "volume": 76602065
+      },
+      "open": "2016-08-11T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 2287,
+        "high": 1,
+        "low": 1,
+        "open": 162091,
+        "volume": 26595888
+      },
+      "id": 41249,
+      "non_hive": {
+        "close": 3545,
+        "high": 2,
+        "low": 1,
+        "open": 251242,
+        "volume": 41356980
+      },
+      "open": "2016-08-12T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 55865,
+        "high": 1,
+        "low": 1,
+        "open": 56372,
+        "volume": 14835506
+      },
+      "id": 42062,
+      "non_hive": {
+        "close": 100000,
+        "high": 2,
+        "low": 1,
+        "open": 87376,
+        "volume": 23275275
+      },
+      "open": "2016-08-13T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 6005,
+        "high": 5,
+        "low": 1,
+        "open": 15313,
+        "volume": 3012819
+      },
+      "id": 42653,
+      "non_hive": {
+        "close": 10080,
+        "high": 10,
+        "low": 1,
+        "open": 27412,
+        "volume": 5209523
+      },
+      "open": "2016-08-14T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 6181,
+        "high": 1,
+        "low": 1,
+        "open": 43598,
+        "volume": 5739487
+      },
+      "id": 43263,
+      "non_hive": {
+        "close": 10193,
+        "high": 2,
+        "low": 1,
+        "open": 73000,
+        "volume": 9169057
+      },
+      "open": "2016-08-15T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 59656,
+        "high": 1,
+        "low": 1,
+        "open": 428,
+        "volume": 33004275
+      },
+      "id": 43746,
+      "non_hive": {
+        "close": 84712,
+        "high": 2,
+        "low": 1,
+        "open": 707,
+        "volume": 48400176
+      },
+      "open": "2016-08-16T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 58290,
+        "high": 1,
+        "low": 1,
+        "open": 585003,
+        "volume": 40646155
+      },
+      "id": 44479,
+      "non_hive": {
+        "close": 89768,
+        "high": 2,
+        "low": 1,
+        "open": 830704,
+        "volume": 61130769
+      },
+      "open": "2016-08-17T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 54587,
+        "high": 1,
+        "low": 1,
+        "open": 30000,
+        "volume": 13919200
+      },
+      "id": 45266,
+      "non_hive": {
+        "close": 80788,
+        "high": 3,
+        "low": 1,
+        "open": 46200,
+        "volume": 21329935
+      },
+      "open": "2016-08-18T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 37681,
+        "high": 1,
+        "low": 1,
+        "open": 1562,
+        "volume": 16709235
+      },
+      "id": 46145,
+      "non_hive": {
+        "close": 62062,
+        "high": 2,
+        "low": 1,
+        "open": 2312,
+        "volume": 25167234
+      },
+      "open": "2016-08-19T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 2150,
+        "high": 1,
+        "low": 1,
+        "open": 10118,
+        "volume": 5183006
+      },
+      "id": 46971,
+      "non_hive": {
+        "close": 3440,
+        "high": 2,
+        "low": 1,
+        "open": 16213,
+        "volume": 8274299
+      },
+      "open": "2016-08-20T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 130,
+        "high": 2,
+        "low": 1,
+        "open": 1060,
+        "volume": 4537167
+      },
+      "id": 47573,
+      "non_hive": {
+        "close": 208,
+        "high": 4,
+        "low": 1,
+        "open": 1685,
+        "volume": 7351723
+      },
+      "open": "2016-08-21T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 9872,
+        "high": 1,
+        "low": 1,
+        "open": 53,
+        "volume": 7289980
+      },
+      "id": 48073,
+      "non_hive": {
+        "close": 14813,
+        "high": 2,
+        "low": 1,
+        "open": 87,
+        "volume": 11275567
+      },
+      "open": "2016-08-22T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1542,
+        "high": 78,
+        "low": 1,
+        "open": 1,
+        "volume": 21112703
+      },
+      "id": 48774,
+      "non_hive": {
+        "close": 2100,
+        "high": 121,
+        "low": 1,
+        "open": 1,
+        "volume": 26904265
+      },
+      "open": "2016-08-23T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 10399,
+        "high": 1,
+        "low": 1,
+        "open": 1000,
+        "volume": 27724041
+      },
+      "id": 49439,
+      "non_hive": {
+        "close": 12998,
+        "high": 2,
+        "low": 1,
+        "open": 1288,
+        "volume": 32887083
+      },
+      "open": "2016-08-24T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 40636,
+        "high": 1,
+        "low": 2,
+        "open": 850,
+        "volume": 17063059
+      },
+      "id": 50451,
+      "non_hive": {
+        "close": 43074,
+        "high": 2,
+        "low": 2,
+        "open": 1071,
+        "volume": 18742667
+      },
+      "open": "2016-08-25T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 20000,
+        "high": 1,
+        "low": 10000,
+        "open": 7781,
+        "volume": 42645983
+      },
+      "id": 51094,
+      "non_hive": {
+        "close": 19100,
+        "high": 2,
+        "low": 8900,
+        "open": 8287,
+        "volume": 41181383
+      },
+      "open": "2016-08-26T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 190775,
+        "high": 1,
+        "low": 1572,
+        "open": 500052,
+        "volume": 51321832
+      },
+      "id": 51903,
+      "non_hive": {
+        "close": 182191,
+        "high": 1,
+        "low": 1400,
+        "open": 477550,
+        "volume": 47974216
+      },
+      "open": "2016-08-27T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 2228,
+        "high": 1,
+        "low": 129527,
+        "open": 30000,
+        "volume": 4627575
+      },
+      "id": 52844,
+      "non_hive": {
+        "close": 2000,
+        "high": 1,
+        "low": 111522,
+        "open": 28650,
+        "volume": 4367963
+      },
+      "open": "2016-08-28T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 302,
+        "high": 1,
+        "low": 3,
+        "open": 5000,
+        "volume": 36005030
+      },
+      "id": 53210,
+      "non_hive": {
+        "close": 376,
+        "high": 2,
+        "low": 2,
+        "open": 4396,
+        "volume": 37546287
+      },
+      "open": "2016-08-29T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 2241,
+        "high": 1,
+        "low": 3100,
+        "open": 4501,
+        "volume": 15321535
+      },
+      "id": 54171,
+      "non_hive": {
+        "close": 2677,
+        "high": 2,
+        "low": 2929,
+        "open": 5062,
+        "volume": 16179597
+      },
+      "open": "2016-08-30T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 37,
+        "high": 1,
+        "low": 10,
+        "open": 6232,
+        "volume": 3545447
+      },
+      "id": 54727,
+      "non_hive": {
+        "close": 41,
+        "high": 2,
+        "low": 10,
+        "open": 7230,
+        "volume": 3836196
+      },
+      "open": "2016-08-31T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1281,
+        "high": 1,
+        "low": 177,
+        "open": 8000,
+        "volume": 9363989
+      },
+      "id": 55288,
+      "non_hive": {
+        "close": 1184,
+        "high": 2,
+        "low": 141,
+        "open": 8639,
+        "volume": 8800923
+      },
+      "open": "2016-09-01T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 4920,
+        "high": 149963,
+        "low": 1885,
+        "open": 11511,
+        "volume": 20105800
+      },
+      "id": 55833,
+      "non_hive": {
+        "close": 4832,
+        "high": 162409,
+        "low": 1696,
+        "open": 10814,
+        "volume": 19141955
+      },
+      "open": "2016-09-02T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 18405,
+        "high": 11,
+        "low": 11,
+        "open": 4637,
+        "volume": 3805695
+      },
+      "id": 56581,
+      "non_hive": {
+        "close": 17833,
+        "high": 12,
+        "low": 10,
+        "open": 4329,
+        "volume": 3711306
+      },
+      "open": "2016-09-03T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 329,
+        "high": 10,
+        "low": 6,
+        "open": 1300,
+        "volume": 2086876
+      },
+      "id": 56962,
+      "non_hive": {
+        "close": 328,
+        "high": 11,
+        "low": 5,
+        "open": 1299,
+        "volume": 2034882
+      },
+      "open": "2016-09-04T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 5009,
+        "high": 1,
+        "low": 446306,
+        "open": 7905,
+        "volume": 14358640
+      },
+      "id": 57384,
+      "non_hive": {
+        "close": 4734,
+        "high": 1,
+        "low": 397212,
+        "open": 7892,
+        "volume": 13730864
+      },
+      "open": "2016-09-05T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 19,
+        "high": 3451,
+        "low": 405,
+        "open": 10467,
+        "volume": 4815859
+      },
+      "id": 57958,
+      "non_hive": {
+        "close": 19,
+        "high": 3961,
+        "low": 372,
+        "open": 9839,
+        "volume": 4798741
+      },
+      "open": "2016-09-06T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 1000,
+        "high": 19,
+        "low": 1205,
+        "open": 3044,
+        "volume": 5022646
+      },
+      "id": 58369,
+      "non_hive": {
+        "close": 950,
+        "high": 19,
+        "low": 1073,
+        "open": 3001,
+        "volume": 4658058
+      },
+      "open": "2016-09-07T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 3097,
+        "high": 1,
+        "low": 4000,
+        "open": 500,
+        "volume": 26835532
+      },
+      "id": 58807,
+      "non_hive": {
+        "close": 2508,
+        "high": 1,
+        "low": 2759,
+        "open": 475,
+        "volume": 22106387
+      },
+      "open": "2016-09-08T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 31647,
+        "high": 1,
+        "low": 15,
+        "open": 1358,
+        "volume": 8228907
+      },
+      "id": 59508,
+      "non_hive": {
+        "close": 25981,
+        "high": 1,
+        "low": 9,
+        "open": 1212,
+        "volume": 6085088
+      },
+      "open": "2016-09-09T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 7767,
+        "high": 1,
+        "low": 5320,
+        "open": 9459,
+        "volume": 3313138
+      },
+      "id": 60114,
+      "non_hive": {
+        "close": 6835,
+        "high": 1,
+        "low": 4315,
+        "open": 7842,
+        "volume": 2844868
+      },
+      "open": "2016-09-10T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 41,
+        "high": 1,
+        "low": 41,
+        "open": 1946,
+        "volume": 3099687
+      },
+      "id": 60681,
+      "non_hive": {
+        "close": 33,
+        "high": 1,
+        "low": 33,
+        "open": 1712,
+        "volume": 2734079
+      },
+      "open": "2016-09-11T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 56430,
+        "high": 1,
+        "low": 288645,
+        "open": 9808,
+        "volume": 36811007
+      },
+      "id": 61262,
+      "non_hive": {
+        "close": 42323,
+        "high": 1,
+        "low": 144322,
+        "open": 8016,
+        "volume": 25460353
+      },
+      "open": "2016-09-12T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 693,
+        "high": 1,
+        "low": 11912,
+        "open": 1400,
+        "volume": 34497248
+      },
+      "id": 62088,
+      "non_hive": {
+        "close": 451,
+        "high": 1,
+        "low": 7580,
+        "open": 1050,
+        "volume": 22969179
+      },
+      "open": "2016-09-13T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 7004,
+        "high": 1,
+        "low": 1962,
+        "open": 14895,
+        "volume": 22214479
+      },
+      "id": 62828,
+      "non_hive": {
+        "close": 4202,
+        "high": 1,
+        "low": 1177,
+        "open": 9681,
+        "volume": 14023235
+      },
+      "open": "2016-09-14T00:00:00",
+      "seconds": 86400
+    },
+    {
+      "hive": {
+        "close": 99862,
+        "high": 1,
+        "low": 115104,
+        "open": 12649,
+        "volume": 9027336
+      },
+      "id": 63427,
+      "non_hive": {
+        "close": 62127,
+        "high": 1,
+        "low": 58128,
+        "open": 8563,
+        "volume": 5647548
+      },
+      "open": "2016-09-15T00:00:00",
+      "seconds": 86400
+    }
+  ]
+}

@@ -1,16 +1,18 @@
 #include <hive/plugins/condenser_api/condenser_api.hpp>
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 
+#include <hive/plugins/json_rpc/utility.hpp>
+
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/block_api/block_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
 #include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
-#include <hive/plugins/tags_api/tags_api_plugin.hpp>
-#include <hive/plugins/follow_api/follow_api_plugin.hpp>
 #include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
 
+#include <hive/protocol/misc_utilities.hpp>
 
 #include <hive/utilities/git_revision.hpp>
 
@@ -30,17 +32,6 @@
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 
-#define LOG_DELAY(start_time, log_threshold, msg, e) \
-  { fc::time_point current_time = fc::time_point::now(); \
-    fc::microseconds delay = current_time - start_time; \
-    if (delay > log_threshold) { \
-      double delay_seconds = double(int64_t(delay.count() / 1000)) / 1000.0; \
-      std::ostringstream os; \
-      os << std::fixed << std::setprecision(3) << delay_seconds; \
-      ulog(msg ": ${delay_seconds} s",("delay_seconds",os.str())e); \
-      } \
-  }
-
 namespace hive { namespace plugins { namespace condenser_api {
 
 namespace detail
@@ -49,13 +40,21 @@ namespace detail
 
   class condenser_api_impl
   {
+    private:
+
+      using legacy_substitutes_type = std::map<std::string, fc::variant>;
+      const legacy_substitutes_type legacy_substitutes;
+
+      legacy_substitutes_type create_legacy_substitutes();
+
     public:
       condenser_api_impl() :
+        legacy_substitutes( create_legacy_substitutes() ),
         _chain( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() ),
         _db( _chain.db() )
       {
         _on_post_apply_block_conn = _db.add_post_apply_block_handler(
-          [&]( const block_notification& note ){ on_post_apply_block( note.block ); },
+          [&]( const block_notification& note ){ on_post_apply_block( note ); },
           appbase::app().get_plugin< hive::plugins::condenser_api::condenser_api_plugin >(),
           0 );
       }
@@ -128,7 +127,6 @@ namespace detail
         (get_account_history)
         (broadcast_transaction)
         (broadcast_transaction_synchronous)
-        (broadcast_block)
         (get_followers)
         (get_following)
         (get_follow_count)
@@ -151,9 +149,12 @@ namespace detail
         (find_proposals)
         (list_proposal_votes)
         (find_recurrent_transfers)
+        (find_rc_accounts)
+        (list_rc_accounts)
+        (list_rc_direct_delegations)
       )
 
-      void on_post_apply_block( const signed_block& b );
+      void on_post_apply_block( const block_notification& note );
 
       hive::plugins::chain::chain_plugin&                              _chain;
 
@@ -165,16 +166,37 @@ namespace detail
       std::shared_ptr< account_by_key::account_by_key_api >             _account_by_key_api;
       std::shared_ptr< network_broadcast_api::network_broadcast_api >   _network_broadcast_api;
       p2p::p2p_plugin*                                                  _p2p = nullptr;
-      std::shared_ptr< tags::tags_api >                                 _tags_api;
-      std::shared_ptr< follow::follow_api >                             _follow_api;
       std::shared_ptr< reputation::reputation_api >                     _reputation_api;
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
+      std::shared_ptr< rc::rc_api >                                     _rc_api;
       map< transaction_id_type, confirmation_callback >                 _callbacks;
       map< time_point_sec, vector< transaction_id_type > >              _callback_expirations;
       boost::signals2::connection                                       _on_post_apply_block_conn;
 
       boost::mutex                                                      _mtx;
   };
+
+  condenser_api_impl::legacy_substitutes_type condenser_api_impl::create_legacy_substitutes()
+  {
+    using _asset_type = hive::protocol::serializer_wrapper<hive::protocol::asset>;
+
+    legacy_substitutes_type _result
+    {
+      {"VESTS_SYMBOL",             fc::variant{ legacy_asset::from_asset( asset(0, VESTS_SYMBOL) ).asset_num_to_string() } },
+      {"HIVE_SYMBOL",              fc::variant{ legacy_asset::from_asset( asset(0, HIVE_SYMBOL) ).asset_num_to_string() } },
+      {"HBD_SYMBOL",               fc::variant{ legacy_asset::from_asset( asset(0, HBD_SYMBOL) ).asset_num_to_string() } },
+      {"HIVE_MINING_REWARD",        fc::variant{ _asset_type{ HIVE_MINING_REWARD,         transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_LIQUIDITY_REWARD", fc::variant{ _asset_type{ HIVE_MIN_LIQUIDITY_REWARD,  transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_CONTENT_REWARD",   fc::variant{ _asset_type{ HIVE_MIN_CONTENT_REWARD,    transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_CURATE_REWARD",    fc::variant{ _asset_type{ HIVE_MIN_CURATE_REWARD,     transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_PRODUCER_REWARD",  fc::variant{ _asset_type{ HIVE_MIN_PRODUCER_REWARD,   transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_POW_REWARD",       fc::variant{ _asset_type{ HIVE_MIN_POW_REWARD,        transaction_serialization_type::legacy } } },
+      {"HIVE_ACTIVE_CHALLENGE_FEE", fc::variant{ _asset_type{ HIVE_ACTIVE_CHALLENGE_FEE,  transaction_serialization_type::legacy } } },
+      {"HIVE_OWNER_CHALLENGE_FEE",  fc::variant{ _asset_type{ HIVE_OWNER_CHALLENGE_FEE,   transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_PAYOUT_HBD",       fc::variant{ _asset_type{ HIVE_MIN_PAYOUT_HBD,        transaction_serialization_type::legacy } } }
+    };
+    return _result;
+  }
 
   DEFINE_API_IMPL( condenser_api_impl, get_version )
   {
@@ -184,22 +206,12 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_trending_tags )
   {
-    CHECK_ARG_SIZE( 2 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    auto tags = _tags_api->get_trending_tags( { args[0].as< string >(), args[1].as< uint32_t >() } ).tags;
-    vector< api_tag_object > result;
-    result.reserve( tags.size() );
-    for( const auto& t : tags )
-    {
-      result.push_back( api_tag_object( t ) );
-    }
-
-    return result;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, get_state ){
-      FC_ASSERT( false, "Supported by hivemind" );
+  DEFINE_API_IMPL( condenser_api_impl, get_state )
+  {
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_active_witnesses )
@@ -212,7 +224,13 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _block_api, "block_api_plugin not enabled." );
-    return _block_api->get_block_header( { args[0].as< uint32_t >() } ).header;
+    get_block_header_return result;
+    auto _header = _block_api->get_block_header( { args[0].as< uint32_t >() } ).header;
+
+    if( _header )
+      result = hive::protocol::serializer_wrapper<block_header>{ *_header, transaction_serialization_type::legacy };
+
+    return result;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_block )
@@ -223,17 +241,7 @@ namespace detail
     auto b = _block_api->get_block( { args[0].as< uint32_t >() } ).block;
 
     if( b )
-    {
-      result = legacy_signed_block( *b );
-      uint32_t n = uint32_t( b->transactions.size() );
-      uint32_t block_num = block_header::num_from_id( b->block_id );
-      for( uint32_t i=0; i<n; i++ )
-      {
-        result->transactions[i].transaction_id = b->transactions[i].id();
-        result->transactions[i].block_num = block_num;
-        result->transactions[i].transaction_num = i;
-      }
-    }
+      result = hive::protocol::serializer_wrapper<legacy_signed_block>{ legacy_signed_block( *b ), transaction_serialization_type::legacy };
 
     return result;
   }
@@ -246,15 +254,10 @@ namespace detail
     auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), args[1].as< bool >() } ).ops;
     get_ops_in_block_return result;
 
-    legacy_operation l_op;
-    legacy_operation_conversion_visitor visitor( l_op );
-
     for( auto& op_obj : ops )
     {
-      if( op_obj.op.visit( visitor) )
-      {
-        result.push_back( api_operation_object( op_obj, visitor.l_op ) );
-      }
+      result.push_back( hive::protocol::serializer_wrapper<api_operation_object>{ api_operation_object( op_obj, op_obj.op ), transaction_serialization_type::legacy } );
+      result.back().value.op_in_trx = op_obj.op_in_trx;
     }
 
     return result;
@@ -263,7 +266,15 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_config )
   {
     CHECK_ARG_SIZE( 0 )
-    return _database_api->get_config( {} );
+
+    auto _result = _database_api->get_config( {} );
+
+    for( auto& item : legacy_substitutes )
+    {
+      _result.set( item.first, item.second );
+    }
+
+    return _result;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_dynamic_global_properties )
@@ -328,7 +339,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_key_references )
   {
     CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _account_by_key_api, "account_history_api_plugin not enabled." );
+    FC_ASSERT( _account_by_key_api, "account_by_key_api_plugin not enabled." );
 
     return _account_by_key_api->get_key_references( { args[0].as< vector< public_key_type > >() } ).accounts;
   }
@@ -353,7 +364,7 @@ namespace detail
       if ( itr != idx.end() )
       {
         results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, delayed_votes_active ) ) );
-        
+
         if(_reputation_api)
         {
           results.back().reputation = _reputation_api->get_account_reputations({ itr->name, 1 }).reputations[0].reputation;
@@ -383,7 +394,7 @@ namespace detail
     bool delayed_votes_active = true;
     if( args.size() == 2 )
       delayed_votes_active = args[1].as< bool >();
-    
+
     vector< optional< api_account_object > > result;
     result.reserve( account_names.size() );
 
@@ -471,18 +482,18 @@ namespace detail
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
 
     auto account = args[0].as< string >();
-    auto destination = args.size() == 2 ? args[1].as< withdraw_route_type >() : outgoing;
+    auto destination = args.size() == 2 ? args[1].as< database_api::withdraw_route_type >() : database_api::withdraw_route_type::outgoing;
 
     get_withdraw_routes_return result;
 
-    if( destination == outgoing || destination == all )
+    if( destination == database_api::withdraw_route_type::outgoing || destination == database_api::withdraw_route_type::all )
     {
       auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_withdraw_route } ).routes;
       for( auto& route : routes )
         result.emplace_back( route );
     }
 
-    if( destination == incoming || destination == all )
+    if( destination == database_api::withdraw_route_type::incoming || destination == database_api::withdraw_route_type::all )
     {
       auto routes = _database_api->find_withdraw_vesting_routes( { account, database_api::by_destination } ).routes;
       for( auto& route : routes )
@@ -739,7 +750,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    return legacy_signed_transaction( _account_history_api->get_transaction( { args[0].as< transaction_id_type >() } ) );
+    return hive::protocol::serializer_wrapper<annotated_signed_transaction>{ _account_history_api->get_transaction( { args[0].as< string >() } ), transaction_serialization_type::legacy };
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_required_signatures )
@@ -772,30 +783,21 @@ namespace detail
   {
     CHECK_ARG_SIZE( 2 )
 
-    vector< tags::vote_state > votes;
+    vector< vote_state > votes;
     const auto& comment = _db.get_comment( args[0].as< account_name_type >(), args[1].as< string >() );
     const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
     chain::comment_id_type cid( comment.get_id() );
     auto itr = idx.lower_bound( cid );
 
-    while( itr != idx.end() && itr->comment == cid )
+    while( itr != idx.end() && itr->get_comment() == cid )
     {
-      const auto& vo = _db.get( itr->voter );
-      tags::vote_state vstate;
+      const auto& vo = _db.get( itr->get_voter() );
+      vote_state vstate;
       vstate.voter = vo.name;
-      vstate.weight = itr->weight;
-      vstate.rshares = itr->rshares;
-      vstate.percent = itr->vote_percent;
-      vstate.time = itr->last_update;
-
-      if( _follow_api )
-      {
-        auto reps = _follow_api->get_account_reputations( follow::get_account_reputations_args( { vo.name, 1 } ) ).reputations;
-        if( reps.size() )
-        {
-          vstate.reputation = reps[0].reputation;
-        }
-      }
+      vstate.weight = itr->get_weight();
+      vstate.rshares = itr->get_rshares();
+      vstate.percent = itr->get_vote_percent();
+      vstate.time = itr->get_last_update();
 
       votes.push_back( vstate );
       ++itr;
@@ -806,25 +808,22 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_votes )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_content )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_content_replies )
   {
-      FC_ASSERT( false, "Supported by hivemind" );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_tags_used_by_author )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _tags_api, "tags_api_plugin not enabled." );
-
-    return _tags_api->get_tags_used_by_author( { args[0].as< account_name_type >() } ).tags;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_post_discussions_by_payout )
@@ -919,15 +918,11 @@ namespace detail
       include_reversible, operation_filter_low, operation_filter_high } ).history;
     get_account_history_return result;
 
-    legacy_operation l_op;
-    legacy_operation_conversion_visitor visitor( l_op );
-
     for( auto& entry : history )
     {
-      if( entry.second.op.visit( visitor ) )
-      {
-        result.emplace( entry.first, api_operation_object( entry.second, visitor.l_op ) );
-      }
+      api_operation_object obj( entry.second, entry.second.op );
+      obj.op_in_trx = entry.second.op_in_trx;
+      result.emplace( entry.first, hive::protocol::serializer_wrapper<api_operation_object>{ obj, transaction_serialization_type::legacy } );
     }
 
     return result;
@@ -948,100 +943,90 @@ namespace detail
 
     fc::time_point api_start_time = fc::time_point::now();
     signed_transaction trx = args[0].as< legacy_signed_transaction >();
-    auto txid = trx.id();
     boost::promise< broadcast_transaction_synchronous_return > p;
+    fc::time_point callback_setup_time;
+    full_transaction_ptr full_transaction;
 
+    auto set_remove_callback = [&]( bool fail )
     {
-      boost::lock_guard< boost::mutex > guard( _mtx );
-      FC_ASSERT( _callbacks.find( txid ) == _callbacks.end(), "Transaction is a duplicate" );
-      _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
-      {
-        p.set_value( r );
-      };
-      _callback_expirations[ trx.expiration ].push_back( txid );
-    }
+      //(possible?) case when determine_encoding_and_accept_transaction throws before filling result
+      if( !full_transaction )
+        return;
 
-    LOG_DELAY(api_start_time, fc::seconds(1), "Excessive delay to setup callback",);
-    fc::time_point callback_setup_time = fc::time_point::now();
+      const auto& txid = full_transaction->get_transaction_id();
+      boost::lock_guard< boost::mutex > guard( _mtx );
+      auto c_itr = _callbacks.find( txid );
+
+      if( fail ) //remove callback
+      {
+        // The callback may have been cleared in the meantime, so we need to check for existence.
+        if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
+        // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
+        full_transaction.reset();
+      }
+      else //setup callback
+      {
+        FC_ASSERT( c_itr == _callbacks.end(), "Transaction is a duplicate" );
+        _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
+        {
+          p.set_value( r );
+        };
+        _callback_expirations[ trx.expiration ].push_back( txid );
+        LOG_DELAY( api_start_time, fc::seconds( 1 ), "Excessive delay to setup callback" );
+        if( callback_setup_time != fc::time_point() )
+          callback_setup_time = fc::time_point::now();
+      }
+    };
 
     try
     {
       /* It may look strange to call these without the lock and then lock again in the case of an exception,
-        * but it is correct and avoids deadlock. accept_transaction is trained along with all other writes, including
-        * pushing blocks. Pushing blocks do not originate from this code path and will never have this lock.
-        * However, it will trigger the on_post_apply_block callback and then attempt to acquire the lock. In this case,
-        * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
-        * thread for the lock.
-        */
-      _chain.accept_transaction( trx );
-      _p2p->broadcast_transaction( trx );
+       * but it is correct and avoids deadlock. accept_transaction is trained along with all other writes, including
+       * pushing blocks. Pushing blocks do not originate from this code path and will never have this lock.
+       * However, it will trigger the on_post_apply_block callback and then attempt to acquire the lock. In this case,
+       * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
+       * thread for the lock.
+       */
+      _chain.determine_encoding_and_accept_transaction( full_transaction, trx, set_remove_callback );
+      _p2p->broadcast_transaction(full_transaction);
     }
     catch( fc::exception& e )
     {
-      LOG_DELAY(callback_setup_time, fc::seconds(1), "Exccesive delay to validate & broadcast trx ${e}", (e) );
-
-      boost::lock_guard< boost::mutex > guard( _mtx );
-      // The callback may have been cleared in the meantine, so we need to check for existence.
-      auto c_itr = _callbacks.find( txid );
-      if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-      // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
-      throw e;
+      LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx ${e}", (e) );
+      set_remove_callback( true );
+      throw;
     }
     catch( ... )
     {
-      LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx",);
-
-      boost::lock_guard< boost::mutex > guard( _mtx );
-      // The callback may have been cleared in the meantine, so we need to check for existence.
-      auto c_itr = _callbacks.find( txid );
-      if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
+      LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
+      set_remove_callback( true );
       throw fc::unhandled_exception(
         FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
         std::current_exception() );
     }
 
-    LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx",);
+    LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
     return p.get_future().get();
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, broadcast_block )
-  {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-
-    return _network_broadcast_api->broadcast_block( { signed_block( args[0].as< legacy_signed_block >() ) } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_followers )
   {
-    CHECK_ARG_SIZE( 4 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_followers( { args[0].as< account_name_type >(), args[1].as< account_name_type >(), args[2].as< follow::follow_type >(), args[3].as< uint32_t >() } ).followers;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_following )
   {
-    CHECK_ARG_SIZE( 4 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_following( { args[0].as< account_name_type >(), args[1].as< account_name_type >(), args[2].as< follow::follow_type >(), args[3].as< uint32_t >() } ).following;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_follow_count )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_follow_count( { args[0].as< account_name_type >() } );
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_feed_entries )
   {
-    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_feed_entries( { args[0].as< account_name_type >(), args[1].as< uint32_t >(), args.size() == 3 ? args[2].as< uint32_t >() : 500 } ).feed;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_feed )
@@ -1051,10 +1036,7 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog_entries )
   {
-    FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_blog_entries( { args[0].as< account_name_type >(), args[1].as< uint32_t >(), args.size() == 3 ? args[2].as< uint32_t >() : 500 } ).blog;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog )
@@ -1065,32 +1047,19 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_account_reputations )
   {
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
-    FC_ASSERT( _follow_api || _reputation_api, "Neither follow_api_plugin nor reputation_api_plugin are enabled. One of these must be running." );
+    FC_ASSERT( _reputation_api, "reputation_api_plugin not enabled." );
 
-    if( _follow_api )
-    {
-      return _follow_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
-    }
-    else
-    {
-      return _reputation_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
-    }
+    return _reputation_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_reblogged_by )
   {
-    CHECK_ARG_SIZE( 2 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_reblogged_by( { args[0].as< account_name_type >(), args[1].as< string >() } ).accounts;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_blog_authors )
   {
-    CHECK_ARG_SIZE( 1 )
-    FC_ASSERT( _follow_api, "follow_api_plugin not enabled." );
-
-    return _follow_api->get_blog_authors( { args[0].as< account_name_type >() } ).blog_authors;
+    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_ticker )
@@ -1193,7 +1162,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    const auto& proposals = _database_api->find_proposals( { args[0].as< vector< hive::plugins::database_api::api_id_type > >() } ).proposals;
+    const auto& proposals = _database_api->find_proposals( { args[0].as< vector< int64_t > >() } ).proposals;
     find_proposals_return result;
 
     for( const auto& p : proposals ) result.emplace_back( api_proposal_object( p ) );
@@ -1214,7 +1183,13 @@ namespace detail
     list_args.status          = args.size() > 4 ?
       args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
 
-    return _database_api->list_proposal_votes( list_args ).proposal_votes;
+    auto _proposal_votes = _database_api->list_proposal_votes( list_args ).proposal_votes;
+    list_proposal_votes_return _result;
+
+    for( auto& vote : _proposal_votes )
+      _result.emplace_back( hive::protocol::serializer_wrapper<database_api::api_proposal_vote_object>{ vote, transaction_serialization_type::legacy } );
+
+    return _result;
   }
 
 
@@ -1222,33 +1197,43 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    return _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
+    auto _recurrent_transfers = _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
+    find_recurrent_transfers_return _result;
+
+    for( auto& recurrent_transfer : _recurrent_transfers )
+      _result.emplace_back( hive::protocol::serializer_wrapper<database_api::api_recurrent_transfer_object>{ recurrent_transfer, transaction_serialization_type::legacy } );
+
+    return _result;
   }
 
-  void condenser_api_impl::on_post_apply_block( const signed_block& b )
+  void condenser_api_impl::on_post_apply_block( const block_notification& note )
   { try {
     boost::lock_guard< boost::mutex > guard( _mtx );
-    int32_t block_num = int32_t(b.block_num());
+    int32_t block_num = int32_t(note.block_num);
     if( _callbacks.size() )
     {
-      for( size_t trx_num = 0; trx_num < b.transactions.size(); ++trx_num )
+      size_t trx_num = 0;
+      for( const auto& trx : note.full_block->get_full_transactions() )
       {
-        const auto& trx = b.transactions[trx_num];
-        auto id = trx.id();
+        const auto& id = trx->get_transaction_id();
         auto itr = _callbacks.find( id );
-        if( itr == _callbacks.end() ) continue;
-        itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), false ) );
-        _callbacks.erase( itr );
+        if( itr != _callbacks.end() )
+        {
+          itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), false ) );
+          _callbacks.erase( itr );
+        }
+        ++trx_num;
       }
     }
 
     /// clear all expirations
+    auto block_ts = note.get_block_timestamp();
     while( true )
     {
       auto exp_it = _callback_expirations.begin();
       if( exp_it == _callback_expirations.end() )
         break;
-      if( exp_it->first >= b.timestamp )
+      if( exp_it->first >= block_ts )
         break;
       for( const transaction_id_type& txid : exp_it->second )
       {
@@ -1266,6 +1251,33 @@ namespace detail
       _callback_expirations.erase( exp_it );
     }
   } FC_LOG_AND_RETHROW() }
+
+  DEFINE_API_IMPL( condenser_api_impl, find_rc_accounts )
+  {
+    CHECK_ARG_SIZE( 1 )
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    return _rc_api->find_rc_accounts( { args[0].as< vector< account_name_type > >() } ).rc_accounts;
+  }
+
+  DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
+  {
+    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    rc::list_rc_accounts_args a;
+    a.start = args[0].as< account_name_type >();
+    a.limit = args[1].as< uint32_t >();
+    return _rc_api->list_rc_accounts( a ).rc_accounts;
+  }
+
+  DEFINE_API_IMPL( condenser_api_impl, list_rc_direct_delegations )
+  {
+    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
+    rc::list_rc_direct_delegations_args a;
+    a.start = args[0].as< vector< fc::variant > >();
+    a.limit = args[1].as< uint32_t >();
+    return _rc_api->list_rc_direct_delegations( a ).rc_direct_delegations;
+  }
 
 } // detail
 
@@ -1350,18 +1362,6 @@ void condenser_api::api_startup()
     my->_p2p = p2p;
   }
 
-  auto tags = appbase::app().find_plugin< tags::tags_api_plugin >();
-  if( tags != nullptr )
-  {
-    my->_tags_api = tags->api;
-  }
-
-  auto follow = appbase::app().find_plugin< follow::follow_api_plugin >();
-  if( follow != nullptr )
-  {
-    my->_follow_api = follow->api;
-  }
-
   auto reputation = appbase::app().find_plugin< reputation::reputation_api_plugin >();
   if( reputation != nullptr )
   {
@@ -1373,6 +1373,12 @@ void condenser_api::api_startup()
   {
     my->_market_history_api = market_history->api;
   }
+
+  auto rc = appbase::app().find_plugin< rc::rc_api_plugin >();
+  if( rc != nullptr )
+  {
+    my->_rc_api = rc->api;
+  }
 }
 
 DEFINE_LOCKLESS_APIS( condenser_api,
@@ -1381,7 +1387,6 @@ DEFINE_LOCKLESS_APIS( condenser_api,
   (get_account_references)
   (broadcast_transaction)
   (broadcast_transaction_synchronous)
-  (broadcast_block)
   (get_market_history_buckets)
   (get_ops_in_block)
   (get_account_history)
@@ -1469,6 +1474,9 @@ DEFINE_READ_APIS( condenser_api,
   (list_proposal_votes)
   (find_proposals)
   (find_recurrent_transfers)
+  (find_rc_accounts)
+  (list_rc_accounts)
+  (list_rc_direct_delegations)
 )
 
 } } } // hive::plugins::condenser_api

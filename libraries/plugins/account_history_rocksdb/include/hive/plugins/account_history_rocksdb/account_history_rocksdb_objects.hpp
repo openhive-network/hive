@@ -1,6 +1,9 @@
 #pragma once
 
+#include <hive/chain/buffer_type.hpp>
 #include <hive/chain/hive_object_types.hpp>
+
+#include <hive/protocol/types.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
 
@@ -26,14 +29,15 @@ class volatile_operation_object : public object< volatile_operation_object_type,
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_operation_object, (serialized_op)(impacted) )
 
-    chain::transaction_id_type trx_id;
-    uint32_t                   block = 0;
-    uint32_t                   trx_in_block = 0;
-    uint32_t                   op_in_trx = 0;
-    uint32_t                   virtual_op = 0;
-    time_point_sec             timestamp;
-    chain::buffer_type         serialized_op;
+    protocol::transaction_id_type            trx_id;
+    uint32_t                                 block = 0;
+    uint32_t                                 trx_in_block = 0;
+    uint32_t                                 op_in_trx = 0;
+    time_point_sec                           timestamp;
+    buffer_type                              serialized_op;
     chainbase::t_vector< account_name_type > impacted;
+    bool                                     is_virtual = false;
+    uint8_t                                  transaction_status = 0;
 };
 
 typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
@@ -52,21 +56,21 @@ class rocksdb_operation_object
       block( o.block ),
       trx_in_block( o.trx_in_block ),
       op_in_trx( o.op_in_trx ),
-      virtual_op( o.virtual_op ),
-      timestamp( o.timestamp )
+      timestamp( o.timestamp ),
+      is_virtual(o.is_virtual)
     {
       serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
     }
 
-    int64_t                    id = 0;
+    uint64_t                      id = 0;
 
-    chain::transaction_id_type trx_id;
-    uint32_t                   block = 0;
-    uint32_t                   trx_in_block = 0;
-    uint16_t                   op_in_trx = 0;
-    uint16_t                   virtual_op = 0;
-    time_point_sec             timestamp;
-    serialize_buffer_t         serialized_op;
+    protocol::transaction_id_type trx_id;
+    uint32_t                      block = 0;
+    uint32_t                      trx_in_block = 0;
+    uint32_t                      op_in_trx = 0;
+    time_point_sec                timestamp;
+    serialize_buffer_t            serialized_op;
+    bool                          is_virtual = false;
 };
 
 struct by_block;
@@ -88,7 +92,7 @@ typedef multi_index_container<
 
 } } } // hive::plugins::account_history_rocksdb
 
-FC_REFLECT( hive::plugins::account_history_rocksdb::volatile_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op)(impacted) )
+FC_REFLECT( hive::plugins::account_history_rocksdb::volatile_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op)(impacted)(transaction_status) )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::account_history_rocksdb::volatile_operation_object, hive::plugins::account_history_rocksdb::volatile_operation_index )
 
-FC_REFLECT( hive::plugins::account_history_rocksdb::rocksdb_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
+FC_REFLECT( hive::plugins::account_history_rocksdb::rocksdb_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op) )

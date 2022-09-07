@@ -33,7 +33,7 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/hive_objects.hpp>
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
@@ -140,15 +140,17 @@ BOOST_AUTO_TEST_CASE( valid_name_test )
 BOOST_AUTO_TEST_CASE( merkle_root )
 {
   signed_block block;
-  vector<signed_transaction> tx;
+  vector<full_transaction_ptr> tx;
+  vector<full_transaction_ptr> tx2;
   vector<digest_type> t;
   const uint32_t num_tx = 10;
 
   for( uint32_t i=0; i<num_tx; i++ )
   {
-    tx.emplace_back();
-    tx.back().ref_block_prefix = i;
-    t.push_back( tx.back().merkle_digest() );
+    signed_transaction _tx;
+    _tx.ref_block_prefix = i;
+    tx.emplace_back( hive::chain::full_transaction_type::create_from_signed_transaction( _tx, hive::protocol::pack_type::legacy, false /* cache this transaction */) );
+    t.push_back( tx.back()->get_merkle_digest() );
   }
 
   auto c = []( const digest_type& digest ) -> checksum_type
@@ -157,10 +159,10 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   auto d = []( const digest_type& left, const digest_type& right ) -> digest_type
   {   return digest_type::hash( std::make_pair( left, right ) );   };
 
-  BOOST_CHECK( block.calculate_merkle_root() == checksum_type() );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == checksum_type() );
 
-  block.transactions.push_back( tx[0] );
-  BOOST_CHECK( block.calculate_merkle_root() ==
+  tx2.push_back( tx[0] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) ==
     c(t[0])
     );
 
@@ -176,8 +178,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
 
   dA = d(t[0], t[1]);
 
-  block.transactions.push_back( tx[1] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dA) );
+  tx2.push_back( tx[1] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dA) );
 
   /*************************
     *                       *
@@ -192,8 +194,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dB = t[2];
   dI = d(dA, dB);
 
-  block.transactions.push_back( tx[2] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dI) );
+  tx2.push_back( tx[2] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dI) );
 
   /***************************
     *                         *
@@ -209,8 +211,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dB = d(t[2], t[3]);
   dI = d(dA, dB);
 
-  block.transactions.push_back( tx[3] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dI) );
+  tx2.push_back( tx[3] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dI) );
 
   /***************************************
     *                                     *
@@ -228,8 +230,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = dC;
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[4] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[4] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /**************************************
     *                                    *
@@ -247,8 +249,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = dC;
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[5] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[5] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /***********************************************
     *                                             *
@@ -266,8 +268,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = d(dC, dD);
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[6] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[6] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /*************************************************
     *                                               *
@@ -285,8 +287,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dJ = d(dC, dD);
   dM = d(dI, dJ);
 
-  block.transactions.push_back( tx[7] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dM) );
+  tx2.push_back( tx[7] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dM) );
 
   /************************************************************************
     *                                                                      *
@@ -307,8 +309,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dN = dK;
   dO = d(dM, dN);
 
-  block.transactions.push_back( tx[8] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
+  tx2.push_back( tx[8] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dO) );
 
   /************************************************************************
     *                                                                      *
@@ -329,8 +331,8 @@ BOOST_AUTO_TEST_CASE( merkle_root )
   dN = dK;
   dO = d(dM, dN);
 
-  block.transactions.push_back( tx[9] );
-  BOOST_CHECK( block.calculate_merkle_root() == c(dO) );
+  tx2.push_back( tx[9] );
+  BOOST_CHECK( full_block_type::compute_merkle_root( tx2 ) == c(dO) );
 }
 
 BOOST_AUTO_TEST_CASE( adjust_balance_test )
@@ -458,53 +460,94 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   */
 
   //top RAM gluttons
-  BOOST_CHECK_EQUAL( sizeof( comment_object ), 36u ); //85M+ growing fast
+  BOOST_CHECK_EQUAL( sizeof( comment_object ), 32u ); //85M+ growing fast
+  BOOST_CHECK_EQUAL( sizeof( comment_index::MULTIINDEX_NODE_TYPE ), 96u );
 
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( sizeof( account_object ), 424u ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 616u );
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
+  BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 136u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
+  BOOST_CHECK_EQUAL( sizeof( account_authority_index::MULTIINDEX_NODE_TYPE ), 312u );
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
+  BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( witness_object ), 352u ); //small but potentially as many as account_object
+  BOOST_CHECK_EQUAL( sizeof( witness_index::MULTIINDEX_NODE_TYPE ), 544u );
 
   //lasting objects (operation to create and remove, but with potential to grow)
-  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 64u ); //1M+ (potential of account_object squared !!!)
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 24u ); //1M+ (potential of account_object squared !!!)
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_index::MULTIINDEX_NODE_TYPE ), 88u );
   BOOST_CHECK_EQUAL( sizeof( withdraw_vesting_route_object ), 48u ); //45k (potential of 10*account_object)
+  BOOST_CHECK_EQUAL( sizeof( withdraw_vesting_route_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( witness_vote_object ), 40u ); //450k (potential of 30*account_object)
+  BOOST_CHECK_EQUAL( sizeof( witness_vote_index::MULTIINDEX_NODE_TYPE ), 136u );
 
   //buffered objects (operation to create, op/vop to remove after certain time)
-  BOOST_CHECK_EQUAL( sizeof( transaction_object ), 64u ); //at most <1h> of transactions
-  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 48u ); //at most <5d> of undelegates
+  BOOST_CHECK_EQUAL( sizeof( transaction_object ), 28u ); //at most <1h> of transactions
+  BOOST_CHECK_EQUAL( sizeof( transaction_index::MULTIINDEX_NODE_TYPE ), 128u );
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_object ), 24u ); //at most <5d> of undelegates
+  BOOST_CHECK_EQUAL( sizeof( vesting_delegation_expiration_index::MULTIINDEX_NODE_TYPE ), 120u );
   BOOST_CHECK_EQUAL( sizeof( owner_authority_history_object ), 104u ); //at most <30d> of ownership updates
+  BOOST_CHECK_EQUAL( sizeof( owner_authority_history_index::MULTIINDEX_NODE_TYPE ), 168u );
   BOOST_CHECK_EQUAL( sizeof( account_recovery_request_object ), 96u ); //at most <1d> of account recoveries
+  BOOST_CHECK_EQUAL( sizeof( account_recovery_request_index::MULTIINDEX_NODE_TYPE ), 192u );
   BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 40u ); //at most <30d> of recovery account changes
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 200u //at most <7d> of unpaid comments (all comments prior to HF19)
+  BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_index::MULTIINDEX_NODE_TYPE ), 136u );
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 128u //at most <7d> of unpaid comments (all comments prior to HF19)
 #ifdef HIVE_ENABLE_SMT
     + 32
 #endif
-  ); 
+  );
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_index::MULTIINDEX_NODE_TYPE ), 192u
+#ifdef HIVE_ENABLE_SMT
+    + 32
+#endif
+  );
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_ex_object ), 64u ); //all comments up to HF19, later not used
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_ex_index::MULTIINDEX_NODE_TYPE ), 128u );
   BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 48u ); //at most <7d> of votes on unpaid comments
+  BOOST_CHECK_EQUAL( sizeof( comment_vote_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( convert_request_object ), 24u ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( convert_request_index::MULTIINDEX_NODE_TYPE ), 120u );
   BOOST_CHECK_EQUAL( sizeof( collateralized_convert_request_object ), 32u ); //at most <3.5d> of conversion requests
+  BOOST_CHECK_EQUAL( sizeof( collateralized_convert_request_index::MULTIINDEX_NODE_TYPE ), 128u );
   BOOST_CHECK_EQUAL( sizeof( escrow_object ), 120u ); //small but potentially lasting forever, limited to 255*account_object
+  BOOST_CHECK_EQUAL( sizeof( escrow_index::MULTIINDEX_NODE_TYPE ), 216u );
   BOOST_CHECK_EQUAL( sizeof( savings_withdraw_object ), 104u ); //at most <3d> of saving withdrawals
+  BOOST_CHECK_EQUAL( sizeof( savings_withdraw_index::MULTIINDEX_NODE_TYPE ), 232u );
   BOOST_CHECK_EQUAL( sizeof( limit_order_object ), 80u ); //at most <28d> of limit orders
+  BOOST_CHECK_EQUAL( sizeof( limit_order_index::MULTIINDEX_NODE_TYPE ), 208u );
   BOOST_CHECK_EQUAL( sizeof( decline_voting_rights_request_object ), 32u ); //at most <30d> of decline requests
+  BOOST_CHECK_EQUAL( sizeof( decline_voting_rights_request_index::MULTIINDEX_NODE_TYPE ), 128u );
   BOOST_CHECK_EQUAL( sizeof( proposal_object ), 144u ); //potentially infinite, but costs a lot to make (especially after HF24)
+  BOOST_CHECK_EQUAL( sizeof( proposal_index::MULTIINDEX_NODE_TYPE ), 336u );
   BOOST_CHECK_EQUAL( sizeof( proposal_vote_object ), 32u ); //potentially infinite, but limited by account_object and time of proposal_object life
+  BOOST_CHECK_EQUAL( sizeof( proposal_vote_index::MULTIINDEX_NODE_TYPE ), 128u );
+  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_object ), 72u ); //TODO: estimate number of active objects
+  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_index::MULTIINDEX_NODE_TYPE ), 200u );
 
-  //singletons (size only affects performance, especially with MIRA)
+  //singletons (size only affects performance)
   BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96u );
+  BOOST_CHECK_EQUAL( sizeof( reward_fund_index::MULTIINDEX_NODE_TYPE ), 160u );
   BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 368u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
   );
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 400u
+#ifdef HIVE_ENABLE_SMT
+    + 16
+#endif
+  );
   BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24u ); //always 64k objects
+  BOOST_CHECK_EQUAL( sizeof( block_summary_index::MULTIINDEX_NODE_TYPE ), 56u );
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
+  BOOST_CHECK_EQUAL( sizeof( hardfork_property_index::MULTIINDEX_NODE_TYPE ), 152u );
   BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
+  BOOST_CHECK_EQUAL( sizeof( feed_history_index::MULTIINDEX_NODE_TYPE ), 264u );
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536u );
-  BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_object ), 72u );
+  BOOST_CHECK_EQUAL( sizeof( witness_schedule_index::MULTIINDEX_NODE_TYPE ), 568u );
 
   //TODO: categorize and evaluate size potential of SMT related objects:
   //account_regular_balance_object
@@ -518,10 +561,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //only used in tests, but open for use in theory:
   //pending_optional_action_object
   //pending_required_action_object
-
-  //not used in regular chain
-  //operation_object //obsolete? AH plugin
-  //account_history_object //obsolete? AH plugin
 }
 #endif
 

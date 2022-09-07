@@ -15,18 +15,23 @@ TIME_BEGIN=$( date -u +%s )
 git submodule update --init --recursive
 mkdir -p "${BUILD_DIR}"
 cd ${BUILD_DIR}
+echo -e "\e[0Ksection_start:`date +%s`:cmake_section\r\e[0KRunning CMake"
 cmake \
     -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install-root" \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-    -DSKIP_BY_TX_ID=OFF \
     -DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET} \
-    -DHIVE_STATIC_BUILD=ON \
     -DHIVE_LINT=${HIVE_LINT} \
-    .. 
-make -j$(nproc)
-ldd "${BUILD_DIR}/programs/cli_wallet/cli_wallet" # Check HIVE_STATIC_BUILD
-make install
-cd .. 
+    -GNinja \
+    ..
+echo -e "\e[0Ksection_end:`date +%s`:cmake_section\r\e[0K"
+echo -e "\e[0Ksection_start:`date +%s`:build_section\r\e[0KBuilding with Ninja"
+ninja
+echo -e "\e[0Ksection_end:`date +%s`:build_section\r\e[0K"
+ldd "${BUILD_DIR}/programs/cli_wallet/cli_wallet"
+echo -e "\e[0Ksection_start:`date +%s`:install_section\r\e[0KInstalling with Ninja"
+ninja install
+echo -e "\e[0Ksection_end:`date +%s`:install_section\r\e[0K"
+cd ..
 
 ( "${BUILD_DIR}/install-root"/bin/hived --version \
   | grep -o '[0-9]*\.[0-9]*\.[0-9]*' \

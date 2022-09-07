@@ -1,0 +1,174 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 13,
+    "message": "unknown key",
+    "name": "N5boost16exception_detail10clone_implINS0_19error_info_injectorISt12out_of_rangeEEEE",
+    "stack": [
+      {
+        "context": {
+          "file": "transaction_util.hpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 103,
+          "method": "verify_authority",
+          "timestamp": "2021-08-30T10:05:54"
+        },
+        "data": {
+          "auth_containers": [
+            {
+              "type": "request_account_recovery_operation",
+              "value": {
+                "account_to_recover": "tulpa",
+                "extensions": [],
+                "new_owner_authority": {
+                  "account_auths": [],
+                  "key_auths": [
+                    [
+                      "STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS",
+                      1
+                    ]
+                  ],
+                  "weight_threshold": 1
+                },
+                "recovery_account": "nalesnik"
+              }
+            }
+          ],
+          "sigs": [
+            "STM66178AvyJD5SxvK9Q4eKJu1auwZ9P8HCBex5RXbM4Dw4UvriyK"
+          ],
+          "what": "unknown key"
+        },
+        "format": "${what}: "
+      },
+      {
+        "context": {
+          "file": "transaction.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 232,
+          "method": "verify_authority",
+          "timestamp": "2021-08-30T10:05:54"
+        },
+        "data": {
+          "*this": {
+            "expiration": "2020-11-05T12:58:10",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "request_account_recovery_operation",
+                "value": {
+                  "account_to_recover": "tulpa",
+                  "extensions": [],
+                  "new_owner_authority": {
+                    "account_auths": [],
+                    "key_auths": [
+                      [
+                        "STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS",
+                        1
+                      ]
+                    ],
+                    "weight_threshold": 1
+                  },
+                  "recovery_account": "nalesnik"
+                }
+              }
+            ],
+            "ref_block_num": 55551,
+            "ref_block_prefix": 276291495,
+            "signatures": [
+              "204f2dc529f3e884a77ee3e849d0f8c03ff9ec0d9af08894427d15c74eea4dcead50bc2bd23ac188cfb5975acc5a89cb1df1474e42d47d54ac993ed240fdb3f955"
+            ]
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 4494,
+          "method": "_apply_transaction",
+          "timestamp": "2021-08-30T10:05:54"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2020-11-05T12:58:10",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "request_account_recovery_operation",
+                "value": {
+                  "account_to_recover": "tulpa",
+                  "extensions": [],
+                  "new_owner_authority": {
+                    "account_auths": [],
+                    "key_auths": [
+                      [
+                        "STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS",
+                        1
+                      ]
+                    ],
+                    "weight_threshold": 1
+                  },
+                  "recovery_account": "nalesnik"
+                }
+              }
+            ],
+            "ref_block_num": 55551,
+            "ref_block_prefix": 276291495,
+            "signatures": [
+              "204f2dc529f3e884a77ee3e849d0f8c03ff9ec0d9af08894427d15c74eea4dcead50bc2bd23ac188cfb5975acc5a89cb1df1474e42d47d54ac993ed240fdb3f955"
+            ]
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 1187,
+          "method": "push_transaction",
+          "timestamp": "2021-08-30T10:05:54"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2020-11-05T12:58:10",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "request_account_recovery_operation",
+                "value": {
+                  "account_to_recover": "tulpa",
+                  "extensions": [],
+                  "new_owner_authority": {
+                    "account_auths": [],
+                    "key_auths": [
+                      [
+                        "STM6wxeXR9kg8uu7vX5LS4HBgKw8sdqHBpzAaacqPwPxYfRx9h5bS",
+                        1
+                      ]
+                    ],
+                    "weight_threshold": 1
+                  },
+                  "recovery_account": "nalesnik"
+                }
+              }
+            ],
+            "ref_block_num": 55551,
+            "ref_block_prefix": 276291495,
+            "signatures": [
+              "204f2dc529f3e884a77ee3e849d0f8c03ff9ec0d9af08894427d15c74eea4dcead50bc2bd23ac188cfb5975acc5a89cb1df1474e42d47d54ac993ed240fdb3f955"
+            ]
+          }
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "unknown key:unknown key: "
+}

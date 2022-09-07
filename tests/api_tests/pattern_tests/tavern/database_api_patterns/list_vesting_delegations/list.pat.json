@@ -1,0 +1,114 @@
+{
+  "delegations": [
+    {
+      "delegatee": "dbfoodbank",
+      "delegator": "gtpjfoodbank",
+      "id": 1293502,
+      "min_delegation_time": "2019-10-31T04:10:06",
+      "vesting_shares": {
+        "amount": "49365465978",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "dses",
+      "delegator": "gtpjfoodbank",
+      "id": 1187734,
+      "min_delegation_time": "2019-03-20T03:06:30",
+      "vesting_shares": {
+        "amount": "192325634090",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "hobo.media",
+      "delegator": "gtpjfoodbank",
+      "id": 1246873,
+      "min_delegation_time": "2019-07-18T09:06:00",
+      "vesting_shares": {
+        "amount": "9935716800",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "qurator",
+      "delegator": "gtpjfoodbank",
+      "id": 1276792,
+      "min_delegation_time": "2019-09-16T03:07:36",
+      "vesting_shares": {
+        "amount": "634674592496",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "self-driving",
+      "delegator": "gtpjfoodbank",
+      "id": 1246957,
+      "min_delegation_time": "2019-07-18T15:06:54",
+      "vesting_shares": {
+        "amount": "3974226143",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "tipu",
+      "delegator": "gtpjfoodbank",
+      "id": 758123,
+      "min_delegation_time": "2018-03-13T23:30:54",
+      "vesting_shares": {
+        "amount": "211558197499",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "upfundme",
+      "delegator": "gtpjfoodbank",
+      "id": 1246115,
+      "min_delegation_time": "2019-07-15T07:39:24",
+      "vesting_shares": {
+        "amount": "99375573580",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "steemchurch",
+      "delegator": "guada1",
+      "id": 1142052,
+      "min_delegation_time": "2019-01-17T14:16:48",
+      "vesting_shares": {
+        "amount": "40163500112",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "cnbuddy",
+      "delegator": "guangzhoulife",
+      "id": 481855,
+      "min_delegation_time": "2018-01-10T02:09:06",
+      "vesting_shares": {
+        "amount": "4113676480",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegatee": "lovemyson",
+      "delegator": "guangzhoulife",
+      "id": 559488,
+      "min_delegation_time": "2018-01-26T10:26:21",
+      "vesting_shares": {
+        "amount": "30667570282",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    }
+  ]
+}

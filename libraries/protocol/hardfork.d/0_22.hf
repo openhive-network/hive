@@ -5,7 +5,7 @@
 
 #define HIVE_HARDFORK_0_22__3485 HIVE_HARDFORK_0_22
 
-#define HIVE_HARDFORK_0_22_VERSION hardfork_version( 0, 22 )
+#define HIVE_HARDFORK_0_22_VERSION hive::protocol::hardfork_version( 0, 22 )
 
 #endif
 

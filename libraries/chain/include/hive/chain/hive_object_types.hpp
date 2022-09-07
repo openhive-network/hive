@@ -61,8 +61,6 @@ enum object_type
   convert_request_object_type,
   collateralized_convert_request_object_type,
   liquidity_reward_balance_object_type,
-  operation_object_type,
-  account_history_object_type,
   hardfork_property_object_type,
   withdraw_vesting_route_object_type,
   owner_authority_history_object_type,
@@ -80,6 +78,7 @@ enum object_type
   proposal_object_type,
   proposal_vote_object_type,
   comment_cashout_object_type,
+  comment_cashout_ex_object_type,
   recurrent_transfer_object_type,
 #ifdef HIVE_ENABLE_SMT
   // SMT objects
@@ -109,8 +108,6 @@ class feed_history_object;
 class convert_request_object;
 class collateralized_convert_request_object;
 class liquidity_reward_balance_object;
-class operation_object;
-class account_history_object;
 class hardfork_property_object;
 class withdraw_vesting_route_object;
 class owner_authority_history_object;
@@ -126,6 +123,7 @@ class vesting_delegation_expiration_object;
 class pending_required_action_object;
 class pending_optional_action_object;
 class comment_cashout_object;
+class comment_cashout_ex_object;
 class recurrent_transfer_object;
 
 #ifdef HIVE_ENABLE_SMT
@@ -157,8 +155,6 @@ typedef oid_ref< feed_history_object                    > feed_history_id_type;
 typedef oid_ref< convert_request_object                 > convert_request_id_type;
 typedef oid_ref< collateralized_convert_request_object  > collateralized_convert_request_id_type;
 typedef oid_ref< liquidity_reward_balance_object        > liquidity_reward_balance_id_type;
-typedef oid_ref< operation_object                       > operation_id_type;
-typedef oid_ref< account_history_object                 > account_history_id_type;
 typedef oid_ref< hardfork_property_object               > hardfork_property_id_type;
 typedef oid_ref< withdraw_vesting_route_object          > withdraw_vesting_route_id_type;
 typedef oid_ref< owner_authority_history_object         > owner_authority_history_id_type;
@@ -174,7 +170,9 @@ typedef oid_ref< vesting_delegation_expiration_object   > vesting_delegation_exp
 typedef oid_ref< pending_required_action_object         > pending_required_action_id_type;
 typedef oid_ref< pending_optional_action_object         > pending_optional_action_id_type;
 typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
+typedef oid_ref< comment_cashout_ex_object              > comment_cashout_ex_id_type;
 typedef oid_ref< recurrent_transfer_object              > recurrent_transfer_id_type;
+typedef oid_ref< witness_schedule_object                > witness_schedule_object_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid_ref< smt_token_object                       > smt_token_id_type;
@@ -322,8 +320,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (convert_request_object_type)
             (collateralized_convert_request_object_type)
             (liquidity_reward_balance_object_type)
-            (operation_object_type)
-            (account_history_object_type)
             (hardfork_property_object_type)
             (withdraw_vesting_route_object_type)
             (owner_authority_history_object_type)
@@ -341,6 +337,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (proposal_object_type)
             (proposal_vote_object_type)
             (comment_cashout_object_type)
+            (comment_cashout_ex_object_type)
             (recurrent_transfer_object_type)
 
 #ifdef HIVE_ENABLE_SMT

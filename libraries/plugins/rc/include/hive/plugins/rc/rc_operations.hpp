@@ -5,47 +5,39 @@
 
 namespace hive { namespace plugins { namespace rc {
 
-struct delegate_to_pool_operation : base_operation
+using hive::protocol::account_name_type;
+using hive::protocol::asset;
+using hive::protocol::base_operation;
+using hive::protocol::asset_symbol_type;
+using hive::protocol::extensions_type;
+using hive::protocol::account_name_type;
+
+class rc_plugin;
+
+struct delegate_rc_operation : base_operation
 {
-  account_name_type     from_account;
-  account_name_type     to_pool;
-  share_type            amount;
+  account_name_type     from;
+  flat_set< account_name_type > delegatees;
+  int64_t              max_rc = 0;
+  extensions_type       extensions;
 
   void validate()const;
-  void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( from_account ); }
-};
-
-struct delegate_drc_from_pool_operation : base_operation
-{
-  account_name_type      from_pool;
-  account_name_type      to_account;
-  int64_t                mana_change = 0;
-  int64_t                drc_max_mana = 0;
-
-  void validate()const;
-  void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( from_pool ); }
+  void get_required_posting_authorities( flat_set<account_name_type>& a )const { a.insert( from ); }
 };
 
 typedef fc::static_variant<
-    delegate_to_pool_operation,
-    delegate_drc_from_pool_operation
+        delegate_rc_operation
   > rc_plugin_operation;
 
-HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_to_pool_operation );
-HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_drc_from_pool_operation );
+HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_rc );
 
 } } } // hive::plugins::rc
 
-FC_REFLECT( hive::plugins::rc::delegate_to_pool_operation,
-  (from_account)
-  (to_pool)
-  (amount)
-  )
-FC_REFLECT( hive::plugins::rc::delegate_drc_from_pool_operation,
-  (from_pool)
-  (to_account)
-  (mana_change)
-  (drc_max_mana)
+FC_REFLECT( hive::plugins::rc::delegate_rc_operation,
+  (from)
+  (delegatees)
+  (max_rc)
+  (extensions)
   )
 
 HIVE_DECLARE_OPERATION_TYPE( hive::plugins::rc::rc_plugin_operation )

@@ -1,0 +1,23 @@
+{
+  "history": [
+    [
+      764,
+      {
+        "block": 3924580,
+        "op": {
+          "type": "account_witness_proxy_operation",
+          "value": {
+            "account": "geoffrey",
+            "proxy": "gtg"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-09T06:52:00",
+        "trx_id": "481a52b2a98177c699590240ad845c3b354dd77e",
+        "trx_in_block": 1,
+        "virtual_op": false
+      }
+    ]
+  ]
+}

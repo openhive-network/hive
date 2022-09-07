@@ -70,9 +70,9 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
           b.hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
 #ifdef HIVE_ENABLE_SMT
-            b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
+          b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
-            b.non_hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
+          b.non_hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
         });
       }
       else
@@ -135,9 +135,9 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
           while( itr->seconds == seconds && itr->open < cutoff )
           {
-            auto old_itr = itr;
+            const auto& old_bucket = *itr;
             ++itr;
-            _db.remove( *old_itr );
+            _db.remove( old_bucket );
           }
         }
       }

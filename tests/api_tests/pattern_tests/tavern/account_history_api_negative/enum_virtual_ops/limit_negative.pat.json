@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:limit > 0: limit of -1 is lesser or equal 0"
+}

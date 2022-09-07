@@ -47,6 +47,7 @@ namespace graphene { namespace net {
   {
     fc::ip::endpoint                  endpoint;
     fc::time_point_sec                last_seen_time;
+    fc::optional<fc::time_point_sec>  last_failed_time;
     fc::enum_type<uint8_t,potential_peer_last_connection_disposition> last_connection_disposition;
     fc::time_point_sec                last_connection_attempt_time;
     uint32_t                          number_of_successful_connection_attempts;
@@ -65,7 +66,7 @@ namespace graphene { namespace net {
       last_connection_disposition(last_connection_disposition),
       number_of_successful_connection_attempts(0),
       number_of_failed_connection_attempts(0)
-    {}  
+    {} 
   };
 
   namespace detail
@@ -119,4 +120,4 @@ namespace graphene { namespace net {
 } } // end namespace graphene::net
 
 FC_REFLECT_ENUM(graphene::net::potential_peer_last_connection_disposition, (never_attempted_to_connect)(last_connection_failed)(last_connection_rejected)(last_connection_handshaking_failed)(last_connection_succeeded))
-FC_REFLECT(graphene::net::potential_peer_record, (endpoint)(last_seen_time)(last_connection_disposition)(last_connection_attempt_time)(number_of_successful_connection_attempts)(number_of_failed_connection_attempts)(last_error) )
+FC_REFLECT(graphene::net::potential_peer_record, (endpoint)(last_seen_time)(last_failed_time)(last_connection_disposition)(last_connection_attempt_time)(number_of_successful_connection_attempts)(number_of_failed_connection_attempts)(last_error) )

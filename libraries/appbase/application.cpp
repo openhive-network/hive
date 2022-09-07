@@ -3,10 +3,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <thread>
+
+#include <hive/utilities/notifications.hpp>
 
 namespace appbase {
 
@@ -74,12 +77,22 @@ void io_handler::close_signal()
     cout<<"Error during cancelling signal: "<< ec.message() << std::endl;
 }
 
+void application::generate_interrupt_request()
+{
+  hive::notify_hived_status("interrupted");
+  _is_interrupt_request = true;
+  ilog("interrupt requested!");
+}
+
 void io_handler::handle_signal( uint32_t _last_signal_code )
 {
   last_signal_code = _last_signal_code;
 
   if(_last_signal_code == SIGINT || _last_signal_code == SIGTERM)
+  {
+    idump((_last_signal_code));
     app.generate_interrupt_request();
+  }
 
   if( allow_close_when_signal_is_received )
     close();
@@ -191,14 +204,18 @@ void application::set_program_options()
   options_description app_cfg_opts( "Application Config Options" );
   options_description app_cli_opts( "Application Command Line Options" );
   app_cfg_opts.add_options()
-      ("plugin", bpo::value< vector<string> >()->composing()->default_value( default_plugins, plugins_ss.str() ), "Plugin(s) to enable, may be specified multiple times");
+      ("plugin", bpo::value< vector<string> >()->composing()->default_value(default_plugins, plugins_ss.str())->value_name("plugin-name"), "Plugin(s) to enable, may be specified multiple times");
 
   app_cli_opts.add_options()
       ("help,h", "Print this help message and exit.")
       ("version,v", "Print version information.")
       ("dump-config", "Dump configuration and exit")
-      ("data-dir,d", bpo::value<bfs::path>(), data_dir_ss.str().c_str() )
-      ("config,c", bpo::value<bfs::path>()->default_value( "config.ini" ), "Configuration file name relative to data-dir");
+      ("list-plugins", "Print names of all available plugins and exit")
+#if BOOST_VERSION >= 106800
+      ("generate-completions", "Generate bash auto-complete script (try: eval \"$(hived --generate-completions)\")")
+#endif
+      ("data-dir,d", bpo::value<bfs::path>()->value_name("dir"), data_dir_ss.str().c_str() )
+      ("config,c", bpo::value<bfs::path>()->default_value("config.ini")->value_name("filename"), "Configuration file name relative to data-dir");
 
   my->_cfg_options.add(app_cfg_opts);
   my->_app_options.add(app_cfg_opts);
@@ -214,7 +231,7 @@ void application::set_program_options()
     {
       my->_cfg_options.add(plugin_cfg_opts);
 
-      for(const boost::shared_ptr<bpo::option_description> od : plugin_cfg_opts.options())
+      for(const boost::shared_ptr<bpo::option_description>& od : plugin_cfg_opts.options())
       {
         // If the config option is not already present as a cli option, add it.
         if( plugin_cli_opts.find_nothrow( od->long_name(), false ) == nullptr )
@@ -272,16 +289,6 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       app_dir << '.' << app_name;
 
       data_dir = data_dir / app_dir.str();
-
-      #pragma message( "TODO: Remove this check for Hive release 0.20.1+" )
-      bfs::path old_dir = bfs::current_path() / "witness_node_data_dir";
-      if( bfs::exists( old_dir ) )
-      {
-        std::cerr << "The default data directory is now '" << data_dir.string() << "' instead of '" << old_dir.string() << "'.\n";
-        std::cerr << "Please move your data directory to '" << data_dir.string() << "' or specify '--data-dir=" << old_dir.string() <<
-          "' to continue using the current data directory.\n";
-        exit(1);
-      }
     }
     my->_data_dir = data_dir;
 
@@ -296,6 +303,14 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       write_default_config(config_file_name);
     }
 
+#if BOOST_VERSION >= 106800
+    if(my->_args.count("generate-completions") > 0)
+    {
+      generate_completions();
+      return false;
+    }
+#endif
+
     bpo::store(bpo::parse_config_file< char >( config_file_name.make_preferred().string().c_str(),
                               my->_cfg_options, true ), my->_args );
 
@@ -305,6 +320,16 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       std::cout << "\t" << quoted("data-dir") << ": " << quoted(my->_data_dir.string().c_str()) << ",\n";
       std::cout << "\t" << quoted("config") << ": " << quoted(config_file_name.string().c_str()) << "\n";
       std::cout << "}\n";
+      return false;
+    }
+
+    if(my->_args.count("list-plugins") > 0)
+    {
+      for(const auto& plugin: plugins)
+      {
+        std::cout << plugin.first << "\n";
+      }
+
       return false;
     }
 
@@ -365,8 +390,23 @@ void application::shutdown() {
 
 void application::finish()
 {
-  pre_shutdown();
-  shutdown();
+  try
+  {
+    pre_shutdown();
+    shutdown();
+  }
+  catch ( const boost::exception& e )
+  {
+    std::cerr << boost::diagnostic_information(e) << "\n";
+  }
+  catch( std::exception& e )
+  {
+    std::cout << ("exception: ") << e.what() << std::endl;
+  }
+  catch(...)
+  {
+    std::cout << "application shutdown: unknown error exception." << std::endl;
+  }
 }
 
 void application::exec()
@@ -382,7 +422,7 @@ void application::exec()
   else
   {
     std::cout << ("performing shutdown on interrupt request...") << std::endl;
-    shutdown();
+    finish();
   }
 
   std::cout << ("Leaving application main loop...") << std::endl;
@@ -394,7 +434,7 @@ void application::write_default_config(const bfs::path& cfg_file)
     bfs::create_directories(cfg_file.parent_path());
 
   std::ofstream out_cfg( bfs::path(cfg_file).make_preferred().string());
-  for(const boost::shared_ptr<bpo::option_description> od : my->_cfg_options.options())
+  for(const boost::shared_ptr<bpo::option_description>& od : my->_cfg_options.options())
   {
     if(!od->description().empty())
       out_cfg << "# " << od->description() << "\n";
@@ -417,14 +457,98 @@ void application::write_default_config(const bfs::path& cfg_file)
       else
       {
         // The string is formatted "arg (=<interesting part>)"
-        example.erase(0, 6);
-        example.erase(example.length()-1);
-        out_cfg << od->long_name() << " = " << example << "\n";
+        size_t space_pos = example.find(' ');
+        if (space_pos != std::string::npos && 
+            example.length() >= space_pos + 4)
+        {
+          example.erase(0, space_pos + 3);
+          example.erase(example.length()-1);
+          out_cfg << od->long_name() << " = " << example << "\n";
+        }
       }
     }
     out_cfg << "\n";
   }
   out_cfg.close();
+}
+
+void application::generate_completions()
+{
+  // option_description is missing long_names() before 1.68.0, and it's easier to just omit this
+  // feature for old versions of boost, instead of trying to support it
+#if BOOST_VERSION >= 106800
+  std::vector<string> all_plugin_names;
+  for (const auto& plugin: plugins)
+    all_plugin_names.push_back(plugin.first);
+
+  // generate a string containing all options, separated by a space
+  std::vector<std::string> all_options;
+  std::vector<string> args_that_take_plugin_names;
+  std::vector<string> args_that_take_directories_names;
+  std::vector<string> args_that_have_no_completion;
+  for (const boost::shared_ptr<bpo::option_description>& od : my->_app_options.options())
+  {
+    std::vector<std::string> this_parameter_variations;
+    // option_description doesn't have a direct acessor for the short option, so
+    // call format_name() which will return a combined short + long "-h [ --help ]"
+    // string, then parse the short option out
+    std::string formatted = od->format_name();
+    if (formatted.length() > 2 && 
+        formatted[0] == '-' &&
+        formatted[1] != '-')
+      this_parameter_variations.push_back(formatted.substr(0, 2));
+
+    const std::string* long_name_strings;
+    size_t long_name_count;
+    std::tie(long_name_strings, long_name_count) = od->long_names();
+    for (unsigned i = 0; i < long_name_count; ++i)
+      this_parameter_variations.push_back(std::string("--" + long_name_strings[i]));
+
+    std::copy(this_parameter_variations.begin(), this_parameter_variations.end(), std::back_inserter(all_options));
+
+    // we don't have a direct way to get the value_name, so parse it from the 
+    // format_parameter() output
+    std::string formatted_parameter = od->format_parameter();
+    size_t space_pos = formatted_parameter.find(' ');
+    if (space_pos != std::string::npos || !formatted_parameter.empty())
+    {
+      std::string value_name;
+      if (space_pos == std::string::npos)
+        value_name = formatted_parameter;
+      else
+        value_name = formatted_parameter.substr(0, space_pos);
+      if (value_name == "plugin-name")
+        std::copy(this_parameter_variations.begin(), this_parameter_variations.end(), std::back_inserter(args_that_take_plugin_names));
+      else if (value_name == "dir")
+        std::copy(this_parameter_variations.begin(), this_parameter_variations.end(), std::back_inserter(args_that_take_directories_names));
+      else
+        std::copy(this_parameter_variations.begin(), this_parameter_variations.end(), std::back_inserter(args_that_have_no_completion));
+    }
+  }
+
+  std::cout << "_hived()\n"
+            << "{\n" 
+            << "  local hived=$1 cur=$2 prev=$3 words=(\"${COMP_WORDS[@]}\")\n"
+            << "  case \"${prev}\" in\n";
+  if (!args_that_take_plugin_names.empty())
+    std::cout << "    " << boost::algorithm::join(args_that_take_plugin_names, "|") << ")\n"
+              << "      COMPREPLY=( $(compgen -W \"" << boost::algorithm::join(all_plugin_names, " ") << "\" -- \"$cur\") )\n"
+              << "      return\n"
+              << "      ;;\n";
+  if (!args_that_take_directories_names.empty())
+    std::cout << "    " << boost::algorithm::join(args_that_take_directories_names, "|") << ")\n"
+              << "      COMPREPLY=( $(compgen -A directory -- \"$cur\") )\n"
+              << "      return\n"
+              << "      ;;\n";
+  std::cout << "    " << boost::algorithm::join(args_that_have_no_completion, "|") << ")\n"
+            << "      COMPREPLY=()\n"
+            << "      return\n"
+            << "      ;;\n"
+            << "  esac\n"
+            << "  COMPREPLY=( $(compgen -W \"" << boost::algorithm::join(all_options, " ") << "\" -- \"$cur\") )\n"
+            << "}\n"
+            << "complete -F _hived -o filenames hived\n";
+#endif
 }
 
 abstract_plugin* application::find_plugin( const string& name )const
@@ -443,7 +567,10 @@ abstract_plugin& application::get_plugin(const string& name)const
 {
   auto ptr = find_plugin(name);
   if(!ptr)
+  {
+    hive::notify_hived_error("Unable to find plugin: " + name);
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
+  }
   return *ptr;
 }
 

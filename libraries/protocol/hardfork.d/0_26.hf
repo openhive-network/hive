@@ -1,9 +1,0 @@
-#ifndef HIVE_HARDFORK_1_26
-#define HIVE_HARDFORK_1_26 26
-#define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_26
-
-#define HIVE_HARDFORK_1_26_TIME 1640952000 //  Thursday, 31 December 2021 12:00:00 GMT
-
-#define HIVE_HARDFORK_1_26_VERSION hardfork_version( 1, 26 )
-
-#endif

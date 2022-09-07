@@ -19,24 +19,24 @@ namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
 {
-  total_vote_weight = cc.total_vote_weight;
-  reward_weight = cc.reward_weight;
-  total_payout_value = cc.total_payout_value;
-  curator_payout_value = cc.curator_payout_value;
-  author_rewards = cc.author_rewards;
-  net_votes = cc.net_votes;
-  active = cc.active;
-  last_payout = cc.last_payout;
-  net_rshares = cc.net_rshares;
-  abs_rshares = cc.abs_rshares;
-  vote_rshares = cc.vote_rshares;
-  children_abs_rshares = cc.children_abs_rshares;
-  cashout_time = cc.cashout_time;
-  max_cashout_time = cc.max_cashout_time;
-  max_accepted_payout = cc.max_accepted_payout;
-  percent_hbd = cc.percent_hbd;
-  allow_votes = cc.allow_votes;
-  allow_curation_rewards = cc.allow_curation_rewards;
+  total_vote_weight = cc.get_total_vote_weight();
+  reward_weight = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
+  total_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+  curator_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+  author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
+  net_votes = cc.get_net_votes();
+  last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist after HF19
+  net_rshares = cc.get_net_rshares();
+  abs_rshares = 0; // value was only used for comments created before HF6 (and to recognize that there are votes)
+  vote_rshares = cc.get_vote_rshares();
+  children_abs_rshares = 0; // value not accumulated after HF17
+  cashout_time = cc.get_cashout_time();
+  max_cashout_time = time_point_sec::maximum(); // since HF17 it is the only possible value
+  max_accepted_payout = cc.get_max_accepted_payout();
+  percent_hbd = cc.get_percent_hbd();
+  allow_votes = cc.allows_votes();
+  allow_curation_rewards = cc.allows_curation_rewards();
+  was_voted_on = cc.has_votes();
 }
 
 
@@ -433,11 +433,8 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
 DEFINE_API_IMPL( database_api_impl, get_active_witnesses )
 {
   const auto& wso = _db.get_witness_schedule_object();
-  size_t n = wso.current_shuffled_witnesses.size();
   get_active_witnesses_return result;
-  result.witnesses.reserve( n );
-  for( size_t i=0; i<n; i++ )
-    result.witnesses.emplace_back( wso.current_shuffled_witnesses[i] );
+  result.witnesses.assign(wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.begin() + wso.num_scheduled_witnesses);
   return result;
 }
 
@@ -891,8 +888,17 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
     case( by_delegation ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      const auto* delegator = _db.find_account( key.first );
+      FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+      account_id_type delegatee_id;
+      if( key.second != "" )
+      {
+        const auto* delegatee = _db.find_account( key.second );
+        FC_ASSERT( delegatee != nullptr, "Given account does not exist." );
+        delegatee_id = delegatee->get_id();
+      }
       iterate_results< chain::vesting_delegation_index, chain::by_delegation >(
-        boost::make_tuple( key.first, key.second ),
+        boost::make_tuple( delegator->get_id(), delegatee_id ),
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_object, vesting_delegation_object >,
@@ -910,9 +916,12 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 {
   find_vesting_delegations_return result;
   const auto& delegation_idx = _db.get_index< chain::vesting_delegation_index, chain::by_delegation >();
-  auto itr = delegation_idx.lower_bound( args.account );
+  const auto* delegator = _db.find_account( args.account );
+  FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+  account_id_type delegator_id = delegator->get_id();
+  auto itr = delegation_idx.lower_bound( delegator_id );
 
-  while( itr != delegation_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != delegation_idx.end() && itr->get_delegator() == delegator_id && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.delegations.emplace_back( *itr, _db );
     ++itr;
@@ -948,8 +957,16 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
     {
       auto key = args.start.as< std::vector< fc::variant > >();
       FC_ASSERT( key.size() == 3, "by_account_expiration start requires 3 values. (account_name_type, time_point_sec, vesting_delegation_expiration_id_type" );
+      account_name_type delegator_name = key[0].as< account_name_type >();
+      account_id_type delegator_id;
+      if( delegator_name != "" )
+      {
+        const auto* delegator = _db.find_account( delegator_name );
+        FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+        delegator_id = delegator->get_id();
+      }
       iterate_results< chain::vesting_delegation_expiration_index, chain::by_account_expiration >(
-        boost::make_tuple( key[0].as< account_name_type >(), key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() ),
+        boost::make_tuple( delegator_id, key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() ),
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_expiration_object, vesting_delegation_expiration_object >,
@@ -967,9 +984,12 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 {
   find_vesting_delegation_expirations_return result;
   const auto& del_exp_idx = _db.get_index< chain::vesting_delegation_expiration_index, chain::by_account_expiration >();
-  auto itr = del_exp_idx.lower_bound( args.account );
+  const auto* delegator = _db.find_account( args.account );
+  FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+  account_id_type delegator_id = delegator->get_id();
+  auto itr = del_exp_idx.lower_bound( delegator_id );
 
-  while( itr != del_exp_idx.end() && itr->delegator == args.account && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != del_exp_idx.end() && itr->get_delegator() == delegator_id && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.delegations.emplace_back( *itr, _db );
     ++itr;
@@ -1341,7 +1361,7 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
 
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
-// SPS                                                              //
+// DHF                                                              //
 //                                                                  //
 //////////////////////////////////////////////////////////////////////
 
@@ -1537,6 +1557,10 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 DEFINE_API_IMPL( database_api_impl, find_proposals )
 {
   FC_ASSERT( args.proposal_ids.size() <= DATABASE_API_SINGLE_QUERY_LIMIT );
+  std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
+  {
+    FC_ASSERT( id >= 0, "The proposal id can't be negative" );
+  });
 
   find_proposals_return result;
   result.proposals.reserve( args.proposal_ids.size() );
@@ -1545,7 +1569,7 @@ DEFINE_API_IMPL( database_api_impl, find_proposals )
 
   std::for_each( args.proposal_ids.begin(), args.proposal_ids.end(), [&](auto& id)
   {
-    auto po = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( id );
+    auto po = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( static_cast<api_id_type>( id ) );
     if( po != nullptr && !po->removed )
     {
       result.proposals.emplace_back( api_proposal_object( *po, currentTime ) );
@@ -1562,10 +1586,15 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 {
   FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
 
-  auto get_proposal_id = [&](const fc::optional<api_id_type>& obj) -> api_id_type
+  auto get_proposal_id = [&](const fc::optional<int64_t>& obj) -> api_id_type
   {
-    if(obj.valid()) return *obj;
-    else return ( args.order_direction == ascending ? 0 : std::numeric_limits<api_id_type>::max());
+    if(obj.valid())
+    {
+      FC_ASSERT( *obj >= 0, "The proposal id can't be negative" );
+      return *obj;
+    }
+    else
+      return ( args.order_direction == ascending ? 0 : std::numeric_limits<api_id_type>::max());
   };
 
   auto get_account_name = [&](const fc::optional<account_name_type>& obj) -> account_name_type
@@ -1663,6 +1692,7 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     HIVE_MAX_SIG_CHECK_DEPTH,
     _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
 
@@ -1696,6 +1726,10 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
         result.keys.insert( k );
       return authority( auth );
     },
+    [&]( account_name_type witness_name )
+    {
+      return _db.get_witness(witness_name).signing_key;
+    },
     HIVE_MAX_SIG_CHECK_DEPTH,
     _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
   );
@@ -1710,6 +1744,8 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
     [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
+    [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
+    args.pack,
     HIVE_MAX_SIG_CHECK_DEPTH,
     HIVE_MAX_AUTHORITY_MEMBERSHIP,
     HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -1757,6 +1793,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).active ); },
       [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).posting ); },
+      [this]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
       HIVE_MAX_SIG_CHECK_DEPTH );
   }
   catch( fc::exception& ) { result.valid = false; }

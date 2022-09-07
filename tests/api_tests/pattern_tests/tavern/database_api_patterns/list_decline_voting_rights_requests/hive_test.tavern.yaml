@@ -1,0 +1,27 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "database_api.list_decline_voting_rights_requests"
+          params: {"start":["2016-01-01T00:00:00", "hive.test"], "limit":10, "order":"by_effective_date"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+          extra_kwargs:
+            ignore_tags: ['requests'] # as requests stays active for 30 days, only posibility to test is to use block limit

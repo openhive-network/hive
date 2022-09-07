@@ -289,13 +289,13 @@ namespace fc {
       if( v.size() ) s.write( v.c_str(), v.size() );
     }
 
-    template<typename Stream> inline void unpack( Stream& s, fc::string& v, uint32_t depth )  {
+    template<typename Stream> inline void unpack( Stream& s, fc::string& value, uint32_t depth )  {
       depth++;
-      std::vector<char> tmp;
-      fc::raw::unpack(s,tmp,depth);
-      if( tmp.size() )
-         v = fc::string(tmp.data(),tmp.data()+tmp.size());
-      else v = fc::string();
+      unsigned_int size; fc::raw::unpack( s, size, depth );
+      FC_ASSERT( size.value < MAX_ARRAY_ALLOC_SIZE );
+      value.resize(size.value);
+      if( size.value )
+        s.read(&value[0], size.value); // the null terminator should be correct from the call to resize()
     }
 
     // bool
@@ -551,12 +551,9 @@ namespace fc {
       unsigned_int size; fc::raw::unpack( s, size );
       FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
       value.clear();
+      value.resize(size.value);
       for ( size_t i = 0; i < size.value; i++ )
-      {
-         T tmp;
-         fc::raw::unpack( s, tmp, depth );
-         value.emplace_back( std::move( tmp ) );
-      }
+         fc::raw::unpack( s, value[i], depth );
     }
 
     template<typename Stream, typename... T>

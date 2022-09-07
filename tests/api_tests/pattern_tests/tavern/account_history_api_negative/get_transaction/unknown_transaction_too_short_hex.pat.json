@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:false: Transaction hash '100' has invalid size. Transaction hash should have size of 160 bits"
+}

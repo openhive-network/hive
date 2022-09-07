@@ -82,9 +82,9 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
   if ( tracking )
   {
     // Update all status objects with the transaction current block number
-    for ( const auto& e : note.block.transactions )
+    for ( const auto& e : note.full_block->get_full_transactions() )
     {
-      const auto& tx_status_obj = _db.get< transaction_status_object, by_trx_id >( e.id() );
+      const auto& tx_status_obj = _db.get< transaction_status_object, by_trx_id >( e->get_transaction_id() );
 
       _db.modify( tx_status_obj, [&] ( transaction_status_object& obj )
       {
@@ -123,16 +123,13 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
   */
 fc::optional< transaction_id_type > transaction_status_impl::get_earliest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num )
 {
-  for ( uint32_t block_num = first_block_num; block_num <= last_block_num; block_num++ )
+  for (uint32_t block_num = first_block_num; block_num <= last_block_num; block_num++)
   {
-    const auto block = _db.fetch_block_by_number( block_num );
-
-    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
-
-    if ( block->transactions.size() > 0 )
-      return block->transactions.front().id();
+    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
+    if( !full_block->get_full_transactions().empty() )
+      return full_block->get_full_transactions().front()->get_transaction_id();
   }
-
   return {};
 }
 
@@ -145,16 +142,13 @@ fc::optional< transaction_id_type > transaction_status_impl::get_earliest_transa
   */
 fc::optional< transaction_id_type > transaction_status_impl::get_latest_transaction_in_range( const uint32_t first_block_num, const uint32_t last_block_num )
 {
-  for ( uint32_t block_num = last_block_num; block_num >= first_block_num; block_num-- )
+  for (uint32_t block_num = last_block_num; block_num >= first_block_num; block_num--)
   {
-    const auto block = _db.fetch_block_by_number( block_num );
-
-    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
-
-    if ( block->transactions.size() > 0 )
-      return block->transactions.back().id();
+    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
+    if( !full_block->get_full_transactions().empty() )
+      return full_block->get_full_transactions().back()->get_transaction_id();
   }
-
   return {};
 }
 
@@ -196,7 +190,6 @@ bool transaction_status_impl::state_is_valid()
 void transaction_status_impl::rebuild_state()
 {
   ilog( "Rebuilding transaction status state" );
-
   // Clear out the transaction status index
   const auto& tx_status_idx = _db.get_index< transaction_status_index >().indices().get< by_trx_id >();
   auto itr = tx_status_idx.begin();
@@ -209,17 +202,14 @@ void transaction_status_impl::rebuild_state()
   // Re-build the index from scratch
   const auto head_block_num = _db.head_block_num();
   uint32_t earliest_tracked_block_num = get_earliest_tracked_block_num();
-
-  for ( uint32_t block_num = earliest_tracked_block_num; block_num <= head_block_num; block_num++ )
+  for (uint32_t block_num = earliest_tracked_block_num; block_num <= head_block_num; block_num++)
   {
-    const auto block = _db.fetch_block_by_number( block_num );
-
-    FC_ASSERT( block.valid(), "Could not read block ${n}", ("n", block_num) );
-
-    for ( const auto& e : block->transactions )
+    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
+    for (const auto& transaction : full_block->get_full_transactions())
       _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
       {
-        obj.transaction_id = e.id();
+        obj.transaction_id = transaction->get_transaction_id();
         obj.block_num = block_num;
       } );
   }

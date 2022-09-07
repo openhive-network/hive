@@ -23,7 +23,10 @@
  */
 #pragma once
 
-#define GRAPHENE_NET_PROTOCOL_VERSION                        106
+#define GRAPHENE_NET_PROTOCOL_VERSION                              107
+#define GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION            107 // support for compressed blocks added in 107
+#define GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION 107 // share blocks by block_id instead of by block_message hash added in 107
+#define GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION               106 // support for the firewall check was added in 106
 
 /**
  * Define this to enable debugging code in the p2p network interface.
@@ -36,7 +39,7 @@
 /**
  * 2MiB
  */
-#define MAX_MESSAGE_SIZE                                     1024*1024*2
+#define MAX_MESSAGE_SIZE                                     (1024*1024*2 + 20) //20 for block_type_id size
 #define GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME      30 // seconds
 
 /**
@@ -77,7 +80,9 @@
  */
 #define GRAPHENE_NET_FUTURE_SYNC_BLOCKS_GRACE_PERIOD_SEC     (60 * 60)
 
-#define GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES           2
+/* recently lowered from 2 minutes -> 1 minute, to match the cache
+ * duration/default wallet expiration time */
+#define GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES           1
 
 #define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING      200
 
@@ -92,7 +97,7 @@
  * parameter, so consider increasing or decreasing it if performance
  * during flooding is lacking.
  */
-#define GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION  1
+#define GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION  100
 
 /**
  * Instead of fetching all item IDs from a peer, then fetching all blocks
@@ -100,12 +105,10 @@
  * then switch into block-fetching mode until the number of blocks we know about
  * but haven't yet fetched drops below this
  */
-#define GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH               10000
-
-#define GRAPHENE_NET_MAX_TRX_PER_SECOND                      1000
+#define GRAPHENE_NET_MIN_BLOCK_IDS_TO_PREFETCH               20000
 
 #define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME 200
-#define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_PREFETCH           (10 * GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME)
+#define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_PREFETCH           (100* GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME)
 
 #define GRAPHENE_NET_MAX_TRX_PER_SECOND                      1000
 

@@ -212,9 +212,11 @@ uint32_t performance::delete_old_objects( Index& old_idx, const account_name_typ
   FC_ASSERT( my );
   return my->delete_old_objects< CreationType >( old_idx, start_account, max_size, pd );
 }
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
 using t_feed = decltype( ((database*)nullptr)->get_index< feed_index >().indices().get< by_feed >() );
 using t_blog = decltype( ((database*)nullptr)->get_index< blog_index >().indices().get< by_blog >() );
+#pragma GCC diagnostic pop
 
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::full_feed >( t_feed& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::part_feed >( t_feed& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;

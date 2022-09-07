@@ -6,7 +6,7 @@
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -56,14 +56,12 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = OBSOLETE_TREASURY_ACCOUNT;
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     }
     tx.clear();
 
@@ -74,14 +72,12 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to_account = OBSOLETE_TREASURY_ACCOUNT;
       op.percent = 50 * HIVE_1_PERCENT;
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to_account = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     }
     tx.clear();
 
@@ -92,32 +88,27 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = OBSOLETE_TREASURY_ACCOUNT;
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.amount = ASSET( "1.000 TBD" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = "alice";
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
       BOOST_REQUIRE( get_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
     }
     tx.clear();
@@ -129,14 +120,12 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = OBSOLETE_TREASURY_ACCOUNT;
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
       tx.clear();
       op.to = NEW_HIVE_TREASURY_ACCOUNT;
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      BOOST_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::assert_exception );
+      BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
     }
     tx.clear();
 
@@ -158,7 +147,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     {
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       } );
     } );
     fund( "alice", ASSET( "10.000 TESTS" ) );
@@ -176,8 +165,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       comment.title = "test";
       comment.body = "Hello world";
       tx.operations.push_back( comment );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -190,8 +178,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       op.allow_curation_rewards = false;
       op.extensions.insert( b );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -202,13 +189,12 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
       vote.voter = "alice";
       vote.weight = HIVE_100_PERCENT;
       tx.operations.push_back( vote );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
     asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
 
@@ -235,7 +221,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
+        gpo.proposal_fund_percent = 0;
       } );
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
       db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );

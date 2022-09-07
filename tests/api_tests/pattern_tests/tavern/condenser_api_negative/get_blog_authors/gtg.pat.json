@@ -1,0 +1,23 @@
+{
+  "code": -32003,
+  "data": {
+    "code": 10,
+    "message": "Assert Exception",
+    "name": "assert_exception",
+    "stack": [
+      {
+        "context": {
+          "file": "condenser_api.cpp",
+          "hostname": "",
+          "level": "error",
+          "line": 1076,
+          "method": "get_blog_authors",
+          "timestamp": "2021-08-30T10:18:12"
+        },
+        "data": {},
+        "format": "_follow_api: follow_api_plugin not enabled."
+      }
+    ]
+  },
+  "message": "Assert Exception:_follow_api: follow_api_plugin not enabled."
+}

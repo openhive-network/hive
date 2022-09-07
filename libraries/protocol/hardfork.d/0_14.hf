@@ -17,6 +17,6 @@
 
 #define HIVE_HARDFORK_0_14_TIME  1474383600 // Tue, 20 Sep 2016 15:00:00 GMT
 
-#define HIVE_HARDFORK_0_14_VERSION hardfork_version( 0, 14 )
+#define HIVE_HARDFORK_0_14_VERSION hive::protocol::hardfork_version( 0, 14 )
 
 #endif

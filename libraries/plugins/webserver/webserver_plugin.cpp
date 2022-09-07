@@ -1,6 +1,8 @@
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/webserver/local_endpoint.hpp>
 
+#include <hive/plugins/json_rpc/utility.hpp>
+
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <fc/network/ip.hpp>
@@ -9,9 +11,11 @@
 #include <fc/network/resolve.hpp>
 
 #include <boost/asio.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
-#include <boost/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/config/asio.hpp>
@@ -26,16 +30,7 @@
 #include <memory>
 #include <iostream>
 
-#define LOG_DELAY(start_time, log_threshold, msg) \
-  { fc::time_point current_time = fc::time_point::now(); \
-    fc::microseconds delay = current_time - start_time; \
-    if (delay > log_threshold) { \
-      double delay_seconds = double(int64_t(delay.count() / 1000)) / 1000.0; \
-      std::ostringstream os; \
-      os << std::fixed << std::setprecision(3) << delay_seconds; \
-      ulog(msg ": ${delay_seconds} s", ("delay_seconds", os.str())); \
-      } \
-  }
+using namespace boost::placeholders;
 
 namespace hive { namespace plugins { namespace webserver {
 
@@ -178,6 +173,10 @@ class webserver_plugin_impl
     boost::signals2::connection         chain_sync_con;
 
     plugins::chain::chain_plugin& chain;
+
+  private:
+    void update_http_endpoint();
+    void update_ws_endpoint();
 };
 
 void webserver_plugin_impl::prepare_threads()
@@ -185,16 +184,20 @@ void webserver_plugin_impl::prepare_threads()
   thread_pool_work.reset( new asio::io_service::work( this->thread_pool_ios ) );
 
   for( uint32_t i = 0; i < thread_pool_size; ++i )
-    thread_pool.create_thread( boost::bind( &asio::io_service::run, &thread_pool_ios ) );
+    thread_pool.create_thread( [&]() { fc::set_thread_name("api"); thread_pool_ios.run(); } );
 }
 
 void webserver_plugin_impl::start_webserver()
 {
+  const bool ws_and_http_uses_same_endpoint = http_endpoint && http_endpoint == ws_endpoint && http_endpoint->port() != 0;
+
   if( ws_endpoint )
   {
-    ws_thread = std::make_shared<std::thread>( [&]()
+    ws_thread = std::make_shared<std::thread>( [&, ws_and_http_uses_same_endpoint]()
     {
       ilog( "start processing ws thread" );
+      fc::set_thread_name("websocket");
+      fc::thread::current().set_name("websocket");
       try
       {
         ws_server.clear_access_channels( websocketpp::log::alevel::all );
@@ -204,14 +207,27 @@ void webserver_plugin_impl::start_webserver()
 
         ws_server.set_message_handler( boost::bind( &webserver_plugin_impl::handle_ws_message, this, &ws_server, _1, _2 ) );
 
-        if( http_endpoint && http_endpoint == ws_endpoint )
+        if( ws_and_http_uses_same_endpoint )
         {
           ws_server.set_http_handler( boost::bind( &webserver_plugin_impl::handle_http_message, this, &ws_server, _1 ) );
-          ilog( "start listening for http requests" );
         }
 
-        ilog( "start listening for ws requests" );
         ws_server.listen( *ws_endpoint );
+        update_ws_endpoint();
+        if( ws_and_http_uses_same_endpoint )
+        {
+          ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
+        }
+        ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
+
+        hive::notify( "webserver listening",
+      // {
+          "type", "WS",
+          "address", ws_endpoint->address().to_string(),
+          "port", ws_endpoint->port()
+      // }
+      );
+
         ws_server.start_accept();
 
         ws_ios.run();
@@ -224,11 +240,13 @@ void webserver_plugin_impl::start_webserver()
     });
   }
 
-  if( http_endpoint && ( ( ws_endpoint && ws_endpoint != http_endpoint ) || !ws_endpoint ) )
+  if( http_endpoint && ( !ws_and_http_uses_same_endpoint || !ws_endpoint ) )
   {
     http_thread = std::make_shared<std::thread>( [&]()
     {
       ilog( "start processing http thread" );
+      fc::set_thread_name("http");
+      fc::thread::current().set_name("http");
       try
       {
         http_server.clear_access_channels( websocketpp::log::alevel::all );
@@ -238,9 +256,18 @@ void webserver_plugin_impl::start_webserver()
 
         http_server.set_http_handler( boost::bind( &webserver_plugin_impl::handle_http_message, this, &http_server, _1 ) );
 
-        ilog( "start listening for http requests" );
         http_server.listen( *http_endpoint );
         http_server.start_accept();
+        update_http_endpoint();
+        ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
+
+        hive::notify( "webserver listening",
+        // {
+            "type", "HTTP",
+            "address", http_endpoint->address().to_string(),
+            "port", http_endpoint->port()
+        // }
+        );
 
         http_ios.run();
         ilog( "http io service exit" );
@@ -255,6 +282,8 @@ void webserver_plugin_impl::start_webserver()
   if( unix_endpoint ) {
     unix_thread = std::make_shared<std::thread>( [&]() {
       ilog( "start processing unix http thread" );
+      fc::set_thread_name("unix_http");
+      fc::thread::current().set_name("unix_http");
       try {
         unix_server.clear_access_channels( websocketpp::log::alevel::all );
         unix_server.clear_error_channels( websocketpp::log::elevel::all );
@@ -278,6 +307,27 @@ void webserver_plugin_impl::start_webserver()
       }
     });
   }
+}
+
+void update_endpoint(websocket_server_type& server, optional< tcp::endpoint >& endpoint)
+{
+  if (endpoint->port() == 0)
+  {
+    boost::system::error_code error;
+    auto server_port = server.get_local_endpoint(error).port();
+    FC_ASSERT(!error);
+    endpoint->port(server_port);
+  }
+}
+
+void webserver_plugin_impl::update_http_endpoint()
+{
+  update_endpoint(http_server, http_endpoint);
+}
+
+void webserver_plugin_impl::update_ws_endpoint()
+{
+  update_endpoint(ws_server, ws_endpoint);
 }
 
 void webserver_plugin_impl::stop_webserver()
@@ -361,7 +411,7 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
         std::stringstream s;
         s << "unknown exception: " << e.what();
         con->send( s.str() );
-	ulog("${e}", ("e", s.str()) );
+        ulog("${e}", ("e", s.str()) );
       }
     }
   });
@@ -411,7 +461,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
         s << "unknown exception: " << e.what();
         con->set_body( s.str() );
         con->set_status( websocketpp::http::status_code::internal_server_error );
-	ulog("${e}", ("e", s.str()) );
+        ulog("${e}", ("e", s.str()) );
       }
     }
 
@@ -467,7 +517,11 @@ void webserver_plugin_impl::handle_http_request(websocket_local_server_type* ser
 
 } // detail
 
-webserver_plugin::webserver_plugin() {}
+webserver_plugin::webserver_plugin()
+{
+  set_pre_shutdown_order(webserver_order);
+}
+
 webserver_plugin::~webserver_plugin() {}
 
 void webserver_plugin::set_program_options( options_description&, options_description& cfg )
@@ -560,9 +614,15 @@ void webserver_plugin::plugin_startup()
   }
 }
 
+void webserver_plugin::plugin_pre_shutdown()
+{
+  ilog("Shutting down webserver_plugin...");
+  my->stop_webserver();
+}
+
 void webserver_plugin::plugin_shutdown()
 {
-  my->stop_webserver();
+  // everything moved to pre_shutdown
 }
 
 } } } // hive::plugins::webserver

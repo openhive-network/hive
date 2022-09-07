@@ -1,0 +1,47 @@
+{
+  "next_block_range_begin": 3251966,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 3251964,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "arhag",
+          "vesting_shares": {
+            "amount": "4538488629",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 5338047,
+      "timestamp": "2016-07-16T17:58:30",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 3251965,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "clayop",
+          "vesting_shares": {
+            "amount": "4538487401",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 5338048,
+      "timestamp": "2016-07-16T17:58:33",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

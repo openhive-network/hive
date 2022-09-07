@@ -1,0 +1,165 @@
+{
+  "history": [
+    [
+      14412,
+      {
+        "block": 2907600,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T15:53:27",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      14720,
+      {
+        "block": 2908800,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T16:53:36",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      14929,
+      {
+        "block": 2910000,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T17:53:57",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      15127,
+      {
+        "block": 2911200,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T18:54:12",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      15348,
+      {
+        "block": 2912400,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T19:54:27",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      15599,
+      {
+        "block": 2913600,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T20:54:45",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      15786,
+      {
+        "block": 2914800,
+        "op": {
+          "type": "liquidity_reward_operation",
+          "value": {
+            "owner": "adm",
+            "payout": {
+              "amount": "1200000",
+              "nai": "@@000000021",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 2,
+        "operation_id": 0,
+        "timestamp": "2016-07-04T21:55:00",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "next_block_range_begin": 3744647,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 3744645,
+      "op": {
+        "type": "fill_order_operation",
+        "value": {
+          "current_orderid": 3472337728,
+          "current_owner": "enki",
+          "current_pays": {
+            "amount": "149805",
+            "nai": "@@000000021",
+            "precision": 3
+          },
+          "open_orderid": 1470182320,
+          "open_owner": "eeks",
+          "open_pays": {
+            "amount": "371516",
+            "nai": "@@000000013",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 9881847,
+      "timestamp": "2016-08-03T00:00:00",
+      "trx_id": "da8c384fd3838347260a6abf1cb13924b6113bf6",
+      "trx_in_block": 4,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

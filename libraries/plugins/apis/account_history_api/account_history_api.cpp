@@ -1,8 +1,6 @@
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 
-#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
-
 namespace hive { namespace plugins { namespace account_history {
 
 namespace detail {
@@ -20,110 +18,6 @@ class abstract_account_history_api_impl
 
     chain::database& _db;
 };
-
-class account_history_api_chainbase_impl : public abstract_account_history_api_impl
-{
-  public:
-    account_history_api_chainbase_impl() : abstract_account_history_api_impl() {}
-    ~account_history_api_chainbase_impl() {}
-
-    get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
-    get_transaction_return get_transaction( const get_transaction_args& ) override;
-    get_account_history_return get_account_history( const get_account_history_args& ) override;
-    enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) override;
-};
-
-DEFINE_API_IMPL( account_history_api_chainbase_impl, get_ops_in_block )
-{
-  FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
-
-  return _db.with_read_lock( [&]()
-  {
-    const auto& idx = _db.get_index< chain::operation_index, chain::by_location >();
-    auto itr = idx.lower_bound( args.block_num );
-
-    get_ops_in_block_return result;
-
-    while( itr != idx.end() && itr->block == args.block_num )
-    {
-      api_operation_object temp = *itr;
-      if( !args.only_virtual || is_virtual_operation( temp.op ) )
-        result.ops.emplace( std::move( temp ) );
-      ++itr;
-    }
-
-    return result;
-  });
-}
-
-DEFINE_API_IMPL( account_history_api_chainbase_impl, get_transaction )
-{
-#ifdef SKIP_BY_TX_ID
-  FC_ASSERT( false, "This node's operator has disabled operation indexing by transaction_id" );
-#else
-
-  FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
-
-  return _db.with_read_lock( [&]()
-  {
-    get_transaction_return result;
-
-    const auto& idx = _db.get_index< chain::operation_index, chain::by_transaction_id >();
-    auto itr = idx.lower_bound( args.id );
-    if( itr != idx.end() && itr->trx_id == args.id )
-    {
-      auto blk = _db.fetch_block_by_number( itr->block );
-      FC_ASSERT( blk.valid() );
-      FC_ASSERT( blk->transactions.size() > itr->trx_in_block );
-      result = blk->transactions[itr->trx_in_block];
-      result.block_num       = itr->block;
-      result.transaction_num = itr->trx_in_block;
-    }
-    else
-    {
-      FC_ASSERT( false, "Unknown Transaction ${t}", ("t",args.id) );
-    }
-
-    return result;
-  });
-#endif
-}
-
-DEFINE_API_IMPL( account_history_api_chainbase_impl, get_account_history )
-{
-  FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
-  FC_ASSERT( args.start >= args.limit-1, "start must be greater than or equal to limit-1 (start is 0-based index)" );
-
-  FC_ASSERT(args.include_reversible.valid() == false, "Supported only in AH-Rocksdb plugin");
-
-  return _db.with_read_lock( [&]()
-  {
-    const auto& idx = _db.get_index< chain::account_history_index, chain::by_account >();
-    auto itr = idx.lower_bound( boost::make_tuple( args.account, args.start ) );
-    uint32_t n = 0;
-
-    get_account_history_return result;
-    while( true )
-    {
-      if( itr == idx.end() )
-        break;
-      if( itr->account != args.account )
-        break;
-      if( n >= args.limit )
-        break;
-      result.history[ itr->sequence ] = _db.get( itr->op );
-      ++itr;
-      ++n;
-    }
-
-    return result;
-  });
-}
-
-DEFINE_API_IMPL( account_history_api_chainbase_impl, enum_virtual_ops )
-{
-  FC_ASSERT( false, "This API is not supported for account history backed by Chainbase" );
-}
 
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
 {
@@ -164,9 +58,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
   get_account_history_return result;
 
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
-  
   unsigned int total_processed_items = 0;
-
   if(args.operation_filter_low || args.operation_filter_high)
   {
     uint64_t filter_low = args.operation_filter_low ? *args.operation_filter_low : 0;
@@ -203,7 +95,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
     { //if we have some results but not all requested, return what we have
       //but if no results, throw an exception that gives a starting item for further searching via pagination
       if (result.history.empty())
-	throw;
+        throw;
     }
   }
   else
@@ -212,7 +104,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
       [&result](unsigned int sequence, const account_history_rocksdb::rocksdb_operation_object& op) -> bool
       {
         /// Here internal counter (inside find_account_history_data) does the limiting job.
-        result.history[sequence] = api_operation_object(op);
+        result.history[sequence] = api_operation_object{op};
         return true;
       });
   }
@@ -222,35 +114,33 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 {
-#ifdef SKIP_BY_TX_ID
-  FC_ASSERT(false, "This node's operator has disabled operation indexing by transaction_id");
-#else
   uint32_t blockNo = 0;
   uint32_t txInBlock = 0;
 
+  hive::protocol::transaction_id_type id(args.id);
+  if (args.id.size() != id.data_size() * 2)
+    FC_ASSERT(false, "Transaction hash '${t}' has invalid size. Transaction hash should have size of ${s} bits", ("t", args.id)("s", sizeof(id._hash) * 8));
+
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
 
-  if(_dataSource.find_transaction_info(args.id, include_reversible, &blockNo, &txInBlock))
-    {
-    get_transaction_return result;
-    _db.with_read_lock([this, blockNo, txInBlock, &result]()
-    {
-    auto blk = _db.fetch_block_by_number(blockNo);
-    FC_ASSERT(blk.valid());
-    FC_ASSERT(blk->transactions.size() > txInBlock);
-    result = blk->transactions[txInBlock];
-    result.block_num = blockNo;
-    result.transaction_num = txInBlock;
-    });
+  if(_dataSource.find_transaction_info(id, include_reversible, &blockNo, &txInBlock))
+  {
+    std::shared_ptr<hive::chain::full_block_type> blk = _db.fetch_block_by_number(blockNo, fc::seconds(1));
+    FC_ASSERT(blk);
+    
+    const auto& full_txs = blk->get_full_transactions();
+
+    FC_ASSERT(full_txs.size() > txInBlock);
+    const auto& full_tx = full_txs[txInBlock];
+
+    get_transaction_return result(full_tx->get_transaction(), full_tx->get_transaction_id(), blockNo, txInBlock);
 
     return result;
-    }
+  }
   else
-    {
-    FC_ASSERT(false, "Unknown Transaction ${t}", ("t", args.id));
-    }
-#endif
-
+  {
+    FC_ASSERT(false, "Unknown Transaction ${id}", (id));
+  }
 }
 
 #define CHECK_OPERATION( r, data, CLASS_NAME ) \
@@ -280,13 +170,15 @@ struct filtering_visitor
   (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
   (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
   (return_vesting_delegation_operation)(comment_benefactor_reward_operation)(producer_reward_operation)
-  (clear_null_account_balance_operation)(proposal_pay_operation)(sps_fund_operation)
+  (clear_null_account_balance_operation)(proposal_pay_operation)(dhf_funding_operation)
   (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
   (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation)
-  (sps_convert_operation)(expired_account_notification_operation)(changed_recovery_account_operation)
+  (dhf_conversion_operation)(expired_account_notification_operation)(changed_recovery_account_operation)
   (transfer_to_vesting_completed_operation)(pow_reward_operation)(vesting_shares_split_operation)
   (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
-  (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation) )
+  (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation)(limit_order_cancelled_operation)
+  (producer_missed_operation)(proposal_fee_operation)(collateralized_convert_immediate_conversion_operation)
+  (escrow_approved_operation)(escrow_rejected_operation) )
 
 private:
   uint64_t _filter = 0;
@@ -295,23 +187,26 @@ private:
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 {
+  constexpr int32_t max_limit{ 150'000 };
   enum_virtual_ops_return result;
 
   bool groupOps = args.group_by_block.valid() && *args.group_by_block;
-
   bool include_reversible = args.include_reversible.valid() ? *args.include_reversible : false;
+  int32_t limit = args.limit.valid() ? *args.limit : max_limit;
+
+  FC_ASSERT( limit > 0, "limit of ${l} is lesser or equal 0", ("l",limit) );
+  FC_ASSERT( limit <= max_limit, "limit of ${l} is greater than maxmimum allowed", ("l",limit) );
 
   std::pair< uint32_t, uint64_t > next_values = _dataSource.enum_operations_from_block_range(args.block_range_begin,
-    args.block_range_end, include_reversible, args.operation_begin, args.limit,
+    args.block_range_end, include_reversible, args.operation_begin, limit,
     [groupOps, &result, &args ](const account_history_rocksdb::rocksdb_operation_object& op, uint64_t operation_id, bool irreversible)
     {
+      api_operation_object _api_obj(op);
+
+      _api_obj.operation_id = operation_id;
 
       if( args.filter.valid() )
       {
-        api_operation_object _api_obj( op );
-
-        _api_obj.operation_id = operation_id;
-
         filtering_visitor accepting_visitor;
 
         if(accepting_visitor.check(*args.filter, _api_obj.op))
@@ -326,7 +221,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
               w.timestamp = op.timestamp;
               w.irreversible = irreversible;
             }
-            
+
             w.ops.emplace_back(std::move(_api_obj));
           }
           else
@@ -351,15 +246,10 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
             w.irreversible = irreversible;
           }
 
-          api_operation_object _api_obj(op);
-          _api_obj.operation_id = operation_id;
           w.ops.emplace_back(std::move(_api_obj));
         }
         else
         {
-          api_operation_object _api_obj(op);
-          _api_obj.operation_id = operation_id;
-
           result.ops.emplace_back(std::move(_api_obj));
         }
         return true;
@@ -377,25 +267,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
 account_history_api::account_history_api()
 {
-  auto ah_cb = appbase::app().find_plugin< hive::plugins::account_history::account_history_plugin >();
-  auto ah_rocks = appbase::app().find_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >();
-
-  if( ah_rocks != nullptr )
-  {
-    if( ah_cb != nullptr )
-      wlog( "account_history and account_history_rocksdb plugins are both enabled. account_history_api will query from account_history_rocksdb" );
-
-    my = std::make_unique< detail::account_history_api_rocksdb_impl >();
-  }
-  else if( ah_cb != nullptr )
-  {
-    my = std::make_unique< detail::account_history_api_chainbase_impl >();
-  }
-  else
-  {
-    FC_ASSERT( false, "Account History API only works if account_history or account_history_rocksdb plugins are enabled" );
-  }
-
+  my = std::make_unique< detail::account_history_api_rocksdb_impl >();
   JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME );
 }
 

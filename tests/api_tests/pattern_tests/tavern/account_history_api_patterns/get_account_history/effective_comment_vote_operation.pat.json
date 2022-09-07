@@ -1,0 +1,956 @@
+{
+  "history": [
+    [
+      2166,
+      {
+        "block": 1261922,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5768066",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 691600921,
+            "total_vote_weight": "36191518155478",
+            "voter": "steemrollin",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T07:13:57",
+        "trx_id": "413ca262fb5c77dfc1f78f4443681ccc815ccc99",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2181,
+      {
+        "block": 1262196,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "791",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-tuck-fheman-medical-equipment-crashes-during-heart-procedure-because-of-antivirus-scan-20160508t044758862z",
+            "rshares": "151385198541",
+            "total_vote_weight": "151385198541",
+            "voter": "tuck-fheman",
+            "weight": "151385198541"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T07:27:45",
+        "trx_id": "01a0af82c0967e0c22f78403744a7e51b3626f9a",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2222,
+      {
+        "block": 1262996,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5784595",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": "151385198541",
+            "total_vote_weight": "36191518954814",
+            "voter": "tuck-fheman",
+            "weight": 799336
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T08:08:00",
+        "trx_id": "c392972effa72d9363e7f6c32953ad9404da08bb",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2224,
+      {
+        "block": 1262997,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5742004",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": "148357494571",
+            "total_vote_weight": "35764702966621",
+            "voter": "tuck-fheman",
+            "weight": 758057
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T08:08:03",
+        "trx_id": "69173a4b735df8e2948902c1cddbafd2bc74d911",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2233,
+      {
+        "block": 1263131,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5922510",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": "1284793191918",
+            "total_vote_weight": "35765176591186",
+            "voter": "au1nethyb1",
+            "weight": 473624565
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T08:14:48",
+        "trx_id": "1c549d873dfacd1e1dc5dcdf4d4830c01343a2ab",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2235,
+      {
+        "block": 1263131,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5964292",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": "1284793191918",
+            "total_vote_weight": "36191989068740",
+            "voter": "au1nethyb1",
+            "weight": 470113926
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T08:14:48",
+        "trx_id": "9600e5d71d58fc3b092cefae317e8055b97b2ef7",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ],
+    [
+      2376,
+      {
+        "block": 1265961,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5934063",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": "101251038008",
+            "total_vote_weight": "35765176822296",
+            "voter": "jamie",
+            "weight": 231110
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:36:45",
+        "trx_id": "2558930eb829e336a218334d2051ebd030e16821",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2385,
+      {
+        "block": 1266083,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5960135",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 82385000,
+            "total_vote_weight": "36191989068740",
+            "voter": "officialinfotech",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:42:51",
+        "trx_id": "e1681450d6219fa2aebb583de37d33b6a56b6dd1",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2390,
+      {
+        "block": 1266137,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5960404",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 85935000,
+            "total_vote_weight": "36191989068740",
+            "voter": "officialfinance",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:45:36",
+        "trx_id": "40e3a599b3c1be72c5830d10ccb041ad00565edf",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2393,
+      {
+        "block": 1266149,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5960472",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 66163433,
+            "total_vote_weight": "36191989068740",
+            "voter": "infowars.com",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:46:12",
+        "trx_id": "092bb0d84866bf54ece397ff4dc36b12717cc02b",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2398,
+      {
+        "block": 1266212,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5960780",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 65582386,
+            "total_vote_weight": "36191989068740",
+            "voter": "alexjones",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:49:21",
+        "trx_id": "ae2476009f43ac2b3be638fbfc3cf99447730d53",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2401,
+      {
+        "block": 1266221,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5960836",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 81042100,
+            "total_vote_weight": "36191989068740",
+            "voter": "officialfuzzy",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:49:48",
+        "trx_id": "19d0fa04d702d4fd5cd5cbb9782e9fee82a5218c",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2403,
+      {
+        "block": 1266232,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "6997209",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": "5802465695828",
+            "total_vote_weight": "36228680528856",
+            "voter": "fuzzyvest",
+            "weight": "36691460116"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T10:50:21",
+        "trx_id": "2a7a8cd61b956611f1e385ea31b3b53515ba8089",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2516,
+      {
+        "block": 1268489,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "16855591",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "19583245200",
+            "total_vote_weight": "39531087086040",
+            "voter": "cass",
+            "weight": 575
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T12:43:21",
+        "trx_id": "c947f9e6a5faa8b38fbf5526e55bf8d8cc2f6732",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2608,
+      {
+        "block": 1270270,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "7005375",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 523009760,
+            "total_vote_weight": "36228680528856",
+            "voter": "bobsunday",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T14:12:36",
+        "trx_id": "72052d5d69d91d073d2644237c9f8c7ceeed20ae",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2610,
+      {
+        "block": 1270271,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "5936597",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": 511123174,
+            "total_vote_weight": "35765176822296",
+            "voter": "bobsunday",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T14:12:39",
+        "trx_id": "a958555bf28f0c9c2a4bb2179b1f87fd5ace8a8d",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2731,
+      {
+        "block": 1272592,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "24353743",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 674378022,
+            "total_vote_weight": "37008940034691",
+            "voter": "jazzycrypt",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T16:09:00",
+        "trx_id": "c084bca2026aab71c0c2c2ed304bf14cc846e79a",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ],
+    [
+      2734,
+      {
+        "block": 1272628,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "6769917",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "is-vote-changing-an-important-feature-for-steem",
+            "rshares": 608861538,
+            "total_vote_weight": "39484775670330",
+            "voter": "anonimau5",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T16:10:48",
+        "trx_id": "e5556e52bb9a0ecebbcdb08743767a6d84c4f9ed",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2749,
+      {
+        "block": 1272856,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "24362756",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "11752974784",
+            "total_vote_weight": "37008940034721",
+            "voter": "jpb3",
+            "weight": 30
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T16:22:15",
+        "trx_id": "f9248f71a416abb99af675cf7bd3181fedcb0a42",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2830,
+      {
+        "block": 1274459,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13419166",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": "29885796722307",
+            "total_vote_weight": "38751835134587",
+            "voter": "berniesanders",
+            "weight": "2523154605731"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T17:42:33",
+        "trx_id": "2b7cb091c3dce8f73b61af83a582684d2d4ba1b8",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2832,
+      {
+        "block": 1274460,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "11872749",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": "29885796722307",
+            "total_vote_weight": "38607747369088",
+            "voter": "berniesanders",
+            "weight": "2842570546792"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T17:42:36",
+        "trx_id": "4271a3284b005f4f93721da73dca5b32c2778550",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2890,
+      {
+        "block": 1275555,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "23403510",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": 108985000,
+            "total_vote_weight": "37008940034721",
+            "voter": "chocolate",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T18:37:30",
+        "trx_id": "615718c1c45b9701708caf7c306f4ef2e002f2f4",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      2893,
+      {
+        "block": 1275560,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "16125879",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": 104625600,
+            "total_vote_weight": "39531087086040",
+            "voter": "chocolate",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T18:37:45",
+        "trx_id": "f5d9bc6c0860971082a3117d9364fc615f166708",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ],
+    [
+      2895,
+      {
+        "block": 1275565,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13117371",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 100266200,
+            "total_vote_weight": "38751835134587",
+            "voter": "chocolate",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T18:38:00",
+        "trx_id": "2323c79ccb3a6528e2b454a0606c41e208cc2cae",
+        "trx_in_block": 2,
+        "virtual_op": true
+      }
+    ],
+    [
+      2897,
+      {
+        "block": 1275568,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "11670182",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": 98086500,
+            "total_vote_weight": "38607747369088",
+            "voter": "chocolate",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T18:38:09",
+        "trx_id": "325116386afee87e71931b54eba78aa1bef34403",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ],
+    [
+      3008,
+      {
+        "block": 1277711,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13128142",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": 672908871,
+            "total_vote_weight": "38751835134587",
+            "voter": "jbradford",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T20:25:36",
+        "trx_id": "e0875ec0350c2a7ef1438c928bcf53078dbc2973",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3010,
+      {
+        "block": 1277712,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "11679756",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-part-1-capital-gainslosses-for-crypto",
+            "rshares": 672908871,
+            "total_vote_weight": "38607747369088",
+            "voter": "jbradford",
+            "weight": 0
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-08T20:25:39",
+        "trx_id": "d79bd7c3e419d05733dcb93ed268a60cd9091a24",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3240,
+      {
+        "block": 1282083,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "149",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "confirmation-of-accounts-i-control-on-bitcointalkbitsharestalk",
+            "rshares": "31560555001",
+            "total_vote_weight": "31560555001",
+            "voter": "pfunk",
+            "weight": "31560555001"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T00:04:39",
+        "trx_id": "48da7244c34b03ae70815ee05a5500e310ee1646",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3309,
+      {
+        "block": 1283361,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "151",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "confirmation-of-accounts-i-control-on-bitcointalkbitsharestalk",
+            "rshares": 564236662,
+            "total_vote_weight": "31560729062",
+            "voter": "predator",
+            "weight": 174061
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T01:08:39",
+        "trx_id": "91ffb2551bcde991681d7d594f16f062658c977b",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3494,
+      {
+        "block": 1286939,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "13109255",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "tax-issues-facing-us-based-cryptocurrency-holders-and-miners-intro-and-irs-guidelines",
+            "rshares": "2408772048948",
+            "total_vote_weight": "38753096448056",
+            "voter": "nextgencrypto",
+            "weight": 1261313469
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T04:08:12",
+        "trx_id": "bc329d9e8bba39bef3c84030cf42f9e78431730c",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3803,
+      {
+        "block": 1292969,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "25456142",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "-blocktrades-adds-support-for-directly-buyingselling-steem",
+            "rshares": "9901240448969",
+            "total_vote_weight": "37025571774787",
+            "voter": "blackjack",
+            "weight": "16631740066"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T09:10:21",
+        "trx_id": "20323bd68eec46d388c51e197bfe97aeb8193383",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3920,
+      {
+        "block": 1295318,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "15385322",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "openledger-pre-sale-of-dao-tokens-is-now-live",
+            "rshares": "282881642383",
+            "total_vote_weight": "39531088811759",
+            "voter": "liondani",
+            "weight": 1725719
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T11:08:12",
+        "trx_id": "50feaa113762f41edb11bb398cdb8470ab4e850b",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3933,
+      {
+        "block": 1295551,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "blocktrades",
+            "pending_payout": {
+              "amount": "159",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "confirmation-of-accounts-i-control-on-bitcointalkbitsharestalk",
+            "rshares": 2712531910,
+            "total_vote_weight": "31577174104",
+            "voter": "aaaaa",
+            "weight": 16445042
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T11:19:51",
+        "trx_id": "086e466f9d8f834da2c8a0c1e2c1f3fef80e4f0a",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ],
+    [
+      3963,
+      {
+        "block": 1296139,
+        "op": {
+          "type": "effective_comment_vote_operation",
+          "value": {
+            "author": "tuck-fheman",
+            "pending_payout": {
+              "amount": "1868989",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "bitshares-dev-hangout-transcript--may-6th-2016",
+            "rshares": "35082265948601",
+            "total_vote_weight": "30529437689766",
+            "voter": "blocktrades",
+            "weight": "28847679693161"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-05-09T11:49:24",
+        "trx_id": "f6b40bc59cf82cedda94f9249b37b008987924d3",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

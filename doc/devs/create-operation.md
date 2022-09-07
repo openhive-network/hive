@@ -166,7 +166,7 @@ Include the new header from `smt_objects.hpp`.
 an interprocess compatible type and must have an `allocator` forwarded from the constructor.
 In practice, this means strings should be `shared_string`, and collections (vector, deque)
 should be one of the `boost::interprocess` types.  See examples in fields
-`transaction_object::packed_trx`, `comment_object::permlink`, and
+`transaction_object::packed_trx`, `comment_cashout_object::permlink`, and
 `feed_history_object::price_history`.
 - (9i) The first field should be `id_type id;` - if you are using `CHAINBASE_OBJECT` macro it
 will be added automatically
@@ -224,7 +224,7 @@ database table.  The table ID of that database table is an integer value given b
 must go into the memory-mapped file (not on the heap).  Any variable-length fields in any
 database object must have the allocator passed-in, and must be compatible with multiprocess
 access.  In practice this means using `boost::interprocess::vector` and `shared_string`.
-Examples may be seen with fields `transaction_object::packed_trx`, `comment_object::permlink`, and
+Examples may be seen with fields `transaction_object::packed_trx`, `comment_cashout_object::permlink`, and
 `feed_history_object::price_history`.
 
 - (9i) Each individual object has an integer object ID field called `id` which acts as a

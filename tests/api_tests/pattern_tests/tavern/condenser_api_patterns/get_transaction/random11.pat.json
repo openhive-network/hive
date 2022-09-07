@@ -1,0 +1,26 @@
+{
+  "block_num": 4243411,
+  "expiration": "2016-08-20T10:05:27",
+  "extensions": [],
+  "operations": [
+    [
+      "comment",
+      {
+        "author": "doitvoluntarily",
+        "body": "thx for info!",
+        "json_metadata": "{\"tags\":[\"bitcoin\"]}",
+        "parent_author": "cryptoeasy",
+        "parent_permlink": "bitfinex-an-unusual-way-to-socialize-the-losses",
+        "permlink": "re-cryptoeasy-bitfinex-an-unusual-way-to-socialize-the-losses-20160820t100514529z",
+        "title": ""
+      }
+    ]
+  ],
+  "ref_block_num": 49097,
+  "ref_block_prefix": 351667746,
+  "signatures": [
+    "206286481e2e1b97bc3b3412bf8901bb5e694663d3b8ccc440dbd32c53ea2e82f7011593ceffa1b79288f3137fa894c8ccccbf65bae69417b40acf1902e425ce44"
+  ],
+  "transaction_id": "9a21547ecb2c9b176d26aa4027347cbf6e6d3f77",
+  "transaction_num": 0
+}

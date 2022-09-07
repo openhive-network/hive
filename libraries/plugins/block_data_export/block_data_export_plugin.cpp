@@ -71,7 +71,8 @@ class block_data_export_plugin_impl
     void on_post_apply_block( const block_notification& note );
 
     void register_export_data_factory( const std::string& name, std::function< std::shared_ptr< exportable_block_data >() >& factory );
-    void create_export_data( const block_id_type& previous, const block_id_type& block_id );
+    void unregister_export_data( const std::string& name );
+    void create_export_data( const block_notification& note );
     void send_export_data();
     std::shared_ptr< exportable_block_data > find_abstract_export_data( const std::string& name );
 
@@ -92,6 +93,7 @@ class block_data_export_plugin_impl
       > >                        _factory_list;
     std::string                   _output_name;
     bool                          _enabled = false;
+    bool                          _skip_empty = false;
 
     size_t                        _max_queue_size = 100;
     boost::concurrent::sync_bounded_queue< std::shared_ptr< work_item > >    _data_queue;
@@ -188,15 +190,30 @@ void block_data_export_plugin_impl::register_export_data_factory(
   _factory_list.emplace_back( name, factory );
 }
 
-void block_data_export_plugin_impl::create_export_data( const block_id_type& previous, const block_id_type& block_id )
+void block_data_export_plugin_impl::unregister_export_data( const std::string& name )
+{
+  //linear search on (most likely very short) vector
+  for( auto it = _factory_list.begin(); it != _factory_list.end(); ++it )
+  {
+    if( it->first == name )
+    {
+      _factory_list.erase( it );
+      break;
+    }
+  }
+  if( _edo )
+    _edo->export_data.erase( name );
+}
+
+void block_data_export_plugin_impl::create_export_data( const block_notification& note )
 {
   _edo.reset();
   if( !_enabled )
     return;
   _edo = std::make_shared< api_export_data_object >();
 
-  _edo->block_id = block_id;
-  _edo->previous = previous;
+  _edo->block_id = note.block_id;
+  _edo->previous = note.prev_block_id;
   for( const auto& fact : _factory_list )
   {
     _edo->export_data.emplace( fact.first, fact.second() );
@@ -205,6 +222,9 @@ void block_data_export_plugin_impl::create_export_data( const block_id_type& pre
 
 void block_data_export_plugin_impl::send_export_data()
 {
+  if( _skip_empty && _edo->export_data.empty() )
+    return;
+
   std::shared_ptr< work_item > work = std::make_shared< work_item >();
   work->edo = _edo;
   _edo.reset();
@@ -236,7 +256,7 @@ std::shared_ptr< exportable_block_data > block_data_export_plugin_impl::find_abs
 
 void block_data_export_plugin_impl::on_pre_apply_block( const block_notification& note )
 {
-  create_export_data( note.block.previous, note.block_id );
+  create_export_data( note );
 }
 
 void block_data_export_plugin_impl::on_post_apply_block( const block_notification& note )
@@ -261,11 +281,16 @@ std::shared_ptr< exportable_block_data > block_data_export_plugin::find_abstract
   return my->find_abstract_export_data( name );
 }
 
+void block_data_export_plugin::unregister_export_data( const std::string& name )
+{
+  my->unregister_export_data( name );
+}
 
 void block_data_export_plugin::set_program_options( options_description& cli, options_description& cfg )
 {
   cfg.add_options()
       ("block-data-export-file", boost::program_options::value< string >()->default_value("NONE"), "Where to export data (NONE to discard)")
+      ("block-data-skip-empty", boost::program_options::value< bool >()->default_value( false ), "Skip producing when no factory is registered" )
       ;
 }
 
@@ -280,6 +305,7 @@ void block_data_export_plugin::plugin_initialize( const boost::program_options::
     my->_enabled = (my->_output_name != "NONE");
     if( !my->_enabled )
       return;
+    my->_skip_empty = options.at( "block-data-skip-empty" ).as< bool >();
 
     my->_pre_apply_block_conn = my->_db.add_pre_apply_block_handler(
       [&]( const block_notification& note ){ my->on_pre_apply_block( note ); }, *this, -9300 );

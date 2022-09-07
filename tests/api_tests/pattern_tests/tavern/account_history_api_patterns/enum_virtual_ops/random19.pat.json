@@ -1,0 +1,167 @@
+{
+  "next_block_range_begin": 2965019,
+  "next_operation_begin": 0,
+  "ops": [],
+  "ops_by_block": [
+    {
+      "block": 2965014,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 2965014,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "abit",
+              "vesting_shares": {
+                "amount": "5071432710",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 4063526,
+          "timestamp": "2016-07-06T16:08:06",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-07-06T16:08:06"
+    },
+    {
+      "block": 2965015,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 2965015,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "bitcube",
+              "vesting_shares": {
+                "amount": "5071431169",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 4063527,
+          "timestamp": "2016-07-06T16:08:09",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-07-06T16:08:09"
+    },
+    {
+      "block": 2965016,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 2965016,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "roadscape",
+              "vesting_shares": {
+                "amount": "5071429627",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 4063528,
+          "timestamp": "2016-07-06T16:08:12",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-07-06T16:08:12"
+    },
+    {
+      "block": 2965017,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 2965017,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "kushed",
+              "vesting_shares": {
+                "amount": "5071428085",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 4063529,
+          "timestamp": "2016-07-06T16:08:15",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-07-06T16:08:15"
+    },
+    {
+      "block": 2965018,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 2965018,
+          "op": {
+            "type": "effective_comment_vote_operation",
+            "value": {
+              "author": "gie",
+              "pending_payout": {
+                "amount": "1",
+                "nai": "@@000000013",
+                "precision": 3
+              },
+              "permlink": "4qy2fn-hello-steemit-community",
+              "rshares": 340625486,
+              "total_vote_weight": "105238921381413533",
+              "voter": "indah-rahayu",
+              "weight": "279561040594056"
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 4063531,
+          "timestamp": "2016-07-06T16:08:15",
+          "trx_id": "2af26af0d7836f190f8a4163e033d7a8f75aa2f7",
+          "trx_in_block": 0,
+          "virtual_op": true
+        },
+        {
+          "block": 2965018,
+          "op": {
+            "type": "producer_reward_operation",
+            "value": {
+              "producer": "steemed",
+              "vesting_shares": {
+                "amount": "5071426544",
+                "nai": "@@000000037",
+                "precision": 6
+              }
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 4063533,
+          "timestamp": "2016-07-06T16:08:18",
+          "trx_id": "0000000000000000000000000000000000000000",
+          "trx_in_block": 4294967295,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-07-06T16:08:15"
+    }
+  ]
+}

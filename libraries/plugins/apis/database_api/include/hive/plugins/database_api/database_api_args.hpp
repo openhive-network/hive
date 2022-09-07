@@ -15,6 +15,13 @@ using protocol::transaction_id_type;
 using protocol::public_key_type;
 using plugins::json_rpc::void_type;
 
+enum class withdraw_route_type
+{
+  incoming,
+  outgoing,
+  all
+};
+
 enum sort_order_type
 {
   by_name,
@@ -38,9 +45,7 @@ enum sort_order_type
   by_conversion_date,
   by_cashout_time,
   by_permlink,
-  by_root,
   by_parent,
-  by_author_last_update,
   by_comment_voter,
   by_voter_comment,
   by_price,
@@ -74,7 +79,7 @@ struct list_object_args_type
 /* get_config */
 
 typedef void_type          get_config_args;
-typedef fc::variant_object get_config_return;
+typedef fc::mutable_variant_object get_config_return;
 
 /* get_version */
 typedef void_type          get_version_args;
@@ -508,7 +513,7 @@ struct list_proposals_return
 
 struct find_proposals_args
 {
-  vector< api_id_type > proposal_ids;
+  vector< int64_t > proposal_ids;
 };
 
 typedef list_proposals_return find_proposals_return;
@@ -572,6 +577,7 @@ typedef get_required_signatures_return get_potential_signatures_return;
 struct verify_authority_args
 {
   signed_transaction trx;
+  hive::protocol::pack_type pack = hive::protocol::pack_type::legacy;
 };
 
 struct verify_authority_return
@@ -594,6 +600,7 @@ struct verify_signatures_args
   vector< account_name_type >   required_owner;
   vector< account_name_type >   required_active;
   vector< account_name_type >   required_posting;
+  vector< account_name_type >   required_witness;
   vector< authority >           required_other;
 
   void get_required_owner_authorities( flat_set< account_name_type >& a )const
@@ -609,6 +616,11 @@ struct verify_signatures_args
   void get_required_posting_authorities( flat_set< account_name_type >& a )const
   {
     a.insert( required_posting.begin(), required_posting.end() );
+  }
+
+  void get_required_witness_signatures( flat_set< account_name_type >& a )const
+  {
+    a.insert( required_witness.begin(), required_witness.end() );
   }
 
   void get_required_authorities( vector< authority >& a )const
@@ -694,6 +706,8 @@ struct is_known_transaction_return
 FC_REFLECT( hive::plugins::database_api::get_version_return,
         (blockchain_version)(hive_revision)(fc_revision)(chain_id) )
 
+FC_REFLECT_ENUM( hive::plugins::database_api::withdraw_route_type, (incoming)(outgoing)(all) )
+
 FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_name)
   (by_proxy)
@@ -716,9 +730,7 @@ FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_conversion_date)
   (by_cashout_time)
   (by_permlink)
-  (by_root)
   (by_parent)
-  (by_author_last_update)
   (by_comment_voter)
   (by_voter_comment)
   (by_price)
@@ -906,7 +918,7 @@ FC_REFLECT( hive::plugins::database_api::get_potential_signatures_args,
   (trx) )
 
 FC_REFLECT( hive::plugins::database_api::verify_authority_args,
-  (trx) )
+  (trx)(pack) )
 
 FC_REFLECT( hive::plugins::database_api::verify_authority_return,
   (valid) )
@@ -921,6 +933,7 @@ FC_REFLECT( hive::plugins::database_api::verify_signatures_args,
   (required_owner)
   (required_active)
   (required_posting)
+  (required_witness)
   (required_other) )
 
 FC_REFLECT( hive::plugins::database_api::verify_signatures_return,

@@ -3,6 +3,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
+#include <hive/utilities/notifications.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <iostream>
@@ -140,15 +141,9 @@ namespace appbase {
 
       boost::asio::io_service& get_io_service() { return main_io_handler.get_io_service(); }
 
-      void generate_interrupt_request()
-      {
-        _is_interrupt_request = true;
-      }
+      void generate_interrupt_request();
 
-      bool is_interrupt_request() const
-      {
-        return _is_interrupt_request;
-      }
+      bool is_interrupt_request() const { return _is_interrupt_request.load(std::memory_order_relaxed); }
 
       std::set< std::string > get_plugins_names() const;
 
@@ -190,6 +185,7 @@ namespace appbase {
 
       void set_program_options();
       void write_default_config( const bfs::path& cfg_file );
+      void generate_completions();
       std::unique_ptr< class application_impl > my;
 
       io_handler                 main_io_handler;

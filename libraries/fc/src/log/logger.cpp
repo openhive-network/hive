@@ -99,8 +99,15 @@ namespace fc {
     void logger::add_appender( const fc::shared_ptr<appender>& a )
     { my->_appenders.push_back(a); }
     
-//    void logger::remove_appender( const fc::shared_ptr<appender>& a )
- //   { my->_appenders.erase(a); }
+    void logger::remove_appender( const fc::shared_ptr<appender>& a )
+    {
+       for( int i = my->_appenders.size() - 1; i >= 0; --i )
+          if( my->_appenders[i] == a )
+          {
+             my->_appenders.erase( my->_appenders.begin() + i );
+             break;
+          }
+    }
 
     std::vector<fc::shared_ptr<appender> > logger::get_appenders()const
     {

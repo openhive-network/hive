@@ -1,0 +1,23 @@
+{
+  "block_num": 3710804,
+  "expiration": "2016-08-01T19:42:27",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "vote_operation",
+      "value": {
+        "author": "johnnyyash",
+        "permlink": "re-maximkichev-the-feeling-you-have-when-your-articles-don-t-become-as-popular-as-you-wish-them-to-be-steemit-20160801t193458623z",
+        "voter": "maximkichev",
+        "weight": 10000
+      }
+    }
+  ],
+  "ref_block_num": 40758,
+  "ref_block_prefix": 4254925359,
+  "signatures": [
+    "1f38d54efdcf120cb74101d66febb8825a8c4154665ea9a61359db9483573d7bc53c9ed00991d16972caf7cf857a29adaada721e235454dacbaa1049d99ba75ad2"
+  ],
+  "transaction_id": "071ab9b1d66b2af063d4f70b24159dab2c949d7a",
+  "transaction_num": 4
+}

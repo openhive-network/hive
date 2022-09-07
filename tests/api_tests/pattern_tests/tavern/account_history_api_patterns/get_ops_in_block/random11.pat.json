@@ -1,0 +1,224 @@
+{
+  "ops": [
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "ned",
+          "pending_payout": {
+            "amount": "654519",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "it-s-time-for-a-steem-bounty-system",
+          "rshares": 52708083,
+          "total_vote_weight": "17554534529202619714",
+          "voter": "curpose",
+          "weight": "568632284990"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "3a54f403e816f9b8b533039c1de72710526d4866",
+      "trx_in_block": 0,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "yangyang",
+          "pending_payout": {
+            "amount": "7758",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "steemit-world-100-post-conclusion-100",
+          "rshares": 690731471,
+          "total_vote_weight": "11744100289542753206",
+          "voter": "bunny",
+          "weight": "420580428064964"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "c37b2f1811e3de2e8b7353d9c01d5fbcbae09d10",
+      "trx_in_block": 1,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "chengmin",
+          "pending_payout": {
+            "amount": "7192",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "my-hometown",
+          "rshares": 54539701,
+          "total_vote_weight": "11544473076463145755",
+          "voter": "comeup",
+          "weight": "35214316861460"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "efeb505339b61b658924e54d5ffb8ed1387d94eb",
+      "trx_in_block": 2,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "angsteem",
+          "pending_payout": {
+            "amount": "31",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "final-logo-for-beyondbitcoin",
+          "rshares": 65294654,
+          "total_vote_weight": "355605760986437886",
+          "voter": "mindfreak",
+          "weight": 0
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "aab2fa1b23cb85d1bb23f0d3272f64cbc598e39c",
+      "trx_in_block": 3,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "ericvancewalton",
+          "pending_payout": {
+            "amount": "99868",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "alarm-clock-dawn-an-original-novel-episode-19",
+          "rshares": "6321074836",
+          "total_vote_weight": "16249210841704374069",
+          "voter": "johnbradshaw",
+          "weight": "413774656473490"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "472959268084d609e2b6f8112755bec8fa49572c",
+      "trx_in_block": 4,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "yangyang",
+          "pending_payout": {
+            "amount": "7759",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "steemit-world-100-post-conclusion-100",
+          "rshares": 213742499,
+          "total_vote_weight": "11744230424812042576",
+          "voter": "moon",
+          "weight": "130135269289370"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "836edb35dc86345e82b8ea7d9c7cfdb4e80d20f2",
+      "trx_in_block": 5,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "nin0000",
+          "pending_payout": {
+            "amount": "0",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "re-msgivings-can-you-date-without-sex-20160831t082634302z",
+          "rshares": 441486990,
+          "total_vote_weight": 0,
+          "voter": "nin0000",
+          "weight": 0
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "a65b908bc81ecd1240977e4aa59922aeb83ddda5",
+      "trx_in_block": 6,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "jamtaylor",
+          "pending_payout": {
+            "amount": "9831",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "barbadian-cherry-tree-5-original-photos",
+          "rshares": 2117475967,
+          "total_vote_weight": "12342522533047087099",
+          "voter": "natalymaty",
+          "weight": "1069486812730121"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:00",
+      "trx_id": "544fb24850b6bf36f968b5e5d05642fc9c948a63",
+      "trx_in_block": 7,
+      "virtual_op": true
+    },
+    {
+      "block": 4681046,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "abit",
+          "vesting_shares": {
+            "amount": "3192651240",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-09-04T16:56:03",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ]
+}

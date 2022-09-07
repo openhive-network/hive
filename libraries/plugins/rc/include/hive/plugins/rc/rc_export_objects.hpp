@@ -14,24 +14,30 @@ namespace hive { namespace plugins { namespace rc {
 using hive::plugins::block_data_export::exportable_block_data;
 using hive::protocol::account_name_type;
 
-struct rc_transaction_info
+struct rc_info
 {
-  account_name_type         resource_user;
-  count_resources_result    usage;
-  fc::int_array< int64_t, HIVE_NUM_RESOURCE_TYPES >
-                    cost;
+  account_name_type         payer;
+  resource_count_type       usage;
+  resource_cost_type        cost;
+  int64_t                   max; //max rc of payer (can be zero when payer is unknown)
+  optional< uint8_t >       op; //only filled when there is just one operation in tx
 };
 
-typedef rc_transaction_info rc_optional_action_info;
+typedef rc_info rc_transaction_info;
+typedef rc_info rc_optional_action_info;
 
 struct rc_block_info
 {
-  resource_count_type       dt;
   resource_count_type       decay;
-  resource_count_type       budget;
+  optional< resource_count_type >
+                            budget; //aside from pool of new accounts this is constant
   resource_count_type       usage;
-  resource_count_type       adjustment;
   resource_count_type       pool;
+  resource_cost_type        cost;
+  fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES >
+                            share;
+  int64_t                   regen = 0;
+  optional< int64_t >       new_accounts_adjustment;
 };
 
 struct exp_rc_data
@@ -42,30 +48,47 @@ struct exp_rc_data
 
   virtual void to_variant( fc::variant& v )const override;
 
-  rc_block_info                          block_info;
-  std::vector< rc_transaction_info >     tx_info;
-  std::vector< rc_optional_action_info > opt_action_info;
+  void add_tx_info( const rc_transaction_info& tx_info )
+  {
+    if( !txs.valid() )
+      txs = std::vector< rc_transaction_info >();
+    txs->emplace_back( tx_info );
+  }
+  void add_opt_action_info( const rc_optional_action_info& action_info )
+  {
+    if( !opt_actions.valid() )
+      opt_actions = std::vector< rc_optional_action_info >();
+    opt_actions->emplace_back( action_info );
+  }
+
+  rc_block_info                                      block;
+  optional< std::vector< rc_transaction_info > >     txs;
+  optional< std::vector< rc_optional_action_info > > opt_actions;
 };
 
 } } } // hive::plugins::rc
 
 FC_REFLECT( hive::plugins::rc::rc_transaction_info,
-  (resource_user)
+  (payer)
   (usage)
   (cost)
+  (max)
+  (op)
 )
 
 FC_REFLECT( hive::plugins::rc::rc_block_info,
-  (dt)
   (decay)
   (budget)
   (usage)
-  (adjustment)
   (pool)
+  (cost)
+  (share)
+  (regen)
+  (new_accounts_adjustment)
 )
 
 FC_REFLECT( hive::plugins::rc::exp_rc_data,
-  (block_info)
-  (tx_info)
-  (opt_action_info)
+  (block)
+  (txs)
+  (opt_actions)
 )

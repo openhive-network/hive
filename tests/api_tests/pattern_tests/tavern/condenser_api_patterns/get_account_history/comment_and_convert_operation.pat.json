@@ -1,0 +1,431 @@
+[
+  [
+    67,
+    {
+      "block": 2880136,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "I'm Gandalf.\nThat's not my real name, but even my mom saved my number as ***Gandalf*** in her phone contact list.\nThat counts, right?\nI'm an IT Wizard, system admin, happily married, <strike>owner of a cat</strike>.\nOwned by a cat.\n\n![Nyunya](https://grey.house/img/niunia.jpg)\n\n**Nyunya** *(The Cat)* wants to watch everything I do, that's just her way of lending a helping paw. I\u2019m not sure if she is so fascinated by what I do or she wants to make sure I do it right.\n\nWhy am I here? What is my motivation?\nNot much different from that guiding my cat:\nCuriosity and to be a witness (node?) of what is emerging here.\n\nMay the STEEM be with you!",
+          "json_metadata": "{\"tags\":[\"introduceyourself\",\"cats\"],\"image\":[\"https://grey.house/img/niunia.jpg\"]}",
+          "parent_author": "",
+          "parent_permlink": "introduceyourself",
+          "permlink": "hello-world",
+          "title": "Hello, World!"
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-03T16:35:03",
+      "trx_id": "3f99bf13f5e78fcd4120075bea6933339516f188",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    114,
+    {
+      "block": 2881669,
+      "op": [
+        "comment",
+        {
+          "author": "trogdor",
+          "body": "Nice, I understand the \"owned by a cat\" sentiment. haha",
+          "json_metadata": "{\"tags\":[\"introduceyourself\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "hello-world",
+          "permlink": "re-gtg-hello-world-20160703t175141501z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-03T17:51:48",
+      "trx_id": "86a7bbf1c37601fb1ab5a4b7ff32dc909dd142ec",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    159,
+    {
+      "block": 2887536,
+      "op": [
+        "comment",
+        {
+          "author": "amartinezque",
+          "body": "Cats, humans , all we move for instinct and curiosity. Welcome! And your cat also!:P",
+          "json_metadata": "{\"tags\":[\"introduceyourself\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "hello-world",
+          "permlink": "re-gtg-hello-world-20160703t224527020z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-03T22:45:27",
+      "trx_id": "bee17bf2245d2b56ccaa71e2e74db943df9ae161",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    183,
+    {
+      "block": 2910577,
+      "op": [
+        "comment",
+        {
+          "author": "edu-lopov",
+          "body": "Welcome to Steemit Gandalf!",
+          "json_metadata": "{\"tags\":[\"introduceyourself\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "hello-world",
+          "permlink": "re-gtg-hello-world-20160704t182251522z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-04T18:22:51",
+      "trx_id": "cac4a9c7f617d140d09053600b36bca7c90524a7",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    188,
+    {
+      "block": 2912870,
+      "op": [
+        "convert",
+        {
+          "amount": "127.144 HBD",
+          "owner": "gtg",
+          "requestid": 1467663446
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-04T20:18:00",
+      "trx_id": "8930ea36f61aef6fa7c5c79922cc9892f2d7373b",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    190,
+    {
+      "block": 2912956,
+      "op": [
+        "convert",
+        {
+          "amount": "0.002 HBD",
+          "owner": "gtg",
+          "requestid": 1467663726
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-04T20:22:18",
+      "trx_id": "804339e4617544b47018e165d7a8ed45ac38f002",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    280,
+    {
+      "block": 3072023,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "Happened to me, my 3rd Jul post https://steemit.com/introduceyourself/@gtg/hello-world \nHit $723.07 at 23:19 UTC+02 ended up ~$256",
+          "json_metadata": "{\"tags\":[\"catharsis\"],\"links\":[\"https://steemit.com/introduceyourself/@gtg/hello-world\"]}",
+          "parent_author": "pfunk",
+          "parent_permlink": "bear-with-me-while-i-bitch-about-losing-usd1000-on-a-post-due-to-the-july-4th-payout-and-fork",
+          "permlink": "re-pfunk-bear-with-me-while-i-bitch-about-losing-usd1000-on-a-post-due-to-the-july-4th-payout-and-fork-20160710t093728262z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-10T09:37:30",
+      "trx_id": "722393fcc1264595dd131aa5f12a8e69054ef957",
+      "trx_in_block": 1,
+      "virtual_op": false
+    }
+  ],
+  [
+    287,
+    {
+      "block": 3075654,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "I'm Gandalf.\nThat's not my real name, but even my mom saved my number as ***Gandalf*** in her phone contact list.\nThat counts, right?\nI'm an IT Wizard, system admin, happily married, <strike>owner of a cat</strike>.\nOwned by a cat.\n\n![Nyunya](https://grey.house/img/niunia.jpg)\n\n**Nyunya** *(The Cat)* wants to watch everything I do, that's just her way of lending a helping paw. I\u2019m not sure if she is so fascinated by what I do or she wants to make sure I do it right.\n\nWhy am I here? What is my motivation?\nNot much different from that guiding my cat:\nCuriosity and to be a witness (node?) of what is emerging here.\n\nMay the STEEM be with you!",
+          "json_metadata": "{\"tags\":[\"introduceyourself\",\"cats\"],\"image\":[\"https://grey.house/img/niunia.jpg\"]}",
+          "parent_author": "",
+          "parent_permlink": "introduceyourself",
+          "permlink": "hello-world",
+          "title": "Hello, World!"
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-07-10T12:39:42",
+      "trx_id": "a04aa61579b65412036b6e1f79967006b54c508e",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    450,
+    {
+      "block": 3759799,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "Zaufanie do delegata si\u0119 liczy. Jego narodowo\u015b\u0107 nie.\nG\u0142osowa\u0107 warto, \u015bwiadomie.\nRozumiem, \u017ce nie ka\u017cdy ma czas i ch\u0119ci, by by\u0107 na bie\u017c\u0105co z tym, co tu si\u0119 dzieje 'od kuchni'. Ja staram si\u0119 przygl\u0105da\u0107 temu uwa\u017cnie i g\u0142osuj\u0119 na tych, kt\u00f3rzy sobie zas\u0142u\u017cyli na to wg mojej skromnej, subiektywnej oceny.\nSam r\u00f3wnie\u017c b\u0119d\u0119 si\u0119 stara\u0142 o wy\u017csz\u0105 pozycj\u0119 na li\u015bcie, ale na razie zbyt wiele innych zaj\u0119\u0107 (zwi\u0105zanych ze steemit)\nAby g\u0142osowa\u0107 tak jak ja mo\u017cna w **cli_wallet** wykona\u0107 polecenie\n`set_voting_proxy \"youraccountname\" \"gtg\" true`\nZr\u00f3b to tylko wtedy je\u015bli jeste\u015b w stanie zaufa\u0107 mi co do moich wybor\u00f3w w sprawie delegat\u00f3w.",
+          "json_metadata": "{\"tags\":[\"polish\"]}",
+          "parent_author": "mefisto",
+          "parent_permlink": "pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness",
+          "permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t123936611z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-03T12:39:42",
+      "trx_id": "8325110ddfa8b352975e6fd3bff448c3468efc87",
+      "trx_in_block": 0,
+      "virtual_op": false
+    }
+  ],
+  [
+    453,
+    {
+      "block": 3760135,
+      "op": [
+        "comment",
+        {
+          "author": "mefisto",
+          "body": "Kryterium wyboru delegata to osobna sprawa. Co delegat powinien potrafi\u0107?Co robi\u0107? Czy powinien poniek\u0105d s\u0142u\u017cy\u0107 swoim wyborcom?\nJedno zdaje si\u0119 by\u0107 pewne - **powinien by\u0107 aktywnym cz\u0142onkiem spo\u0142eczno\u015bci steemit.** \nJestem niemal pewny, \u017ce jestesmy w stanie wybra\u0107 wskaza\u0107 kilka os\u00f3b, kt\u00f3re mog\u0142yby zbiera\u0107 glosy polskiej spo\u0142eczno\u015bci. Je\u015bli si\u0119 nie myl\u0119, g\u0142os\u00f3w b\u0119dzie wi\u0119cej - je\u015bli system g\u0142osowania na dodatkowych kandydat\u00f3w b\u0119dzie prostszy dla przeci\u0119tnego po\u017ceracza blog\u00f3w... np. pojawi si\u0119 \u0142adny graficzny klient pod windoz\u0119.",
+          "json_metadata": "{\"tags\":[\"polish\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t123936611z",
+          "permlink": "re-gtg-re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t125639335z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-03T12:56:33",
+      "trx_id": "66fb777f2f36b7a3666f236228bddd1eeeeed1ed",
+      "trx_in_block": 2,
+      "virtual_op": false
+    }
+  ],
+  [
+    454,
+    {
+      "block": 3760145,
+      "op": [
+        "comment",
+        {
+          "author": "mefisto",
+          "body": "@@ -66,16 +66,17 @@\n otrafi%C4%87?\n+ \n Co robi%C4%87\n",
+          "json_metadata": "{\"tags\":[\"polish\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t123936611z",
+          "permlink": "re-gtg-re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t125639335z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-03T12:57:03",
+      "trx_id": "176074c6fb5f33db4fdf0291c49b7082e9393b33",
+      "trx_in_block": 4,
+      "virtual_op": false
+    }
+  ],
+  [
+    455,
+    {
+      "block": 3760160,
+      "op": [
+        "comment",
+        {
+          "author": "mefisto",
+          "body": "@@ -238,17 +238,17 @@\n %C5%BCe jeste\n-s\n+%C5%9B\n my w sta\n@@ -257,16 +257,18 @@\n e wybra%C4%87\n+ /\n  wskaza%C4%87\n@@ -331,16 +331,18 @@\n zno%C5%9Bci. \n+%0A%0A\n Je%C5%9Bli si\n",
+          "json_metadata": "{\"tags\":[\"polish\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t123936611z",
+          "permlink": "re-gtg-re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t125639335z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-03T12:57:48",
+      "trx_id": "e6cca453b183babf4de47b155e5fc2fd09adc273",
+      "trx_in_block": 1,
+      "virtual_op": false
+    }
+  ],
+  [
+    456,
+    {
+      "block": 3760183,
+      "op": [
+        "comment",
+        {
+          "author": "mefisto",
+          "body": "@@ -220,18 +220,16 @@\n tem \n-niemal pew\n+przekona\n ny, \n",
+          "json_metadata": "{\"tags\":[\"polish\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t123936611z",
+          "permlink": "re-gtg-re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160803t125639335z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-03T12:58:57",
+      "trx_id": "e1e36b533b9ca71b26e28d81f4191f6f79dc874c",
+      "trx_in_block": 2,
+      "virtual_op": false
+    }
+  ],
+  [
+    477,
+    {
+      "block": 3818561,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "Hello, World!\n\nMy intention is not to make it into top 19. I could name many  other candidates (clearly more than 19) with greater commitment to steem(it) who are a lot more appropriate as witnesses, but I'm sure I can be useful as a backup witness.\n\nI introduced myself here:\nhttps://steemit.com/introduceyourself/@gtg/hello-world\nThose of you who use https://steemit.chat know me as **Gandalf**.\nFor some time, I\u2019ve been using my magic powers (mostly those related to security and infrastructure) to improve steemit. For example, I\u2019ve improved our \"Perfect\" Forward Secrecy and made our communication with site more secure.\n\nMy **seed node** (EU based):\n`seed-node = gtg.steem.house:2001`\nYou can also use it to rsync data dir\n`rsync -Pa rsync://gtg.steem.house/witness_node_data_dir .`\n\nMy **witness node** is on a separate data center (an EU-based one as well).\nIf you believe I can be of value to steemit, please vote for me:\n`vote_for_witness YOURACCOUNT gtg true true`\n\n![witness](https://grey.house/img/witness.jpg)",
+          "json_metadata": "{\"tags\":[\"witness-category\"],\"links\":[\"https://steemit.com/introduceyourself/@gtg/hello-world\"]}",
+          "parent_author": "",
+          "parent_permlink": "witness-category",
+          "permlink": "witness-gtg",
+          "title": "Witness \"gtg\""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-05T14:02:24",
+      "trx_id": "bf5e83b7ddc4efcaf101f5260653a3588e411f36",
+      "trx_in_block": 6,
+      "virtual_op": false
+    }
+  ],
+  [
+    508,
+    {
+      "block": 3820615,
+      "op": [
+        "comment",
+        {
+          "author": "cire81",
+          "body": "Thank you for spending your time to make steemit secure. Thanks to people like you we have a much safer environment. Were you paid for your effort on steem?",
+          "json_metadata": "{\"tags\":[\"witness-category\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "witness-gtg",
+          "permlink": "re-gtg-witness-gtg-20160805t154528701z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-05T15:45:27",
+      "trx_id": "47696dcd765db02c2de5827adf4afe65841158eb",
+      "trx_in_block": 4,
+      "virtual_op": false
+    }
+  ],
+  [
+    522,
+    {
+      "block": 3821150,
+      "op": [
+        "comment",
+        {
+          "author": "iaco",
+          "body": "As the computer world beyond user interfaces  is a magical realm to me, the only way I can get my brain to completely understand it is to just let go and tell my self it's all made of unicorns and runes being cast to make the magic happen :) I thank you for your work:)",
+          "json_metadata": "{\"tags\":[\"witness-category\"]}",
+          "parent_author": "gtg",
+          "parent_permlink": "witness-gtg",
+          "permlink": "re-gtg-witness-gtg-20160805t161219379z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-05T16:12:21",
+      "trx_id": "95e2dd24c9aa395d36da098fc8c9589cd7b95c2a",
+      "trx_in_block": 3,
+      "virtual_op": false
+    }
+  ],
+  [
+    549,
+    {
+      "block": 3824218,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "Dzi\u015b oficjalnie zg\u0142osi\u0142em kandydatur\u0119.\nhttps://steemit.com/witness-category/@gtg/witness-gtg\n> Koncentracja g\u0142os\u00f3w - mo\u017ce z czasem pom\u00f3c wybra\u0107 kogo\u015b z naszych do pierwszej 50-tki.\n\nOd pocz\u0105tku by\u0142em w pierwszej setce i aby g\u0142osowa\u0107 konieczne by\u0142o u\u017cycie `cli_wallet`\nObecnie jestem w pierwszej 50-tce, wi\u0119c mo\u017cna g\u0142osowa\u0107 ju\u017c bezpo\u015brednio ze strony:\nhttps://steemit.com/~witnesses",
+          "json_metadata": "{\"tags\":[\"polish\"],\"links\":[\"https://steemit.com/witness-category/@gtg/witness-gtg\"]}",
+          "parent_author": "mefisto",
+          "parent_permlink": "pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness",
+          "permlink": "re-mefisto-pl-czy-polska-spolecznosc-powinna-miec-swojego-delegata-witness-20160805t184622691z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-05T18:46:27",
+      "trx_id": "9c5197bcd87f4207c122ed47e1be9fb2102c0226",
+      "trx_in_block": 8,
+      "virtual_op": false
+    }
+  ],
+  [
+    881,
+    {
+      "block": 3985180,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "Of course It is truly right. It doesn't manipulate the free market. It says: _\"Hey, better watch out, fake products over there!\"_, so other buyers (upvoters) have choice to follow that advice or not. That's because of that freedom, not against it. Besides, I like cats. :-)",
+          "json_metadata": "{\"tags\":[\"steemitabuse\"]}",
+          "parent_author": "heretickitten",
+          "parent_permlink": "re-cheetah-cheetah-bot-explained-20160811t033141148z",
+          "permlink": "re-heretickitten-re-cheetah-cheetah-bot-explained-20160811t093103978z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-11T09:31:09",
+      "trx_id": "f8d0ac4efa8b392935b82eed25678170853e98ff",
+      "trx_in_block": 5,
+      "virtual_op": false
+    }
+  ],
+  [
+    909,
+    {
+      "block": 3994822,
+      "op": [
+        "comment",
+        {
+          "author": "gtg",
+          "body": "`overmind`sounds good, but maybe morph it to `overmint`\nWhere `mint`is like in _\u201che made a mint on the stock market\u201d_ and/or like in _\"The United States Mint\"_ + of course like misspelled _\"mind\"_.",
+          "json_metadata": "{\"tags\":[\"steem\"]}",
+          "parent_author": "wackou",
+          "parent_permlink": "btstools-development-bounties",
+          "permlink": "re-wackou-btstools-development-bounties-20160811t173426180z",
+          "title": ""
+        }
+      ],
+      "op_in_trx": 0,
+      "timestamp": "2016-08-11T17:34:33",
+      "trx_id": "97be0ae220643dc8aff2633140c65ea750f77c41",
+      "trx_in_block": 3,
+      "virtual_op": false
+    }
+  ]
+]

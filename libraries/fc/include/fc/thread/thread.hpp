@@ -10,6 +10,8 @@ namespace fc {
   class time_point;
   class microseconds;
 
+  void set_thread_name(const char* threadName);
+
    namespace detail
    {
       void* get_thread_specific_data(unsigned slot);

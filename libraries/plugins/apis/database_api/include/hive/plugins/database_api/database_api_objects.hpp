@@ -3,10 +3,9 @@
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/global_property_object.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
-#include <hive/chain/sps_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
@@ -17,6 +16,7 @@ using namespace hive::chain;
 
 struct api_reward_fund_object
 {
+  api_reward_fund_object() = default;
   api_reward_fund_object( const reward_fund_object& o, const database& db ):
     id( o.get_id() ),
     name( o.name ),
@@ -33,13 +33,13 @@ struct api_reward_fund_object
   reward_fund_id_type     id;
   reward_fund_name_type   name;
   asset                   reward_balance;
-  uint128_t               recent_claims;
+  uint128_t               recent_claims = 0;
   time_point_sec          last_update;
-  uint128_t               content_constant;
-  uint16_t                percent_curation_rewards;
-  uint16_t                percent_content_rewards;
-  protocol::curve_id      author_reward_curve;
-  protocol::curve_id      curation_reward_curve;
+  uint128_t               content_constant = 0;
+  uint16_t                percent_curation_rewards = 0;
+  uint16_t                percent_content_rewards = 0;
+  protocol::curve_id      author_reward_curve = protocol::quadratic;
+  protocol::curve_id      curation_reward_curve = protocol::quadratic;
 };
 
 struct api_witness_vote_object
@@ -111,10 +111,10 @@ struct api_vesting_delegation_object
 {
   api_vesting_delegation_object( const vesting_delegation_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( o.delegator ),
-    delegatee( o.delegatee ),
-    vesting_shares( o.vesting_shares ),
-    min_delegation_time( o.min_delegation_time )
+    delegator( db.get_account( o.get_delegator() ).get_name() ),
+    delegatee( db.get_account( o.get_delegatee() ).get_name() ),
+    vesting_shares( o.get_vesting() ),
+    min_delegation_time( o.get_min_delegation_time() )
   {}
 
   vesting_delegation_id_type id;
@@ -128,9 +128,9 @@ struct api_vesting_delegation_expiration_object
 {
   api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
     id( o.get_id() ),
-    delegator( o.delegator ),
-    vesting_shares( o.vesting_shares ),
-    expiration( o.expiration )
+    delegator( db.get_account( o.get_delegator() ).get_name() ),
+    vesting_shares( o.get_vesting() ),
+    expiration( o.get_expiration_time() )
   {}
 
   vesting_delegation_expiration_id_type id;
@@ -141,6 +141,7 @@ struct api_vesting_delegation_expiration_object
 
 struct api_convert_request_object
 {
+  api_convert_request_object() {}
   api_convert_request_object( const convert_request_object& o, const database& db ):
     id( o.get_id() ),
     owner( db.get_account( o.get_owner() ).get_name() ),
@@ -158,6 +159,7 @@ struct api_convert_request_object
 
 struct api_collateralized_convert_request_object
 {
+  api_collateralized_convert_request_object() {}
   api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db ) :
     id( o.get_id() ),
     owner( db.get_account( o.get_owner() ).get_name() ),
@@ -199,6 +201,7 @@ struct api_limit_order_object
     for_sale( o.for_sale ),
     sell_price( o.sell_price )
   {}
+  api_limit_order_object() {}
 
   limit_order_id_type id;
   time_point_sec      created;
@@ -248,8 +251,8 @@ struct api_dynamic_global_property_object
     next_daily_maintenance_time( o.next_daily_maintenance_time ),
     content_reward_percent( o.content_reward_percent ),
     vesting_reward_percent( o.vesting_reward_percent ),
-    sps_fund_percent( o.sps_fund_percent ),
-    sps_interval_ledger( o.sps_interval_ledger ),
+    proposal_fund_percent( o.proposal_fund_percent ),
+    dhf_interval_ledger( o.dhf_interval_ledger ),
     downvote_pool_percent( o.downvote_pool_percent ),
     current_remove_threshold( o.current_remove_threshold ),
     early_voting_seconds( o.early_voting_seconds ),
@@ -301,8 +304,8 @@ struct api_dynamic_global_property_object
   time_point_sec                  next_daily_maintenance_time;
   uint16_t                        content_reward_percent              = 0;
   uint16_t                        vesting_reward_percent              = 0;
-  uint16_t                        sps_fund_percent                    = 0;
-  asset                           sps_interval_ledger;
+  uint16_t                        proposal_fund_percent               = 0;
+  asset                           dhf_interval_ledger;
   uint16_t                        downvote_pool_percent               = 0;
   int16_t                         current_remove_threshold            = 0;
   uint64_t                        early_voting_seconds                = 0;
@@ -348,7 +351,6 @@ struct api_commment_cashout_info
 
   int32_t        net_votes = 0;
 
-  time_point_sec active;
   time_point_sec last_payout;
   time_point_sec cashout_time;
   time_point_sec max_cashout_time;
@@ -358,6 +360,7 @@ struct api_commment_cashout_info
   bool           allow_replies = false;
   bool           allow_votes = false;
   bool           allow_curation_rewards = false;
+  bool           was_voted_on = false;
 };
 
 struct api_comment_object
@@ -369,31 +372,31 @@ struct api_comment_object
     const comment_cashout_object* cc = db.find_comment_cashout( o );
     if( cc )
     {
-      total_vote_weight       = cc->total_vote_weight;
-      reward_weight           = cc->reward_weight;
-      total_payout_value      = cc->total_payout_value;
-      curator_payout_value    = cc->curator_payout_value;
-      author_rewards          = cc->author_rewards;
-      net_votes               = cc->net_votes;
-      active                  = cc->active;
-      last_payout             = cc->last_payout;
-      children                = cc->children;
-      net_rshares             = cc->net_rshares;
-      abs_rshares             = cc->abs_rshares;
-      vote_rshares            = cc->vote_rshares;
-      children_abs_rshares    = cc->children_abs_rshares;
+      total_vote_weight       = cc->get_total_vote_weight();
+      reward_weight           = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
+      total_payout_value      = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+      curator_payout_value    = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+      author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
+      net_votes               = cc->get_net_votes();
+      last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
+      children                = cc->get_number_of_replies();
+      net_rshares             = cc->get_net_rshares();
+      abs_rshares             = 0; // value was only used for comments created before HF6
+      vote_rshares            = cc->get_vote_rshares();
+      children_abs_rshares    = 0; // value not accumulated after HF17
       created                 = cc->get_creation_time();
-      last_update             = active;
-      cashout_time            = cc->cashout_time;
-      max_cashout_time        = cc->max_cashout_time;
-      max_accepted_payout     = cc->max_accepted_payout;
-      percent_hbd             = cc->percent_hbd;
-      allow_votes             = cc->allow_votes;
-      allow_curation_rewards  = cc->allow_curation_rewards;
+      last_update             = created; // edit time not available here (Hivemind has it)
+      cashout_time            = cc->get_cashout_time();
+      max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
+      max_accepted_payout     = cc->get_max_accepted_payout();
+      percent_hbd             = cc->get_percent_hbd();
+      allow_votes             = cc->allows_votes();
+      allow_curation_rewards  = cc->allows_curation_rewards();
+      was_voted_on            = cc->has_votes();
 
-      for( auto& route : cc->beneficiaries )
+      for( auto& route : cc->get_beneficiaries() )
       {
-        beneficiaries.push_back( route );
+        beneficiaries.emplace_back( db.get_account( route.account_id ).get_name(), route.weight );
       }
 
     }
@@ -414,7 +417,6 @@ struct api_comment_object
   string            json_metadata;
   time_point_sec    last_update;
   time_point_sec    created;
-  time_point_sec    active;
   time_point_sec    last_payout;
 
   uint8_t           depth = 0;
@@ -446,6 +448,7 @@ struct api_comment_object
   bool              allow_replies = false;
   bool              allow_votes = false;
   bool              allow_curation_rewards = false;
+  bool              was_voted_on = false;
   vector< beneficiary_route_type > beneficiaries;
 };
 
@@ -453,17 +456,17 @@ struct api_comment_vote_object
 {
   api_comment_vote_object( const comment_vote_object& cv, const database& db ) :
     id( cv.get_id() ),
-    weight( cv.weight ),
-    rshares( cv.rshares),
-    vote_percent( cv.vote_percent ),
-    last_update( cv.last_update ),
-    num_changes( cv.num_changes )
+    weight( cv.get_weight() ),
+    rshares( cv.get_rshares() ),
+    vote_percent( cv.get_vote_percent() ),
+    last_update( cv.get_last_update() ),
+    num_changes( cv.get_number_of_changes() )
   {
-    voter = db.get( cv.voter ).name;
-    const comment_cashout_object* cc = db.find_comment_cashout( cv.comment );
+    voter = db.get( cv.get_voter() ).name;
+    const comment_cashout_object* cc = db.find_comment_cashout( cv.get_comment() );
     assert( cc != nullptr ); //votes should not exist after cashout
-    author = db.get_account( cc->author_id ).name;
-    permlink = to_string( cc->permlink );
+    author = db.get_account( cc->get_author_id() ).name;
+    permlink = to_string( cc->get_permlink() );
   }
 
   comment_vote_id_type id;
@@ -545,6 +548,7 @@ struct api_account_object
     owner = authority( auth.owner );
     active = authority( auth.active );
     posting = authority( auth.posting );
+    previous_owner_update = auth.previous_owner_update;
     last_owner_update = auth.last_owner_update;
 #ifdef COLLECT_ACCOUNT_METADATA
     const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
@@ -580,6 +584,7 @@ struct api_account_object
   string            posting_json_metadata;
   account_name_type proxy;
 
+  time_point_sec    previous_owner_update;
   time_point_sec    last_owner_update;
   time_point_sec    last_account_update;
 
@@ -842,13 +847,15 @@ struct api_witness_schedule_object
 
 struct api_signed_block_object : public signed_block
 {
-  api_signed_block_object( const signed_block& block ) : signed_block( block )
+  api_signed_block_object(const std::shared_ptr<full_block_type>& full_block) : 
+    signed_block(full_block->get_block()),
+    block_id(full_block->get_block_id()),
+    signing_key(full_block->get_signing_key())
   {
-    block_id = id();
-    signing_key = signee();
-    transaction_ids.reserve( transactions.size() );
-    for( const signed_transaction& tx : transactions )
-      transaction_ids.push_back( tx.id() );
+    const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions = full_block->get_full_transactions();
+    transaction_ids.reserve(transactions.size());
+    for (const std::shared_ptr<full_transaction_type>& full_transaction : full_transactions)
+      transaction_ids.push_back(full_transaction->get_transaction_id());
   }
   api_signed_block_object() {}
 
@@ -1071,7 +1078,6 @@ FC_REFLECT(hive::plugins::database_api::api_commment_cashout_info,
 
   (net_votes)
 
-  (active)
   (last_payout)
   (cashout_time)
   (max_cashout_time)
@@ -1081,6 +1087,7 @@ FC_REFLECT(hive::plugins::database_api::api_commment_cashout_info,
   (allow_replies)
   (allow_votes)
   (allow_curation_rewards)
+  (was_voted_on)
 )
 
 FC_REFLECT( hive::plugins::database_api::api_reward_fund_object,
@@ -1135,8 +1142,8 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
           (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)
           (available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)(next_maintenance_time)
-          (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(sps_fund_percent)
-          (sps_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
+          (last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(proposal_fund_percent)
+          (dhf_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
           (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
           (max_open_recurrent_transfers)
 #ifdef HIVE_ENABLE_SMT
@@ -1151,13 +1158,13 @@ FC_REFLECT( hive::plugins::database_api::api_change_recovery_account_request_obj
 FC_REFLECT( hive::plugins::database_api::api_comment_object,
           (id)(author)(permlink)
           (category)(parent_author)(parent_permlink)
-          (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
+          (title)(body)(json_metadata)(last_update)(created)(last_payout)
           (depth)(children)
           (net_rshares)(abs_rshares)(vote_rshares)
           (children_abs_rshares)(cashout_time)(max_cashout_time)
           (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(author_rewards)(net_votes)
           (root_author)(root_permlink)
-          (max_accepted_payout)(percent_hbd)(allow_replies)(allow_votes)(allow_curation_rewards)
+          (max_accepted_payout)(percent_hbd)(allow_replies)(allow_votes)(allow_curation_rewards)(was_voted_on)
           (beneficiaries)
         )
 
@@ -1166,7 +1173,7 @@ FC_REFLECT( hive::plugins::database_api::api_comment_vote_object,
         )
 
 FC_REFLECT( hive::plugins::database_api::api_account_object,
-          (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(posting_json_metadata)(proxy)(last_owner_update)(last_account_update)
+          (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(posting_json_metadata)(proxy)(previous_owner_update)(last_owner_update)(last_account_update)
           (created)(mined)
           (recovery_account)(last_account_recovery)(reset_account)
           (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)

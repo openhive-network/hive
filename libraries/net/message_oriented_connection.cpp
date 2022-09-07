@@ -160,9 +160,13 @@ namespace graphene { namespace net {
           _bytes_received += BUFFER_SIZE;
           memcpy((char*)&m, buffer, sizeof(message_header));
 
+
           FC_ASSERT( m.size <= MAX_MESSAGE_SIZE, "", ("m.size",m.size)("MAX_MESSAGE_SIZE",MAX_MESSAGE_SIZE) );
 
           size_t remaining_bytes_with_padding = 16 * ((m.size - LEFTOVER + 15) / 16);
+          fc::time_point read_first_bytes_time = fc::time_point::now();
+          dlog("begun reading message of type ${type} from ${peer}, with ${remaining_bytes_with_padding} remaining", 
+               ("type", m.msg_type)("peer", get_socket().remote_endpoint())(remaining_bytes_with_padding));
           m.data.resize(LEFTOVER + remaining_bytes_with_padding); //give extra 16 bytes to allow for padding added in send call
           std::copy(buffer + sizeof(message_header), buffer + sizeof(buffer), m.data.begin());
           if (remaining_bytes_with_padding)
@@ -170,6 +174,9 @@ namespace graphene { namespace net {
             _sock.read(&m.data[LEFTOVER], remaining_bytes_with_padding);
             _bytes_received += remaining_bytes_with_padding;
           }
+          fc::time_point read_last_bytes_time = fc::time_point::now();
+          fc::microseconds read_duration = read_last_bytes_time - read_first_bytes_time;
+          dlog("read complete message from ${peer} in ${read_duration}μs, decoding and passing to node", (read_duration)("peer", get_socket().remote_endpoint()));
           m.data.resize(m.size); // truncate off the padding bytes
 
           _last_message_received_time = fc::time_point::now();
@@ -178,6 +185,7 @@ namespace graphene { namespace net {
           {
             // message handling errors are warnings...
             _delegate->on_message(_self, m);
+            dlog("node is done handling message from ${peer}", ("peer", get_socket().remote_endpoint()));
           }
           /// Dedicated catches needed to distinguish from general fc::exception
           catch ( const fc::canceled_exception& e ) { throw e; }

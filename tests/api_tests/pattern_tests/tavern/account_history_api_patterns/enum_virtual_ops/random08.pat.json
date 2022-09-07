@@ -1,0 +1,67 @@
+{
+  "next_block_range_begin": 2763713,
+  "next_operation_begin": 3583019,
+  "ops": [
+    {
+      "block": 2763710,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "jabbasteem",
+          "vesting_shares": {
+            "amount": "5463882598",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 3583016,
+      "timestamp": "2016-06-29T15:11:24",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 2763711,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "complexring",
+          "vesting_shares": {
+            "amount": "5463880718",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 3583017,
+      "timestamp": "2016-06-29T15:11:27",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 2763712,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "roadscape",
+          "vesting_shares": {
+            "amount": "5463878838",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 3583018,
+      "timestamp": "2016-06-29T15:11:30",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

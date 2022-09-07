@@ -1,0 +1,104 @@
+{
+  "delegations": [
+    {
+      "delegator": "ohanahealing",
+      "expiration": "2020-11-06T14:56:42",
+      "id": 4718327,
+      "vesting_shares": {
+        "amount": "48003680316",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "michelmake",
+      "expiration": "2020-11-06T15:11:09",
+      "id": 4718328,
+      "vesting_shares": {
+        "amount": "606044703367",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "steinreich",
+      "expiration": "2020-11-06T15:30:18",
+      "id": 4718329,
+      "vesting_shares": {
+        "amount": "4970838678681",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "lhp.app",
+      "expiration": "2020-11-06T15:34:42",
+      "id": 4718330,
+      "vesting_shares": {
+        "amount": "1930588800",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "kapitanrejven",
+      "expiration": "2020-11-06T15:36:00",
+      "id": 4718331,
+      "vesting_shares": {
+        "amount": "27800000000000",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "fbslo",
+      "expiration": "2020-11-06T15:56:12",
+      "id": 4718332,
+      "vesting_shares": {
+        "amount": "29095664593",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "mrdalle",
+      "expiration": "2020-11-06T16:04:00",
+      "id": 4718333,
+      "vesting_shares": {
+        "amount": "9984815639",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "barrylangdon",
+      "expiration": "2020-11-06T16:43:45",
+      "id": 4718334,
+      "vesting_shares": {
+        "amount": "587469844620",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "blocktrades.com",
+      "expiration": "2020-11-06T16:49:15",
+      "id": 4718335,
+      "vesting_shares": {
+        "amount": "386708764637",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "delegator": "themonetaryfew",
+      "expiration": "2020-11-06T16:54:33",
+      "id": 4718336,
+      "vesting_shares": {
+        "amount": "2982674897473",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    }
+  ]
+}

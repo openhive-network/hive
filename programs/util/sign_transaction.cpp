@@ -8,6 +8,8 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
 
+#include <hive/chain/full_transaction.hpp>
+
 #include <hive/utilities/key_conversion.hpp>
 
 #include <hive/protocol/transaction.hpp>
@@ -15,10 +17,14 @@
 
 #define CHAIN_ID_PARAM "--chain-id"
 
+using hive::chain::full_transaction_type;
+using hive::chain::full_transaction_ptr;
+
 struct tx_signing_request
 {
   hive::protocol::transaction     tx;
   std::string                     wif;
+  hive::protocol::pack_type       serialization_type = hive::protocol::transaction_serialization_type::legacy;
 };
 
 struct tx_signing_result
@@ -35,7 +41,7 @@ struct error_result
   std::string error;
 };
 
-FC_REFLECT( tx_signing_request, (tx)(wif) )
+FC_REFLECT( tx_signing_request, (tx)(wif)(serialization_type) )
 FC_REFLECT( tx_signing_result, (digest)(sig_digest)(key)(sig) )
 FC_REFLECT( error_result, (error) )
 
@@ -115,16 +121,19 @@ int main(int argc, char** argv, char** envp)
       tx_signing_request sreq;
       fc::from_variant( v, sreq );
 
+      full_transaction_ptr full_transaction = full_transaction_type::create_from_transaction(sreq.tx, sreq.serialization_type);
+
       tx_signing_result sres;
       sres.tx = sreq.tx;
-      sres.digest = sreq.tx.digest();
-      sres.sig_digest = sreq.tx.sig_digest(chainId);
+      sres.digest = full_transaction->get_digest();
+      sres.sig_digest = full_transaction->compute_sig_digest(chainId);
 
       auto priv_key = hive::utilities::wif_to_key( sreq.wif );
 
       if(priv_key)
       {
-        sres.sig = priv_key->sign_compact( sres.sig_digest );
+        full_transaction->sign_transaction( { *priv_key } , chainId, fc::ecc::fc_canonical, sreq.serialization_type );
+        sres.sig = full_transaction->get_transaction().signatures.back();
         sres.key = hive::protocol::public_key_type( priv_key->get_public_key() );
         std::string sres_str = fc::json::to_string( sres );
         std::cout << "{\"result\":" << sres_str << "}" << std::endl;

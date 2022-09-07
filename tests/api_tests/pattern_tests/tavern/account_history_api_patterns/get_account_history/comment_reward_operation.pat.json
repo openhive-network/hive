@@ -1,0 +1,204 @@
+{
+  "history": [
+    [
+      18094,
+      {
+        "block": 3426457,
+        "op": {
+          "type": "comment_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "author_rewards": 13,
+            "beneficiary_payout_value": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "curator_payout_value": {
+              "amount": "388196",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "payout": {
+              "amount": "45",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "this-piston-rocks-public-steem-steem-api-for-piston-users-and-developers",
+            "total_payout_value": {
+              "amount": "967021",
+              "nai": "@@000000013",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 3,
+        "operation_id": 0,
+        "timestamp": "2016-07-22T20:47:30",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      18107,
+      {
+        "block": 3426576,
+        "op": {
+          "type": "comment_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "author_rewards": 16,
+            "beneficiary_payout_value": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "curator_payout_value": {
+              "amount": "1595",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "payout": {
+              "amount": "56",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "changelog-python-steem-0-2rc1",
+            "total_payout_value": {
+              "amount": "11630",
+              "nai": "@@000000013",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 3,
+        "operation_id": 0,
+        "timestamp": "2016-07-22T20:53:33",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      18210,
+      {
+        "block": 3427233,
+        "op": {
+          "type": "comment_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "author_rewards": 16,
+            "beneficiary_payout_value": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "curator_payout_value": {
+              "amount": "63453",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "payout": {
+              "amount": "55",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "python-steem-0-1",
+            "total_payout_value": {
+              "amount": "63510",
+              "nai": "@@000000013",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 3,
+        "operation_id": 0,
+        "timestamp": "2016-07-22T21:26:42",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      18628,
+      {
+        "block": 3431278,
+        "op": {
+          "type": "comment_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "author_rewards": 11,
+            "beneficiary_payout_value": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "curator_payout_value": {
+              "amount": "493",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "payout": {
+              "amount": "38",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "steem-api",
+            "total_payout_value": {
+              "amount": "2135",
+              "nai": "@@000000013",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 3,
+        "operation_id": 0,
+        "timestamp": "2016-07-23T00:50:54",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      18959,
+      {
+        "block": 3436603,
+        "op": {
+          "type": "comment_reward_operation",
+          "value": {
+            "author": "xeroc",
+            "author_rewards": 601,
+            "beneficiary_payout_value": {
+              "amount": "0",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "curator_payout_value": {
+              "amount": "677",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "payout": {
+              "amount": "2755",
+              "nai": "@@000000013",
+              "precision": 3
+            },
+            "permlink": "re-thecryptodrive-steemit-whales-stockpile-sp-government-spending-analogy-and-the-solution-revealed-20160722t051308630z",
+            "total_payout_value": {
+              "amount": "2077",
+              "nai": "@@000000013",
+              "precision": 3
+            }
+          }
+        },
+        "op_in_trx": 279,
+        "operation_id": 0,
+        "timestamp": "2016-07-23T05:19:36",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

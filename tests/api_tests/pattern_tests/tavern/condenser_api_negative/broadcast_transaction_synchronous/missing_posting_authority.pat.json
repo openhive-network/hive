@@ -1,0 +1,130 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 13,
+    "message": "unknown key",
+    "name": "N5boost16exception_detail10clone_implINS0_19error_info_injectorISt12out_of_rangeEEEE",
+    "stack": [
+      {
+        "context": {
+          "file": "transaction_util.hpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 103,
+          "method": "verify_authority",
+          "timestamp": "2021-08-30T10:08:31"
+        },
+        "data": {
+          "auth_containers": [
+            {
+              "type": "vote_operation",
+              "value": {
+                "author": "alice",
+                "permlink": "a-post-by-alice",
+                "voter": "hiveio",
+                "weight": 10000
+              }
+            }
+          ],
+          "sigs": [],
+          "what": "unknown key"
+        },
+        "format": "${what}: "
+      },
+      {
+        "context": {
+          "file": "transaction.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 232,
+          "method": "verify_authority",
+          "timestamp": "2021-08-30T10:08:31"
+        },
+        "data": {
+          "*this": {
+            "expiration": "2016-03-24T18:00:21",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "vote_operation",
+                "value": {
+                  "author": "alice",
+                  "permlink": "a-post-by-alice",
+                  "voter": "hiveio",
+                  "weight": 10000
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 2181793527,
+            "signatures": []
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 4494,
+          "method": "_apply_transaction",
+          "timestamp": "2021-08-30T10:08:31"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2016-03-24T18:00:21",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "vote_operation",
+                "value": {
+                  "author": "alice",
+                  "permlink": "a-post-by-alice",
+                  "voter": "hiveio",
+                  "weight": 10000
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 2181793527,
+            "signatures": []
+          }
+        },
+        "format": ""
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 1187,
+          "method": "push_transaction",
+          "timestamp": "2021-08-30T10:08:31"
+        },
+        "data": {
+          "trx": {
+            "expiration": "2016-03-24T18:00:21",
+            "extensions": [],
+            "operations": [
+              {
+                "type": "vote_operation",
+                "value": {
+                  "author": "alice",
+                  "permlink": "a-post-by-alice",
+                  "voter": "hiveio",
+                  "weight": 10000
+                }
+              }
+            ],
+            "ref_block_num": 0,
+            "ref_block_prefix": 2181793527,
+            "signatures": []
+          }
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "unknown key:unknown key: "
+}

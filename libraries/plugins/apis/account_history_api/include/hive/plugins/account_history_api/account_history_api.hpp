@@ -1,9 +1,12 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
 
-#include <hive/chain/history_object.hpp>
-
+#include <hive/protocol/operations.hpp>
 #include <hive/protocol/types.hpp>
+
+#include <hive/plugins/account_history_api/annotated_signed_transaction.hpp>
+
+#include <hive/chain/buffer_type.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
@@ -23,24 +26,25 @@ struct api_operation_object
     trx_id( op_obj.trx_id ),
     block( op_obj.block ),
     trx_in_block( op_obj.trx_in_block ),
-    virtual_op( op_obj.virtual_op ),
+    op_in_trx( op_obj.op_in_trx ),
     timestamp( op_obj.timestamp )
   {
     op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op_obj.serialized_op );
+    virtual_op = hive::protocol::is_virtual_operation(op);
   }
 
   hive::protocol::transaction_id_type trx_id;
   uint32_t                            block = 0;
   uint32_t                            trx_in_block = 0;
   uint32_t                            op_in_trx = 0;
-  uint32_t                            virtual_op = 0;
+  bool                                virtual_op = false;
   uint64_t                            operation_id = 0;
   fc::time_point_sec                  timestamp;
   hive::protocol::operation           op;
 
   bool operator<( const api_operation_object& obj ) const
   {
-    return std::tie( block, trx_in_block, op_in_trx, virtual_op ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx, obj.virtual_op );
+    return std::tie( block, trx_in_block, op_in_trx ) < std::tie( obj.block, obj.trx_in_block, obj.op_in_trx );
   }
 };
 
@@ -61,12 +65,12 @@ struct get_ops_in_block_return
 
 struct get_transaction_args
 {
-  hive::protocol::transaction_id_type id;
+  fc::string id;
   /// if set to true transaction from reversible block will be returned if id matches given one.
   fc::optional<bool> include_reversible;
 };
 
-typedef hive::protocol::annotated_signed_transaction get_transaction_return;
+typedef hive::plugins::account_history::annotated_signed_transaction get_transaction_return;
 
 struct get_account_history_args
 {
@@ -75,11 +79,11 @@ struct get_account_history_args
   uint32_t                            limit = 1000;
   /// if set to true operations from reversible block will be also returned.
   fc::optional<bool> include_reversible;
-  /** if either are set, the set of returned operations will include only these 
+  /** if either are set, the set of returned operations will include only these
    * matching bitwise filter.
-   * For the first 64 operations (as defined in protocol/operations.hpp), set the 
+   * For the first 64 operations (as defined in protocol/operations.hpp), set the
    * corresponding bit in operation_filter_low; for the higher-numbered operations,
-   * set the bit in operation_filter_high (pretending operation_filter is a 
+   * set the bit in operation_filter_high (pretending operation_filter is a
    * 128-bit bitmask composed of {operation_filter_high, operation_filter_low})
    */
   fc::optional<uint64_t> operation_filter_low;
@@ -93,41 +97,48 @@ struct get_account_history_return
 
 enum enum_vops_filter : uint64_t
 {
-  fill_convert_request_operation                = 0x0'00000001ull,
-  author_reward_operation                       = 0x0'00000002ull,
-  curation_reward_operation                     = 0x0'00000004ull,
-  comment_reward_operation                      = 0x0'00000008ull,
-  liquidity_reward_operation                    = 0x0'00000010ull,
-  interest_operation                            = 0x0'00000020ull,
-  fill_vesting_withdraw_operation               = 0x0'00000040ull,
-  fill_order_operation                          = 0x0'00000080ull,
-  shutdown_witness_operation                    = 0x0'00000100ull,
-  fill_transfer_from_savings_operation          = 0x0'00000200ull,
-  hardfork_operation                            = 0x0'00000400ull,
-  comment_payout_update_operation               = 0x0'00000800ull,
-  return_vesting_delegation_operation           = 0x0'00001000ull,
-  comment_benefactor_reward_operation           = 0x0'00002000ull,
-  producer_reward_operation                     = 0x0'00004000ull,
-  clear_null_account_balance_operation          = 0x0'00008000ull,
-  proposal_pay_operation                        = 0x0'00010000ull,
-  sps_fund_operation                            = 0x0'00020000ull,
-  hardfork_hive_operation                       = 0x0'00040000ull,
-  hardfork_hive_restore_operation               = 0x0'00080000ull,
-  delayed_voting_operation                      = 0x0'00100000ull,
-  consolidate_treasury_balance_operation        = 0x0'00200000ull,
-  effective_comment_vote_operation              = 0x0'00400000ull,
-  ineffective_delete_comment_operation          = 0x0'00800000ull,
-  sps_convert_operation                         = 0x0'01000000ull,
-  expired_account_notification_operation        = 0x0'02000000ull,
-  changed_recovery_account_operation            = 0x0'04000000ull,
-  transfer_to_vesting_completed_operation       = 0x0'08000000ull,
-  pow_reward_operation                          = 0x0'10000000ull,
-  vesting_shares_split_operation                = 0x0'20000000ull,
-  account_created_operation                     = 0x0'40000000ull,
-  fill_collateralized_convert_request_operation = 0x0'80000000ull,
-  system_warning_operation                      = 0x1'00000000ull,
-  fill_recurrent_transfer_operation             = 0x2'00000000ull,
-  failed_recurrent_transfer_operation           = 0x4'00000000ull,
+  fill_convert_request_operation                = 0x0000'00000001ull,
+  author_reward_operation                       = 0x0000'00000002ull,
+  curation_reward_operation                     = 0x0000'00000004ull,
+  comment_reward_operation                      = 0x0000'00000008ull,
+  liquidity_reward_operation                    = 0x0000'00000010ull,
+  interest_operation                            = 0x0000'00000020ull,
+  fill_vesting_withdraw_operation               = 0x0000'00000040ull,
+  fill_order_operation                          = 0x0000'00000080ull,
+  shutdown_witness_operation                    = 0x0000'00000100ull,
+  fill_transfer_from_savings_operation          = 0x0000'00000200ull,
+  hardfork_operation                            = 0x0000'00000400ull,
+  comment_payout_update_operation               = 0x0000'00000800ull,
+  return_vesting_delegation_operation           = 0x0000'00001000ull,
+  comment_benefactor_reward_operation           = 0x0000'00002000ull,
+  producer_reward_operation                     = 0x0000'00004000ull,
+  clear_null_account_balance_operation          = 0x0000'00008000ull,
+  proposal_pay_operation                        = 0x0000'00010000ull,
+  dhf_funding_operation                         = 0x0000'00020000ull,
+  hardfork_hive_operation                       = 0x0000'00040000ull,
+  hardfork_hive_restore_operation               = 0x0000'00080000ull,
+  delayed_voting_operation                      = 0x0000'00100000ull,
+  consolidate_treasury_balance_operation        = 0x0000'00200000ull,
+  effective_comment_vote_operation              = 0x0000'00400000ull,
+  ineffective_delete_comment_operation          = 0x0000'00800000ull,
+  dhf_conversion_operation                      = 0x0000'01000000ull,
+  expired_account_notification_operation        = 0x0000'02000000ull,
+  changed_recovery_account_operation            = 0x0000'04000000ull,
+  transfer_to_vesting_completed_operation       = 0x0000'08000000ull,
+  pow_reward_operation                          = 0x0000'10000000ull,
+  vesting_shares_split_operation                = 0x0000'20000000ull,
+  account_created_operation                     = 0x0000'40000000ull,
+  fill_collateralized_convert_request_operation = 0x0000'80000000ull,
+  system_warning_operation                      = 0x0001'00000000ull,
+  fill_recurrent_transfer_operation             = 0x0002'00000000ull,
+  failed_recurrent_transfer_operation           = 0x0004'00000000ull,
+  limit_order_cancelled_operation               = 0x0008'00000000ull,
+  producer_missed_operation                     = 0x0010'00000000ull,
+  proposal_fee_operation                        = 0x0020'00000000ull,
+  collateralized_convert_immediate_conversion_operation
+                                                = 0x0040'00000000ull,
+  escrow_approved_operation                     = 0x0080'00000000ull,
+  escrow_rejected_operation                     = 0x0100'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.
@@ -146,7 +157,7 @@ struct enum_virtual_ops_args
 
   fc::optional<bool> group_by_block;
   fc::optional< uint64_t > operation_begin;
-  fc::optional< uint32_t > limit;
+  fc::optional< int32_t > limit;
   fc::optional< uint64_t > filter;
 };
 
@@ -197,7 +208,7 @@ FC_REFLECT( hive::plugins::account_history::api_operation_object,
   (trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(op)(operation_id) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_args,
-  (block_num)(only_virtual) )
+  (block_num)(only_virtual)(include_reversible) )
 
 FC_REFLECT( hive::plugins::account_history::get_ops_in_block_return,
   (ops) )

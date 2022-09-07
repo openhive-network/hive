@@ -1,0 +1,28 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest
+    - xfail # get_account_references --- Needs to be refactored for Hive
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "condenser_api.get_account_references"
+          params: ["account_lower_bound": "", "limit": 1000]
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:has_valid_response
+          extra_kwargs:
+            ignore_tags: ['total_votes']

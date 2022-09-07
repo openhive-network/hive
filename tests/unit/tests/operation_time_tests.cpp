@@ -8,7 +8,6 @@
 
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 
 #include <hive/chain/util/reward.hpp>
@@ -104,8 +103,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       }
 
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      sign( tx, author.private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, author.private_key );
     }
 
     generate_blocks(1);
@@ -121,8 +119,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       vote.weight = HIVE_100_PERCENT;
       tx.operations.push_back( vote );
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      sign( tx, voter.private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, voter.private_key );
     }
 
     //auto& reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive();
@@ -132,7 +129,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     //const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
     //idump( (rf) );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "mypost" ) ) )->cashout_time, true );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "mypost" ) ) )->get_cashout_time(), true );
     /*
     for( const auto& author : authors )
     {
@@ -184,16 +181,14 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     signed_transaction tx;
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     validate_database();
 
     comment.author = "bob";
 
     tx.clear();
     tx.operations.push_back( comment );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
     validate_database();
 
     generate_blocks( db->head_block_time() + db->get_dynamic_global_properties().reverse_auction_seconds );
@@ -207,8 +202,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     tx.clear();
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     validate_database();
 
     vote.voter = "bob";
@@ -217,11 +211,10 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
 
     tx.clear();
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
     validate_database();
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
 
     // If comments are paid out independent of order, then the last satoshi of HIVE cannot be divided among them
     const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
@@ -263,8 +256,7 @@ BOOST_AUTO_TEST_CASE( reward_funds )
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     generate_blocks( 5 );
 
@@ -275,10 +267,9 @@ BOOST_AUTO_TEST_CASE( reward_funds )
     tx.clear();
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
-    generate_blocks( db->get_comment( "alice", string( "test" ) ).cashout_time );
+    generate_blocks( db->get_comment( "alice", string( "test" ) ).get_cashout_time() );
 
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
@@ -291,7 +282,7 @@ BOOST_AUTO_TEST_CASE( reward_funds )
       validate_database();
     }
 
-    generate_blocks( db->get_comment( "bob", string( "test" ) ).cashout_time );
+    generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() );
 
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
@@ -335,10 +326,9 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
-    auto alice_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->net_rshares.value,
+    auto alice_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_net_rshares(),
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).content_constant );
 
@@ -350,10 +340,9 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     tx.clear();
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
 
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
@@ -362,8 +351,8 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
       validate_database();
     }
 
-    auto bob_cashout_time = db->find_comment_cashout( db->get_comment( "bob", string( "test" ) ) )->cashout_time;
-    auto bob_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "bob", string( "test" ) ) )->net_rshares.value,
+    auto bob_cashout_time = db->find_comment_cashout( db->get_comment( "bob", string( "test" ) ) )->get_cashout_time();
+    auto bob_vshares = util::evaluate_reward_curve( db->find_comment_cashout( db->get_comment( "bob", string( "test" ) ) )->get_net_rshares(),
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
       db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).content_constant );
 
@@ -422,19 +411,15 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     com.body = "bar";
     tx.operations.push_back( com );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     com.author = "bob";
     tx.operations.push_back( com );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     BOOST_TEST_MESSAGE( "Voting for comments." );
 
@@ -444,43 +429,36 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     vote.permlink = "test";
     vote.weight = HIVE_100_PERCENT;
     tx.operations.push_back( vote );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     vote.voter = "sam";
     vote.author = "alice";
     tx.operations.push_back( vote );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     vote.voter = "bob";
     vote.author = "bob";
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     vote.voter = "dave";
     vote.author = "bob";
     tx.operations.push_back( vote );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     BOOST_TEST_MESSAGE( "Generate blocks up until first payout" );
 
-    //generate_blocks( db->get_comment( "bob", string( "test" ) ).cashout_time - HIVE_BLOCK_INTERVAL, true );
+    //generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() - HIVE_BLOCK_INTERVAL, true );
 
     auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + ASSET( "1.667 TESTS" );
     auto total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
-    auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).net_rshares;
+    auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).get_net_rshares();
     auto bob_vest_shares = get_vesting( "bob" );
     auto bob_hbd_balance = get_hbd_balance( "bob" );
 
@@ -502,48 +480,38 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_TEST_MESSAGE( "Testing no payout when less than $0.02" );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "alice";
     vote.author = "alice";
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "dave";
     vote.author = "bob";
     vote.weight = HIVE_1_PERCENT;
     tx.operations.push_back( vote );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
-    generate_blocks( db->get_comment( "bob", string( "test" ) ).cashout_time - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() - HIVE_BLOCK_INTERVAL, true );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "bob";
     vote.author = "alice";
     vote.weight = HIVE_100_PERCENT;
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "sam";
     tx.operations.push_back( vote );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "dave";
     tx.operations.push_back( vote );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     bob_vest_shares = get_vesting( "bob" );
     bob_hbd_balance = get_hbd_balance( "bob" );
@@ -591,50 +559,39 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     com.body = "bar";
     tx.operations.push_back( com );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     com.author = "bob";
     tx.operations.push_back( com );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     BOOST_TEST_MESSAGE( "First round of votes." );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote_operation vote;
     vote.voter = "alice";
     vote.author = "alice";
     vote.permlink = "test";
     vote.weight = HIVE_100_PERCENT;
     tx.operations.push_back( vote );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "dave";
     tx.operations.push_back( vote );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "bob";
     vote.author = "bob";
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "sam";
     tx.operations.push_back( vote );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     BOOST_TEST_MESSAGE( "Generating blocks..." );
 
@@ -643,32 +600,26 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_TEST_MESSAGE( "Second round of votes." );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "alice";
     vote.author = "bob";
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( vote );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "bob";
     vote.author = "alice";
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "sam";
     tx.operations.push_back( vote );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     BOOST_TEST_MESSAGE( "Generating more blocks..." );
 
-    generate_blocks( db->get_comment( "bob", string( "test" ) ).cashout_time - ( HIVE_BLOCK_INTERVAL / 2 ), true );
+    generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() - ( HIVE_BLOCK_INTERVAL / 2 ), true );
 
     BOOST_TEST_MESSAGE( "Check comments have not been paid out." );
 
@@ -681,14 +632,14 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "alice" ) ).id ) ) != vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "bob" ) ).id   ) ) != vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "sam" ) ).id   ) ) != vote_idx.end() );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).net_rshares.value > 0 );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).net_rshares.value > 0 );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() > 0 );
+    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() > 0 );
     validate_database();
 
     auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + ASSET( "2.000 TESTS" );
     auto total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
-    auto bob_comment_vote_total = db->get_comment( "bob", string( "test" ) ).total_vote_weight;
-    auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).net_rshares;
+    auto bob_comment_vote_total = db->get_comment( "bob", string( "test" ) ).get_total_vote_weight();
+    auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).get_net_rshares();
     auto bob_hbd_balance = get_hbd_balance( "bob" );
     auto alice_vest_shares = get_vesting( "alice" );
     auto bob_vest_shares = get_vesting( "bob" );
@@ -701,11 +652,11 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto bob_comment_hbd_reward = asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) * exchange_rate;
     auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) ) * db->get_dynamic_global_properties().get_vesting_share_price();
     auto unclaimed_payments = bob_comment_vote_rewards;
-    auto alice_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "alice" ) ).id ) )->weight ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
+    auto alice_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "alice" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
     auto alice_vote_vesting = alice_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
-    auto bob_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "bob" ) ).id ) )->weight ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
+    auto bob_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
     auto bob_vote_vesting = bob_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
-    auto sam_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "sam" ) ).id ) )->weight ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
+    auto sam_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "sam" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
     auto sam_vote_vesting = sam_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
     unclaimed_payments -= ( alice_vote_reward + bob_vote_reward + sam_vote_reward );
 
@@ -718,8 +669,8 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_REQUIRE( db->get_dynamic_global_properties().get_total_reward_fund_hive().amount.value == reward_hive.amount.value - ( bob_comment_payout + bob_comment_vote_rewards - unclaimed_payments ).amount.value );
     BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value.amount.value == ( ( bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price() ) + ( bob_comment_hbd_reward * exchange_rate ) ).amount.value );
     BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ( bob_hbd_balance + bob_comment_hbd_reward ).amount.value );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).net_rshares.value > 0 );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).net_rshares.value == 0 );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() > 0 );
+    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() == 0 );
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( alice_vest_shares + alice_vote_vesting ).amount.value );
     BOOST_REQUIRE( get_vesting( "bob" ).amount.value == ( bob_vest_shares + bob_vote_vesting + bob_comment_vesting_reward ).amount.value );
     BOOST_REQUIRE( get_vesting( "sam" ).amount.value == ( sam_vest_shares + sam_vote_vesting ).amount.value );
@@ -739,7 +690,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     BOOST_TEST_MESSAGE( "Generating blocks up to next comment payout" );
 
-    generate_blocks( db->get_comment( "alice", string( "test" ) ).cashout_time - ( HIVE_BLOCK_INTERVAL / 2 ), true );
+    generate_blocks( db->get_comment( "alice", string( "test" ) ).get_cashout_time() - ( HIVE_BLOCK_INTERVAL / 2 ), true );
 
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).id ) ) != vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).id   ) ) != vote_idx.end() );
@@ -748,16 +699,16 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "alice" ) ).id ) ) == vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "bob" ) ).id   ) ) == vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "sam" ) ).id   ) ) == vote_idx.end() );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).net_rshares.value > 0 );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).net_rshares.value == 0 );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() > 0 );
+    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() == 0 );
     validate_database();
 
     BOOST_TEST_MESSAGE( "Generate block to cause payout" );
 
     reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + ASSET( "2.000 TESTS" );
     total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
-    auto alice_comment_vote_total = db->get_comment( "alice", string( "test" ) ).total_vote_weight;
-    auto alice_comment_rshares = db->get_comment( "alice", string( "test" ) ).net_rshares;
+    auto alice_comment_vote_total = db->get_comment( "alice", string( "test" ) ).get_total_vote_weight();
+    auto alice_comment_rshares = db->get_comment( "alice", string( "test" ) ).get_net_rshares();
     auto alice_hbd_balance = get_hbd_balance( "alice" );
     alice_vest_shares = get_vesting( "alice" );
     bob_vest_shares = get_vesting( "bob" );
@@ -776,13 +727,13 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto alice_comment_hbd_reward = asset( alice_comment_payout.amount / 2, HIVE_SYMBOL ) * exchange_rate;
     auto alice_comment_vesting_reward = ( alice_comment_payout - asset( alice_comment_payout.amount / 2, HIVE_SYMBOL ) ) * db->get_dynamic_global_properties().get_vesting_share_price();
     unclaimed_payments = alice_comment_vote_rewards;
-    alice_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).id ) )->weight ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
+    alice_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
     alice_vote_vesting = alice_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
-    bob_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).id ) )->weight ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
+    bob_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
     bob_vote_vesting = bob_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
-    sam_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "sam" ) ).id ) )->weight ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
+    sam_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "sam" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
     sam_vote_vesting = sam_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
-    auto dave_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "dave" ) ).id ) )->weight ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
+    auto dave_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "dave" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
     auto dave_vote_vesting = dave_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
     unclaimed_payments -= ( alice_vote_reward + bob_vote_reward + sam_vote_reward + dave_vote_reward );
 
@@ -792,8 +743,8 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_REQUIRE( ( db->get_dynamic_global_properties().get_total_reward_fund_hive() + alice_comment_payout + alice_comment_vote_rewards - unclaimed_payments ).amount.value == reward_hive.amount.value );
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).total_payout_value.amount.value == ( ( alice_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price() ) + ( alice_comment_hbd_reward * exchange_rate ) ).amount.value );
     BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ( alice_hbd_balance + alice_comment_hbd_reward ).amount.value );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).net_rshares.value == 0 );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).net_rshares.value == 0 );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() == 0 );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() == 0 );
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( alice_vest_shares + alice_vote_vesting + alice_comment_vesting_reward ).amount.value );
     BOOST_REQUIRE( get_vesting( "bob" ).amount.value == ( bob_vest_shares + bob_vote_vesting ).amount.value );
     BOOST_REQUIRE( get_vesting( "sam" ).amount.value == ( sam_vest_shares + sam_vote_vesting ).amount.value );
@@ -814,48 +765,38 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_TEST_MESSAGE( "Testing no payout when less than $0.02" );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "alice";
     vote.author = "alice";
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "dave";
     vote.author = "bob";
     vote.weight = HIVE_1_PERCENT;
     tx.operations.push_back( vote );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
-    generate_blocks( db->get_comment( "bob", string( "test" ) ).cashout_time - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() - HIVE_BLOCK_INTERVAL, true );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "bob";
     vote.author = "alice";
     vote.weight = HIVE_100_PERCENT;
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "sam";
     tx.operations.push_back( vote );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote.voter = "dave";
     tx.operations.push_back( vote );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     bob_vest_shares = get_vesting( "bob" );
     auto bob_hbd = get_hbd_balance( "bob" );
@@ -899,36 +840,29 @@ OOST_AUTO_TEST_CASE( nested_comments )
     comment_op.body = "bar";
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( comment_op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     comment_op.author = "bob";
     comment_op.parent_author = "alice";
     comment_op.parent_permlink = "test";
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( comment_op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     comment_op.author = "sam";
     comment_op.parent_author = "bob";
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( comment_op );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     comment_op.author = "dave";
     comment_op.parent_author = "sam";
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( comment_op );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
 
     vote_operation vote_op;
     vote_op.voter = "alice";
@@ -938,11 +872,10 @@ OOST_AUTO_TEST_CASE( nested_comments )
     tx.operations.push_back( vote_op );
     vote_op.author = "bob";
     tx.operations.push_back( vote_op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
+    
     vote_op.voter = "bob";
     vote_op.author = "alice";
     tx.operations.push_back( vote_op );
@@ -951,19 +884,16 @@ OOST_AUTO_TEST_CASE( nested_comments )
     vote_op.author = "dave";
     vote_op.weight = HIVE_1_PERCENT * 20;
     tx.operations.push_back( vote_op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
     vote_op.voter = "sam";
     vote_op.author = "bob";
     vote_op.weight = HIVE_100_PERCENT;
     tx.operations.push_back( vote_op );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
-    generate_blocks( db->get_comment( "alice", string( "test" ) ).cashout_time - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
+    generate_blocks( db->get_comment( "alice", string( "test" ) ).get_cashout_time() - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
     auto& gpo = db->get_dynamic_global_properties();
     uint128_t reward_hive = gpo.get_total_reward_fund_hive().amount.value + ASSET( "2.000 TESTS" ).amount.value;
@@ -977,34 +907,34 @@ OOST_AUTO_TEST_CASE( nested_comments )
     const auto& vote_idx = db->get_index< comment_vote_index >().indices().get< by_comment_voter >();
 
     // Calculate total comment rewards and voting rewards.
-    auto alice_comment_reward = ( ( reward_hive * alice_comment.net_rshares.value * alice_comment.net_rshares.value ) / total_rshares2 ).to_uint64();
-    total_rshares2 -= uint128_t( alice_comment.net_rshares.value ) * ( alice_comment.net_rshares.value );
+    auto alice_comment_reward = ( ( reward_hive * alice_comment.get_net_rshares() * alice_comment.get_net_rshares() ) / total_rshares2 ).to_uint64();
+    total_rshares2 -= uint128_t( alice_comment.get_net_rshares() ) * ( alice_comment.get_net_rshares() );
     reward_hive -= alice_comment_reward;
     auto alice_comment_vote_rewards = alice_comment_reward / 2;
     alice_comment_reward -= alice_comment_vote_rewards;
 
-    auto alice_vote_alice_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).id ) )->weight ) * alice_comment_vote_rewards ) / alice_comment.total_vote_weight ), HIVE_SYMBOL );
-    auto bob_vote_alice_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).id ) )->weight ) * alice_comment_vote_rewards ) / alice_comment.total_vote_weight ), HIVE_SYMBOL );
+    auto alice_vote_alice_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards ) / alice_comment.get_total_vote_weight() ), HIVE_SYMBOL );
+    auto bob_vote_alice_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards ) / alice_comment.get_total_vote_weight() ), HIVE_SYMBOL );
     reward_hive += alice_comment_vote_rewards - ( alice_vote_alice_reward + bob_vote_alice_reward ).amount.value;
 
-    auto bob_comment_reward = ( ( reward_hive * bob_comment.net_rshares.value * bob_comment.net_rshares.value ) / total_rshares2 ).to_uint64();
-    total_rshares2 -= uint128_t( bob_comment.net_rshares.value ) * bob_comment.net_rshares.value;
+    auto bob_comment_reward = ( ( reward_hive * bob_comment.get_net_rshares() * bob_comment.get_net_rshares() ) / total_rshares2 ).to_uint64();
+    total_rshares2 -= uint128_t( bob_comment.get_net_rshares() ) * bob_comment.get_net_rshares();
     reward_hive -= bob_comment_reward;
     auto bob_comment_vote_rewards = bob_comment_reward / 2;
     bob_comment_reward -= bob_comment_vote_rewards;
 
-    auto alice_vote_bob_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "alice" ) ).id ) )->weight ) * bob_comment_vote_rewards ) / bob_comment.total_vote_weight ), HIVE_SYMBOL );
-    auto bob_vote_bob_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "bob" ) ).id ) )->weight ) * bob_comment_vote_rewards ) / bob_comment.total_vote_weight ), HIVE_SYMBOL );
-    auto sam_vote_bob_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "sam" ) ).id ) )->weight ) * bob_comment_vote_rewards ) / bob_comment.total_vote_weight ), HIVE_SYMBOL );
+    auto alice_vote_bob_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "alice" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards ) / bob_comment.get_total_vote_weight() ), HIVE_SYMBOL );
+    auto bob_vote_bob_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards ) / bob_comment.get_total_vote_weight() ), HIVE_SYMBOL );
+    auto sam_vote_bob_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "sam" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards ) / bob_comment.get_total_vote_weight() ), HIVE_SYMBOL );
     reward_hive += bob_comment_vote_rewards - ( alice_vote_bob_reward + bob_vote_bob_reward + sam_vote_bob_reward ).amount.value;
 
-    auto dave_comment_reward = ( ( reward_hive * dave_comment.net_rshares.value * dave_comment.net_rshares.value ) / total_rshares2 ).to_uint64();
-    total_rshares2 -= uint128_t( dave_comment.net_rshares.value ) * dave_comment.net_rshares.value;
+    auto dave_comment_reward = ( ( reward_hive * dave_comment.get_net_rshares() * dave_comment.get_net_rshares() ) / total_rshares2 ).to_uint64();
+    total_rshares2 -= uint128_t( dave_comment.get_net_rshares() ) * dave_comment.get_net_rshares();
     reward_hive -= dave_comment_reward;
     auto dave_comment_vote_rewards = dave_comment_reward / 2;
     dave_comment_reward -= dave_comment_vote_rewards;
 
-    auto bob_vote_dave_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "dave", string( "test" ).id, db->get_account( "bob" ) ).id ) )->weight ) * dave_comment_vote_rewards ) / dave_comment.total_vote_weight ), HIVE_SYMBOL );
+    auto bob_vote_dave_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "dave", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * dave_comment_vote_rewards ) / dave_comment.get_total_vote_weight() ), HIVE_SYMBOL );
     reward_hive += dave_comment_vote_rewards - bob_vote_dave_reward.amount.value;
 
     // Calculate rewards paid to parent posts
@@ -1192,7 +1122,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 */
 
 
-BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
+BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 {
   try
   {
@@ -1210,8 +1140,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
     op.vesting_shares = asset( new_alice.get_vesting().amount / 2, VESTS_SYMBOL );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
     asset vesting_shares = new_alice.get_vesting();
@@ -1249,9 +1178,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals, *boost::unit_test::disabled() )
 
       const auto& alice = db->get_account( "alice" );
 
-      //`delayed_voting_operation` is triggered for all witnesses + `alice` after `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` ( 30 days )
-      const int shift = ( i == 4 ) ? ( HIVE_MAX_WITNESSES + 1/*alice*/ ) : 0;
-      fill_op = get_last_operations( 2 + shift )[ 1 + shift ].get< fill_vesting_withdraw_operation >();
+      fill_op = get_last_operations( 2 )[ 1 ].get< fill_vesting_withdraw_operation >();
 
       BOOST_REQUIRE( alice.get_vesting().amount.value == ( vesting_shares - withdraw_rate ).amount.value );
       BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - alice.get_balance().amount.value <= 1 );
@@ -1304,11 +1231,9 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( wv );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     BOOST_TEST_MESSAGE( "Setting up bob destination" );
     set_withdraw_vesting_route_operation op;
@@ -1323,8 +1248,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     op.percent = HIVE_1_PERCENT * 30;
     op.auto_vest = false;
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "Setting up first withdraw" );
 
@@ -1335,12 +1259,27 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     auto old_bob_vesting = bob.get_vesting();
     auto old_sam_balance = sam.get_balance();
     auto old_sam_vesting = sam.get_vesting();
-    generate_blocks( alice.next_vesting_withdrawal, true );
+
+    generate_blocks( alice.next_vesting_withdrawal - HIVE_BLOCK_INTERVAL, true );
+    generate_block();
 
     {
       const auto& alice = db->get_account( "alice" );
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
+
+      // check vops
+      auto vops = get_last_operations( 3 );
+      auto implied_route = vops[0].get< fill_vesting_withdraw_operation >();
+      auto route_sam = vops[1].get< fill_vesting_withdraw_operation >();
+      auto route_bob = vops[2].get< fill_vesting_withdraw_operation >();
+      BOOST_REQUIRE( is_effective_operation( implied_route ) );
+      BOOST_REQUIRE( implied_route.to_account == alice.get_name() );
+      BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
+      BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
+      BOOST_REQUIRE( route_sam.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE( route_bob.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE( implied_route.withdrawn == ( vesting_withdraw_rate - route_sam.withdrawn - route_bob.withdrawn ) );
 
       BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
@@ -1360,31 +1299,40 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     BOOST_TEST_MESSAGE( "Test failure with greater than 100% destination assignment" );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     op.to_account = "sam";
     op.percent = HIVE_1_PERCENT * 50 + 1;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_TEST_MESSAGE( "Test from_account receiving no withdraw" );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     op.to_account = "sam";
     op.percent = HIVE_1_PERCENT * 50;
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
-    generate_blocks( db->get_account( "alice" ).next_vesting_withdrawal, true );
+    generate_blocks( db->get_account( "alice" ).next_vesting_withdrawal - HIVE_BLOCK_INTERVAL, true );
+    generate_block();
+
     {
       const auto& alice = db->get_account( "alice" );
       const auto& bob = db->get_account( "bob" );
       const auto& sam = db->get_account( "sam" );
+
+      // check vops - unlike previous time, this time there is no vop for implied route, since its "power" is 0%
+      // note: the vop for implied route is actually emitted, but AH filters it out when it is not effective (see issue #337)
+      auto vops = get_last_operations( 2 );
+      auto route_sam = vops[0].get< fill_vesting_withdraw_operation >();
+      auto route_bob = vops[1].get< fill_vesting_withdraw_operation >();
+      BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
+      BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
+      BOOST_REQUIRE( route_sam.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE( route_bob.withdrawn == route_sam.withdrawn );
+      BOOST_REQUIRE( route_bob.withdrawn + route_sam.withdrawn == vesting_withdraw_rate );
 
       BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
       BOOST_REQUIRE( alice.get_balance() == old_alice_balance );
@@ -1454,8 +1402,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     {
       txs[i].set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       txs[i].operations.push_back( ops[i] );
-      sign( txs[i], keys[i] );
-      db->push_transaction( txs[i], 0 );
+      push_transaction( txs[i], keys[i], 0 );
     }
 
     BOOST_TEST_MESSAGE( "Jump forward an hour" );
@@ -1478,12 +1425,10 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
       for( int j = 0; j < 7; j++ )
       {
         txs[j].operations.clear();
-        txs[j].signatures.clear();
         ops[j].exchange_rate = price( ops[j].exchange_rate.base, asset( ops[j].exchange_rate.quote.amount + 10, HIVE_SYMBOL ) );
         txs[j].set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
         txs[j].operations.push_back( ops[j] );
-        sign( txs[j], keys[j] );
-        db->push_transaction( txs[j], 0 );
+        push_transaction( txs[j], keys[j], 0 );
       }
 
       BOOST_TEST_MESSAGE( "Generate Blocks" );
@@ -1519,14 +1464,12 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 
     BOOST_TEST_MESSAGE( "Setup conversion to TESTS" );
     tx.operations.clear();
-    tx.signatures.clear();
     op.owner = "alice";
     op.amount = asset( 2000, HBD_SYMBOL );
     op.requestid = 2;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "Generating Blocks up to conversion block" );
     generate_blocks( db->head_block_time() + HIVE_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL / 2 ), true );
@@ -1765,11 +1708,9 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     transfer.from = "alice";
     transfer.amount = ASSET( "1.000 TBD" );
     tx.operations.clear();
-    tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( transfer );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     auto& gpo = db->get_dynamic_global_properties();
     BOOST_REQUIRE(gpo.get_hbd_interest_rate() > 0);
@@ -1797,11 +1738,9 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2 ), true );
 
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( transfer );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value );
     validate_database();
@@ -1815,11 +1754,9 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     generate_blocks( db->head_block_time() + fc::seconds( ( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC * 7 ) / 3 ), true );
 
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( transfer );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     if(db->has_hardfork(HIVE_HARDFORK_1_25))
     {
@@ -1838,7 +1775,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
 BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 {
-  using hive::plugins::condenser_api::legacy_asset;
+  using hive::protocol::legacy_asset;
 
   try
   {
@@ -1983,12 +1920,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.expiration = db->head_block_time() + fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION );
     op.orderid = 1;
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "Waiting 10 minutes" );
 
@@ -2002,12 +1937,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.fill_or_kill = false;
     op.orderid = 2;
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     alice_hive_volume += ( asset( alice_hbd.amount / 20, HBD_SYMBOL ) * exchange_rate ).amount.value;
     alice_reward_last_update = db->head_block_time();
@@ -2051,11 +1984,9 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.min_to_receive = asset( ( alice_hbd.amount.value / 20 ), HBD_SYMBOL );
     op.orderid = 3;
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.operations.push_back( op );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     BOOST_TEST_MESSAGE( "Waiting 10 minutes" );
 
@@ -2068,12 +1999,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell = asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HIVE_SYMBOL );
     op.min_to_receive = asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HBD_SYMBOL );
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     BOOST_TEST_MESSAGE( "Waiting 30 minutes" );
 
@@ -2086,12 +2015,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell = asset( ( alice_hbd.amount.value / 10 ) * 3, HBD_SYMBOL );
     op.min_to_receive = asset( ( alice_hbd.amount.value / 10 ) * 3, HIVE_SYMBOL );
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     alice_hbd_volume -= ( alice_hbd.amount.value / 10 ) * 3;
     alice_reward_last_update = db->head_block_time();
@@ -2099,9 +2026,9 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     sam_reward_last_update = db->head_block_time();
     bob_hbd_volume += ( alice_hbd.amount.value / 10 ) * 3 - ( alice_hbd.amount.value / 20 );
     bob_reward_last_update = db->head_block_time();
-    ops = get_last_operations( 4 );
+    ops = get_last_operations( 2 );
 
-    fill_order_op = ops[1].get< fill_order_operation >();
+    fill_order_op = ops[0].get< fill_order_operation >();
     BOOST_REQUIRE( fill_order_op.open_owner == "bob" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 4 );
     BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HIVE_SYMBOL ).amount.value );
@@ -2109,7 +2036,7 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     BOOST_REQUIRE( fill_order_op.current_orderid == 5 );
     BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HBD_SYMBOL ).amount.value );
 
-    fill_order_op = ops[3].get< fill_order_operation >();
+    fill_order_op = ops[1].get< fill_order_operation >();
     BOOST_REQUIRE( fill_order_op.open_owner == "sam" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 3 );
     BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ).amount.value );
@@ -2144,12 +2071,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell = asset( alice_hbd.amount.value / 20 * 2, HBD_SYMBOL );
     op.min_to_receive = asset( alice_hbd.amount.value / 20 * 2, HIVE_SYMBOL );
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10.to_seconds() / 2 ), true );
 
@@ -2158,12 +2083,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell = asset( alice_hbd.amount.value / 20, HIVE_SYMBOL );
     op.min_to_receive = asset( alice_hbd.amount.value / 20, HBD_SYMBOL );
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10.to_seconds() / 2 ), true );
 
@@ -2203,20 +2126,18 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.owner = "sam";
     op.orderid = 8;
 
-    tx.signatures.clear();
     tx.operations.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     alice_hive_volume += alice_hbd.amount.value / 20;
     alice_reward_last_update = db->head_block_time();
     sam_hive_volume -= alice_hbd.amount.value / 20;
     sam_reward_last_update = db->head_block_time();
 
-    ops = get_last_operations( 2 );
-    fill_order_op = ops[1].get< fill_order_operation >();
+    ops = get_last_operations( 1 );
+    fill_order_op = ops[0].get< fill_order_operation >();
 
     BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 6 );
@@ -2254,21 +2175,17 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     transfer.amount = asset( alice_hbd.amount / 2, HBD_SYMBOL );
 
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( transfer );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     op.owner = "alice";
     op.amount_to_sell = asset( 8 * ( alice_hbd.amount.value / 20 ), HIVE_SYMBOL );
     op.min_to_receive = asset( op.amount_to_sell.amount, HBD_SYMBOL );
     op.orderid = 9;
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10, true );
 
@@ -2277,11 +2194,9 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.min_to_receive = asset( op.amount_to_sell.amount, HIVE_SYMBOL );
     op.orderid = 10;
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     alice_hbd_volume += op.amount_to_sell.amount.value;
     alice_reward_last_update = db->head_block_time();
@@ -2331,10 +2246,8 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.min_to_receive.amount = op.amount_to_sell.amount;
     op.orderid = 11;
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     alice_hbd_volume += op.amount_to_sell.amount.value;
     alice_reward_last_update = db->head_block_time();
@@ -2383,21 +2296,17 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     transfer.from = "alice";
     transfer.amount = asset( alice_hbd.amount / 5, HBD_SYMBOL );
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( transfer );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     op.owner = "bob";
     op.orderid = 12;
     op.amount_to_sell = asset( 3 * ( alice_hbd.amount / 40 ), HBD_SYMBOL );
     op.min_to_receive = asset( op.amount_to_sell.amount, HIVE_SYMBOL );
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10, true );
 
@@ -2406,10 +2315,8 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell = op.min_to_receive;
     op.min_to_receive.symbol = HBD_SYMBOL;
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
-    sign( tx, dave_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, dave_private_key );
 
     bob_hive_volume += op.amount_to_sell.amount.value;
     bob_reward_last_update = db->head_block_time();
@@ -2512,11 +2419,9 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell = ASSET( "1.000 TESTS" );
     op.min_to_receive = ASSET( "1.000 TBD" );
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, sam_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, sam_private_key );
 
     generate_blocks( db->head_block_time() + ( HIVE_BLOCK_INTERVAL / 2 ) + HIVE_LIQUIDITY_TIMEOUT_SEC, true );
 
@@ -2534,11 +2439,9 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     op.amount_to_sell.symbol = HBD_SYMBOL;
     op.min_to_receive.symbol = HIVE_SYMBOL;
     tx.operations.clear();
-    tx.signatures.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     sam_hbd_volume = ASSET( "1.000 TBD" ).amount.value;
     sam_hive_volume = 0;
@@ -2574,63 +2477,43 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
 
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test1" ) ) )->reward_weight == HIVE_100_PERCENT );
+    push_transaction( tx, alice_private_key );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
     op.permlink = "test2";
 
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test2" ) ) )->reward_weight == HIVE_100_PERCENT );
+    push_transaction( tx, alice_private_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     op.permlink = "test3";
 
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test3" ) ) )->reward_weight == HIVE_100_PERCENT );
+    push_transaction( tx, alice_private_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     op.permlink = "test4";
 
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test4" ) ) )->reward_weight == HIVE_100_PERCENT );
+    push_transaction( tx, alice_private_key );
 
     generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     op.permlink = "test5";
 
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test5" ) ) )->reward_weight == HIVE_100_PERCENT );
+    push_transaction( tx, alice_private_key );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2653,49 +2536,30 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "1.250 TESTS" ) );
     set_price_feed( exchange_rate );
 
-    signed_transaction tx;
-
     comment_operation comment;
     comment.author = "alice";
     comment.parent_author = "";
     comment.permlink = "test";
     comment.parent_permlink = "test";
     comment.body = "test";
-
-    tx.operations.push_back( comment );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
-
-    comment.body = "test2";
+    push_transaction( comment, alice_private_key );
 
     generate_block();
 
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( comment );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    comment.body = "test2";
+    push_transaction( comment, alice_private_key );
 
     vote_operation vote;
     vote.weight = HIVE_100_PERCENT;
     vote.voter = "bob";
     vote.author = "alice";
     vote.permlink = "test";
+    push_transaction( vote, bob_private_key );
 
-    tx.operations.clear();
-    tx.signatures.clear();
+    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::min() );
+    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::maximum() );
 
-    tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
-
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->last_payout == fc::time_point_sec::min() );
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time != fc::time_point_sec::min() );
-    BOOST_REQUIRE( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time != fc::time_point_sec::maximum() );
-
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time, true );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2704,15 +2568,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     }
 
     vote.voter = "sam";
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, sam_private_key );
     /// Starting from HF25 voting for already paid posts is allowed again.
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, sam_private_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2722,15 +2579,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
 
     vote.voter = "bob";
     vote.weight = HIVE_100_PERCENT * -1;
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, bob_private_key );
     /// Starting from HF25 voting for already paid posts is allowed again.
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, bob_private_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2740,15 +2590,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
 
     vote.voter = "dave";
     vote.weight = 0;
-
-    tx.operations.clear();
-    tx.signatures.clear();
-
-    tx.operations.push_back( vote );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, dave_private_key );
     /// Starting from HF25 voting for already paid posts is allowed again.
-    db->push_transaction( tx, 0 );
+    push_transaction( vote, dave_private_key );
 
     {
       const comment_object& _comment = db->get_comment( "alice", string( "test" ) );
@@ -2757,29 +2600,45 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     }
 
     comment.body = "test4";
+    push_transaction( comment, alice_private_key ); // Works now in #1714
 
-    tx.operations.clear();
-    tx.signatures.clear();
+    comment.author = "alice";
+    comment.parent_author = "";
+    comment.permlink = "test-fast-vote";
+    comment.parent_permlink = "test";
+    comment.body = "test";
+    push_transaction( comment, alice_private_key );
 
-    tx.operations.push_back( comment );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 ); // Works now in #1714
+    comment.author = "bob";
+    push_transaction( comment, bob_private_key );
+
+    generate_block();
+
+    // vote multiple times in the same block - no longer 3s cooldown - works since HF26
+    vote.author = "alice";
+    vote.permlink = "test-fast-vote";
+    vote.voter = "dave";
+    vote.weight = HIVE_100_PERCENT;
+    push_transaction( vote, dave_private_key );
+    vote.author = "bob";
+    push_transaction( vote, dave_private_key );
+
+    generate_block();
   }
   FC_LOG_AND_RETHROW()
 }
 
-// This test is too intensive without optimizations. Disable it when we build in debug
 BOOST_AUTO_TEST_CASE( hbd_stability )
 {
-  #ifndef DEBUG
   try
   {
-    db_plugin->debug_update( [=]( database& db )
+    auto& dgpo = db->get_dynamic_global_properties();
+
+    db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.sps_fund_percent = 0;
-        gpo.content_reward_percent = 75 * HIVE_1_PERCENT;
+        gpo.proposal_fund_percent = 0;
       });
     }, database::skip_witness_signature );
 
@@ -2787,7 +2646,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     auto debug_key = "5JdouSvkK75TKWrJixYufQgePT21V7BAVWbNUWt3ktqhPmy8Z78"; //get_dev_key debug node
 
-    ACTORS( (alice)(bob)(sam)(dave)(greg) );
+    ACTORS( (alice)(bob)(sam) );
 
     fund( "alice", 10000 );
     fund( "bob", 10000 );
@@ -2798,7 +2657,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) );
     set_price_feed( exchange_rate );
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() == HIVE_100_PERCENT );
+    BOOST_REQUIRE( dgpo.get_hbd_print_rate() == HIVE_100_PERCENT );
 
     comment_operation comment;
     comment.author = "alice";
@@ -2810,8 +2669,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     signed_transaction tx;
     tx.operations.push_back( comment );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     vote_operation vote;
     vote.voter = "bob";
@@ -2820,21 +2678,18 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     vote.weight = HIVE_100_PERCENT;
 
     tx.operations.clear();
-    tx.signatures.clear();
 
     tx.operations.push_back( vote );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
 
     BOOST_TEST_MESSAGE( "Generating blocks up to comment payout" );
 
-    db_plugin->debug_generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->cashout_time.sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
-
-    auto& gpo = db->get_dynamic_global_properties();
+    generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
 
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
-    asset hbd_balance = asset( ( gpo.virtual_supply.amount * ( gpo.hbd_stop_percent + 112 ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
+    int correction = ( dgpo.hbd_stop_percent * dgpo.hbd_stop_percent ) / ( HIVE_100_PERCENT - dgpo.hbd_stop_percent ) + 1;
+    asset hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_stop_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
@@ -2843,81 +2698,82 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       });
     }, database::skip_witness_signature );
 
-    db_plugin->debug_update( [=]( database& db )
+    db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
         gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
-        gpo.virtual_supply = gpo.virtual_supply + hbd_balance * exchange_rate;
+        gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
       });
     }, database::skip_witness_signature );
 
     validate_database();
 
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_blocks( debug_key, 1, database::skip_witness_signature );
 
-    auto comment_reward = ( gpo.get_total_reward_fund_hive().amount + 2000 ) - ( ( gpo.get_total_reward_fund_hive().amount + 2000 ) * 25 * HIVE_1_PERCENT ) / HIVE_100_PERCENT ;
-    comment_reward /= 2;
-    auto hbd_reward = ( comment_reward * gpo.get_hbd_print_rate() ) / HIVE_100_PERCENT;
-    auto alice_hbd = get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) + asset( hbd_reward, HIVE_SYMBOL ) * exchange_rate;
-    auto alice_hive = get_balance( "alice" ) + get_rewards( "alice" ) ;
+    BOOST_TEST_MESSAGE( "Checking printing HBD has stopped" );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), 0 );
 
-    BOOST_TEST_MESSAGE( "Checking printing HBD has slowed" );
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() < HIVE_100_PERCENT );
+    auto& _alice = db->get_account( "alice" );
+    auto alice_hbd = _alice.get_hbd_balance() + _alice.get_hbd_rewards();
+    BOOST_REQUIRE_EQUAL( alice_hbd.amount.value, 0 );
+    auto alice_hive = _alice.get_balance() + _alice.get_rewards();
+    BOOST_REQUIRE_EQUAL( alice_hive.amount.value, 0 );
 
     BOOST_TEST_MESSAGE( "Pay out comment and check rewards are paid as HIVE" );
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_blocks( debug_key, 1, database::skip_witness_signature );
 
     validate_database();
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) + get_hbd_rewards( "alice" ) == alice_hbd );
-    BOOST_REQUIRE( get_balance( "alice" ) + get_rewards( "alice" ) > alice_hive );
+    BOOST_REQUIRE( _alice.get_hbd_balance() + _alice.get_hbd_rewards() == alice_hbd );
+    BOOST_REQUIRE( _alice.get_balance() + _alice.get_rewards() > alice_hive );
 
     BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
 
-    // Get close to hbd_start_percent for printing HBD to start again, but not all the way
+    // Get slightly above hbd_start_percent (about 10% of distance between start and stop)
+    uint16_t percent = ( dgpo.hbd_stop_percent - dgpo.hbd_start_percent ) / 10;
+    percent += dgpo.hbd_start_percent;
+    correction = ( percent * percent ) / ( HIVE_100_PERCENT - percent ) + 1;
+    hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_start_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.hbd_balance = asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL );
+        a.hbd_balance = hbd_balance;
       });
     }, database::skip_witness_signature );
 
-    auto current_hbd_supply = alice_hbd + asset( ( ( gpo.hbd_start_percent - 9 ) * hbd_balance.amount ) / gpo.hbd_stop_percent, HBD_SYMBOL ) + db->get_treasury().get_hbd_balance();
-
-    db_plugin->debug_update( [=]( database& db )
+    db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = current_hbd_supply;
-      });
+        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
+        gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
+      } );
     }, database::skip_witness_signature );
 
-    db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
     validate_database();
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() < HIVE_100_PERCENT );
+    generate_blocks( debug_key, 1, database::skip_witness_signature );
+    BOOST_REQUIRE( dgpo.get_hbd_print_rate() < HIVE_100_PERCENT );
 
-    auto last_print_rate = db->get_dynamic_global_properties().get_hbd_print_rate();
+    auto last_print_rate = dgpo.get_hbd_print_rate();
 
     // Keep producing blocks until printing HBD is back
-    while( ( db->get_dynamic_global_properties().get_current_hbd_supply() * exchange_rate ).amount >= ( db->get_dynamic_global_properties().virtual_supply.amount * db->get_dynamic_global_properties().hbd_start_percent ) / HIVE_100_PERCENT )
+    while( db->calculate_HBD_percent() >= dgpo.hbd_start_percent )
     {
-      auto& gpo = db->get_dynamic_global_properties();
-      BOOST_REQUIRE( gpo.get_hbd_print_rate() >= last_print_rate );
-      last_print_rate = gpo.get_hbd_print_rate();
-      db_plugin->debug_generate_blocks( debug_key, 1, database::skip_witness_signature );
+      BOOST_REQUIRE( dgpo.get_hbd_print_rate() >= last_print_rate );
+      last_print_rate = dgpo.get_hbd_print_rate();
+      generate_blocks( debug_key, 1, database::skip_witness_signature );
       if( db->head_block_num() % 1000 == 0 )
         validate_database();
     }
 
     validate_database();
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_hbd_print_rate() == HIVE_100_PERCENT );
+    BOOST_REQUIRE( dgpo.get_hbd_print_rate() == HIVE_100_PERCENT );
   }
   FC_LOG_AND_RETHROW()
-  #endif
 }
 
 BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
@@ -2948,10 +2804,9 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     tx.operations.push_back( comment );
     tx.operations.push_back( vote );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
-    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->cashout_time, true );
+    generate_blocks( db->find_comment_cashout( db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
 
     BOOST_TEST_MESSAGE( "Setting HBD percent to greater than 10% market cap." );
 
@@ -3024,8 +2879,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     tx.operations.push_back( save1);
     tx.operations.push_back( save2 );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     validate_database();
 
     db_plugin->debug_update( [=]( database& db )
@@ -3175,13 +3029,12 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     op.fee = ASSET( "0.000 TESTS" );
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
 
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
     BOOST_CHECK( db->_pending_tx.size() == 0 );
 
     // Pushes successfully
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
     BOOST_CHECK( db->_pending_tx.size() == 1 );
 
@@ -3189,18 +3042,16 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     {
       generate_block();
 
-      // The transaction fails in generate_block(), meaning it is removed from the local node's transaction list
-      BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 0u );
-      BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
-      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
+      // The transaction fails to be included in new block (due to witness::schedule not being elected),
+      // but it is successfully reapplied as pending
+      BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->get_block().transactions.size(), 0u );
+      BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
+      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
-    db->push_transaction( tx, 0 );
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK( db->_pending_tx.size() == 1 );
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
-    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), 1u );
+    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->get_block().transactions.size(), 1u );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
 
@@ -3216,16 +3067,16 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     // Create n+1 transactions
     for( size_t i=0; i<=n; i++ )
     {
-      tx.signatures.clear();
       tx.set_expiration( expiration );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
       expiration += fc::seconds(3);
     }
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == n+2 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), n+1 );
     generate_block();
-    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->transactions.size(), n );
+    BOOST_CHECK_EQUAL( db->fetch_block_by_number( db->head_block_num() )->get_block().transactions.size(), n );
+    // last transaction exhausted current witness subsidy, so it was not included in block, but remains
+    // as pending for later
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
   }
   FC_LOG_AND_RETHROW()

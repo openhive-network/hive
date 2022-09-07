@@ -47,7 +47,6 @@ class network_broadcast_api
 
     DECLARE_API(
       (broadcast_transaction)
-      (broadcast_block)
     )
 
   private:

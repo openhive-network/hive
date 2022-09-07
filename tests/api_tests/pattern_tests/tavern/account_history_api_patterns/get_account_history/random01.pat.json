@@ -1,0 +1,62 @@
+{
+  "history": [
+    [
+      19,
+      {
+        "block": 2161007,
+        "op": {
+          "type": "producer_reward_operation",
+          "value": {
+            "producer": "badger3143",
+            "vesting_shares": {
+              "amount": "6917263295",
+              "nai": "@@000000037",
+              "precision": 6
+            }
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-06-08T15:09:42",
+        "trx_id": "0000000000000000000000000000000000000000",
+        "trx_in_block": 4294967295,
+        "virtual_op": true
+      }
+    ],
+    [
+      20,
+      {
+        "block": 2163888,
+        "op": {
+          "type": "pow_operation",
+          "value": {
+            "block_id": "002104af55d5c492c8c134b5a55c89eac8210a86",
+            "nonce": "6317456790497374569",
+            "props": {
+              "account_creation_fee": {
+                "amount": "1",
+                "nai": "@@000000021",
+                "precision": 3
+              },
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "d28a6c6f0fd04548ef12833d3e95acf7690cfb2bc6f6c8cd3b277d2f234bd908",
+              "signature": "20bd759200fb6996e141f1968beb3ef7d37a1692f15dc3a6c930388b27ec8691c07e36d3a0f441de10d12b2b1c98ed0816d3c2dfe1c8be1eacfd27fe5f4dd7f07a",
+              "work": "0000000c822c37f6a18985b1ef0eac34ae51f9e87d9ce3a8a217c90c7d74d82e",
+              "worker": "STM5DHtHTDTyr3A4uutu6EsnHPfxAfRo9gQoJRT7jAHw4eU4UWRCK"
+            },
+            "worker_account": "badger3143"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-06-08T17:33:54",
+        "trx_id": "0b775b60a3f8dc7adea76f91afd92fd2b88daf19",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ]
+  ]
+}

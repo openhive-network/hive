@@ -1,0 +1,64 @@
+{
+  "history": [
+    [
+      377,
+      {
+        "block": 3399063,
+        "op": {
+          "type": "request_account_recovery_operation",
+          "value": {
+            "account_to_recover": "gtg",
+            "extensions": [],
+            "new_owner_authority": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM8bmDfubWHsCjs9LzPNCQEGevk3iJGRDHH1Mvsc2kboTg6ZT6YM",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "recovery_account": "steem"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-21T21:41:00",
+        "trx_id": "f0ffadc77bb4e089e0d12ae754f9690144c71edc",
+        "trx_in_block": 1,
+        "virtual_op": false
+      }
+    ],
+    [
+      378,
+      {
+        "block": 3399201,
+        "op": {
+          "type": "request_account_recovery_operation",
+          "value": {
+            "account_to_recover": "gtg",
+            "extensions": [],
+            "new_owner_authority": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5RLQ1Jh8Kf56go3xpzoodg4vRsgCeWhANXoEXrYH7bLEwSVyjh",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "recovery_account": "steem"
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-21T21:48:00",
+        "trx_id": "4292eb5939be2918552c08b8be0adc23ac939002",
+        "trx_in_block": 2,
+        "virtual_op": false
+      }
+    ]
+  ]
+}

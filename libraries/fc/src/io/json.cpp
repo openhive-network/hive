@@ -10,6 +10,9 @@
 #include <fstream>
 #include <sstream>
 
+//#define SIMDJSON_DEVELOPMENT_CHECKS 1
+#include <simdjson.h>
+
 #include <boost/filesystem/fstream.hpp>
 
 namespace fc
@@ -24,7 +27,7 @@ namespace fc
     template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in, uint32_t depth = 0 );
     template<typename T, json::parse_type parser_type> variant number_from_stream( T& in, uint32_t depth = 0 );
     template<typename T> variant token_from_stream( T& in, uint32_t depth = 0 );
-    void escape_string( const string& str, ostream& os, uint32_t depth = 0 );
+    template<typename T> void escape_string( const string& str, T& os, uint32_t depth = 0 );
     template<typename T> void to_stream( T& os, const variants& a, json::output_formatting format );
     template<typename T> void to_stream( T& os, const variant_object& o, json::output_formatting format );
     template<typename T> void to_stream( T& os, const variant& v, json::output_formatting format );
@@ -35,6 +38,50 @@ namespace fc
 
 namespace fc
 {
+  class fast_stream
+  {
+    private:
+
+      std::string content;
+
+    public:
+
+      fast_stream( uint32_t buffer_size = 10'000'000 )
+      {
+        content.reserve( buffer_size );
+      }
+
+      fast_stream& operator<<( const char& v )
+      {
+        content += v;
+        return *this;
+      }
+
+      fast_stream& operator<<( const char* v )
+      {
+        content.append( v, std::strlen(v) );
+        return *this;
+      }
+
+      fast_stream& operator<<( const std::string& v )
+      {
+        content.append( v );
+        return *this;
+      }
+
+      template<typename T>
+      fast_stream& operator<<( const T& v )
+      {
+        content.append( std::move( std::to_string( v ) ) );
+        return *this;
+      }
+
+      std::string&& str()
+      {
+        return std::move( content );
+      }
+  };
+
    template<typename T>
    char parseEscape( T& in, uint32_t )
    {
@@ -88,7 +135,8 @@ namespace fc
    template<typename T>
    fc::string stringFromStream( T& in, uint32_t depth )
    {
-      fc::stringstream token;
+     fc::string result;
+     result.reserve( 25 );
       try
       {
          char c = in.peek();
@@ -104,23 +152,23 @@ namespace fc
             switch( c = in.peek() )
             {
                case '\\':
-                  token << parseEscape( in, depth );
+                  result.push_back( parseEscape( in, depth ) );
                   break;
                case 0x04:
                   FC_THROW_EXCEPTION( parse_error_exception, "EOF before closing '\"' in string '${token}'",
-                                                   ("token", token.str() ) );
+                                                   ("token", result ) );
                case '"':
                   in.get();
-                  return token.str();
+                  return result;
                default:
-                  token << c;
+                  result.push_back( c );
                   in.get();
             }
          }
          FC_THROW_EXCEPTION( parse_error_exception, "EOF before closing '\"' in string '${token}'",
-                                          ("token", token.str() ) );
+                             ("token", result ) );
        } FC_RETHROW_EXCEPTIONS( warn, "while parsing token '${token}'",
-                                          ("token", token.str() ) );
+                                ("token", result ) );
    }
    template<typename T>
    fc::string stringFromToken( T& in, uint32_t depth )
@@ -258,14 +306,15 @@ namespace fc
    variant number_from_stream( T& in, uint32_t depth )
    {
       depth++;
-      fc::stringstream ss;
+      fc::string number_string;
+      number_string.reserve( 10 );
 
       bool  dot = false;
       bool  neg = false;
       if( in.peek() == '-')
       {
         neg = true;
-        ss.put( in.get() );
+        number_string.push_back( in.get() );
       }
       bool done = false;
 
@@ -291,12 +340,12 @@ namespace fc
               case '7':
               case '8':
               case '9':
-                 ss.put( in.get() );
+                 number_string.push_back( in.get() );
                  break;
               default:
                  if( isalnum( c ) )
                  {
-                    return ss.str() + stringFromToken( in, depth );
+                   return number_string + stringFromToken( in, depth );
                  }
                 done = true;
                 break;
@@ -309,14 +358,14 @@ namespace fc
       catch (const std::ios_base::failure&)
       {
       }
-      fc::string str = ss.str();
-      if (str == "-." || str == ".") // check the obviously wrong things we could have encountered
-        FC_THROW_EXCEPTION(parse_error_exception, "Can't parse token \"${token}\" as a JSON numeric constant", ("token", str));
+
+      if (number_string == "-." || number_string == ".") // check the obviously wrong things we could have encountered
+        FC_THROW_EXCEPTION(parse_error_exception, "Can't parse token \"${token}\" as a JSON numeric constant", ("token", number_string));
       if( dot )
-        return parser_type == json::legacy_parser_with_string_doubles ? variant(str) : variant(to_double(str));
+        return parser_type == json::legacy_parser_with_string_doubles ? variant(number_string) : variant(to_double(number_string));
       if( neg )
-        return to_int64(str);
-      return to_uint64(str);
+        return to_int64(number_string);
+      return to_uint64(number_string);
    }
    template<typename T>
    variant token_from_stream( T& in, uint32_t depth )
@@ -523,7 +572,8 @@ namespace fc
     *
     *  All other characters are printed as UTF8.
     */
-   void escape_string( const string& str, ostream& os, uint32_t )
+   template<typename T>
+   void escape_string( const string& str, T& os, uint32_t )
    {
       os << '"';
       for( auto itr = str.begin(); itr != str.end(); ++itr )
@@ -693,7 +743,7 @@ namespace fc
 
    fc::string   json::to_string( const variant& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
    {
-      fc::stringstream ss;
+      fc::fast_stream ss;
       fc::to_stream( ss, v, format );
       return ss.str();
    }
@@ -888,4 +938,179 @@ namespace fc
       return false;
    }
 
+   namespace
+   {
+      variant parse_element(simdjson::ondemand::value element) {
+         switch (element.type()) {
+            case simdjson::ondemand::json_type::array:
+               {
+                  variants arr;
+                  arr.reserve(element.count_elements());
+                  auto array = element.get_array();
+                  std::transform(array.begin(), array.end(), std::back_inserter(arr), parse_element);
+                  return arr;
+               }
+            case simdjson::ondemand::json_type::object:
+               {
+                  mutable_variant_object obj;
+                  auto object = element.get_object();
+                  std::for_each(object.begin(), object.end(), [&obj](simdjson::ondemand::field field) {
+                     variant value = parse_element(field.value());
+                     obj(std::string((std::string_view)field.unescaped_key()), std::move(value));
+                  });
+                  return obj;
+               }
+            case simdjson::ondemand::json_type::number:
+               switch (element.get_number_type()) {
+                  case simdjson::ondemand::number_type::signed_integer:
+                     return variant((int64_t)element.get_int64());
+                  case simdjson::ondemand::number_type::unsigned_integer:
+                     return variant((uint64_t)element.get_uint64());
+                  case simdjson::ondemand::number_type::floating_point_number:
+                  default:
+                     return variant((double)element.get_double());
+               }
+            case simdjson::ondemand::json_type::string:
+               return variant(std::string((std::string_view)element.get_string()));
+            case simdjson::ondemand::json_type::boolean:
+               return variant((bool)element.get_bool());
+            case simdjson::ondemand::json_type::null:
+               return variant(nullptr);
+            default:
+               FC_THROW("Encountered an unknown type during json parsing");
+         }
+      }
+      variant parse_document(simdjson::ondemand::document& doc) {
+         switch (doc.type()) {
+            case simdjson::ondemand::json_type::number:
+               switch (doc.get_number_type()) {
+                  case simdjson::ondemand::number_type::signed_integer:
+                     return variant((int64_t)doc.get_int64());
+                  case simdjson::ondemand::number_type::unsigned_integer:
+                     return variant((uint64_t)doc.get_uint64());
+                  case simdjson::ondemand::number_type::floating_point_number:
+                  default:
+                     return variant((double)doc.get_double());
+               }
+            case simdjson::ondemand::json_type::string:
+               {
+                  std::string_view string_value = doc.get_string();
+                  return variant(std::string(string_value));
+               }
+            case simdjson::ondemand::json_type::boolean:
+               {
+                  bool bool_value = doc.get_bool();
+                  return variant(bool_value);
+               }
+            case simdjson::ondemand::json_type::null:
+               return variant(nullptr);
+            default:
+               return parse_element(doc);
+         }
+      }
+   } // end anonymous namespace
+
+   variant json::fast_from_string(const std::string& string_to_parse)
+   { try {
+     assert(string_to_parse.capacity() - string_to_parse.size() >= simdjson::SIMDJSON_PADDING);
+     FC_ASSERT(string_to_parse.capacity() - string_to_parse.size() >= simdjson::SIMDJSON_PADDING, 
+               "this function requires the input to have ${bytes} bytes of extra padding", 
+               ("bytes", simdjson::SIMDJSON_PADDING));
+     thread_local simdjson::ondemand::parser parser;
+     simdjson::ondemand::document doc = parser.iterate(string_to_parse);
+     return parse_document(doc);
+   } FC_CAPTURE_AND_RETHROW((string_to_parse)) }
+
+   namespace
+   {
+      void validate_element(simdjson::ondemand::value element) {
+         switch (element.type()) {
+            case simdjson::ondemand::json_type::array:
+               {
+                  auto array = element.get_array();
+                  std::for_each(array.begin(), array.end(), validate_element);
+                  break;
+               }
+            case simdjson::ondemand::json_type::object:
+               {
+                  auto object = element.get_object();
+                  std::for_each(object.begin(), object.end(), [](simdjson::ondemand::field field) {
+                     (void)field.unescaped_key().value();
+                     validate_element(field.value());
+                  });
+                  break;
+               }
+            case simdjson::ondemand::json_type::number:
+               switch (element.get_number_type()) {
+                 case simdjson::ondemand::number_type::signed_integer:
+                   (void)element.get_int64().value();
+                   break;
+                 case simdjson::ondemand::number_type::unsigned_integer:
+                   (void)element.get_uint64().value();
+                   break;
+                 case simdjson::ondemand::number_type::floating_point_number:
+                 default:
+                   (void)element.get_double().value();
+               }
+               break;
+            case simdjson::ondemand::json_type::string:
+               (void)element.get_string().value();
+               break;
+            case simdjson::ondemand::json_type::boolean:
+               (void)element.get_bool().value();
+               break;
+            case simdjson::ondemand::json_type::null:
+               (void)element.get_string().value();
+               break;
+            default:
+               FC_THROW("Encountered an unknown type during json parsing");
+         }
+      }
+      void validate_document(simdjson::ondemand::document& doc) {
+         switch (doc.type()) {
+            case simdjson::ondemand::json_type::number:
+               switch (doc.get_number_type()) {
+                 case simdjson::ondemand::number_type::signed_integer:
+                   (void)doc.get_int64().value();
+                   break;
+                 case simdjson::ondemand::number_type::unsigned_integer:
+                   (void)doc.get_uint64().value();
+                   break;
+                 case simdjson::ondemand::number_type::floating_point_number:
+                 default:
+                   (void)doc.get_double().value();
+               }
+               break;
+            case simdjson::ondemand::json_type::string:
+               (void)doc.get_string().value();
+               break;
+            case simdjson::ondemand::json_type::boolean:
+               (void)doc.get_bool().value();
+               break;
+            case simdjson::ondemand::json_type::null:
+               (void)doc.get_string().value();
+               break;
+            default:
+               return validate_element(doc);
+         }
+      }
+   } // end anonymous namespace
+   bool json::fast_is_valid(const std::string& string_to_validate)
+   {
+     assert(string_to_validate.capacity() - string_to_validate.size() >= simdjson::SIMDJSON_PADDING);
+     FC_ASSERT(string_to_validate.capacity() - string_to_validate.size() >= simdjson::SIMDJSON_PADDING, 
+               "this function requires the input to have ${bytes} bytes of extra padding", 
+               ("bytes", simdjson::SIMDJSON_PADDING));
+     thread_local simdjson::ondemand::parser parser;
+     try
+     {
+        simdjson::ondemand::document doc = parser.iterate(string_to_validate);
+        validate_document(doc);
+        return true;
+     }
+     catch (...)
+     {
+        return false;
+     }
+   }
 } // fc

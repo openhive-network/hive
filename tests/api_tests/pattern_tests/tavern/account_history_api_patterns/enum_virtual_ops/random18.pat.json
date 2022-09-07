@@ -1,0 +1,77 @@
+{
+  "next_block_range_begin": 3168136,
+  "next_operation_begin": 4788740,
+  "ops": [
+    {
+      "block": 3168135,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "gryphon",
+          "pending_payout": {
+            "amount": "1",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "torgovlya-fyuchersom-bitkoina-na-bitmex",
+          "rshares": 229884217,
+          "total_vote_weight": "36200336145382826",
+          "voter": "sairji",
+          "weight": "733958741940948"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 4788733,
+      "timestamp": "2016-07-13T18:03:42",
+      "trx_id": "5c1bd1261b1f45fc393c514be33b08e90c885340",
+      "trx_in_block": 2,
+      "virtual_op": true
+    },
+    {
+      "block": 3168135,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "riverhead",
+          "vesting_shares": {
+            "amount": "4681569125",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 4788734,
+      "timestamp": "2016-07-13T18:03:45",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 3168136,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "thomasflemming",
+          "pending_payout": {
+            "amount": "622656",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "hi-i-am-thomas-flemming",
+          "rshares": 254980796,
+          "total_vote_weight": "17882051028200425708",
+          "voter": "undbecks85",
+          "weight": "1101928674912"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 4788738,
+      "timestamp": "2016-07-13T18:03:45",
+      "trx_id": "0e0e63159f75e3c76230f1cd1d055c208a412dcb",
+      "trx_in_block": 2,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

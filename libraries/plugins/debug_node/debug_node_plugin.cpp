@@ -25,12 +25,17 @@ class debug_node_plugin_impl
     debug_node_plugin_impl();
     virtual ~debug_node_plugin_impl();
 
+    plugins::chain::chain_plugin&             _chain_plugin;
     chain::database&                          _db;
+
     boost::signals2::connection               _post_apply_block_conn;
 };
 
 debug_node_plugin_impl::debug_node_plugin_impl() :
-  _db( appbase::app().get_plugin< chain::chain_plugin >().db() ) {}
+  _chain_plugin(appbase::app().get_plugin< hive::plugins::chain::chain_plugin >()),
+  _db(_chain_plugin.db())
+  {}
+
 debug_node_plugin_impl::~debug_node_plugin_impl() {}
 
 }
@@ -174,12 +179,7 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 }
 */
 
-uint32_t debug_node_plugin::debug_generate_blocks(
-  const std::string& debug_key,
-  uint32_t count,
-  uint32_t skip,
-  uint32_t miss_blocks
-)
+uint32_t debug_node_plugin::debug_generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation)
 {
   debug_generate_blocks_args args;
   debug_generate_blocks_return ret;
@@ -188,13 +188,11 @@ uint32_t debug_node_plugin::debug_generate_blocks(
   args.count = count;
   args.skip = skip;
   args.miss_blocks = miss_blocks;
-  debug_generate_blocks( ret, args );
+  debug_generate_blocks( ret, args, immediate_generation );
   return ret.blocks;
 }
 
-void debug_node_plugin::debug_generate_blocks(
-  debug_generate_blocks_return& ret,
-  const debug_generate_blocks_args& args )
+void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret, const debug_generate_blocks_args& args, bool immediate_generation)
 {
   if( args.count == 0 )
   {
@@ -218,7 +216,7 @@ void debug_node_plugin::debug_generate_blocks(
   }
 
   chain::database& db = database();
-  witness::block_producer bp( db );
+
   uint32_t slot = args.miss_blocks+1, produced = 0;
   while( produced < args.count )
   {
@@ -249,7 +247,22 @@ void debug_node_plugin::debug_generate_blocks(
         break;
     }
 
-    bp.generate_block( scheduled_time, scheduled_witness_name, *debug_private_key, args.skip );
+    auto generate_block_ctrl = std::make_shared< hive::chain::generate_block_flow_control >(scheduled_time,
+      scheduled_witness_name, *debug_private_key, args.skip);
+
+    /// FIXME: this parameter and condition is bad, but regular path using chain_plugin::generate_block can't be used in unit tests, where chain_plugin is not initialized at all.
+    /// Because of that, there is no write processing thread started, and created block-generation-requests are not procesed at all...
+    /// To fix it correctly, database fixtures should perform the same initialization as regular appbase::application does, what additionally would allow to better test startup and shutdown conditions.
+    if(immediate_generation)
+    {
+      witness::block_producer bp(db);
+      bp.generate_block(generate_block_ctrl.get());
+    }
+    else
+    {
+      my->_chain_plugin.generate_block(generate_block_ctrl);
+    }
+
     ++produced;
     slot = new_slot;
   }
@@ -262,7 +275,8 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   const std::string& debug_key,
   const fc::time_point_sec& head_block_time,
   bool generate_sparsely,
-  uint32_t skip
+  uint32_t skip,
+  bool immediate_generation
 )
 {
   chain::database& db = database();
@@ -274,18 +288,18 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
 
   if( generate_sparsely )
   {
-    new_blocks += debug_generate_blocks( debug_key, 1, skip );
+    new_blocks += debug_generate_blocks( debug_key, 1, skip, 0, immediate_generation );
     auto slots_to_miss = db.get_slot_at_time( head_block_time );
     if( slots_to_miss > 1 )
     {
       slots_to_miss--;
-      new_blocks += debug_generate_blocks( debug_key, 1, skip, slots_to_miss );
+      new_blocks += debug_generate_blocks( debug_key, 1, skip, slots_to_miss, immediate_generation );
     }
   }
   else
   {
     while( db.head_block_time() < head_block_time )
-      new_blocks += debug_generate_blocks( debug_key, 1 );
+      new_blocks += debug_generate_blocks( debug_key, 1, hive::chain::database::skip_nothing, 0, immediate_generation );
   }
 
   return new_blocks;

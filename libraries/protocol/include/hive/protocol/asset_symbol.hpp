@@ -2,6 +2,7 @@
 
 #include <fc/io/raw.hpp>
 #include <hive/protocol/types_fwd.hpp>
+#include <hive/protocol/misc_utilities.hpp>
 
 #define HIVE_ASSET_SYMBOL_PRECISION_BITS     4
 #define HIVE_ASSET_CONTROL_BITS              1
@@ -153,25 +154,28 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
   switch( sym.space() )
   {
     case hive::protocol::asset_symbol_type::legacy_space:
-    {
-      uint64_t ser = 0;
-      switch( sym.asset_num )
+      if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
       {
-        case HIVE_ASSET_NUM_HIVE:
-          ser = OBSOLETE_SYMBOL_SER;
-          break;
-        case HIVE_ASSET_NUM_HBD:
-          ser = OBD_SYMBOL_SER;
-          break;
-        case HIVE_ASSET_NUM_VESTS:
-          ser = VESTS_SYMBOL_SER;
-          break;
-        default:
-          FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
+        uint64_t ser = 0;
+        switch( sym.asset_num )
+        {
+          case HIVE_ASSET_NUM_HIVE:
+            ser = OBSOLETE_SYMBOL_SER;
+            break;
+          case HIVE_ASSET_NUM_HBD:
+            ser = OBD_SYMBOL_SER;
+            break;
+          case HIVE_ASSET_NUM_VESTS:
+            ser = VESTS_SYMBOL_SER;
+            break;
+          default:
+            FC_ASSERT( false, "Cannot serialize unknown asset symbol" );
+        }
+        pack( s, ser );
+        break;
       }
-      pack( s, ser );
-      break;
-    }
+      //else
+      //  continue to next case
     case hive::protocol::asset_symbol_type::smt_nai_space:
       pack( s, sym.asset_num );
       break;

@@ -1,0 +1,27 @@
+{
+  "next_block_range_begin": 4670855,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 4670854,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "witness.svk",
+          "vesting_shares": {
+            "amount": "3199039390",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 17445605,
+      "timestamp": "2016-09-04T08:21:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

@@ -4,7 +4,7 @@ cmake_minimum_required( VERSION 3.2 )
 
 set( BLOCKCHAIN_NAME "Hive" )
 
-set( CMAKE_CXX_STANDARD 14 )
+set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_EXTENSIONS OFF )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
@@ -31,6 +31,7 @@ list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/GitVers
 include( GetGitRevisionDescription )
 get_git_head_revision( GIT_REFSPEC GIT_SHA2 )
 
+SET( Boost_NO_BOOST_CMAKE ON CACHE STRING "ON or OFF" FORCE )
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread
                              date_time
@@ -65,24 +66,6 @@ if( ENABLE_SMT_SUPPORT  )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHIVE_ENABLE_SMT" )
 endif()
 
-OPTION( ENABLE_MIRA "Build source with MIRA (ON OR OFF)" OFF )
-MESSAGE( STATUS "ENABLE_MIRA: ${ENABLE_MIRA}" )
-if( ENABLE_MIRA )
-  MESSAGE( STATUS "     " )
-  MESSAGE( FATAL_ERROR "             NOTE: MIRA HAS BEEN REMOVED             " )
-  MESSAGE( STATUS "     " )
-endif()
-
-OPTION( LOW_MEMORY_NODE "Build source for low memory node (ON OR OFF)" ON )
-MESSAGE( STATUS "LOW_MEMORY_NODE: ${LOW_MEMORY_NODE}" )
-MESSAGE( STATUS "     " )
-if( LOW_MEMORY_NODE )
-  MESSAGE( WARNING "             NOTE: LOW MEMORY NODE OPTION HAS BEEN DEPRECATED      " )
-else()
-  MESSAGE( FATAL_ERROR "             NOTE: LOW MEMORY NODE OPTION HAS BEEN DEPRECATED      " )
-endif()
-MESSAGE( STATUS "     " )
-
 OPTION( STORE_ACCOUNT_METADATA "Keep the json_metadata for accounts (ON OR OFF)" ON )
 MESSAGE( STATUS "STORE_ACCOUNT_METADATA: ${STORE_ACCOUNT_METADATA}" )
 if( STORE_ACCOUNT_METADATA )
@@ -93,14 +76,6 @@ if( STORE_ACCOUNT_METADATA )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCOLLECT_ACCOUNT_METADATA" )
 endif()
 
-OPTION( SUPPORT_COMMENT_CONTENT "Build source with enabled comment content support (ON OR OFF)" OFF )
-MESSAGE( STATUS "SUPPORT_COMMENT_CONTENT: ${SUPPORT_COMMENT_CONTENT}" )
-IF (SUPPORT_COMMENT_CONTENT)
-  MESSAGE( STATUS "     " )
-  MESSAGE( FATAL_ERROR "             COMMENT_CONTENT_SUPPORT HAS BEEN REMOVED!      " )
-  MESSAGE( STATUS "     " )
-ENDIF()
-
 OPTION( CHAINBASE_CHECK_LOCKING "Check locks in chainbase (ON or OFF)" ON )
 MESSAGE( STATUS "CHAINBASE_CHECK_LOCKING: ${CHAINBASE_CHECK_LOCKING}" )
 if( CHAINBASE_CHECK_LOCKING )
@@ -108,73 +83,101 @@ if( CHAINBASE_CHECK_LOCKING )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCHAINBASE_CHECK_LOCKING" )
 endif()
 
-OPTION( CLEAR_VOTES "Build source to clear old votes from memory" ON )
-if( CLEAR_VOTES )
-  MESSAGE( STATUS "   CONFIGURING TO CLEAR OLD VOTES FROM MEMORY" )
-else()
-  MESSAGE( FATAL_ERROR "   NOTE: CLEAR OLD VOTES OPTION HAS BEEN DEPRECATED" )
+OPTION( HIVE_CONVERTER_BUILD "Build hive blockchain converter (ON or OFF)" OFF )
+if( HIVE_CONVERTER_BUILD )
+  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHIVE_CONVERTER_BUILD" )
+  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHIVE_CONVERTER_BUILD" )
+endif()
+MESSAGE( STATUS "HIVE_CONVERTER_BUILD: ${HIVE_CONVERTER_BUILD}" )
+
+if( HIVE_CONVERTER_BUILD OR BUILD_HIVE_TESTNET )
+  MESSAGE( STATUS "CONFIGURING FOR ALTERNATE CHAIN ID USAGE" )
+  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_ALTERNATE_CHAIN_ID" )
+  SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_ALTERNATE_CHAIN_ID" )
 endif()
 
-OPTION( SKIP_BY_TX_ID "Skip ordering operation history by transaction id (ON or OFF)" OFF )
-MESSAGE( STATUS "SKIP_BY_TX_ID: ${SKIP_BY_TX_ID}" )
-if( SKIP_BY_TX_ID )
-   SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSKIP_BY_TX_ID" )
-   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSKIP_BY_TX_ID" )
+OPTION( HIVE_LINT "Enable linting with clang-tidy during compilation" OFF )
+
+if( HIVE_LINT )
+  find_program(
+    CLANG_TIDY_EXE
+    NAMES "clang-tidy"
+    DOC "Path to clain-tidy executable"
+  )
+
+  SET( CLANG_TIDY_IGNORED
+  "-fuchsia-default-arguments-*\
+  ,-clang-diagnostic-unknown-warning-option\
+  ,-bugprone-lambda-function-name\
+  ,-llvm-qualified-auto\
+  ,-misc-non-private-member-variables-in-classes\
+  ,-cert-dcl16-c\
+  ,-bugprone-narrowing-conversions\
+  ,-bugprone-macro-parentheses\
+  ,-bugprone-branch-clone\
+  ,-cert-oop54-cpp\
+  ,-fuchsia-statically-constructed-objects\
+  ,-performance-unnecessary-value-param\
+  ,-bugprone-exception-escape\
+  ,-clang-analyzer-cplusplus.NewDeleteLeaks\
+  ,-fuchsia-default-arguments\
+  ,-fuchsia-trailing-return\
+  ,-clang-analyzer-optin.cplusplus.UninitializedObject\
+  ,-bugprone-signed-char-misuse\
+  ,-hicpp-*\
+  ,-cert-err60-cpp\
+  ,-llvm-namespace-comment\
+  ,-cert-err09-cpp\
+  ,-cert-err61-cpp\
+  ,-fuchsia-overloaded-operator\
+  ,-misc-throw-by-value-catch-by-reference\
+  ,-misc-unused-parameters\
+  ,-clang-analyzer-core.uninitialized.Assign\
+  ,-llvm-include-order\
+  ,-clang-diagnostic-unused-lambda-capture\
+  ,-misc-macro-parentheses\
+  ,-boost-use-to-string\
+  ,-misc-lambda-function-name\
+  ,-cert-err58-cpp\
+  ,-cert-err34-c\
+  ,-cppcoreguidelines-*\
+  ,-modernize-*\
+  ,-clang-diagnostic-#pragma-messages\
+  ,-google-*\
+  ,-readability-*"
+  )
+
+  if( NOT CLANG_TIDY_EXE )
+    message( FATAL_ERROR "Clang tidy tool is not found, but is required by enabled HIVE_LINT option" )
+  elseif( VERSION LESS 3.6 )
+    message( FATAL_ERROR "clang-tidy found but only supported with CMake version >= 3.6" )
+  else()
+    message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
+    EXECUTE_PROCESS(
+      COMMAND ${CLANG_TIDY_EXE} --version
+      OUTPUT_VARIABLE CLANG_VERSION
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    STRING( REPLACE "\n" ";" CLANG_VERSION ${CLANG_VERSION} )
+    LIST( GET CLANG_VERSION 1 CLANG_VERSION )
+    STRING( REGEX MATCH "[0-9]+" CLANG_VERSION ${CLANG_VERSION} )
+    MESSAGE( STATUS "clang-tidy version: ${CLANG_VERSION}" )
+    SET( CLANG_ALL_CHECKS "--checks=*" )
+    IF ( CLANG_VERSION LESS 10 )
+      SET( CLANG_ALL_CHECKS "-checks=*" )
+    ENDIF()
+
+    set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};${CLANG_ALL_CHECKS},${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
+  endif( NOT CLANG_TIDY_EXE )
+endif( HIVE_LINT )
+
+OPTION( HIVE_FAIL_ON_WARNINGS "Treat compile warnings as errors. Auto-enabled with HIVE_LINT" HIVE_LINT )
+if( HIVE_FAIL_ON_WARNINGS )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror" )
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror" )
 endif()
-
-OPTION( HIVE_STATIC_BUILD "Build hived as a static library (ON or OFF)" OFF )
-if( HIVE_STATIC_BUILD AND ( ( MSVC AND NOT MINGW ) OR APPLE ) )
-   MESSAGE( STATUS "Statuc build is not available on Windows or OS X" )
-   SET( HIVE_STATIC_BUILD OFF )
-endif()
-MESSAGE( STATUS "HIVE_STATIC_BUILD: ${HIVE_STATIC_BUILD}" )
-
-SET( HIVE_LINT "OFF" CACHE STRING "Enable linting with clang-tidy during compilation" )
-find_program(
-   CLANG_TIDY_EXE
-   NAMES "clang-tidy"
-   DOC "Path to clain-tidy executable"
-)
-
-SET( CLANG_TIDY_IGNORED
-"-fuchsia-default-arguments\
-,-hicpp-*\
-,-cert-err60-cpp\
-,-llvm-namespace-comment\
-,-cert-err09-cpp\
-,-cert-err61-cpp\
-,-fuchsia-overloaded-operator\
-,-misc-throw-by-value-catch-by-reference\
-,-misc-unused-parameters\
-,-clang-analyzer-core.uninitialized.Assign\
-,-llvm-include-order\
-,-clang-diagnostic-unused-lambda-capture\
-,-misc-macro-parentheses\
-,-boost-use-to-string\
-,-misc-lambda-function-name\
-,-cert-err58-cpp\
-,-cert-err34-c\
-,-cppcoreguidelines-*\
-,-modernize-*\
-,-clang-diagnostic-#pragma-messages\
-,-google-*\
-,-readability-*"
-)
-
-if( NOT CLANG_TIDY_EXE )
-   message( STATUS "clang-tidy not found" )
-elseif( VERSION LESS 3.6 )
-   messgae( STATUS "clang-tidy found but only supported with CMake version >= 3.6" )
-else()
-   message( STATUS "clany-tidy found: ${CLANG_TIDY_EXE}" )
-   if( HIVE_LINT )
-      message( STATUS "Linting enabled" )
-      set( DO_CLANG_TIDY ${CLANG_TIDY_EXE};-checks=*,${CLANG_TIDY_IGNORED};--warnings-as-errors=* )
-   else()
-      unset( CLANG_TIDY_EXE )
-      message( STATUS "Linting disabled" )
-   endif()
-endif( NOT CLANG_TIDY_EXE )
+MESSAGE( STATUS "HIVE_FAIL_ON_WARNINGS: ${HIVE_FAIL_ON_WARNINGS}" )
 
 IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
@@ -187,11 +190,6 @@ FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if( NOT Boost_VERSION_MACRO ) # FindBoost in CMake version >=3.15 reports Boost_VERSION in x.y.z format
   set( Boost_VERSION_MACRO Boost_VERSION )
-endif()
-
-if( NOT( Boost_VERSION_MACRO LESS 106900 ) )
-   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
-   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 endif()
 
 if( WIN32 )
@@ -251,11 +249,11 @@ else( WIN32 ) # Apple AND Linux
     if( APPLE )
         # Apple Specific Options Here
         message( STATUS "Configuring Hive on OS X" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
     else( APPLE )
         # Linux Specific Options Here
         message( STATUS "Configuring Hive on Linux" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall" )
         set( rt_library rt )
         set( pthread_library pthread)
         if ( NOT DEFINED crypto_library )
@@ -293,7 +291,7 @@ if(ENABLE_COVERAGE_TESTING)
 endif()
 
 # fc/src/compress/miniz.c breaks strict aliasing. The Linux kernel builds with no strict aliasing
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Werror -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
@@ -354,6 +352,8 @@ endif(ENABLE_INSTALLER)
 
 if( BUILD_HIVE_TESTNET )
   MESSAGE( STATUS "\n\n             CONFIGURED FOR TEST NETWORK             \n\n" )
+elseif( HIVE_CONVERTER_BUILD )
+  MESSAGE( STATUS "\n\n             CONFIGURED FOR ALTERNATE NETWORK             \n\n" )
 else()
   MESSAGE( STATUS "\n\n             CONFIGURED FOR HIVE NETWORK             \n\n" )
 endif()
@@ -364,15 +364,6 @@ else()
 MESSAGE( STATUS "\n\n             CONFIGURED FOR NO SUPPORT OF SMT             \n\n" )
 endif()
 
-if( LOW_MEMORY_NODE )
-  MESSAGE( STATUS "\n\n             CONFIGURED FOR LOW MEMORY NODE          \n\n" )
-  if( STORE_ACCOUNT_METADATA )
-    MESSAGE( STATUS "\n\n             BUT STILL STORING ACCOUNT METADATA          \n\n" )
-  endif()
-else()
-  MESSAGE( STATUS "\n\n             CONFIGURED FOR FULL NODE                \n\n" )
-endif()
-
 set(INDENT_WIDTH 2 CACHE STRING "Determine how many spaces should be used for formating (by default 2)")
 find_program(PYTHON_3_6 "python3.6")
 
@@ -380,7 +371,7 @@ find_program(PYTHON_3_6 "python3.6")
 # cmake --build . --target format
 if(PYTHON_3_6)
   add_custom_target(format COMMAND ${PYTHON_3_6} ${CMAKE_SOURCE_DIR}/format.py ${INDENT_WIDTH} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  MESSAGE( STATUS "\n\n             FORMAT IS AVAIABLE                \n\n" )
+  MESSAGE( STATUS "\n\n             FORMAT IS AVAILABLE                \n\n" )
 else(PYTHON_3_6)
-  MESSAGE( STATUS "\n\n             FORMAT IS NOT AVAIABLE                \n\n" )
+  MESSAGE( STATUS "\n\n             FORMAT IS NOT AVAILABLE                \n\n" )
 endif( PYTHON_3_6 )

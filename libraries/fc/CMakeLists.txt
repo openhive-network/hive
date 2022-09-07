@@ -33,9 +33,9 @@ endif()
 
 SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
+cmake_policy(SET CMP0054 NEW)
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread date_time system filesystem program_options serialization chrono unit_test_framework context locale iostreams)
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
 IF( ECC_IMPL STREQUAL openssl )
   SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
@@ -66,24 +66,27 @@ if ( MSVC )
         USE_SCALAR_INV_BUILTIN )
     set_target_properties( secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
 else ( MSVC )
+    if( ${CMAKE_POSITION_INDEPENDENT_CODE} )
+      SET( FPIC_FLAG "-fPIC" )
+    endif()
     include(ExternalProject)
     if ( MINGW )
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no  --host=x86_64-w64-mingw32
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --host=x86_64-w64-mingw32
      BUILD_COMMAND make
      INSTALL_COMMAND true
-     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
+     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.so
     )
     else ( MINGW )
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no
      BUILD_COMMAND make
      INSTALL_COMMAND true
-     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
+     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.so
     )
     endif ( MINGW )
     ExternalProject_Add_Step(project_secp256k1 autogen
@@ -95,9 +98,13 @@ else ( MSVC )
     ExternalProject_Get_Property(project_secp256k1 binary_dir)
 
     add_library(secp256k1 STATIC IMPORTED)
+    add_library(secp256k1_shared SHARED IMPORTED)
     set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set_property(TARGET secp256k1_shared PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_SHARED_LIBRARY_SUFFIX})
     set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
+    set_property(TARGET secp256k1_shared PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
     add_dependencies(secp256k1 project_secp256k1)
+    add_dependencies(secp256k1_shared project_secp256k1)
 endif ( MSVC )
 # End configure secp256k1-zkp
 
@@ -112,6 +119,7 @@ IF( WIN32 )
   set(Boost_USE_MULTITHREADED ON)
   set(BOOST_ALL_DYN_LINK OFF) # force dynamic linking for all libraries
 
+  SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
   FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
   # For Boost 1.53 on windows, coroutine was not in BOOST_LIBRARYDIR and do not need it to build,  but if boost versin >= 1.54, find coroutine otherwise will cause link errors
   IF(NOT "${Boost_VERSION}" MATCHES "1.53(.*)")
@@ -130,6 +138,12 @@ ELSE(WIN32)
   LIST(APPEND BOOST_COMPONENTS coroutine)
 
   cmake_policy(SET CMP0057 NEW)
+  SET( ORIGINAL_BOOST_DYNAMIC_FLAG ${Boost_USE_STATIC_LIBS})
+  SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
+  FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+  SET( BOOST_LIBRARIS_DYNAMIC ${Boost_LIBRARIES} )
+
+  SET( Boost_USE_STATIC_LIBS ${ORIGINAL_BOOST_DYNAMIC_FLAG} CACHE STRING "ON or OFF" FORCE )
   FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
   SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
@@ -215,6 +229,7 @@ set( fc_sources
      src/crypto/hex.cpp
      src/crypto/sha1.cpp
      src/crypto/ripemd160.cpp
+     src/crypto/cripemd160.cpp
      src/crypto/sha256.cpp
      src/crypto/sha224.cpp
      src/crypto/sha512.cpp
@@ -241,6 +256,7 @@ set( fc_sources
      src/reflect/typename.cpp
      vendor/cyoencode-1.0.2/src/CyoDecode.c
      vendor/cyoencode-1.0.2/src/CyoEncode.c
+     vendor/simdjson/simdjson.cpp
      )
 
 file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
@@ -261,9 +277,7 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
 # begin readline stuff
 find_package(Curses)
 
-if( HIVE_STATIC_BUILD )
-  set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
-endif()
+set( Readline_USE_STATIC_LIBS ON CACHE BOOL "Use static readline libraries" )
 find_package(Readline)
 
 file(GLOB HEADERS "include/bts/cli/*.hpp")
@@ -317,7 +331,9 @@ IF(APPLE)
   # just always try to link it in on mac.
   find_package( ZLIB REQUIRED )
 ELSE(APPLE)
+  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   find_package( ZLIB )
+  set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
 ENDIF(APPLE)
 
 if( ZLIB_FOUND )
@@ -356,19 +372,24 @@ if( LOG_LONG_API )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLOG_LONG_API -DLOG_LONG_API_MAX_MS=${LOG_LONG_API_MAX_MS} -DLOG_LONG_API_WARN_MS=${LOG_LONG_API_WARN_MS}" )
 endif()
 
-target_include_directories(fc
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${Boost_INCLUDE_DIR}
-    ${OPENSSL_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
-    "${readline_includes}"
+SET( public_includes
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${Boost_INCLUDE_DIR}
+        ${OPENSSL_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
+        "${readline_includes}"
+)
 
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+SET( private_includes
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src
-  )
+)
+
+target_include_directories(fc PUBLIC ${public_includes} PRIVATE ${private_includes})
 
 #target_link_libraries( fc PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
 IF(NOT WIN32)

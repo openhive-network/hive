@@ -1,7 +1,23 @@
 #ifndef HIVE_HARDFORK_0_20
 #define HIVE_HARDFORK_0_20 20
 
+// Note: for hardforks 20 and 24 (which change signature validation), this file contains 
+// both the "TIME" and the "ACTUAL_TIME".  The "TIME" is the earliest the hardfork was 
+// allowed to take effect, the fork could happen any time after "TIME" as soon as a 
+// majority of witnesses had approved it.  The "TIME" was set in advance of the fork.
+// The "ACTUAL_TIME" is the block where the fork actually took effect (i.e., both 
+// conditions were satisfied and the chain started following the new rules).  This
+// could only be determined after the fact.  If there were several forks running this
+// code, they could have applied the hard fork at different times, so the value
+// below is only valid for the hive mainnet.
+// Since there's no single long-running testnet, we'll assume testnets will simply
+// apply these two hardforks as soon as possible.  If you choose to run a testnet
+// that doesn't do that, you'll need to alter the transaction signature validation
+// code accordingly.
+// Note: the "ACTUAL_TIME" below is the timestamp of the block where the hardfork
+// took effect.  The change in signature validation doesn't happen until the next block.
 #define HIVE_HARDFORK_0_20_TIME 1537887600 // Tue, 25 September 2018 15:00:00 UTC (11:00:00 EDT)
+#define HIVE_HARDFORK_0_20_ACTUAL_TIME 1537887600 // Tue, 25 September 2018 15:00:00 UTC (11:00:00 EDT)
 
 #define HIVE_HARDFORK_0_20__409  (HIVE_HARDFORK_0_20)
 #define HIVE_HARDFORK_0_20__1449 (HIVE_HARDFORK_0_20)
@@ -27,6 +43,6 @@
 #define HIVE_HARDFORK_0_20__SP190 (HIVE_HARDFORK_0_20)
 
 
-#define HIVE_HARDFORK_0_20_VERSION hardfork_version( 0, 20 )
+#define HIVE_HARDFORK_0_20_VERSION hive::protocol::hardfork_version( 0, 20 )
 
 #endif

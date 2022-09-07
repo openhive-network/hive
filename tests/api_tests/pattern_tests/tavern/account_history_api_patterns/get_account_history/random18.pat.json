@@ -1,0 +1,96 @@
+{
+  "history": [
+    [
+      16,
+      {
+        "block": 4216876,
+        "op": {
+          "type": "custom_json_operation",
+          "value": {
+            "id": "follow",
+            "json": "{\"follower\":\"asimpleanarchist\",\"following\":\"larkenrose\",\"what\":[\"blog\"]}",
+            "required_auths": [],
+            "required_posting_auths": [
+              "asimpleanarchist"
+            ]
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-19T11:45:18",
+        "trx_id": "4664614be3123e4b5f2afb31f4d09b833fc6a858",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      17,
+      {
+        "block": 4217080,
+        "op": {
+          "type": "custom_json_operation",
+          "value": {
+            "id": "follow",
+            "json": "{\"follower\":\"asimpleanarchist\",\"following\":\"dragonanarchist\",\"what\":[\"blog\"]}",
+            "required_auths": [],
+            "required_posting_auths": [
+              "asimpleanarchist"
+            ]
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-19T11:55:48",
+        "trx_id": "7eb7d4c730817da05d2b7d964f12f11a0e0a621d",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      18,
+      {
+        "block": 4217087,
+        "op": {
+          "type": "custom_json_operation",
+          "value": {
+            "id": "follow",
+            "json": "{\"follower\":\"asimpleanarchist\",\"following\":\"verbz\",\"what\":[\"blog\"]}",
+            "required_auths": [],
+            "required_posting_auths": [
+              "asimpleanarchist"
+            ]
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-19T11:56:09",
+        "trx_id": "dd411d978dfbaf922be989b544c57d7e78bc12a0",
+        "trx_in_block": 4,
+        "virtual_op": false
+      }
+    ],
+    [
+      19,
+      {
+        "block": 4217402,
+        "op": {
+          "type": "custom_json_operation",
+          "value": {
+            "id": "follow",
+            "json": "{\"follower\":\"asimpleanarchist\",\"following\":\"falkvinge\",\"what\":[\"blog\"]}",
+            "required_auths": [],
+            "required_posting_auths": [
+              "asimpleanarchist"
+            ]
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-08-19T12:12:06",
+        "trx_id": "bb45dfd74af67f6436e9cd65ddab5f3ca16c8559",
+        "trx_in_block": 4,
+        "virtual_op": false
+      }
+    ]
+  ]
+}

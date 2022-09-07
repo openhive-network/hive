@@ -4,20 +4,16 @@
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/history_object.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
-#include <hive/chain/util/reward.hpp>
-#include <hive/chain/util/uint256.hpp>
+#include <hive/chain/util/supplement_operations.hpp>
+#include <hive/chain/util/data_filter.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <hive/utilities/plugin_utilities.hpp>
-
-#include <hive/plugins/condenser_api/condenser_api.hpp>
 
 #include <appbase/application.hpp>
 
@@ -44,23 +40,23 @@ namespace bpo = boost::program_options;
 #define HIVE_NAMESPACE_PREFIX "hive::protocol::"
 #define OPEN_FILE_LIMIT 750
 
-#define DIAGNOSTIC(s)
-//#define DIAGNOSTIC(s) s
-
-#define CURRENT_LIB 1
-#define OPERATION_BY_ID 2
-#define OPERATION_BY_BLOCK 3
-#define AH_INFO_BY_NAME 4
-#define AH_OPERATION_BY_ID 5
-#define BY_TRANSACTION_ID 6
+enum Columns
+{
+  CURRENT_LIB = 1,
+  LAST_REINDEX_POINT = CURRENT_LIB,
+  OPERATION_BY_ID,
+  OPERATION_BY_BLOCK,
+  AH_INFO_BY_NAME,
+  AH_OPERATION_BY_ID,
+  BY_TRANSACTION_ID
+};
 
 #define WRITE_BUFFER_FLUSH_LIMIT     10
 #define ACCOUNT_HISTORY_LENGTH_LIMIT 30
 #define ACCOUNT_HISTORY_TIME_LIMIT   30
-#define VIRTUAL_OP_FLAG              0x8000000000000000
 
-/** Because localtion_id_pair stores block_number paired with (VIRTUAL_OP_FLAG|operation_id),
-  *  max allowed operation-id is max_int (instead of max_uint).
+/** Because localtion_id_pair stores block_number paired with operation_id_vop_pair, which stores operation id on 63 bits,
+  *  max allowed operation-id is max_int64 (instead of max_uint64).
   */
 #define MAX_OPERATION_ID             std::numeric_limits<int64_t>::max()
 
@@ -79,7 +75,7 @@ using hive::protocol::signed_transaction;
 using hive::chain::operation_notification;
 using hive::chain::transaction_id_type;
 
-using hive::plugins::condenser_api::legacy_asset;
+using hive::protocol::legacy_asset;
 using hive::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
@@ -266,12 +262,43 @@ typedef PrimitiveTypeSlice< uint32_t > lib_id_slice_t;
 typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
 
 #define LIB_ID lib_id_slice_t( 0 )
+#define REINDEX_POINT_ID lib_id_slice_t( 1 )
+
+struct operation_id_vop_pair
+{
+  operation_id_vop_pair(uint64_t id = 0, bool is_virtual_op = false) : _op_id(id), _is_virtual_op(is_virtual_op)
+  {
+    FC_ASSERT(id < static_cast<uint64_t>(MAX_OPERATION_ID));
+  }
+
+  bool operator < (const operation_id_vop_pair& rhs) const
+  {
+    return _op_id < rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
+  }
+
+  bool operator > (const operation_id_vop_pair& rhs) const
+  {
+    return _op_id > rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
+  }
+
+  bool operator == (const operation_id_vop_pair& rhs) const
+  {
+    return _op_id == rhs._op_id; /// Intentionally skipped _is_virtual_op field, which holds only information about pointed operation
+  }
+
+  uint64_t get_id() const { return _op_id; }
+  bool is_virtual() const { return _is_virtual_op; }
+
+private:
+  uint64_t _op_id : 63;
+  uint64_t _is_virtual_op : 1;
+};
 
 /** Location index is nonunique. Since RocksDB supports only unique indexes, it must be extended
   *  by some unique part (ie ID).
   *
   */
-typedef std::pair< uint32_t, uint64_t > block_op_id_pair;
+typedef std::pair< uint32_t, operation_id_vop_pair > block_op_id_pair;
 typedef PrimitiveTypeComparatorImpl< block_op_id_pair > op_by_block_num_ComparatorImpl;
 
 /// Compares account_history_info::id and rocksdb_operation_object::id pair
@@ -378,7 +405,7 @@ public:
 
     ah_info_by_name_slice_t key(name.data);
     PinnableSlice buffer;
-    auto s = _storage->Get(ReadOptions(), _columnHandles[AH_INFO_BY_NAME], key, &buffer);
+    auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::AH_INFO_BY_NAME], key, &buffer);
     if(s.ok())
     {
       load(*ahInfo, buffer.data(), buffer.size());
@@ -394,7 +421,7 @@ public:
     _ahInfoCache[name] = ahInfo;
     auto serializeBuf = dump(ahInfo);
     ah_info_by_name_slice_t nameSlice(name.data);
-    auto s = Put(_columnHandles[AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
+    auto s = Put(_columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, Slice(serializeBuf.data(), serializeBuf.size()));
     checkStatus(s);
   }
 
@@ -410,77 +437,6 @@ private:
   std::map<account_name_type, account_history_info> _ahInfoCache;
 };
 
-struct supplement_operations_visitor
-{
-  supplement_operations_visitor( chain::database& db ) : _db( db ) {}
-  typedef void result_type;
-
-  template<typename T>
-  void operator()( const T& op ) {}
-
-  void operator()( const effective_comment_vote_operation& op )
-  {
-    if( op.pending_payout.amount != 0 )
-      return; //estimated payout was already calculated
-
-    const auto* cashout = _db.find_comment_cashout( _db.get_comment( op.author, op.permlink ) );
-    if( cashout == nullptr || cashout->net_rshares.value <= 0 )
-      return; //voting can happen even after cashout; there will be no new payout though
-
-    const auto& props = _db.get_dynamic_global_properties();
-    const auto& hist = _db.get_feed_history();
-
-    const chain::reward_fund_object* rf = nullptr;
-    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      rf = &_db.get_reward_fund();
-
-    u256 total_r2 = 0;
-    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      total_r2 = chain::util::to256( rf->recent_claims );
-    else
-      total_r2 = chain::util::to256( props.total_reward_shares2 );
-
-    if( total_r2 > 0 )
-    {
-      asset pot;
-      uint128_t vshares = 0;
-
-      if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      {
-        pot = rf->reward_balance;
-        vshares = chain::util::evaluate_reward_curve( cashout->net_rshares.value, rf->author_reward_curve, rf->content_constant );
-      }
-      else
-      {
-        pot = props.total_reward_fund_hive;
-        vshares = chain::util::evaluate_reward_curve( cashout->net_rshares.value );
-      }
-
-      if( !hist.current_median_history.is_null() )
-        pot = pot * hist.current_median_history;
-      else
-        pot = asset( 0, HBD_SYMBOL );
-
-      u256 r2 = chain::util::to256( vshares );
-      r2 *= pot.amount.value;
-      r2 /= total_r2;
-
-      //ABW: yes, formally we should be making copy of the operation, however all things considered
-      //it would be a waste of time
-      effective_comment_vote_operation& _op = const_cast< effective_comment_vote_operation& >( op );
-      _op.pending_payout.amount = static_cast< uint64_t >( r2 );
-    }
-  }
-
-  chain::database& _db;
-};
-
-void supplement_operation( const operation& op, database& db )
-{
-  supplement_operations_visitor vtor( db );
-  op.visit( vtor );
-}
-
 } /// anonymous
 
 class account_history_rocksdb_plugin::impl final
@@ -491,7 +447,8 @@ public:
     _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
     _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
-    _writeBuffer(_storage, _columnHandles)
+    _writeBuffer(_storage, _columnHandles),
+    _filter("ah-rb")
     {
     collectOptions(options);
 
@@ -515,10 +472,10 @@ public:
         load_additional_data_from_snapshot(note);
       }, _self, 0);
 
-    _on_post_apply_operation_con = _mainDb.add_post_apply_operation_handler(
+    _on_pre_apply_operation_con = _mainDb.add_pre_apply_operation_handler(
       [&]( const operation_notification& note )
       {
-        on_post_apply_operation(note);
+        on_pre_apply_operation(note);
       },
       _self
     );
@@ -527,14 +484,6 @@ public:
       [&]( uint32_t block_num )
       {
         on_irreversible_block( block_num );
-      },
-      _self
-    );
-
-    _on_pre_apply_block_conn = _mainDb.add_pre_apply_block_handler(
-      [&](const block_notification& bn)
-      {
-        on_pre_apply_block(bn);
       },
       _self
     );
@@ -555,9 +504,8 @@ public:
       _self
     );
 
-    is_processed_block_mtx_locked.store(false);
     _cached_irreversible_block.store(0);
-    _currently_processed_block.store(0);
+    _cached_reindex_point = 0;
 
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
     }
@@ -565,20 +513,24 @@ public:
   ~impl()
   {
 
-    chain::util::disconnect_signal(_on_post_apply_operation_con);
+    chain::util::disconnect_signal(_on_pre_apply_operation_con);
     chain::util::disconnect_signal(_on_irreversible_block_conn);
-    chain::util::disconnect_signal(_on_pre_apply_block_conn);
     chain::util::disconnect_signal(_on_post_apply_block_conn);
     chain::util::disconnect_signal(_on_fail_apply_block_conn);
     shutdownDb();
   }
 
-  void openDb()
+  void openDb( bool cleanDatabase )
   {
     //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
     bfs::create_directories( _blockchainStoragePath );
 
-    createDbSchema(_storagePath);
+    if( cleanDatabase )
+      ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+
+    auto _result = createDbSchema(_storagePath);
+    if(  !std::get<1>( _result ) )
+      return;
 
     auto columnDefs = prepareColumnDefinitions(true);
 
@@ -605,14 +557,21 @@ public:
       // opening the db, so that is not a good place to write the initial lib.
       try
       {
-        uint32_t lib = get_lib();
-        _cached_irreversible_block.store(lib);
+        load_lib();
+        try
+        {
+          load_reindex_point();
+        }
+        catch( fc::assert_exception& )
+        {
+          update_reindex_point( 0 );
+        }
       }
       catch( fc::assert_exception& )
       {
         update_lib( 0 );
+        update_reindex_point( 0 );
       }
-
     }
     else
     {
@@ -625,10 +584,9 @@ public:
   void on_pre_reindex( const hive::chain::reindex_notification& note );
   void on_post_reindex( const hive::chain::reindex_notification& note );
 
-  /// Allows to start immediate data import (outside replay process).
-  void importData(unsigned int blockLimit);
-
   void find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, bool include_reversible,
+    std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
+  uint32_t find_reversible_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit, uint32_t number_of_irreversible_ops,
     std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const;
   bool find_operation_object(size_t opId, rocksdb_operation_object* op) const;
   /// Allows to look for all operations present in given block and call `processor` for them.
@@ -643,7 +601,7 @@ public:
   bool find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
     uint32_t* txInBlock) const;
 
-  void shutdownDb()
+  void shutdownDb( bool removeDB = false )
   {
     if(_storage)
     {
@@ -651,6 +609,13 @@ public:
       cleanupColumnHandles();
       _storage->Close();
       _storage.reset();
+
+      if( removeDB )
+      {
+        ilog( "Attempting to destroy current AHR storage..." );
+        ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+        ilog( "AccountHistoryRocksDB has been destroyed at location: ${p}.", ( "p", _storagePath.string() ) );
+      }
     }
   }
 
@@ -658,14 +623,22 @@ private:
   void supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note);
   void load_additional_data_from_snapshot(const hive::chain::load_snapshot_supplement_notification& note);
 
-  uint32_t get_lib(const uint32_t* fallbackIrreversibleBlock = nullptr) const;
+  //loads last irreversible block from DB to _cached_irreversible_block
+  void load_lib();
+  //stores new value of last irreversible block in DB and _cached_irreversible_block
   void update_lib( uint32_t );
+  //loads reindex point from DB to _cached_reindex_point
+  void load_reindex_point();
+  //stores new value of reindex point in DB and _cached_reindex_point
+  void update_reindex_point( uint32_t );
 
   typedef std::vector<ColumnFamilyDescriptor> ColumnDefinitions;
   ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn);
 
-  /// Returns true if database will need data import.
-  bool createDbSchema(const bfs::path& path);
+  /// std::tuple<A, B>
+  /// A - returns true if database will need data import.
+  /// B - returns false if problems with opening db appeared.
+  std::tuple<bool, bool> createDbSchema(const bfs::path& path);
 
   void cleanupColumnHandles()
   {
@@ -707,20 +680,12 @@ private:
     }
 
     id_slice_t idSlice(obj.id);
-    auto s = _writeBuffer.Put(_columnHandles[OPERATION_BY_ID], idSlice, Slice(serializedObj.data(), serializedObj.size()));
+    auto s = _writeBuffer.Put(_columnHandles[Columns::OPERATION_BY_ID], idSlice, Slice(serializedObj.data(), serializedObj.size()));
     checkStatus(s);
 
-    // uint64_t location = ( (uint64_t) obj.trx_in_block << 32 ) | ( (uint64_t) obj.op_in_trx << 16 ) | ( obj.virtual_op );
+    op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, operation_id_vop_pair(obj.id, obj.is_virtual)));
 
-    uint64_t encoded_id = (uint64_t) obj.id;
-    if( obj.virtual_op > 0 )
-    {
-      encoded_id |= VIRTUAL_OP_FLAG;
-    }
-
-    op_by_block_num_slice_t blockLocSlice(block_op_id_pair(obj.block, encoded_id));
-
-    s = _writeBuffer.Put(_columnHandles[OPERATION_BY_BLOCK], blockLocSlice, idSlice);
+    s = _writeBuffer.Put(_columnHandles[Columns::OPERATION_BY_BLOCK], blockLocSlice, idSlice);
     checkStatus(s);
 
     for(const auto& name : impacted)
@@ -831,12 +796,11 @@ private:
     }
   }
 
-  void on_post_apply_operation(const operation_notification& opNote);
+  void on_pre_apply_operation(const operation_notification& opNote);
 
   void on_irreversible_block( uint32_t block_num );
 
   void on_post_apply_block(const block_notification& bn);
-  void on_pre_apply_block(const  block_notification& bn);
 
   void collectOptions(const bpo::variables_map& options);
 
@@ -866,8 +830,6 @@ private:
 
 /// Class attributes:
 private:
-  typedef flat_map< account_name_type, account_name_type > account_name_range_index;
-
   account_history_rocksdb_plugin&  _self;
   chain::database&                 _mainDb;
   bfs::path                        _blockchainStoragePath;
@@ -876,9 +838,8 @@ private:
   std::vector<ColumnFamilyHandle*> _columnHandles;
   CachableWriteBatch               _writeBuffer;
 
-  boost::signals2::connection      _on_post_apply_operation_con;
+  boost::signals2::connection      _on_pre_apply_operation_con;
   boost::signals2::connection      _on_irreversible_block_conn;
-  boost::signals2::connection      _on_pre_apply_block_conn;
   boost::signals2::connection      _on_post_apply_block_conn;
   boost::signals2::connection      _on_fail_apply_block_conn;
 
@@ -905,33 +866,19 @@ private:
   unsigned int                     _collectedOpsWriteLimit = 1;
 
   /// <summary>
-  /// Information if mutex is locked/unlocked.
+  /// Last block of most recent reindex - all such blocks are in inreversible storage already, since
+  /// the data is put there directly during reindex (it also means there is no volatile data for such
+  /// blocks), but _cached_irreversible_block might point to earlier block because it reflects
+  /// the state of dgpo. Once node starts syncing normally, the _cached_irreversible_block will catch up.
   /// </summary>
-  std::atomic_bool   is_processed_block_mtx_locked;
+  unsigned int                     _cached_reindex_point = 0;
 
   /// <summary>
   /// Block being irreversible atm.
   /// </summary>
   std::atomic_uint                 _cached_irreversible_block;
-  /// <summary>
-  ///  Block currently processed by node
-  /// </summary>
-  std::atomic_uint                 _currently_processed_block;
-  /// <summary>
-  ///  Allows to hold API threads trying to read data coming from currently processed block until it will
-  ///  finish its processing and data will be complete.
-  /// </summary>
-  mutable std::mutex               _currently_processed_block_mtx;
 
-  mutable std::condition_variable  _currently_processed_block_cv;
-  /// <summary>
-  /// Controls MT access to the volatile_operation_index being cleared during `on_irreversible_block` handler execution.
-  /// </summary>
-  mutable std::mutex               _currently_persisted_irreversible_mtx;
-  std::atomic_uint                 _currently_persisted_irreversible_block{0};
-  mutable std::condition_variable  _currently_persisted_irreversible_cv;
-
-  account_name_range_index         _tracked_accounts;
+  account_filter                   _filter;
   flat_set<std::string>            _op_list;
   flat_set<std::string>            _blacklisted_op_list;
 
@@ -966,10 +913,8 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 {
   fc::mutable_variant_object state_opts;
 
-  typedef std::pair< account_name_type, account_name_type > pairstring;
-  HIVE_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
-
-  state_opts[ "account-history-rocksdb-track-account-range" ] = _tracked_accounts;
+  _filter.fill( options, "account-history-rocksdb-track-account-range" );
+  state_opts[ "account-history-rocksdb-track-account-range" ] = _filter.get_tracked_accounts();
 
   if(options.count("account-history-rocksdb-whitelist-ops"))
   {
@@ -1025,47 +970,9 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 
 inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account_name_type& name) const
 {
-  if(_tracked_accounts.empty())
-    return true;
-
-  /// Code below is based on original contents of account_history_plugin_impl::on_post_apply_operation
-  auto itr = _tracked_accounts.lower_bound(name);
-
-  /*
-    * The map containing the ranges uses the key as the lower bound and the value as the upper bound.
-    * Because of this, if a value exists with the range (key, value], then calling lower_bound on
-    * the map will return the key of the next pair. Under normal circumstances of those ranges not
-    * intersecting, the value we are looking for will not be present in range that is returned via
-    * lower_bound.
-    *
-    * Consider the following example using ranges ["a","c"], ["g","i"]
-    * If we are looking for "bob", it should be tracked because it is in the lower bound.
-    * However, lower_bound( "bob" ) returns an iterator to ["g","i"]. So we need to decrement the iterator
-    * to get the correct range.
-    *
-    * If we are looking for "g", lower_bound( "g" ) will return ["g","i"], so we need to make sure we don't
-    * decrement.
-    *
-    * If the iterator points to the end, we should check the previous (equivalent to rbegin)
-    *
-    * And finally if the iterator is at the beginning, we should not decrement it for obvious reasons
-    */
-  if(itr != _tracked_accounts.begin() &&
-    ((itr != _tracked_accounts.end() && itr->first != name ) || itr == _tracked_accounts.end()))
-  {
-    --itr;
-  }
-
-  bool inRange = itr != _tracked_accounts.end() && itr->first <= name && name <= itr->second;
+  bool inRange = _filter.is_tracked_account( name );
 
   _excludedAccountCount += inRange;
-
-  DIAGNOSTIC(
-    if(inRange)
-      ilog("Account: ${a} matched to defined account range: [${b},${e}]", ("a", name)("b", itr->first)("e", itr->second) );
-    else
-      ilog("Account: ${a} ignored due to defined tracking filters.", ("a", name));
-  );
 
   return inRange;
 }
@@ -1079,7 +986,7 @@ std::vector<account_name_type> account_history_rocksdb_plugin::impl::getImpacted
   if(impacted.empty())
     return retVal;
 
-  if(_tracked_accounts.empty())
+  if(_filter.empty())
   {
     retVal.insert(retVal.end(), impacted.begin(), impacted.end());
     return retVal;
@@ -1126,81 +1033,49 @@ void account_history_rocksdb_plugin::impl::storeOpFilteringParameters(const std:
     }
   }
 
-std::vector<rocksdb_operation_object> 
+std::vector<rocksdb_operation_object>
 account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeBegin, uint32_t* blockRangeEnd,
   uint32_t* collectedIrreversibleBlock) const
 {
   FC_ASSERT(*blockRangeBegin < *blockRangeEnd, "Wrong block range");
 
-  if(_currently_persisted_irreversible_block >= *blockRangeBegin && _currently_persisted_irreversible_block <= *blockRangeEnd)
+  return _mainDb.with_read_lock([this, blockRangeBegin, blockRangeEnd, collectedIrreversibleBlock]() -> std::vector<rocksdb_operation_object>
   {
-    ilog("Awaiting for the end of save current irreversible block ${b} block, requested by call: [${rb}, ${re}]",
-      ("b", _currently_persisted_irreversible_block.operator unsigned int())("rb", *blockRangeBegin)("re", *blockRangeEnd));
+    *collectedIrreversibleBlock = _cached_irreversible_block;
+    if( *collectedIrreversibleBlock < _cached_reindex_point )
+    {
+      wlog( "Dynamic correction of last irreversible block from ${a} to ${b} due to reindex point value",
+        ( "a", *collectedIrreversibleBlock )( "b", _cached_reindex_point ) );
+      *collectedIrreversibleBlock = _cached_reindex_point;
+    }
 
-    /** Api requests data of currently saved irreversible block, so it must wait for the end of storage and cleanup of 
-    *   volatile ops container.
-    */
-    std::unique_lock<std::mutex> lk(_currently_persisted_irreversible_mtx);
+    if( *blockRangeEnd < *collectedIrreversibleBlock )
+      return std::vector<rocksdb_operation_object>();
 
-    _currently_persisted_irreversible_cv.wait(lk,
-      [this, blockRangeBegin, blockRangeEnd]() -> bool
+    std::vector<rocksdb_operation_object> retVal;
+
+      const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+      retVal.reserve(volatileIdx.size());
+
+      auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
+      for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
       {
-        return _currently_persisted_irreversible_block < *blockRangeBegin || _currently_persisted_irreversible_block > * blockRangeEnd;
+        uint64_t opId = opIterator->op_in_trx;
+        opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
+
+        rocksdb_operation_object persistentOp(*opIterator);
+        persistentOp.id = opId;
+        retVal.emplace_back(std::move(persistentOp));
       }
-    );
 
-    ilog("Resumed evaluation a range containing currently just written irreversible block, requested by call: [${rb}, ${re}]",
-      ("rb", *blockRangeBegin)("re", *blockRangeEnd));
-  }
+    if(retVal.empty() == false)
+    {
+      *blockRangeBegin = retVal.front().block;
+      *blockRangeEnd = retVal.back().block + 1;
+    }
 
-  *collectedIrreversibleBlock = _cached_irreversible_block;
-
-  if(*blockRangeEnd < _cached_irreversible_block)
-    return std::vector<rocksdb_operation_object>();
-
-  if(_currently_processed_block >= *blockRangeBegin && _currently_processed_block <= *blockRangeEnd)
-  {
-    ilog("Awaiting for the end of evaluation of ${b} block, requested by call: [${rb}, ${re}]",
-      ("b", _currently_processed_block.operator unsigned int())("rb", *blockRangeBegin)("re", *blockRangeEnd));
-    /** Api requests data of currently processed (evaluated) block, so it must wait for the end of evaluation
-    *   to collect all contained operations.
-    */
-    std::unique_lock<std::mutex> lk(_currently_processed_block_mtx);
-
-    _currently_processed_block_cv.wait(lk,
-      [this, blockRangeBegin, blockRangeEnd]() -> bool
-        {
-          return _currently_processed_block < *blockRangeBegin || _currently_processed_block > *blockRangeEnd;
-        }
-    );
-
-    ilog("Resumed evaluation a range containing currently processed block, requested by call: [${rb}, ${re}]",
-      ("rb", *blockRangeBegin)("re", *blockRangeEnd));
-  }
-
-  std::vector<rocksdb_operation_object> retVal;
-  const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
-
-  retVal.reserve(volatileIdx.size());
-
-  auto opIterator = volatileIdx.lower_bound(*blockRangeBegin);
-  for(; opIterator != volatileIdx.end() && opIterator->block < *blockRangeEnd; ++opIterator)
-  {
-    uint64_t opId = opIterator->op_in_trx;
-    opId |= static_cast<uint64_t>(opIterator->trx_in_block) << 32;
-
-    rocksdb_operation_object persistentOp(*opIterator);
-    persistentOp.id = opId;
-    retVal.emplace_back(std::move(persistentOp));
-  }
-
-  if(retVal.empty() == false)
-  {
-    *blockRangeBegin = retVal.front().block;
-    *blockRangeEnd = retVal.back().block + 1;
-  }
-
-  return retVal;
+    return retVal;
+  });
 }
 
 void account_history_rocksdb_plugin::impl::find_account_history_data(const account_name_type& name, uint64_t start,
@@ -1209,14 +1084,21 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   if(limit == 0)
     return;
 
+  unsigned int count = 0;
+  unsigned int number_of_irreversible_ops = 0;
+
   ReadOptions rOptions;
 
   ah_info_by_name_slice_t nameSlice(name.data);
   PinnableSlice buffer;
-  auto s = _storage->Get(rOptions, _columnHandles[AH_INFO_BY_NAME], nameSlice, &buffer);
+  auto s = _storage->Get(rOptions, _columnHandles[Columns::AH_INFO_BY_NAME], nameSlice, &buffer);
 
   if(s.IsNotFound())
+  {
+    if(include_reversible)
+      find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
     return;
+  }
 
   checkStatus(s);
 
@@ -1232,19 +1114,25 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   ah_op_by_id_slice_t key(std::make_pair(ahInfo.id, start));
   id_slice_t ahIdSlice(ahInfo.id);
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[AH_OPERATION_BY_ID]));
+  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[Columns::AH_OPERATION_BY_ID]));
 
   it->SeekForPrev(key);
 
   if(it->Valid() == false)
+  {
+    if(include_reversible)
+      find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
     return;
+  }
 
   auto keySlice = it->key();
   auto keyValue = ah_op_by_id_slice_t::unpackSlice(keySlice);
 
-  unsigned int count = 0;
+  number_of_irreversible_ops = keyValue.second + 1;
+  if(include_reversible)
+    count += find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
 
-  for(; it->Valid(); it->Prev())
+  for(; it->Valid() && count<limit; it->Prev())
   {
     auto keySlice = it->key();
     if(keySlice.starts_with(ahIdSlice) == false)
@@ -1267,11 +1155,51 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   }
 }
 
+uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_data(const account_name_type& name, uint64_t start,
+  uint32_t limit, uint32_t number_of_irreversible_ops, std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const
+{
+  uint32_t count = 0;
+  if(number_of_irreversible_ops < start)
+  {
+    uint32_t collectedIrreversibleBlock = 0;
+    uint32_t rangeBegin = _cached_irreversible_block;
+    if( BOOST_UNLIKELY( rangeBegin == 0) )
+      rangeBegin = 1;
+    uint32_t rangeEnd = _mainDb.head_block_num() + 1;
+
+    auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
+
+    std::vector<rocksdb_operation_object> ops_for_this_account;
+    for(const auto& obj : reversibleOps)
+    {
+      hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
+      auto impacted = getImpactedAccounts( op );
+      if( std::find( impacted.begin(), impacted.end(), name) != impacted.end() )
+        ops_for_this_account.push_back(obj);
+    };
+
+    if( number_of_irreversible_ops + ops_for_this_account.size() < start )
+      start = number_of_irreversible_ops + ops_for_this_account.size();
+
+    for(int i = start-number_of_irreversible_ops-1; i>=0; i--)
+    {
+      rocksdb_operation_object oObj = ops_for_this_account[i];
+      if(processor(number_of_irreversible_ops + i, oObj))
+      {
+        ++count;
+        if(count >= limit)
+          return count;
+      }
+    }
+  }
+  return count;
+}
+
 bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, rocksdb_operation_object* op) const
 {
   std::string data;
   id_slice_t idSlice(opId);
-  ::rocksdb::Status s = _storage->Get(ReadOptions(), _columnHandles[OPERATION_BY_ID], idSlice, &data);
+  ::rocksdb::Status s = _storage->Get(ReadOptions(), _columnHandles[Columns::OPERATION_BY_ID], idSlice, &data);
 
   if(s.ok())
   {
@@ -1302,7 +1230,7 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
       return; /// If requested block was reversible, there is no more data in the persistent storage to process.
   }
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(ReadOptions(), _columnHandles[OPERATION_BY_BLOCK]));
+  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(ReadOptions(), _columnHandles[Columns::OPERATION_BY_BLOCK]));
   by_block_slice_t blockNumSlice(blockNum);
   op_by_block_num_slice_t key(block_op_id_pair(blockNum, 0));
 
@@ -1321,10 +1249,13 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
 
 std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtualOperationsFromBlockRange(
   uint32_t blockRangeBegin, uint32_t blockRangeEnd, bool include_reversible,
-  fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit, 
+  fc::optional<uint64_t> resumeFromOperation, fc::optional<uint32_t> limit,
   std::function<bool(const rocksdb_operation_object&, uint64_t, bool)> processor) const
 {
+  constexpr static uint32_t block_range_limit = 2'000;
+
   FC_ASSERT(blockRangeEnd > blockRangeBegin, "Block range must be upward");
+  FC_ASSERT(blockRangeEnd - blockRangeBegin <= block_range_limit, "Block range distance must be less than or equal to ${lim}", ("lim", block_range_limit));
 
   uint64_t lastProcessedOperationId = 0;
   if(resumeFromOperation.valid())
@@ -1340,11 +1271,15 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   fc::optional< uint64_t > nextElementAfterLimit;
   uint32_t lastFoundBlock = 0;
 
+  uint32_t lookupUpperBound = blockRangeEnd;
+
   if(include_reversible)
   {
     auto collection = collectReversibleOps(&collectedReversibleRangeBegin, &collectedReversibleRangeEnd,
       &collectedIrreversibleBlock);
     reversibleOps = std::move(collection);
+
+    dlog("EnumVirtualOps for blockRangeBegin: ${b}, blockRangeEnd: ${e}, irreversible block: ${i}",("b", blockRangeBegin)("e", blockRangeEnd)("i", collectedIrreversibleBlock));
 
     if(blockRangeBegin > collectedIrreversibleBlock)
     {
@@ -1365,7 +1300,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         }
 
         /// Accept only virtual operations
-        if(op.virtual_op > 0)
+        if (op.is_virtual)
           if(processor(op, op.id, false))
             ++cntLimit;
 
@@ -1379,29 +1314,38 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     }
 
     /// Partial case: rangeBegin is <= collectedIrreversibleBlock but blockRangeEnd > collectedIrreversibleBlock
-    if(blockRangeEnd > collectedIrreversibleBlock)
+    if(lookupUpperBound > collectedIrreversibleBlock)
     {
-      blockRangeEnd = collectedIrreversibleBlock; /// strip processing to irreversible subrange
       hasTrailingReversibleBlocks = true;
+      lookupUpperBound = collectedIrreversibleBlock+1; /// strip processing to full irreversible subrange
+    }
+    else if(lookupUpperBound == collectedIrreversibleBlock)
+    {
+      hasTrailingReversibleBlocks = false;
+      lookupUpperBound = collectedIrreversibleBlock; /// strip processing to irreversible subrange (excluding LIB)
     }
   }
 
-  op_by_block_num_slice_t upperBoundSlice(block_op_id_pair(blockRangeEnd, 0));
+  op_by_block_num_slice_t upperBoundSlice(block_op_id_pair(lookupUpperBound, 0));
 
   op_by_block_num_slice_t rangeBeginSlice(block_op_id_pair(blockRangeBegin, lastProcessedOperationId));
 
   ReadOptions rOptions;
   rOptions.iterate_upper_bound = &upperBoundSlice;
 
-  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
+  std::unique_ptr<::rocksdb::Iterator> it(_storage->NewIterator(rOptions, _columnHandles[Columns::OPERATION_BY_BLOCK]));
+
+  dlog("Looking RocksDB storage for blocks from range: <${b}, ${e})", ("b", blockRangeBegin)("e", lookupUpperBound));
 
   for(it->Seek(rangeBeginSlice); it->Valid(); it->Next())
   {
     auto keySlice = it->key();
     const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
 
+    dlog("Found op. in block: ${b}", ("b", key.first));
+
     /// Accept only virtual operations
-    if(key.second & VIRTUAL_OP_FLAG)
+    if(key.second.is_virtual())
     {
       auto valueSlice = it->value();
       auto opId = id_slice_t::unpackSlice(valueSlice);
@@ -1413,11 +1357,12 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
       ///Number of retrieved operations can't be greater then limit
       if(limit.valid() && (cntLimit >= *limit))
       {
-        nextElementAfterLimit = key.second;
+        nextElementAfterLimit = key.second.get_id();
+        lastFoundBlock = key.first;
         break;
       }
 
-      if(processor(op, key.second, true))
+      if(processor(op, key.second.get_id(), true))
         ++cntLimit;
 
       lastFoundBlock = key.first;
@@ -1447,9 +1392,8 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
         }
 
         /// Accept only virtual operations
-        if(op.virtual_op > 0)
-          if(processor(op, op.id, false))
-            ++cntLimit;
+        if(op.is_virtual && processor(op, op.id, false))
+          ++cntLimit;
 
         lastFoundBlock = op.block;
       }
@@ -1465,7 +1409,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     op_by_block_num_slice_t lowerBoundSlice(block_op_id_pair(lastFoundBlock, 0));
     rOptions = ReadOptions();
     rOptions.iterate_lower_bound = &lowerBoundSlice;
-    it.reset(_storage->NewIterator(rOptions, _columnHandles[OPERATION_BY_BLOCK]));
+    it.reset(_storage->NewIterator(rOptions, _columnHandles[Columns::OPERATION_BY_BLOCK]));
 
     op_by_block_num_slice_t nextRangeBeginSlice(block_op_id_pair(lastFoundBlock, 0));
     for(it->Seek(nextRangeBeginSlice); it->Valid(); it->Next())
@@ -1473,7 +1417,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
       auto keySlice = it->key();
       const auto& key = op_by_block_num_slice_t::unpackSlice(keySlice);
 
-      if(key.second & VIRTUAL_OP_FLAG)
+      if(key.second.is_virtual())
         return std::make_pair( key.first, 0 );
     }
   }
@@ -1483,11 +1427,11 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
 
 bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol::transaction_id_type& trxId,
   bool include_reversible, uint32_t* blockNo, uint32_t* txInBlock) const
-  {
+{
   ReadOptions rOptions;
   TransactionIdSlice idSlice(trxId);
   std::string dataBuffer;
-  ::rocksdb::Status s = _storage->Get(rOptions, _columnHandles[BY_TRANSACTION_ID], idSlice, &dataBuffer);
+  ::rocksdb::Status s = _storage->Get(rOptions, _columnHandles[Columns::BY_TRANSACTION_ID], idSlice, &dataBuffer);
 
   if(s.ok())
     {
@@ -1500,8 +1444,29 @@ bool account_history_rocksdb_plugin::impl::find_transaction_info(const protocol:
 
   FC_ASSERT(s.IsNotFound());
 
-  return false;
+  if(include_reversible)
+  {
+    return _mainDb.with_read_lock([this, &trxId, blockNo, txInBlock]() -> bool
+    {
+      const auto& volatileIdx = _mainDb.get_index< volatile_operation_index, by_block >();
+
+      for(auto opIterator = volatileIdx.begin(); opIterator != volatileIdx.end(); ++opIterator)
+      {
+        if(opIterator->trx_id == trxId)
+        {
+          *blockNo = opIterator->block;
+          *txInBlock = opIterator->trx_in_block;
+          return true;
+        }
+      }
+
+      return false;
+    }
+    );
   }
+
+  return false;
+}
 
 void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain::prepare_snapshot_supplement_notification& note)
 {
@@ -1566,11 +1531,9 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
 
   ilog("Attempting to restore an AccountHistoryRocksDB backup from the backup location: `${p}'", ("p", pathString));
 
-  shutdownDb();
+  shutdownDb( true );
 
-  ilog("Attempting to destroy current AHR storage...");
-  ::rocksdb::Options destroyOpts;
-  ::rocksdb::DestroyDB(_storagePath.string(), destroyOpts);
+  ilog("Starting restore of AccountHistoryRocksDB backup into storage location: ${p}.", ("p", _storagePath.string()));
 
   bfs::path walDir(_storagePath);
   walDir /= "WAL";
@@ -1579,35 +1542,68 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
 
   ilog("Restoring AccountHistoryRocksDB backup from the location: `${p}' finished", ("p", pathString));
 
-  openDb();
+  openDb( false );
 }
 
-uint32_t account_history_rocksdb_plugin::impl::get_lib(const uint32_t* fallbackIrreversibleBlock /*= nullptr*/) const
+void account_history_rocksdb_plugin::impl::load_lib()
 {
   std::string data;
-  auto s = _storage->Get(ReadOptions(), _columnHandles[CURRENT_LIB], LIB_ID, &data );
+  auto s = _storage->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], LIB_ID, &data );
 
-  if(fallbackIrreversibleBlock != nullptr)
+  if(s.code() == ::rocksdb::Status::kNotFound)
   {
-    if(s.code() == ::rocksdb::Status::kNotFound)
-      return *fallbackIrreversibleBlock;
+    ilog( "RocksDB LIB not present in DB." );
+    update_lib( 0 ); ilog( "RocksDB LIB set to 0." );
+    return;
   }
 
   FC_ASSERT( s.ok(), "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
 
-  uint32_t lib = 0;
-  load( lib, data.data(), data.size() );
+  uint32_t lib = lib_slice_t::unpackSlice(data);
 
-  if(lib < _cached_irreversible_block)
-    return _cached_irreversible_block;
-  else
-    return lib;
+  FC_ASSERT( lib >= _cached_irreversible_block,
+    "Inconsistency in last irreversible block - cached ${c}, stored ${s}",
+    ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
+  _cached_irreversible_block.store( lib );
+  ilog( "RocksDB LIB loaded with value ${l}.", ( "l", lib ) );
 }
 
 void account_history_rocksdb_plugin::impl::update_lib( uint32_t lib )
 {
+  //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
   _cached_irreversible_block.store(lib);
-  auto s = _writeBuffer.Put( _columnHandles[ CURRENT_LIB ], LIB_ID, lib_slice_t( lib ) );
+  auto s = _writeBuffer.Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
+  checkStatus( s );
+}
+
+void account_history_rocksdb_plugin::impl::load_reindex_point()
+{
+  std::string data;
+  auto s = _storage->Get( ReadOptions(), _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, &data );
+
+  if( s.code() == ::rocksdb::Status::kNotFound )
+  {
+    ilog( "RocksDB reindex point not present in DB." );
+    update_reindex_point( 0 );
+    return;
+  }
+
+  FC_ASSERT( s.ok(), "Could not find last reindex point. Error msg: `${e}'", ( "e", s.ToString() ) );
+
+  uint32_t rp = lib_slice_t::unpackSlice(data);
+
+  FC_ASSERT( rp >= _cached_reindex_point,
+    "Inconsistency in reindex point - cached ${c}, stored ${s}",
+    ( "c", _cached_reindex_point )( "s", rp ) );
+  _cached_reindex_point = rp;
+  ilog( "RocksDB reindex point loaded with value ${p}.", ( "p", rp ) );
+}
+
+void account_history_rocksdb_plugin::impl::update_reindex_point( uint32_t rp )
+{
+  ilog( "RocksDB reindex point set to ${p}.", ( "p", rp ) );
+  _cached_reindex_point = rp;
+  auto s = _writeBuffer.Put( _columnHandles[Columns::LAST_REINDEX_POINT], REINDEX_POINT_ID, lib_slice_t( rp ) );
   checkStatus( s );
 }
 
@@ -1617,7 +1613,9 @@ account_history_rocksdb_plugin::impl::ColumnDefinitions account_history_rocksdb_
   if(addDefaultColumn)
     columnDefs.emplace_back(::rocksdb::kDefaultColumnFamilyName, ColumnFamilyOptions());
 
+  //see definition of Columns enum
   columnDefs.emplace_back("current_lib", ColumnFamilyOptions());
+  //columnDefs.emplace_back("last_reindex_point", ColumnFamilyOptions() ); reused above as another record
 
   columnDefs.emplace_back("operation_by_id", ColumnFamilyOptions());
   auto& byIdColumn = columnDefs.back();
@@ -1642,7 +1640,7 @@ account_history_rocksdb_plugin::impl::ColumnDefinitions account_history_rocksdb_
   return columnDefs;
 }
 
-bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
+std::tuple<bool, bool> account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
 {
   DB* db = nullptr;
 
@@ -1652,6 +1650,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
+  options.max_open_files = OPEN_FILE_LIMIT;
 
   auto s = DB::OpenForReadOnly(options, strPath, columnDefs, &_columnHandles, &db);
 
@@ -1659,7 +1658,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
   {
     cleanupColumnHandles(db);
     delete db;
-    return false; /// DB does not need data import.
+    return { false, true }; /// { DB does not need data import, an application is not closed }
   }
 
   options.create_if_missing = true;
@@ -1671,7 +1670,7 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
     s = db->CreateColumnFamilies(columnDefs, &_columnHandles);
     if(s.ok())
     {
-      ilog("RockDB column definitions created successfully.");
+      ilog("RocksDB column definitions created successfully.");
       saveStoreVersion();
       /// Store initial values of Seq-IDs for held objects.
       flushWriteBuffer(db);
@@ -1685,14 +1684,16 @@ bool account_history_rocksdb_plugin::impl::createDbSchema(const bfs::path& path)
 
     delete db;
 
-    return true; /// DB needs data import
+    return { true, true }; /// { DB needs data import, an application is not closed }
   }
   else
   {
     elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", s.ToString()));
 
-    return false;
+    appbase::app().generate_interrupt_request();
+
+    return { false, false };/// { DB does not need data import, an application is closed }
   }
 }
 
@@ -1719,11 +1720,11 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
       }
 
     auto nextEntryId = ++ahInfo.newestEntryId;
-      _writeBuffer.putAHInfo(name, ahInfo);
+    _writeBuffer.putAHInfo(name, ahInfo);
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, nextEntryId));
     id_slice_t valueSlice(obj.id);
-    auto s = _writeBuffer.Put(_columnHandles[AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
+    auto s = _writeBuffer.Put(_columnHandles[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
     checkStatus(s);
   }
   else
@@ -1737,7 +1738,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
 
     ah_op_by_id_slice_t ahInfoOpSlice(std::make_pair(ahInfo.id, 0));
     id_slice_t valueSlice(obj.id);
-    auto s = _writeBuffer.Put(_columnHandles[AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
+    auto s = _writeBuffer.Put(_columnHandles[Columns::AH_OPERATION_BY_ID], ahInfoOpSlice, valueSlice);
     checkStatus(s);
   }
 }
@@ -1748,7 +1749,7 @@ void account_history_rocksdb_plugin::impl::storeTransactionInfo(const chain::tra
   block_no_tx_in_block_pair block_no_tx_no(blockNo, trx_in_block);
   block_no_tx_in_block_slice_t valueSlice(block_no_tx_no);
 
-  auto s = _writeBuffer.Put(_columnHandles[BY_TRANSACTION_ID], txSlice, valueSlice);
+  auto s = _writeBuffer.Put(_columnHandles[Columns::BY_TRANSACTION_ID], txSlice, valueSlice);
   checkStatus(s);
   }
 
@@ -1771,10 +1772,10 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
   rOptions.iterate_lower_bound = &oldestEntrySlice;
   rOptions.iterate_upper_bound = &newestEntrySlice;
 
-  auto s = _writeBuffer.SingleDelete(_columnHandles[AH_OPERATION_BY_ID], oldestEntrySlice);
+  auto s = _writeBuffer.SingleDelete(_columnHandles[Columns::AH_OPERATION_BY_ID], oldestEntrySlice);
   checkStatus(s);
 
-  std::unique_ptr<::rocksdb::Iterator> dataItr(_storage->NewIterator(rOptions, _columnHandles[AH_OPERATION_BY_ID]));
+  std::unique_ptr<::rocksdb::Iterator> dataItr(_storage->NewIterator(rOptions, _columnHandles[Columns::AH_OPERATION_BY_ID]));
 
   /** To clean outdated records we have to iterate over all AH records having subsequent number greater than limit
     *  and additionally verify date of operation, to clean up only these exceeding a date limit.
@@ -1834,7 +1835,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
     checkStatus(s);
   }
 
-  openDb();
+  openDb( false );
 
   ilog("Setting write limit to massive level");
 
@@ -1859,16 +1860,17 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   _reindexing = false;
   uint32_t last_irreversible_block_num =_mainDb.get_last_irreversible_block_num();
   update_lib( last_irreversible_block_num ); // Set same value as in main database, as result of witness participation
+  update_reindex_point( note.last_block_number );
 
   printReport( note.last_block_number, "RocksDB data reindex finished." );
 }
 
 std::string get_asset_amount(const asset& amount)
 {
-   std::string asset_with_amount_string = legacy_asset::from_asset(amount).to_string();
-   size_t space_pos = asset_with_amount_string.find(' ');
-   assert(space_pos != std::string::npos);
-   return asset_with_amount_string.substr(0, space_pos);
+  std::string asset_with_amount_string = legacy_asset::from_asset(amount).to_string();
+  size_t space_pos = asset_with_amount_string.find(' ');
+  assert(space_pos != std::string::npos);
+  return asset_with_amount_string.substr(0, space_pos);
 }
 
 void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const char* detailText) const
@@ -1885,87 +1887,31 @@ void account_history_rocksdb_plugin::impl::printReport(uint32_t blockNo, const c
     );
 }
 
-void account_history_rocksdb_plugin::impl::importData(unsigned int blockLimit)
+std::string to_string(hive::chain::database::transaction_status txs)
 {
-  if(_storage == nullptr)
+  switch(txs)
   {
-    ilog("RocksDB has no opened storage. Skipping data import...");
-    return;
+    case hive::chain::database::TX_STATUS_NONE:
+      return "TX_STATUS_NONE";
+    case hive::chain::database::TX_STATUS_UNVERIFIED:
+      return "TX_STATUS_UNVERIFIED";
+    case hive::chain::database::TX_STATUS_PENDING:
+      return "TX_STATUS_PENDING";
+    case hive::chain::database::TX_STATUS_BLOCK:
+      return "TX_STATUS_BLOCK";
+    case hive::chain::database::TX_STATUS_INC_BLOCK:
+      return "TX_STATUS_INC_BLOCK";
+    case hive::chain::database::TX_STATUS_GEN_BLOCK:
+      return "TX_STATUS_GEN_BLOCK";
   }
+  FC_ASSERT(false);
 
-  ilog("Starting data import...");
-
-  block_id_type lastBlock;
-  size_t blockNo = 0;
-
-  _lastTx = transaction_id_type();
-  _txNo = 0;
-  _totalOps = 0;
-  _excludedOps = 0;
-
-  benchmark_dumper dumper;
-  dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&){}, "rocksdb_data_import.json");
-
-  _mainDb.foreach_operation([blockLimit, &blockNo, &lastBlock, this](
-    const signed_block_header& prevBlockHeader, const signed_block& block, const signed_transaction& tx,
-    uint32_t txInBlock, const operation& op, uint16_t opInTx) -> bool
-  {
-    if(lastBlock != block.previous)
-    {
-      blockNo = block.block_num();
-      lastBlock = block.previous;
-
-      if(blockLimit != 0 && blockNo > blockLimit)
-      {
-        ilog( "RocksDb data import stopped because of block limit reached.");
-        return false;
-      }
-
-      if(blockNo % 1000 == 0)
-        {
-        printReport(blockNo, "Executing data import has ");
-        }
-    }
-
-    auto impacted = getImpactedAccounts( op );
-    if( impacted.empty() )
-      return true;
-
-    supplement_operation( op, _mainDb );
-
-    rocksdb_operation_object obj;
-    obj.trx_id = tx.id();
-    obj.block = blockNo;
-    obj.trx_in_block = txInBlock;
-    obj.op_in_trx = opInTx;
-    obj.timestamp = _mainDb.head_block_time();
-    auto size = fc::raw::pack_size( op );
-    obj.serialized_op.resize( size );
-    fc::datastream< char* > ds( obj.serialized_op.data(), size );
-    fc::raw::pack( ds, op );
-
-    importOperation( obj, impacted );
-
-    return true;
-  }
-  );
-
-  flushWriteBuffer();
-
-  const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool){});
-  ilog( "RocksDb data import - Performance report at block ${n}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
-    ("n", blockNo)
-    ("rt", measure.real_ms)
-    ("ct", measure.cpu_ms)
-    ("cm", measure.current_mem)
-    ("pm", measure.peak_mem) );
-
-  printReport(blockNo, "RocksDB data import finished. ");
+  return "broken tx status";
 }
 
-void account_history_rocksdb_plugin::impl::on_post_apply_operation(const operation_notification& n)
+void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operation_notification& n)
 {
-  if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && n.virtual_op == 0 )
+  if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !n.virtual_op)
   {
     ilog("RocksDb data import processed blocks: ${n}, containing: ${tx} transactions and ${op} operations.\n"
         " ${ep} operations have been filtered out due to configured options.\n"
@@ -1988,7 +1934,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_operation(const operati
   if( impacted.empty() )
     return; // Ignore operations not impacting any account (according to original implementation)
 
-  supplement_operation( n.op, _mainDb );
+  hive::util::supplement_operation( n.op, _mainDb );
 
   if( _reindexing )
   {
@@ -1997,7 +1943,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_operation(const operati
     obj.block = n.block;
     obj.trx_in_block = n.trx_in_block;
     obj.op_in_trx = n.op_in_trx;
-    obj.virtual_op = n.virtual_op;
+    obj.is_virtual = n.virtual_op;
     obj.timestamp = _mainDb.head_block_time();
     auto size = fc::raw::pack_size( n.op );
     obj.serialized_op.resize( size );
@@ -2008,20 +1954,29 @@ void account_history_rocksdb_plugin::impl::on_post_apply_operation(const operati
   }
   else
   {
+    auto txs = _mainDb.get_tx_status();
+    //const auto& newOp =
     _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
     {
       o.trx_id = n.trx_id;
       o.block = n.block;
       o.trx_in_block = n.trx_in_block;
       o.op_in_trx = n.op_in_trx;
-      o.virtual_op = n.virtual_op;
+      o.is_virtual = n.virtual_op;
       o.timestamp = _mainDb.head_block_time();
       auto size = fc::raw::pack_size( n.op );
       o.serialized_op.resize( size );
       fc::datastream< char* > ds( o.serialized_op.data(), size );
       fc::raw::pack( ds, n.op );
       o.impacted.insert( o.impacted.end(), impacted.begin(), impacted.end() );
+      if( txs == database::TX_STATUS_NONE && o.is_virtual ) //vop from automatic state processing
+        o.transaction_status = database::TX_STATUS_BLOCK;
+      else
+        o.transaction_status = txs;
     });
+
+    //dlog("Adding operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", newOp.get_id())("b", n.block)
+    //  ("txs", to_string(txs))("body", fc::json::to_string(n.op)));
   }
 }
 
@@ -2029,84 +1984,60 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
 {
   if( _reindexing ) return;
 
-  uint32_t fallbackIrreversibleBlock = 0;
-  
-  /// In case of genesis block (and fresh testnet) there can be no LIB at begin.
+  if( block_num <= _cached_reindex_point )
+  {
+    // during reindex all data is pushed directly to storage, however the LIB reflects
+    // state in dgpo; this means there is a small window of inconsistency when data is stored
+    // in permanent storage but LIB would indicate it should be in volatile index
+    wlog( "Incoming LIB value ${l} within reindex range ${r} - that block is already effectively irreversible",
+      ( "l", block_num )( "r", _cached_reindex_point ) );
+  }
+  else
+  {
+    FC_ASSERT( block_num > _cached_irreversible_block, "New irreversible block: ${nb} can't be less than already stored one: ${ob}",
+      ( "nb", block_num )( "ob", static_cast< uint32_t >(_cached_irreversible_block) ) );
+  }
 
-  auto stored_lib = get_lib(&fallbackIrreversibleBlock);
-  
-  FC_ASSERT(block_num > stored_lib, "New irreversible block: ${nb} can't be less than already stored one: ${ob}", ("nb", block_num)("ob", stored_lib));
+  /// Here is made assumption, that thread processing block/transaction and sending this notification ALREADY holds write lock.
+  /// Usually this lock is held by chain_plugin::start_write_processing() function (the write_processing thread).
 
   auto& volatileOpsGenericIndex = _mainDb.get_mutable_index<volatile_operation_index>();
 
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
-  auto itr = volatile_idx.begin();
 
-  _currently_persisted_irreversible_block.store(block_num);
+  /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
+  auto moveRangeBeginI = volatile_idx.upper_bound( _cached_irreversible_block );
 
-  {
-    std::lock_guard<std::mutex> lk(_currently_persisted_irreversible_mtx);
+  FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
 
-    // it is unlikely we get here but flush storage in this case
-    if(itr != volatile_idx.end() && itr->block < block_num)
+  auto moveRangeEndI = volatile_idx.upper_bound(block_num);
+  FC_ASSERT( block_num > _cached_reindex_point || moveRangeBeginI == moveRangeEndI,
+    "There should be no volatile data for block ${b} since it was processed during reindex up to ${r}",
+    ( "b", block_num )( "r", _cached_reindex_point ) );
+
+  volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> bool
     {
-      flushStorage();
-
-      while(itr != volatile_idx.end() && itr->block < block_num)
+      auto txs = static_cast<hive::chain::database::transaction_status>(operation.transaction_status);
+      if(txs & hive::chain::database::TX_STATUS_BLOCK)
       {
-        auto comp = []( const rocksdb_operation_object& lhs, const rocksdb_operation_object& rhs )
-        {
-          return std::tie( lhs.block, lhs.trx_in_block, lhs.op_in_trx, lhs.trx_id, lhs.virtual_op ) < std::tie( rhs.block, rhs.trx_in_block, rhs.op_in_trx, rhs.trx_id, rhs.virtual_op );
-        };
-        std::set< rocksdb_operation_object, decltype(comp) > ops( comp );
-        find_operations_by_block(itr->block, false, // don't include reversible, only already imported ops
-          [&ops](const rocksdb_operation_object& op)
-          {
-            ops.emplace(op);
-          }
-        );
-
-        uint32_t this_itr_block = itr->block;
-        while(itr != volatile_idx.end() && itr->block == this_itr_block)
-        {
-          rocksdb_operation_object obj(*itr);
-          // check that operation is already stored as irreversible as it will be not imported
-          FC_ASSERT(ops.count(obj), "operation in block ${block} was not imported until irreversible block ${irreversible}", ("block", this_itr_block)("irreversible", block_num));
-          hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
-          wlog("prevented importing duplicate operation from block ${block} when handling irreversible block ${irreversible}, operation: ${op}",
-            ("block", obj.block)("irreversible", block_num)("op", fc::json::to_string(op)));
-          itr++;
-        }
-      }
-    }
-
-    /// Range of reversible (volatile) ops to be processed should come from blocks (stored_lib, block_num]
-    auto moveRangeBeginI = volatile_idx.upper_bound(stored_lib);
-
-    FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
-
-    auto moveRangeEndI = volatile_idx.upper_bound(block_num);
-    volatileOpsGenericIndex.move_to_external_storage<by_block>(moveRangeBeginI, moveRangeEndI, [this](const volatile_operation_object& operation) -> void
-      {
+        //dlog("Flushing operation: id ${id}, block: ${b}, tx_status: ${txs}", ("id", operation.get_id())("b", operation.block)
+        //  ("txs", to_string(txs)));
         rocksdb_operation_object obj(operation);
         importOperation(obj, operation.impacted);
+        return true; /// Allow move_to_external_storage internals to erase this object
       }
-    );
+      else
+      {
+        wlog("Skipped operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", operation.get_id())("b", operation.block)
+          ("txs", to_string(txs))("body", fc::json::to_string(fc::raw::unpack_from_buffer< hive::protocol::operation >(operation.serialized_op))));
 
-    update_lib(block_num);
-  }
+        return false; /// Disallow object erasing inside move_to_external_storage internals
+      }
+    }
+  );
 
-  _currently_persisted_irreversible_block.store(0);
-  _currently_persisted_irreversible_cv.notify_all();
-}
-
-void account_history_rocksdb_plugin::impl::on_pre_apply_block(const block_notification& bn)
-{
-  if(_reindexing) return;
-
-  _currently_processed_block.store(bn.block_num);
-  is_processed_block_mtx_locked.store(true);
-  _currently_processed_block_mtx.lock();
+  update_lib(block_num);
+  //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
@@ -2116,7 +2047,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
     // check the balances of all tracked accounts, emit a line in the CSV file if any have changed
     // since the last block
     const auto& account_idx = _mainDb.get_index<hive::chain::account_index>().indices().get<hive::chain::by_name>();
-    for (auto range : _tracked_accounts)
+    for (auto range : _filter.get_tracked_accounts())
     {
       const std::string& lower = range.first;
       const std::string& upper = range.second;
@@ -2192,8 +2123,8 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
         if (balances_changed)
         {
           _balance_csv_file << (string)account.name << ","
-                            << bn.block.block_num() << ","
-                            << bn.block.timestamp.to_iso_string() << ","
+                            << bn.block_num << ","
+                            << bn.get_block_timestamp().to_iso_string() << ","
                             << get_asset_amount(saved_balance_record.hive_balance) << ","
                             << get_asset_amount(saved_balance_record.savings_hive_balance) << ","
                             << get_asset_amount(saved_balance_record.hbd_balance) << ","
@@ -2217,17 +2148,6 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
       }
     }
   }
-
-  if(_reindexing) return;
-
-  _currently_processed_block.store(0);
-  if( is_processed_block_mtx_locked )
-  {
-    is_processed_block_mtx_locked.store(false);
-    _currently_processed_block_mtx.unlock();
-  }
-
-  _currently_processed_block_cv.notify_all();
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
@@ -2236,7 +2156,6 @@ account_history_rocksdb_plugin::account_history_rocksdb_plugin()
 
 account_history_rocksdb_plugin::~account_history_rocksdb_plugin()
 {
-
 }
 
 void account_history_rocksdb_plugin::set_program_options(
@@ -2252,8 +2171,6 @@ void account_history_rocksdb_plugin::set_program_options(
 
   ;
   command_line_options.add_options()
-    ("account-history-rocksdb-immediate-import", bpo::bool_switch()->default_value(false),
-      "Allows to force immediate data import at plugin startup. By default storage is supplied during reindex process.")
     ("account-history-rocksdb-stop-import-at-block", bpo::value<uint32_t>()->default_value(0),
       "Allows to specify block number, the data import process should stop at.")
     ("account-history-rocksdb-dump-balance-history", boost::program_options::value< string >(), "Dumps balances for all tracked accounts to a CSV file every time they change")
@@ -2264,8 +2181,6 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 {
   if(options.count("account-history-rocksdb-stop-import-at-block"))
     _blockLimit = options.at("account-history-rocksdb-stop-import-at-block").as<uint32_t>();
-
-  _doImmediateImport = options.at("account-history-rocksdb-immediate-import").as<bool>();
 
   bfs::path dbPath;
 
@@ -2281,21 +2196,18 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 
   _my = std::make_unique<impl>( *this, options, dbPath );
 
-  _my->openDb();
+  _my->openDb(_destroyOnStartup);
 }
 
 void account_history_rocksdb_plugin::plugin_startup()
 {
   ilog("Starting up account_history_rocksdb_plugin...");
-
-  if(_doImmediateImport)
-    _my->importData(_blockLimit);
 }
 
 void account_history_rocksdb_plugin::plugin_shutdown()
 {
   ilog("Shutting down account_history_rocksdb_plugin...");
-  _my->shutdownDb();
+  _my->shutdownDb(_destroyOnShutdown);
 }
 
 void account_history_rocksdb_plugin::find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,
@@ -2324,9 +2236,9 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::enum_operations_
 
 bool account_history_rocksdb_plugin::find_transaction_info(const protocol::transaction_id_type& trxId, bool include_reversible, uint32_t* blockNo,
   uint32_t* txInBlock) const
-  {
+{
   return _my->find_transaction_info(trxId, include_reversible, blockNo, txInBlock);
-  }
+}
 
 } } }
 

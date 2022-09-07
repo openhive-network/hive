@@ -1,0 +1,27 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest # no noempty result in 5mln blocks
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        timeout: !int "{timeout:d}"
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "account_history_api.get_account_history"
+          params: {"account":"blocktrades", "operation_filter_low": 274877906944, "start": 1000, "limit": 1000}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern
+

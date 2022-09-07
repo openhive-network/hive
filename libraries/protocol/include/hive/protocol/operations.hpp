@@ -6,7 +6,7 @@
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/hive_virtual_operations.hpp>
 #include <hive/protocol/smt_operations.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 namespace hive { namespace protocol {
 
@@ -38,7 +38,7 @@ namespace hive { namespace protocol {
 
         custom_operation, // 15
 
-        report_over_production_operation, // 16
+        witness_block_approve_operation, // 16
 
         delete_comment_operation, // 17
         custom_json_operation, // 18
@@ -104,14 +104,14 @@ namespace hive { namespace protocol {
         producer_reward_operation, // last_regular + 15
         clear_null_account_balance_operation, // last_regular + 16
         proposal_pay_operation, // last_regular + 17
-        sps_fund_operation, // last_regular + 18
+        dhf_funding_operation, // last_regular + 18
         hardfork_hive_operation, // last_regular + 19
         hardfork_hive_restore_operation, // last_regular + 20
         delayed_voting_operation, // last_regular + 21
         consolidate_treasury_balance_operation, // last_regular + 22
         effective_comment_vote_operation, // last_regular + 23
         ineffective_delete_comment_operation, // last_regular + 24
-        sps_convert_operation, // last_regular + 25
+        dhf_conversion_operation, // last_regular + 25
         expired_account_notification_operation, // last_regular + 26
         changed_recovery_account_operation, // last_regular + 27
         transfer_to_vesting_completed_operation, // last_regular + 28
@@ -121,13 +121,20 @@ namespace hive { namespace protocol {
         fill_collateralized_convert_request_operation, // last_regular + 32
         system_warning_operation, // last_regular + 33,
         fill_recurrent_transfer_operation, // last_regular + 34
-        failed_recurrent_transfer_operation // last_regular + 35
+        failed_recurrent_transfer_operation, // last_regular + 35
+        limit_order_cancelled_operation,  // last_regular + 36
+        producer_missed_operation, // last_regular + 37
+        proposal_fee_operation, //last_regular + 38
+        collateralized_convert_immediate_conversion_operation, //last_regular + 39
+        escrow_approved_operation, //last_regular + 40
+        escrow_rejected_operation //last_regular + 41
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,
                               flat_set<string>& active,
                               flat_set<string>& owner,
                               flat_set<string>& posting,
+                              flat_set<string>& witness,
                               vector<authority>&  other );
 
   void operation_validate( const operation& op );*/
@@ -136,8 +143,32 @@ namespace hive { namespace protocol {
 
   bool is_virtual_operation( const operation& op );
 
+  bool is_effective_operation( const operation& op );
+
 } } // hive::protocol
 
+namespace fc
+{
+  using hive::protocol::operation;
+  template<>
+  struct serialization_functor< operation >
+  {
+    bool operator()( const fc::variant& v, operation& s ) const
+    {
+      return extended_serialization_functor< operation >().serialize( v, s );
+    }
+  };
+
+  template<>
+  struct variant_creator_functor< operation >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< operation >().create( v );
+    }
+  };
+}
 /*namespace fc {
     void to_variant( const hive::protocol::operation& var,  fc::variant& vo );
     void from_variant( const fc::variant& var,  hive::protocol::operation& vo );

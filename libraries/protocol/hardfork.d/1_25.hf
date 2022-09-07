@@ -1,0 +1,18 @@
+#ifndef HIVE_HARDFORK_1_25
+#define HIVE_HARDFORK_1_25 25
+
+#ifdef IS_TEST_NET
+#define HIVE_HARDFORK_1_25_TIME 1622808000 // Friday, 4 June 2021 12:00:00
+#else
+#define HIVE_HARDFORK_1_25_TIME 1625061600 // Wednesday, 30 June 2021 14:00:00
+#endif /// IS_TEST_NET
+
+#define HIVE_HARDFORK_1_25_VERSION hive::protocol::hardfork_version( 1, 25 )
+
+#define HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT  (fc::microseconds(HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD.count()/2))
+#define HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP  (fc::time_point_sec(HIVE_HARDFORK_1_25_TIME) + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD)
+
+//hard limit on HBD no longer counts treasury balance (issue #140)
+#define HIVE_HARDFORK_1_25_HBD_HARD_CAP (HIVE_HARDFORK_1_25)
+
+#endif

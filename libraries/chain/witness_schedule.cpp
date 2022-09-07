@@ -14,8 +14,10 @@ using hive::chain::util::rd_system_params;
 using hive::chain::util::rd_user_params;
 using hive::chain::util::rd_validate_user_params;
 
+// this is only called on application of hf4, and the future witness schedule doesn't take
+// effect until a much later hard fork, so we only need to operate on the current witness schedule here.
 void reset_virtual_schedule_time( database& db )
-{
+{ try {
   const witness_schedule_object& wso = db.get_witness_schedule_object();
   db.modify( wso, [&](witness_schedule_object& o )
   {
@@ -32,12 +34,10 @@ void reset_virtual_schedule_time( database& db )
       wobj.virtual_scheduled_time = HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2 / (wobj.votes.value+1);
     } );
   }
-}
+} FC_CAPTURE_AND_RETHROW() }
 
-void update_median_witness_props( database& db )
-{
-  const witness_schedule_object& wso = db.get_witness_schedule_object();
-
+void update_median_witness_props(database& db, const witness_schedule_object& wso)
+{ try {
   /// fetch all witness objects
   vector<const witness_object*> active; active.reserve( wso.num_scheduled_witnesses );
   for( int i = 0; i < wso.num_scheduled_witnesses; i++ )
@@ -125,16 +125,21 @@ void update_median_witness_props( database& db )
     _wso.account_subsidy_witness_rd.min_decay = min_decay;
   } );
 
-  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
+  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
+  if( dgpo.maximum_block_size != median_maximum_block_size )
+  {
+    db.push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+      "Changing maximum block size from ${old} to ${new}", ( "old", dgpo.maximum_block_size )( "new", median_maximum_block_size ) ).get_message() ) );
+  }
+  db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
   {
     _dgpo.maximum_block_size = median_maximum_block_size;
     _dgpo.hbd_interest_rate  = median_hbd_interest_rate;
   } );
-}
+} FC_CAPTURE_AND_RETHROW() }
 
-void update_witness_schedule4( database& db )
-{
-  const witness_schedule_object& wso = db.get_witness_schedule_object();
+void update_witness_schedule4(database& db, const witness_schedule_object& wso)
+{ try {
   vector< account_name_type > active_witnesses;
   active_witnesses.reserve( HIVE_MAX_WITNESSES );
 
@@ -367,8 +372,8 @@ void update_witness_schedule4( database& db )
 
       uint32_t jmax = _wso.num_scheduled_witnesses - i;
       uint32_t j = i + k%jmax;
-      std::swap( _wso.current_shuffled_witnesses[i],
-              _wso.current_shuffled_witnesses[j] );
+      std::swap(_wso.current_shuffled_witnesses[i],
+                _wso.current_shuffled_witnesses[j]);
     }
 
     _wso.current_virtual_time = new_virtual_time;
@@ -376,8 +381,8 @@ void update_witness_schedule4( database& db )
     _wso.majority_version = majority_version;
   } );
 
-  update_median_witness_props(db);
-}
+  update_median_witness_props(db, wso);
+} FC_CAPTURE_AND_RETHROW() }
 
 
 /**
@@ -385,18 +390,38 @@ void update_witness_schedule4( database& db )
   *  See @ref witness_object::virtual_last_update
   */
 void update_witness_schedule(database& db)
-{
+{ try {
   if( (db.head_block_num() % HIVE_MAX_WITNESSES) == 0 ) //wso.next_shuffle_block_num )
   {
+    const witness_schedule_object& wso = db.get_witness_schedule_object();
     if( db.has_hardfork(HIVE_HARDFORK_0_4) )
     {
-      update_witness_schedule4(db);
+      if (db.has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE))
+      {
+        //dlog("Has hardfork 1_26, generating a future shuffled witness schedule");
+
+        // if this is the first time we've run after the hardfork, the `future_witness_schedule_object`
+        // that was created during hardfork activation will be a copy of `current_shuffled_witnesses`.
+        //
+        // every time after that, `future_witness_schedule_object` will already have the next HIVE_MAX_WITNESSES ready,
+        // so we should swap that into `current_shuffled_witnesses` and then compute the new set into 
+        // `future_witness_schedule_object`
+        const witness_schedule_object& future_wso = db.get_future_witness_schedule_object();
+
+        // promote future witnesses to current
+        db.modify(wso, [&](witness_schedule_object& witness_schedule)
+        {
+          witness_schedule.copy_values_from(future_wso);
+        } );
+
+        update_witness_schedule4(db, future_wso);
+        return;
+      }
+      update_witness_schedule4(db, wso);
       return;
     }
 
     const auto& props = db.get_dynamic_global_properties();
-    const witness_schedule_object& wso = db.get_witness_schedule_object();
-
 
     vector<account_name_type> active_witnesses;
     active_witnesses.reserve( HIVE_MAX_WITNESSES );
@@ -529,8 +554,8 @@ void update_witness_schedule(database& db)
 
       _wso.next_shuffle_block_num = db.head_block_num() + _wso.num_scheduled_witnesses;
     } );
-    update_median_witness_props(db);
+    update_median_witness_props(db, wso);
   }
-}
+} FC_CAPTURE_AND_RETHROW() }
 
 } }

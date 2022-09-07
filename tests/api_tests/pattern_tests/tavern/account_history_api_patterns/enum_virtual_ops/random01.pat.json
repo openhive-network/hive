@@ -1,0 +1,96 @@
+{
+  "next_block_range_begin": 4456475,
+  "next_operation_begin": 0,
+  "ops": [],
+  "ops_by_block": [
+    {
+      "block": 4456473,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 4456473,
+          "op": {
+            "type": "effective_comment_vote_operation",
+            "value": {
+              "author": "lauralemons",
+              "pending_payout": {
+                "amount": "1639",
+                "nai": "@@000000013",
+                "precision": 3
+              },
+              "permlink": "pictures-of-my-cat-mouse",
+              "rshares": 317169384,
+              "total_vote_weight": "6429011873866132200",
+              "voter": "illlefr4u",
+              "weight": "620839047906922"
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 15871601,
+          "timestamp": "2016-08-27T21:14:06",
+          "trx_id": "051e147044ab017af468e5d627b0e1f2309515fe",
+          "trx_in_block": 0,
+          "virtual_op": true
+        },
+        {
+          "block": 4456473,
+          "op": {
+            "type": "effective_comment_vote_operation",
+            "value": {
+              "author": "natureofbeing",
+              "pending_payout": {
+                "amount": "675",
+                "nai": "@@000000013",
+                "precision": 3
+              },
+              "permlink": "calling-out-to-steemians-who-are-good-teachers",
+              "rshares": "5938139439",
+              "total_vote_weight": "3887360978470583429",
+              "voter": "chick1",
+              "weight": "4867552481953842"
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 15871603,
+          "timestamp": "2016-08-27T21:14:06",
+          "trx_id": "88353d4dc7895b032e72d5ffb176e120dda520aa",
+          "trx_in_block": 1,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-08-27T21:14:06"
+    },
+    {
+      "block": 4456474,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 4456474,
+          "op": {
+            "type": "effective_comment_vote_operation",
+            "value": {
+              "author": "tracemayer",
+              "pending_payout": {
+                "amount": "621",
+                "nai": "@@000000013",
+                "precision": 3
+              },
+              "permlink": "msnbc-journalist-mika-brzezinski-i-can-t-pretend-to-cover-donald-trump-fairly",
+              "rshares": 3572994301,
+              "total_vote_weight": "3679164408340410238",
+              "voter": "murh",
+              "weight": "1144837989503106"
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 15871606,
+          "timestamp": "2016-08-27T21:14:09",
+          "trx_id": "e96acec6c03408f6271c574919d42670636077eb",
+          "trx_in_block": 0,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-08-27T21:14:09"
+    }
+  ]
+}

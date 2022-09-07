@@ -1,0 +1,211 @@
+{
+  "next_block_range_begin": 6,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 1,
+      "op": {
+        "type": "account_created_operation",
+        "value": {
+          "creator": "miners",
+          "initial_delegation": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "initial_vesting_shares": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "new_account_name": "miners"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-03-24T16:00:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 1,
+      "op": {
+        "type": "account_created_operation",
+        "value": {
+          "creator": "null",
+          "initial_delegation": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "initial_vesting_shares": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "new_account_name": "null"
+        }
+      },
+      "op_in_trx": 2,
+      "operation_id": 1,
+      "timestamp": "2016-03-24T16:00:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 1,
+      "op": {
+        "type": "account_created_operation",
+        "value": {
+          "creator": "temp",
+          "initial_delegation": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "initial_vesting_shares": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "new_account_name": "temp"
+        }
+      },
+      "op_in_trx": 3,
+      "operation_id": 2,
+      "timestamp": "2016-03-24T16:00:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 1,
+      "op": {
+        "type": "account_created_operation",
+        "value": {
+          "creator": "initminer",
+          "initial_delegation": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "initial_vesting_shares": {
+            "amount": "0",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "new_account_name": "initminer"
+        }
+      },
+      "op_in_trx": 4,
+      "operation_id": 3,
+      "timestamp": "2016-03-24T16:00:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 1,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "initminer",
+          "vesting_shares": {
+            "amount": "1000000",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 4,
+      "timestamp": "2016-03-24T16:05:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 2,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "initminer",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 5,
+      "timestamp": "2016-03-24T16:05:36",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 3,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "initminer",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 6,
+      "timestamp": "2016-03-24T16:05:39",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 4,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "initminer",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 7,
+      "timestamp": "2016-03-24T16:05:42",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 5,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "initminer",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 8,
+      "timestamp": "2016-03-24T16:05:45",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

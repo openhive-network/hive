@@ -87,11 +87,18 @@ namespace helpers
   template <class IndexType>
   void gather_index_static_data(const IndexType& index, index_statistic_info* info)
   {
+#if BOOST_VERSION >= 107400
+#define MULTIINDEX_NODE_TYPE final_node_type
+#else
+#define MULTIINDEX_NODE_TYPE node_type
+#endif
+    static_assert( sizeof( typename IndexType::MULTIINDEX_NODE_TYPE ) >= sizeof( typename IndexType::value_type ) );
+
     info->_value_type_name = boost::core::demangle(typeid(typename IndexType::value_type).name());
     info->_item_count = index.size();
     info->_item_sizeof = sizeof(typename IndexType::value_type);
     info->_item_additional_allocation = 0;
-    size_t pureNodeSize = sizeof(typename IndexType::node_type) -
+    size_t pureNodeSize = sizeof(typename IndexType::MULTIINDEX_NODE_TYPE) -
       sizeof(typename IndexType::value_type);
     info->_additional_container_allocation = info->_item_count*pureNodeSize;
   }
@@ -198,7 +205,6 @@ namespace chainbase {
     * CHAINBASE_OBJECT( account_object ) or
     * CHAINBASE_OBJECT( dynamic_global_property_object, true )
     * first parameter is a class name, second (true or false, default false) tells if default constructor should be allowed
-    * Note that with MIRA enabled default constructors will be allowed anyway as it uses them during unpacking of object contents.
     */
   #define CHAINBASE_OBJECT( ... ) BOOST_PP_OVERLOAD(CHAINBASE_OBJECT_,__VA_ARGS__)(__VA_ARGS__)
 
@@ -250,23 +256,53 @@ namespace chainbase {
     * In C++ the only way to implement finally is to create a class
     * with a destructor, so that's what we do here.
     */
+  class session_int_incrementer
+  {
+  public:
+    session_int_incrementer(int32_t& target) :
+      _target(&target)
+    {
+      ++*_target;
+    }
+    session_int_incrementer(session_int_incrementer&& rhs) :
+      _target(rhs._target)
+    {
+      rhs._target = nullptr;
+    }
+    ~session_int_incrementer()
+    {
+      if (_target)
+        --*_target;
+    }
+
+  private:
+    int32_t* _target;
+  };
+
   class int_incrementer
   {
-    public:
-      int_incrementer( int32_t& target ) : _target(target)
-      { ++_target; }
+  public:
+    int_incrementer(std::atomic<int32_t>& target, const char* const lock_type, uint32_t lock_serial_number) :
+      _target(target),
+      _start_locking(fc::time_point::now()),
+      _lock_type(lock_type),
+      _lock_serial_number(lock_serial_number)
+    {
+      _target.fetch_add(1, std::memory_order_relaxed);
+    }
+    ~int_incrementer()
+    {
+      _target.fetch_sub(1, std::memory_order_relaxed);
+      fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
+      fc_wlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase ${_lock_type} lock (#${_lock_serial_number})", ("held", lock_duration.count())(_lock_type)(_lock_serial_number));
+    }
+    int32_t get() const { return _target; }
 
-      int_incrementer( int_incrementer& ii ) : _target( ii._target )
-      { ++_target; }
-
-      ~int_incrementer()
-      { --_target; }
-
-      int32_t get()const
-      { return _target; }
-
-    private:
-      int32_t& _target;
+  private:
+    std::atomic<int32_t>& _target;
+    fc::time_point _start_locking;
+    const char* const _lock_type; // will be either "read" or "write"
+    uint32_t _lock_serial_number; // allows us to associate the "locking" log with the "releasing" log
   };
 
   /**
@@ -307,7 +343,9 @@ namespace chainbase {
         auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
 
         if( !insert_result.second ) {
-          CHAINBASE_THROW_EXCEPTION( std::logic_error("could not insert object, most likely a uniqueness constraint was violated") );
+          std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
         }
 
         ++_next_id;
@@ -344,9 +382,40 @@ namespace chainbase {
       template<typename Modifier>
       void modify( const value_type& obj, Modifier&& m ) {
         on_modify( obj );
+
+        fc::exception_ptr fc_exception_ptr;
+        std::exception_ptr std_exception_ptr;
+
+        auto safe_modifier = [&m, &fc_exception_ptr, &std_exception_ptr](value_type& obj) {
+          try
+          {
+            m(obj);
+          }
+          catch(const fc::exception& e)
+          {
+            fc_exception_ptr = e.dynamic_copy_exception();
+          }
+          catch(...)
+          {
+            std_exception_ptr = std::current_exception();
+          }
+        };
+
         auto itr = _indices.iterator_to( obj );
-        auto ok = _indices.modify( itr, std::forward<Modifier>( m ) );
-        if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+
+        auto ok = _indices.modify( itr, safe_modifier);
+
+        if(fc_exception_ptr)
+          fc_exception_ptr->dynamic_rethrow_exception();
+        else if(std_exception_ptr)
+          std::rethrow_exception(std_exception_ptr);
+
+        if(!ok)
+        {
+          std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+        }
       }
 
       void remove( const value_type& obj ) {
@@ -368,13 +437,21 @@ namespace chainbase {
 
         for(auto objectI = begin; objectI != end;)
         {
-          processor(*objectI);
+          bool allow_removal = processor(*objectI);
 
           auto nextI = objectI;
           ++nextI;
-          auto successor = idx.erase(objectI);
-          FC_ASSERT(successor == nextI);
-          objectI = successor;
+          if(allow_removal)
+          {
+            auto successor = idx.erase(objectI);
+            FC_ASSERT(successor == nextI);
+            objectI = successor;
+          }
+          else
+          {
+            /// Move to the next object
+            objectI = nextI;
+          }
         }
       }
 
@@ -477,18 +554,38 @@ namespace chainbase {
             ok = _indices.emplace( std::move( item.second ) ).second;
           }
 
-          if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not modify object, most likely a uniqueness constraint was violated" ) );
+          if( !ok )
+          {
+            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            CHAINBASE_THROW_EXCEPTION(std::logic_error(
+              "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: "
+                + type_name));
+          }
         }
 
         for( const auto& id : head.new_ids )
         {
-          _indices.erase( _indices.find( id ) );
+          auto position = _indices.find(id);
+
+          if(position == _indices.end())
+          {
+            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            CHAINBASE_THROW_EXCEPTION(std::logic_error("unable to find object with id: " +
+              std::to_string(id) + "in the index holding types: " + type_name));
+          }
+
+            _indices.erase( position );
         }
         _next_id = head.old_next_id;
 
         for( auto& item : head.removed_values ) {
           bool ok = _indices.emplace( std::move( item.second ) ).second;
-          if( !ok ) CHAINBASE_THROW_EXCEPTION( std::logic_error( "Could not restore object, most likely a uniqueness constraint was violated" ) );
+          if( !ok )
+          {
+            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            CHAINBASE_THROW_EXCEPTION(std::logic_error(
+              "Could not restore object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+          }
         }
 
         _stack.pop_back();
@@ -878,7 +975,7 @@ namespace chainbase {
           session( session&& s )
             : _index_sessions( std::move(s._index_sessions) ),
               _revision( s._revision ),
-              _session_incrementer( s._session_incrementer )
+              _session_incrementer(std::move(s._session_incrementer))
           {}
 
           session( vector<std::unique_ptr<abstract_session>>&& s, int32_t& session_count )
@@ -917,7 +1014,7 @@ namespace chainbase {
 
           vector< std::unique_ptr<abstract_session> > _index_sessions;
           int64_t _revision = -1;
-          int_incrementer _session_incrementer;
+          session_int_incrementer _session_incrementer;
       };
 
       session start_undo_session();
@@ -946,9 +1043,12 @@ namespace chainbase {
         _index_types.back()->add_index( *this );
       }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
       auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager()) {
         return _segment->get_segment_manager();
       }
+#pragma GCC diagnostic pop
 
       unsigned long long get_total_system_memory() const
       {
@@ -1116,28 +1216,34 @@ namespace chainbase {
       }
 
       template< typename Lambda >
-      auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) -> decltype( (*(Lambda*)nullptr)() )
+      auto with_read_lock( Lambda&& callback, fc::microseconds wait_for_microseconds = fc::microseconds() ) -> decltype( (*(Lambda*)nullptr)() )
       {
-#ifndef ENABLE_STD_ALLOCATOR
-        read_lock lock( _rw_lock, bip::defer_lock_type() );
-#else
-        read_lock lock( _rw_lock, boost::defer_lock_t() );
-#endif
+        uint32_t lock_serial_number = _next_read_lock_serial_number.fetch_add(1, std::memory_order_relaxed);
+        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
+        read_lock lock(_rw_lock, boost::defer_lock_t());
 
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        int_incrementer ii( _read_lock_count );
+        int_incrementer ii(_read_lock_count, "read", lock_serial_number);
 #endif
 
-        if( !wait_micro )
-        {
+        if (wait_for_microseconds == fc::microseconds())
           lock.lock();
-        }
-        else
+        else if (!lock.try_lock_for(boost::chrono::microseconds(wait_for_microseconds.count())))
         {
-          if( !lock.timed_lock( boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds( wait_micro ) ) )
-            CHAINBASE_THROW_EXCEPTION( lock_exception() );
+          fc_wlog(fc::logger::get("chainlock"),"timedout getting chainbase_read_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})",
+                  ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                  ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                  (lock_serial_number));
+          CHAINBASE_THROW_EXCEPTION( lock_exception() );
         }
+
+        fc_dlog(fc::logger::get("chainlock"), "_read_lock_count=${_read_lock_count} (#${lock_serial_number})", 
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
 
         return callback();
       }
@@ -1145,13 +1251,22 @@ namespace chainbase {
       template< typename Lambda >
       auto with_write_lock( Lambda&& callback ) -> decltype( (*(Lambda*)nullptr)() )
       {
-        write_lock lock( _rw_lock, boost::defer_lock_t() );
+        uint32_t lock_serial_number = _next_write_lock_serial_number.fetch_add(1, std::memory_order_relaxed);
+        fc_wlog(fc::logger::get("chainlock"), "trying to get chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})", 
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
+        write_lock lock(_rw_lock, boost::defer_lock_t());
 #ifdef CHAINBASE_CHECK_LOCKING
         BOOST_ATTRIBUTE_UNUSED
-        int_incrementer ii( _write_lock_count );
+        int_incrementer ii(_write_lock_count, "write", lock_serial_number);
 #endif
 
         lock.lock();
+        fc_wlog(fc::logger::get("chainlock"),"got chainbase_write_lock: read_lock_count=${_read_lock_count} write_lock_count=${_write_lock_count} (#${lock_serial_number})",
+                ("_read_lock_count", _read_lock_count.load(std::memory_order_relaxed))
+                ("_write_lock_count", _write_lock_count.load(std::memory_order_relaxed))
+                (lock_serial_number));
 
         return callback();
       }
@@ -1231,8 +1346,10 @@ namespace chainbase {
 
       bfs::path                                                   _data_dir;
 
-      int32_t                                                     _read_lock_count = 0;
-      int32_t                                                     _write_lock_count = 0;
+      std::atomic<int32_t>                                        _read_lock_count = {0};
+      std::atomic<int32_t>                                        _write_lock_count = {0};
+      std::atomic<uint32_t>                                       _next_read_lock_serial_number = {0};
+      std::atomic<uint32_t>                                       _next_write_lock_serial_number = {0};
       bool                                                        _enable_require_locking = false;
 
       bool                                                        _is_open = false;

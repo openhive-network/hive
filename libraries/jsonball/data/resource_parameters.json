@@ -1,76 +1,86 @@
 [
- ["resource_history_bytes",
-  {
-   "time_unit" : "blocks",
-   "budget_time" : {"days" : 30},
-   "budget" : "37500000000",
-   "half_life" : {"days" : 15},
-   "resource_unit_base" : 10,
-   "resource_unit_exponent" : 0,
-   "a_point_num" : 50,
-   "a_point_denom" : 10000,
-   "u_point_num" : 1,
-   "u_point_denom" : 2
-  }
- ],
+  [
+    "resource_history_bytes",
+    {
+      "time_unit": "blocks",
+      "budget_time": { "days": 30 },
+      "budget": "37500000000",
+      "half_life": { "days": 15 },
+      "resource_unit_base": 10,
+      "resource_unit_exponent": 0,
+      "a_point_num": 150,
+      "a_point_denom": 10000,
+      "u_point_num": 1,
+      "u_point_denom": 2,
+      "comment": "Cost of network transport and block_log storage"
+    }
+  ],
 
- ["resource_new_accounts",
-  {
-   "time_unit" : "blocks",
-   "budget_time" : {"seconds" : 30000},
-   "budget" : 797,
-   "half_life" : {"days" : 5},
-   "resource_unit_base" : 10,
-   "resource_unit_exponent" : 4,
-   "a_point_num" : 37,
-   "a_point_denom" : 1000,
-   "u_point_num" : 1,
-   "u_point_denom" : 2
-  }
- ],
+  [
+    "resource_new_accounts",
+    {
+      "time_unit": "blocks",
+      "budget_time": { "seconds": 30000 },
+      "budget": 797,
+      "half_life": { "days": 5 },
+      "resource_unit_base": 10,
+      "resource_unit_exponent": 4,
+      "a_point_num": 37,
+      "a_point_denom": 1000,
+      "u_point_num": 1,
+      "u_point_denom": 2,
+      "comment": "This pool is recalculated with account subsidy witness params"
+    }
+  ],
 
- ["resource_market_bytes",
-  {
-   "time_unit" : "blocks",
-   "budget_time" : {"days" : 30},
-   "budget" : "6250000000",
-   "half_life" : {"hours" : 16},
-   "resource_unit_base" : 10,
-   "resource_unit_exponent" : 1,
-   "a_point_num" : 50,
-   "a_point_denom" : 10000,
-   "u_point_num" : 1,
-   "u_point_denom" : 2
-  }
- ],
+  [
+    "resource_market_bytes",
+    {
+      "time_unit": "blocks",
+      "budget_time": { "days": 30 },
+      "budget": "6250000000",
+      "half_life": { "hours": 16 },
+      "resource_unit_base": 10,
+      "resource_unit_exponent": 1,
+      "a_point_num": 150,
+      "a_point_denom": 10000,
+      "u_point_num": 1,
+      "u_point_denom": 2,
+      "comment": "Extra history-like cost for ops that need to be observed by exchanges"
+    }
+  ],
 
- ["resource_state_bytes",
-  {
-   "time_unit" : "blocks",
-   "budget_time" : {"days" : 30},
-   "budget" : "30000000000000",
-   "half_life" : {"days" : 15},
-   "resource_unit_base" : 10,
-   "resource_unit_exponent" : 0,
-   "a_point_num" : 50,
-   "a_point_denom" : 10000,
-   "u_point_num" : 1,
-   "u_point_denom" : 2
-  }
- ],
+  [
+    "resource_state_bytes",
+    {
+      "time_unit": "blocks",
+      "budget_time": { "days": 30 },
+      "budget": "37623913512960",
+      "half_life": { "days": 15 },
+      "resource_unit_base": 10,
+      "resource_unit_exponent": 0,
+      "a_point_num": 150,
+      "a_point_denom": 10000,
+      "u_point_num": 1,
+      "u_point_denom": 2,
+      "comment": "Cost of state RAM in hived, 1 persistent byte is 5*365*24 units (5 years worth of byte-hours)"
+    }
+  ],
 
- ["resource_execution_time",
-  {
-   "time_unit" : "blocks",
-   "budget_time" : {"days" : 30},
-   "budget" : "8876712328766",
-   "half_life" : {"days" : 15},
-   "resource_unit_base" : 10,
-   "resource_unit_exponent" : 0,
-   "a_point_num" : 50,
-   "a_point_denom" : 10000,
-   "u_point_num" : 1,
-   "u_point_denom" : 2
-  }
- ]
+  [
+    "resource_execution_time",
+    {
+      "time_unit": "blocks",
+      "budget_time": { "hours": 1 },
+      "budget": "48000000000",
+      "half_life": { "hours": 1 },
+      "resource_unit_base": 10,
+      "resource_unit_exponent": 0,
+      "a_point_num": 150,
+      "a_point_denom": 10000,
+      "u_point_num": 1,
+      "u_point_denom": 2,
+      "comment": "Cost of processing in hived, processing in Hivemind/HAF-apps most likely needs separate pool"
+    }
+  ]
 ]

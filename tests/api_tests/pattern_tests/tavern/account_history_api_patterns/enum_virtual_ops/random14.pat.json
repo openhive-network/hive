@@ -1,0 +1,39 @@
+{
+  "next_block_range_begin": 3977145,
+  "next_operation_begin": 12039550,
+  "ops": [],
+  "ops_by_block": [
+    {
+      "block": 3977145,
+      "irreversible": true,
+      "ops": [
+        {
+          "block": 3977145,
+          "op": {
+            "type": "effective_comment_vote_operation",
+            "value": {
+              "author": "stephmckenzie",
+              "pending_payout": {
+                "amount": "3233",
+                "nai": "@@000000013",
+                "precision": 3
+              },
+              "permlink": "i-know-i-m-in-an-emotionally-abusive-relationship-so-why-do-i-stay",
+              "rshares": 1350286506,
+              "total_vote_weight": "7639348845676506691",
+              "voter": "benthegameboy",
+              "weight": "2137834995269341"
+            }
+          },
+          "op_in_trx": 1,
+          "operation_id": 12039548,
+          "timestamp": "2016-08-11T02:48:48",
+          "trx_id": "43225c62b17d5bc1635dc7de3ed360f2e3e32548",
+          "trx_in_block": 0,
+          "virtual_op": true
+        }
+      ],
+      "timestamp": "2016-08-11T02:48:48"
+    }
+  ]
+}

@@ -25,21 +25,53 @@ class advanced_benchmark_dumper
 
     struct item
     {
+      std::string context;
       std::string op_name;
-      mutable uint64_t time;
+      mutable uint64_t time = 0;
+      mutable uint64_t count = 0;
+      mutable uint64_t time_per_count = 0; //calculated only during dump
+      mutable uint64_t broken_measurements = 0; //increased when nested measurement caused this outer one to reset
+        //broken measurements don't have any influence on collected time or count
 
-      item( std::string _op_name, uint64_t _time ): op_name( _op_name ), time( _time ) {}
+      item( std::string _context, std::string _op_name, uint64_t _time, uint64_t _count = 1, bool broken = false )
+        : context( std::move(_context) ), op_name( std::move(_op_name) )
+      {
+        inc( time, _count, broken );
+      }
 
-      bool operator<( const item& obj ) const { return op_name < obj.op_name; }
-      void inc( uint64_t _time ) const { time += _time; }
+      bool operator<( const item& obj ) const
+      {
+        if( op_name < obj.op_name )
+          return true;
+        else
+          return ( op_name == obj.op_name ) && ( context < obj.context );
+      }
+      void inc( uint64_t _time, uint64_t _count = 1, bool broken = false ) const
+      {
+        if( broken )
+        {
+          broken_measurements += _count;
+        }
+        else
+        {
+          time += _time;
+          count += _count;
+        }
+      }
+      void calculate_time_per_count() const { time_per_count = count ? ( time + count - 1 ) / count : 0; } //round up
     };
 
     struct ritem
     {
+      std::string context;
       std::string op_name;
       uint64_t time;
+      uint64_t count;
+      uint64_t time_per_count;
+      uint64_t broken_measurements;
 
-      ritem( std::string _op_name, uint64_t _time ): op_name( _op_name ), time( _time ){}
+      ritem( const item& i ) : context( i.context ), op_name( i.op_name ), time( i.time ), count( i.count ),
+        time_per_count( i.time_per_count ), broken_measurements( i.broken_measurements ) {}
 
       bool operator<( const ritem& obj ) const { return time > obj.time; }
     };
@@ -52,7 +84,8 @@ class advanced_benchmark_dumper
       COLLECTION items;
       
       total_info(){}
-      total_info( uint64_t _total_time ): total_time( _total_time ) {}
+      total_info( uint64_t _total_time )
+        : total_time( _total_time ) {}
 
       void inc( uint64_t _time ) { total_time += _time; }
 
@@ -89,10 +122,10 @@ class advanced_benchmark_dumper
     static std::string& get_virtual_operation_name(){ return virtual_operation_name; }
 
     template< bool IS_PRE_OPERATION >
-    static std::string generate_desc( const std::string& desc1, const std::string& desc2 )
+    static std::string generate_context_desc( const std::string& desc )
     {
       std::stringstream s;
-      s << ( IS_PRE_OPERATION ? "pre--->" : "post--->" ) << desc1 << "--->" << desc2;
+      s << ( IS_PRE_OPERATION ? "pre->" : "post->" ) << desc;
 
       return s.str();
     }
@@ -101,16 +134,16 @@ class advanced_benchmark_dumper
     bool is_enabled() { return enabled; }
 
     void begin();
-    template< bool APPLY_CONTEXT = false >
-    void end( const std::string& str );
+    void end( const std::string& str, uint64_t _count = 1 ) { end( apply_context_name, str, _count ); }
+    void end( const std::string& context, const std::string& str, uint64_t _count = 1 );
 
     void dump();
 };
 
 } } } // hive::chain::util
 
-FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::item, (op_name)(time) )
-FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::ritem, (op_name)(time) )
+FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::item, (context)(op_name)(time)(count)(time_per_count)(broken_measurements) )
+FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::ritem, (context)(op_name)(time)(count)(time_per_count)(broken_measurements) )
 
 FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::total_info< std::set< hive::chain::util::advanced_benchmark_dumper::item > >, (total_time)(items) )
 FC_REFLECT( hive::chain::util::advanced_benchmark_dumper::total_info< std::multiset< hive::chain::util::advanced_benchmark_dumper::ritem > >, (total_time)(items) )

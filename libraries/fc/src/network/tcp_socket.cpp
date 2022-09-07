@@ -236,6 +236,52 @@ namespace fc {
 #endif // __APPLE__
   }
 
+  int tcp_socket::set_receive_buffer_size(int new_receive_buffer_size)
+  {
+    //read and log old receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
+    my->_sock.get_option(old_receive_buffer_reading);
+    ddump((old_receive_buffer_reading.value()));
+
+    boost::asio::socket_base::receive_buffer_size option(new_receive_buffer_size);
+    my->_sock.set_option(option);
+
+    //read new value and log receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size new_receive_buffer_reading;
+    my->_sock.get_option(new_receive_buffer_reading);
+    ddump((new_receive_buffer_reading.value()));
+    return new_receive_buffer_reading.value();
+  }
+
+  int tcp_socket::set_send_buffer_size(int new_send_buffer_size)
+  {
+    //read and log old send_buffer_size
+    boost::asio::socket_base::send_buffer_size old_send_buffer_reading;
+    my->_sock.get_option(old_send_buffer_reading);
+    ddump((old_send_buffer_reading.value()));
+
+    boost::asio::socket_base::send_buffer_size option(new_send_buffer_size);
+    my->_sock.set_option(option);
+
+    //read new value and log send_buffer_size
+    boost::asio::socket_base::send_buffer_size new_send_buffer_reading;
+    my->_sock.get_option(new_send_buffer_reading);
+    ddump((new_send_buffer_reading.value()));
+    return new_send_buffer_reading.value();
+  }
+
+  bool tcp_socket::get_no_delay()
+  {
+    boost::asio::ip::tcp::no_delay option;
+    my->_sock.get_option(option);
+    return option.value();
+  }
+
+  void tcp_socket::set_no_delay(bool no_delay_flag)
+  {
+    boost::asio::ip::tcp::no_delay option(no_delay_flag);
+    my->_sock.set_option(option);
+  }
 
   class tcp_server::impl {
     public:
@@ -302,6 +348,64 @@ namespace fc {
     }
 #endif // __APPLE__
   }
+
+  int tcp_server::set_receive_buffer_size(int new_receive_buffer_size)
+  {
+    if( !my )
+      my = new impl;
+    //read and log old receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size old_receive_buffer_reading;
+    my->_accept.get_option(old_receive_buffer_reading);
+    ddump((old_receive_buffer_reading.value()));
+
+    boost::asio::socket_base::receive_buffer_size option(new_receive_buffer_size);
+    my->_accept.set_option(option);
+
+    //read and log new receive_buffer_size
+    boost::asio::socket_base::receive_buffer_size new_receive_buffer_reading;
+    my->_accept.get_option(new_receive_buffer_reading);
+    ddump((new_receive_buffer_reading.value()));
+
+    return new_receive_buffer_reading.value();
+  }
+
+  int tcp_server::set_send_buffer_size(int new_send_buffer_size)
+  {
+    if( !my )
+      my = new impl;
+    //read and log old send_buffer_size
+    boost::asio::socket_base::send_buffer_size old_send_buffer_reading;
+    my->_accept.get_option(old_send_buffer_reading);
+    ddump((old_send_buffer_reading.value()));
+
+    boost::asio::socket_base::send_buffer_size option(new_send_buffer_size);
+    my->_accept.set_option(option);
+
+    //read and log new send_buffer_size
+    boost::asio::socket_base::send_buffer_size new_send_buffer_reading;
+    my->_accept.get_option(new_send_buffer_reading);
+    ddump((new_send_buffer_reading.value()));
+
+    return new_send_buffer_reading.value();
+  }
+
+  bool tcp_server::get_no_delay()
+  {
+    if (!my)
+      my = new impl;
+    boost::asio::ip::tcp::no_delay option;
+    my->_accept.get_option(option);
+    return option.value();
+  }
+
+  void tcp_server::set_no_delay(bool no_delay_flag)
+  {
+    if (!my)
+      my = new impl;
+    boost::asio::ip::tcp::no_delay option(no_delay_flag);
+    my->_accept.set_option(option);
+  }
+
   void tcp_server::listen( uint16_t port )
   {
     if( !my )

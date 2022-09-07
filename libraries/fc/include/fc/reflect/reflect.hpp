@@ -128,6 +128,10 @@ namespace fc { \
 template<> struct reflector<ENUM> { \
     typedef fc::true_type is_defined; \
     typedef fc::true_type is_enum; \
+    enum member_count_enum {  \
+      local_member_count = 0 BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_MEMBER_COUNT, +, FIELDS ),\
+      total_member_count = local_member_count \
+    }; \
     static const char* to_string(ENUM elem) { \
       switch( elem ) { \
         BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_ENUM_TO_STRING, ENUM, FIELDS ) \

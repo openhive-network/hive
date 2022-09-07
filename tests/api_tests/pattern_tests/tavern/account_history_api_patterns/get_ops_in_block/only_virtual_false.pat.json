@@ -1,0 +1,67 @@
+{
+  "ops": [
+    {
+      "block": 2797050,
+      "op": {
+        "type": "vote_operation",
+        "value": {
+          "author": "pfunk",
+          "permlink": "guide-maximize-your-mining-hashrate-in-windows-by-mining-steem-in-a-vm",
+          "voter": "gtg",
+          "weight": 10000
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-06-30T19:12:21",
+      "trx_id": "e0cd24f9aba3b668b1443786bee3891f644ff23f",
+      "trx_in_block": 0,
+      "virtual_op": false
+    },
+    {
+      "block": 2797050,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "pfunk",
+          "pending_payout": {
+            "amount": "812683",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "guide-maximize-your-mining-hashrate-in-windows-by-mining-steem-in-a-vm",
+          "rshares": 27547358,
+          "total_vote_weight": "20780999058208",
+          "voter": "gtg",
+          "weight": 0
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-06-30T19:12:21",
+      "trx_id": "e0cd24f9aba3b668b1443786bee3891f644ff23f",
+      "trx_in_block": 0,
+      "virtual_op": true
+    },
+    {
+      "block": 2797050,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "roadscape",
+          "vesting_shares": {
+            "amount": "5400959205",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-06-30T19:12:24",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ]
+}

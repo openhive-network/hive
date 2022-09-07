@@ -2,13 +2,14 @@
 #include <boost/array.hpp>
 #include <boost/any.hpp>
 #include <iostream>
+#include <fc/log/logger.hpp>
 
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
-  {
+{
   return 512 * 1024;
-  }
+}
 
   class environment_check {
 
@@ -44,8 +45,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       environment_check& operator = ( const environment_check& other )
       {
 #ifndef ENABLE_STD_ALLOCATOR
-        plugins = plugins;
+        plugins = other.plugins;
 #endif
+        version_info = other.version_info;
         compiler_version = other.compiler_version;
         debug = other.debug;
         apple = other.apple;
@@ -178,6 +180,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         else
         {
           *env.first = environment_check( allocator< environment_check >( _segment->get_segment_manager() ) );
+          if (environment_extension)
+          {
+            env.first->version_info = environment_extension->version_info.c_str();
+            for( auto& item : environment_extension->plugins )
+              env.first->plugins.insert( shared_string( item.c_str(), _segment->get_segment_manager() ) );
+          }
         }
       }
       else

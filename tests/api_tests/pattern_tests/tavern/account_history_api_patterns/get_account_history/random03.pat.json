@@ -1,0 +1,33 @@
+{
+  "history": [
+    [
+      1,
+      {
+        "block": 3810456,
+        "op": {
+          "type": "account_created_operation",
+          "value": {
+            "creator": "steem",
+            "initial_delegation": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "initial_vesting_shares": {
+              "amount": "11541527333",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "new_account_name": "jevt"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-08-05T07:15:36",
+        "trx_id": "9d7e329f2975476fa06d6bb1bbf7ea7a0972eb8c",
+        "trx_in_block": 1,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

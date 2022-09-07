@@ -1,12 +1,9 @@
 file(GLOB HEADERS "include/equihash/*.hpp" )
 
-add_library( equihash
-             src/pow.cpp
-             src/blake2b.c
-             ${HEADERS}
-           )
+SET( sources src/pow.cpp src/blake2b.c ${HEADERS} )
 
-target_link_libraries( equihash )
+add_library( equihash ${sources})
+
 target_include_directories( equihash PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 install( TARGETS

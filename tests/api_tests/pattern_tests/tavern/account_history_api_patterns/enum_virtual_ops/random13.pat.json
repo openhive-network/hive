@@ -1,0 +1,67 @@
+{
+  "next_block_range_begin": 639540,
+  "next_operation_begin": 0,
+  "ops": [
+    {
+      "block": 639537,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "tombstone46",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 847113,
+      "timestamp": "2016-04-16T06:39:54",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 639538,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "aphrodite",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 847114,
+      "timestamp": "2016-04-16T06:39:57",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 639539,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "tombstone50",
+          "vesting_shares": {
+            "amount": "1000",
+            "nai": "@@000000021",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 847115,
+      "timestamp": "2016-04-16T06:40:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

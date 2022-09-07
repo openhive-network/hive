@@ -1,0 +1,32 @@
+{
+  "next_block_range_begin": 4645245,
+  "next_operation_begin": 17281153,
+  "ops": [
+    {
+      "block": 4645245,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "bonvivan",
+          "pending_payout": {
+            "amount": "0",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "seine-svog-live-session-in-belgrade",
+          "rshares": 154479225,
+          "total_vote_weight": "712382170008616",
+          "voter": "expedition",
+          "weight": "700509133841805"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 17281152,
+      "timestamp": "2016-09-03T10:58:39",
+      "trx_id": "19378f3dadfe95043fcf0fa2ec0fc9170812e0d4",
+      "trx_in_block": 1,
+      "virtual_op": true
+    }
+  ],
+  "ops_by_block": []
+}

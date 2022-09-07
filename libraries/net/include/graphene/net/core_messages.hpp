@@ -25,6 +25,8 @@
 
 #include <graphene/net/config.hpp>
 #include <hive/protocol/block.hpp>
+#include <hive/chain/full_block.hpp>
+#include <hive/chain/full_transaction.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/crypto/elliptic.hpp>
@@ -36,7 +38,6 @@
 #include <fc/exception/exception.hpp>
 #include <fc/io/enum_type.hpp>
 
-
 #include <vector>
 
 namespace graphene { namespace net {
@@ -44,6 +45,8 @@ namespace graphene { namespace net {
   using hive::protocol::block_id_type;
   using hive::protocol::transaction_id_type;
   using hive::protocol::signed_block;
+  using hive::chain::full_block_type;
+  using hive::chain::full_transaction_type;
 
   typedef fc::ecc::public_key_data node_id_t;
   typedef fc::ripemd160 item_hash_t;
@@ -68,6 +71,7 @@ namespace graphene { namespace net {
   {
     trx_message_type                             = 1000,
     block_message_type                           = 1001,
+    compressed_block_message_type                = 1002,
     core_message_type_first                      = 5000,
     item_ids_inventory_message_type              = 5001,
     blockchain_item_ids_inventory_message_type   = 5002,
@@ -91,29 +95,55 @@ namespace graphene { namespace net {
 
   const uint32_t core_protocol_version = GRAPHENE_NET_PROTOCOL_VERSION;
 
-   struct trx_message
-   {
-      static const core_message_type_enum type;
+  struct trx_message
+  {
+    static const core_message_type_enum type;
 
-      signed_transaction trx;
-      trx_message() {}
-      trx_message(signed_transaction transaction) :
-        trx(std::move(transaction))
-      {}
-   };
+    std::shared_ptr<full_transaction_type> full_transaction;
+    trx_message() {}
+    trx_message(const std::shared_ptr<full_transaction_type>& full_transaction) :
+      full_transaction(full_transaction)
+    {}
+  };
 
-   struct block_message
-   {
-      static const core_message_type_enum type;
+  struct block_message
+  {
+    static const core_message_type_enum type;
 
-      block_message(){}
-      block_message(const signed_block& blk )
-      :block(blk),block_id(blk.id()){}
+    block_message(){}
+    block_message(const std::shared_ptr<full_block_type>& full_block) :
+      full_block(full_block)
+    {
+      assert(full_block); // doesn't make sense to call this with a nullptr
+    }
 
-      signed_block    block;
-      block_id_type   block_id;
+    std::shared_ptr<full_block_type> full_block;
+  };
 
-   };
+  // though this message looks identical to block_message, it serializes to the 
+  // zstd-compressed version of the block that we store in the block log.
+  // Note that compressed blocks currently behave a little different.  If a
+  // source node wants to broadcast a block, it will advertise an uncompressed
+  // block message for the block, type 1001, using the message hash that an uncompressed
+  // block message would need.  When receiving this inventory, a sink node would 
+  // request it as an uncompressed block (again, type 1001).  The source node would
+  // When the source node sends the block, though, it would see from the protocol version
+  // that the sink node understands compressed_block_messages, and it will send a
+  // compressed version of that block (type 1002) instead.
+  // Nodes will never advertise or request messages of type 1002 directly.
+  struct compressed_block_message
+  {
+    static const core_message_type_enum type;
+
+    compressed_block_message(){}
+    compressed_block_message(const std::shared_ptr<full_block_type>& full_block) :
+      full_block(full_block)
+    {
+      assert(full_block); // doesn't make sense to call this with a nullptr
+    }
+
+    std::shared_ptr<full_block_type> full_block;
+  };
 
   struct item_ids_inventory_message
   {
@@ -397,12 +427,12 @@ namespace graphene { namespace net {
     std::vector<current_connection_data> current_connections;
   };
 
-
 } } // graphene::net
 
 FC_REFLECT_ENUM( graphene::net::core_message_type_enum,
                  (trx_message_type)
                  (block_message_type)
+                 (compressed_block_message_type)
                  (core_message_type_first)
                  (item_ids_inventory_message_type)
                  (blockchain_item_ids_inventory_message_type)
@@ -423,13 +453,12 @@ FC_REFLECT_ENUM( graphene::net::core_message_type_enum,
                  (get_current_connections_reply_message_type)
                  (core_message_type_last) )
 
-FC_REFLECT( graphene::net::trx_message, (trx) )
-FC_REFLECT( graphene::net::block_message, (block)(block_id) )
+//FC_REFLECT( graphene::net::trx_message, (full_transaction) )        // explicit serialization
+//FC_REFLECT( graphene::net::block_message, (full_block)(block_id) )  // explicit serialization
+//FC_REFLECT( graphene::net::compressed_block_message, (full_block)(block_id) )  // explicit serialization
 
-FC_REFLECT( graphene::net::item_id, (item_type)
-                               (item_hash) )
-FC_REFLECT( graphene::net::item_ids_inventory_message, (item_type)
-                                                  (item_hashes_available) )
+FC_REFLECT( graphene::net::item_id, (item_type)(item_hash) )
+FC_REFLECT( graphene::net::item_ids_inventory_message, (item_type)(item_hashes_available) )
 FC_REFLECT( graphene::net::blockchain_item_ids_inventory_message, (total_remaining_item_count)
                                                              (item_type)
                                                              (item_hashes_available) )

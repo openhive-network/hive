@@ -1,0 +1,42 @@
+{
+  "code": -32000,
+  "data": {
+    "code": 13,
+    "message": "unknown key",
+    "name": "N5boost16exception_detail10clone_implINS0_19error_info_injectorISt12out_of_rangeEEEE",
+    "stack": [
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 828,
+          "method": "get_comment",
+          "timestamp": "2020-11-25T13:32:56"
+        },
+        "data": {
+          "author": 14007,
+          "permlink": "wrong_permlink",
+          "what": "unknown key"
+        },
+        "format": "${what}: "
+      },
+      {
+        "context": {
+          "file": "database.cpp",
+          "hostname": "",
+          "level": "warn",
+          "line": 838,
+          "method": "get_comment",
+          "timestamp": "2020-11-25T13:32:56"
+        },
+        "data": {
+          "author": "gtg",
+          "permlink": "wrong_permlink"
+        },
+        "format": ""
+      }
+    ]
+  },
+  "message": "unknown key:unknown key: "
+}

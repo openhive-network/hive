@@ -1,0 +1,235 @@
+{
+  "ops": [
+    {
+      "block": 4078236,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "ntomaino",
+          "pending_payout": {
+            "amount": "127",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "searching-for-steem-s-bieber-moment",
+          "rshares": 1904280488,
+          "total_vote_weight": "627354753561260663",
+          "voter": "owdy",
+          "weight": "3019796162763868"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:45",
+      "trx_id": "403595f6e7975c1a790a5b6bd8834601c560fc86",
+      "trx_in_block": 0,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "jackgallenhall",
+          "pending_payout": {
+            "amount": "4615",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "steemit-photo-challenge-shah-jahan-mosque-situated-in-thatta-pakistan",
+          "rshares": 54822719,
+          "total_vote_weight": "7916849247891189115",
+          "voter": "lisajohn",
+          "weight": "82381998229234"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:45",
+      "trx_id": "55c33d2e157be039979fe48fc97e291c3647f34a",
+      "trx_in_block": 1,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "ghasemkiani",
+          "pending_payout": {
+            "amount": "3",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "google-is-creating-a-new-operating-system-called-fuchsia",
+          "rshares": 120086198,
+          "total_vote_weight": "17581890367070516",
+          "voter": "remlaps",
+          "weight": "552761251159971"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:45",
+      "trx_id": "f0e69dfda73048c47b95d356c0ea97f71c8201d5",
+      "trx_in_block": 2,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "silversteem",
+          "vesting_shares": {
+            "amount": "3619568051",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:48",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "curation_reward_operation",
+        "value": {
+          "comment_author": "teego",
+          "comment_permlink": "steem-docker-images-roadmap",
+          "curator": "steempower",
+          "payout_must_be_claimed": false,
+          "reward": {
+            "amount": "655141675",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 2,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:48",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "curation_reward_operation",
+        "value": {
+          "comment_author": "teego",
+          "comment_permlink": "steem-docker-images-roadmap",
+          "curator": "drinkzya",
+          "payout_must_be_claimed": false,
+          "reward": {
+            "amount": "7239134",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 3,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:48",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "author_reward_operation",
+        "value": {
+          "author": "teego",
+          "curators_vesting_payout": {
+            "amount": "662380810",
+            "nai": "@@000000037",
+            "precision": 6
+          },
+          "hbd_payout": {
+            "amount": "502",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "hive_payout": {
+            "amount": "0",
+            "nai": "@@000000021",
+            "precision": 3
+          },
+          "payout_must_be_claimed": false,
+          "permlink": "steem-docker-images-roadmap",
+          "vesting_payout": {
+            "amount": "1103968017",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 4,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:48",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "comment_reward_operation",
+        "value": {
+          "author": "teego",
+          "author_rewards": 610,
+          "beneficiary_payout_value": {
+            "amount": "0",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "curator_payout_value": {
+            "amount": "301",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "payout": {
+            "amount": "1306",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "steem-docker-images-roadmap",
+          "total_payout_value": {
+            "amount": "1004",
+            "nai": "@@000000013",
+            "precision": 3
+          }
+        }
+      },
+      "op_in_trx": 5,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:48",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    },
+    {
+      "block": 4078236,
+      "op": {
+        "type": "comment_payout_update_operation",
+        "value": {
+          "author": "nanzo-scoop",
+          "permlink": "anthony-joshua-believe-the-hype-a-written-response-to-dwyer"
+        }
+      },
+      "op_in_trx": 6,
+      "operation_id": 0,
+      "timestamp": "2016-08-14T15:28:48",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ]
+}

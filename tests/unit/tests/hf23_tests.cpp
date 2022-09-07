@@ -6,7 +6,7 @@
 
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
-#include <hive/protocol/sps_operations.hpp>
+#include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -39,7 +39,7 @@ namespace
 
 std::string asset_to_string( const asset& a )
 {
-  return hive::plugins::condenser_api::legacy_asset::from_asset( a ).to_string();
+  return hive::protocol::legacy_asset::from_asset( a ).to_string();
 }
 
 } // namespace
@@ -370,45 +370,45 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
       generate_block();
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       delegate_vest( "alice", "bob", _3v, alice_private_key );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       delegate_vest( "alice", "bob", _2v, alice_private_key );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) != idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       delegate_vest( "alice", "bob", _1v, alice_private_key );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) != idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       const auto& _bob = db->get_account( "bob" );
       db->clear_account( _bob );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) != idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) != idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
     {
       const auto& _alice = db->get_account( "alice" );
       db->clear_account( _alice );
 
       const auto& idx = db->get_index< vesting_delegation_expiration_index, by_account_expiration >();
-      BOOST_REQUIRE( idx.lower_bound( "alice" ) == idx.end() );
-      BOOST_REQUIRE( idx.lower_bound( "bob" ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( alice_id ) == idx.end() );
+      BOOST_REQUIRE( idx.lower_bound( bob_id ) == idx.end() );
     }
 
     database_fixture::validate_database();
@@ -478,6 +478,10 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
 
       BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == _2v.amount.value );
       BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == _1v.amount.value );
+
+      auto hf23_vop = get_last_operations(1)[0].get< hardfork_hive_operation >();
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.size() == 1 );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.back() == "bob" );
     }
     {
       const auto& _alice = db->get_account( "alice" );
@@ -490,6 +494,11 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
       BOOST_REQUIRE( RECEIVED_VESTS( "alice" ) == 0l );
       BOOST_REQUIRE( RECEIVED_VESTS( "bob" ) == 0l );
       BOOST_REQUIRE( RECEIVED_VESTS( "carol" ) == 0l );
+
+      auto hf23_vop = get_last_operations(1)[0].get< hardfork_hive_operation >();
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.size() == 2 );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.front() == "bob" );
+      BOOST_REQUIRE( hf23_vop.other_affected_accounts.back() == "carol" );
     }
 
     database_fixture::validate_database();
@@ -727,7 +736,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
     generate_block();
 
     fund( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
-    fund( "alice", ASSET( "10.100 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
+    fund( "alice", ASSET( "10.100 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "10.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "10.100", "0.000", "0.000", "0.027", get_hbd_balance, "TBD" );
@@ -746,8 +755,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.ratification_deadline = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 10 );
       op.escrow_expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -772,8 +780,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.agent = "carol";
       op.who = "carol";
       tx.operations.push_back( op );
-      sign( tx, carol_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, carol_private_key );
     }
     tx.clear();
 
@@ -798,8 +805,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.agent = "carol";
       op.who = "bob";
       tx.operations.push_back( op );
-      sign( tx, bob_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, bob_private_key );
     }
     tx.clear();
 
@@ -827,8 +833,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.hive_amount = ASSET( "2.000 TESTS" );
       op.hbd_amount = ASSET( "3.000 TBD" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -856,8 +861,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.hive_amount = ASSET( "2.000 TESTS" );
       op.hbd_amount = ASSET( "3.000 TBD" );
       tx.operations.push_back( op );
-      sign( tx, bob_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, bob_private_key );
     }
     tx.clear();
 
@@ -884,8 +888,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.agent = "carol";
       op.who = "bob";
       tx.operations.push_back( op );
-      sign( tx, bob_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, bob_private_key );
     }
     tx.clear();
 
@@ -925,8 +928,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.hbd_amount = ASSET( "1.000 TBD" );
       tx.operations.push_back( op );
 
-      sign( tx, carol_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, carol_private_key );
     }
     tx.clear();
 
@@ -954,8 +956,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
       op.hive_amount = ASSET( "2.000 TESTS" );
       op.hbd_amount = ASSET( "0.000 TBD" );
       tx.operations.push_back( op );
-      sign( tx, carol_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, carol_private_key );
     }
     tx.clear();
 
@@ -994,7 +995,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
     generate_block();
 
     fund( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
-    fund( "bob", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
+    fund( "bob", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "10.000", "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "0.000", "5.000", "0.027", get_hbd_balance, "TBD" );
@@ -1008,8 +1009,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       op.min_to_receive = ASSET( "5.000 TBD" );
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -1033,8 +1033,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       op.fill_or_kill = true;
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
-      sign( tx, bob_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, bob_private_key );
     }
     tx.clear();
 
@@ -1054,12 +1053,11 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       limit_order_create2_operation op;
       op.owner = "bob";
       op.amount_to_sell = ASSET( "3.000 TBD" );
-      op.exchange_rate = ASSET( "2.000 TBD" ) / ASSET( "5.000 TESTS" );
+      op.exchange_rate = price( ASSET( "2.000 TBD" ), ASSET( "5.000 TESTS" ) );
       op.fill_or_kill = true;
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
-      sign( tx, bob_private_key );
-      HIVE_REQUIRE_THROW( db->push_transaction( tx, 0 ), fc::exception );
+      HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
     }
     tx.clear();
 
@@ -1079,12 +1077,11 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
       limit_order_create2_operation op;
       op.owner = "bob";
       op.amount_to_sell = ASSET( "3.000 TBD" );
-      op.exchange_rate = ASSET( "2.000 TBD" ) / ASSET( "4.000 TESTS" );
+      op.exchange_rate = price( ASSET( "2.000 TBD" ), ASSET( "4.000 TESTS" ) );
       op.fill_or_kill = true;
       op.expiration = db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL * 20 );
       tx.operations.push_back( op );
-      sign( tx, bob_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, bob_private_key );
     }
     tx.clear();
 
@@ -1120,7 +1117,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
     generate_block();
 
     //note! extra 0.1 TESTS is in form of vests
-    fund( "alice", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and sps-fund/inflation
+    fund( "alice", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "5.000", "0.027", get_hbd_balance, "TBD" );
@@ -1132,8 +1129,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
       op.owner = "alice";
       op.amount = ASSET( "5.000 TBD" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -1165,8 +1161,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
       op.owner = "alice";
       op.amount = ASSET( "1.000 TESTS" );
       tx.operations.push_back( op );
-      sign( tx, alice_private_key );
-      db->push_transaction( tx, 0 );
+      push_transaction( tx, alice_private_key );
     }
     tx.clear();
 
@@ -1238,8 +1233,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     transfer.amount = ASSET( "1.000 TBD" );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( transfer );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     }
 
     auto& gpo = db->get_dynamic_global_properties();
@@ -1299,8 +1293,7 @@ BOOST_AUTO_TEST_CASE( savings_test_01 )
     op.amount = ASSET( "1000.000 TBD" );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1000.000 TBD" ) );
     db->clear_account( db->get_account( "alice" ) );
@@ -1329,8 +1322,7 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
     op.amount = ASSET( "1000.000 TBD" );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
-    sign( tx, alice_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1000.000 TBD" ) );
 

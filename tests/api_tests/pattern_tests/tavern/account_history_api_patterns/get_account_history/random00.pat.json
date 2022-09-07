@@ -1,0 +1,89 @@
+{
+  "history": [
+    [
+      0,
+      {
+        "block": 3231730,
+        "op": {
+          "type": "account_create_operation",
+          "value": {
+            "active": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM7QaGguZZzm3nLZqyspLCWHzkS8BYwr7sxYwz7qCGdAgPLzgx1y",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "creator": "steem",
+            "fee": {
+              "amount": "5000",
+              "nai": "@@000000021",
+              "precision": 3
+            },
+            "json_metadata": "",
+            "memo_key": "STM6rSvhgFyQbtAYaGgJHhGZCdGk7DtMiCC2qwVhV3q1wdTp9PYxK",
+            "new_account_name": "fleshtwinkie",
+            "owner": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM7KMn4PZ5WpVD7v7vHGjFGCdNtDUYbv9ALodi37JkGbpohqFnc5",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "posting": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5x3bqhZxkWco1HNw5nxNC1krviSJUuiSKKBRQBnmuYDSE8cWyY",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-16T00:37:42",
+        "trx_id": "b97a2782b30959b08954e3dba168e229c752ce74",
+        "trx_in_block": 0,
+        "virtual_op": false
+      }
+    ],
+    [
+      1,
+      {
+        "block": 3231730,
+        "op": {
+          "type": "account_created_operation",
+          "value": {
+            "creator": "steem",
+            "initial_delegation": {
+              "amount": "0",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "initial_vesting_shares": {
+              "amount": "22859303875",
+              "nai": "@@000000037",
+              "precision": 6
+            },
+            "new_account_name": "fleshtwinkie"
+          }
+        },
+        "op_in_trx": 1,
+        "operation_id": 0,
+        "timestamp": "2016-07-16T00:37:42",
+        "trx_id": "b97a2782b30959b08954e3dba168e229c752ce74",
+        "trx_in_block": 0,
+        "virtual_op": true
+      }
+    ]
+  ]
+}

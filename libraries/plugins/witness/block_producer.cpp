@@ -4,6 +4,7 @@
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/version.hpp>
 
+#include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/pending_required_action_object.hpp>
@@ -14,24 +15,22 @@
 
 namespace hive { namespace plugins { namespace witness {
 
-chain::signed_block block_producer::generate_block(fc::time_point_sec when, const chain::account_name_type& witness_owner, const fc::ecc::private_key& block_signing_private_key, uint32_t skip)
+void block_producer::generate_block( chain::generate_block_flow_control* generate_block_ctrl )
 {
-  chain::signed_block result;
-  hive::chain::detail::with_skip_flags(
-    _db,
-    skip,
-    [&]()
+  hive::chain::detail::with_skip_flags( _db, generate_block_ctrl->get_skip_flags(), [&]()
+  {
+    try
     {
-      try
-      {
-        result = _generate_block( when, witness_owner, block_signing_private_key );
-      }
-      FC_CAPTURE_AND_RETHROW( (witness_owner) )
-    });
-  return result;
+      _generate_block( generate_block_ctrl, generate_block_ctrl->get_block_timestamp(), generate_block_ctrl->get_witness_owner(),
+                       generate_block_ctrl->get_block_signing_private_key() );
+    }
+    FC_CAPTURE_AND_RETHROW( ( generate_block_ctrl->get_witness_owner() ) )
+  } );
 }
 
-chain::signed_block block_producer::_generate_block(fc::time_point_sec when, const chain::account_name_type& witness_owner, const fc::ecc::private_key& block_signing_private_key)
+void block_producer::_generate_block( chain::generate_block_flow_control* generate_block_ctrl,
+                                      fc::time_point_sec when, const chain::account_name_type& witness_owner,
+                                      const fc::ecc::private_key& block_signing_private_key)
 {
   uint32_t skip = _db.get_node_properties().skip_flags;
   uint32_t slot_num = _db.get_slot_at_time( when );
@@ -44,15 +43,16 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   if( !(skip & chain::database::skip_witness_signature) )
     FC_ASSERT( witness_obj.signing_key == block_signing_private_key.get_public_key() );
 
-  chain::signed_block pending_block;
+  chain::signed_block_header pending_block_header;
 
-  pending_block.previous = _db.head_block_id();
-  pending_block.timestamp = when;
-  pending_block.witness = witness_owner;
+  pending_block_header.previous = _db.head_block_id();
+  pending_block_header.timestamp = when;
+  pending_block_header.witness = witness_owner;
 
-  adjust_hardfork_version_vote( _db.get_witness( witness_owner ), pending_block );
+  adjust_hardfork_version_vote( _db.get_witness( witness_owner ), pending_block_header );
 
-  apply_pending_transactions( witness_owner, when, pending_block );
+  std::vector<std::shared_ptr<hive::chain::full_transaction_type>> full_transactions;
+  apply_pending_transactions(witness_owner, when, pending_block_header, full_transactions);
 
   // We have temporarily broken the invariant that
   // _pending_tx_session is the result of applying _pending_tx, as
@@ -60,26 +60,34 @@ chain::signed_block block_producer::_generate_block(fc::time_point_sec when, con
   // However, the push_block() call below will re-create the
   // _pending_tx_session.
 
-  if( !(skip & chain::database::skip_witness_signature) )
-    pending_block.sign( block_signing_private_key, _db.has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+  const fc::ecc::private_key* signer = (skip & chain::database::skip_witness_signature) ? nullptr : &block_signing_private_key;
+
+  std::shared_ptr<hive::chain::full_block_type> full_pending_block = 
+    hive::chain::full_block_type::create_from_block_header_and_transactions(pending_block_header, full_transactions, signer);
 
   // TODO:  Move this to _push_block() so session is restored.
   if( !(skip & chain::database::skip_block_size_check) )
+    FC_ASSERT(full_pending_block->get_uncompressed_block_size() <= HIVE_MAX_BLOCK_SIZE );
+  generate_block_ctrl->store_produced_block( full_pending_block );
+
+  try
   {
-    FC_ASSERT( fc::raw::pack_size(pending_block) <= HIVE_MAX_BLOCK_SIZE );
+    _db.push_block( *generate_block_ctrl, skip );
   }
-
-  _db.push_block( pending_block, skip );
-
-  return pending_block;
+  catch (const fc::exception& e)
+  {
+    elog("NOTIFYALERT! Failed to apply newly produced block ${block_num} (${block_id}) with exception ${e}", 
+         ("block_num", full_pending_block->get_block_num())("block_id", full_pending_block->get_block_id())(e));
+    throw;
+  }
 }
 
-void block_producer::adjust_hardfork_version_vote(const chain::witness_object& witness, chain::signed_block& pending_block)
+void block_producer::adjust_hardfork_version_vote(const chain::witness_object& witness, chain::signed_block_header& pending_block_header)
 {
   using namespace hive::protocol;
 
   if( witness.running_version != HIVE_BLOCKCHAIN_VERSION )
-    pending_block.extensions.insert( block_header_extensions( HIVE_BLOCKCHAIN_VERSION ) );
+    pending_block_header.extensions.insert( block_header_extensions( HIVE_BLOCKCHAIN_VERSION ) );
 
   const auto& hfp = _db.get_hardfork_property_object();
   const auto& hf_versions = _db.get_hardfork_versions();
@@ -88,23 +96,26 @@ void block_producer::adjust_hardfork_version_vote(const chain::witness_object& w
     && ( witness.hardfork_version_vote != hf_versions.versions[ hfp.last_hardfork + 1 ] || witness.hardfork_time_vote != hf_versions.times[ hfp.last_hardfork + 1 ] ) ) // Witness vote does not match binary configuration
   {
     // Make vote match binary configuration
-    pending_block.extensions.insert( block_header_extensions( hardfork_version_vote( hf_versions.versions[ hfp.last_hardfork + 1 ], hf_versions.times[ hfp.last_hardfork + 1 ] ) ) );
+    pending_block_header.extensions.insert( block_header_extensions( hardfork_version_vote( hf_versions.versions[ hfp.last_hardfork + 1 ], hf_versions.times[ hfp.last_hardfork + 1 ] ) ) );
   }
   else if( hfp.current_hardfork_version == HIVE_BLOCKCHAIN_VERSION // Binary does not know of a new hardfork
         && witness.hardfork_version_vote > HIVE_BLOCKCHAIN_VERSION ) // Voting for hardfork in the future, that we do not know of...
   {
     // Make vote match binary configuration. This is vote to not apply the new hardfork.
-    pending_block.extensions.insert( block_header_extensions( hardfork_version_vote( hf_versions.versions[ hfp.last_hardfork ], hf_versions.times[ hfp.last_hardfork ] ) ) );
+    pending_block_header.extensions.insert( block_header_extensions( hardfork_version_vote( hf_versions.versions[ hfp.last_hardfork ], hf_versions.times[ hfp.last_hardfork ] ) ) );
   }
 }
 
-void block_producer::apply_pending_transactions(
-      const chain::account_name_type& witness_owner,
-      fc::time_point_sec when,
-      chain::signed_block& pending_block)
+void block_producer::apply_pending_transactions(const chain::account_name_type& witness_owner,
+                                                fc::time_point_sec when,
+                                                chain::signed_block_header& pending_block_header, 
+                                                std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions)
 {
   // The 4 is for the max size of the transaction vector length
-  size_t total_block_size = fc::raw::pack_size( pending_block ) + 4;
+  //ABW: size of vector can take between 1 and 5 packed bytes, therefore +4 covers potential max (size of empty is already
+  //included in uncorrected pack_size; in practice total_block_size will overshoot actual pack_size by 4 or 3 bytes, maybe
+  //2 bytes if we ever allow blocks big enough to accomodate over 16k transactions (15 or more bits needed for size)
+  size_t total_block_size = fc::raw::pack_size(pending_block_header) + 4;
   const auto& gpo = _db.get_dynamic_global_properties();
   uint64_t maximum_block_size = gpo.maximum_block_size; //HIVE_MAX_BLOCK_SIZE;
   uint64_t maximum_transaction_partition_size = maximum_block_size -  ( maximum_block_size * gpo.required_actions_partition_percent ) / HIVE_100_PERCENT;
@@ -127,18 +138,22 @@ void block_producer::apply_pending_transactions(
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     /// modify current witness so transaction evaluators can know who included the transaction
-    _db.modify(
-          _db.get_dynamic_global_properties(),
-          [&]( chain::dynamic_global_property_object& dgp )
-          {
-            dgp.current_witness = witness_owner;
-          });
+    _db.modify(_db.get_dynamic_global_properties(), [&]( chain::dynamic_global_property_object& dgp )
+    {
+      dgp.current_witness = witness_owner;
+    } );
   }
 
-  uint64_t postponed_tx_count = 0;
+  BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
+  // the flag also covers time of processing of required and optional actions
+  _db.set_tx_status( chain::database::TX_STATUS_GEN_BLOCK );
+
+  uint32_t postponed_tx_count = 0;
+  uint32_t failed_tx_count = 0;
   // pop pending state (reset to head block state)
-  for( const chain::signed_transaction& tx : _db._pending_tx )
+  for( const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction : _db._pending_tx )
   {
+    const hive::protocol::signed_transaction& tx = full_transaction->get_transaction();
     // Only include transactions that have not expired yet for currently generating block,
     // this should clear problem transactions and allow block production to continue
 
@@ -146,36 +161,42 @@ void block_producer::apply_pending_transactions(
       break;
 
     if( tx.expiration < when )
+    {
+      ++failed_tx_count;
       continue;
+    }
 
-    uint64_t new_total_size = total_block_size + fc::raw::pack_size( tx );
+    uint64_t new_total_size = total_block_size + full_transaction->get_transaction_size();
 
     // postpone transaction if it would make block too big
     if( new_total_size >= maximum_transaction_partition_size )
     {
-      postponed_tx_count++;
+      ++postponed_tx_count;
       continue;
     }
 
     try
     {
       auto temp_session = _db.start_undo_session();
-      _db.apply_transaction( tx, _db.get_node_properties().skip_flags );
+      _db.apply_transaction(full_transaction, _db.get_node_properties().skip_flags);
       temp_session.squash();
 
       total_block_size = new_total_size;
-      pending_block.transactions.push_back( tx );
+      full_transactions.push_back(full_transaction);
     }
     catch ( const fc::exception& e )
     {
-      // Do nothing, transaction will not be re-applied
+      ++failed_tx_count;
+      // Do nothing, transaction will be re-applied after this block is reapplied (and possibly
+      // after processing further blocks) until it expires or repeats the exception during that time
       //wlog( "Transaction was not processed while generating block due to ${e}", ("e", e) );
       //wlog( "The transaction was ${t}", ("t", tx) );
     }
   }
-  if( postponed_tx_count > 0 )
+  if (postponed_tx_count > 0 || failed_tx_count > 0)
   {
-    wlog( "Postponed ${n} transactions due to block size limit", ("n", _db._pending_tx.size() - pending_block.transactions.size()) );
+    wlog("Postponed ${postponed_count} transactions during block production (${failed_tx_count} failed/expired)", 
+         ("postponed_count", _db._pending_tx.size() - full_transactions.size())(failed_tx_count));
   }
 
   const auto& pending_required_action_idx = _db.get_index< chain::pending_required_action_index, chain::by_execution >();
@@ -210,7 +231,7 @@ FC_TODO( "Remove ifdef when required actions are added" )
 #ifdef IS_TEST_NET
   if( required_actions.size() )
   {
-    pending_block.extensions.insert( required_actions );
+    pending_block_header.extensions.insert( required_actions );
   }
 #endif
 
@@ -241,13 +262,11 @@ FC_TODO( "Remove ifdef when optional actions are added" )
 #ifdef IS_TEST_NET
   if( optional_actions.size() )
   {
-    pending_block.extensions.insert( optional_actions );
+    pending_block_header.extensions.insert( optional_actions );
   }
 #endif
 
   _db.pending_transaction_session().reset();
-
-  pending_block.transaction_merkle_root = pending_block.calculate_merkle_root();
 }
 
 } } } // hive::plugins::witness

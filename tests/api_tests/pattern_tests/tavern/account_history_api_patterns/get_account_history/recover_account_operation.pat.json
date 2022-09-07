@@ -1,0 +1,43 @@
+{
+  "history": [
+    [
+      379,
+      {
+        "block": 3399202,
+        "op": {
+          "type": "recover_account_operation",
+          "value": {
+            "account_to_recover": "gtg",
+            "extensions": [],
+            "new_owner_authority": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5RLQ1Jh8Kf56go3xpzoodg4vRsgCeWhANXoEXrYH7bLEwSVyjh",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            },
+            "recent_owner_authority": {
+              "account_auths": [],
+              "key_auths": [
+                [
+                  "STM5F9tCbND6zWPwksy1rEN24WjPiQWSU2vwGgegQVjAcYDe1zTWi",
+                  1
+                ]
+              ],
+              "weight_threshold": 1
+            }
+          }
+        },
+        "op_in_trx": 0,
+        "operation_id": 0,
+        "timestamp": "2016-07-21T21:48:03",
+        "trx_id": "80b4c722e31afc093ef0aeeb3e447eae224908a8",
+        "trx_in_block": 6,
+        "virtual_op": false
+      }
+    ]
+  ]
+}

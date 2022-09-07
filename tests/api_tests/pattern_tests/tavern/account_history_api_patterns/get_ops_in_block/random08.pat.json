@@ -1,0 +1,67 @@
+{
+  "ops": [
+    {
+      "block": 1567545,
+      "op": {
+        "type": "vote_operation",
+        "value": {
+          "author": "kiaora712",
+          "permlink": "a-guy-with-the-backpack",
+          "voter": "liondani",
+          "weight": 10000
+        }
+      },
+      "op_in_trx": 0,
+      "operation_id": 0,
+      "timestamp": "2016-05-18T22:45:57",
+      "trx_id": "1b66cb8de8bc2dd4c68ea3558b8ee4112ec237a0",
+      "trx_in_block": 0,
+      "virtual_op": false
+    },
+    {
+      "block": 1567545,
+      "op": {
+        "type": "effective_comment_vote_operation",
+        "value": {
+          "author": "kiaora712",
+          "pending_payout": {
+            "amount": "1252",
+            "nai": "@@000000013",
+            "precision": 3
+          },
+          "permlink": "a-guy-with-the-backpack",
+          "rshares": "492265040424",
+          "total_vote_weight": "492265040424",
+          "voter": "liondani",
+          "weight": "492265040424"
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-05-18T22:45:57",
+      "trx_id": "1b66cb8de8bc2dd4c68ea3558b8ee4112ec237a0",
+      "trx_in_block": 0,
+      "virtual_op": true
+    },
+    {
+      "block": 1567545,
+      "op": {
+        "type": "producer_reward_operation",
+        "value": {
+          "producer": "dele-puppy",
+          "vesting_shares": {
+            "amount": "9396731458",
+            "nai": "@@000000037",
+            "precision": 6
+          }
+        }
+      },
+      "op_in_trx": 1,
+      "operation_id": 0,
+      "timestamp": "2016-05-18T22:46:00",
+      "trx_id": "0000000000000000000000000000000000000000",
+      "trx_in_block": 4294967295,
+      "virtual_op": true
+    }
+  ]
+}

@@ -1,117 +1,138 @@
-#Usage: DOCKER_BUILDKIT=1 docker build --no-cache  --target=testnet_node_builder .
+# Base docker file having defined environment for build and run of hived instance.
+# Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
+# To be started from cloned haf source directory.
+ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
+ARG CI_IMAGE_TAG=:ubuntu20.04-4 
+ARG BLOCK_LOG_SUFFIX
 
-ARG BUILD_HIVE_TESTNET=OFF
-ARG HIVE_LINT=OFF
-FROM registry.gitlab.syncad.com/hive/hive/hive-baseenv:latest AS builder
+ARG BUILD_IMAGE_TAG
 
-ENV src_dir="/usr/local/src/hive"
-ENV install_base_dir="/usr/local/hive"
+FROM phusion/baseimage:focal-1.0.0 AS runtime
+
 ENV LANG=en_US.UTF-8
 
-ADD . ${src_dir}
-WORKDIR ${src_dir}
+SHELL ["/bin/bash", "-c"] 
 
-###################################################################################################
-##                                        CONSENSUS NODE BUILD                                   ##
-###################################################################################################
+USER root
+WORKDIR /usr/local/src
+ADD ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
-FROM builder AS consensus_node_builder
+# Install base runtime packages
+RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
 
-RUN \
-  cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh "OFF" "ON"
+USER hived
+WORKDIR /home/hived
 
-###################################################################################################
-##                                  CONSENSUS NODE CONFIGURATION                                 ##
-###################################################################################################
+FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG AS ci-base-image
 
-FROM builder AS consensus_node
-ARG TRACKED_ACCOUNT_NAME
-ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
-ARG USE_PUBLIC_BLOCKLOG
-ENV USE_PUBLIC_BLOCKLOG=${USE_PUBLIC_BLOCKLOG}
+ENV LANG=en_US.UTF-8
 
-WORKDIR "${install_base_dir}/consensus"
-# Get all needed files from previous stage, and throw away unneeded rest(like objects)
-COPY --from=consensus_node_builder ${src_dir}/build/install-root/ ${src_dir}/contrib/hived.run ./
-COPY --from=consensus_node_builder ${src_dir}/contrib/config-for-docker.ini  datadir/config.ini
+SHELL ["/bin/bash", "-c"] 
 
-RUN \
-   ls -la && \
-   chmod +x hived.run
+USER root
+WORKDIR /usr/local/src
+# Install additionally development packages
+RUN ./scripts/setup_ubuntu.sh --dev --hived-account="hived"
 
-# rpc service :
-EXPOSE 8090
-# p2p service :
-EXPOSE 2001
-CMD "${install_base_dir}/consensus/hived.run"
+USER hived
+WORKDIR /home/hived
 
-###################################################################################################
-##                                          GENERAL NODE BUILD                                   ##
-###################################################################################################
+#docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
 
-FROM builder AS general_node_builder
+RUN sudo -n mkdir -p /home/hived/datadir/blockchain && cd /home/hived/datadir/blockchain && \
+  sudo -n wget -c https://gtg.openhive.network/get/blockchain/block_log.5M && \
+    sudo -n mv block_log.5M block_log && sudo -n chown -Rc hived:hived /home/hived/datadir/
 
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
 
-ARG BUILD_HIVE_TESTNET
-ARG HIVE_LINT
-
+ARG BUILD_HIVE_TESTNET=OFF
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
+
+ARG HIVE_CONVERTER_BUILD=OFF
+ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
+
+ARG HIVE_LINT=OFF
 ENV HIVE_LINT=${HIVE_LINT}
 
-RUN \
-  cd ${src_dir} && \
-    ${src_dir}/ciscripts/build.sh ${BUILD_HIVE_TESTNET} ${HIVE_LINT}
+USER hived
+WORKDIR /home/hived
+SHELL ["/bin/bash", "-c"] 
 
-###################################################################################################
-##                                    GENERAL NODE CONFIGURATION                                 ##
-###################################################################################################
-
-FROM builder AS general_node
-ARG TRACKED_ACCOUNT_NAME
-ENV TRACKED_ACCOUNT_NAME=${TRACKED_ACCOUNT_NAME}
-ARG USE_PUBLIC_BLOCKLOG
-ENV USE_PUBLIC_BLOCKLOG=${USE_PUBLIC_BLOCKLOG}
-
-WORKDIR "${install_base_dir}/hive-node"
-# Get all needed files from previous stage, and throw away unneeded rest(like objects)
-COPY --from=general_node_builder ${src_dir}/build/install-root/ ${src_dir}/contrib/hived.run ./
-COPY --from=general_node_builder ${src_dir}/contrib/config-for-docker.ini  datadir/config.ini
+# Get everything from cwd as sources to be built.
+COPY --chown=hived:hived . /home/hived/hive
 
 RUN \
-   ls -la && \
-   chmod +x hived.run
+  mkdir -p ./build/tests/unit/ \
+  && ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
+  --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
+  --cmake-arg="-DENABLE_SMT_SUPPORT=${BUILD_HIVE_TESTNET}" \
+  --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
+  --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  && \
+  cd ./build && \
+  find . -name *.o  -type f -delete && \
+  find . -name *.a  -type f -delete
 
-# rpc service :
-EXPOSE 8090
-# p2p service :
-EXPOSE 2001
-CMD "${install_base_dir}/hive-node/hived.run"
+# Here we could use a smaller image without packages specific to build requirements
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$BLOCK_LOG_SUFFIX$CI_IMAGE_TAG as base_instance
 
-###################################################################################################
-##                                          TESTNET NODE BUILD                                   ##
-###################################################################################################
+ENV BUILD_IMAGE_TAG=${BUILD_IMAGE_TAG:-:ubuntu20.04-4}
 
-FROM builder AS testnet_node_builder
+ARG P2P_PORT=2001
+ENV P2P_PORT=${P2P_PORT}
 
-ARG HIVE_LINT=ON
+ARG WS_PORT=8090
+ENV WS_PORT=${WS_PORT}
 
-ENV BUILD_HIVE_TESTNET="ON"
-ENV HIVE_LINT=${HIVE_LINT}
+ARG HTTP_PORT=8090
+ENV HTTP_PORT=${HTTP_PORT}
 
-RUN \
-  cd ${src_dir} && \
-      apt-get update && \
-      apt-get install -y clang && \
-      apt-get install -y clang-tidy && \
-      ${src_dir}/ciscripts/build.sh ${BUILD_HIVE_TESTNET} ${HIVE_LINT} && \
-      apt-get install -y screen && \
-      pip3 install -U secp256k1prp && \
-      git clone https://gitlab.syncad.com/hive/beem.git && \
-      cd beem && \
-        git checkout dk-update-proposal-operation && \
-        python3 setup.py build && \
-        python3 setup.py install --user && \
-  cd ${src_dir} && \
-        ${src_dir}/ciscripts/run_regressions.sh
+SHELL ["/bin/bash", "-c"] 
+
+USER hived
+WORKDIR /home/hived
+
+COPY --from=build \
+  /home/hived/build/programs/hived/hived \
+  /home/hived/build/programs/cli_wallet/cli_wallet \
+  /home/hived/build/programs/util/compress_block_log \
+  /home/hived/build/programs/util/truncate_block_log \
+  /home/hived/build/programs/blockchain_converter/blockchain_converter* \
+  /home/hived/build/tests/unit/* /home/hived/bin/
+
+COPY --from=build /home/hived/hive/scripts/common.sh ./scripts/common.sh
+
+ADD ./docker/docker_entrypoint.sh .
+
+RUN sudo -n mkdir -p /home/hived/bin && sudo -n mkdir -p /home/hived/shm_dir && \
+  sudo -n mkdir -p /home/hived/datadir && sudo -n chown -Rc hived:hived /home/hived/
+
+VOLUME [/home/hived/datadir, /home/hived/shm_dir]
+
+STOPSIGNAL SIGINT 
+
+ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
+
+FROM ${CI_REGISTRY_IMAGE}base_instance$BLOCK_LOG_SUFFIX:base_instance-${BUILD_IMAGE_TAG} as instance
+
+#p2p service
+EXPOSE ${P2P_PORT}
+# websocket service
+EXPOSE ${WS_PORT}
+# JSON rpc service
+EXPOSE ${HTTP_PORT}
+
+FROM ${CI_REGISTRY_IMAGE}instance-5m:instance-${BUILD_IMAGE_TAG} as data
+
+ADD --chown=hived:hived ./docker/config_5M.ini /home/hived/datadir/config.ini
+
+RUN "/home/hived/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
+
+ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
+
+# default command line to be passed for this version (which should be stopped at 5M)
+CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+
+EXPOSE ${HTTP_PORT}
 

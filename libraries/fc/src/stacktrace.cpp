@@ -53,32 +53,44 @@ std::string run_command( const std::string& command )
     return "";
 }
 
-void print_stacktrace_linenums( void** addrlist, int addrlen )
+void print_stacktrace_chunk(const std::string& module, const std::vector<std::string>& offsets, std::ostream& cmd_stream, std::ostream& output_stream)
 {
-   if( addrlen == 0 )
-      return;
+  std::ostringstream ss_cmd;
+  ss_cmd << "addr2line -p -a -f -C -i -e " << module;
+  for (const auto& offset : offsets)
+    ss_cmd << " +" << offset;
+  std::string cmd = ss_cmd.str();
+  cmd_stream << "\t" << cmd << "\n";
+  std::string output = run_command(cmd);
+  output_stream << output;
+}
 
-   char my_path[512];
-   auto result = readlink("/proc/self/exe", my_path, 511);
-   if( result < 0 )
-   {
-      std::cerr << "print_stacktrace_linenums() failed, could not read PID" << std::endl;
-      return;
-   }
-   else
-   {
-      my_path[result] = '\0';
-   }
+void print_stacktrace_linenums(const std::vector<std::pair<std::string, std::string>>& modules_and_offsets)
+{
+  fc::optional<std::string> previous_module;
+  std::vector<std::string> offsets_to_print;
+  
+  std::ostringstream cmd_stream;
+  std::ostringstream output_stream;
 
-   std::ostringstream ss_cmd;
-   ss_cmd << "addr2line -p -a -f -C -i -e " << my_path;
-   for( int i=0; i<addrlen; i++ )
-      ss_cmd << " " << std::setfill('0') << std::setw(16) << std::hex << std::noshowbase << uint64_t(addrlist[i]);
-   std::string cmd = ss_cmd.str();
-   std::cerr << "executing command:" << std::endl;
-   std::cerr << cmd << std::endl;
-   std::string output = run_command(cmd);
-   std::cerr << output << std::endl;
+  for (const auto& value : modules_and_offsets)
+  {
+    if (previous_module && *previous_module != value.first)
+    {
+      // switching modules in the stack trace
+      print_stacktrace_chunk(*previous_module, offsets_to_print, cmd_stream, output_stream);
+      previous_module = value.first;
+      offsets_to_print.clear();
+    }
+    else if (!previous_module)
+      previous_module = value.first;
+    offsets_to_print.push_back(value.second);
+  }
+  if (previous_module)
+    print_stacktrace_chunk(*previous_module, offsets_to_print, cmd_stream, output_stream);
+
+  std::cerr << "executing command(s):\n" << cmd_stream.str() << "\n";
+  std::cerr << output_stream.str() << "\n";
 }
 
 void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, void* caller_overwrite_hack /* = nullptr */, bool addr2line /* = true */ )
@@ -107,6 +119,8 @@ void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, voi
    // allocate string which will be filled with the demangled function name
    size_t funcnamesize = 256;
    char* funcname = (char*)malloc(funcnamesize);
+
+   std::vector<std::pair<std::string, std::string>> modules_and_offsets;
 
    // iterate over the returned symbol lines. skip the first, it is the
    // address of this function.
@@ -137,6 +151,8 @@ void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, voi
          *begin_offset++ = '\0';
          *end_offset = '\0';
 
+         modules_and_offsets.push_back(std::make_pair(std::string(symbollist[i]), std::string(begin_offset)));
+
          // mangled name is now in [begin_name, begin_offset) and caller
          // offset in [begin_offset, end_offset). now apply
          // __cxa_demangle():
@@ -163,7 +179,10 @@ void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, voi
    }
 
    if( addr2line )
-      print_stacktrace_linenums(addrlist, addrlen);
+   {
+      out << "\n";
+      print_stacktrace_linenums(modules_and_offsets);
+   }
 
    free(funcname);
    free(symbollist);

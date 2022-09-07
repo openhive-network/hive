@@ -1,0 +1,1 @@
+{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"cancel_transfer_from_savings_operation","value":{"from":"alice","request_id":1}}],"extensions":[],"signatures":["202a45829e97a4e4037d803b2d0ae686e050340dca47098180ce4c9e319a70f6ce7d6033fcd57ccb538549a580ceb4e15f398b601e163ec4c7137bf02fc7923b8d"]}

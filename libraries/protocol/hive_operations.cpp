@@ -4,9 +4,25 @@
 #include <fc/io/json.hpp>
 #include <fc/macros.hpp>
 
+#include <chrono>
 #include <locale>
 
 namespace hive { namespace protocol {
+  namespace
+  {
+    // the fast_is_valid() check verifies that the document is valid utf-8 and valid json.
+    // the old is_valid() test is slower and let some bad json through.  For now, we're falling
+    // back to the old parser which will allow us to replay blocks that the old is_valid() allowed
+    // but shouldn't have.
+    void validate_json_with_fallback(const std::string& json)
+    {
+      if (!fc::json::fast_is_valid(json))
+      {
+        FC_ASSERT(fc::is_utf8(json), "JSON not formatted in UTF8");
+        FC_ASSERT(fc::json::is_valid(json), "JSON is not valid JSON");
+      }
+    }
+  }
 
   void validate_auth_size( const authority& a )
   {
@@ -22,11 +38,9 @@ namespace hive { namespace protocol {
     owner.validate();
     active.validate();
 
-    if ( json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(json_metadata), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!json_metadata.empty())
+      validate_json_with_fallback(json_metadata);
+
     FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Account creation fee cannot be negative" );
   }
 
@@ -41,11 +55,8 @@ namespace hive { namespace protocol {
     active.validate();
     posting.validate();
 
-    if( json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(json_metadata), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!json_metadata.empty())
+      validate_json_with_fallback(json_metadata);
 
     FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Account creation fee cannot be negative" );
     FC_ASSERT( delegation >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
@@ -61,28 +72,19 @@ namespace hive { namespace protocol {
     if( posting )
       posting->validate();*/
 
-    if ( json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(json_metadata), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!json_metadata.empty())
+      validate_json_with_fallback(json_metadata);
   }
 
   void account_update2_operation::validate() const
   {
     validate_account_name( account );
 
-    if ( json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(json_metadata), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!json_metadata.empty())
+      validate_json_with_fallback(json_metadata);
 
-    if ( posting_json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(posting_json_metadata), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(posting_json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!posting_json_metadata.empty())
+      validate_json_with_fallback(posting_json_metadata);
   }
 
   void comment_operation::validate() const
@@ -100,10 +102,8 @@ namespace hive { namespace protocol {
     validate_permlink( parent_permlink );
     validate_permlink( permlink );
 
-    if( json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::json::is_valid(json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!json_metadata.empty())
+      validate_json_with_fallback(json_metadata);
   }
 
   struct comment_options_extension_validate_visitor
@@ -183,11 +183,8 @@ namespace hive { namespace protocol {
     validate_auth_size( active );
     validate_auth_size( posting );
 
-    if( json_metadata.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(json_metadata), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(json_metadata), "JSON Metadata not valid JSON" );
-    }
+    if (!json_metadata.empty())
+      validate_json_with_fallback(json_metadata);
 
     FC_ASSERT( extensions.size() == 0, "There are no extensions for create_claimed_account_operation." );
   }
@@ -355,8 +352,7 @@ namespace hive { namespace protocol {
     FC_ASSERT( (required_auths.size() + required_posting_auths.size()) > 0, "at least one account must be specified" );
     FC_ASSERT( id.size() <= HIVE_CUSTOM_OP_ID_MAX_LENGTH,
       "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size()) );
-    FC_ASSERT( fc::is_utf8(json), "JSON Metadata not formatted in UTF8" );
-    FC_ASSERT( fc::json::is_valid(json), "JSON Metadata not valid JSON" );
+    validate_json_with_fallback(json);
   }
   void custom_binary_operation::validate() const {
     /// required auth accounts are the ones whose bandwidth is consumed
@@ -376,10 +372,12 @@ namespace hive { namespace protocol {
 
   void pow_operation::validate()const
   {
+#ifndef HIVE_CONVERTER_BUILD
     props.validate< true >();
     validate_account_name( worker_account );
     FC_ASSERT( work_input() == work.input, "Determninistic input does not match recorded input" );
     work.validate();
+#endif /// HIVE_CONVERTER_BUILD
   }
 
   struct pow2_operation_validate_visitor
@@ -395,8 +393,10 @@ namespace hive { namespace protocol {
 
   void pow2_operation::validate()const
   {
+#ifndef HIVE_CONVERTER_BUILD
     props.validate< true >();
     work.visit( pow2_operation_validate_visitor() );
+#endif /// HIVE_CONVERTER_BUILD
   }
 
   struct pow2_operation_get_required_active_visitor
@@ -515,7 +515,7 @@ namespace hive { namespace protocol {
             ),
           "Limit order must be for the HIVE:HBD or SMT:(HIVE/HBD) market" );
 
-    (amount_to_sell / min_to_receive).validate();
+    price( amount_to_sell, min_to_receive ).validate();
   }
 
   void limit_order_create2_operation::validate()const
@@ -562,16 +562,6 @@ namespace hive { namespace protocol {
     FC_ASSERT( amount.amount > 0, "Must convert some HIVE" );
   }
 
-  void report_over_production_operation::validate()const
-  {
-    validate_account_name( reporter );
-    validate_account_name( first_block.witness );
-    FC_ASSERT( first_block.witness   == second_block.witness );
-    FC_ASSERT( first_block.timestamp == second_block.timestamp );
-    FC_ASSERT( first_block.signee()  == second_block.signee() );
-    FC_ASSERT( first_block.id() != second_block.id() );
-  }
-
   void escrow_transfer_operation::validate()const
   {
     validate_account_name( from );
@@ -586,11 +576,8 @@ namespace hive { namespace protocol {
     FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL, "HBD amount must contain HBD asset" );
     FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL, "HIVE amount must contain HIVE asset" );
     FC_ASSERT( ratification_deadline < escrow_expiration, "ratification deadline must be before escrow expiration" );
-    if ( json_meta.size() > 0 )
-    {
-      FC_ASSERT( fc::is_utf8(json_meta), "JSON Metadata not formatted in UTF8" );
-      FC_ASSERT( fc::json::is_valid(json_meta), "JSON Metadata not valid JSON" );
-    }
+    if (!json_meta.empty())
+      validate_json_with_fallback(json_meta);
   }
 
   void escrow_approve_operation::validate()const
@@ -747,6 +734,12 @@ namespace hive { namespace protocol {
       FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
       FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
       FC_ASSERT( fc::hours(recurrence * executions).to_seconds()  < fc::days(HIVE_MAX_RECURRENT_TRANSFER_END_DATE).to_seconds(), "Cannot set a transfer that would last for longer than ${days} days", ("days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE) );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
+
+  void witness_block_approve_operation::validate()const
+  { try {
+      validate_account_name( witness );
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 

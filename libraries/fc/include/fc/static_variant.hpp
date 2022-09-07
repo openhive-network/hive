@@ -16,6 +16,26 @@
 
 namespace fc {
 
+template< typename static_variant >
+struct serialization_functor
+{
+  bool operator()( const fc::variant& v, static_variant& s ) const
+  {
+    return false;
+  }
+};
+
+template< typename static_variant >
+struct variant_creator_functor
+{
+  template<typename T>
+  variant operator()( const T& v ) const
+  {
+    auto name = trim_typename_namespace( fc::get_typename< T >::name() );
+    return mutable_variant_object( "type", name )( "value", v );
+  }
+};
+
 // Implementation details, the user should not import this:
 namespace impl {
 
@@ -227,6 +247,10 @@ class static_variant {
     }
 
 public:
+
+    /// Expose it outside for further processing of specified Types.
+    using type_infos = impl::type_info<Types...>;
+
     template<typename X>
     struct tag
     {
@@ -367,6 +391,7 @@ struct visitor {
     typedef Result result_type;
 };
 
+   template< typename static_variant >
    struct from_static_variant
    {
       variant& var;
@@ -375,8 +400,7 @@ struct visitor {
       typedef void result_type;
       template<typename T> void operator()( const T& v )const
       {
-         auto name = trim_typename_namespace( fc::get_typename< T >::name() );
-         var = mutable_variant_object( "type", name )( "value", v );
+        var = variant_creator_functor< static_variant >()( v );
       }
    };
 
@@ -394,7 +418,7 @@ struct visitor {
 
    template<typename... T> void to_variant( const fc::static_variant<T...>& s, fc::variant& v )
    {
-      s.visit( from_static_variant( v ) );
+      s.visit( from_static_variant< fc::static_variant<T...> >( v ) );
    }
 
    struct get_static_variant_name
@@ -427,7 +451,12 @@ struct visitor {
          return name_map;
       }();
 
-      FC_ASSERT( v.is_object(), "Input data have to treated as object." );
+      if( serialization_functor< fc::static_variant<T...> >()( v, s ) )
+        return;
+
+      if( !v.is_object() )
+        FC_THROW_EXCEPTION( bad_cast_exception, "Input data have to treated as object." );
+
       auto v_object = v.get_object();
 
       FC_ASSERT( v_object.contains( "type" ), "Type field doesn't exist." );

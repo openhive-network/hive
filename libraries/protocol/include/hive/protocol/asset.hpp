@@ -98,6 +98,38 @@ namespace hive { namespace protocol {
     }
   };
 
+  struct legacy_asset
+  {
+    public:
+      legacy_asset() {}
+
+      legacy_asset( const asset& a )
+      {
+        amount = a.amount;
+        symbol = a.symbol;
+      }
+
+      asset to_asset()const
+      {
+        return asset( amount, symbol );
+      }
+
+      operator asset()const { return to_asset(); }
+
+      static legacy_asset from_asset( const asset& a )
+      {
+        return legacy_asset( a );
+      }
+
+      std::string asset_num_to_string() const;
+
+      string to_string()const;
+      static legacy_asset from_string( const string& from );
+
+      share_type                       amount;
+      asset_symbol_type                symbol = HIVE_SYMBOL;
+  };
+
   /** Represents quotation of the relative value of asset against another asset.
       Similar to 'currency pair' used to determine value of currencies.
 
@@ -121,7 +153,7 @@ namespace hive { namespace protocol {
       Both base and quote shall have different symbol defined, since it also results in
       creation of invalid price object. \see validate() method.
     */
-    explicit price(const asset& base, const asset& quote) : base(base),quote(quote)
+    price(const asset& _base, const asset& _quote) : base(_base),quote(_quote)
     {
       /// Call validate to verify passed arguments. \warning It throws on error.
       validate();
@@ -145,7 +177,6 @@ namespace hive { namespace protocol {
 
   }; /// price
 
-  price operator / ( const asset& base, const asset& quote );
   inline price operator~( const price& p ) { return price{p.quote,p.base}; }
 
   bool  operator <  ( const asset& a, const asset& b );
@@ -208,11 +239,15 @@ namespace hive { namespace protocol {
 } } // hive::protocol
 
 namespace fc {
-  void to_variant( const hive::protocol::asset& var,  fc::variant& vo );
-  void from_variant( const fc::variant& var,  hive::protocol::asset& vo );
+    void to_variant( const hive::protocol::asset& var,  fc::variant& vo );
+    void from_variant( const fc::variant& var,  hive::protocol::asset& vo );
+
+    void to_variant( const hive::protocol::legacy_asset& a, fc::variant& var );
+    void from_variant( const fc::variant& var, hive::protocol::legacy_asset& a );
 }
 
 FC_REFLECT( hive::protocol::asset, (amount)(symbol) )
+FC_REFLECT( hive::protocol::legacy_asset, (amount)(symbol) )
 FC_REFLECT( hive::protocol::price, (base)(quote) )
 
 FC_REFLECT( hive::protocol::HBD_asset, (amount) )

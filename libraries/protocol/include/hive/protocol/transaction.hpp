@@ -3,6 +3,7 @@
 #include <hive/protocol/sign_state.hpp>
 #include <hive/protocol/types.hpp>
 
+#include <functional>
 #include <numeric>
 
 namespace hive { namespace protocol {
@@ -22,7 +23,8 @@ using fc::ecc::canonical_signature_type;
     digest_type         digest()const;
     transaction_id_type id()const;
     void                validate() const;
-    digest_type         sig_digest( const chain_id_type& chain_id )const;
+    void                validate( const std::function<void( const operation& op, bool post )>& notify ) const;
+    digest_type         sig_digest( const chain_id_type& chain_id, hive::protocol::pack_type pack )const;
 
     void set_expiration( fc::time_point_sec expiration_time );
     void set_reference_block( const block_id_type& reference_block );
@@ -47,6 +49,7 @@ using fc::ecc::canonical_signature_type;
     void get_required_authorities( flat_set< account_name_type >& active,
                           flat_set< account_name_type >& owner,
                           flat_set< account_name_type >& posting,
+                          flat_set< account_name_type >& witness,
                           vector< authority >& other )const;
   };
 
@@ -55,9 +58,9 @@ using fc::ecc::canonical_signature_type;
     signed_transaction( const transaction& trx = transaction() )
       : transaction(trx){}
 
-    const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ );
+    //const signature_type& sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ );
 
-    signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ )const;
+    //signature_type sign( const private_key_type& key, const chain_id_type& chain_id, canonical_signature_type canon_type/* = fc::ecc::fc_canonical*/ )const;
 
     set<public_key_type> get_required_signatures(
       const chain_id_type& chain_id,
@@ -65,6 +68,7 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const witness_public_key_getter& get_witness_key,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -76,6 +80,8 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const witness_public_key_getter& get_witness_key,
+      hive::protocol::pack_type pack,
       uint32_t max_recursion/* = HIVE_MAX_SIG_CHECK_DEPTH*/,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -88,31 +94,20 @@ using fc::ecc::canonical_signature_type;
       const authority_getter& get_active,
       const authority_getter& get_owner,
       const authority_getter& get_posting,
+      const witness_public_key_getter& get_witness_key,
       uint32_t max_recursion = HIVE_MAX_SIG_CHECK_DEPTH,
       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
       canonical_signature_type canon_type = fc::ecc::fc_canonical
       ) const;
 
-    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/ )const;
+    flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, canonical_signature_type/* = fc::ecc::fc_canonical*/, hive::protocol::pack_type pack )const;
 
     vector<signature_type> signatures;
-
     digest_type merkle_digest()const;
 
     void clear() { operations.clear(); signatures.clear(); }
   };
-
-  struct annotated_signed_transaction : public signed_transaction {
-    annotated_signed_transaction(){}
-    annotated_signed_transaction( const signed_transaction& trx )
-    :signed_transaction(trx),transaction_id(trx.id()){}
-
-    transaction_id_type transaction_id;
-    uint32_t            block_num = 0;
-    uint32_t            transaction_num = 0;
-  };
-
 
   /// @} transactions group
 
@@ -120,4 +115,3 @@ using fc::ecc::canonical_signature_type;
 
 FC_REFLECT( hive::protocol::transaction, (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions) )
 FC_REFLECT_DERIVED( hive::protocol::signed_transaction, (hive::protocol::transaction), (signatures) )
-FC_REFLECT_DERIVED( hive::protocol::annotated_signed_transaction, (hive::protocol::signed_transaction), (transaction_id)(block_num)(transaction_num) );

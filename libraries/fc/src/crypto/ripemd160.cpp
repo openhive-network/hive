@@ -1,9 +1,8 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/fwd_impl.hpp>
-#include <openssl/sha.h>
-#include <openssl/ripemd.h>
 #include <string.h>
 #include <fc/crypto/ripemd160.hpp>
+#include <fc/crypto/cripemd160.hpp>
 #include <fc/crypto/sha512.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/variant.hpp>
@@ -27,17 +26,8 @@ char* ripemd160::data()const { return (char*)&_hash[0]; }
 
 
 struct ripemd160::encoder::impl {
-   impl()
-   {
-        memset( (char*)&ctx, 0, sizeof(ctx) );
-   }
-   RIPEMD160_CTX ctx;
+   CRIPEMD160 ctx;
 };
-
-ripemd160::encoder::~encoder() {}
-ripemd160::encoder::encoder() {
-  reset();
-}
 
 ripemd160 ripemd160::hash( const fc::sha512& h )
 {
@@ -56,16 +46,18 @@ ripemd160 ripemd160::hash( const string& s ) {
   return hash( s.c_str(), s.size() );
 }
 
+ripemd160::encoder::encoder() {}
+ripemd160::encoder::~encoder() {}
 void ripemd160::encoder::write( const char* d, uint32_t dlen ) {
-  RIPEMD160_Update( &my->ctx, d, dlen); 
+  my->ctx.Write((const unsigned char*)d, dlen);
 }
 ripemd160 ripemd160::encoder::result() {
   ripemd160 h;
-  RIPEMD160_Final((uint8_t*)h.data(), &my->ctx );
+  my->ctx.Finalize((unsigned char*)h.data());
   return h;
 }
 void ripemd160::encoder::reset() {
-  RIPEMD160_Init( &my->ctx);  
+  my->ctx.Reset();
 }
 
 ripemd160 operator << ( const ripemd160& h1, uint32_t i ) {

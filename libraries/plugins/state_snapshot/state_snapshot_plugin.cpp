@@ -26,7 +26,7 @@
 #include <rocksdb/sst_file_reader.h>
 #include <rocksdb/utilities/write_batch_with_index.h>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/type.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/io_service.hpp>
@@ -918,6 +918,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
+      void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
+
     private:
       state_snapshot_plugin&  _self;
       database&               _mainDb;
@@ -1216,12 +1218,23 @@ void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_exter
 void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_index* idx, index_dump_reader* reader)
   {
   try
-    {
+  {
     reader->set_processing_success(false);
     idx->load_snapshot(*reader);
     reader->set_processing_success(true);
-    }
-  FC_CAPTURE_LOG_AND_RETHROW((reader->getIndexDescription())(reader->getCurrentlyProcessedId()))
+  }
+  catch( boost::interprocess::bad_alloc& ex )
+  {
+    wlog("Problem with a snapshot allocation. A value of `shared-file-size` option has to be greater or equals to a size of snapshot data...");
+    wlog( "${details}", ("details",ex.what()) );
+    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+    throw;
+  }
+  catch(...)
+  {
+    wlog("index description: ${idx_desc} id: ${id}", ("idx_desc", reader->getIndexDescription())("id", reader->getCurrentlyProcessedId()));
+    throw fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unknown error occured when a snapshot's loading" ), std::current_exception() );
+  }
   }
 
 void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotName)
@@ -1306,7 +1319,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   elog("Snapshot generation FAILED.");
   }
 
-void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
+void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
   bfs::path actualStoragePath = _storagePath / snapshotName;
   actualStoragePath = actualStoragePath.normalize();
@@ -1374,7 +1387,9 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
   auto blockNo = _mainDb.head_block_num();
 
   ilog("Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block));
+
   _mainDb.set_revision(blockNo);
+  _mainDb.load_state_initial_data(openArgs);
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
   ilog("State snapshot load. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
@@ -1390,13 +1405,30 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
   _mainDb.set_snapshot_loaded();
   }
 
+void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
+  {
+    try
+    {
+      load_snapshot_impl( snapshotName, openArgs );
+    }
+    FC_CAPTURE_LOG_AND_RETHROW( (snapshotName) );
+  }
+
 void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive::chain::open_args& openArgs)
   {
-  if(_do_immediate_load)
-    load_snapshot(_snapshot_name, openArgs);
+    if(_do_immediate_load)
+    {
+      hive::notify_hived_status("loading snapshot");
+      load_snapshot(_snapshot_name, openArgs);
+      hive::notify_hived_status("finished loading snapshot");
+    }
 
-  if(_do_immediate_dump)
-    prepare_snapshot(_snapshot_name);
+    if(_do_immediate_dump)
+    {
+      hive::notify_hived_status("dumping snapshot");
+      prepare_snapshot(_snapshot_name);
+      hive::notify_hived_status("finished dumping snapshot");
+    }
   }
 
 state_snapshot_plugin::state_snapshot_plugin()
@@ -1436,7 +1468,7 @@ void state_snapshot_plugin::plugin_startup()
 
 void state_snapshot_plugin::plugin_shutdown()
   {
-  ilog("Shutting down account_history_rocksdb_plugin...");
+  ilog("Shutting down state_snapshot_plugin...");
   /// TO DO ADD CHECK DEFERRING SHUTDOWN WHEN SNAPSHOT IS GENERATED/LOADED.
   }
 

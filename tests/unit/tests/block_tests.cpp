@@ -25,14 +25,14 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
+#include <hive/chain/database_exceptions.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_objects.hpp>
-#include <hive/chain/history_object.hpp>
 
-#include <hive/plugins/account_history/account_history_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
 
 #include <hive/utilities/tempdir.hpp>
@@ -47,7 +47,33 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-#define TEST_SHARED_MEM_SIZE (1024 * 1024 * 8)
+#define TEST_SHARED_MEM_SIZE (1024 * 1024 * 64)
+
+namespace fc
+{
+  std::ostream& boost_test_print_type(std::ostream& ostr, const ripemd160& hash)
+  {
+    ostr << hash.str();
+    return ostr;
+  }
+  std::ostream& operator<<(std::ostream& ostr, const time_point_sec time)
+  {
+    ostr << time.to_iso_string();
+    return ostr;
+  }
+}
+namespace hive 
+{
+  namespace protocol
+  {
+    template <typename Storage>
+    std::ostream& operator<<(std::ostream& ostr, const fixed_string_impl<Storage>& str)
+    {
+      ostr << (std::string)str;
+      return ostr;
+    }
+  }
+}
 
 BOOST_AUTO_TEST_SUITE(block_tests)
 
@@ -68,34 +94,34 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
   try {
     fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    signed_block b;
+    std::shared_ptr<full_block_type> b;
 
     // TODO:  Don't generate this here
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
-    signed_block cutoff_block;
+    std::shared_ptr<full_block_type> cutoff_block;
     {
       database db;
       witness::block_producer bp( db );
       db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
-      b = bp.generate_block(db.get_slot_time(1), db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      b = GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
 
       // TODO:  Change this test when we correct #406
       // n.b. we generate HIVE_MIN_UNDO_HISTORY+1 extra blocks which will be discarded on save
       for( uint32_t i = 1; ; ++i )
       {
-        BOOST_CHECK( db.head_block_id() == b.id() );
-        //witness_id_type prev_witness = b.witness;
+        BOOST_CHECK( db.head_block_id() == b->get_block_id() );
         string cur_witness = db.get_scheduled_witness(1);
-        //BOOST_CHECK( cur_witness != prev_witness );
-        b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
-        BOOST_CHECK( b.witness == cur_witness );
+        b = GENERATE_BLOCK( bp, db.get_slot_time(1), cur_witness,
+          init_account_priv_key, database::skip_nothing );
+        BOOST_CHECK( b->get_block_header().witness == cur_witness );
         uint32_t cutoff_height = db.get_last_irreversible_block_num();
         if( cutoff_height >= 200 )
         {
           auto block = db.fetch_block_by_number( cutoff_height );
-          BOOST_REQUIRE( block.valid() );
-          cutoff_block = *block;
+          BOOST_REQUIRE( block );
+          cutoff_block = block;
           break;
         }
       }
@@ -107,19 +133,18 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
 
-      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num() );
+      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num() );
 
       b = cutoff_block;
       for( uint32_t i = 0; i < 200; ++i )
       {
-        BOOST_CHECK( db.head_block_id() == b.id() );
+        BOOST_CHECK( db.head_block_id() == b->get_block_id() );
 
-        //witness_id_type prev_witness = b.witness;
         string cur_witness = db.get_scheduled_witness(1);
-        //BOOST_CHECK( cur_witness != prev_witness );
-        b = bp.generate_block(db.get_slot_time(1), cur_witness, init_account_priv_key, database::skip_nothing);
+        b = GENERATE_BLOCK( bp, db.get_slot_time(1), cur_witness,
+          init_account_priv_key, database::skip_nothing );
       }
-      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block.block_num()+200 );
+      BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num()+200 );
     }
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
@@ -144,7 +169,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
       {
         now = db.get_slot_time(1);
         time_stack.push_back( now );
-        auto b = bp.generate_block( now, db.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing );
+        GENERATE_BLOCK( bp, now, db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
       }
       BOOST_CHECK( db.head_block_num() == 5 );
       BOOST_CHECK( db.head_block_time() == now );
@@ -167,7 +193,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
       {
         now = db.get_slot_time(1);
         time_stack.push_back( now );
-        auto b = bp.generate_block( now, db.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing );
+        auto b = GENERATE_BLOCK( bp, now, db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
       }
       BOOST_CHECK( db.head_block_num() == 7 );
     }
@@ -197,46 +224,54 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     for( uint32_t i = 0; i < 10; ++i )
     {
-      auto b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+                               init_account_priv_key, database::skip_nothing );
       try {
         PUSH_BLOCK( db2, b );
       } FC_CAPTURE_AND_RETHROW( ("db2") );
     }
     for( uint32_t i = 10; i < 13; ++i )
     {
-      auto b =  bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+                               init_account_priv_key, database::skip_nothing );
     }
     string db1_tip = db1.head_block_id().str();
     uint32_t next_slot = 3;
     for( uint32_t i = 13; i < 16; ++i )
     {
-      auto b =  bp2.generate_block(db2.get_slot_time(next_slot), db2.get_scheduled_witness(next_slot), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(next_slot), db2.get_scheduled_witness(next_slot),
+        init_account_priv_key, database::skip_nothing );
       next_slot = 1;
       // notify both databases of the new block.
       // only db2 should switch to the new fork, db1 should not
       PUSH_BLOCK( db1, b );
       BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
-      BOOST_CHECK_EQUAL(db2.head_block_id().str(), b.id().str());
+      BOOST_CHECK_EQUAL(db2.head_block_id().str(), b->get_block_id().str());
     }
 
+    string db2_block_13_id = db2.head_block_id().str();
     //The two databases are on distinct forks now, but at the same height. Make a block on db2, make it invalid, then
-    //pass it to db1 and assert that db1 doesn't switch to the new fork.
-    signed_block good_block;
+    //pass it to db1 and assert that db1 successfully switches to the new fork, but only as far as block 13, the last
+    //valid block
+    std::shared_ptr<full_block_type> good_block;
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db2.head_block_num(), 13u);
     {
-      auto b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+                               init_account_priv_key, database::skip_nothing );
       good_block = b;
-      b.transactions.emplace_back(signed_transaction());
-      b.transactions.back().operations.emplace_back(transfer_operation());
-      b.sign( init_account_priv_key );
-      BOOST_CHECK_EQUAL(b.block_num(), 14u);
-      HIVE_CHECK_THROW(PUSH_BLOCK( db1, b ), fc::exception);
+      auto bad_block_header = b->get_block_header();
+      auto bad_block_txs = b->get_full_transactions();
+      signed_transaction tx;
+      tx.operations.emplace_back( transfer_operation() );
+      bad_block_txs.emplace_back( full_transaction_type::create_from_signed_transaction( tx, pack_type::legacy, false ) );
+      BOOST_CHECK_EQUAL(bad_block_header.block_num(), 14u);
+      HIVE_CHECK_THROW(PUSH_BLOCK( db1, bad_block_header, bad_block_txs, init_account_priv_key ), fc::exception);
     }
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
-    BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
+    BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2_block_13_id);
 
-    // assert that db1 switches to new fork with good block
+    // assert that db1 accepts the good version of block 14
     BOOST_CHECK_EQUAL(db2.head_block_num(), 14u);
     PUSH_BLOCK( db1, good_block );
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2.head_block_id().str());
@@ -273,36 +308,372 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     cop.active = cop.owner;
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    PUSH_TX( db1, trx );
+    PUSH_TX( db1, trx, init_account_priv_key );
     //*/
     // generate blocks
     // db1 : A
     // db2 : B C D
 
-    auto b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
 
     auto alice_id = db1.get_account( "alice" ).get_id();
     BOOST_CHECK( db1.get(alice_id).name == "alice" );
 
-    b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    db1.push_block(b);
-    b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    db1.push_block(b);
+    b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( db1, b );
+    b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( db1, b );
     HIVE_REQUIRE_THROW(db2.get(alice_id), std::exception);
     db1.get(alice_id); /// it should be included in the pending state
     db1.clear_pending(); // clear it so that we can verify it was properly removed from pending state.
     HIVE_REQUIRE_THROW(db1.get(alice_id), std::exception);
 
-    PUSH_TX( db2, trx );
+    PUSH_TX( db2, trx, init_account_priv_key );
 
-    b = bp2.generate_block(db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    db1.push_block(b);
+    b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( db1, b );
 
     BOOST_CHECK( db1.get(alice_id).name == "alice");
     BOOST_CHECK( db2.get(alice_id).name == "alice");
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+namespace
+{ 
+  __attribute__((unused))
+  void dump_witnesses(std::string_view label, const hive::chain::database& db)
+  {
+    const witness_schedule_object& wso_for_irreversibility = db.get_witness_schedule_object_for_irreversibility();
+    BOOST_TEST_MESSAGE(label << ": head block #" << db.head_block_num() << ", " << (int)wso_for_irreversibility.num_scheduled_witnesses << " scheduled witnesses");
+
+    const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                      wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                      wso_for_irreversibility.num_scheduled_witnesses);
+    std::ostringstream wits;
+    bool first = true;
+    for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+    {
+      wits << (first ? "" : ", ") << fast_confirming_witness;
+      first = false;
+    }
+    BOOST_TEST_MESSAGE(label << ": witnesses: " << wits.str());
+  }
+
+  __attribute__((unused))
+  void dump_blocks(std::string_view label, const hive::chain::database& db)
+  {
+    BOOST_TEST_MESSAGE(label << ": last_irrevresible_block: " << db.get_last_irreversible_block_num());
+    for (uint32_t block_num = 1; block_num <= db.head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = db.fetch_block_by_number(block_num);
+      BOOST_TEST_MESSAGE(label << ": block #" << block->get_block_num() << 
+                         ", id " << block->get_block_id().str() << 
+                         " generated by " << block->get_block_header().witness);
+    }
+  }
+}
+
+// Normally, the only thing that will cause the blockchain to switch to a different for
+// is if the new fork is longer than the current fork.  But with the fast-confirmation
+// transactions, if we find that a supermajority of witnesses support a different fork
+// from our own, and the fork is the same length as our current fork, we should switch.
+//
+// This test creates a fork between the database controlled by the fixture and a second
+// database, manually passing blocks and transactions between the two similar to how
+// a flaky network might.
+// We'll assume this is a case where a single witness (on db2) gets disconnected from 
+// the network, while the other 20 witnesses remain connected (on db1)
+BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
+{
+  try
+  {
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    BOOST_TEST_MESSAGE("Generating several rounds of blocks to allow our real witnesses to become active");
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    generate_blocks(63);
+    // dump_witnesses("db1", *db);
+    // dump_blocks("db1", *db);
+    BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
+
+    // create a second, empty, database that we will first bring in sync with the 
+    // fixture's database, then we will trigger a fork and test how it resolves.
+    // we'll call the fixture's database "db1"
+    database db2;
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+    open_test_database(db2, dir2.path());
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    // dump_witnesses("db2", db2);
+    // dump_blocks("db2", db2);
+
+    BOOST_TEST_MESSAGE("Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db->head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = db->fetch_block_by_number(block_num);
+      PUSH_BLOCK(db2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
+    BOOST_TEST_MESSAGE("db: head block is " << db->head_block_id().str());
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    // dump_witnesses("db2", db2);
+    // dump_blocks("db2", db2);
+    BOOST_TEST_MESSAGE("db2 last_irreversible_block is " << db2.get_last_irreversible_block_num());
+
+    // db1 and db2 are now in sync, but their last_irreversible should be about 15 blocks old.  Go ahead and
+    // use fast-confirms to bring the last_irreversible up to the current head block.
+    // (this isn't strictly necessary to achieve the goal of this test case, but it's probably more 
+    // representative of how the blockchains will look in real life)
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for all blocks " << db2.get_last_irreversible_block_num());
+      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = db->fetch_block_by_number(db->head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          push_transaction(fast_confirm_op, init_account_priv_key);
+
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+          PUSH_TX(db2, trx, init_account_priv_key);
+        }
+    }
+    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
+
+    // fork.  db2 will generate the next block, but we won't propagate it.
+    // then db1 will generate the a block at the same height.
+    BOOST_TEST_MESSAGE("Simulating a fork by generating a block in db2 that won't be shared with db1");
+    witness::block_producer block_producer2(db2);
+    const fc::time_point_sec head_block_time = db2.head_block_time();
+    const fc::time_point_sec orphan_slot_time = head_block_time + HIVE_BLOCK_INTERVAL;
+    const fc::time_point_sec real_slot_time = orphan_slot_time + HIVE_BLOCK_INTERVAL;
+    BOOST_TEST_MESSAGE("head block time is " << head_block_time << ", orphan block time will be " << orphan_slot_time);
+    const uint32_t orphan_slot_num = db2.get_slot_at_time(orphan_slot_time);
+    const uint32_t real_slot_num = db2.get_slot_at_time(real_slot_time);
+    BOOST_TEST_MESSAGE("head slot num is " << db2.get_slot_at_time(head_block_time) << ", orphan slot num will be " << orphan_slot_num);
+    BOOST_TEST_MESSAGE("On db1 blockchain, we'll skip the block that should have been produced at time " << orphan_slot_time << 
+                       " by " << db2.get_scheduled_witness(orphan_slot_num) << ", and instead produce the block at time " <<
+                       real_slot_time << " with " << db2.get_scheduled_witness(real_slot_num));
+    std::shared_ptr<full_block_type> orphan_block = GENERATE_BLOCK(block_producer2, 
+                                                                   orphan_slot_time, 
+                                                                   db2.get_scheduled_witness(orphan_slot_num), 
+                                                                   init_account_priv_key, database::skip_nothing);
+    BOOST_TEST_MESSAGE("Generated block #" << orphan_block->get_block_num() << " with id " << orphan_block->get_block_id().str() <<
+                       " generated by witness " << orphan_block->get_block_header().witness << ", pushing to db2");
+    PUSH_BLOCK(db2, orphan_block);
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num() - 1);
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_header().timestamp, orphan_slot_time);
+
+    BOOST_TEST_MESSAGE("Creating the other side of the fork by generating a block in db1 that doesn't include db2's head block");
+    db2.get_scheduled_witness(db2.head_block_num() + 1), 
+    generate_block(0, init_account_priv_key, 1 /* <-- skip one block */);
+    std::shared_ptr<full_block_type> real_block = db->fetch_block_by_number(db->head_block_num());
+    BOOST_TEST_MESSAGE("Generated block #" << real_block->get_block_num() << " with id " << real_block->get_block_id().str() <<
+                       " generated by witness " << real_block->get_block_header().witness << ", pushed to db1");
+    BOOST_REQUIRE_EQUAL(real_block->get_block_num(), orphan_block->get_block_num());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_header().timestamp, real_slot_time);
+    BOOST_REQUIRE_NE(orphan_block->get_block_id(), real_block->get_block_id());
+    BOOST_REQUIRE_EQUAL(db->head_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_NE(db->head_block_id(), db2.head_block_id());
+
+    // reconnect
+    BOOST_TEST_MESSAGE("Reconnecting the two networks");
+    PUSH_BLOCK(*db, orphan_block);
+    PUSH_BLOCK(db2, real_block);
+    // nothing should happen yet
+    BOOST_REQUIRE_EQUAL(orphan_block->get_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db->head_block_id());
+
+    // now let db2 see the fast-confirm messages of all the 20 other witnesses that were on db1
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm for the new non-orphan head block");
+      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      const account_name_type witness_for_real_block = real_block->get_block_header().witness;
+      const account_name_type witness_for_orphan_block = orphan_block->get_block_header().witness;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_real_block && // the wit that generated the block doesn't fast-confirm their own block
+            fast_confirming_witness != witness_for_orphan_block) // and the wit from db2 won't, because his head is still the orphan block
+        {
+          BOOST_TEST_MESSAGE("Confirming real block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = real_block->get_block_id();
+          push_transaction(fast_confirm_op, init_account_priv_key);
+
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+          PUSH_TX(db2, trx, init_account_priv_key);
+        }
+    }
+
+    BOOST_TEST_MESSAGE("Verifying that the forked node rejoins after receiving fast confirmations, even though the new chain isn't longer");
+    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db->head_block_id());
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
+    throw;
+  }
+}
+
+BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fixture)
+{
+  try
+  {
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+
+    BOOST_TEST_MESSAGE("Generating several rounds of blocks to allow our real witnesses to become active");
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    generate_blocks(63);
+    // dump_witnesses("db1", *db);
+    // dump_blocks("db1", *db);
+    BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
+
+    // create a second, empty, database that we will first bring in sync with the 
+    // fixture's database, then we will trigger a fork and test how it resolves.
+    // we'll call the fixture's database "db1"
+    database db2;
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
+    open_test_database(db2, dir2.path());
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    // dump_witnesses("db2", db2);
+    // dump_blocks("db2", db2);
+
+    BOOST_TEST_MESSAGE("Copying initial blocks generated in db1 to db2");
+    for (uint32_t block_num = 1; block_num <= db->head_block_num(); ++block_num)
+    {
+      std::shared_ptr<full_block_type> block = db->fetch_block_by_number(block_num);
+      PUSH_BLOCK(db2, block);
+      // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
+      if (block_num == 1)
+        db2.set_hardfork(26);
+    }
+
+    BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
+    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
+    BOOST_TEST_MESSAGE("db: head block is " << db->head_block_id().str());
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    // dump_witnesses("db2", db2);
+    // dump_blocks("db2", db2);
+    BOOST_TEST_MESSAGE("db2 last_irreversible_block is " << db2.get_last_irreversible_block_num());
+
+    // db1 and db2 are now in sync, but their last_irreversible should be about 15 blocks old.  Go ahead and
+    // use fast-confirms to bring the last_irreversible up to the current head block.
+    // (this isn't strictly necessary to achieve the goal of this test case, but it's probably more 
+    // representative of how the blockchains will look in real life)
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for all blocks " << db2.get_last_irreversible_block_num());
+      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = db->fetch_block_by_number(db->head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming head block with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          push_transaction(fast_confirm_op, init_account_priv_key);
+
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+          PUSH_TX(db2, trx, init_account_priv_key);
+        }
+    }
+    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
+
+    // now we want to create the next two blocks, but simulate the case where the blocks arrive
+    // in the wrong order: i.e., we:
+    // - receive all the fast-confirms for block 66
+    // - we receive block 67
+    // - we receive block 66
+
+    // generate block 66 in db1, but don't propagate it to db2
+    generate_blocks(1);
+    {
+      BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for block 66 for all witnesses " << db2.get_last_irreversible_block_num());
+      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
+                                                                        wso_for_irreversibility.current_shuffled_witnesses.begin() + 
+                                                                        wso_for_irreversibility.num_scheduled_witnesses);
+      std::shared_ptr<full_block_type> full_head_block = db->fetch_block_by_number(db->head_block_num());
+      const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
+      for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
+        if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
+        {
+          BOOST_TEST_MESSAGE("Confirming block 66 with witness " << fast_confirming_witness);
+          witness_block_approve_operation fast_confirm_op;
+          fast_confirm_op.witness = fast_confirming_witness;
+          fast_confirm_op.block_id = full_head_block->get_block_id();
+          push_transaction(fast_confirm_op, init_account_priv_key);
+
+          // push the fast-confirms to db2, which doesn't yet have block 66
+          signed_transaction trx;
+          trx.operations.push_back(fast_confirm_op);
+          trx.set_expiration(db2.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+          PUSH_TX(db2, trx, init_account_priv_key);
+        }
+    }
+    BOOST_REQUIRE_EQUAL(db->head_block_num(), 66);
+    BOOST_REQUIRE_EQUAL(db2.head_block_num(), 65);
+    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), 66);
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 65);
+
+    // generate block 67 in db1, propagate it to db2.  it will be pushed to the forkdb's unlinked index
+    generate_blocks(1);
+    BOOST_REQUIRE_THROW(PUSH_BLOCK(db2, db->fetch_block_by_number(67)), hive::chain::unlinkable_block_exception);
+
+    // nothing should have changed
+    BOOST_REQUIRE_EQUAL(db2.head_block_num(), 65);
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 65);
+
+    PUSH_BLOCK(db2, db->fetch_block_by_number(66));
+
+    // pushing block 66 has linked in block 67, so db2 should apply both blocks.  It already has the
+    // fast-confirms for block 66, so it should become irreverisble immediately.
+    BOOST_REQUIRE_EQUAL(db2.head_block_num(), 67);
+    BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 66);
+  }
+  catch (const fc::exception& e)
+  {
+    edump((e));
     throw;
   }
 }
@@ -334,8 +705,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     cop.active = cop.owner;
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    PUSH_TX( db1, trx, skip_sigs );
+    PUSH_TX( db1, trx, init_account_priv_key, skip_sigs );
 
     trx = decltype(trx)();
     transfer_operation t;
@@ -344,16 +714,16 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     t.amount = asset(500,HIVE_SYMBOL);
     trx.operations.push_back(t);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    PUSH_TX( db1, trx, skip_sigs );
+    PUSH_TX( db1, trx, init_account_priv_key, skip_sigs );
 
-    HIVE_CHECK_THROW(PUSH_TX( db1, trx, skip_sigs ), fc::exception);
+    HIVE_CHECK_THROW(PUSH_TX( db1, trx, init_account_priv_key, skip_sigs ), fc::exception);
 
-    auto b = bp1.generate_block( db1.get_slot_time(1), db1.get_scheduled_witness( 1 ), init_account_priv_key, skip_sigs );
+    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, skip_sigs );
     PUSH_BLOCK( db2, b, skip_sigs );
 
-    HIVE_CHECK_THROW(PUSH_TX( db1, trx, skip_sigs ), fc::exception);
-    HIVE_CHECK_THROW(PUSH_TX( db2, trx, skip_sigs ), fc::exception);
+    HIVE_CHECK_THROW(PUSH_TX( db1, trx, init_account_priv_key, skip_sigs ), fc::exception);
+    HIVE_CHECK_THROW(PUSH_TX( db2, trx, init_account_priv_key, skip_sigs ), fc::exception);
     BOOST_CHECK_EQUAL(db1.get_balance( "alice", HIVE_SYMBOL ).amount.value, 500);
     BOOST_CHECK_EQUAL(db2.get_balance( "alice", HIVE_SYMBOL ).amount.value, 500);
   } catch (fc::exception& e) {
@@ -374,7 +744,8 @@ BOOST_AUTO_TEST_CASE( tapos )
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
 
-    auto b = bp1.generate_block( db1.get_slot_time(1), db1.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing);
+    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
 
     BOOST_TEST_MESSAGE( "Creating a transaction with reference block" );
     idump((db1.head_block_id()));
@@ -389,13 +760,13 @@ BOOST_AUTO_TEST_CASE( tapos )
     cop.active = cop.owner;
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
 
     BOOST_TEST_MESSAGE( "Pushing Pending Transaction" );
     idump((trx));
-    db1.push_transaction(trx);
+    PUSH_TX( db1, trx, init_account_priv_key );
     BOOST_TEST_MESSAGE( "Generating a block" );
-    b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
+    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
     trx.clear();
 
     transfer_operation t;
@@ -404,14 +775,13 @@ BOOST_AUTO_TEST_CASE( tapos )
     t.amount = asset(50,HIVE_SYMBOL);
     trx.operations.push_back(t);
     trx.set_expiration( db1.head_block_time() + fc::seconds(2) );
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
     idump((trx)(db1.head_block_time()));
-    b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    idump((b));
-    b = bp1.generate_block(db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing);
-    trx.signatures.clear();
-    trx.sign( init_account_priv_key, db1.get_chain_id(), fc::ecc::fc_canonical );
-    BOOST_REQUIRE_THROW( db1.push_transaction(trx, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
+    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    idump((b->get_block()));
+    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, init_account_priv_key, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -441,44 +811,34 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     tx.ref_block_num = 0;
     tx.ref_block_prefix = 0;
-    tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    PUSH_TX( *db, tx );
+    push_transaction( tx, alice_private_key );
 
     BOOST_TEST_MESSAGE( "proper ref_block_num, ref_block_prefix" );
 
-    tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    PUSH_TX( *db, tx, database::skip_transaction_dupe_check );
+    push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check );
 
     BOOST_TEST_MESSAGE( "ref_block_num=0, ref_block_prefix=12345678" );
 
     tx.ref_block_num = 0;
     tx.ref_block_prefix = 0x12345678;
-    tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
 
     BOOST_TEST_MESSAGE( "ref_block_num=1, ref_block_prefix=12345678" );
 
     tx.ref_block_num = 1;
     tx.ref_block_prefix = 0x12345678;
-    tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
 
     BOOST_TEST_MESSAGE( "ref_block_num=9999, ref_block_prefix=12345678" );
 
     tx.ref_block_num = 9999;
     tx.ref_block_prefix = 0x12345678;
-    tx.signatures.clear();
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
-    HIVE_REQUIRE_THROW( PUSH_TX( *db, tx, database::skip_transaction_dupe_check ), fc::exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
   }
   catch (fc::exception& e)
   {
@@ -501,7 +861,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   trx.validate();
 
-  db->push_transaction(trx, ~0);
+  push_transaction(trx, fc::ecc::private_key(), ~0);
 
   trx.operations.clear();
   t.from = "bob";
@@ -511,22 +871,16 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   trx.validate();
 
   BOOST_TEST_MESSAGE( "Verify that not-signing causes an exception" );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), fc::exception );
+  HIVE_REQUIRE_THROW( push_transaction(trx), fc::exception );
 
   BOOST_TEST_MESSAGE( "Verify that double-signing causes an exception" );
-  sign( trx, bob_private_key );
-  sign( trx, bob_private_key );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), tx_duplicate_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, bob_private_key} ), tx_duplicate_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing with an extra, unused key fails" );
-  trx.signatures.pop_back();
-  sign( trx, generate_private_key( "bogus" ) );
-  HIVE_REQUIRE_THROW( db->push_transaction(trx, 0), tx_irrelevant_sig );
+  HIVE_REQUIRE_THROW( push_transaction(trx, {bob_private_key, generate_private_key( "bogus") }, 0), tx_irrelevant_sig );
 
   BOOST_TEST_MESSAGE( "Verify that signing once with the proper key passes" );
-  trx.signatures.pop_back();
-  db->push_transaction(trx, 0);
-  sign( trx, bob_private_key );
+  push_transaction(trx, bob_private_key );
 
 } FC_LOG_AND_RETHROW() }
 
@@ -716,7 +1070,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
     int miss_blocks = fc::minutes( 1 ).to_seconds() / HIVE_BLOCK_INTERVAL;
     auto witness = db->get_scheduled_witness( miss_blocks );
     auto block_time = db->get_slot_time( miss_blocks );
-    bp.generate_block( block_time , witness, init_account_priv_key, 0 );
+    GENERATE_BLOCK( bp, block_time , witness, init_account_priv_key );
 
     BOOST_CHECK_EQUAL( db->head_block_num(), init_block_num + 1 );
     BOOST_CHECK( db->head_block_time() == block_time );
@@ -734,31 +1088,37 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
 {
   try
   {
-    try {
-    int argc = boost::unit_test::framework::master_test_suite().argc;
-    char** argv = boost::unit_test::framework::master_test_suite().argv;
-    for( int i=1; i<argc; i++ )
+    autoscope auto_wipe( [&]()
     {
-      const std::string arg = argv[i];
-      if( arg == "--record-assert-trip" )
-        fc::enable_record_assert_trip = true;
-      if( arg == "--show-test-names" )
-        std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
-    }
-    appbase::app().register_plugin< hive::plugins::account_history::account_history_plugin >();
-    db_plugin = &appbase::app().register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+      if( ah_plugin )
+        ah_plugin->plugin_shutdown();
+      if( data_dir )
+        db->wipe( data_dir->path(), data_dir->path(), true );
+    } );
+
+    try {
+
+    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
+    {
+      ah_plugin = &app.register_plugin< ah_plugin_type >();
+      ah_plugin->set_destroy_database_on_startup();
+      ah_plugin->set_destroy_database_on_shutdown();
+      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+
+      app.initialize<
+        ah_plugin_type,
+        hive::plugins::debug_node::debug_node_plugin
+      >( argc, argv );
+
+      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
+      BOOST_REQUIRE( db );
+    } );
+    
     init_account_pub_key = init_account_priv_key.get_public_key();
 
-    appbase::app().initialize<
-      hive::plugins::account_history::account_history_plugin,
-      hive::plugins::debug_node::debug_node_plugin
-    >( argc, argv );
+    ah_plugin->plugin_startup();
 
-    db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
-    BOOST_REQUIRE( db );
-
-
-    open_database();
+    open_database( _data_dir );
 
     generate_blocks( 2 );
 
@@ -789,7 +1149,8 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
-    auto itr = db->get_index< account_history_index >().indices().get< by_id >().end();
+    const auto& ah_idx = db->get_index< hive::plugins::account_history_rocksdb::volatile_operation_index, by_id >();
+    auto itr = ah_idx.end();
     itr--;
 
     const auto last_ah_id = itr->get_id();
@@ -799,22 +1160,21 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
 
     string op_msg = "Testnet: Hardfork applied";
 
-    itr = db->get_index< account_history_index >().indices().get< by_id >().upper_bound(last_ah_id);
+    itr = ah_idx.upper_bound(last_ah_id);
     /// Skip another producer_reward_op generated at last produced block
     ++itr;
 
     ilog("Looked up AH-id: ${a}, found: ${i}", ("a", last_ah_id)("i", itr->get_id()));
 
     /// Original AH record points (by_id) actual operation data. We need to query for it again
-    const buffer_type& _serialized_op = db->get(itr->op).serialized_op;
-    auto last_op = fc::raw::unpack_from_vector< hive::chain::operation >(_serialized_op);
+    auto last_op = fc::raw::unpack_from_vector< hive::chain::operation >(itr->serialized_op);
 
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
     operation hardfork_vop = hardfork_operation( HIVE_HARDFORK_0_1 );
 
     BOOST_REQUIRE(last_op == hardfork_vop);
-    BOOST_REQUIRE(db->get(itr->op).timestamp == db->head_block_time());
+    BOOST_REQUIRE(itr->timestamp == db->head_block_time());
 
     BOOST_TEST_MESSAGE( "Testing hardfork is only applied once" );
     generate_block();
@@ -822,11 +1182,9 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     auto processed_op = last_op;
 
     /// Continue (starting from last HF op position), but skip last HF op
-    for(++itr; itr != db->get_index< account_history_index >().indices().get< by_id >().end(); ++itr)
+    for(++itr; itr != ah_idx.end(); ++itr)
     {
-      const auto& ahRecord = *itr;
-      const buffer_type& _serialized_op = db->get(ahRecord.op).serialized_op;
-      processed_op = fc::raw::unpack_from_vector< hive::chain::operation >(_serialized_op);
+      processed_op = fc::raw::unpack_from_vector< hive::chain::operation >(itr->serialized_op);
     }
 
       /// There shall be no more hardfork ops after last one.
@@ -836,26 +1194,22 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
 
     /// Search again for pre-HF operation
-    itr = db->get_index< account_history_index >().indices().get< by_id >().upper_bound(last_ah_id);
+    itr = ah_idx.upper_bound(last_ah_id);
     /// Skip another producer_reward_op generated at last produced block
     ++itr;
 
     /// Here last HF vop shall be pointed, with its original time.
-    BOOST_REQUIRE( db->get(itr->op).timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
+    BOOST_REQUIRE( itr->timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
 
   }
   catch( fc::exception& e )
   {
-    db->wipe( data_dir->path(), data_dir->path(), true );
     throw e;
   }
   catch( std::exception& e )
   {
-    db->wipe( data_dir->path(), data_dir->path(), true );
     throw e;
   }
-
-  db->wipe( data_dir->path(), data_dir->path(), true );
 }
 
 BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
@@ -891,22 +1245,86 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
       tx.operations.push_back( op );
     }
 
-    sign( tx, init_account_priv_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, init_account_priv_key );
 
     // Second transaction, tx minus op is 78 (one less byte for operation vector size)
     // We need a 88 byte op. We need a 22 character memo (1 byte for length) 55 = 32 (old op) + 55 + 1
     op.memo = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123";
     tx.clear();
     tx.operations.push_back( op );
-    sign( tx, init_account_priv_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, init_account_priv_key );
 
     generate_block();
 
     // The last transfer should have been delayed due to size
     auto head_block = db->fetch_block_by_number( db->head_block_num() );
-    BOOST_REQUIRE( head_block->transactions.size() == 1 );
+    BOOST_REQUIRE( head_block->get_block().transactions.size() == 1 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
+{
+  try {
+    // this is required to reproduce issue with setting last irreversible block
+    // before block number HIVE_START_MINER_VOTING_BLOCK, if not then other test should be added
+    BOOST_REQUIRE( HIVE_MAX_WITNESSES + 1 < HIVE_START_MINER_VOTING_BLOCK );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    database db;
+    witness::block_producer bp( db );
+    db._log_hardforks = false;
+    open_test_database( db, data_dir.path() );
+
+    auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
+    {
+      uint32_t head_block_to_check = HIVE_MAX_WITNESSES - 3;
+      for( uint32_t i = 0; i < head_block_to_check; ++i )
+      {
+        GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
+      }
+
+      db.set_last_irreversible_block_num(db.head_block_num());
+      GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+    }
+
+    {
+      uint32_t head_block_to_check = (HIVE_MAX_WITNESSES + HIVE_START_MINER_VOTING_BLOCK) / 2;
+      for( uint32_t i = db.head_block_num(); i < head_block_to_check; ++i )
+      {
+        GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
+      }
+
+      db.set_last_irreversible_block_num(db.head_block_num());
+      GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+    }
+
+    {
+      uint32_t head_block_to_check = HIVE_START_MINER_VOTING_BLOCK + 3;
+      for( uint32_t i = db.head_block_num(); i < head_block_to_check; ++i )
+      {
+        GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+          init_account_priv_key, database::skip_nothing );
+      }
+
+      db.set_last_irreversible_block_num(db.head_block_num());
+      GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( safe_closing_database )
+{
+  try {
+    database db;
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    db.wipe( data_dir.path(), data_dir.path(), true );
   }
   FC_LOG_AND_RETHROW()
 }

@@ -1,0 +1,25 @@
+---
+  test_name: Hived
+
+  marks:
+    - patterntest # lower bucket_seconds can be tested for full sync nodes, starting from 2020-03-03T15:00:00
+
+  includes:
+    - !include ../../common.yaml
+
+  stages:
+    - name: test
+      request:
+        url: "{service.proto:s}://{service.server:s}:{service.port}/"
+        method: POST
+        headers:
+          Content-Type: application/json
+        json:
+          jsonrpc: "2.0"
+          id: 1
+          method: "market_history_api.get_market_history"
+          params: {"bucket_seconds": 86400, "start": "2016-03-01T00:00:00", "end": "2017-03-02T00:00:00"}
+      response:
+        status_code: 200
+        verify_response_with:
+          function: validate_response:compare_response_with_pattern

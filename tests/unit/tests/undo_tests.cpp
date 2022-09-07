@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     BOOST_TEST_MESSAGE( "--- Testing: undo_key_collision" );
 
     const auto& fake_account_object = db->create< account_object >( "fake" );
-    fc::optional< std::reference_wrapper< const comment_object > > fake_parent_comment;
+    const comment_object* fake_parent_comment = nullptr;
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     old_size = co.size< comment_index >();
     uint32_t old_size_cashout = co_cashout.size< comment_cashout_index >();
 
-    co_cashout.modify( objc0_cashout, [&]( comment_cashout_object& obj ){ obj.cashout_time = time_point_sec( 21 ); } );
+    co_cashout.modify( objc0_cashout, [&]( comment_cashout_object& obj ){ obj.set_cashout_time( time_point_sec( 21 ) ); } );
 
     const comment_object& objc1 = co.create( fake_account_object, "permlink2", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "permlink2", time_point_sec( 10 ), time_point_sec( 20 ) );
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
   try
   {
     const auto& fake_account_object = db->create< account_object >( "fake" );
-    fc::optional< std::reference_wrapper< const comment_object > > fake_parent_comment;
+    const comment_object* fake_parent_comment = nullptr;
 
     BOOST_TEST_MESSAGE( "--- Testing: undo_different_indexes" );
 
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     co.create( fake_account_object, "11", fake_parent_comment );
     const comment_object& objc1 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
-    co_cashout.modify( objc1_cashout, [&]( comment_cashout_object& obj ){ obj.active = time_point_sec( 21 ); } );
+    co_cashout.modify( objc1_cashout, [&]( comment_cashout_object& obj ){} );
     BOOST_REQUIRE( old_size_co + 2 == co.size< comment_index >() );
     BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
 
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
     BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
 
-    co_cashout.modify( objc2_cashout, [&]( comment_cashout_object& obj ){ obj.active = time_point_sec( 21 ); } );
+    co_cashout.modify( objc2_cashout, [&]( comment_cashout_object& obj ){} );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
     BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 
     for( int32_t i=1; i<=5; ++i )
     {
-      co_cashout.modify( co1_cashout, [&]( comment_cashout_object& obj ){ obj.active = time_point_sec( 21 ); } );
+      co_cashout.modify( co1_cashout, [&]( comment_cashout_object& obj ){} );
       ao.modify( ao1, [&]( account_object& obj ){ obj.name = std::to_string(0); } );
 
       BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );
@@ -456,11 +456,9 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     tx.operations.push_back( op );
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, bob_private_key );
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, bob_private_key );
     generate_blocks( 1 );
     tx.operations.clear();
-    tx.signatures.clear();
 
     generate_blocks( 1 );
 
@@ -473,16 +471,14 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     tx.operations.push_back( op );
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, alice_private_key );
 
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, alice_private_key );
     generate_blocks( 1 );
     db->pop_block();
 
     BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     tx.operations.clear();
-    tx.signatures.clear();
 
     generate_blocks( 1 );
 
@@ -493,17 +489,14 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     tx.operations.push_back( op );
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    sign( tx, dan_private_key );
-    sign( tx, chuck_private_key );
 
-    db->push_transaction( tx, 0 );
+    push_transaction( tx, {dan_private_key, chuck_private_key} );
     generate_blocks( 1 );
     db->pop_block();
 
     BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     tx.operations.clear();
-    tx.signatures.clear();
   }
   FC_LOG_AND_RETHROW()
 }

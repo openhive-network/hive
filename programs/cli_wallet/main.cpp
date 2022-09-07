@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <future>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -38,10 +39,12 @@
 #include <fc/rpc/websocket_api.hpp>
 #include <fc/smart_ref_impl.hpp>
 
+#include <hive/utilities/git_revision.hpp>
 #include <hive/utilities/key_conversion.hpp>
 
 #include <hive/protocol/protocol.hpp>
-#include <hive/wallet/remote_node_api.hpp>
+#include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
+#include <hive/wallet/misc_utilities.hpp>
 #include <hive/wallet/wallet.hpp>
 
 #include <fc/interprocess/signals.hpp>
@@ -66,6 +69,16 @@ using namespace hive::wallet;
 using namespace std;
 namespace bpo = boost::program_options;
 
+namespace
+{
+  fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
+
+  void sig_handler(int signal)
+  {
+    exit_promise->set_value(signal);
+  }
+}
+
 int main( int argc, char** argv )
 {
   try {
@@ -75,7 +88,9 @@ int main( int argc, char** argv )
     boost::program_options::options_description opts;
       opts.add_options()
       ("help,h", "Print this help message and exit.")
-      ("server-rpc-endpoint,s", bpo::value<string>()->implicit_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
+      ("version,v", "Print git revision sha of this cli_wallet build.")
+      ("offline,o", "Run the wallet in offline mode.")
+      ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server websocket RPC endpoint")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
       ("rpc-endpoint,r", bpo::value<string>()->implicit_value("127.0.0.1:8091"), "Endpoint for wallet websocket RPC to listen on")
@@ -86,8 +101,11 @@ int main( int argc, char** argv )
                                                                                          "or use HIVE_WALLET_PASSWORD environment variable if no password is supplied")
       ("daemon,d", "Run the wallet in daemon mode" )
       ("rpc-http-allowip", bpo::value<vector<string>>()->multitoken(), "Allows only specified IPs to connect to the HTTP endpoint" )
-      ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "wallet to load")
-      ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
+      ("wallet-file,w", bpo::value<string>()->implicit_value("wallet.json"), "Wallet to load")
+      ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "Chain ID to connect to")
+      ("output-formatter", bpo::value< std::string >(), "Allows to present a result in different ways. Possible values(none/text/json)" )
+      ("transaction-serialization", bpo::value< std::string >()->default_value( "legacy" ), "Allows to generate JSON using legacy/HF26 format. Possible values(legacy/hf26). By default is `legacy`." )
+      ("store-transaction", bpo::value< std::string >(), "Requires a name of file. Allows to save a serialized transaction into the file in a current directory. By default a name of file is empty." )
       ;
     vector<string> allowed_ips;
 
@@ -98,6 +116,11 @@ int main( int argc, char** argv )
     if( options.count("help") )
     {
       std::cout << opts << "\n";
+      return 0;
+    }
+    if( options.count("version") )
+    {
+      std::cout << "hive_git_revision: " << std::string( hive::utilities::git_revision_sha ) << "\n";
       return 0;
     }
     if( options.count("rpc-http-allowip") && options.count("rpc-http-endpoint") ) {
@@ -120,6 +143,21 @@ int main( int argc, char** argv )
         FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
       }
     }
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+    std::cout << "STARTING "
+# ifdef IS_TEST_NET
+                            "TEST"
+# else
+                            "MIRROR"
+# endif
+                            " WALLET\n";
+#else
+    std::cout << "STARTING HIVE WALLET\n";
+#endif
+    std::cout << "chain id: " << std::string(_hive_chain_id) << "\n";
+    std::cout << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
+    std::cout << "git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n";
 
     fc::path data_dir;
     fc::logging_config cfg;
@@ -163,52 +201,91 @@ int main( int argc, char** argv )
     }
 
     // but allow CLI to override
-    if( options.count("server-rpc-endpoint") )
+    if( !options.at("server-rpc-endpoint").defaulted() )
       wdata.ws_server = options.at("server-rpc-endpoint").as<std::string>();
+
+    // Override wallet data
+    wdata.offline = options.count( "offline" );
 
     fc::http::websocket_client client( options["cert-authority"].as<std::string>() );
     idump((wdata.ws_server));
     fc::http::websocket_connection_ptr con;
 
-    for (;;)
+    std::shared_ptr<wallet_api> wapiptr;
+    boost::signals2::scoped_connection closed_connection;
+
+    auto wallet_cli = std::make_shared<fc::rpc::cli>();
+
+    auto get_output_formatter = []( const bpo::variables_map& options, output_formatter_type default_format )
     {
-      try
+      if( options.count("output-formatter") )
       {
-        con = client.connect( wdata.ws_server );
+        fc::variant _v = options["output-formatter"].as<std::string>();
+        output_formatter_type _result;
+        from_variant( _v, _result );
+        return _result;
       }
-      catch (const fc::exception& e)
-      {
-        if (!options.count("retry-server-connection"))
-          throw;
-      }
-      if (con)
-        break;
       else
       {
-        wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
-        fc::usleep(fc::seconds(10));
+        return default_format;
       }
+    };
+
+    fc::variant _v = options["transaction-serialization"].as<std::string>();
+    transaction_serialization_type _transaction_serialization;
+    from_variant( _v, _transaction_serialization );
+
+    std::string _store_transaction = options.count("store-transaction") ? options["store-transaction"].as<std::string>() : "";
+
+    if( wdata.offline )
+    {
+      ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
+    }
+    else
+    {
+      for (;;)
+      {
+        try
+        {
+          con = client.connect( wdata.ws_server );
+        }
+        catch (const fc::exception& e)
+        {
+          if (!options.count("retry-server-connection"))
+            throw;
+        }
+        if (con)
+          break;
+        else
+        {
+          wlog("Error connecting to server RPC endpoint, retrying in 10 seconds");
+          fc::usleep(fc::seconds(10));
+        }
+      }
+      auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
+      auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
+
+      output_formatter_type output_format;
+      if( options.count("daemon") )
+        output_format = get_output_formatter( options, output_formatter_type::none );
+      else
+        output_format = get_output_formatter( options, output_formatter_type::text );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), output_format, _transaction_serialization, _store_transaction );
+      closed_connection = con->closed.connect([=]{
+        cerr << "Server has disconnected us.\n";
+        wallet_cli->stop();
+      });
+      (void)(closed_connection);
     }
 
-    auto apic = std::make_shared<fc::rpc::websocket_api_connection>(*con);
-
-    auto remote_api = apic->get_remote_api< hive::wallet::remote_node_api >( 0, "condenser_api" );
-
-    auto wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api );
+    wallet_cli->set_on_termination_handler( sig_handler );
     wapiptr->set_wallet_filename( wallet_file.generic_string() );
-    wapiptr->load_wallet_file();
 
     fc::api<wallet_api> wapi(wapiptr);
 
-    auto wallet_cli = std::make_shared<fc::rpc::cli>();
-    for( auto& name_formatter : wapiptr->get_result_formatters() )
+    for( auto& name_formatter : wallet_formatter::get_result_formatters() )
       wallet_cli->format_result( name_formatter.first, name_formatter.second );
-
-    boost::signals2::scoped_connection closed_connection(con->closed.connect([=]{
-      cerr << "Server has disconnected us.\n";
-      wallet_cli->stop();
-    }));
-    (void)(closed_connection);
 
     if( wapiptr->is_new() )
     {
@@ -258,11 +335,12 @@ int main( int argc, char** argv )
     auto _http_server = std::make_shared<fc::http::server>();
     if( options.count("rpc-http-endpoint" ) )
     {
-      ilog( "Listening for incoming HTTP RPC requests on ${p}", ("p", options.at("rpc-http-endpoint").as<string>() ) );
       for( const auto& ip : allowed_ips )
         allowed_ip_set.insert(fc::ip::address(ip));
 
       _http_server->listen( fc::ip::endpoint::from_string( options.at( "rpc-http-endpoint" ).as<string>() ) );
+      ilog( "Listening for incoming HTTP RPC requests on ${endpoint}", ( "endpoint", _http_server->get_local_endpoint() ) );
+
       //
       // due to implementation, on_request() must come AFTER listen()
       //
@@ -271,7 +349,7 @@ int main( int argc, char** argv )
         {
           if( allowed_ip_set.find( fc::ip::endpoint::from_string(req.remote_endpoint).get_address() ) == allowed_ip_set.end() &&
               allowed_ip_set.find( fc::ip::address() ) == allowed_ip_set.end() ) {
-            elog("rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
+            elog("Rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
@@ -290,27 +368,21 @@ int main( int argc, char** argv )
     {
       wallet_cli->register_api( wapi );
       wallet_cli->start();
-      wallet_cli->wait();
     }
     else
     {
-      fc::promise<int>::ptr exit_promise = new fc::promise<int>("UNIX Signal Handler");
-      fc::set_signal_handler([&exit_promise](int signal) {
-        exit_promise->set_value(signal);
-      }, SIGINT);
-
+      fc::set_signal_handler( sig_handler, SIGINT );
+      fc::set_signal_handler( sig_handler, SIGTERM );
       ilog( "Entering Daemon Mode, ^C to exit" );
-      exit_promise->wait();
     }
+
+    exit_promise->wait();
+    wallet_cli->stop();
 
     wapi->save_wallet_file(wallet_file.generic_string());
     locked_connection.disconnect();
     closed_connection.disconnect();
-  }
-  catch ( const fc::exception& e )
-  {
-    std::cout << e.to_detail_string() << "\n";
-    return -1;
-  }
+  } FC_CAPTURE_AND_LOG(());
+
   return 0;
 }

@@ -1,0 +1,28 @@
+#ifndef HIVE_HARDFORK_1_24
+#define HIVE_HARDFORK_1_24 24
+
+// Note: for hardforks 20 and 24 (which change signature validation), this file contains 
+// both the "TIME" and the "ACTUAL_TIME".  The "TIME" is the earliest the hardfork was 
+// allowed to take effect, the fork could happen any time after "TIME" as soon as a 
+// majority of witnesses had approved it.  The "TIME" was set in advance of the fork.
+// The "ACTUAL_TIME" is the block where the fork actually took effect (i.e., both 
+// conditions were satisfied and the chain started following the new rules).  This
+// could only be determined after the fact.  If there were several forks running this
+// code, they could have applied the hard fork at different times, so the value
+// below is only valid for the hive mainnet.
+// Testnets don't change behavior at hard fork 1.24
+// Note: the "ACTUAL_TIME" below is the timestamp of the block where the hardfork
+// took effect.  The change in signature validation doesn't happen until the next block.
+#ifdef IS_TEST_NET
+  #define HIVE_HARDFORK_1_24_TIME 1588334400 // Friday, 1 May 2020 12:00:00 GMT
+#else
+  #define HIVE_HARDFORK_1_24_TIME 1601992800 // Tuesday, 06-Oct-2020 14:00:00 UTC
+  #define HIVE_HARDFORK_1_24_ACTUAL_TIME 1602703884 // Wednesday, October 14, 2020 19:31:24 UTC
+#endif
+
+#define HIVE_HARDFORK_1_24_VERSION hive::protocol::hardfork_version( 1, 24 )
+
+// hive.fund replaces steem.dao as treasury account
+#define HIVE_HARDFORK_1_24_TREASURY_RENAME HIVE_HARDFORK_1_24
+
+#endif

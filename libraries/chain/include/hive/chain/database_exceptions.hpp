@@ -74,7 +74,7 @@ namespace hive { namespace chain {
   FC_DECLARE_EXCEPTION( chain_exception, 4000000, "blockchain exception" )
   FC_DECLARE_DERIVED_EXCEPTION( database_query_exception,          hive::chain::chain_exception, 4010000, "database query exception" )
   FC_DECLARE_DERIVED_EXCEPTION( block_validate_exception,          hive::chain::chain_exception, 4020000, "block validation exception" )
-  FC_DECLARE_DERIVED_EXCEPTION( transaction_exception,             hive::chain::chain_exception, 4030000, "transaction validation exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_check_exception,       hive::chain::chain_exception, 4030000, "transaction validation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( operation_validate_exception,      hive::chain::chain_exception, 4040000, "operation validation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( operation_evaluate_exception,      hive::chain::chain_exception, 4050000, "operation evaluation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( utility_exception,                 hive::chain::chain_exception, 4060000, "utility method exception" )
@@ -87,10 +87,13 @@ namespace hive { namespace chain {
   FC_DECLARE_DERIVED_EXCEPTION( order_match_exception,             hive::chain::market_exception, 4120100, "order match exception" )
   FC_DECLARE_DERIVED_EXCEPTION( order_fill_exception,              hive::chain::market_exception, 4120100, "order fill exception" )
 
-  FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_exception, 4030100, "transaction expiration exception" )
-  FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_exception, 4030200, "transaction tapos exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_check_exception, 4030100, "transaction expiration exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_check_exception, 4030200, "transaction tapos exception" )
 
   FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   hive::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
+
+  // defined here and not in rc_plugin, because it is interesting to observe transactions failing due to that reason
+  FC_DECLARE_DERIVED_EXCEPTION( not_enough_rc_exception,           hive::chain::plugin_exception, 4100100, "payer has not enough RC mana for transaction" )
 
   HIVE_DECLARE_OP_BASE_EXCEPTIONS( transfer );
 //   HIVE_DECLARE_OP_EVALUATE_EXCEPTION( from_account_not_whitelisted, transfer, 1, "owner mismatch" )
@@ -105,8 +108,9 @@ namespace hive { namespace chain {
 
   FC_DECLARE_DERIVED_EXCEPTION( internal_exception, hive::chain::chain_exception, 4990000, "internal exception" )
 
-  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1, "Exceeds max authority fan-out" )
-  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2, "Auth account not found" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1,  "Exceeds max authority fan-out" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2,  "Auth account not found" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( peer_is_on_an_unreachable_fork, 3, "Peer is on an unreachable fork" )
 
 } } // hive::chain
 

@@ -1,0 +1,142 @@
+{
+  "block_id": "000004447e2ed42b4879089ec30d3a6a4ce92482",
+  "extensions": [],
+  "previous": "000004433bd4602cf5f74dbb564183837df9cef8",
+  "signing_key": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
+  "timestamp": "2016-03-24T17:00:06",
+  "transaction_ids": [
+    "ef73d8fadf17e2590c6d96efc1ca868edd7dd613",
+    "02b3404402bc68314daa3752833f8c8c14daa070",
+    "ee1e29958549b9547383c3ef932bd95a571fd0d4",
+    "8dfe0564434071b76276fc7892505a397f2fef98"
+  ],
+  "transaction_merkle_root": "87ec275f2b1d0d2e184105232b644804cdcd3a54",
+  "transactions": [
+    {
+      "block_num": 1092,
+      "expiration": "2016-03-24T18:00:03",
+      "extensions": [],
+      "operations": [
+        [
+          "pow",
+          {
+            "block_id": "000004433bd4602cf5f74dbb564183837df9cef8",
+            "nonce": 82,
+            "props": {
+              "account_creation_fee": "100.000 HIVE",
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "59b009f89477919f95914151cef06f28bf344dd6fb7670aca1c1f4323c80446b",
+              "signature": "1f3f83209097efcd01b7d6f27ce726164323d503d6fcf4d55bfb7cb3032796f6766738b36062b5850d69447fdf9c091cbc70825df5eeacc4710a0b11ffdbf0912a",
+              "work": "0b62f4837801cd857f01d6a541faeb13d6bb95f1c36c6b4b14a47df632aa6c92",
+              "worker": "STM65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G"
+            },
+            "worker_account": "admin"
+          }
+        ]
+      ],
+      "ref_block_num": 1091,
+      "ref_block_prefix": 744543291,
+      "signatures": [],
+      "transaction_id": "ef73d8fadf17e2590c6d96efc1ca868edd7dd613",
+      "transaction_num": 0
+    },
+    {
+      "block_num": 1092,
+      "expiration": "2016-03-24T18:00:03",
+      "extensions": [],
+      "operations": [
+        [
+          "pow",
+          {
+            "block_id": "000004433bd4602cf5f74dbb564183837df9cef8",
+            "nonce": 151,
+            "props": {
+              "account_creation_fee": "100.000 HIVE",
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "55d4752057cc3206abae80bce5f012a0df82a126c91c72dbd2b92ea70b1d3b76",
+              "signature": "207d80794cb57ed0bc5f859d45959350126f7728b055bcf40ac9cef99f38d41d0e5188e1c5b77501c497f575ed83b1f68ab8ea4c564abd57212237a5ecc889b024",
+              "work": "024fd8ac09e9dfb966087c250919445f6f4cf2e719e93ff55f81843cbe4a5e70",
+              "worker": "STM65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G"
+            },
+            "worker_account": "admin"
+          }
+        ]
+      ],
+      "ref_block_num": 1091,
+      "ref_block_prefix": 744543291,
+      "signatures": [],
+      "transaction_id": "02b3404402bc68314daa3752833f8c8c14daa070",
+      "transaction_num": 1
+    },
+    {
+      "block_num": 1092,
+      "expiration": "2016-03-24T18:00:03",
+      "extensions": [],
+      "operations": [
+        [
+          "pow",
+          {
+            "block_id": "000004433bd4602cf5f74dbb564183837df9cef8",
+            "nonce": 60,
+            "props": {
+              "account_creation_fee": "100.000 HIVE",
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "fece42ada3ac23101e3c4ee18f6eccc69d6f8710c7b29b496e0a7ad0c128af2c",
+              "signature": "2018233fbb20c9a8543604b8edf7ff1ff1bbea22c52a1eabf9592c0316909c4e080d5b4b1ea1a66a7024de10ec3c2b1dbff8c696bfccdee78aca4d560430d33964",
+              "work": "0d8423b0fa3d87ed8c3f8dd9c0f79884da8966a1fd1501b27212918f15dfb72e",
+              "worker": "STM5QPFyb4ANmtoaubh4iEtDd1DJvx5jxJYKbFtLExdVjKdGkQo44"
+            },
+            "worker_account": "dark"
+          }
+        ]
+      ],
+      "ref_block_num": 1091,
+      "ref_block_prefix": 744543291,
+      "signatures": [],
+      "transaction_id": "ee1e29958549b9547383c3ef932bd95a571fd0d4",
+      "transaction_num": 2
+    },
+    {
+      "block_num": 1092,
+      "expiration": "2016-03-24T18:00:03",
+      "extensions": [],
+      "operations": [
+        [
+          "pow",
+          {
+            "block_id": "000004433bd4602cf5f74dbb564183837df9cef8",
+            "nonce": 37,
+            "props": {
+              "account_creation_fee": "100.000 HIVE",
+              "hbd_interest_rate": 1000,
+              "maximum_block_size": 131072
+            },
+            "work": {
+              "input": "50c9191036d5a384606afc2c0ab964c79d75e9f5300538085c0cc9aa608cdd61",
+              "signature": "2069cb8e6f78f592b9bc851853c0c39b8dd1bea34366e4b16c8a99610a29313320339041822dd3149d6c21f0ae4b18b181f3e7decc2e652db8b853ca583d8dbd8a",
+              "work": "02bdca86f824db3e59e059b70a490547c54334b4443a691505acc0d8490325ac",
+              "worker": "STM5gzvDurFRmVUUs38TDtTtGVAEz8TcWMt4xLVbxwP2PP8b9q7P4"
+            },
+            "worker_account": "nxt1"
+          }
+        ]
+      ],
+      "ref_block_num": 1091,
+      "ref_block_prefix": 744543291,
+      "signatures": [],
+      "transaction_id": "8dfe0564434071b76276fc7892505a397f2fef98",
+      "transaction_num": 3
+    }
+  ],
+  "witness": "initminer",
+  "witness_signature": "1f4ba63fdb35c76942a03a8b5bbd376f683a79fd8e0bdb10231975c900ef66bc5c49a0df305fa1cedbeae4b958e45e1dfb754b34b2555501d2deba266c621db36d"
+}

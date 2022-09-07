@@ -1,0 +1,4 @@
+{
+  "code": -32003,
+  "message": "Assert Exception:blockRangeEnd > blockRangeBegin: Block range must be upward"
+}

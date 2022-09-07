@@ -5,249 +5,259 @@
 // This header defines the resource sizes.  It is an implementation detail of resource_count.cpp,
 // but you may want it if you are re-implementing resource_count.cpp in a client library.
 
-#define STATE_BYTES_SCALE                       10000
-
-// These numbers are obtained from computations in state_byte_hours.py script
-//
-// $ ./state_byte_hours.py
-// {"seconds":196608}
-// 174
-// {"days":3}
-// 229
-// {"days":28}
-// 1940
-// {"days":7}
-// 525
-
-#define STATE_TRANSACTION_BYTE_SIZE               174
-#define STATE_TRANSFER_FROM_SAVINGS_BYTE_SIZE     229
-#define STATE_LIMIT_ORDER_BYTE_SIZE              1940
-#define STATE_COMMENT_VOTE_BYTE_SIZE              525
-
-#define EXEC_FOLLOW_CUSTOM_OP_SCALE                20
-
 namespace hive { namespace plugins { namespace rc {
 
 struct state_object_size_info
 {
-  // authority
-  int64_t authority_base_size                =   4    *STATE_BYTES_SCALE;
-  int64_t authority_account_member_size      =  18    *STATE_BYTES_SCALE;
-  int64_t authority_key_member_size          =  35    *STATE_BYTES_SCALE;
+  state_object_size_info();
 
-  // account_object
-  int64_t account_object_base_size           = 480    *STATE_BYTES_SCALE;
-  int64_t account_authority_object_base_size =  40    *STATE_BYTES_SCALE;
+  const int64_t TEMPORARY_STATE_BYTE;
+  const int64_t LASTING_STATE_BYTE;
+  const int64_t PERSISTENT_STATE_BYTE;
 
-  // account_recovery_request_object
-  int64_t account_recovery_request_object_base_size = 32*STATE_BYTES_SCALE;
+  // account create (all versions)
+  const int64_t account_create_base_size;
+  //const int64_t account_json_metadata_char_size;
+  const int64_t authority_account_member_size;
+  const int64_t authority_key_member_size;
 
-  // comment_object
-  int64_t comment_object_base_size           = 201    *STATE_BYTES_SCALE;
-  // category isn't actually a field in the op, it's done by parent_permlink
-  // int64_t comment_object_category_char_size  =         STATE_BYTES_SCALE;
-  int64_t comment_object_permlink_char_size  =         STATE_BYTES_SCALE;
-  int64_t comment_object_parent_permlink_char_size = 2*STATE_BYTES_SCALE;
-  int64_t comment_object_beneficiaries_member_size = 18*STATE_BYTES_SCALE;
+  // account update (both versions) and nonsubsidized account recovery
+  const int64_t owner_authority_history_object_size;
 
-  // comment_vote_object
-  int64_t comment_vote_object_base_size      = 47     *STATE_COMMENT_VOTE_BYTE_SIZE;
+  // transfer to vesting
+  const int64_t transfer_to_vesting_size;
 
-  // convert_request_object
-  int64_t convert_request_object_base_size   = 48     *STATE_BYTES_SCALE;
-  // collateralized_convert_request_object
-  int64_t collateralized_convert_request_object_base_size = 48 * STATE_BYTES_SCALE;
+  // request account recovery
+  const int64_t request_account_recovery_size;
 
-  // decline_voting_rights_request_object
-  int64_t decline_voting_rights_request_object_base_size = 28*STATE_BYTES_SCALE;
+  // change recovery account
+  const int64_t change_recovery_account_size;
 
-  // escrow_object
-  int64_t escrow_object_base_size            = 119    *STATE_BYTES_SCALE;
+  // comment
+  const int64_t comment_base_size;
+  const int64_t comment_permlink_char_size;
+  const int64_t comment_beneficiaries_member_size;
 
-  // limit_order_object
-  int64_t limit_order_object_base_size       = 76     *STATE_LIMIT_ORDER_BYTE_SIZE;
+  // vote
+  const int64_t vote_size;
 
-  // savigns_withdraw_object
-  int64_t savings_withdraw_object_byte_size  = 64     *STATE_TRANSFER_FROM_SAVINGS_BYTE_SIZE;
+  // convert
+  const int64_t convert_size;
+  // collateralized convert
+  const int64_t collateralized_convert_size;
 
-  // transaction_object
-  int64_t transaction_object_base_size       =  35    *STATE_TRANSACTION_BYTE_SIZE;
-  int64_t transaction_object_byte_size       =         STATE_TRANSACTION_BYTE_SIZE;
+  // decline voting rights
+  const int64_t decline_voting_rights_size;
 
-  // vesting_delegation_object
-  int64_t vesting_delegation_object_base_size = 60*STATE_BYTES_SCALE;
+  // escrow transfer
+  const int64_t escrow_transfer_size;
 
-  // vesting_delegation_expiration_object
-  int64_t vesting_delegation_expiration_object_base_size = 44*STATE_BYTES_SCALE;
+  // limit order create (both versions)
+  const int64_t limit_order_create_size;
 
-  // withdraw_vesting_route_object
-  int64_t withdraw_vesting_route_object_base_size = 43*STATE_BYTES_SCALE;
+  // transfer from savings
+  const int64_t transfer_from_savings_size;
 
-  // witness_object
-  int64_t witness_object_base_size           = 266    *STATE_BYTES_SCALE;
-  int64_t witness_object_url_char_size       =   1    *STATE_BYTES_SCALE;
+  // transaction
+  const int64_t transaction_base_size;
 
-  // witness_vote_object
-  int64_t witness_vote_object_base_size      = 40     *STATE_BYTES_SCALE;
+  // delegate vesting shares
+  const int64_t vesting_delegation_object_size;
+  const int64_t vesting_delegation_expiration_object_size;
+  const int64_t delegate_vesting_shares_size;
 
-  // proposal_object
-  int64_t proposal_object_base_size            = 68  *STATE_BYTES_SCALE;
-  // proposal_vote_object
-  int64_t proposal_vote_object_base_size       = 24  *STATE_BYTES_SCALE;
-  int64_t proposal_vote_object_member_size     = 8   *STATE_BYTES_SCALE;
+  // set withdraw vesting route
+  const int64_t set_withdraw_vesting_route_size;
 
-  // recurrent_transfer_operation
-  int64_t recurrent_transfer_object_base_size = 80 * STATE_BYTES_SCALE;
+  // witness update
+  const int64_t witness_update_base_size;
+  const int64_t witness_update_url_char_size;
 
+  // account witness vote
+  const int64_t account_witness_vote_size;
+
+  // create proposal
+  const int64_t create_proposal_base_size; //multiply by actual lifetime
+  const int64_t create_proposal_subject_permlink_char_size; //multiply by actual lifetime
+
+  // update proposal votes
+  const int64_t update_proposal_votes_member_size;
+  
+  // recurrent transfer
+  const int64_t recurrent_transfer_base_size; //multiply by actual lifetime
+
+  // direct rc delegation
+  const int64_t delegate_rc_base_size; //multiply by number of delegatees
 };
 
 struct operation_exec_info
 {
-  int64_t account_create_operation_exec_time                  =  57700;
-  int64_t account_create_with_delegation_operation_exec_time  =  57700;
-  int64_t account_update_operation_exec_time                  =  14000;
-  int64_t account_update2_operation_exec_time                 =  14000;
-  int64_t account_witness_proxy_operation_exec_time           = 117000;
-  int64_t account_witness_vote_operation_exec_time            =  23000;
-  int64_t cancel_transfer_from_savings_operation_exec_time    =  11500;
-  int64_t change_recovery_account_operation_exec_time         =  12000;
-  int64_t claim_account_operation_exec_time                   =  10000;
-  int64_t claim_reward_balance_operation_exec_time            =  50300;
-  int64_t comment_operation_exec_time                         = 114100;
-  int64_t comment_options_operation_exec_time                 =  13200;
-  int64_t convert_operation_exec_time                         =  15700;
-  int64_t collateralized_convert_operation_exec_time          =  15700;
-  int64_t create_claimed_account_operation_exec_time          =  57700;
-  int64_t custom_operation_exec_time                          =  11400;
-  int64_t custom_json_operation_exec_time                     =  11400;
-  int64_t custom_binary_operation_exec_time                   =  11400;
-  int64_t decline_voting_rights_operation_exec_time           =   5300;
-  int64_t delegate_vesting_shares_operation_exec_time         =  19900;
-  int64_t delete_comment_operation_exec_time                  =  51100;
-  int64_t escrow_approve_operation_exec_time                  =   9900;
-  int64_t escrow_dispute_operation_exec_time                  =  11500;
-  int64_t escrow_release_operation_exec_time                  =  17200;
-  int64_t escrow_transfer_operation_exec_time                 =  19100;
-  int64_t feed_publish_operation_exec_time                    =   6200;
-  int64_t limit_order_cancel_operation_exec_time              =   9600;
-  int64_t limit_order_create_operation_exec_time              =  31700;
-  int64_t limit_order_create2_operation_exec_time             =  31700;
-  int64_t request_account_recovery_operation_exec_time        =  54400;
-  int64_t set_withdraw_vesting_route_operation_exec_time      =  17900;
-  int64_t transfer_from_savings_operation_exec_time           =  17500;
-  int64_t transfer_operation_exec_time                        =   9600;
-  int64_t transfer_to_savings_operation_exec_time             =   6400;
-  int64_t transfer_to_vesting_operation_exec_time             =  44400;
-  int64_t vote_operation_exec_time                            =  26500;
-  int64_t withdraw_vesting_operation_exec_time                =  10400;
-  int64_t witness_set_properties_operation_exec_time          =   9500;
-  int64_t witness_update_operation_exec_time                  =   9500;
-  int64_t recurrent_transfer_operation_exec_time              =  17200;
+  operation_exec_info();
 
+  const int64_t account_create_time;
+  const int64_t account_create_with_delegation_time;
+  const int64_t account_witness_vote_time;
+  const int64_t comment_time;
+  const int64_t comment_options_time;
+  const int64_t convert_time;
+  const int64_t collateralized_convert_time;
+  const int64_t create_claimed_account_time;
+  const int64_t decline_voting_rights_time;
+  const int64_t delegate_vesting_shares_time;
+  const int64_t escrow_transfer_time;
+  const int64_t limit_order_create_time;
+  const int64_t limit_order_create2_time;
+  const int64_t request_account_recovery_time;
+  const int64_t set_withdraw_vesting_route_time;
+  const int64_t vote_time;
+  const int64_t witness_update_time;
+  const int64_t transfer_time;
+  const int64_t transfer_to_vesting_time;
+  const int64_t transfer_to_savings_time;
+  const int64_t transfer_from_savings_time;
+  const int64_t claim_reward_balance_time;
+  const int64_t withdraw_vesting_time;
+  const int64_t account_update_time;
+  const int64_t account_update2_time;
+  const int64_t account_witness_proxy_time;
+  const int64_t cancel_transfer_from_savings_time;
+  const int64_t change_recovery_account_time;
+  const int64_t claim_account_time;
+  const int64_t custom_time;
+  const int64_t custom_json_time;
+  const int64_t custom_binary_time;
+  const int64_t delete_comment_time;
+  const int64_t escrow_approve_time;
+  const int64_t escrow_dispute_time;
+  const int64_t escrow_release_time;
+  const int64_t feed_publish_time;
+  const int64_t limit_order_cancel_time;
+  const int64_t witness_set_properties_time;
 #ifdef HIVE_ENABLE_SMT
-  int64_t claim_reward_balance2_operation_exec_time           = 0;
-  int64_t smt_setup_operation_exec_time                       = 0;
-  int64_t smt_setup_emissions_operation_exec_time             = 0;
-  int64_t smt_set_setup_parameters_operation_exec_time        = 0;
-  int64_t smt_set_runtime_parameters_operation_exec_time      = 0;
-  int64_t smt_create_operation_exec_time                      = 0;
-  int64_t smt_contribute_operation_exec_time                  = 0;
+  const int64_t claim_reward_balance2_time;
+  const int64_t smt_setup_time;
+  const int64_t smt_setup_emissions_time;
+  const int64_t smt_set_setup_parameters_time;
+  const int64_t smt_set_runtime_parameters_time;
+  const int64_t smt_create_time;
+  const int64_t smt_contribute_time;
 #endif
+  const int64_t create_proposal_time;
+  const int64_t update_proposal_time;
+  const int64_t update_proposal_votes_time;
+  const int64_t remove_proposal_time;
+  const int64_t recurrent_transfer_base_time; //processing separately below
+  const int64_t recurrent_transfer_processing_time; //multiply by number of transfers
+  const int64_t delegate_rc_time;
 
-  int64_t create_proposal_operation_exec_time                  =   31700;
-  int64_t update_proposal_operation_exec_time                  =   9600;
-  int64_t update_proposal_votes_operation_exec_time            =   12000;
-  int64_t remove_proposal_operation_exec_time                  =   12000;
+  const int64_t verify_authority_time; //multiply by number of signatures
+  const int64_t transaction_time;
+
+  //not used but included since we have measurements
+  const int64_t recover_account_time;
+  const int64_t pow_time;
+  const int64_t pow2_time;
+
 };
 
 } } }
 
 FC_REFLECT( hive::plugins::rc::state_object_size_info,
-  ( authority_base_size )
+  ( TEMPORARY_STATE_BYTE )
+  ( LASTING_STATE_BYTE )
+  ( PERSISTENT_STATE_BYTE )
+  ( account_create_base_size )
+  //( account_json_metadata_char_size )
   ( authority_account_member_size )
   ( authority_key_member_size )
-  ( account_object_base_size )
-  ( account_authority_object_base_size )
-  ( account_recovery_request_object_base_size )
-  ( comment_object_base_size )
-  ( comment_object_permlink_char_size )
-  ( comment_object_parent_permlink_char_size )
-  ( comment_object_beneficiaries_member_size )
-  ( comment_vote_object_base_size )
-  ( convert_request_object_base_size )
-  ( collateralized_convert_request_object_base_size )
-  ( decline_voting_rights_request_object_base_size )
-  ( escrow_object_base_size )
-  ( limit_order_object_base_size )
-  ( savings_withdraw_object_byte_size )
-  ( transaction_object_base_size )
-  ( transaction_object_byte_size )
-  ( vesting_delegation_object_base_size )
-  ( vesting_delegation_expiration_object_base_size )
-  ( withdraw_vesting_route_object_base_size )
-  ( witness_object_base_size )
-  ( witness_object_url_char_size )
-  ( witness_vote_object_base_size )
-  ( proposal_object_base_size )
-  ( proposal_vote_object_base_size )
-  ( proposal_vote_object_member_size )
+  ( owner_authority_history_object_size )
+  ( transfer_to_vesting_size )
+  ( request_account_recovery_size )
+  ( change_recovery_account_size )
+  ( comment_base_size )
+  ( comment_permlink_char_size )
+  ( comment_beneficiaries_member_size )
+  ( vote_size )
+  ( convert_size )
+  ( collateralized_convert_size )
+  ( decline_voting_rights_size )
+  ( escrow_transfer_size )
+  ( limit_order_create_size )
+  ( transfer_from_savings_size )
+  ( transaction_base_size )
+  ( vesting_delegation_object_size )
+  ( vesting_delegation_expiration_object_size )
+  ( delegate_vesting_shares_size )
+  ( set_withdraw_vesting_route_size )
+  ( witness_update_base_size )
+  ( witness_update_url_char_size )
+  ( account_witness_vote_size )
+  ( create_proposal_base_size )
+  ( create_proposal_subject_permlink_char_size )
+  ( update_proposal_votes_member_size )
+  ( recurrent_transfer_base_size )
+  ( delegate_rc_base_size )
   )
 
 FC_REFLECT( hive::plugins::rc::operation_exec_info,
-  ( account_create_operation_exec_time )
-  ( account_create_with_delegation_operation_exec_time )
-  ( account_update_operation_exec_time )
-  ( account_update2_operation_exec_time )
-  ( account_witness_proxy_operation_exec_time )
-  ( account_witness_vote_operation_exec_time )
-  ( cancel_transfer_from_savings_operation_exec_time )
-  ( change_recovery_account_operation_exec_time )
-  ( claim_account_operation_exec_time )
-  ( claim_reward_balance_operation_exec_time )
-  ( comment_operation_exec_time )
-  ( comment_options_operation_exec_time )
-  ( convert_operation_exec_time )
-  ( collateralized_convert_operation_exec_time )
-  ( create_claimed_account_operation_exec_time )
-  ( custom_operation_exec_time )
-  ( custom_json_operation_exec_time )
-  ( custom_binary_operation_exec_time )
-  ( decline_voting_rights_operation_exec_time )
-  ( delegate_vesting_shares_operation_exec_time )
-  ( delete_comment_operation_exec_time )
-  ( escrow_approve_operation_exec_time )
-  ( escrow_dispute_operation_exec_time )
-  ( escrow_release_operation_exec_time )
-  ( escrow_transfer_operation_exec_time )
-  ( feed_publish_operation_exec_time )
-  ( limit_order_cancel_operation_exec_time )
-  ( limit_order_create_operation_exec_time )
-  ( limit_order_create2_operation_exec_time )
-  ( request_account_recovery_operation_exec_time )
-  ( set_withdraw_vesting_route_operation_exec_time )
-  ( transfer_from_savings_operation_exec_time )
-  ( transfer_operation_exec_time )
-  ( transfer_to_savings_operation_exec_time )
-  ( transfer_to_vesting_operation_exec_time )
-  ( vote_operation_exec_time )
-  ( withdraw_vesting_operation_exec_time )
-  ( witness_set_properties_operation_exec_time )
-  ( witness_update_operation_exec_time )
-
+  ( account_create_time )
+  ( account_create_with_delegation_time )
+  ( account_witness_vote_time )
+  ( comment_time )
+  ( comment_options_time )
+  ( convert_time )
+  ( collateralized_convert_time )
+  ( create_claimed_account_time )
+  ( decline_voting_rights_time )
+  ( delegate_vesting_shares_time )
+  ( escrow_transfer_time )
+  ( limit_order_create_time )
+  ( limit_order_create2_time )
+  ( request_account_recovery_time )
+  ( set_withdraw_vesting_route_time )
+  ( vote_time )
+  ( witness_update_time )
+  ( transfer_time )
+  ( transfer_to_vesting_time )
+  ( transfer_to_savings_time )
+  ( transfer_from_savings_time )
+  ( claim_reward_balance_time )
+  ( withdraw_vesting_time )
+  ( account_update_time )
+  ( account_update2_time )
+  ( account_witness_proxy_time )
+  ( cancel_transfer_from_savings_time )
+  ( change_recovery_account_time )
+  ( claim_account_time )
+  ( custom_time )
+  ( custom_json_time )
+  ( custom_binary_time )
+  ( delete_comment_time )
+  ( escrow_approve_time )
+  ( escrow_dispute_time )
+  ( escrow_release_time )
+  ( feed_publish_time )
+  ( limit_order_cancel_time )
+  ( witness_set_properties_time )
 #ifdef HIVE_ENABLE_SMT
-  ( claim_reward_balance2_operation_exec_time )
-  ( smt_setup_operation_exec_time )
-  ( smt_setup_emissions_operation_exec_time )
-  ( smt_set_setup_parameters_operation_exec_time )
-  ( smt_set_runtime_parameters_operation_exec_time )
-  ( smt_create_operation_exec_time )
-  ( smt_contribute_operation_exec_time )
+  ( claim_reward_balance2_time )
+  ( smt_setup_time )
+  ( smt_setup_emissions_time )
+  ( smt_set_setup_parameters_time )
+  ( smt_set_runtime_parameters_time )
+  ( smt_create_time )
+  ( smt_contribute_time )
 #endif
-
-  (create_proposal_operation_exec_time)
-  (update_proposal_operation_exec_time)
-  (update_proposal_votes_operation_exec_time)
-  (remove_proposal_operation_exec_time)
-  (recurrent_transfer_operation_exec_time)
-
+  ( create_proposal_time )
+  ( update_proposal_time )
+  ( update_proposal_votes_time )
+  ( remove_proposal_time )
+  ( recurrent_transfer_base_time )
+  ( recurrent_transfer_processing_time )
+  ( delegate_rc_time )
+  ( verify_authority_time )
+  ( transaction_time )
+  ( recover_account_time )
+  ( pow_time )
+  ( pow2_time )
   )

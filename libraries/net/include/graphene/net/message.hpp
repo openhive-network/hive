@@ -29,6 +29,10 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/reflect/variant.hpp>
 
+namespace hive { namespace chain {
+  struct compressed_block_data;
+} }
+
 namespace graphene { namespace net {
 
   /**
@@ -44,6 +48,10 @@ namespace graphene { namespace net {
   };
 
   typedef fc::uint160_t message_hash_type;
+
+  struct block_message;
+  struct compressed_block_message;
+  struct trx_message;
 
   /**
    *  Abstracts the process of packing/unpacking a message for a 
@@ -71,6 +79,10 @@ namespace graphene { namespace net {
         data     = fc::raw::pack_to_vector(m);
         size     = (uint32_t)data.size();
      }
+
+     message(const block_message& msg);
+     message(const hive::chain::compressed_block_data& compressed_data);
+     message(const trx_message& msg);
 
      fc::uint160_t id()const
      {
@@ -106,6 +118,10 @@ namespace graphene { namespace net {
               ("msg_type", msg_type)
               );
      }
+     
+     block_message as_block_message() const;
+     compressed_block_message as_compressed_block_message() const;
+     trx_message as_trx_message() const;
   };
 
 

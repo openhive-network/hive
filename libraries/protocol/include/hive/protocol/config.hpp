@@ -2,6 +2,7 @@
  * Copyright (c) 2016 Steemit, Inc., and contributors.
  */
 #pragma once
+#include <hive/protocol/types.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/testnet_blockchain_configuration.hpp>
 
@@ -9,31 +10,49 @@
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
 
-#ifdef IS_TEST_NET
+#define HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR"
+
+#ifdef USE_ALTERNATE_CHAIN_ID
 
 using namespace hive::protocol::testnet_blockchain_configuration;
 
-#ifdef HIVE_ENABLE_SMT
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 26, 0) )
+/// Testnet or mirror net
+#define HIVE_INIT_PRIVATE_KEY                 (configuration_data.get_initminer_private_key())
+#define HIVE_INIT_PUBLIC_KEY_STR              (std::string(configuration_data.get_initminer_public_key()))
+
+#define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR (configuration_data.get_HF9_compromised_accounts_key())
+
 #else
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 25, 0) )
+
+/// Mainnet 
+#define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
+#define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR
+
+#endif /// USE_ALTERNATE_CHAIN_ID
+
+#define HIVE_INIT_PUBLIC_KEY (hive::protocol::public_key_type(HIVE_INIT_PUBLIC_KEY_STR))
+
+#ifdef IS_TEST_NET
+
+#ifdef HIVE_ENABLE_SMT
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 27, 0) )
+#else
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 26, 0) )
 #endif
 
-#define HIVE_INIT_PRIVATE_KEY                 (fc::ecc::private_key::regenerate(fc::sha256::hash(std::string("init_key"))))
-#define HIVE_INIT_PUBLIC_KEY_STR              (std::string( hive::protocol::public_key_type(HIVE_INIT_PRIVATE_KEY.get_public_key()) ))
-#define STEEM_CHAIN_ID                        (fc::sha256::hash("testnet"))
+#define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
 #define HIVE_ADDRESS_PREFIX                   "TST"
 
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400))
-#define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400))
-#define HIVE_CASHOUT_WINDOW_SECONDS           configuration_data.get_hive_cashout_window_seconds()
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400)) // Friday, January 1, 2016 12:00:00 AM UTC
+#define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400)) // Friday, January 1, 2016 12:00:00 AM UTC
+#define HIVE_CASHOUT_WINDOW_SECONDS           (configuration_data.get_hive_cashout_window_seconds())
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (HIVE_CASHOUT_WINDOW_SECONDS)
 #define HIVE_SECOND_CASHOUT_WINDOW            (60*60*24*3) /// 3 days
 #define HIVE_MAX_CASHOUT_WINDOW_SECONDS       (60*60*24) /// 1 day
 #define HIVE_UPVOTE_LOCKOUT_HF7               (fc::minutes(1))
-#define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*5)    /// 5 minutes
+#define HIVE_UPVOTE_LOCKOUT_SECONDS           (configuration_data.get_hive_upvote_lockout_seconds())
 #define HIVE_UPVOTE_LOCKOUT_HF17              (fc::minutes(5))
 
 
@@ -42,14 +61,11 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::seconds(60)
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
-#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(0)
+#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(6)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
 
 #define HIVE_INIT_SUPPLY                      (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
 #define HIVE_HBD_INIT_SUPPLY                  (int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ))
-
-/// Allows to limit number of total produced blocks.
-#define TESTNET_BLOCK_LIMIT                   (3000000)
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
@@ -63,6 +79,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*1) /// 1 day
 #define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       ((HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)/30)  /// We want to have at most 30 entries in the account's delayed voting collection (similary to mainnet)
 
+#define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 (configuration_data.get_hive_reverse_auction_window_seconds())
+#define HIVE_EARLY_VOTING_SECONDS_HF25           (configuration_data.get_hive_early_voting_seconds())
+#define HIVE_MID_VOTING_SECONDS_HF25             (configuration_data.get_hive_mid_voting_seconds())
 
 #else // IS LIVE HIVE NETWORK
 
@@ -70,15 +89,17 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 ///                               LIVE HIVE NETWORK (MainNet)                                   ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 25, 0) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 26, 0) )
 
-#define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
-#define STEEM_CHAIN_ID                        fc::sha256()
+#ifndef HIVE_INIT_PUBLIC_KEY_STR
+# define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
+#endif
+#define OLD_CHAIN_ID                          fc::sha256()
 #define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #define HIVE_ADDRESS_PREFIX                   "STM"
 
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200))
-#define HIVE_MINING_TIME                      (fc::time_point_sec(1458838800))
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200)) // Thursday, March 24, 2016 4:00:00 PM UTC
+#define HIVE_MINING_TIME                      (fc::time_point_sec(1458838800)) // Thursday, March 24, 2016 4:00:00 PM UTC
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (60*60*24)    /// 1 day
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (60*60*12)    /// 12 hours
 #define HIVE_CASHOUT_WINDOW_SECONDS           (60*60*24*7)  /// 7 days
@@ -111,6 +132,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS (60*60*24*30) // 30 days
 #define HIVE_DELAYED_VOTING_INTERVAL_SECONDS       (60*60*24*1)  // 1 day
 
+#define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 0              /// disabled
+#define HIVE_EARLY_VOTING_SECONDS_HF25           (24 * 60 * 60) /// 24 hours
+#define HIVE_MID_VOTING_SECONDS_HF25             (48 * 60 * 60) /// 48 hours
 
 #endif
 
@@ -164,8 +188,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
-#define HIVE_EARLY_VOTING_SECONDS_HF25 (24*60*60) /// 24 hours
-#define HIVE_MID_VOTING_SECONDS_HF25 (48*60*60) /// 48 hours
 #define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
@@ -272,10 +294,14 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_MIN_PAYOUT_HBD                   (asset(20,HBD_SYMBOL))
 
-#define HIVE_HBD_STOP_PERCENT_HF14            (5*HIVE_1_PERCENT ) // Stop printing HBD at 5% Market Cap
-#define HIVE_HBD_STOP_PERCENT_HF20            (10*HIVE_1_PERCENT ) // Stop printing HBD at 10% Market Cap
 #define HIVE_HBD_START_PERCENT_HF14           (2*HIVE_1_PERCENT) // Start reducing printing of HBD at 2% Market Cap
+#define HIVE_HBD_STOP_PERCENT_HF14            (5*HIVE_1_PERCENT) // Stop printing HBD at 5% Market Cap
 #define HIVE_HBD_START_PERCENT_HF20           (9*HIVE_1_PERCENT) // Start reducing printing of HBD at 9% Market Cap
+#define HIVE_HBD_STOP_PERCENT_HF20            (10*HIVE_1_PERCENT) // Stop printing HBD at 10% Market Cap
+#define HIVE_HBD_START_PERCENT_HF26           (20*HIVE_1_PERCENT) // Start reducing printing of HBD at 20% Market Cap
+#define HIVE_HBD_STOP_PERCENT_HF26            (20*HIVE_1_PERCENT) // Stop printing HBD at 20% Market Cap
+#define HIVE_HBD_HARD_LIMIT_PRE_HF26          (10*HIVE_1_PERCENT) // Artificial HBD price kicks in at 10% Market Cap
+#define HIVE_HBD_HARD_LIMIT                   (30*HIVE_1_PERCENT) // Artificial HBD price kicks in at 30% Market Cap
 
 #define HIVE_MIN_ACCOUNT_NAME_LENGTH          3
 #define HIVE_MAX_ACCOUNT_NAME_LENGTH          16
@@ -295,8 +321,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC (60*60*24*30)
 #define HIVE_MAX_TRANSACTION_SIZE             (1024*64)
 #define HIVE_MIN_BLOCK_SIZE_LIMIT             (HIVE_MAX_TRANSACTION_SIZE)
-#define HIVE_MAX_BLOCK_SIZE                   (HIVE_MAX_TRANSACTION_SIZE*HIVE_BLOCK_INTERVAL*2000)
-#define HIVE_SOFT_MAX_BLOCK_SIZE              (2*1024*1024)
+#define HIVE_MAX_BLOCK_SIZE              (2*1024*1024)
 #define HIVE_MIN_BLOCK_SIZE                   115
 #define HIVE_BLOCKS_PER_HOUR                  (60*60/HIVE_BLOCK_INTERVAL)
 #define HIVE_FEED_INTERVAL_BLOCKS             (HIVE_BLOCKS_PER_HOUR)
@@ -319,7 +344,11 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_BLOCKCHAIN_PRECISION_DIGITS      3
 #define HIVE_MAX_INSTANCE_ID                  (uint64_t(-1)>>16)
 /** NOTE: making this a power of 2 (say 2^15) would greatly accelerate fee calcs */
-#define HIVE_MAX_AUTHORITY_MEMBERSHIP         40
+#ifndef HIVE_CONVERTER_BUILD
+#  define HIVE_MAX_AUTHORITY_MEMBERSHIP       40
+#else
+#  define HIVE_MAX_AUTHORITY_MEMBERSHIP       41 /* 40 + second auth */
+#endif
 #define HIVE_MAX_ASSET_WHITELIST_AUTHORITIES  10
 #define HIVE_MAX_URL_LENGTH                   127
 

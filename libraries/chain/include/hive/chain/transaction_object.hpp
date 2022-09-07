@@ -22,11 +22,8 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( transaction_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_object, (packed_trx) )
+      CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_object )
 
-      typedef buffer_type t_packed_trx;
-
-      t_packed_trx         packed_trx;
       transaction_id_type  trx_id;
       time_point_sec       expiration;
   };
@@ -52,7 +49,7 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::transaction_object, (id)(packed_trx)(trx_id)(expiration) )
+FC_REFLECT( hive::chain::transaction_object, (id)(trx_id)(expiration) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::transaction_object, hive::chain::transaction_index )
 
 namespace helpers
@@ -62,21 +59,11 @@ namespace helpers
   {
   public:
     typedef hive::chain::transaction_index IndexType;
-    typedef typename hive::chain::transaction_object::t_packed_trx t_packed_trx;
 
     index_statistic_info gather_statistics(const IndexType& index, bool onlyStaticInfo) const
     {
       index_statistic_info info;
       gather_index_static_data(index, &info);
-
-      if(onlyStaticInfo == false)
-      {
-        for(const auto& o : index)
-        {
-          info._item_additional_allocation += o.packed_trx.capacity()*sizeof(t_packed_trx::value_type);
-        }
-      }
-
       return info;
     }
   };
