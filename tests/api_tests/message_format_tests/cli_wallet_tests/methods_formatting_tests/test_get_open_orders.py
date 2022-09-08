@@ -1,9 +1,10 @@
 from math import isclose
-from typing import List
+import re
+from typing import Dict
 
 import test_tools as tt
 
-from .local_tools import verify_json_patterns, verify_text_patterns, split_text_to_separated_words
+from .local_tools import verify_json_patterns, verify_text_patterns
 
 ORDER_INITIAL_VALUES = [
     {
@@ -83,14 +84,14 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
 
 def parse_text_response(text):
-    lines: List[List[str]] = split_text_to_separated_words(text)
-    open_orders = []
-    for words in lines[2:5]:
-        open_orders.append({
-            'id': words[0],
-            'price': words[1],
-            'quantity': words[2],
-            'type': words[3],
-        })
+    def parse_single_line_with_order_values(line_to_parse: str) -> Dict:
+        splitted_values = re.split(r'\s{2,}', line_to_parse.strip())
+        return {
+            'id': splitted_values[0],
+            'price': splitted_values[1],
+            'quantity': splitted_values[2],
+            'type': splitted_values[3],
+        }
 
-    return open_orders
+    lines = text.splitlines()
+    return [parse_single_line_with_order_values(line_to_parse) for line_to_parse in lines[2:5]]
