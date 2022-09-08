@@ -45,6 +45,7 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    version.cpp
    misc_utilities.cpp
    forward_impacted.cpp
+   witness_objects.cpp
    ${GET_CONFIG_CPP}
    ${HEADERS}
    ${hardfork_hpp_file}

@@ -12,6 +12,8 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
 
+#include <hive/protocol/witness_objects.hpp>
+
 #include <fc/macros.hpp>
 
 #include <fc/uint128.hpp>
@@ -98,18 +100,6 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   }
 }
 
-struct witness_properties_change_flags
-{
-  uint32_t account_creation_changed       : 1;
-  uint32_t max_block_changed              : 1;
-  uint32_t hbd_interest_changed           : 1;
-  uint32_t account_subsidy_budget_changed : 1;
-  uint32_t account_subsidy_decay_changed  : 1;
-  uint32_t key_changed                    : 1;
-  uint32_t hbd_exchange_changed           : 1;
-  uint32_t url_changed                    : 1;
-};
-
 void witness_set_properties_evaluator::do_apply( const witness_set_properties_operation& o )
 {
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1620 ), "witness_set_properties_evaluator not enabled until HF 20" );
@@ -117,88 +107,25 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   const auto& witness = _db.get< witness_object, by_name >( o.owner ); // verifies witness exists;
 
   // Capture old properties. This allows only updating the object once.
-  chain_properties  props;
-  public_key_type   signing_key;
-  price             hbd_exchange_rate;
-  time_point_sec    last_hbd_exchange_update;
-  string            url;
-
   witness_properties_change_flags flags;
+  witness_set_properties_inputs props;
 
-  auto itr = o.props.find( "key" );
-
-  // This existence of 'key' is checked in witness_set_properties_operation::validate
-  fc::raw::unpack_from_vector( itr->second, signing_key );
-  FC_ASSERT( signing_key == witness.signing_key, "'key' does not match witness signing key.",
-    ("key", signing_key)("signing_key", witness.signing_key) );
-
-  itr = o.props.find( "account_creation_fee" );
-  flags.account_creation_changed = itr != o.props.end();
-  if( flags.account_creation_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, props.account_creation_fee );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
+  extract_set_witness_properties(o.props, flags, props, _db.has_hardfork(HIVE_HARDFORK_1_24),
+  [&](const fc::string& prop_name, auto, auto){
+    if(prop_name == "key")
+    {
+      FC_ASSERT( props.signing_key == witness.signing_key, "'key' does not match witness signing key.",
+        ("key", props.signing_key)("signing_key", witness.signing_key) );
+    }
+    else if(flags.account_creation_changed && _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ))
     {
       FC_TODO( "Move to validate() after HF20" );
       FC_ASSERT( props.account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE, "account_creation_fee greater than maximum account creation fee" );
+    }else if( flags.hbd_exchange_changed )
+    {
+      props.last_hbd_exchange_update = _db.head_block_time();
     }
-  }
-
-  itr = o.props.find( "maximum_block_size" );
-  flags.max_block_changed = itr != o.props.end();
-  if( flags.max_block_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, props.maximum_block_size );
-  }
-
-  itr = o.props.find( "sbd_interest_rate" );
-  if(itr == o.props.end() && _db.has_hardfork(HIVE_HARDFORK_1_24))
-    itr = o.props.find( "hbd_interest_rate" );
-
-  flags.hbd_interest_changed = itr != o.props.end();
-  if( flags.hbd_interest_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, props.hbd_interest_rate );
-  }
-
-  itr = o.props.find( "account_subsidy_budget" );
-  flags.account_subsidy_budget_changed = itr != o.props.end();
-  if( flags.account_subsidy_budget_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, props.account_subsidy_budget );
-  }
-
-  itr = o.props.find( "account_subsidy_decay" );
-  flags.account_subsidy_decay_changed = itr != o.props.end();
-  if( flags.account_subsidy_decay_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, props.account_subsidy_decay );
-  }
-
-  itr = o.props.find( "new_signing_key" );
-  flags.key_changed = itr != o.props.end();
-  if( flags.key_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, signing_key );
-  }
-
-  itr = o.props.find( "sbd_exchange_rate" );
-  if(itr == o.props.end() && _db.has_hardfork(HIVE_HARDFORK_1_24))
-    itr = o.props.find("hbd_exchange_rate");
-
-  flags.hbd_exchange_changed = itr != o.props.end();
-  if( flags.hbd_exchange_changed )
-  {
-    fc::raw::unpack_from_vector( itr->second, hbd_exchange_rate );
-    last_hbd_exchange_update = _db.head_block_time();
-  }
-
-  itr = o.props.find( "url" );
-  flags.url_changed = itr != o.props.end();
-  if( flags.url_changed )
-  {
-    fc::raw::unpack_from_vector< std::string >( itr->second, url );
-  }
+  });
 
   _db.modify( witness, [&]( witness_object& w )
   {
@@ -229,18 +156,18 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
 
     if( flags.key_changed )
     {
-      w.signing_key = signing_key;
+      w.signing_key = props.signing_key;
     }
 
     if( flags.hbd_exchange_changed )
     {
-      w.hbd_exchange_rate = hbd_exchange_rate;
-      w.last_hbd_exchange_update = last_hbd_exchange_update;
+      w.hbd_exchange_rate = props.hbd_exchange_rate;
+      w.last_hbd_exchange_update = props.last_hbd_exchange_update;
     }
 
     if( flags.url_changed )
     {
-      from_string( w.url, url );
+      from_string( w.url, props.url );
     }
   });
 }
@@ -1169,7 +1096,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   }
   else
   {
-    amount_vested = _db.create_vesting( to_account, o.amount );   
+    amount_vested = _db.create_vesting( to_account, o.amount );
   }
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
@@ -3162,7 +3089,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 void witness_block_approve_evaluator::do_apply(const witness_block_approve_operation& op)
 {
   // This transaction si /updait's handled in database::process_fast_confirm_transaction
-  // and never reaches the 
+  // and never reaches the
   FC_ASSERT(false, "This operation may not be included in a block");
 }
 
