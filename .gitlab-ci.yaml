@@ -163,7 +163,6 @@ chain_test:
     GIT_STRATEGY: none
   script:
     - timeout 23m ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
-  timeout: 28min
   artifacts:
     reports:
       junit: chain_test_results.xml
@@ -186,7 +185,6 @@ plugin_test:
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
     - timeout 6m ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
-  timeout: 11min
   artifacts:
     reports:
       junit: plugin_test_results.xml
@@ -243,7 +241,6 @@ beem_tests:
     - *beem_setup
     - cd tests/functional/python_tests/dhf_tests
     - *run-pytest
-  timeout: 23min
   artifacts:
     reports:
       junit: tests/functional/python_tests/dhf_tests/report.xml
@@ -292,7 +289,6 @@ cli_wallet_tests:
   script:
     - cd tests/functional/python_tests/cli_wallet
     - *run-pytest
-  timeout: 35min
   tags:
     - public-runner-docker
   artifacts:
@@ -312,7 +308,6 @@ hived_tests:
   script:
     - cd tests/functional/python_tests/hived
     - *run-pytest
-  timeout: 26min
   tags:
     - public-runner-docker
   artifacts:
@@ -331,7 +326,6 @@ cli_wallet_extended_tests:
   script:
     - cd tests/functional/python_tests/cli_wallet_extended_tests
     - *run-pytest
-  timeout: 16min
   artifacts:
     reports:
       junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
@@ -350,7 +344,6 @@ fork_tests:
   script:
     - cd tests/functional/python_tests/fork_tests
     - *run-pytest
-  timeout: 13min
   artifacts:
     reports:
       junit: tests/functional/python_tests/fork_tests/report.xml
@@ -370,7 +363,6 @@ hf26_tests:
   script:
     - cd tests/functional/python_tests/hf26_tests
     - *run-pytest
-  timeout: 25min
   artifacts:
     reports:
       junit: tests/functional/python_tests/hf26_tests/report.xml
@@ -390,7 +382,6 @@ live_sync_tests:
     - apt-get update -y && apt-get install -y tox
     - cd tests/functional/python_tests/live_sync_tests
     - timeout 11m tox
-  timeout: 16min
   artifacts:
     reports:
       junit: tests/functional/python_tests/live_sync_tests/report.xml
@@ -409,7 +400,6 @@ network_broadcast_tests:
   script:
     - cd tests/functional/python_tests/network_broadcast_tests
     - *run-pytest
-  timeout: 11min
   artifacts:
     reports:
       junit: tests/functional/python_tests/network_broadcast_tests/report.xml
@@ -428,7 +418,6 @@ test_tools_tests:
   script:
     - cd tests/test_tools/tests
     - *run-pytest
-  timeout: 35min
   artifacts:
     reports:
       junit: tests/test_tools/tests/report.xml
@@ -447,7 +436,6 @@ rc_direct_delegations_tests:
   script:
     - cd tests/functional/python_tests/direct_rc_delegations_tests
     - *run-pytest
-  timeout: 17min
   artifacts:
     reports:
       junit: tests/functional/python_tests/direct_rc_delegations_tests/report.xml
@@ -471,7 +459,6 @@ message_format_testnet_tests:
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)")
     - *run-pytest
-  timeout: 28min
   artifacts:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
@@ -491,7 +478,6 @@ datagen_api_tests:
   script:
     - cd tests/functional/python_tests/datagen_tests/api_tests/
     - *run-pytest
-  timeout: 13min
   artifacts:
     reports:
       junit: tests/functional/python_tests/datagen_tests/api_tests/report.xml
@@ -523,7 +509,6 @@ patterns_tests:
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
     - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
-  timeout: 38min
   artifacts:
     when: always
     reports:
@@ -553,7 +538,6 @@ transaction_serialization_testnet_tests:
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests
     - export PYTEST_ARGS=(-m testnet)
     - *run-pytest
-  timeout: 20min
   artifacts:
     reports:
       junit: tests/functional/python_tests/transaction_serialization_tests/report.xml
@@ -587,8 +571,6 @@ transaction_serialization_mainnet_tests:
     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet)
     - *run-pytest
 
-  timeout: 32min
-
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
@@ -614,7 +596,6 @@ transaction_serialization_mainnet_tests:
     - cd tests/api_tests/message_format_tests
     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
     - *run-pytest
-  timeout: 35min
   artifacts:
     reports:
       junit: tests/api_tests/message_format_tests/report.xml
@@ -657,7 +638,6 @@ foundation_layer_tests:
     - pip install pytest-rerunfailures==${PYTEST_RERUN_FAILURES_VERSION}
     - cd tests/functional/python_tests/foundation_layer_tests
     - *run-pytest
-  timeout: 5min
   artifacts:
     reports:
       junit: tests/functional/python_tests/foundation_layer_tests/report.xml
