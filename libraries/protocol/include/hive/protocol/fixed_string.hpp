@@ -204,6 +204,20 @@ inline void unpack( Stream& s, hive::protocol::fixed_string_impl< Storage >& u, 
   u = str;
 }
 
+template<typename Stream, typename Storage>
+inline Stream& operator<<(Stream& s, const hive::protocol::fixed_string_impl< Storage >& u)
+{ try {
+  pack(s, std::string( u ));
+  return s;
+} FC_CAPTURE_AND_RETHROW() }
+
+template<typename Stream, typename Storage>
+inline Stream& operator>>(Stream& s, hive::protocol::fixed_string_impl< Storage >& u)
+{ try {
+  std::string out;
+  unpack(s, out);
+  return s;
+} FC_CAPTURE_AND_RETHROW() }
 } // raw
 
 template< typename Storage >
