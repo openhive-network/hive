@@ -1,6 +1,9 @@
+import re
+from typing import Dict
+
 import test_tools as tt
 
-from .local_tools import split_text_to_separated_words, verify_json_patterns, verify_text_patterns
+from .local_tools import verify_json_patterns, verify_text_patterns
 from .....local_tools import create_account_and_fund_it
 
 BALANCES = {
@@ -75,20 +78,25 @@ def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_format
 
 
 def parse_text_response(text):
-    words = split_text_to_separated_words(text)
-    accounts = []
-    for i in range(len(BALANCES)):
-        accounts.append({
-            'name': words[i][0],
-            'balance': words[i][1],
-            'vesting_shares': words[i][2],
-            'hbd_balance': words[i][3],
-        })
+    def parse_single_line_with_account_balances(line_to_parse: str) -> Dict:
+        splitted_values = re.split(r'\s{2,}', line_to_parse.strip())
+        return {
+            'name': splitted_values[0],
+            'balance': splitted_values[1],
+            'vesting_shares': splitted_values[2],
+            'hbd_balance': splitted_values[3],
+        }
 
-    listed_my_accounts = {
-        'accounts': accounts,
-        'total_hive':  words[4][1],
-        'total_vest': words[4][2],
-        'total_hbd': words[4][3],
+    def parse_single_line_with_total_balances(line_to_parse: str) -> Dict:
+        splitted_values = re.split(r'\s{2,}', line_to_parse.strip())
+        return {
+                'total_hive':  splitted_values[1],
+                'total_vest': splitted_values[2],
+                'total_hbd': splitted_values[3],
+        }
+
+    lines = text.splitlines()
+    return {
+        'accounts': [parse_single_line_with_account_balances(line_to_parse) for line_to_parse in lines[0:3]],
+        **parse_single_line_with_total_balances(lines[4]),
     }
-    return listed_my_accounts
