@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import pytest
 
@@ -23,8 +24,14 @@ def prepared_node(request):
         init_node.run()
         return init_node
 
+    def __create_replayed_node():
+        api_node = tt.ApiNode()
+        api_node.run(replay_from=Path(__file__).parent.joinpath('wallet_bridge_api_tests/block_log/block_log'), wait_for_live=False)
+        return api_node
+
     create_node = {
         'testnet': __create_init_node,
+        'testnet_replayed': __create_replayed_node,
         'mainnet_5m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
         'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }

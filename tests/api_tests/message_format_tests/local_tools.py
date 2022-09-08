@@ -35,7 +35,7 @@ def request_account_recovery(wallet, account_name):
     wallet.api.request_account_recovery('initminer', account_name, authority)
 
 
-def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
+def run_for(*node_names: Literal['testnet', 'testnet_replayed', 'mainnet_5m', 'mainnet_64m']):
     """
     Runs decorated test for each node specified as parameter.
 
