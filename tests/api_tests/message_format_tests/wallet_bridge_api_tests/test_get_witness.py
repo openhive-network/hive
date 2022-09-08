@@ -23,8 +23,9 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-def test_get_witness_with_correct_value(replayed_node, witness_account):
-    replayed_node.api.wallet_bridge.get_witness(witness_account)
+@run_for('testnet_replayed')
+def test_get_witness_with_correct_value(prepared_node, witness_account):
+    prepared_node.api.wallet_bridge.get_witness(witness_account)
 
 
 @pytest.mark.parametrize(
