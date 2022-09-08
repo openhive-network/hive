@@ -461,6 +461,47 @@ void operation_get_impacted_accounts( const operation& op, flat_set<account_name
 
 namespace /// anonymous
 {
+  struct get_account_from_accounts_visitor
+  {
+    get_account_from_accounts_visitor(){}
+
+    typedef account_name_type result_type;
+
+    result_type operator()( const account_create_operation& op )const
+    {
+      return op.new_account_name;
+    }
+
+    result_type operator()( const account_create_with_delegation_operation& op )const
+    {
+      return op.new_account_name;
+    }
+
+    result_type operator()( const create_claimed_account_operation& op )const
+    {
+      return op.new_account_name;
+    }
+
+    result_type operator()( const account_created_operation& op )const
+    {
+      return op.new_account_name;
+    }
+
+    template< typename T >
+    result_type operator()( [[maybe_unused]] const T& op )const
+    {
+      FC_ASSERT( false, "Visitor meant to be used only with the account_created_operation" );
+    }
+  };
+}
+
+account_name_type get_account_from_accounts_operations( const operation& op )
+{
+  return op.visit( get_account_from_accounts_visitor{} );
+}
+
+namespace /// anonymous
+{
 
 struct get_static_variant_name_with_prefix
 {
