@@ -1,6 +1,8 @@
 import json
+import re
+from typing import Dict
 
-from .local_tools import verify_json_patterns, verify_text_patterns, split_text_to_separated_words
+from .local_tools import verify_json_patterns, verify_text_patterns
 
 
 def test_get_account_history(node, wallet_with_json_formatter, wallet_with_text_formatter):
@@ -33,16 +35,16 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
 
 def parse_text_response(text):
-    words = split_text_to_separated_words(text)
-    account_history = []
-    for line in words[2:-1]:
-        account_history.append({
-            'pos': int(line[0]),
-            'block': int(line[1]),
-            'id': line[2],
+    def parse_single_line_with_order_values(line_to_parse: str) -> Dict:
+        splitted_values = re.split(r'\s{2,}', line_to_parse.strip())
+        return {
+            'pos': int(splitted_values[0]),
+            'block': int(splitted_values[1]),
+            'id': splitted_values[2],
             'op': {
-                'type': f'{line[3]}_operation',
-                'value': json.loads(line[4]),
+                'type': f'{splitted_values[3]}_operation',
+                'value': json.loads(splitted_values[4]),
             },
-        })
-    return account_history
+        }
+    lines = text.splitlines()
+    return [parse_single_line_with_order_values(line_to_parse) for line_to_parse in lines[2:-1]]
