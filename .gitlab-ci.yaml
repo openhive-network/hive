@@ -4,6 +4,7 @@ stages:
 - cleanup
 
 variables:
+  PYTEST_NUMBER_OF_PROCESSES: 8
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
@@ -196,6 +197,26 @@ plugin_test:
   tags:
     - public-runner-docker
 
+.run-pytest: &run-pytest
+  # Usage:
+  # 1. Add - *run-pytest to your script section.
+  # 2. Set the appropriate values for:
+  #    - PYTEST_TIMEOUT_MINUTES (required)
+  #    - PYTEST_NUMBER_OF_PROCESSES (default: defined via global CI variable)
+  #    - PYTEST_LOG_DURATIONS (default: 0 - disabled)
+  #    - PYTEST_ARGS (default: "" - empty)
+  #      Best to export PYTEST_ARGS as array (e.g. `export PYTEST_ARGS=(-m testnet)`. In some cases setting PYTEST_ARGS as string will fail.
+  - if [ -z "$PYTEST_TIMEOUT_MINUTES" ]; then echo "Required variable PYTEST_TIMEOUT_MINUTES was not set!"; exit 22; fi
+  - if [ $PYTEST_NUMBER_OF_PROCESSES -gt 1 ]; then PROCESSES="-n ${PYTEST_NUMBER_OF_PROCESSES}";  fi
+  - if [ ${PYTEST_LOG_DURATIONS:=0} -ge 1 ]; then DURATIONS="--durations 0";  fi
+  - |
+    echo "Launching pytest
+     - timeout (minutes): ${PYTEST_TIMEOUT_MINUTES}
+     - processes: ${PYTEST_NUMBER_OF_PROCESSES}
+     - log durations: ${PYTEST_LOG_DURATIONS}
+     - additional arguments: ${PYTEST_ARGS[@]}"
+  - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="./report.xml" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
+
 .beem_setup : &beem_setup
   - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
   - python3 -m venv venv/
@@ -216,11 +237,12 @@ beem_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
+    PYTEST_TIMEOUT_MINUTES: 18
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - *beem_setup
     - cd tests/functional/python_tests/dhf_tests
-    - timeout 20m pytest -n ${NUMBER_OF_PROCESSES} --durations 0 --timeout=$((18*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 23min
   artifacts:
     reports:
@@ -237,7 +259,6 @@ beem_tests:
   interruptible: true
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev python3-venv
-    - export NUMBER_OF_PROCESSES=$(nproc)
     - python3 -m venv venv/
     - . venv/bin/activate
     - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
@@ -265,9 +286,12 @@ cli_wallet_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 30
+    PYTEST_NUMBER_OF_PROCESSES: 1
   script:
     - cd tests/functional/python_tests/cli_wallet
-    - timeout 32m pytest --timeout=$((30*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 35min
   tags:
     - public-runner-docker
@@ -282,9 +306,12 @@ hived_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 21
+    PYTEST_NUMBER_OF_PROCESSES: 1
   script:
     - cd tests/functional/python_tests/hived
-    - timeout 23m pytest --timeout=$((21*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 26min
   tags:
     - public-runner-docker
@@ -299,9 +326,11 @@ cli_wallet_extended_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 11
   script:
     - cd tests/functional/python_tests/cli_wallet_extended_tests
-    - timeout 13m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((11*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 16min
   artifacts:
     reports:
@@ -316,9 +345,11 @@ fork_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 8
   script:
     - cd tests/functional/python_tests/fork_tests
-    - timeout 10m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((8*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 13min
   artifacts:
     reports:
@@ -334,10 +365,11 @@ hf26_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
+    PYTEST_TIMEOUT_MINUTES: 20
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
   script:
     - cd tests/functional/python_tests/hf26_tests
-    - timeout 22m pytest -n auto --timeout=$((20*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 25min
   artifacts:
     reports:
@@ -372,9 +404,11 @@ network_broadcast_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 6
   script:
     - cd tests/functional/python_tests/network_broadcast_tests
-    - timeout 8m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((6*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 11min
   artifacts:
     reports:
@@ -389,9 +423,11 @@ test_tools_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 30
   script:
     - cd tests/test_tools/tests
-    - timeout 32m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((30*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 35min
   artifacts:
     reports:
@@ -406,9 +442,11 @@ rc_direct_delegations_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 12
   script:
     - cd tests/functional/python_tests/direct_rc_delegations_tests
-    - timeout 14m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((12*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 17min
   artifacts:
     reports:
@@ -424,13 +462,15 @@ message_format_testnet_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
+    PYTEST_TIMEOUT_MINUTES: 24
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     NODE_TYPE: "testnet"
   script:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
-    - timeout 26m pytest --timeout=$((24*60)) -m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)" -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)")
+    - *run-pytest
   timeout: 28min
   artifacts:
     reports:
@@ -446,10 +486,11 @@ datagen_api_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
+    PYTEST_TIMEOUT_MINUTES: 10
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
   script:
     - cd tests/functional/python_tests/datagen_tests/api_tests/
-    - timeout 12m pytest --timeout=$((10*60)) --durations=0 -vv -n ${NUMBER_OF_PROCESSES} --junitxml="./report.xml"
+    - *run-pytest
   timeout: 13min
   artifacts:
     reports:
@@ -506,9 +547,12 @@ transaction_serialization_testnet_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 15
   script:
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests
-    - timeout 17m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((15*60)) --junitxml="./report.xml" -m testnet
+    - export PYTEST_ARGS=(-m testnet)
+    - *run-pytest
   timeout: 20min
   artifacts:
     reports:
@@ -521,6 +565,7 @@ transaction_serialization_mainnet_tests:
   image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
   interruptible: true
   variables:
+    PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: prepare_hived_data_image
@@ -534,13 +579,13 @@ transaction_serialization_mainnet_tests:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
     - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
     - python3 -m ensurepip
-    - export NUMBER_OF_PROCESSES=$(nproc)
-    - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
+    - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" pytest-timeout==${PYTEST_TIMEOUT_VERSION}
 
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet
-    - timeout 29m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((27*60)) -m mainnet_5m --junitxml="./report.xml" --http-endpoint='hived-instance:8090' --ws-endpoint='hived-instance:8090' --wallet-path="$CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet"
+    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet)
+    - *run-pytest
 
   timeout: 32min
 
@@ -560,14 +605,15 @@ transaction_serialization_mainnet_tests:
 .message_format_tests:
   image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
   variables:
+    PYTEST_TIMEOUT_MINUTES: 30
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
   script:
     - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
     - python3 -m ensurepip
-    - export NUMBER_OF_PROCESSES=$(nproc)
     - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
     - cd tests/api_tests/message_format_tests
-    - timeout 32m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((30*60)) -m ${NODE_TYPE} --junitxml="./report.xml" --http-endpoint=${NODE_ADDRESS}
+    - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
+    - *run-pytest
   timeout: 35min
   artifacts:
     reports:
@@ -605,10 +651,12 @@ foundation_layer_tests:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 3
   script:
     - pip install pytest-rerunfailures==${PYTEST_RERUN_FAILURES_VERSION}
     - cd tests/functional/python_tests/foundation_layer_tests
-    - timeout 4m pytest -n ${NUMBER_OF_PROCESSES} --timeout=$((3*60)) --junitxml="./report.xml"
+    - *run-pytest
   timeout: 5min
   artifacts:
     reports:
