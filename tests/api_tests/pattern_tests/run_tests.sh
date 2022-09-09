@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export PYTHONPATH="$2/tests/test_tools/package"
+
 if [[ $1 == *":"* ]]; then
     export HIVEMIND_ADDRESS=${1%:*}
     export HIVEMIND_PORT=${1##*:}
@@ -9,14 +11,9 @@ else
 fi
 export TAVERN_DIR="$2/tests/api_tests/pattern_tests/"
 
-default_testname_pat="(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
-if [[ "$3" == "direct_call_hafah" ]]; then
-    export IS_DIRECT_CALL_HAFAH=TRUE
-    TEST_NAMES="account_history_api_"
-else
-    export IS_DIRECT_CALL_HAFAH=FALSE
-    TEST_NAMES=$default_testname_pat
-fi
+default_testsuite=${3:?"Test suite must be specified as 3-rd script argument"}
+
+export IS_DIRECT_CALL_HAFAH=${4:-FALSE}
 
 tox -e tavern --                                 \
     --tb=line                                    \
@@ -27,4 +24,5 @@ tox -e tavern --                                 \
     --junitxml=results.xml                       \
     -W ignore::pytest.PytestDeprecationWarning   \
     -W ignore::DeprecationWarning                \
-    -k "${TEST_NAMES}"
+    -k "${default_testsuite}"
+
