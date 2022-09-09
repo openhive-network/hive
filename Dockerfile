@@ -108,7 +108,7 @@ ADD ./docker/docker_entrypoint.sh .
 RUN sudo -n mkdir -p /home/hived/bin && sudo -n mkdir -p /home/hived/shm_dir && \
   sudo -n mkdir -p /home/hived/datadir && sudo -n chown -Rc hived:hived /home/hived/
 
-VOLUME [/home/hived/datadir, /home/hived/shm_dir]
+VOLUME [ "/home/hived/datadir", "/home/hived/shm_dir" ]
 
 STOPSIGNAL SIGINT 
 
