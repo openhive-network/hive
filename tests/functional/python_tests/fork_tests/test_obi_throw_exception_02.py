@@ -5,7 +5,7 @@ import time
 def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     # start - A network (consists of a 'A' network(10 witnesses) + a 'B' network(11 witnesses)) produces blocks
 
-    # A witnesses from both networks have an exception in the same time - during 20 seconds these sub networks can't produce
+    # A witnesses from both networks have an exception in the same time - during 'sleep_time_in_sec' seconds these sub networks can't produce
     # After production resuming, both sub networks link together and LIB increases,
     # because sending transaction with `witness_block_approve_operation` inf witness plugin is sent when `finish_apply_block` event occurs
 
@@ -36,11 +36,15 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     _a0 = logs[0].collector
     last_lib_01                                 = get_last_irreversible_block_num(_a0)
 
-    tt.logger.info(f'Artificial exception is thrown during 30 seconds')
+    sleep_time_in_sec = 30
+
+    tt.logger.info(f'Artificial exception is thrown during {sleep_time_in_sec} seconds')
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception = True)
     witness_node_1.api.debug_node.debug_throw_exception(throw_exception = True)
 
-    time.sleep(30)
+    tt.logger.info(f'Before sleep {sleep_time_in_sec}')
+    time.sleep(sleep_time_in_sec)
+    tt.logger.info(f'After sleep {sleep_time_in_sec}')
 
     tt.logger.info(f'Artificial exception is disabled')
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception = False)

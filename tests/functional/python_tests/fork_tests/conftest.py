@@ -30,6 +30,8 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
 
     tt.logger.info('Running nodes...')
 
+    connect_sub_networks(networks)
+
     nodes = [node for network in networks for node in network.nodes]
     nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
     init_node: InitNode = get_implementation(nodes[0])
