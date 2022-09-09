@@ -1,25 +1,4 @@
 Application Options:
-  --account-history-track-account-range arg
-                                        Defines a range of accounts to track as
-                                        a json pair ["from","to"] [from,to] Can
-                                        be specified multiple times.
-  --track-account-range arg             Defines a range of accounts to track as
-                                        a json pair ["from","to"] [from,to] Can
-                                        be specified multiple times. Deprecated
-                                        in favor of account-history-track-accou
-                                        nt-range.
-  --account-history-whitelist-ops arg   Defines a list of operations which will
-                                        be explicitly logged.
-  --history-whitelist-ops arg           Defines a list of operations which will
-                                        be explicitly logged. Deprecated in
-                                        favor of account-history-whitelist-ops.
-  --account-history-blacklist-ops arg   Defines a list of operations which will
-                                        be explicitly ignored.
-  --history-blacklist-ops arg           Defines a list of operations which will
-                                        be explicitly ignored. Deprecated in
-                                        favor of account-history-blacklist-ops.
-  --history-disable-pruning arg (=0)    Disables automatic account history
-                                        trimming
   --account-history-rocksdb-path arg (="blockchain/account-history-rocksdb-storage")
                                         The location of the rocksdb database
                                         for account history. By default it is
@@ -36,6 +15,8 @@ Application Options:
                                         Defines a list of operations which will
                                         be explicitly ignored.
   --block-data-export-file arg (=NONE)  Where to export data (NONE to discard)
+  --block-data-skip-empty arg (=0)      Skip producing when no factory is
+                                        registered
   --block-log-info-print-interval-seconds arg (=86400)
                                         How often to print out block_log_info
                                         (default 1 day)
@@ -45,18 +26,18 @@ Application Options:
   --block-log-info-print-file arg (=ILOG)
                                         Where to print (filename or special
                                         sink ILOG, STDOUT, STDERR)
-  --shared-file-dir arg (="blockchain") the location of the chain shared memory
+  --shared-file-dir dir (="blockchain") the location of the chain shared memory
                                         files (absolute path or relative to
                                         application data dir)
-  --shared-file-size arg (=54G)         Size of the shared memory file.
-                                        Default: 54G. If running a full node,
-                                        increase this value to 200G.
+  --shared-file-size arg (=24G)         Size of the shared memory file.
+                                        Default: 24G. If running with many
+                                        plugins, increase this value to 28G.
   --shared-file-full-threshold arg (=0) A 2 precision percentage (0-10000) that
                                         defines the threshold for when to
                                         autoscale the shared memory file.
                                         Setting this to 0 disables autoscaling.
                                         Recommended value for consensus node is
-                                        9500 (95%). Full node is 9900 (99%)
+                                        9500 (95%).
   --shared-file-scale-rate arg (=0)     A 2 precision percentage (0-10000) that
                                         defines how quickly to scale the shared
                                         memory file. When autoscaling occurs
@@ -68,6 +49,22 @@ Application Options:
                                         should be enforced as checkpoints.
   --flush-state-interval arg            flush shared memory changes to disk
                                         every N blocks
+  --enable-block-log-compression arg (=1)
+                                        Compress blocks using zstd as they're
+                                        added to the block log
+  --block-log-compression-level arg (=15)
+                                        Block log zstd compression level 0
+                                        (fast, low compression) - 22 (slow,
+                                        high compression)
+  --blockchain-thread-pool-size size (=8)
+                                        Number of worker threads used to
+                                        pre-validate transactions and blocks
+  --block-stats-report-type arg (=FULL) Level of detail of block stat reports:
+                                        NONE, MINIMAL, REGULAR, FULL. Default
+                                        FULL (recommended for API nodes).
+  --block-stats-report-output arg (=ILOG)
+                                        Where to put block stat reports: DLOG,
+                                        ILOG, NOTIFY. Default ILOG.
   --cashout-logging-starting-block arg  Starting block for comment cashout log
   --cashout-logging-ending-block arg    Ending block for comment cashout log
   --cashout-logging-log-path-dir arg    Path to log file
@@ -112,10 +109,10 @@ Application Options:
                                         ,"peer_advertising_disabled":false,"max
                                         imum_number_of_blocks_to_handle_at_one_
                                         time":200,"maximum_number_of_sync_block
-                                        s_to_prefetch":2000,"maximum_blocks_per
-                                        _peer_during_syncing":200,"active_ignor
-                                        ed_request_timeout_microseconds":600000
-                                        0} )
+                                        s_to_prefetch":20000,"maximum_blocks_pe
+                                        r_peer_during_syncing":200,"active_igno
+                                        red_request_timeout_microseconds":60000
+                                        00} )
   --snapshot-root-dir arg (="snapshot") The location (root-dir) of the snapshot
                                         storage, to save/read portable state
                                         dumps
@@ -162,7 +159,7 @@ Application Options:
                                         more witnesses or miners
 
 
-  --log-appender arg (={"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"})
+  --log-appender arg (={"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds", "delta_times": false})
                                         Appender definition json: {"appender",
                                         "stream", "file"} Can only specify a
                                         file OR a stream
@@ -171,10 +168,12 @@ Application Options:
   --log-logger arg (={"name":"default","level":"info","appender":"stderr"} {"name":"user","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"})
                                         Logger definition json: {"name",
                                         "level", "appender"}
+  --notifications-endpoint arg          list of addresses, that will receive
+                                        notification about in-chain events
   --backtrace arg (=yes)                Whether to print backtrace on SIGSEGV
 
 Application Config Options:
-  --plugin arg (=witness account_by_key account_by_key_api condenser_api )
+  --plugin plugin-name (=witness account_by_key account_by_key_api wallet_bridge_api )
                                         Plugin(s) to enable, may be specified
                                         multiple times
 
@@ -182,17 +181,19 @@ Application Command Line Options:
   -h [ --help ]                         Print this help message and exit.
   -v [ --version ]                      Print version information.
   --dump-config                         Dump configuration and exit
-  -d [ --data-dir ] arg                 Directory containing configuration file
+  --list-plugins                        Print names of all available plugins
+                                        and exit
+  --generate-completions                Generate bash auto-complete script
+                                        (try: eval "$(hived --generate-completi
+                                        ons)")
+  -d [ --data-dir ] dir                 Directory containing configuration file
                                         config.ini. Default location:
                                         $HOME/.hived or CWD/. hived
-  -c [ --config ] arg (="config.ini")   Configuration file name relative to
+  -c [ --config ] filename (="config.ini")
+                                        Configuration file name relative to
                                         data-dir
 
 Command Line Options for account_history_rocksdb:
-  --account-history-rocksdb-immediate-import
-                                        Allows to force immediate data import
-                                        at plugin startup. By default storage
-                                        is supplied during reindex process.
   --account-history-rocksdb-stop-import-at-block arg (=0)
                                         Allows to specify block number, the
                                         data import process should stop at.
@@ -207,10 +208,16 @@ Command Line Options for chain:
                                         environment check
   --resync-blockchain                   clear chain database and block log
   --stop-replay-at-block arg            Stop after reaching given block number
-  --exit-after-replay                   Exit after reaching given block number
+  --exit-after-replay                   [ DEPRECATED ] Exit after reaching
+                                        given block number
+  --exit-before-sync                    Exits before starting sync, handy for
+                                        dumping snapshot without starting
+                                        replay
   --force-replay                        Before replaying clean all old files.
                                         If specifed, `--replay-blockchain` flag
                                         is implied
+  --validate-during-replay              Runs all validations that are normally
+                                        turned off during replay
   --advanced-benchmark                  Make profiling for every plugin.
   --set-benchmark-interval arg          Print time and memory usage every given
                                         number of blocks
@@ -222,6 +229,9 @@ Command Line Options for chain:
                                         out
   --chain-id arg (=18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e)
                                         chain ID to connect to
+  --skeleton-key arg (=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n)
+                                        WIF PRIVATE key to be used as skeleton
+                                        key for all accounts
 
 Command Line Options for condenser_api:
   --disable-get-block                   Disable get_block API call
@@ -236,7 +246,6 @@ Command Line Options for rc:
   --rc-skip-reject-not-enough-rc        Skip rejecting transactions when
                                         account has insufficient RCs. This is
                                         not recommended.
-  --rc-compute-historical-rc            Generate historical resource credits
   --rc-start-at-block arg (=0)          Start calculating RCs at a specific
                                         block
   --rc-account-whitelist arg            Ignore RC calculations for the
