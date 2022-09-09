@@ -1,5 +1,8 @@
   -h [ --help ]                         Print this help message and exit.
-  -s [ --server-rpc-endpoint ] [=arg(=ws://127.0.0.1:8090)]
+  -v [ --version ]                      Print git revision sha of this
+                                        cli_wallet build.
+  -o [ --offline ]                      Run the wallet in offline mode.
+  -s [ --server-rpc-endpoint ] arg (=ws://127.0.0.1:8090)
                                         Server websocket RPC endpoint
   -a [ --cert-authority ] arg (=_default)
                                         Trusted CA bundle file for connecting
@@ -27,7 +30,18 @@
   --rpc-http-allowip arg                Allows only specified IPs to connect to
                                         the HTTP endpoint
   -w [ --wallet-file ] [=arg(=wallet.json)]
-                                        wallet to load
+                                        Wallet to load
   --chain-id arg (=18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e)
-                                        chain ID to connect to
+                                        Chain ID to connect to
+  --output-formatter arg                Allows to present a result in different
+                                        ways. Possible values(none/text/json)
+  --transaction-serialization arg (=legacy)
+                                        Allows to generate JSON using
+                                        legacy/HF26 format. Possible
+                                        values(legacy/hf26). By default is
+                                        `legacy`.
+  --store-transaction arg               Requires a name of file. Allows to save
+                                        a serialized transaction into the file
+                                        in a current directory. By default a
+                                        name of file is empty.
 
