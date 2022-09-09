@@ -1,5 +1,5 @@
 # Appender definition json: {"appender", "stream", "file"} Can only specify a file OR a stream
-log-appender = {"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}
+log-appender = {"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds", "delta_times": false}
 
 # log-console-appender =
 
@@ -16,27 +16,6 @@ backtrace = yes
 
 # Plugin(s) to enable, may be specified multiple times
 plugin = witness account_by_key account_by_key_api wallet_bridge_api
-
-# Defines a range of accounts to track as a json pair ["from","to"] [from,to] Can be specified multiple times.
-# account-history-track-account-range =
-
-# Defines a range of accounts to track as a json pair ["from","to"] [from,to] Can be specified multiple times. Deprecated in favor of account-history-track-account-range.
-# track-account-range =
-
-# Defines a list of operations which will be explicitly logged.
-# account-history-whitelist-ops =
-
-# Defines a list of operations which will be explicitly logged. Deprecated in favor of account-history-whitelist-ops.
-# history-whitelist-ops =
-
-# Defines a list of operations which will be explicitly ignored.
-# account-history-blacklist-ops =
-
-# Defines a list of operations which will be explicitly ignored. Deprecated in favor of account-history-blacklist-ops.
-# history-blacklist-ops =
-
-# Disables automatic account history trimming
-history-disable-pruning = 0
 
 # The location of the rocksdb database for account history. By default it is $DATA_DIR/blockchain/account-history-rocksdb-storage
 account-history-rocksdb-path = "blockchain/account-history-rocksdb-storage"
@@ -68,10 +47,10 @@ block-log-info-print-file = ILOG
 # the location of the chain shared memory files (absolute path or relative to application data dir)
 shared-file-dir = "blockchain"
 
-# Size of the shared memory file. Default: 54G. If running a full node, increase this value to 200G.
-shared-file-size = 54G
+# Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.
+shared-file-size = 24G
 
-# A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%). Full node is 9900 (99%)
+# A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%).
 shared-file-full-threshold = 0
 
 # A 2 precision percentage (0-10000) that defines how quickly to scale the shared memory file. When autoscaling occurs the file's size will be increased by this percent. Setting this to 0 disables autoscaling. Recommended value is between 1000-2000 (10-20%)
@@ -82,6 +61,21 @@ shared-file-scale-rate = 0
 
 # flush shared memory changes to disk every N blocks
 # flush-state-interval =
+
+# Compress blocks using zstd as they're added to the block log
+enable-block-log-compression = 1
+
+# Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)
+block-log-compression-level = 15
+
+# Number of worker threads used to pre-validate transactions and blocks
+blockchain-thread-pool-size = 8
+
+# Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes).
+block-stats-report-type = FULL
+
+# Where to put block stat reports: DLOG, ILOG, NOTIFY. Default ILOG.
+block-stats-report-output = ILOG
 
 # Starting block for comment cashout log
 # cashout-logging-starting-block =
@@ -125,14 +119,11 @@ market-history-buckets-per-size = 5760
 # The IP address and port of a remote peer to sync with.
 # p2p-seed-node =
 
-# P2P network parameters. (Default: {"listen_endpoint":"0.0.0.0:0","accept_incoming_connections":true,"wait_if_endpoint_is_busy":true,"private_key":"0000000000000000000000000000000000000000000000000000000000000000","desired_number_of_connections":20,"maximum_number_of_connections":200,"peer_connection_retry_timeout":30,"peer_inactivity_timeout":5,"peer_advertising_disabled":false,"maximum_number_of_blocks_to_handle_at_one_time":200,"maximum_number_of_sync_blocks_to_prefetch":2000,"maximum_blocks_per_peer_during_syncing":200,"active_ignored_request_timeout_microseconds":6000000} )
+# P2P network parameters. (Default: {"listen_endpoint":"0.0.0.0:0","accept_incoming_connections":true,"wait_if_endpoint_is_busy":true,"private_key":"0000000000000000000000000000000000000000000000000000000000000000","desired_number_of_connections":20,"maximum_number_of_connections":200,"peer_connection_retry_timeout":30,"peer_inactivity_timeout":5,"peer_advertising_disabled":false,"maximum_number_of_blocks_to_handle_at_one_time":200,"maximum_number_of_sync_blocks_to_prefetch":20000,"maximum_blocks_per_peer_during_syncing":200,"active_ignored_request_timeout_microseconds":6000000} )
 # p2p-parameters =
 
 # Skip rejecting transactions when account has insufficient RCs. This is not recommended.
 rc-skip-reject-not-enough-rc = 0
-
-# Generate historical resource credits
-rc-compute-historical-rc = 0
 
 # Start calculating RCs at a specific block
 rc-start-at-block = 0
