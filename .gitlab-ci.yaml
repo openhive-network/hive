@@ -462,7 +462,7 @@ patterns_tests:
   variables:
     FF_NETWORK_PER_BUILD: 1
     PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
-
+    TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
   needs:
     - job: prepare_hived_data_image
       artifacts: true
@@ -479,13 +479,13 @@ patterns_tests:
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
-    - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR"
+    - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   timeout: 38min
   artifacts:
     when: always
     reports:
-      junit: $CI_PROJECT_DIR/tests/api_tests/pattern_tests/results.xml
+      junit: tests/api_tests/pattern_tests/results.xml
     paths:
     - "$CI_JOB_NAME"
     - "**/from_node.log"
