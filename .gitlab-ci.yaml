@@ -394,7 +394,7 @@ live_sync_tests:
   tags:
     - public-runner-docker
 
-network_broadcast_tests:
+broadcast_tests:
   stage: test
   extends: .test_tools_based
   needs:
@@ -404,11 +404,11 @@ network_broadcast_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
   script:
-    - cd tests/functional/python_tests/network_broadcast_tests
+    - cd tests/functional/python_tests/broadcast_tests
     - *run-pytest
   artifacts:
     reports:
-      junit: tests/functional/python_tests/network_broadcast_tests/report.xml
+      junit: tests/functional/python_tests/broadcast_tests/report.xml
   tags:
     - public-runner-docker
 
