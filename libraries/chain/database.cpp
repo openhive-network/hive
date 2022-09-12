@@ -5675,7 +5675,10 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     }
 
   }
-  FC_CAPTURE_AND_RETHROW()
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
 }
 
 
