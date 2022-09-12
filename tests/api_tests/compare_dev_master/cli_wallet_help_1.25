@@ -1,0 +1,33 @@
+  -h [ --help ]                         Print this help message and exit.
+  -s [ --server-rpc-endpoint ] [=arg(=ws://127.0.0.1:8090)]
+                                        Server websocket RPC endpoint
+  -a [ --cert-authority ] arg (=_default)
+                                        Trusted CA bundle file for connecting 
+                                        to wss:// TLS server
+  --retry-server-connection             Keep trying to connect to the Server 
+                                        websocket RPC endpoint if the first 
+                                        attempt fails
+  -r [ --rpc-endpoint ] [=arg(=127.0.0.1:8091)]
+                                        Endpoint for wallet websocket RPC to 
+                                        listen on
+  -t [ --rpc-tls-endpoint ] [=arg(=127.0.0.1:8092)]
+                                        Endpoint for wallet websocket TLS RPC 
+                                        to listen on
+  -c [ --rpc-tls-certificate ] [=arg(=server.pem)]
+                                        PEM certificate for wallet websocket 
+                                        TLS RPC
+  -H [ --rpc-http-endpoint ] [=arg(=127.0.0.1:8093)]
+                                        Endpoint for wallet HTTP RPC to listen 
+                                        on
+  --unlock arg                          Password to automatically unlock wallet
+                                        with or use HIVE_WALLET_PASSWORD 
+                                        environment variable if no password is 
+                                        supplied
+  -d [ --daemon ]                       Run the wallet in daemon mode
+  --rpc-http-allowip arg                Allows only specified IPs to connect to
+                                        the HTTP endpoint
+  -w [ --wallet-file ] [=arg(=wallet.json)]
+                                        wallet to load
+  --chain-id arg (=18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e)
+                                        chain ID to connect to
+

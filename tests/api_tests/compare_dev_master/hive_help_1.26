@@ -1,0 +1,280 @@
+Application Options:
+  --account-history-rocksdb-path arg (="blockchain/account-history-rocksdb-storage")
+                                        The location of the rocksdb database
+                                        for account history. By default it is
+                                        $DATA_DIR/blockchain/account-history-ro
+                                        cksdb-storage
+  --account-history-rocksdb-track-account-range arg
+                                        Defines a range of accounts to track as
+                                        a json pair ["from","to"] [from,to] Can
+                                        be specified multiple times.
+  --account-history-rocksdb-whitelist-ops arg
+                                        Defines a list of operations which will
+                                        be explicitly logged.
+  --account-history-rocksdb-blacklist-ops arg
+                                        Defines a list of operations which will
+                                        be explicitly ignored.
+  --block-data-export-file arg (=NONE)  Where to export data (NONE to discard)
+  --block-data-skip-empty arg (=0)      Skip producing when no factory is
+                                        registered
+  --block-log-info-print-interval-seconds arg (=86400)
+                                        How often to print out block_log_info
+                                        (default 1 day)
+  --block-log-info-print-irreversible arg (=1)
+                                        Whether to defer printing until block
+                                        is irreversible
+  --block-log-info-print-file arg (=ILOG)
+                                        Where to print (filename or special
+                                        sink ILOG, STDOUT, STDERR)
+  --shared-file-dir dir (="blockchain") the location of the chain shared memory
+                                        files (absolute path or relative to
+                                        application data dir)
+  --shared-file-size arg (=24G)         Size of the shared memory file.
+                                        Default: 24G. If running with many
+                                        plugins, increase this value to 28G.
+  --shared-file-full-threshold arg (=0) A 2 precision percentage (0-10000) that
+                                        defines the threshold for when to
+                                        autoscale the shared memory file.
+                                        Setting this to 0 disables autoscaling.
+                                        Recommended value for consensus node is
+                                        9500 (95%).
+  --shared-file-scale-rate arg (=0)     A 2 precision percentage (0-10000) that
+                                        defines how quickly to scale the shared
+                                        memory file. When autoscaling occurs
+                                        the file's size will be increased by
+                                        this percent. Setting this to 0
+                                        disables autoscaling. Recommended value
+                                        is between 1000-2000 (10-20%)
+  -c [ --checkpoint ] arg               Pairs of [BLOCK_NUM,BLOCK_ID] that
+                                        should be enforced as checkpoints.
+  --flush-state-interval arg            flush shared memory changes to disk
+                                        every N blocks
+  --enable-block-log-compression arg (=1)
+                                        Compress blocks using zstd as they're
+                                        added to the block log
+  --block-log-compression-level arg (=15)
+                                        Block log zstd compression level 0
+                                        (fast, low compression) - 22 (slow,
+                                        high compression)
+  --blockchain-thread-pool-size size (=8)
+                                        Number of worker threads used to
+                                        pre-validate transactions and blocks
+  --block-stats-report-type arg (=FULL) Level of detail of block stat reports:
+                                        NONE, MINIMAL, REGULAR, FULL. Default
+                                        FULL (recommended for API nodes).
+  --block-stats-report-output arg (=ILOG)
+                                        Where to put block stat reports: DLOG,
+                                        ILOG, NOTIFY. Default ILOG.
+  --cashout-logging-starting-block arg  Starting block for comment cashout log
+  --cashout-logging-ending-block arg    Ending block for comment cashout log
+  --cashout-logging-log-path-dir arg    Path to log file
+  -e [ --debug-node-edit-script ] arg   Database edits to apply on startup (may
+                                        specify multiple times)
+  --edit-script arg                     Database edits to apply on startup (may
+                                        specify multiple times). Deprecated in
+                                        favor of debug-node-edit-script.
+  --follow-max-feed-size arg (=500)     Set the maximum size of cached feed for
+                                        an account
+  --follow-start-feeds arg (=0)         Block time (in epoch seconds) when to
+                                        start calculating feeds
+  --log-json-rpc arg                    json-rpc log directory name.
+  --market-history-bucket-size arg (=[15,60,300,3600,86400])
+                                        Track market history by grouping orders
+                                        into buckets of equal size measured in
+                                        seconds specified as a JSON array of
+                                        numbers
+  --market-history-buckets-per-size arg (=5760)
+                                        How far back in time to track history
+                                        for each bucket size, measured in the
+                                        number of buckets (default: 5760)
+  --p2p-endpoint [=arg(=127.0.0.1:9876)]
+                                        The local IP address and port to listen
+                                        for incoming connections.
+  --p2p-max-connections arg             Maxmimum number of incoming connections
+                                        on P2P endpoint.
+  --seed-node arg                       The IP address and port of a remote
+                                        peer to sync with. Deprecated in favor
+                                        of p2p-seed-node.
+  --p2p-seed-node arg                   The IP address and port of a remote
+                                        peer to sync with.
+  --p2p-parameters arg                  P2P network parameters. (Default:
+                                        {"listen_endpoint":"0.0.0.0:0","accept_
+                                        incoming_connections":true,"wait_if_end
+                                        point_is_busy":true,"private_key":"0000
+                                        000000000000000000000000000000000000000
+                                        000000000000000000000","desired_number_
+                                        of_connections":20,"maximum_number_of_c
+                                        onnections":200,"peer_connection_retry_
+                                        timeout":30,"peer_inactivity_timeout":5
+                                        ,"peer_advertising_disabled":false,"max
+                                        imum_number_of_blocks_to_handle_at_one_
+                                        time":200,"maximum_number_of_sync_block
+                                        s_to_prefetch":20000,"maximum_blocks_pe
+                                        r_peer_during_syncing":200,"active_igno
+                                        red_request_timeout_microseconds":60000
+                                        00} )
+  --snapshot-root-dir arg (="snapshot") The location (root-dir) of the snapshot
+                                        storage, to save/read portable state
+                                        dumps
+  --statsd-endpoint arg                 Endpoint to send statsd messages to.
+  --statsd-batchsize arg (=1)           Size to batch statsd messages.
+  --statsd-whitelist arg                Whitelist of statistics to capture.
+  --statsd-blacklist arg                Blacklist of statistics to capture.
+  --tags-start-promoted arg (=0)        Block time (in epoch seconds) when to
+                                        start calculating promoted content.
+                                        Should be 1 week prior to current time.
+  --transaction-status-block-depth arg (=64000)
+                                        Defines the number of blocks from the
+                                        head block that transaction statuses
+                                        will be tracked.
+  --transaction-status-track-after-block arg (=0)
+                                        Defines the block number the
+                                        transaction status plugin will begin
+                                        tracking.
+  --webserver-http-endpoint arg         Local http endpoint for webserver
+                                        requests.
+  --webserver-unix-endpoint arg         Local unix http endpoint for webserver
+                                        requests.
+  --webserver-ws-endpoint arg           Local websocket endpoint for webserver
+                                        requests.
+  --webserver-enable-permessage-deflate arg
+                                        Enable the RFC-7692 permessage-deflate
+                                        extension for the WebSocket server
+                                        (only used if the client requests it).
+                                        This may save bandwidth at the expense
+                                        of CPU
+  --rpc-endpoint arg                    Local http and websocket endpoint for
+                                        webserver requests. Deprecated in favor
+                                        of webserver-http-endpoint and
+                                        webserver-ws-endpoint
+  --webserver-thread-pool-size arg (=32)
+                                        Number of threads used to handle
+                                        queries. Default: 32.
+  --required-participation arg (=33)    Percent of witnesses (0-99) that must
+                                        be participating in order to produce
+                                        blocks
+  -w [ --witness ] arg                  name of witness controlled by this node
+                                        (e.g. initwitness )
+  --private-key arg                     WIF PRIVATE KEY to be used by one or
+                                        more witnesses or miners
+
+
+  --log-appender arg (={"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds", "delta_times": false})
+                                        Appender definition json: {"appender",
+                                        "stream", "file"} Can only specify a
+                                        file OR a stream
+  --log-console-appender arg
+  --log-file-appender arg
+  --log-logger arg (={"name":"default","level":"info","appender":"stderr"} {"name":"user","level":"debug","appender":"stderr"} {"name":"p2p","level":"warn","appender":"p2p"})
+                                        Logger definition json: {"name",
+                                        "level", "appender"}
+  --notifications-endpoint arg          list of addresses, that will receive
+                                        notification about in-chain events
+  --backtrace arg (=yes)                Whether to print backtrace on SIGSEGV
+
+Application Config Options:
+  --plugin plugin-name (=witness account_by_key account_by_key_api wallet_bridge_api )
+                                        Plugin(s) to enable, may be specified
+                                        multiple times
+
+Application Command Line Options:
+  -h [ --help ]                         Print this help message and exit.
+  -v [ --version ]                      Print version information.
+  --dump-config                         Dump configuration and exit
+  --list-plugins                        Print names of all available plugins
+                                        and exit
+  --generate-completions                Generate bash auto-complete script
+                                        (try: eval "$(hived --generate-completi
+                                        ons)")
+  -d [ --data-dir ] dir                 Directory containing configuration file
+                                        config.ini. Default location:
+                                        $HOME/.hived or CWD/. hived
+  -c [ --config ] filename (="config.ini")
+                                        Configuration file name relative to
+                                        data-dir
+
+Command Line Options for account_history_rocksdb:
+  --account-history-rocksdb-stop-import-at-block arg (=0)
+                                        Allows to specify block number, the
+                                        data import process should stop at.
+  --account-history-rocksdb-dump-balance-history arg
+                                        Dumps balances for all tracked accounts
+                                        to a CSV file every time they change
+
+Command Line Options for chain:
+  --replay-blockchain                   clear chain database and replay all
+                                        blocks
+  --force-open                          force open the database, skipping the
+                                        environment check
+  --resync-blockchain                   clear chain database and block log
+  --stop-replay-at-block arg            Stop after reaching given block number
+  --exit-after-replay                   [ DEPRECATED ] Exit after reaching
+                                        given block number
+  --exit-before-sync                    Exits before starting sync, handy for
+                                        dumping snapshot without starting
+                                        replay
+  --force-replay                        Before replaying clean all old files.
+                                        If specifed, `--replay-blockchain` flag
+                                        is implied
+  --validate-during-replay              Runs all validations that are normally
+                                        turned off during replay
+  --advanced-benchmark                  Make profiling for every plugin.
+  --set-benchmark-interval arg          Print time and memory usage every given
+                                        number of blocks
+  --dump-memory-details                 Dump database objects memory usage
+                                        info. Use set-benchmark-interval to set
+                                        dump interval.
+  --check-locks                         Check correctness of chainbase locking
+  --validate-database-invariants        Validate all supply invariants check
+                                        out
+  --chain-id arg (=18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e)
+                                        chain ID to connect to
+  --skeleton-key arg (=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n)
+                                        WIF PRIVATE key to be used as skeleton
+                                        key for all accounts
+
+Command Line Options for condenser_api:
+  --disable-get-block                   Disable get_block API call
+
+Command Line Options for p2p:
+  --force-validate                      Force validation of all transactions.
+                                        Deprecated in favor of
+                                        p2p-force-validate
+  --p2p-force-validate                  Force validation of all transactions.
+
+Command Line Options for rc:
+  --rc-skip-reject-not-enough-rc        Skip rejecting transactions when
+                                        account has insufficient RCs. This is
+                                        not recommended.
+  --rc-start-at-block arg (=0)          Start calculating RCs at a specific
+                                        block
+  --rc-account-whitelist arg            Ignore RC calculations for the
+                                        whitelist
+
+Command Line Options for state_snapshot:
+  --load-snapshot arg                   Allows to force immediate snapshot
+                                        import at plugin startup. All data in
+                                        state storage are overwritten
+  --dump-snapshot arg                   Allows to force immediate snapshot dump
+                                        at plugin startup. All data in the
+                                        snaphsot storage are overwritten
+
+Command Line Options for statsd:
+  --statsd-record-on-replay             Records statsd events during replay
+
+Command Line Options for tags:
+  --tags-skip-startup-update            Skip updating tags on startup. Can
+                                        safely be skipped when starting a
+                                        previously running node. Should not be
+                                        skipped when reindexing.
+
+Command Line Options for transaction_status:
+  --transaction-status-rebuild-state    Indicates that the transaction status
+                                        plugin must re-build its state upon
+                                        startup.
+
+Command Line Options for witness:
+  --enable-stale-production             Enable block production, even if the
+                                        chain is stale.
+  --witness-skip-enforce-bandwidth      Skip enforcing bandwidth restrictions.
+                                        Default is true in favor of rc_plugin.
