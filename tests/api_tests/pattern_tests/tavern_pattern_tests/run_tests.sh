@@ -9,7 +9,7 @@ else
     export HIVEMIND_ADDRESS=localhost
     export HIVEMIND_PORT=$1
 fi
-export TAVERN_DIR="$2/tests/api_tests/pattern_tests/"
+export TAVERN_DIR="$2/tests/api_tests/pattern_tests/tavern_pattern_tests/"
 
 default_testsuite=${3:?"Test suite must be specified as 3-rd script argument"}
 

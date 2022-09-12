@@ -485,7 +485,7 @@ datagen_api_tests:
   tags:
     - public-runner-docker
 
-patterns_tests:
+tavern_patterns_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
   variables:
@@ -507,13 +507,13 @@ patterns_tests:
 
   script:
     # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
+    - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests/tavern_pattern_tests
     - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   artifacts:
     when: always
     reports:
-      junit: tests/api_tests/pattern_tests/results.xml
+      junit: tests/api_tests/pattern_tests/tavern_pattern_tests/results.xml
     paths:
     - "$CI_JOB_NAME"
     - "**/from_node.log"
