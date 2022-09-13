@@ -648,5 +648,26 @@ HIVE_AUTO_TEST_CASE( reflected,
   BOOST_REQUIRE_EQUAL( c.b.b, c_out.b.b );
 )
 
+HIVE_AUTO_TEST_CASE( variant_negation,
+  BOOST_REQUIRE( !fc::variant{ false } );
+  BOOST_REQUIRE( !fc::variant{ 0 } );
+)
+
+HIVE_AUTO_TEST_CASE( variant_compare_eq,
+  BOOST_REQUIRE( (fc::variant{ 1 } == fc::variant{ 1 }) );
+  BOOST_REQUIRE( (fc::variant{ "alice" } == fc::variant{ "alice" }) );
+  BOOST_REQUIRE( !(fc::variant{ 2 } == fc::variant{ 1 }) );
+  BOOST_REQUIRE( !(fc::variant{ true } == fc::variant{ 1 }) );
+  BOOST_REQUIRE( !(fc::variant{ "alice" } == fc::variant{ "bob" }) );
+)
+
+HIVE_AUTO_TEST_CASE( variant_compare_ne,
+  BOOST_REQUIRE( !(fc::variant{ 1 } != fc::variant{ 1 }) );
+  BOOST_REQUIRE( !(fc::variant{ "alice" } != fc::variant{ "alice" }) );
+  BOOST_REQUIRE( (fc::variant{ 2 } != fc::variant{ 1 }) );
+  BOOST_REQUIRE( (fc::variant{ true } != fc::variant{ 1 }) );
+  BOOST_REQUIRE( (fc::variant{ "alice" } != fc::variant{ "bob" }) );
+)
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
