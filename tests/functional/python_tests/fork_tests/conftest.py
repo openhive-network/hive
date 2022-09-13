@@ -111,7 +111,7 @@ def prepare_nodes(sub_networks_sizes : list) -> list:
     init_node         = None
 
     for sub_networks_size in sub_networks_sizes:
-        tt.logger.info(f'Preparing sub-network nr: {cnt} that consists of {sub_networks_size} nodes')
+        tt.logger.info(f'Preparing sub-network nr: {cnt} that consists of {sub_networks_size} witnesses')
 
         witness_names = [f'witness-{cnt}-{i}' for i in range(sub_networks_size)]
         all_witness_names += witness_names
@@ -134,9 +134,12 @@ def prepare_sub_networks_generation(sub_networks_sizes : list, block_log_directo
 
     tt.logger.info('Running networks, waiting for live...')
 
+    cnt = 0
     for sub_network in sub_networks:
         assert sub_network is not None
         sub_network.run()
+        tt.logger.info(f'A network number {cnt} is running')
+        cnt += 1
 
     initminer_public_key = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'
     init_network(init_node, all_witness_names, initminer_public_key, block_log_directory_name)
@@ -202,3 +205,8 @@ def prepare_obi_throw_exception_01() -> Dict:
 @pytest.fixture
 def prepare_obi_throw_exception_02() -> Dict:
     yield { 'sub-networks-data': prepare_sub_networks([10, 11], allow_generate_block_log(), create_block_log_directory_name('block_log_obi_throw_exception_02')) }
+
+@pytest.fixture
+def prepare_fork_3_sub_networks_00() -> Dict:
+    pass
+    yield { 'sub-networks-data': prepare_sub_networks([3, 4, 14], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_3_sub_networks_00')) }

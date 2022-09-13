@@ -49,34 +49,28 @@ def get_time_offset_from_iso_8601(timestamp: str) -> str:
     return time_offset
 
 def connect_sub_networks(sub_networks : list):
-    if len(sub_networks) > 1:
-        current_sub_network = None
-        cnt = -1
-        for sub_network in sub_networks:
-            cnt += 1
-            if current_sub_network is None:
-                current_sub_network = sub_network
-                continue
-            else:
-                assert (current_sub_network is not None) and (sub_network is not None)
-                tt.logger.info(f"Sub network {cnt} connected with {cnt-1}")
-                current_sub_network.connect_with(sub_network)
-                current_sub_network = sub_network
+    assert len(sub_networks) > 1
+
+    current_idx = 0
+    while current_idx < len(sub_networks) - 1:
+        next_current_idx = current_idx + 1
+        while next_current_idx < len(sub_networks):
+            tt.logger.info(f"Sub network {current_idx} connected with {next_current_idx}")
+            sub_networks[current_idx].connect_with(sub_networks[next_current_idx])
+            next_current_idx += 1
+        current_idx += 1
 
 def disconnect_sub_networks(sub_networks : list):
-    if len(sub_networks) > 1:
-        current_sub_network = None
-        cnt = -1
-        for sub_network in sub_networks:
-            cnt += 1
-            if current_sub_network is None:
-                current_sub_network = sub_network
-                continue
-            else:
-                assert (current_sub_network is not None) and (sub_network is not None)
-                tt.logger.info(f"Sub network {cnt} disconnected from {cnt-1}")
-                current_sub_network.disconnect_from(sub_network)
-                current_sub_network = sub_network
+    assert len(sub_networks) > 1
+
+    current_idx = 0
+    while current_idx < len(sub_networks) - 1:
+        next_current_idx = current_idx + 1
+        while next_current_idx < len(sub_networks):
+            tt.logger.info(f"Sub network {current_idx} disconnected from {next_current_idx}")
+            sub_networks[current_idx].disconnect_from(sub_networks[next_current_idx])
+            next_current_idx += 1
+        current_idx += 1
 
 def enable_witnesses(wallet : tt.Wallet, witness_details : list):
     with wallet.in_single_transaction():
