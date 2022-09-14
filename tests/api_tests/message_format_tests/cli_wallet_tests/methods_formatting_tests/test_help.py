@@ -9,15 +9,15 @@ def test_help(node, wallet_with_json_formatter, wallet_with_text_formatter):
 
 
 def test_json_format_pattern(node, wallet_with_json_formatter):
-    json = wallet_with_json_formatter.api.help()
+    help_content_in_json_form = wallet_with_json_formatter.api.help()
 
-    verify_json_patterns('help', json)
+    verify_json_patterns('help', help_content_in_json_form)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
-    text = wallet_with_text_formatter.api.help()
+    help_content_in_text_form = wallet_with_text_formatter.api.help()
 
-    verify_text_patterns('help', text)
+    verify_text_patterns('help', help_content_in_text_form)
 
 def parse_text_response(text):
     return [line for line in text.split('\n') if line != '']
