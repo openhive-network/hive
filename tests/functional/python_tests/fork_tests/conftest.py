@@ -25,20 +25,27 @@ def get_time_offset_from_file(file: Path):
 
 
 def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
-    time_offset = get_time_offset_from_file(blocklog_directory/'timestamp')
-    block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
+    if blocklog_directory is not None:
+        time_offset = get_time_offset_from_file(blocklog_directory/'timestamp')
+        block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
 
     tt.logger.info('Running nodes...')
 
     connect_sub_networks(networks)
 
     nodes = [node for network in networks for node in network.nodes]
-    nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
+    if blocklog_directory is not None:
+        nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
+    else:
+        nodes[0].run(wait_for_live=False)
     init_node: InitNode = get_implementation(nodes[0])
     endpoint = init_node.get_p2p_endpoint()
     for node in nodes[1:]:
         node.config.p2p_seed_node.append(endpoint)
-        node.run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
+        if blocklog_directory is not None:
+            node.run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
+        else:
+            node.run(wait_for_live=False)
 
     for network in networks:
         network.is_running = True
@@ -129,17 +136,7 @@ def prepare_nodes(sub_networks_sizes : list) -> list:
 def prepare_sub_networks_generation(sub_networks_sizes : list, block_log_directory_name : str = None) -> Dict:
     sub_networks, init_node, all_witness_names = prepare_nodes(sub_networks_sizes)
 
-    # Run
-    connect_sub_networks(sub_networks)
-
-    tt.logger.info('Running networks, waiting for live...')
-
-    cnt = 0
-    for sub_network in sub_networks:
-        assert sub_network is not None
-        sub_network.run()
-        tt.logger.info(f'A network number {cnt} is running')
-        cnt += 1
+    run_networks(sub_networks, None)
 
     initminer_public_key = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4'
     init_network(init_node, all_witness_names, initminer_public_key, block_log_directory_name)
@@ -208,5 +205,8 @@ def prepare_obi_throw_exception_02() -> Dict:
 
 @pytest.fixture
 def prepare_fork_3_sub_networks_00() -> Dict:
-    pass
     yield { 'sub-networks-data': prepare_sub_networks([3, 4, 14], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_3_sub_networks_00')) }
+
+@pytest.fixture
+def prepare_fork_3_sub_networks_01() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([7, 7, 7], allow_generate_block_log(), create_block_log_directory_name('block_log_fork_3_sub_networks_01')) }
