@@ -36,13 +36,13 @@ def test_get_open_orders_json_format(node, wallet_with_json_formatter):
                                                     order_initial_value['amount_to_sell'],
                                                     order_initial_value['min_to_receive'], False, 3600)
 
-    json = wallet_with_json_formatter.api.get_open_orders('initminer')
+    open_orders = wallet_with_json_formatter.api.get_open_orders('initminer')
 
-    for order_json, value in zip(json['orders'], ORDER_INITIAL_VALUES):
-        assert order_json['id'] == value['id']
-        assert order_json['type'] == value['type']
-        assert are_close(float(order_json['price']), value['price'])
-        assert order_json['quantity'] == (value['amount_to_sell']).as_nai()
+    for order, order_initial_value in zip(open_orders['orders'], ORDER_INITIAL_VALUES):
+        assert order['id'] == order_initial_value['id']
+        assert order['type'] == order_initial_value['type']
+        assert are_close(float(order['price']), order_initial_value['price'])
+        assert order['quantity'] == (order_initial_value['amount_to_sell']).as_nai()
 
 
 def test_get_open_orders_text_format(node, wallet_with_text_formatter):
@@ -51,13 +51,13 @@ def test_get_open_orders_text_format(node, wallet_with_text_formatter):
                                                     order_initial_value['amount_to_sell'],
                                                     order_initial_value['min_to_receive'], False, 3600)
 
-    text_parsed_to_list = parse_text_response(wallet_with_text_formatter.api.get_open_orders('initminer'))
+    open_orders = parse_text_response(wallet_with_text_formatter.api.get_open_orders('initminer'))
 
-    for order_text, value in zip(text_parsed_to_list, ORDER_INITIAL_VALUES):
-        assert int(order_text['id']) == value['id']
-        assert order_text['type'] == value['type']
-        assert are_close(float(order_text['price']), float(value['price']))
-        assert order_text['quantity'] == value['amount_to_sell']
+    for order, order_initial_value in zip(open_orders, ORDER_INITIAL_VALUES):
+        assert int(order['id']) == order_initial_value['id']
+        assert order['type'] == order_initial_value['type']
+        assert are_close(float(order['price']), float(order_initial_value['price']))
+        assert order['quantity'] == order_initial_value['amount_to_sell']
 
 
 def test_json_format_pattern(node, wallet_with_json_formatter):
@@ -66,9 +66,9 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
                                                     order_initial_value['amount_to_sell'],
                                                     order_initial_value['min_to_receive'], False, 3600)
 
-    json = wallet_with_json_formatter.api.get_open_orders('initminer')
+    open_orders = wallet_with_json_formatter.api.get_open_orders('initminer')
 
-    verify_json_patterns('get_open_orders', json)
+    verify_json_patterns('get_open_orders', open_orders)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
@@ -77,9 +77,9 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
                                                     order_initial_value['amount_to_sell'],
                                                     order_initial_value['min_to_receive'], False, 3600)
 
-    text = wallet_with_text_formatter.api.get_open_orders('initminer')
+    open_orders = wallet_with_text_formatter.api.get_open_orders('initminer')
 
-    verify_text_patterns('get_open_orders', text)
+    verify_text_patterns('get_open_orders', open_orders)
 
 
 def parse_text_response(text):
