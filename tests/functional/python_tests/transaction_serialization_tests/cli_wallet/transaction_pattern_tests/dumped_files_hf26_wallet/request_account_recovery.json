@@ -1,1 +1,29 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"request_account_recovery_operation","value":{"recovery_account":"initminer","account_to_recover":"alice","new_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",1]]},"extensions":[]}}],"extensions":[],"signatures":["1f47987dffed5cf6e4b9aa76dea63131f0b64aab2fc1cb787a42ca54daa853d6e47864433a144b09418a3220773feb21d157b2e1f6d2327252830e222f29bc80e3"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "request_account_recovery_operation",
+      "value": {
+        "account_to_recover": "alice",
+        "extensions": [],
+        "new_owner_authority": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+              1
+            ]
+          ],
+          "weight_threshold": 1
+        },
+        "recovery_account": "initminer"
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "1f47987dffed5cf6e4b9aa76dea63131f0b64aab2fc1cb787a42ca54daa853d6e47864433a144b09418a3220773feb21d157b2e1f6d2327252830e222f29bc80e3"
+  ]
+}

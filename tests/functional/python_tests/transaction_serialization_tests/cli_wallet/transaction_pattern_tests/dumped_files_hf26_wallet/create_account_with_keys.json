@@ -1,1 +1,55 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",1]]},"memo_key":"TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH","json_metadata":"{}"}}],"extensions":[],"signatures":["201493948eed3464e3ff7abb05f644ca03def833c8856e3dfdecc3ec4241e28ea551af20ac4ea459eb2a83b699feac628a899dc519458f8d5a7ab90e9dbefd9dfe"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "account_create_operation",
+      "value": {
+        "active": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",
+              1
+            ]
+          ],
+          "weight_threshold": 1
+        },
+        "creator": "initminer",
+        "fee": {
+          "amount": "0",
+          "nai": "@@000000021",
+          "precision": 3
+        },
+        "json_metadata": "{}",
+        "memo_key": "TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",
+        "new_account_name": "dan",
+        "owner": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",
+              1
+            ]
+          ],
+          "weight_threshold": 1
+        },
+        "posting": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5vYywCazmCT3XSRhxoPPHEznNJqQHzSDnGsGYTKR6VkU88E1gH",
+              1
+            ]
+          ],
+          "weight_threshold": 1
+        }
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "201493948eed3464e3ff7abb05f644ca03def833c8856e3dfdecc3ec4241e28ea551af20ac4ea459eb2a83b699feac628a899dc519458f8d5a7ab90e9dbefd9dfe"
+  ]
+}

@@ -1,1 +1,19 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"account_witness_vote_operation","value":{"account":"alice","witness":"initminer","approve":true}}],"extensions":[],"signatures":["1f7dd3ca46340a61c79a19ddbd871f71e1b22e95ade0222dc803a40e9e2bdd433162ad37d0d7117ef9ae0954debdced96945c406de6e75b507c0002580dbcdb147"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "account_witness_vote_operation",
+      "value": {
+        "account": "alice",
+        "approve": true,
+        "witness": "initminer"
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "1f7dd3ca46340a61c79a19ddbd871f71e1b22e95ade0222dc803a40e9e2bdd433162ad37d0d7117ef9ae0954debdced96945c406de6e75b507c0002580dbcdb147"
+  ]
+}

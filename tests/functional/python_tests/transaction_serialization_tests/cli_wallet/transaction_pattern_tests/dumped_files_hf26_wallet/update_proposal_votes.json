@@ -1,1 +1,22 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"update_proposal_votes_operation","value":{"voter":"alice","proposal_ids":[0],"approve":true,"extensions":[]}}],"extensions":[],"signatures":["2070e9295982a3f64ce7f56d7a7fbbc99ec7a6bf456bc9c6f4b573f8a1adc82a600f5721a9cc73e06b3a7350dfd1d677d6649864a009d1f3eeb687e584b2540727"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "update_proposal_votes_operation",
+      "value": {
+        "approve": true,
+        "extensions": [],
+        "proposal_ids": [
+          0
+        ],
+        "voter": "alice"
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "2070e9295982a3f64ce7f56d7a7fbbc99ec7a6bf456bc9c6f4b573f8a1adc82a600f5721a9cc73e06b3a7350dfd1d677d6649864a009d1f3eeb687e584b2540727"
+  ]
+}

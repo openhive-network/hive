@@ -1,1 +1,39 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"recover_account_operation","value":{"account_to_recover":"alice","new_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"recent_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",1]]},"extensions":[]}}],"extensions":[],"signatures":["206d56bcde8accaba295f7b4f7c474cda3be6bfe0a7c66fa5d19312379c8b0b28c1230bcd75c52e62e70ffa936e35708b0eff8134e5c35ac1e32aaa3f427a80db8","1f48c17705f8822fb556def8a8351f1b996f372c34ffe22f737a4ab85ed1192f237bd94292179a146dc26a2f7b7af62864ab7c630b611f736491dd068ad9a1e4cb"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "recover_account_operation",
+      "value": {
+        "account_to_recover": "alice",
+        "extensions": [],
+        "new_owner_authority": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
+              1
+            ]
+          ],
+          "weight_threshold": 1
+        },
+        "recent_owner_authority": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+              1
+            ]
+          ],
+          "weight_threshold": 1
+        }
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "206d56bcde8accaba295f7b4f7c474cda3be6bfe0a7c66fa5d19312379c8b0b28c1230bcd75c52e62e70ffa936e35708b0eff8134e5c35ac1e32aaa3f427a80db8",
+    "1f48c17705f8822fb556def8a8351f1b996f372c34ffe22f737a4ab85ed1192f237bd94292179a146dc26a2f7b7af62864ab7c630b611f736491dd068ad9a1e4cb"
+  ]
+}

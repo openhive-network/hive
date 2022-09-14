@@ -1,1 +1,19 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["account_update",{"account":"alice","memo_key":"TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW","json_metadata":"{ \"test\" : 4 }"}]],"extensions":[],"signatures":["2051ef7d1b2cf900b6246ab5dd65178678fbd818c1e143e1b7b6e39c8cce9d8ad133078fd0477a1ee0cdf0291cf85cb420e77fa5a5a26dfd6a4183c055ae6254fe"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    [
+      "account_update",
+      {
+        "account": "alice",
+        "json_metadata": "{ \"test\" : 4 }",
+        "memo_key": "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW"
+      }
+    ]
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "2051ef7d1b2cf900b6246ab5dd65178678fbd818c1e143e1b7b6e39c8cce9d8ad133078fd0477a1ee0cdf0291cf85cb420e77fa5a5a26dfd6a4183c055ae6254fe"
+  ]
+}

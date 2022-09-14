@@ -1,1 +1,30 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"limit_order_create_operation","value":{"owner":"alice","orderid":1000,"amount_to_sell":{"amount":"1000","precision":3,"nai":"@@000000021"},"min_to_receive":{"amount":"1000","precision":3,"nai":"@@000000013"},"fill_or_kill":false,"expiration":"2022-07-26T12:14:40"}}],"extensions":[],"signatures":["2014e4963be8eff6a293db872c5af7beaedb3419e36f6b78256cdbb604e01b10095450c9fd7a0e4feebf5a646e57f843ea26dfd4e9ab412b2b185769de5dd79773"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "limit_order_create_operation",
+      "value": {
+        "amount_to_sell": {
+          "amount": "1000",
+          "nai": "@@000000021",
+          "precision": 3
+        },
+        "expiration": "2022-07-26T12:14:40",
+        "fill_or_kill": false,
+        "min_to_receive": {
+          "amount": "1000",
+          "nai": "@@000000013",
+          "precision": 3
+        },
+        "orderid": 1000,
+        "owner": "alice"
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "2014e4963be8eff6a293db872c5af7beaedb3419e36f6b78256cdbb604e01b10095450c9fd7a0e4feebf5a646e57f843ea26dfd4e9ab412b2b185769de5dd79773"
+  ]
+}

@@ -1,1 +1,25 @@
-["account_create", {"fee": "0.000 HIVE", "creator": "", "new_account_name": "", "owner": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "active": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "posting": {"weight_threshold": 0, "account_auths": [], "key_auths": []}, "memo_key": "STM1111111111111111111111111111111114T1Anm", "json_metadata": ""}]
+[
+  "account_create",
+  {
+    "active": {
+      "account_auths": [],
+      "key_auths": [],
+      "weight_threshold": 0
+    },
+    "creator": "",
+    "fee": "0.000 HIVE",
+    "json_metadata": "",
+    "memo_key": "STM1111111111111111111111111111111114T1Anm",
+    "new_account_name": "",
+    "owner": {
+      "account_auths": [],
+      "key_auths": [],
+      "weight_threshold": 0
+    },
+    "posting": {
+      "account_auths": [],
+      "key_auths": [],
+      "weight_threshold": 0
+    }
+  }
+]

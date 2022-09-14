@@ -1,1 +1,18 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["withdraw_vesting",{"account":"alice","vesting_shares":"10.000000 VESTS"}]],"extensions":[],"signatures":["201cc8942132db696295ee998598eeb99b7a51ba5be959b21914a869beccd55dfc1dce353f011ea64add95acb03df1ecffd972ad827175c829d2278ac191101529"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    [
+      "withdraw_vesting",
+      {
+        "account": "alice",
+        "vesting_shares": "10.000000 VESTS"
+      }
+    ]
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "201cc8942132db696295ee998598eeb99b7a51ba5be959b21914a869beccd55dfc1dce353f011ea64add95acb03df1ecffd972ad827175c829d2278ac191101529"
+  ]
+}

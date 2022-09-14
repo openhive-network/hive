@@ -1,1 +1,26 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["escrow_transfer",{"from":"initminer","to":"alice","hbd_amount":"10.000 TBD","hive_amount":"10.000 TESTS","escrow_id":10,"agent":"bob","fee":"10.000 TBD","json_meta":"{}","ratification_deadline":"2030-01-01T00:00:00","escrow_expiration":"2030-06-01T00:00:00"}]],"extensions":[],"signatures":["1f434dad79d86ab0b6f013cdd1c1f81557a03702052a1e459b78e1f59e494afb501a6d6ede2fdb08ed2ffcd9931456ca19286bc45f159423da7fdbbfc94b2496a8"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    [
+      "escrow_transfer",
+      {
+        "agent": "bob",
+        "escrow_expiration": "2030-06-01T00:00:00",
+        "escrow_id": 10,
+        "fee": "10.000 TBD",
+        "from": "initminer",
+        "hbd_amount": "10.000 TBD",
+        "hive_amount": "10.000 TESTS",
+        "json_meta": "{}",
+        "ratification_deadline": "2030-01-01T00:00:00",
+        "to": "alice"
+      }
+    ]
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "1f434dad79d86ab0b6f013cdd1c1f81557a03702052a1e459b78e1f59e494afb501a6d6ede2fdb08ed2ffcd9931456ca19286bc45f159423da7fdbbfc94b2496a8"
+  ]
+}
