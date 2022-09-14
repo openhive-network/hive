@@ -16,7 +16,7 @@
   "hbd_print_rate": 10000,
   "hbd_start_percent": 200,
   "hbd_stop_percent": 500,
-  "head_block_age": "5 years old",
+  "head_block_age": "6 years old",
   "head_block_id": "004c4b40245ffb07380a393fb2b3d841b76cdaec",
   "head_block_num": 5000000,
   "head_block_number": 5000000,
