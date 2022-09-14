@@ -50,66 +50,66 @@ for order_initial_value in ORDER_INITIAL_VALUES:
 def test_get_order_book_json_format(node, wallet_with_json_formatter):
     prepare_accounts_and_orders(wallet_with_json_formatter)
 
-    json = wallet_with_json_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
+    order_book = wallet_with_json_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
     sum_hbd_from_bids = tt.Asset.Tbd(0)
-    for order_value, order_initial_value in zip(json['bids'], ORDER_INITIAL_VALUES[0:2]):
+    for order, order_initial_value in zip(order_book['bids'], ORDER_INITIAL_VALUES[0:2]):
         sum_hbd_from_bids = sum_hbd_from_bids + order_initial_value['amount_to_sell']
-        assert order_value['hive'] == order_initial_value['min_to_receive'].as_nai()
-        assert order_value['hbd'] == order_initial_value['amount_to_sell'].as_nai()
-        assert order_value['sum_hbd'] == sum_hbd_from_bids.as_nai()
-        assert are_close(float(order_value['price']), order_initial_value['price'])
+        assert order['hive'] == order_initial_value['min_to_receive'].as_nai()
+        assert order['hbd'] == order_initial_value['amount_to_sell'].as_nai()
+        assert order['sum_hbd'] == sum_hbd_from_bids.as_nai()
+        assert are_close(float(order['price']), order_initial_value['price'])
 
     sum_hbd_from_asks = tt.Asset.Tbd(0)
-    for order_value, order_initial_value in zip(json['asks'], ORDER_INITIAL_VALUES[2:4]):
+    for order, order_initial_value in zip(order_book['asks'], ORDER_INITIAL_VALUES[2:4]):
         sum_hbd_from_asks = sum_hbd_from_asks + order_initial_value['min_to_receive']
-        assert order_value['hive'] == order_initial_value['amount_to_sell'].as_nai()
-        assert order_value['hbd'] == order_initial_value['min_to_receive'].as_nai()
-        assert order_value['sum_hbd'] == sum_hbd_from_asks.as_nai()
-        assert are_close(float(order_value['price']), order_initial_value['price'])
+        assert order['hive'] == order_initial_value['amount_to_sell'].as_nai()
+        assert order['hbd'] == order_initial_value['min_to_receive'].as_nai()
+        assert order['sum_hbd'] == sum_hbd_from_asks.as_nai()
+        assert are_close(float(order['price']), order_initial_value['price'])
 
-    assert json['bid_total'] == sum_hbd_from_bids.as_nai()
-    assert json['ask_total'] == sum_hbd_from_asks.as_nai()
+    assert order_book['bid_total'] == sum_hbd_from_bids.as_nai()
+    assert order_book['ask_total'] == sum_hbd_from_asks.as_nai()
 
 
 def test_get_order_book_text_format(node, wallet_with_text_formatter):
     prepare_accounts_and_orders(wallet_with_text_formatter)
 
-    text_parsed_to_dict = parse_text_response(wallet_with_text_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES)))
+    order_book = parse_text_response(wallet_with_text_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES)))
 
     sum_hbd_from_bids = tt.Asset.Tbd(0)
-    for order_value, order_initial_value in zip(text_parsed_to_dict['bids'], ORDER_INITIAL_VALUES[0:2]):
+    for order, order_initial_value in zip(order_book['bids'], ORDER_INITIAL_VALUES[0:2]):
         sum_hbd_from_bids = sum_hbd_from_bids + order_initial_value['amount_to_sell']
-        assert order_value['hive'] == order_initial_value['min_to_receive']
-        assert order_value['hbd'] == order_initial_value['amount_to_sell']
-        assert order_value['sum_hbd'] == sum_hbd_from_bids
-        assert are_close(float(order_value['price']), order_initial_value['price'])
+        assert order['hive'] == order_initial_value['min_to_receive']
+        assert order['hbd'] == order_initial_value['amount_to_sell']
+        assert order['sum_hbd'] == sum_hbd_from_bids
+        assert are_close(float(order['price']), order_initial_value['price'])
 
     sum_hbd_from_asks = tt.Asset.Tbd(0)
-    for order_value, order_initial_value in zip(text_parsed_to_dict['asks'], ORDER_INITIAL_VALUES[2:4]):
+    for order, order_initial_value in zip(order_book['asks'], ORDER_INITIAL_VALUES[2:4]):
         sum_hbd_from_asks = sum_hbd_from_asks + order_initial_value['min_to_receive']
-        assert order_value['hive'] == order_initial_value['amount_to_sell']
-        assert order_value['hbd'] == order_initial_value['min_to_receive']
-        assert order_value['sum_hbd'] == sum_hbd_from_asks
-        assert are_close(float(order_value['price']), order_initial_value['price'])
+        assert order['hive'] == order_initial_value['amount_to_sell']
+        assert order['hbd'] == order_initial_value['min_to_receive']
+        assert order['sum_hbd'] == sum_hbd_from_asks
+        assert are_close(float(order['price']), order_initial_value['price'])
 
-    assert text_parsed_to_dict['bid_total'] == sum_hbd_from_bids
-    assert text_parsed_to_dict['ask_total'] == sum_hbd_from_asks
+    assert order_book['bid_total'] == sum_hbd_from_bids
+    assert order_book['ask_total'] == sum_hbd_from_asks
 
 
 def test_json_format_pattern(node, wallet_with_json_formatter):
     prepare_accounts_and_orders(wallet_with_json_formatter)
 
-    json = wallet_with_json_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
+    order_book = wallet_with_json_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
 
-    verify_json_patterns('get_order_book', json)
+    verify_json_patterns('get_order_book', order_book)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
     prepare_accounts_and_orders(wallet_with_text_formatter)
 
-    text = wallet_with_text_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
+    order_book = wallet_with_text_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
 
-    verify_text_patterns('get_order_book', text)
+    verify_text_patterns('get_order_book', order_book)
 
 
 def parse_text_response(text):
