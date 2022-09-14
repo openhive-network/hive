@@ -2,21 +2,23 @@ from .local_tools import verify_json_patterns, verify_text_patterns
 
 
 def test_gethelp(node, wallet_with_json_formatter, wallet_with_text_formatter):
-    json = wallet_with_json_formatter.api.gethelp('list_my_accounts')
-    text = parse_text_response(wallet_with_text_formatter.api.gethelp('list_my_accounts'))
-    assert json == text
+    gethelp_content_in_json_form = wallet_with_json_formatter.api.gethelp('list_my_accounts')
+    gethelp_content_in_text_form_parsed_to_list =\
+        parse_text_response(wallet_with_text_formatter.api.gethelp('list_my_accounts'))
+
+    assert gethelp_content_in_json_form == gethelp_content_in_text_form_parsed_to_list
 
 
 def test_json_format_pattern(node, wallet_with_json_formatter):
-    json = wallet_with_json_formatter.api.gethelp('list_my_accounts')
+    gethelp_content_in_json_form = wallet_with_json_formatter.api.gethelp('list_my_accounts')
 
-    verify_json_patterns('gethelp', json)
+    verify_json_patterns('gethelp', gethelp_content_in_json_form)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
-    text = wallet_with_text_formatter.api.gethelp('list_my_accounts')
+    gethelp_content_in_text_form = wallet_with_text_formatter.api.gethelp('list_my_accounts')
 
-    verify_text_patterns('gethelp', text)
+    verify_text_patterns('gethelp', gethelp_content_in_text_form)
 
 
 def parse_text_response(text):
