@@ -1,4 +1,5 @@
 from distutils.util import strtobool
+from math import isclose
 import os
 from pathlib import Path
 
@@ -42,3 +43,7 @@ def verify_text_patterns(method_name, method_output):
         assert pattern == method_output
 
     __write_to_text_pattern(method_name, method_output)
+
+
+def are_close(first: float, second: float) -> bool:
+    return isclose(first, second, abs_tol=0.000001)
