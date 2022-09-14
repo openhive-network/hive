@@ -14,11 +14,12 @@ def test_get_account_history(node, wallet_with_json_formatter, wallet_with_text_
     # Wait to appear transactions in account_history
     node.wait_number_of_blocks(21)
 
-    json = wallet_with_json_formatter.api.get_account_history('alice', block_num[-1] + 1, 2)
-    text_parsed_to_list = parse_text_response(wallet_with_text_formatter.api.
-                                              get_account_history('alice', block_num[-1] + 1, 2))
+    account_history_in_json_form = wallet_with_json_formatter.api.get_account_history('alice', block_num[-1] + 1, 2)
+    account_history_in_text_form_parsed_to_list = parse_text_response(
+        wallet_with_text_formatter.api.get_account_history('alice', block_num[-1] + 1, 2))
 
-    for acc_history_json, acc_history_text in zip(json, text_parsed_to_list):
+    for acc_history_json, acc_history_text in zip(account_history_in_json_form,
+                                                  account_history_in_text_form_parsed_to_list):
         assert acc_history_json == acc_history_text
 
 
@@ -28,9 +29,9 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
     # Wait to appear transactions in account_history
     node.wait_number_of_blocks(21)
 
-    json = wallet_with_json_formatter.api.get_account_history('alice', block_num[-1] + 1, 2)
+    account_history_in_json_form = wallet_with_json_formatter.api.get_account_history('alice', block_num[-1] + 1, 2)
 
-    verify_json_patterns('get_account_history', json)
+    verify_json_patterns('get_account_history', account_history_in_json_form)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
@@ -39,9 +40,9 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
     # Wait to appear transactions in account_history
     node.wait_number_of_blocks(21)
 
-    text = wallet_with_text_formatter.api.get_account_history('alice', block_num[-1] + 1, 2)
+    account_history_in_text_form = wallet_with_text_formatter.api.get_account_history('alice', block_num[-1] + 1, 2)
 
-    verify_text_patterns('get_account_history', text)
+    verify_text_patterns('get_account_history', account_history_in_text_form)
 
 
 def parse_text_response(text):
