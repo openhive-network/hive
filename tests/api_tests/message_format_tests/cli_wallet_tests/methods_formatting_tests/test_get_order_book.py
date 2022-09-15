@@ -5,7 +5,8 @@ from typing import Dict, List, Literal, Union
 
 import test_tools as tt
 
-from .local_tools import are_close, calculate_price, verify_json_patterns, verify_text_patterns
+from .local_tools import are_close, calculate_price, create_buy_order, create_sell_order, verify_json_patterns, \
+    verify_text_patterns
 from .....local_tools import create_account_and_fund_it
 
 ORDER_INITIAL_VALUES = [
@@ -14,14 +15,14 @@ ORDER_INITIAL_VALUES = [
         'id': 0,
         'amount_to_sell': tt.Asset.Tbd(20),
         'min_to_receive': tt.Asset.Test(100),
-        'type': 'SELL',
+        'type': 'BUY',
     },
     {
         'name': 'bob',
         'id': 1,
         'amount_to_sell': tt.Asset.Tbd(50),
         'min_to_receive': tt.Asset.Test(300),
-        'type': 'SELL',
+        'type': 'BUY',
     },
     {
         'name': 'carol',
@@ -128,9 +129,13 @@ def prepare_accounts_and_orders(wallet):
         create_account_and_fund_it(wallet, order_initial_value['name'],
                                    tests=tt.Asset.Test(1000000),
                                    tbds=tt.Asset.Tbd(1000000), vests=tt.Asset.Test(1000000))
-        wallet.api.create_order(order_initial_value['name'], order_initial_value['id'],
-                                order_initial_value['amount_to_sell'],
-                                order_initial_value['min_to_receive'], False, 3600)
+
+        if order_initial_value['type'] == 'BUY':
+            create_buy_order(wallet, order_initial_value['name'], order_initial_value['min_to_receive'],
+                             order_initial_value['amount_to_sell'], order_initial_value['id'])
+        else:
+            create_sell_order(wallet, order_initial_value['name'], order_initial_value['amount_to_sell'],
+                              order_initial_value['min_to_receive'], order_initial_value['id'])
 
 
 def assert_that_bids_are_equal(orders_bids: Dict, reference_orders_bids: List, asset_format: Literal['hf26', 'legacy']) -> tt.Asset.Tbd:
