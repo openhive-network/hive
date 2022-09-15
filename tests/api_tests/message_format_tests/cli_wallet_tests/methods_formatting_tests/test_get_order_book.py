@@ -5,13 +5,8 @@ from typing import Dict, List, Literal, Union
 
 import test_tools as tt
 
-from .local_tools import are_close, verify_json_patterns, verify_text_patterns
+from .local_tools import are_close, calculate_price, verify_json_patterns, verify_text_patterns
 from .....local_tools import create_account_and_fund_it
-
-
-def calculate_price(amount_1, amount_2):
-    return min(amount_1, amount_2) / max(amount_1, amount_2)
-
 
 ORDER_INITIAL_VALUES = [
     {
