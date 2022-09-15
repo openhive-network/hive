@@ -18,9 +18,7 @@ def test_get_account_history(node, wallet_with_json_formatter, wallet_with_text_
     account_history_in_text_form_parsed_to_list = parse_text_response(
         wallet_with_text_formatter.api.get_account_history('alice', block_num[-1] + 1, 2))
 
-    for acc_history_json, acc_history_text in zip(account_history_in_json_form,
-                                                  account_history_in_text_form_parsed_to_list):
-        assert acc_history_json == acc_history_text
+    assert account_history_in_json_form == account_history_in_text_form_parsed_to_list
 
 
 def test_json_format_pattern(node, wallet_with_json_formatter):
