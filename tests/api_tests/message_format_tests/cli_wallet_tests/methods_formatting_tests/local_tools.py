@@ -57,3 +57,7 @@ def create_buy_order(wallet, account, buy: tt.Asset.Test, offer: tt.Asset.Tbd, i
 
 def create_sell_order(wallet, account, sell: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> None:
     wallet.api.create_order(account, id, sell, offer, False, 360)
+
+
+def calculate_price(amount_1, amount_2):
+    return min(amount_1, amount_2) / max(amount_1, amount_2)
