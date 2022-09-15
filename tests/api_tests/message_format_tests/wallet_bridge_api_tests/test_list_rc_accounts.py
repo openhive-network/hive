@@ -36,8 +36,11 @@ def test_list_rc_accounts_with_correct_values(prepared_node, should_prepare, rc_
         wallet = tt.Wallet(attach_to=prepared_node)
         wallet.create_accounts(len(ACCOUNTS))
         wallet.api.create_account('initminer', 'true', '{}')
+
     rc_accounts = prepared_node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
-    if int(limit) != 0:
+
+    # Ensure that response is not empty when requested non-zero number of accounts
+    if int(limit) > 0:
         assert len(rc_accounts) > 0
 
 
