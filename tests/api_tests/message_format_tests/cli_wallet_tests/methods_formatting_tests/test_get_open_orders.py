@@ -3,7 +3,8 @@ from typing import Dict
 
 import test_tools as tt
 
-from .local_tools import are_close, verify_json_patterns, verify_text_patterns
+from .local_tools import are_close, calculate_price, create_buy_order, create_sell_order, verify_json_patterns,\
+    verify_text_patterns
 
 ORDER_INITIAL_VALUES = [
     {
@@ -27,14 +28,17 @@ ORDER_INITIAL_VALUES = [
 ]
 for order_initial_value in ORDER_INITIAL_VALUES:
     order_initial_value['price'] = \
-        order_initial_value['min_to_receive'].amount / order_initial_value['amount_to_sell'].amount
+        calculate_price(order_initial_value['min_to_receive'].amount, order_initial_value['amount_to_sell'].amount)
 
 
 def test_get_open_orders_json_format(node, wallet_with_json_formatter):
     for order_initial_value in ORDER_INITIAL_VALUES:
-        wallet_with_json_formatter.api.create_order('initminer', order_initial_value['id'],
-                                                    order_initial_value['amount_to_sell'],
-                                                    order_initial_value['min_to_receive'], False, 3600)
+        if order_initial_value['type'] == 'BUY':
+            create_buy_order(wallet_with_json_formatter, 'initminer', order_initial_value['min_to_receive'],
+                             order_initial_value['amount_to_sell'], order_initial_value['id'])
+        else:
+            create_sell_order(wallet_with_json_formatter, 'initminer', order_initial_value['amount_to_sell'],
+                              order_initial_value['min_to_receive'], order_initial_value['id'])
 
     open_orders = wallet_with_json_formatter.api.get_open_orders('initminer')
 
@@ -47,9 +51,12 @@ def test_get_open_orders_json_format(node, wallet_with_json_formatter):
 
 def test_get_open_orders_text_format(node, wallet_with_text_formatter):
     for order_initial_value in ORDER_INITIAL_VALUES:
-        wallet_with_text_formatter.api.create_order('initminer', order_initial_value['id'],
-                                                    order_initial_value['amount_to_sell'],
-                                                    order_initial_value['min_to_receive'], False, 3600)
+        if order_initial_value['type'] == 'BUY':
+            create_buy_order(wallet_with_text_formatter, 'initminer', order_initial_value['min_to_receive'],
+                             order_initial_value['amount_to_sell'], order_initial_value['id'])
+        else:
+            create_sell_order(wallet_with_text_formatter, 'initminer', order_initial_value['amount_to_sell'],
+                              order_initial_value['min_to_receive'], order_initial_value['id'])
 
     open_orders = parse_text_response(wallet_with_text_formatter.api.get_open_orders('initminer'))
 
@@ -62,9 +69,12 @@ def test_get_open_orders_text_format(node, wallet_with_text_formatter):
 
 def test_json_format_pattern(node, wallet_with_json_formatter):
     for order_initial_value in ORDER_INITIAL_VALUES:
-        wallet_with_json_formatter.api.create_order('initminer', order_initial_value['id'],
-                                                    order_initial_value['amount_to_sell'],
-                                                    order_initial_value['min_to_receive'], False, 3600)
+        if order_initial_value['type'] == 'BUY':
+            create_buy_order(wallet_with_json_formatter, 'initminer', order_initial_value['min_to_receive'],
+                             order_initial_value['amount_to_sell'], order_initial_value['id'])
+        else:
+            create_sell_order(wallet_with_json_formatter, 'initminer', order_initial_value['amount_to_sell'],
+                              order_initial_value['min_to_receive'], order_initial_value['id'])
 
     open_orders = wallet_with_json_formatter.api.get_open_orders('initminer')
 
@@ -73,9 +83,12 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
     for order_initial_value in ORDER_INITIAL_VALUES:
-        wallet_with_text_formatter.api.create_order('initminer', order_initial_value['id'],
-                                                    order_initial_value['amount_to_sell'],
-                                                    order_initial_value['min_to_receive'], False, 3600)
+        if order_initial_value['type'] == 'BUY':
+            create_buy_order(wallet_with_text_formatter, 'initminer', order_initial_value['min_to_receive'],
+                             order_initial_value['amount_to_sell'], order_initial_value['id'])
+        else:
+            create_sell_order(wallet_with_text_formatter, 'initminer', order_initial_value['amount_to_sell'],
+                              order_initial_value['min_to_receive'], order_initial_value['id'])
 
     open_orders = wallet_with_text_formatter.api.get_open_orders('initminer')
 
