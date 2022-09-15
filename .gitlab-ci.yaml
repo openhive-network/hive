@@ -417,6 +417,8 @@ test_tools_tests:
     PYTEST_TIMEOUT_MINUTES: 30
   script:
     - cd tests/test_tools/tests
+    - ls -al
+    - pip install local-tools/
     - *run-pytest
   artifacts:
     reports:
