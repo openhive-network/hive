@@ -90,9 +90,9 @@ def parse_text_response(text):
     def parse_single_line_with_total_balances(line_to_parse: str) -> Dict:
         splitted_values = re.split(r'\s{2,}', line_to_parse.strip())
         return {
-                'total_hive':  splitted_values[1],
-                'total_vest': splitted_values[2],
-                'total_hbd': splitted_values[3],
+            'total_hive':  splitted_values[1],
+            'total_vest': splitted_values[2],
+            'total_hbd': splitted_values[3],
         }
 
     lines = text.splitlines()
