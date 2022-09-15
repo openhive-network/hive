@@ -3,7 +3,9 @@ from math import isclose
 import os
 from pathlib import Path
 
-from .....local_tools import read_from_json_pattern, write_to_json_pattern
+import test_tools as tt
+
+from ....local_tools import read_from_json_pattern, write_to_json_pattern
 
 __PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 
@@ -47,3 +49,11 @@ def verify_text_patterns(method_name, method_output):
 
 def are_close(first: float, second: float) -> bool:
     return isclose(first, second, abs_tol=0.000001)
+
+
+def create_buy_order(wallet, account, buy: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> None:
+    wallet.api.create_order(account, id, offer, buy, False, 360)
+
+
+def create_sell_order(wallet, account, sell: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> None:
+    wallet.api.create_order(account, id, sell, offer, False, 360)
