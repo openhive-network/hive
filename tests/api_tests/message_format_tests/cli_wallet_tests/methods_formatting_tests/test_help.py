@@ -20,4 +20,4 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
     verify_text_patterns('help', help_content_in_text_form)
 
 def parse_text_response(text):
-    return [line for line in text.split('\n') if line != '']
+    return [line for line in text.splitlines() if line != '']
