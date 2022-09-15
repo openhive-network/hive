@@ -22,4 +22,4 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
 
 def parse_text_response(text):
-    return [line for line in text.split('\n') if line != '']
+    return [line for line in text.splitlines() if line != '']
