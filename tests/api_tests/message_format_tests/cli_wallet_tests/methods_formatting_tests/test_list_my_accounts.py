@@ -31,7 +31,7 @@ TOTAL_BALANCES = {
 
 
 def test_list_my_accounts_json_format(wallet_with_json_formatter):
-    for name, balances in zip(BALANCES.keys(), BALANCES.values()):
+    for name, balances in BALANCES.items():
         create_account_and_fund_it(wallet_with_json_formatter, name=name, **balances)
 
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
@@ -45,7 +45,7 @@ def test_list_my_accounts_json_format(wallet_with_json_formatter):
 
 
 def test_list_my_accounts_text_format(wallet_with_text_formatter):
-    for name, balances in zip(BALANCES.keys(), BALANCES.values()):
+    for name, balances in BALANCES.items():
         create_account_and_fund_it(wallet_with_text_formatter, name=name, **balances)
 
     accounts_summary = parse_text_response(wallet_with_text_formatter.api.list_my_accounts())
@@ -60,7 +60,7 @@ def test_list_my_accounts_text_format(wallet_with_text_formatter):
 
 
 def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_formatter):
-    for name, balances in zip(BALANCES.keys(), BALANCES.values()):
+    for name, balances in BALANCES.items():
         create_account_and_fund_it(wallet_with_json_formatter, name=name, **balances)
 
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
@@ -69,7 +69,7 @@ def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_format
 
 
 def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_formatter):
-    for name, balances in zip(BALANCES.keys(), BALANCES.values()):
+    for name, balances in BALANCES.items():
         create_account_and_fund_it(wallet_with_text_formatter, name=name, **balances)
 
     accounts_summary = wallet_with_text_formatter.api.list_my_accounts()
