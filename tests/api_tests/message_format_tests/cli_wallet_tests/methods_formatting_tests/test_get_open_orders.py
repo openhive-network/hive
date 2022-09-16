@@ -106,4 +106,4 @@ def parse_text_response(text):
         }
 
     lines = text.splitlines()
-    return [parse_single_line_with_order_values(line_to_parse) for line_to_parse in lines[2:5]]
+    return [parse_single_line_with_order_values(line_to_parse) for line_to_parse in lines[2:]]
