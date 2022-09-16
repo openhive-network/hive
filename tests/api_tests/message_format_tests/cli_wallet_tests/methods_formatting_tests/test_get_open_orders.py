@@ -61,9 +61,9 @@ def test_get_open_orders_text_format(node, wallet_with_text_formatter):
     open_orders = parse_text_response(wallet_with_text_formatter.api.get_open_orders('initminer'))
 
     for order, initial_order in zip(open_orders, INITIAL_ORDERS):
-        assert int(order['id']) == initial_order['id']
+        assert order['id'] == initial_order['id']
         assert order['type'] == initial_order['type']
-        assert are_close(float(order['price']), float(initial_order['price']))
+        assert are_close(order['price'], initial_order['price'])
         assert order['quantity'] == initial_order['amount_to_sell']
 
 
@@ -99,8 +99,8 @@ def parse_text_response(text):
     def parse_single_line_with_order_values(line_to_parse: str) -> Dict:
         splitted_values = re.split(r'\s{2,}', line_to_parse.strip())
         return {
-            'id': splitted_values[0],
-            'price': splitted_values[1],
+            'id': int(splitted_values[0]),
+            'price': float(splitted_values[1]),
             'quantity': splitted_values[2],
             'type': splitted_values[3],
         }
