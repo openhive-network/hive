@@ -9,7 +9,7 @@ from .local_tools import are_close, calculate_price, create_buy_order, create_se
     verify_text_patterns
 from .....local_tools import create_account_and_fund_it
 
-ORDER_INITIAL_VALUES = [
+INITIAL_ORDERS = [
     {
         'name': 'alice',
         'id': 0,
@@ -40,18 +40,18 @@ ORDER_INITIAL_VALUES = [
     },
 ]
 
-for order_initial_value in ORDER_INITIAL_VALUES:
-    order_initial_value['price'] = \
-        calculate_price(order_initial_value['min_to_receive'].amount, order_initial_value['amount_to_sell'].amount)
+for initial_order in INITIAL_ORDERS:
+    initial_order['price'] = \
+        calculate_price(initial_order['min_to_receive'].amount, initial_order['amount_to_sell'].amount)
 
 
 def test_get_order_book_json_format(node, wallet_with_json_formatter):
     prepare_accounts_and_orders(wallet_with_json_formatter)
 
-    order_book = wallet_with_json_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
+    order_book = wallet_with_json_formatter.api.get_order_book(len(INITIAL_ORDERS))
 
-    sum_hbd_from_bids = assert_that_bids_are_equal(order_book['bids'], ORDER_INITIAL_VALUES[0:2], 'hf26')
-    sum_hbd_from_asks = assert_that_asks_are_equal(order_book['asks'], ORDER_INITIAL_VALUES[2:4], 'hf26')
+    sum_hbd_from_bids = assert_that_bids_are_equal(order_book['bids'], INITIAL_ORDERS[0:2], 'hf26')
+    sum_hbd_from_asks = assert_that_asks_are_equal(order_book['asks'], INITIAL_ORDERS[2:4], 'hf26')
 
     assert order_book['bid_total'] == sum_hbd_from_bids.as_nai()
     assert order_book['ask_total'] == sum_hbd_from_asks.as_nai()
@@ -60,10 +60,10 @@ def test_get_order_book_json_format(node, wallet_with_json_formatter):
 def test_get_order_book_text_format(node, wallet_with_text_formatter):
     prepare_accounts_and_orders(wallet_with_text_formatter)
 
-    order_book = parse_text_response(wallet_with_text_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES)))
+    order_book = parse_text_response(wallet_with_text_formatter.api.get_order_book(len(INITIAL_ORDERS)))
 
-    sum_hbd_from_bids = assert_that_bids_are_equal(order_book['bids'], ORDER_INITIAL_VALUES[0:2], 'legacy')
-    sum_hbd_from_asks = assert_that_asks_are_equal(order_book['asks'], ORDER_INITIAL_VALUES[2:4], 'legacy')
+    sum_hbd_from_bids = assert_that_bids_are_equal(order_book['bids'], INITIAL_ORDERS[0:2], 'legacy')
+    sum_hbd_from_asks = assert_that_asks_are_equal(order_book['asks'], INITIAL_ORDERS[2:4], 'legacy')
 
     assert order_book['bid_total'] == sum_hbd_from_bids
     assert order_book['ask_total'] == sum_hbd_from_asks
@@ -72,7 +72,7 @@ def test_get_order_book_text_format(node, wallet_with_text_formatter):
 def test_json_format_pattern(node, wallet_with_json_formatter):
     prepare_accounts_and_orders(wallet_with_json_formatter)
 
-    order_book = wallet_with_json_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
+    order_book = wallet_with_json_formatter.api.get_order_book(len(INITIAL_ORDERS))
 
     verify_json_patterns('get_order_book', order_book)
 
@@ -80,7 +80,7 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
 def test_text_format_pattern(node, wallet_with_text_formatter):
     prepare_accounts_and_orders(wallet_with_text_formatter)
 
-    order_book = wallet_with_text_formatter.api.get_order_book(len(ORDER_INITIAL_VALUES))
+    order_book = wallet_with_text_formatter.api.get_order_book(len(INITIAL_ORDERS))
 
     verify_text_patterns('get_order_book', order_book)
 
@@ -125,20 +125,20 @@ def parse_text_response(text):
 
 
 def prepare_accounts_and_orders(wallet):
-    for order_initial_value in ORDER_INITIAL_VALUES:
-        create_account_and_fund_it(wallet, order_initial_value['name'],
-                                   tests=tt.Asset.Test(1000000),
+    for initial_order in INITIAL_ORDERS:
+        create_account_and_fund_it(wallet, initial_order['name'], tests=tt.Asset.Test(1000000),
                                    tbds=tt.Asset.Tbd(1000000), vests=tt.Asset.Test(1000000))
 
-        if order_initial_value['type'] == 'BUY':
-            create_buy_order(wallet, order_initial_value['name'], order_initial_value['min_to_receive'],
-                             order_initial_value['amount_to_sell'], order_initial_value['id'])
+        if initial_order['type'] == 'BUY':
+            create_buy_order(wallet, initial_order['name'], initial_order['min_to_receive'],
+                             initial_order['amount_to_sell'], initial_order['id'])
         else:
-            create_sell_order(wallet, order_initial_value['name'], order_initial_value['amount_to_sell'],
-                              order_initial_value['min_to_receive'], order_initial_value['id'])
+            create_sell_order(wallet, initial_order['name'], initial_order['amount_to_sell'],
+                              initial_order['min_to_receive'], initial_order['id'])
 
 
-def assert_that_bids_are_equal(orders_bids: Dict, reference_orders_bids: List, asset_format: Literal['hf26', 'legacy']) -> tt.Asset.Tbd:
+def assert_that_bids_are_equal(orders_bids: Dict, reference_orders_bids: List,
+                               asset_format: Literal['hf26', 'legacy']) -> tt.Asset.Tbd:
     sum_hbd_from_bids = tt.Asset.Tbd(0)
     for order, reference_order in zip(orders_bids, reference_orders_bids):
         sum_hbd_from_bids = sum_hbd_from_bids + reference_order['amount_to_sell']
@@ -150,7 +150,8 @@ def assert_that_bids_are_equal(orders_bids: Dict, reference_orders_bids: List, a
     return sum_hbd_from_bids
 
 
-def assert_that_asks_are_equal(orders_asks: Dict, reference_orders_asks: List, asset_format: Literal['hf26', 'legacy']) -> tt.Asset.Tbd:
+def assert_that_asks_are_equal(orders_asks: Dict, reference_orders_asks: List,
+                               asset_format: Literal['hf26', 'legacy']) -> tt.Asset.Tbd:
     sum_hbd_from_asks = tt.Asset.Tbd(0)
     for order, reference_order in zip(orders_asks, reference_orders_asks):
         sum_hbd_from_asks = sum_hbd_from_asks + reference_order['min_to_receive']
