@@ -182,8 +182,21 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
       if (p2p_force_validate)
       {
-        (void)full_transaction->get_signature_keys();
-        (void)full_transaction->get_required_authorities();
+        try
+        {
+          (void)full_transaction->get_signature_keys();
+        }
+        catch (...)
+        {
+        }
+
+        try
+        {
+          (void)full_transaction->get_required_authorities();
+        }
+        catch (...)
+        {
+        }
       }
       break;
     case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p:
@@ -196,8 +209,21 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       catch (...)
       {
       }
-      (void)full_transaction->get_signature_keys();
-      (void)full_transaction->get_required_authorities();
+
+      try
+      {
+        (void)full_transaction->get_signature_keys();
+      }
+      catch (...)
+      {
+      }
+      try
+      {
+        (void)full_transaction->get_required_authorities();
+      }
+      catch (...)
+      {
+      }
       break;
     default:
       elog("invalid data source type for transaction");
