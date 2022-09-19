@@ -101,65 +101,84 @@ blockchain_worker_thread_pool::blockchain_worker_thread_pool() :
 
 void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_block_type>& full_block_weak_ptr, data_source_type data_source)
 {
-  std::shared_ptr<full_block_type> full_block = full_block_weak_ptr.lock();
-  if (!full_block)
-    return; // the block was garbage collected before we could do any work on it
-  // fc::time_point start = fc::time_point::now();
-  switch (data_source)
+  try
   {
-    case blockchain_worker_thread_pool::data_source_type::block_received_from_p2p:
-      // fully decompress (if necessary) the block and unpack it
-      full_block->decode_block();
+    std::shared_ptr<full_block_type> full_block = full_block_weak_ptr.lock();
+    if (!full_block)
+      return; // the block was garbage collected before we could do any work on it
+    // fc::time_point start = fc::time_point::now();
+    switch (data_source)
+    {
+      case blockchain_worker_thread_pool::data_source_type::block_received_from_p2p:
+        // fully decompress (if necessary) the block and unpack it
+        full_block->decode_block();
 
-      // now we have the full_transactions, get started working on them
-      blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
-                                                                 blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p);
-      // precompute some stuff we'll need for validating the block
-      full_block->compute_signing_key();
-      full_block->compute_merkle_root();
+        // now we have the full_transactions, get started working on them
+        blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
+                                                                   blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p);
+        // precompute some stuff we'll need for validating the block
+        full_block->compute_signing_key();
+        full_block->compute_merkle_root();
 
-      // compute the legacy block message hash for sharing on the network
-      // TODO: remove this after the hardfork
-      full_block->compute_legacy_block_message_hash();
+        // compute the legacy block message hash for sharing on the network
+        // TODO: remove this after the hardfork
+        full_block->compute_legacy_block_message_hash();
 
-      // finally, compress it if it didn't start out that way (needed for writing to the block log)
-      full_block->compress_block();
-      break;
-    case blockchain_worker_thread_pool::data_source_type::locally_produced_block:
-      // locally-produced blocks should have everything done except for the compression, so kick that off now
-      full_block->compress_block();
+        // finally, compress it if it didn't start out that way (needed for writing to the block log)
+        full_block->compress_block();
+        break;
+      case blockchain_worker_thread_pool::data_source_type::locally_produced_block:
+        // locally-produced blocks should have everything done except for the compression, so kick that off now
+        full_block->compress_block();
 
-      // compute the legacy block message hash for sharing on the network
-      // TODO: remove this after the hardfork
-      full_block->compute_legacy_block_message_hash();
+        // compute the legacy block message hash for sharing on the network
+        // TODO: remove this after the hardfork
+        full_block->compute_legacy_block_message_hash();
 
-      break;
-    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed:
-      // if we're reading from an uncompressed block, but sending to a peer that wants compressed blocks, 
-      // compress it for them
-      full_block->compress_block();
-      break;
-    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed:
-      // if we're reading a compressed block log serving blocks to a peer who can't accept 
-      // them, decompress the block
-      // TODO: remove this after the hardfork
-      full_block->decompress_block();
-      break;
-    case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed:
-      // if we're reading a compressed block log serving blocks to a peer who can accept compressed blocks,
-      // but ours is compressed using a dictionary they don't have, recompress our block using no dictionary
-      full_block->alternate_compress_block();
-      break;
-    case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
-      full_block->decode_block_header();
-      break;
-    default:
-      elog("Error: full block added to worker thread with an unrecognized data source");
-  };
+        break;
+      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed:
+        // if we're reading from an uncompressed block, but sending to a peer that wants compressed blocks, 
+        // compress it for them
+        full_block->compress_block();
+        break;
+      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed:
+        // if we're reading a compressed block log serving blocks to a peer who can't accept 
+        // them, decompress the block
+        // TODO: remove this after the hardfork
+        full_block->decompress_block();
+        break;
+      case blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed:
+        // if we're reading a compressed block log serving blocks to a peer who can accept compressed blocks,
+        // but ours is compressed using a dictionary they don't have, recompress our block using no dictionary
+        full_block->alternate_compress_block();
+        break;
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
+        full_block->decode_block_header();
+        break;
+      default:
+        elog("Error: full block added to worker thread with an unrecognized data source");
+    }
+  }
+  catch (const fc::exception& e)
+  {
+    // note: none of the above calls is expected to throw during normal operation.  But if something unexpected
+    // happens, we don't want it to kill the worker threads
+    elog("caught unexpected exception: ${e}", (e));
+  }
+  catch (const std::exception& e)
+  {
+    elog("caught unexpected exception: ${what}", ("what", e.what()));
+    edump((e.what()));
+  }
+  catch (...)
+  {
+    elog("caught unexpected exception");
+  }
   // fc::time_point end = fc::time_point::now();
   // fc::microseconds duration = end - start;
   // ilog("perform_work on the block took ${duration}μs", (duration));
 }
+
 void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_transaction_type>& full_transaction_weak_ptr, data_source_type data_source)
 {
   std::shared_ptr<full_transaction_type> full_transaction = full_transaction_weak_ptr.lock();
@@ -177,6 +196,10 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       }
       catch (...)
       {
+        // we ignore exceptions for all calls, we're just trying to make the full_transaction precompute the
+        // result (or, if there's an error, precompute the exception).  Just like with a normal result, the
+        // full_transaction will cache any exceptions thrown now and rethrow them when and if the blockchain
+        // makes the corresponding call during the course of apply_transaction.
       }
 
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
