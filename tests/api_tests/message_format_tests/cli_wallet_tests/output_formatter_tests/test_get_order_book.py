@@ -6,7 +6,6 @@ from typing import Dict, List, Literal, Union
 import test_tools as tt
 
 from .local_tools import are_close, create_buy_order, create_sell_order, verify_json_patterns, verify_text_patterns
-from .....local_tools import create_account_and_fund_it
 
 
 def test_get_order_book_json_format(node, wallet_with_json_formatter):
@@ -90,8 +89,8 @@ def parse_text_response(text):
 
 def prepare_accounts_and_orders(wallet):
     for account in ['alice', 'bob', 'carol', 'dan']:
-        create_account_and_fund_it(wallet, account, tests=tt.Asset.Test(1000000),
-                                   tbds=tt.Asset.Tbd(1000000), vests=tt.Asset.Test(1000000))
+        wallet.create_account(account, hives=tt.Asset.Test(1000000), hbds=tt.Asset.Tbd(1000000),
+                              vests=tt.Asset.Test(1000000))
 
     with wallet.in_single_transaction():
         buy_order0 = create_buy_order(wallet, 'alice', tt.Asset.Test(100), tt.Asset.Tbd(20), 0)

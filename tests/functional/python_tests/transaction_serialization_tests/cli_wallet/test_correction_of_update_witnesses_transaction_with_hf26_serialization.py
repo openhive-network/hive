@@ -2,8 +2,6 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import create_account_and_fund_it
-
 
 @pytest.mark.testnet
 def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_hf26_serialization, request):
@@ -29,7 +27,7 @@ def test_is_legacy_keyword_TESTS_is_in_legacy_transaction(node, wallet_with_lega
 
 @pytest.mark.testnet
 def test_update_witness_serialization(node, wallet, request):
-    create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(100))
+    wallet.create_account('alice', vests=tt.Asset.Test(100))
     update_witness = wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').public_key,
                                                {'account_creation_fee': tt.Asset.Test(10)})
 
@@ -49,7 +47,7 @@ def test_update_witness_serialization(node, wallet, request):
 
 
 def create_and_power_account_and_update_witness(wallet):
-    create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(100))
+    wallet.create_account('alice', vests=tt.Asset.Test(100))
 
     wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').public_key,
                               {'account_creation_fee': tt.Asset.Test(10)})

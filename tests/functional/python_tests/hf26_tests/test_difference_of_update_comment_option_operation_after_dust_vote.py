@@ -1,7 +1,5 @@
 import test_tools as tt
 
-from ....local_tools import create_account_and_fund_it
-
 """
 A bug has been detected in hardfork 25. Votes with weight below the dust_threshold (called "dust votes"), 
 can be created when were send from an account with very low resources or have low weight. On HF25 they were ignored.
@@ -12,7 +10,7 @@ def test_modify_beneficiaries_after_dust_vote_on_hf26(wallet_hf26):
     for account in ['alice', 'bob']:
         wallet_hf26.api.create_account('initminer', account, '{}')
 
-    create_account_and_fund_it(wallet_hf26, 'carol', vests=tt.Asset.Test(1))
+    wallet_hf26.create_account('carol', vests=tt.Asset.Test(1))
 
     wallet_hf26.api.post_comment('initminer', 'test-post', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
     wallet_hf26.api.vote('carol', 'initminer', 'test-post', 1)  # "dust-vote"
@@ -24,7 +22,7 @@ def test_modify_beneficiaries_after_dust_vote_on_hf25(wallet_hf25):
     for account in ['alice', 'bob']:
         wallet_hf25.api.create_account('initminer', account, '{}')
 
-    create_account_and_fund_it(wallet_hf25, 'carol', vests=tt.Asset.Test(1))
+    wallet_hf25.create_account('carol', vests=tt.Asset.Test(1))
 
     wallet_hf25.api.post_comment('initminer', 'test-post', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
     wallet_hf25.api.vote('carol', 'initminer', 'test-post', 1)  # "dust-vote"

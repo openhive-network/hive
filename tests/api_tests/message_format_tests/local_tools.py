@@ -3,7 +3,7 @@ from typing import Literal
 
 import test_tools as tt
 
-from ...local_tools import create_account_and_fund_it, date_from_now
+from ...local_tools import date_from_now
 
 
 def create_and_cancel_vesting_delegation(wallet, delegator, delegatee):
@@ -52,8 +52,8 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
 
 
 def prepare_escrow(wallet, *, sender: str) -> None:
-    create_account_and_fund_it(wallet, sender, tests=tt.Asset.Test(100), vests=tt.Asset.Test(100),
-                               tbds=tt.Asset.Tbd(100))
+    wallet.create_account(sender, hives=tt.Asset.Test(100), vests=tt.Asset.Test(100),
+                          hbds=tt.Asset.Tbd(100))
 
     for name in ['receiver', 'agent']:
         wallet.api.create_account(sender, name, '{}')

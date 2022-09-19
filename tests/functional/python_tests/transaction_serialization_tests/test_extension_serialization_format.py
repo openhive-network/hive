@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from ....local_tools import create_account_and_fund_it, date_from_now
+from ....local_tools import date_from_now
 
 PROPOSAL_START_DATE = date_from_now(weeks=16)
 PROPOSAL_END_DATE = date_from_now(weeks=20)
@@ -30,8 +30,8 @@ PROPOSAL_END_DATE_AFTER_UPDATE = date_from_now(weeks=19)
 def test_change_comment_operation(node, api, expected_extension):
     wallet = tt.Wallet(attach_to=node)
 
-    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
-    create_account_and_fund_it(wallet, 'bob', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    wallet.create_account('bob', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
@@ -76,7 +76,7 @@ def test_change_comment_operation(node, api, expected_extension):
 def test_update_proposal_operation(node, api, expected_extension):
     wallet = tt.Wallet(attach_to=node)
 
-    create_account_and_fund_it(wallet, 'alice', tbds=tt.Asset.Tbd(100), vests=tt.Asset.Test(100))
+    wallet.create_account('alice', hbds=tt.Asset.Tbd(100), vests=tt.Asset.Test(100))
     wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
     wallet.api.create_proposal('alice', 'alice', PROPOSAL_START_DATE, PROPOSAL_END_DATE, tt.Asset.Tbd(100), 'subject-1', 'permlink')
     operation = wallet.api.update_proposal(0, 'alice', tt.Asset.Tbd(10), 'subject-1', 'permlink', PROPOSAL_END_DATE_AFTER_UPDATE)

@@ -1,7 +1,5 @@
 import test_tools as tt
 
-from ....local_tools import create_account_and_fund_it
-
 
 def test_getting_rewards_after_vote_overwriting_on_hf25(node_hf25, wallet_hf25):
     perform_test_preparation(node_hf25, wallet_hf25)
@@ -26,8 +24,8 @@ def perform_test_preparation(node, wallet):
     Prepares to receive reward balances with vote overwriting. Vote overwriting blocks receiving rewards by bob on HF25.
     On HF26 this account gets rewards.
     """
-    create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(100000))
-    create_account_and_fund_it(wallet, 'bob', vests=tt.Asset.Test(100000))
+    wallet.create_account('alice', vests=tt.Asset.Test(100000))
+    wallet.create_account('bob', vests=tt.Asset.Test(100000))
 
     wallet.api.post_comment('alice', 'permlink', '', 'paremt-permlink', 'title', 'body', '{}')
 
