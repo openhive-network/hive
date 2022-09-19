@@ -134,7 +134,7 @@ namespace fc
 
       // at worst it will be size digits (base 2) so make our buffer
       // that plus room for null terminator
-      static char sz [128 + 1];
+      char sz [128 + 1];
        sz[sizeof(sz) - 1] = '\0';
 
       uint128 ii(*this);
