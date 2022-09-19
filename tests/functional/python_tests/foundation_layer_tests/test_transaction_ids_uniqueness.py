@@ -15,8 +15,8 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
 # In this test case it is important that all generated transactions go to single block.
 # We are unable to guarantee this due to the race between blocks production and generating transactions.
 # If the transactions do not enter a single block, they will be split between two blocks.
-# In this case, the test is repeated (up to five times).
-@pytest.mark.flaky(reruns=5)
+# In this case, the test is repeated.
+@pytest.mark.flaky(reruns=5, reruns_delay=30)
 @pytest.mark.testnet
 def test_if_transaction_ids_order_corresponds_to_transactions_order(node, wallet):
     names = [f'account-{i:02d}' for i in range(50)]
