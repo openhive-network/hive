@@ -1,4 +1,4 @@
 #        BLOCK #    TRX ID                                             OPERATION            DETAILS                                           
 ---------------------------------------------------------------------------------------------------
-1        1          0000000000000000000000000000000000000000           hardfork             {"hardfork_id":1}                                 
-2        1          0000000000000000000000000000000000000000           hardfork             {"hardfork_id":2}                                 
+5        4          0f38c95b3830c1485250d0f557a7d18f7c56900a           comment              {"parent_author":"","parent_permlink":"someone0","author":"alice","permlink":"test-permlink","title":"test-title","body":"this is a body","json_metadata":"{}"}
+6        5          3b6bd31fb5b51e430ade7610e6ec93eb7aab2b1c           account_update       {"account":"alice","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",1],["TST5iZMbNEmy33uEhFC6bVu8cYwKEycntoRHbv8LXuTtjg6E8Sq2Z",1]]},"memo_key":"TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW","json_metadata":"{}"}
