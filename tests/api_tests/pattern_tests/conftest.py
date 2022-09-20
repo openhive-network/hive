@@ -4,14 +4,16 @@ from collections import namedtuple
 from urllib.parse import urlunparse
 
 import test_tools as tt
-from local_tools import Config
+from local_tools import Config, IS_DIRECT_CALL_HAFAH
 
-def pytest_tavern_beta_before_every_test_run(test_dict, variables):
-    if os.getenv("IS_DIRECT_CALL_HAFAH", "").lower() == "true":
-        url = test_dict["stages"][0]["request"]["url"]
-        method_name = test_dict["stages"][0]["request"]["json"]["method"].split(".")[1]
-        test_dict["stages"][0]["request"]["url"] = f"{url}rpc/{method_name}"
-        test_dict["stages"][0]["request"]["json"] = test_dict["stages"][0]["request"]["json"]["params"]
+# create this function only if run with tavern
+if 'HIVEMIND_PORT' in os.environ:
+    def pytest_tavern_beta_before_every_test_run(test_dict, variables):
+        if IS_DIRECT_CALL_HAFAH:
+            url = test_dict["stages"][0]["request"]["url"]
+            method_name = test_dict["stages"][0]["request"]["json"]["method"].split(".")[1]
+            test_dict["stages"][0]["request"]["url"] = f"{url}rpc/{method_name}"
+            test_dict["stages"][0]["request"]["json"] = test_dict["stages"][0]["request"]["json"]["params"]
 
 def pytest_addoption(parser):
     parser.addoption('--proto', type=str, default='http', help='Specifies protocol of connection to node [default: http]')
