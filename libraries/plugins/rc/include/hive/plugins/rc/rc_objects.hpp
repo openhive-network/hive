@@ -105,6 +105,8 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
     }
 
     //current content of resource pool
+    const resource_count_type& get_pool() const { return pool_array; }
+    //current content of resource pool for selected resource
     int64_t get_pool( int poolIdx ) const { return pool_array[ poolIdx ]; }
     //global usage statistics within last HIVE_RC_BUCKET_TIME_LENGTH*HIVE_RC_WINDOW_BUCKET_COUNT window
     const resource_count_type& get_usage() const { return usage_in_window; }

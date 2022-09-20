@@ -360,17 +360,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
-  {
     export_data->add_tx_info( tx_info );
-  }
-  else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY ) == 0 )
-  {
-    //correction for head block number is to counter the fact that transactions are handled before block switches to
-    //new one and therefore it is different for transactions and for block they are processed in (the effect was that
-    //similar condition for automatic actions/block was triggering debug print for different block than here; now
-    //both places print in the same moment, so you can see connection between data from here and there)
-    dlog( "${b} : ${i}", ("b", gpo.head_block_number+1)("i", tx_info) );
-  }
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
 void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
@@ -428,8 +418,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   if( reset_bucket )
     active_bucket = &( *bucket_idx.begin() );
 
-  bool debug_print = ( ( gpo.head_block_number % HIVE_BLOCKS_PER_DAY ) == 0 );
-  _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& pool_obj )
+  const auto& rc_pool = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+  _db.modify( rc_pool, [&]( rc_pool_object& pool_obj )
   {
     bool budget_adjustment = false;
     for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
@@ -471,6 +461,11 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       block_info.budget = pool_obj.get_last_known_budget();
   } );
 
+  if( ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 )
+  {
+    // TODO: add daily reports here
+  }
+
   _db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
   {
     if( reset_bucket )
@@ -483,8 +478,6 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
     export_data->block = block_info;
-  else if( debug_print )
-    dlog( "${b} : ${i}", ( "b", gpo.head_block_number )( "i", block_info ) );
 } FC_CAPTURE_AND_RETHROW( (note.full_block->get_block()) ) }
 
 void rc_plugin_impl::on_first_block()
@@ -530,7 +523,7 @@ void rc_plugin_impl::on_first_block()
   }
 
   const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
-  ilog( "Genesis pool_obj is ${o}", ("o", pool_obj) );
+  ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
   _db.create< rc_pending_data >();
 
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
@@ -1208,13 +1201,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
-  {
     export_data->add_opt_action_info( opt_action_info );
-  }
-  else if( (gpo.head_block_number % HIVE_BLOCKS_PER_DAY) == 0 )
-  {
-    dlog( "${b} : ${i}", ("b", gpo.head_block_number)("i", opt_action_info) );
-  }
 }
 
 void rc_plugin_impl::validate_database()
