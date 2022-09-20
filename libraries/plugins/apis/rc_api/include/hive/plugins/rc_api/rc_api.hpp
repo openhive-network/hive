@@ -119,6 +119,27 @@ struct list_rc_direct_delegations_return
   std::vector< rc_direct_delegation_api_object > rc_direct_delegations;
 };
 
+typedef void_type get_rc_stats_args;
+
+struct get_rc_stats_return
+{
+  variant_object rc_stats;
+};
+
+struct get_rc_operation_stats_args
+{
+  std::string operation; //behaves like enum, except hive::protocol::operation is not an enum
+};
+
+struct get_rc_operation_stats_return
+{
+  uint32_t count;
+  int64_t avg_cost;
+  resource_cost_type resource_cost;
+  resource_share_type resource_cost_share;
+  resource_count_type resource_usage;
+};
+
 class rc_api
 {
   public:
@@ -131,6 +152,8 @@ class rc_api
       (find_rc_accounts)
       (list_rc_accounts)
       (list_rc_direct_delegations)
+      (get_rc_stats)
+      (get_rc_operation_stats)
       )
 
   private:
@@ -186,3 +209,18 @@ FC_REFLECT( hive::plugins::rc::list_rc_direct_delegations_return,
   (rc_direct_delegations)
   )
 
+FC_REFLECT( hive::plugins::rc::get_rc_stats_return,
+  (rc_stats)
+  )
+
+FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_args,
+  (operation)
+  )
+
+FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_return,
+  (count)
+  (avg_cost)
+  (resource_cost)
+  (resource_cost_share)
+  (resource_usage)
+  )

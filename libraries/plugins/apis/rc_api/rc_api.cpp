@@ -28,6 +28,8 @@ class rc_api_impl
       (find_rc_accounts)
       (list_rc_accounts)
       (list_rc_direct_delegations)
+      (get_rc_stats)
+      (get_rc_operation_stats)
     )
 
     chain::database& _db;
@@ -158,6 +160,72 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   return result;
 }
 
+DEFINE_API_IMPL( rc_api_impl, get_rc_stats )
+{
+  get_rc_stats_return result;
+
+  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
+  // stats won't be enabled until RC plugin starts working (plus they are not enabled in testnet)
+  FC_ASSERT( rc_plugin.is_rc_stats_enabled(), "Gathering of RC stats not enabled." );
+  // FULL report would not be useful in itself - it'd have to be supplemented like in get_rc_operation_stats
+  result.rc_stats = rc_plugin.get_report( rc::rc_plugin::report_type::REGULAR );
+
+  return result;
+}
+
+DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
+{
+  get_rc_operation_stats_return result;
+
+  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
+  // stats won't be enabled until RC plugin starts working (plus they are not enabled in testnet)
+  FC_ASSERT( rc_plugin.is_rc_stats_enabled(), "Gathering of RC stats not enabled." );
+
+  //compare with from_string defined in FC_REFLECT_ENUM - we don't have enum here but situation is similar
+  int op_id = 0;
+  for( ; op_id < HIVE_RC_NUM_OPERATIONS; ++op_id )
+  {
+    hive::protocol::operation op;
+    op.set_which( op_id );
+    std::string op_name = op.get_stored_type_name( true );
+    if( strcmp( op_name.c_str(), args.operation.c_str() ) == 0 )
+      break;
+  }
+  if( op_id == HIVE_RC_NUM_OPERATIONS )
+  {
+    if( strcmp( "multiop", args.operation.c_str() ) != 0 )
+    {
+      try
+      {
+        op_id = boost::lexical_cast< int >( args.operation );
+        if( op_id < 0 || HIVE_RC_NUM_OPERATIONS < op_id )
+          fc::throw_bad_enum_cast( args.operation.c_str(), "hive::protocol::operation" );
+      }
+      catch( const boost::bad_lexical_cast& e )
+      {
+        fc::throw_bad_enum_cast( args.operation.c_str(), "hive::protocol::operation" );
+      }
+    }
+  }
+
+  const auto& op_stats = _db.get< rc_stats_object >( RC_ARCHIVE_STATS_ID ).get_op_stats( op_id );
+
+  result.count = op_stats.count;
+  result.avg_cost = op_stats.average_cost();
+  if( result.avg_cost > 0 )
+  {
+    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    {
+      result.resource_cost[i] = op_stats.cost[i] / op_stats.count;
+      result.resource_usage[i] = op_stats.usage[i] / op_stats.count;
+      //there should still be a solid margin even for new account tokens for the calculation below
+      result.resource_cost_share[i] = result.resource_cost[i] * HIVE_100_PERCENT / result.avg_cost;
+    }
+  }
+
+  return result;
+}
+
 } // detail
 
 rc_api::rc_api(): my( new detail::rc_api_impl() )
@@ -173,6 +241,8 @@ DEFINE_READ_APIS( rc_api,
   (find_rc_accounts)
   (list_rc_accounts)
   (list_rc_direct_delegations)
+  (get_rc_stats)
+  (get_rc_operation_stats)
   )
 
 } } } // hive::plugins::rc
