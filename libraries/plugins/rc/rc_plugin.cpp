@@ -47,6 +47,9 @@ using hive::chain::util::manabar_params;
 class rc_plugin_impl
 {
   public:
+    typedef rc_plugin::report_type report_type;
+    enum class report_output { DLOG, ILOG, NOTIFY };
+
     rc_plugin_impl( rc_plugin& _plugin ) :
       _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin )
@@ -83,6 +86,8 @@ class rc_plugin_impl
 
     int64_t calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info );
 
+    fc::variant_object get_report( report_type rt, const rc_stats_object& stats ) const;
+
     database&                     _db;
     rc_plugin&                    _self;
 
@@ -109,7 +114,13 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_optional_action_conn;
     boost::signals2::connection   _pre_apply_custom_operation_conn;
     boost::signals2::connection   _post_apply_custom_operation_conn;
+
+    static report_type auto_report_type; //type of automatic daily rc stats reports
+    static report_output auto_report_output; //output of automatic daily rc stat reports
 };
+
+rc_plugin_impl::report_type rc_plugin_impl::auto_report_type = rc_plugin_impl::report_type::REGULAR;
+rc_plugin_impl::report_output rc_plugin_impl::auto_report_output = rc_plugin_impl::report_output::ILOG;
 
 int64_t get_next_vesting_withdrawal( const account_object& account )
 {
@@ -475,7 +486,22 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   if( _enable_rc_stats && ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 )
   {
     const auto& new_stats_obj = _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID );
-    // TODO: add daily reports here
+    if( auto_report_type != report_type::NONE && new_stats_obj.get_starting_block() )
+    {
+      fc::variant_object report = get_report( auto_report_type, new_stats_obj );
+      switch( auto_report_output )
+      {
+      case report_output::NOTIFY:
+        hive::notify( "RC stats", "rc_stats", report );
+        break;
+      case report_output::ILOG:
+        ilog( "RC stats:${report}", ( report ) );
+        break;
+      default:
+        dlog( "RC stats:${report}", ( report ) );
+        break;
+      };
+    }
     const auto& old_stats_obj = _db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
     _db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
     {
@@ -1249,6 +1275,87 @@ void rc_plugin_impl::validate_database()
   }
 }
 
+fc::variant_object rc_plugin_impl::get_report( report_type rt, const rc_stats_object& stats ) const
+{
+  if( rt == report_type::NONE )
+    return fc::variant_object();
+
+  fc::variant_object_builder report;
+  report
+    ( "block", stats.get_starting_block() )
+    ( "regen", stats.get_global_regen() )
+    ( "budget", stats.get_budget() )
+    ( "pool", stats.get_pool() )
+    ( "share", stats.get_share() )
+    // note: these are average costs from the start of current set of blocks (so from
+    // previous set); they might be different from costs calculated for current set
+    ( "vote", stats.get_archive_average_cost(0) )
+    ( "comment", stats.get_archive_average_cost(1) )
+    ( "transfer", stats.get_archive_average_cost(2) );
+  if( rt != report_type::MINIMAL )
+  {
+    fc::variant_object_builder ops;
+    for( int i = 0; i <= HIVE_RC_NUM_OPERATIONS; ++i )
+    {
+      const auto& op_stats = stats.get_op_stats(i);
+      if( op_stats.count == 0 )
+        continue;
+      fc::variant_object_builder op;
+      op( "count", op_stats.count );
+      if( rt != report_type::FULL )
+      {
+        op( "avg_cost", op_stats.average_cost() );
+      }
+      else
+      {
+        op
+          ( "cost", op_stats.cost )
+          ( "usage", op_stats.usage );
+      }
+      if( i == HIVE_RC_NUM_OPERATIONS )
+      {
+        ops( "multiop", op.get() );
+      }
+      else
+      {
+        hive::protocol::operation _op;
+        _op.set_which(i);
+        std::string op_name = _op.get_stored_type_name( true );
+        ops( op_name, op.get() );
+      }
+    }
+    report( "ops", ops.get() );
+
+    fc::variants payers;
+    for( int i = 0; i < HIVE_RC_NUM_PAYER_RANKS; ++i )
+    {
+      const auto& payer_stats = stats.get_payer_stats(i);
+      fc::variant_object_builder payer;
+      payer
+        ( "rank", i )
+        ( "count", payer_stats.count );
+      if( payer_stats.less_than_5_percent )
+        payer( "lt5", payer_stats.less_than_5_percent );
+      if( payer_stats.less_than_10_percent )
+        payer( "lt10", payer_stats.less_than_10_percent );
+      if( payer_stats.less_than_20_percent )
+        payer( "lt20", payer_stats.less_than_20_percent );
+      if( payer_stats.was_dry() )
+      {
+        fc::variant_object_builder dry;
+        dry
+          ( "vote", payer_stats.cant_afford[0] )
+          ( "comment", payer_stats.cant_afford[1] )
+          ( "transfer", payer_stats.cant_afford[2] );
+        payer( "cant_afford", dry.get() );
+      }
+      payers.emplace_back( payer.get() );
+    }
+    report( "payers", payers );
+  }
+  return report.get();
+}
+
 } // detail
 
 rc_plugin::rc_plugin() {}
@@ -1408,6 +1515,12 @@ bool rc_plugin::is_rc_stats_enabled() const
 void rc_plugin::validate_database()
 {
   my->validate_database();
+}
+
+fc::variant_object rc_plugin::get_report( report_type rt, bool pending ) const
+{
+  const rc_stats_object& stats = my->_db.get< rc_stats_object >( pending ? RC_PENDING_STATS_ID : RC_ARCHIVE_STATS_ID );
+  return my->get_report( rt, stats );
 }
 
 exp_rc_data::exp_rc_data() {}

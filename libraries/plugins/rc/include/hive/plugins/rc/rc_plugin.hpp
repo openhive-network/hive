@@ -51,6 +51,15 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     void validate_database();
 
+    enum class report_type
+    {
+      NONE, //no report
+      MINIMAL, //just basic stats - no operation or payer stats
+      REGULAR, //no detailed operation stats
+      FULL //everything
+    };
+    fc::variant_object get_report( report_type rt, bool pending = false ) const;
+
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;
 };
