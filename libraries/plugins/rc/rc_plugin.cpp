@@ -22,6 +22,7 @@
 #include <hive/jsonball/jsonball.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <cmath>
 
 #ifndef IS_TEST_NET
 #define HIVE_HF20_BLOCK_NUM 26256743
@@ -88,6 +89,7 @@ class rc_plugin_impl
     rc_plugin_skip_flags          _skip;
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
+    bool                          _enable_rc_stats = false; //needs to be false by default
 
     std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
 
@@ -358,6 +360,14 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 #endif
   );
 
+  if( _enable_rc_stats && _db.is_processing_block() )
+  {
+    _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
+    {
+      stats_obj.add_stats( tx_info );
+    } );
+  }
+
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
@@ -462,9 +472,18 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       block_info.budget = pool_obj.get_last_known_budget();
   } );
 
-  if( ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 )
+  if( _enable_rc_stats && ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 )
   {
+    const auto& new_stats_obj = _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID );
     // TODO: add daily reports here
+    const auto& old_stats_obj = _db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
+    _db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
+    {
+      _db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
+      {
+        new_stats.archive_and_reset_stats( old_stats, rc_pool, note.block_num, block_info.regen );
+      } );
+    } );
   }
 
   _db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
@@ -525,6 +544,8 @@ void rc_plugin_impl::on_first_block()
 
   const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
   ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
+  _db.create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
+  _db.create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
   _db.create< rc_pending_data >();
 
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
@@ -1198,6 +1219,14 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 #endif
   );
 
+  if( _enable_rc_stats && _db.is_processing_block() )
+  {
+    _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
+    {
+      stats_obj.add_stats( opt_action_info );
+    } );
+  }
+
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
@@ -1287,6 +1316,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_stats_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pending_data_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
@@ -1297,6 +1327,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
 #ifndef IS_TEST_NET
     my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
+    my->_enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
 #else
     uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();
     if( start_block > 0 )
@@ -1364,6 +1395,16 @@ const rc_plugin_skip_flags& rc_plugin::get_rc_plugin_skip_flags() const
   return my->_skip;
 }
 
+void rc_plugin::set_enable_rc_stats( bool enable )
+{
+  my->_enable_rc_stats = enable;
+}
+
+bool rc_plugin::is_rc_stats_enabled() const
+{
+  return my->_enable_rc_stats;
+}
+
 void rc_plugin::validate_database()
 {
   my->validate_database();
@@ -1375,6 +1416,71 @@ exp_rc_data::~exp_rc_data() {}
 void exp_rc_data::to_variant( fc::variant& v )const
 {
   fc::to_variant( *this, v );
+}
+
+void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
+  uint32_t _block_num, int64_t _regen )
+{
+  //copy all data to archive (but not the id)
+  {
+    auto _id = archive.id;
+    archive = copy_chain_object();
+    archive.id = _id;
+  }
+
+  block_num = _block_num;
+  regen = _regen;
+  budget = pool_obj.get_last_known_budget();
+  pool = pool_obj.get_pool();
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    share[i] = pool_obj.count_share(i);
+  for( int i = 0; i < 3; ++i )
+    if( op_stats[i].count > 0 ) //leave old value if there is no new data
+      average_cost[i] = op_stats[i].average_cost();
+
+  op_stats = {};
+  payer_stats = {};
+}
+
+void rc_stats_object::add_stats( const rc_info& tx_info )
+{
+  int _op_idx = op_stats.size() - 1; //multiop transaction by default
+  if( tx_info.op.valid() )
+    _op_idx = tx_info.op.value();
+  rc_op_stats& _op_stats = op_stats[ _op_idx ];
+
+  _op_stats.count += 1;
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+  {
+    _op_stats.cost[i] += tx_info.cost[i];
+    _op_stats.usage[i] += tx_info.usage[i];
+  }
+
+  if( tx_info.max > 0 )
+  {
+    int _payer_rank = log10( tx_info.max ) - 9;
+    if( _payer_rank < 0 )
+      _payer_rank = 0;
+    if( _payer_rank >= HIVE_RC_NUM_PAYER_RANKS )
+      _payer_rank = HIVE_RC_NUM_PAYER_RANKS - 1;
+    rc_payer_stats& _payer_stats = payer_stats[ _payer_rank ];
+
+    _payer_stats.count += 1;
+    // since it is just statistics we can do rough calculations:
+    int64_t low_rc = tx_info.max / 20; // 5%
+    if( tx_info.rc < low_rc )
+      _payer_stats.less_than_5_percent += 1;
+    low_rc <<= 1; // 10%
+    if( tx_info.rc < low_rc )
+      _payer_stats.less_than_10_percent += 1;
+    low_rc <<= 1; // 20%
+    if( tx_info.rc < low_rc )
+      _payer_stats.less_than_20_percent += 1;
+
+    for( int i = 0; i < 3; ++i )
+      if( tx_info.rc < average_cost[i] )
+        _payer_stats.cant_afford[i] += 1;
+  }
 }
 
 int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool only_delegable_rc )

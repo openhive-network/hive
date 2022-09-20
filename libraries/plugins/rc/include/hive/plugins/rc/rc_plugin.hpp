@@ -46,6 +46,8 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     void set_rc_plugin_skip_flags( rc_plugin_skip_flags skip );
     const rc_plugin_skip_flags& get_rc_plugin_skip_flags() const;
+    void set_enable_rc_stats( bool enable = true );
+    bool is_rc_stats_enabled() const;
 
     void validate_database();
 

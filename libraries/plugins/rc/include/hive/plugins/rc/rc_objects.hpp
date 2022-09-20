@@ -2,6 +2,8 @@
 #include <hive/chain/util/manabar.hpp>
 
 #include <hive/plugins/rc/rc_config.hpp>
+#include <hive/plugins/rc/rc_export_objects.hpp>
+#include <hive/plugins/rc/rc_stats.hpp>
 #include <hive/plugins/rc/rc_utility.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/chain/database.hpp>
@@ -27,7 +29,8 @@ enum rc_object_types
   rc_account_object_type           = ( HIVE_RC_SPACE_ID << 8 ) + 2,
   rc_direct_delegation_object_type = ( HIVE_RC_SPACE_ID << 8 ) + 3,
   rc_usage_bucket_object_type      = ( HIVE_RC_SPACE_ID << 8 ) + 4,
-  rc_pending_data_type             = ( HIVE_RC_SPACE_ID << 8 ) + 5
+  rc_pending_data_type             = ( HIVE_RC_SPACE_ID << 8 ) + 5,
+  rc_stats_object_type             = ( HIVE_RC_SPACE_ID << 8 ) + 6
 };
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
@@ -133,6 +136,57 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_pool_object );
 };
 typedef oid_ref< rc_pool_object > rc_pool_id_type;
+
+/**
+  * Collects statistics to generate daily report.
+  * Second instance keeps data from previous day and is used for API calls.
+  */
+class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >
+{
+  CHAINBASE_OBJECT( rc_stats_object );
+  public:
+    template< typename Allocator >
+    rc_stats_object( allocator< Allocator > a, uint64_t _id, uint32_t _forced_id )
+      : id( _forced_id ) {}
+
+    //for copying stats from pending to archive and reseting pending - call on pending object (RC_PENDING_STATS_ID)
+    void archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
+      uint32_t _block_num, int64_t _regen );
+    //collects stats using given transaction data
+    void add_stats( const rc_info& tx_info );
+
+    //starting block for statistics
+    uint32_t get_starting_block() const { return block_num; }
+    //global regeneration rate at starting block
+    int64_t get_global_regen() const { return regen; }
+    //budget at starting block
+    const resource_count_type& get_budget() const { return budget; }
+    //resource pool values at starting block
+    const resource_count_type& get_pool() const { return pool; }
+    //popularity share at starting block
+    const resource_share_type& get_share() const { return share; }
+    //cumulative stats for selected operation (HIVE_RC_NUM_OPERATIONS for multiop transaction stats)
+    const rc_op_stats& get_op_stats( int opTag ) const { return op_stats[ opTag ]; }
+    //cumulative stats for users per rank
+    const rc_payer_stats& get_payer_stats( int payerRank ) const { return payer_stats[ payerRank ]; }
+    //average cost of vote/comment/transfer at the starting block (used for payer affordability filter)
+    int64_t get_archive_average_cost( int opTag ) const { return average_cost[opTag]; }
+
+  private:
+    uint32_t block_num = 0;
+    int64_t regen = 0;
+    resource_count_type budget;
+    resource_count_type pool;
+    resource_share_type share;
+    fc::int_array< rc_op_stats, HIVE_RC_NUM_OPERATIONS + 1 > op_stats;
+    fc::int_array< rc_payer_stats, HIVE_RC_NUM_PAYER_RANKS > payer_stats;
+    fc::int_array< int64_t, 3 > average_cost;
+
+  CHAINBASE_UNPACK_CONSTRUCTOR( rc_stats_object );
+};
+typedef oid_ref< rc_stats_object > rc_stats_id_type;
+const rc_stats_id_type RC_PENDING_STATS_ID( oid< rc_stats_object >(0) );
+const rc_stats_id_type RC_ARCHIVE_STATS_ID( oid< rc_stats_object >(1) );
 
 /**
   * Represents temporary data on pending transactions (singleton).
@@ -308,6 +362,15 @@ typedef multi_index_container<
 > rc_pool_index;
 
 typedef multi_index_container<
+  rc_stats_object,
+  indexed_by<
+    ordered_unique< tag< by_id >,
+      const_mem_fun< rc_stats_object, rc_stats_object::id_type, &rc_stats_object::get_id > >
+  >,
+  allocator< rc_stats_object >
+> rc_stats_index;
+
+typedef multi_index_container<
   rc_pending_data,
   indexed_by<
     ordered_unique< tag< by_id >,
@@ -371,6 +434,19 @@ FC_REFLECT( hive::plugins::rc::rc_pool_object,
   (sum_of_resource_weights)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pool_object, hive::plugins::rc::rc_pool_index )
+
+FC_REFLECT( hive::plugins::rc::rc_stats_object,
+  (id)
+  (block_num)
+  (regen)
+  (budget)
+  (pool)
+  (share)
+  (op_stats)
+  (payer_stats)
+  (average_cost)
+)
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_stats_object, hive::plugins::rc::rc_stats_index )
 
 FC_REFLECT( hive::plugins::rc::rc_pending_data,
   (id)
