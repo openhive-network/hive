@@ -19,14 +19,12 @@
         json:
           jsonrpc: "2.0"
           id: 1
-          method: "account_history_api.get_account_history"
-          params: {"account": "gtg", "limit": -1}
+          method: "account_history_api.enum_virtual_ops"
+          params: {"block_range_begin": 4, "block_range_end": 5, "limit": "limit"}
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
             error_response: True
-            ignore_tags:
-              - data
-
+            ignore_tags: <error>
