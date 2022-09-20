@@ -1180,7 +1180,6 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // How many resources do the optional actions use?
   count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
-  opt_action_info.op = note.action.which();
 
   // How many RC do these actions cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, opt_action_info );
