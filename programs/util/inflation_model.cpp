@@ -137,9 +137,8 @@ int main( int argc, char** argv, char** envp )
     block_inflation_model( b, current_supply );
     if( b%1000 == 0 )
     {
-      fc::mutable_variant_object mvo;
-      mvo("rvec", reward_total)("b", b)("s", current_supply);
-      std::cout << fc::json::to_string(mvo) << std::endl;
+      fc::variant_object_builder mvo = fc::variant_object_builder("rvec", reward_total)("b", b)("s", current_supply);
+      std::cout << fc::json::to_string(mvo.get()) << std::endl;
     }
   }
 

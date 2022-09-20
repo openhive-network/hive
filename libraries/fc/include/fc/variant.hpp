@@ -35,7 +35,6 @@ namespace fc
 
    class variant;
    class variant_object;
-   class mutable_variant_object;
    class time_point;
    class time_point_sec;
    class microseconds;
@@ -89,8 +88,6 @@ namespace fc
 
    void to_variant( const variant_object& var,  variant& vo );
    void from_variant( const variant& var,  variant_object& vo );
-   void to_variant( const mutable_variant_object& var,  variant& vo );
-   void from_variant( const variant& var,  mutable_variant_object& vo );
    void to_variant( const std::vector<char>& var,  variant& vo );
    void from_variant( const variant& var,  std::vector<char>& vo );
 
@@ -223,11 +220,10 @@ namespace fc
         variant( int64_t val );
         variant( double val );
         variant( bool val );
-        variant( blob val );
-        variant( fc::string val );
-        variant( variant_object );
-        variant( mutable_variant_object );
-        variant( variants );
+        variant( const blob& val );
+        variant( const fc::string& val );
+        variant( const variant_object& );
+        variant( const variants& );
         variant( const variant& );
         variant( variant&& );
        ~variant();
@@ -276,6 +272,11 @@ namespace fc
         uint64_t                    as_uint64()const;
         bool                        as_bool()const;
         double                      as_double()const;
+
+        int64_t                     get_int64()const;
+        uint64_t                    get_uint64()const;
+        bool                        get_bool()const;
+        double                      get_double()const;
 
         blob&                       get_blob();
         const blob&                 get_blob()const;

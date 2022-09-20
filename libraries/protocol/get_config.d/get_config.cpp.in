@@ -6,27 +6,27 @@
 
 namespace hive { namespace protocol {
 
-fc::mutable_variant_object get_config( const std::string& treasury_name, const fc::sha256& chain_id )
+fc::variant_object get_config( const std::string& treasury_name, const fc::sha256& chain_id )
 {
-  fc::mutable_variant_object result;
-	result["HIVE_CHAIN_ID"] = chain_id;
-  result["HIVE_TREASURY_ACCOUNT"] = treasury_name;
+  fc::variant_object_builder result;
+	result("HIVE_CHAIN_ID", chain_id);
+  result("HIVE_TREASURY_ACCOUNT", treasury_name);
 
 #ifdef IS_TEST_NET
-  result["IS_TEST_NET"] = true;
+  result("IS_TEST_NET", true);
 #else
-  result["IS_TEST_NET"] = false;
+  result("IS_TEST_NET", false);
 #endif
 
 #ifdef HIVE_ENABLE_SMT
-  result["HIVE_ENABLE_SMT"] = true;
+  result("HIVE_ENABLE_SMT", true);
 #else
-  result["HIVE_ENABLE_SMT"] = false;
+  result("HIVE_ENABLE_SMT", false);
 #endif
 
 @CONFIG_HPP@
 
-  return result;
+  return result.get();
 }
 
 } } // hive::protocol

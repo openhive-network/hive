@@ -93,7 +93,7 @@ namespace fc {
 
       FILE* out = stream::std_error ? stderr : stdout;
 
-      //fc::string fmt_str = fc::format_string( cfg.format, mutable_variant_object(m.get_context())( "message", message)  );
+      //fc::string fmt_str = fc::format_string( cfg.format, variant_object(m.get_context())( "message", message)  );
       std::stringstream file_line;
       file_line << m.get_context().get_file() <<":"<<m.get_context().get_line_number() <<" ";
 

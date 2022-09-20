@@ -2,6 +2,8 @@
 #include <fc/crypto/base64.hpp>
 #include <fc/variant.hpp>
 #include <fc/reflect/reflect.hpp>
+#include <fc/crypto/hex.hpp>
+#include <fc/exception/exception.hpp>
 
 namespace fc {
 
@@ -104,18 +106,19 @@ namespace fc {
   template<typename T, size_t N>
   void to_variant( const array<T,N>& bi, variant& v )
   {
-     v = std::vector<char>( (const char*)&bi, ((const char*)&bi) + sizeof(bi) );
+    if( bi.size() )
+       v = to_hex(reinterpret_cast<const char*>(bi.data),sizeof(bi));
+    else v = string("");
   }
   template<typename T, size_t N>
   void from_variant( const variant& v, array<T,N>& bi )
   {
-    std::vector<char> ve = v.as< std::vector<char> >();
-    if( ve.size() )
+    auto str = v.as_string();
+    if( str.size() )
     {
-        memcpy(&bi, ve.data(), fc::min<size_t>(ve.size(),sizeof(bi)) );
+       size_t r = from_hex( str, reinterpret_cast<char*>(bi.data), sizeof(bi) );
+       FC_ASSERT( r == bi.size() );
     }
-    else
-        memset( static_cast<void*>(&bi), char(0), sizeof(bi) );
   }
 
 

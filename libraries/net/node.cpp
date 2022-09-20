@@ -2012,34 +2012,34 @@ namespace graphene { namespace net {
       // which lets us add and remove fields without changing the protocol.  Once we
       // settle on what we really want in there, we'll likely promote them to first
       // class fields in the hello message
-      fc::mutable_variant_object user_data;
-      user_data["fc_git_revision_sha"] = fc::git_revision_sha;
-      user_data["fc_git_revision_unix_timestamp"] = fc::git_revision_unix_timestamp;
+      fc::variant_object_builder user_data;
+      user_data("fc_git_revision_sha", fc::git_revision_sha);
+      user_data("fc_git_revision_unix_timestamp", fc::git_revision_unix_timestamp);
 #if defined( __APPLE__ )
-      user_data["platform"] = "osx";
+      user_data("platform", "osx");
 #elif defined( __linux__ )
-      user_data["platform"] = "linux";
+      user_data("platform", "linux");
 #elif defined( _MSC_VER )
-      user_data["platform"] = "win32";
+      user_data("platform", "win32");
 #else
-      user_data["platform"] = "other";
+      user_data("platform", "other");
 #endif
-      user_data["bitness"] = sizeof(void*) * 8;
+      user_data("bitness", sizeof(void*) * 8);
 
-      user_data["node_id"] = _node_id;
+      user_data("node_id", _node_id);
 
       item_hash_t head_block_id = _delegate->get_head_block_id();
-      user_data["last_known_block_hash"] = head_block_id;
-      user_data["last_known_block_number"] = _delegate->get_block_number(head_block_id);
-      user_data["last_known_block_time"] = _delegate->get_block_time(head_block_id);
+      user_data("last_known_block_hash", head_block_id);
+      user_data("last_known_block_number", _delegate->get_block_number(head_block_id));
+      user_data("last_known_block_time", _delegate->get_block_time(head_block_id));
 
       if (!_hard_fork_block_numbers.empty())
-        user_data["last_known_fork_block_number"] = _hard_fork_block_numbers.back();
+        user_data("last_known_fork_block_number", _hard_fork_block_numbers.back());
 
-      user_data["chain_id"] = _delegate->get_new_chain_id();
-      user_data["last_available_zstd_compression_dictionary_number"] = hive::chain::get_last_available_zstd_compression_dictionary_number();
+      user_data("chain_id", _delegate->get_new_chain_id());
+      user_data("last_available_zstd_compression_dictionary_number", hive::chain::get_last_available_zstd_compression_dictionary_number());
 
-      return user_data;
+      return user_data.get();
     }
     void node_impl::parse_hello_user_data_for_peer(peer_connection* originating_peer, const fc::variant_object& user_data)
     {
@@ -4239,26 +4239,26 @@ namespace graphene { namespace net {
         data_for_this_peer.node_id = peer->node_id;
         data_for_this_peer.connection_direction = peer->direction;
         data_for_this_peer.firewalled = peer->is_firewalled;
-        fc::mutable_variant_object user_data;
+        fc::variant_object_builder user_data;
         if (peer->graphene_git_revision_sha)
-          user_data["graphene_git_revision_sha"] = *peer->graphene_git_revision_sha;
+          user_data("graphene_git_revision_sha", *peer->graphene_git_revision_sha);
         if (peer->graphene_git_revision_unix_timestamp)
-          user_data["graphene_git_revision_unix_timestamp"] = *peer->graphene_git_revision_unix_timestamp;
+          user_data("graphene_git_revision_unix_timestamp", *peer->graphene_git_revision_unix_timestamp);
         if (peer->fc_git_revision_sha)
-          user_data["fc_git_revision_sha"] = *peer->fc_git_revision_sha;
+          user_data("fc_git_revision_sha", *peer->fc_git_revision_sha);
         if (peer->fc_git_revision_unix_timestamp)
-          user_data["fc_git_revision_unix_timestamp"] = *peer->fc_git_revision_unix_timestamp;
+          user_data("fc_git_revision_unix_timestamp", *peer->fc_git_revision_unix_timestamp);
         if (peer->platform)
-          user_data["platform"] = *peer->platform;
+          user_data("platform", *peer->platform);
         if (peer->bitness)
-          user_data["bitness"] = *peer->bitness;
-        user_data["user_agent"] = peer->user_agent;
+          user_data("bitness", *peer->bitness);
+        user_data("user_agent", peer->user_agent);
 
-        user_data["last_known_block_hash"] = peer->last_block_delegate_has_seen;
-        user_data["last_known_block_number"] = _delegate->get_block_number(peer->last_block_delegate_has_seen);
-        user_data["last_known_block_time"] = peer->last_block_time_delegate_has_seen;
+        user_data("last_known_block_hash", peer->last_block_delegate_has_seen);
+        user_data("last_known_block_number", _delegate->get_block_number(peer->last_block_delegate_has_seen));
+        user_data("last_known_block_time", peer->last_block_time_delegate_has_seen);
 
-        data_for_this_peer.user_data = user_data;
+        data_for_this_peer.user_data = user_data.get();
         reply.current_connections.emplace_back(data_for_this_peer);
       }
       originating_peer->send_message(reply);
@@ -5498,24 +5498,24 @@ namespace graphene { namespace net {
         fc::optional<fc::ip::endpoint> endpoint = peer->get_remote_endpoint();
         if (endpoint)
           this_peer_status.host = *endpoint;
-        fc::mutable_variant_object peer_details;
-        peer_details["addr"] = endpoint ? (std::string)*endpoint : std::string();
-        peer_details["addrlocal"] = (std::string)peer->get_local_endpoint();
-        peer_details["services"] = "00000001";
-        peer_details["lastsend"] = peer->get_last_message_sent_time().sec_since_epoch();
-        peer_details["lastrecv"] = peer->get_last_message_received_time().sec_since_epoch();
-        peer_details["bytessent"] = peer->get_total_bytes_sent();
-        peer_details["bytesrecv"] = peer->get_total_bytes_received();
-        peer_details["conntime"] = peer->get_connection_time();
-        peer_details["pingtime"] = "";
-        peer_details["pingwait"] = "";
-        peer_details["version"] = "";
-        peer_details["subver"] = peer->user_agent;
-        peer_details["inbound"] = peer->direction == peer_connection_direction::inbound;
-        peer_details["firewall_status"] = peer->is_firewalled;
-        peer_details["startingheight"] = "";
-        peer_details["banscore"] = "";
-        peer_details["syncnode"] = "";
+        fc::variant_object_builder peer_details;
+        peer_details("addr", endpoint ? (std::string)*endpoint : std::string());
+        peer_details("addrlocal", (std::string)peer->get_local_endpoint());
+        peer_details("services", "00000001");
+        peer_details("lastsend", peer->get_last_message_sent_time().sec_since_epoch());
+        peer_details("lastrecv", peer->get_last_message_received_time().sec_since_epoch());
+        peer_details("bytessent", peer->get_total_bytes_sent());
+        peer_details("bytesrecv", peer->get_total_bytes_received());
+        peer_details("conntime", peer->get_connection_time());
+        peer_details("pingtime", "");
+        peer_details("pingwait", "");
+        peer_details("version", "");
+        peer_details("subver", peer->user_agent);
+        peer_details("inbound", peer->direction == peer_connection_direction::inbound);
+        peer_details("firewall_status", peer->is_firewalled);
+        peer_details("startingheight", "");
+        peer_details("banscore", "");
+        peer_details("syncnode", "");
 
         if (peer->fc_git_revision_sha)
         {
@@ -5524,12 +5524,12 @@ namespace graphene { namespace net {
             revision_string += " (same as ours)";
           else
             revision_string += " (different from ours)";
-          peer_details["fc_git_revision_sha"] = revision_string;
+          peer_details("fc_git_revision_sha", revision_string);
 
         }
         if (peer->fc_git_revision_unix_timestamp)
         {
-          peer_details["fc_git_revision_unix_timestamp"] = *peer->fc_git_revision_unix_timestamp;
+          peer_details("fc_git_revision_unix_timestamp", *peer->fc_git_revision_unix_timestamp);
           std::string age_string = fc::get_approximate_relative_time_string( *peer->fc_git_revision_unix_timestamp);
           if (*peer->fc_git_revision_unix_timestamp == fc::time_point_sec(fc::git_revision_unix_timestamp))
             age_string += " (same as ours)";
@@ -5537,20 +5537,20 @@ namespace graphene { namespace net {
             age_string += " (newer than ours)";
           else
             age_string += " (older than ours)";
-          peer_details["fc_git_revision_age"] = age_string;
+          peer_details("fc_git_revision_age", age_string);
         }
 
         if (peer->platform)
-          peer_details["platform"] = *peer->platform;
+          peer_details("platform", *peer->platform);
 
         // provide these for debugging
         // warning: these are just approximations, if the peer is "downstream" of us, they may
         // have received blocks from other peers that we are unaware of
-        peer_details["current_head_block"] = peer->last_block_delegate_has_seen;
-        peer_details["current_head_block_number"] = _delegate->get_block_number(peer->last_block_delegate_has_seen);
-        peer_details["current_head_block_time"] = peer->last_block_time_delegate_has_seen;
+        peer_details("current_head_block", peer->last_block_delegate_has_seen);
+        peer_details("current_head_block_number", _delegate->get_block_number(peer->last_block_delegate_has_seen));
+        peer_details("current_head_block_time", peer->last_block_time_delegate_has_seen);
 
-        this_peer_status.info = peer_details;
+        this_peer_status.info = peer_details.get();
         statuses.push_back(this_peer_status);
       }
       return statuses;
@@ -5719,12 +5719,12 @@ namespace graphene { namespace net {
     fc::variant_object node_impl::network_get_info() const
     {
       VERIFY_CORRECT_THREAD();
-      fc::mutable_variant_object info;
-      info["listening_on"] = _actual_listening_endpoint;
-      info["node_public_key"] = _node_public_key;
-      info["node_id"] = _node_id;
-      info["firewalled"] = _is_firewalled;
-      return info;
+      fc::variant_object_builder info;
+      info("listening_on", _actual_listening_endpoint);
+      info("node_public_key", _node_public_key);
+      info("node_id", _node_id);
+      info("firewalled", _is_firewalled);
+      return info.get();
     }
     fc::variant_object node_impl::network_get_usage_stats() const
     {
@@ -5750,11 +5750,11 @@ namespace graphene { namespace net {
                      std::back_inserter(network_usage_by_hour),
                      std::plus<uint32_t>());
 
-      fc::mutable_variant_object result;
-      result["usage_by_second"] = network_usage_by_second;
-      result["usage_by_minute"] = network_usage_by_minute;
-      result["usage_by_hour"] = network_usage_by_hour;
-      return result;
+      fc::variant_object_builder result;
+      result("usage_by_second", network_usage_by_second);
+      result("usage_by_minute", network_usage_by_minute);
+      result("usage_by_hour", network_usage_by_hour);
+      return result.get();
     }
 
     bool node_impl::is_hard_fork_block(uint32_t block_number) const
@@ -6046,32 +6046,32 @@ namespace graphene { namespace net {
 
     fc::variant_object statistics_gathering_node_delegate_wrapper::get_call_statistics()
     {
-      fc::mutable_variant_object statistics;
+      fc::variant_object_builder statistics;
       std::ostringstream note;
       note << "All times are in microseconds, mean is the average of the last " << ROLLING_WINDOW_SIZE << " call times";
-      statistics["_note"] = note.str();
+      statistics("_note", note.str());
 
 #define ADD_STATISTICS_FOR_METHOD(r, data, method_name) \
-      fc::mutable_variant_object BOOST_PP_CAT(method_name, _stats); \
-      BOOST_PP_CAT(method_name, _stats)["min"] = boost::accumulators::min(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["mean"] = boost::accumulators::rolling_mean(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["max"] = boost::accumulators::max(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["sum"] = boost::accumulators::sum(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_before_min"] = boost::accumulators::min(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_before_mean"] = boost::accumulators::rolling_mean(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_before_max"] = boost::accumulators::max(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_before_sum"] = boost::accumulators::sum(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_after_min"] = boost::accumulators::min(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_after_mean"] = boost::accumulators::rolling_mean(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_after_max"] = boost::accumulators::max(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["delay_after_sum"] = boost::accumulators::sum(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator))); \
-      BOOST_PP_CAT(method_name, _stats)["count"] = boost::accumulators::count(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator))); \
-      statistics[BOOST_PP_STRINGIZE(method_name)] = BOOST_PP_CAT(method_name, _stats);
+      fc::variant_object_builder BOOST_PP_CAT(method_name, _stats); \
+      BOOST_PP_CAT(method_name, _stats)("min", boost::accumulators::min(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("mean", boost::accumulators::rolling_mean(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("max", boost::accumulators::max(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("sum", boost::accumulators::sum(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_before_min", boost::accumulators::min(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_before_mean", boost::accumulators::rolling_mean(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_before_max", boost::accumulators::max(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_before_sum", boost::accumulators::sum(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_before_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_after_min", boost::accumulators::min(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_after_mean", boost::accumulators::rolling_mean(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_after_max", boost::accumulators::max(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("delay_after_sum", boost::accumulators::sum(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator)))); \
+      BOOST_PP_CAT(method_name, _stats)("count", boost::accumulators::count(BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _execution_accumulator)))); \
+      statistics(BOOST_PP_STRINGIZE(method_name), BOOST_PP_CAT(method_name, _stats).get());
 
       BOOST_PP_SEQ_FOR_EACH(ADD_STATISTICS_FOR_METHOD, unused, NODE_DELEGATE_METHOD_NAMES)
 #undef ADD_STATISTICS_FOR_METHOD
 
-      return statistics;
+      return statistics.get();
     }
 
 // define VERBOSE_NODE_DELEGATE_LOGGING to log whenever the node delegate throws exceptions

@@ -61,8 +61,6 @@ namespace fc { namespace rpc  {
          future<variant> async_call( const fc::string& method, 
                                      const variant_object& args );
 
-         future<variant> async_call( const fc::string& method, mutable_variant_object args );
-
          /// Sending in an array of variants will be handled as positional arguments
          future<variant> async_call( const fc::string& method, 
                                      const variants& args );
@@ -280,19 +278,11 @@ namespace fc { namespace rpc  {
 
          template<typename Result>
          Result call( const fc::string& method, 
-                               variant_object a1, 
+                               const variant_object& a1, 
                                microseconds timeout = microseconds::maximum())
          {
-            return async_call( method, fc::move(a1) ).wait(timeout).as<Result>();
+            return async_call( method, a1 ).wait(timeout).as<Result>();
          }
-         template<typename Result>
-         Result call( const fc::string& method, 
-                               mutable_variant_object a1, 
-                               microseconds timeout = microseconds::maximum())
-         {
-            return async_call( method, variant_object( fc::move(a1) ) ).wait(timeout).as<Result>();
-         }
-
 
          template<typename Result>
          Result call( const fc::string& method, microseconds timeout = microseconds::maximum() )

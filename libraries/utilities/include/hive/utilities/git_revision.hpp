@@ -26,7 +26,7 @@
 
 namespace fc
 {
-class mutable_variant_object;
+class variant_object;
 } ///namespace fc
 
 namespace hive { namespace utilities {
@@ -43,6 +43,6 @@ extern const char* const git_revision_sha;
 extern const uint32_t git_revision_unix_timestamp;
 extern const char* const git_revision_description;
 
-void build_version_info(fc::mutable_variant_object* storage);
+void build_version_info(fc::variant_object* storage);
 
 } } // end namespace hive::utilities

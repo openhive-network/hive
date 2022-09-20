@@ -174,22 +174,22 @@ void market_history_plugin::plugin_initialize( const boost::program_options::var
     HIVE_ADD_PLUGIN_INDEX(my->_db, bucket_index);
     HIVE_ADD_PLUGIN_INDEX(my->_db, order_history_index);
 
-    fc::mutable_variant_object state_opts;
+    fc::variant_object_builder state_opts;
 
     if( options.count( MH_BUCKET_SIZE ) )
     {
       std::string buckets = options[MH_BUCKET_SIZE].as< string >();
       my->_tracked_buckets = fc::json::from_string( buckets ).as< flat_set< uint32_t > >();
-      state_opts[MH_BUCKET_SIZE] = buckets;
+      state_opts(MH_BUCKET_SIZE, buckets);
     }
 
     if( options.count( MH_BUCKETS_PER_SIZE ) )
     {
       my->_maximum_history_per_bucket_size = options[MH_BUCKETS_PER_SIZE].as< uint32_t >();
-      state_opts[MH_BUCKETS_PER_SIZE] = my->_maximum_history_per_bucket_size;
+      state_opts(MH_BUCKETS_PER_SIZE, my->_maximum_history_per_bucket_size);
     }
 
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts.get() );
 
     ilog( "market_history: plugin_initialize() end" );
   } FC_CAPTURE_AND_RETHROW()

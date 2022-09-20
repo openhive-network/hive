@@ -911,10 +911,10 @@ private:
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
 {
-  fc::mutable_variant_object state_opts;
+  fc::variant_object_builder state_opts;
 
   _filter.fill( options, "account-history-rocksdb-track-account-range" );
-  state_opts[ "account-history-rocksdb-track-account-range" ] = _filter.get_tracked_accounts();
+  state_opts( "account-history-rocksdb-track-account-range", _filter.get_tracked_accounts());
 
   if(options.count("account-history-rocksdb-whitelist-ops"))
   {
@@ -923,7 +923,7 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 
     if( _op_list.size() )
     {
-      state_opts["account-history-rocksdb-whitelist-ops"] = _op_list;
+      state_opts("account-history-rocksdb-whitelist-ops", _op_list);
     }
   }
 
@@ -937,7 +937,7 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
 
     if( _blacklisted_op_list.size() )
     {
-      state_opts["account-history-rocksdb-blacklist-ops"] = _blacklisted_op_list;
+      state_opts("account-history-rocksdb-blacklist-ops", _blacklisted_op_list);
     }
   }
 
@@ -965,7 +965,7 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
     _balance_csv_file.flush();
   }
 
-  appbase::app().get_plugin< chain::chain_plugin >().report_state_options( _self.name(), state_opts );
+  appbase::app().get_plugin< chain::chain_plugin >().report_state_options( _self.name(), state_opts.get() );
 }
 
 inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account_name_type& name) const

@@ -26,7 +26,7 @@ const char* const git_revision_sha = HIVE_GIT_REVISION_SHA;
 const uint32_t git_revision_unix_timestamp = HIVE_GIT_REVISION_UNIX_TIMESTAMP;
 const char* const git_revision_description = HIVE_GIT_REVISION_DESCRIPTION;
 
-void build_version_info(fc::mutable_variant_object* storage)
+void build_version_info(fc::variant_object* storage)
 {
   if(strcmp(root_project_name, hive_project_name) != 0)
   {

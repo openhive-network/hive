@@ -115,7 +115,7 @@ public:
   fc::optional<fc::ip::endpoint> endpoint;
   vector<fc::ip::endpoint> seeds;
   string user_agent;
-  fc::mutable_variant_object config;
+  fc::variant_object config;
   uint32_t max_connections = 0;
   bool force_validate = false;
   bool block_producer = false;
@@ -587,7 +587,7 @@ void p2p_plugin::set_block_production( bool producing_blocks )
 
 fc::variant_object p2p_plugin::get_info()
 {
-  fc::mutable_variant_object result = my->node->network_get_info();
+  fc::variant_object result = my->node->network_get_info();
   result["connection_count"] = my->node->get_connection_count();
   return result;
 }

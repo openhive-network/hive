@@ -144,11 +144,11 @@ void schema_impl< ObjectType, false, false >::get_str_schema( std::string& s )
 
   std::string my_name;
   get_name( my_name );
-  fc::mutable_variant_object mvo;
-  mvo("name", my_name)
+  fc::variant_object_builder mvo = fc::variant_object_builder
+    ("name", my_name)
     ("type", "prim");
 
-  str_schema = fc::json::to_string( mvo );
+  str_schema = fc::json::to_string( mvo.get() );
   s = str_schema;
   return;
 }
@@ -167,12 +167,12 @@ void schema_impl< ObjectType,  true, false >::get_str_schema( std::string& s )
 
   std::string my_name;
   get_name( my_name );
-  fc::mutable_variant_object mvo;
-  mvo("name", my_name)
+  fc::variant_object_builder mvo = fc::variant_object_builder
+    ("name", my_name)
     ("type", "class")
     ("members", vtor._members);
 
-  str_schema = fc::json::to_string( mvo );
+  str_schema = fc::json::to_string( mvo.get() );
   s = str_schema;
   return;
 }
@@ -191,13 +191,13 @@ void schema_impl< ObjectType,  true,  true >::get_str_schema( std::string& s )
 
   std::string my_name;
   get_name(my_name);
-  fc::mutable_variant_object mvo;
-  mvo("name", my_name)
+  fc::variant_object_builder mvo = fc::variant_object_builder
+    ("name", my_name)
     ("type", "enum")
     ("members", vtor._members)
     ;
 
-  str_schema = fc::json::to_string( mvo );
+  str_schema = fc::json::to_string( mvo.get() );
   s = str_schema;
   return;
 }

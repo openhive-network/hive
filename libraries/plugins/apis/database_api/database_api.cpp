@@ -267,7 +267,7 @@ DEFINE_API_IMPL( database_api_impl, get_config )
 
 DEFINE_API_IMPL( database_api_impl, get_version )
 {
-  fc::mutable_variant_object version_storage;
+  fc::variant_object version_storage;
   hive::utilities::build_version_info(&version_storage);
 
   version_storage.set("chain_id", std::string(_db.get_chain_id()));

@@ -66,16 +66,16 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
   ilog("Intializing tags plugin" );
   my = std::make_unique< detail::tags_plugin_impl >();
 
-  fc::mutable_variant_object state_opts;
+  fc::variant_object_builder state_opts;
 
   if( options.count( "tags-start-promoted" ) )
   {
     my->_promoted_start_time = fc::time_point_sec( options[ "tags-start-promoted" ].as< uint32_t >() );
-    state_opts["tags-start-promoted"] = my->_promoted_start_time;
+    state_opts("tags-start-promoted", my->_promoted_start_time);
     idump( (my->_promoted_start_time) );
   }
 
-  appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+  appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts.get() );
 }
 
 

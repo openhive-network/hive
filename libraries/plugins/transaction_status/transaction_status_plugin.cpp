@@ -253,18 +253,18 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
     ilog( "transaction_status: plugin_initialize() begin" );
     my = std::make_unique< detail::transaction_status_impl >();
 
-    fc::mutable_variant_object state_opts;
+    fc::variant_object_builder state_opts;
 
     if( options.count( TRANSACTION_STATUS_BLOCK_DEPTH_KEY ) )
     {
       my->nominal_block_depth = options.at( TRANSACTION_STATUS_BLOCK_DEPTH_KEY ).as< uint32_t >();
-      state_opts[ TRANSACTION_STATUS_BLOCK_DEPTH_KEY ] = my->nominal_block_depth;
+      state_opts( TRANSACTION_STATUS_BLOCK_DEPTH_KEY, my->nominal_block_depth );
     }
 
     if( options.count( TRANSACTION_STATUS_TRACK_AFTER_KEY ) )
     {
       my->nominal_track_after_block = options.at( TRANSACTION_STATUS_TRACK_AFTER_KEY ).as< uint32_t >();
-      state_opts[ TRANSACTION_STATUS_TRACK_AFTER_KEY ] = my->nominal_track_after_block;
+      state_opts( TRANSACTION_STATUS_TRACK_AFTER_KEY, my->nominal_track_after_block);
     }
 
     if( options.count( TRANSACTION_STATUS_REBUILD_STATE_KEY ) )
@@ -291,7 +291,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
 
     HIVE_ADD_PLUGIN_INDEX(my->_db, transaction_status_index);
 
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts.get() );
 
     my->post_apply_transaction_connection = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note ) { try { my->on_post_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->post_apply_block_connection = my->_db.add_post_apply_block_handler( [&]( const block_notification& note ) { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );

@@ -43,13 +43,13 @@ void schema_optional_impl< E >::get_str_schema( std::string& s )
 
   std::string my_name;
   get_name( my_name );
-  fc::mutable_variant_object mvo;
-  mvo("name", my_name)
+  fc::variant_object_builder mvo = fc::variant_object_builder
+    ("name", my_name)
     ("type", "optional")
     ("etype", e_type)
     ;
 
-  str_schema = fc::json::to_string( mvo );
+  str_schema = fc::json::to_string( mvo.get() );
   s = str_schema;
   return;
 }

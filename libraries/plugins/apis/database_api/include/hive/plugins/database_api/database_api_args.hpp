@@ -79,13 +79,13 @@ struct list_object_args_type
 /* get_config */
 
 typedef void_type          get_config_args;
-typedef fc::mutable_variant_object get_config_return;
+typedef fc::variant_object get_config_return;
 
 /* get_version */
 typedef void_type          get_version_args;
 
 /// Returns set of keys: `blockchain_version`, `hive_revision`, `fc_revision`, `chain_id` and optional root project version i.e. `haf_revision` with string values
-typedef fc::mutable_variant_object get_version_return;
+typedef fc::variant_object get_version_return;
 
 /* Singletons */
 

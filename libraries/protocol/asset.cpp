@@ -554,10 +554,9 @@ namespace fc {
     {
       try
       {
-        variant v = mutable_variant_object( ASSET_AMOUNT_KEY, boost::lexical_cast< std::string >( var.amount.value ) )
+        vo = variant_object_builder( ASSET_AMOUNT_KEY, boost::lexical_cast< std::string >( var.amount.value ) )
                                 ( ASSET_PRECISION_KEY, uint64_t( var.symbol.decimals() ) )
-                                ( ASSET_NAI_KEY, var.symbol.to_nai_string() );
-        vo = v;
+                                ( ASSET_NAI_KEY, var.symbol.to_nai_string() ).get();
       } FC_CAPTURE_AND_RETHROW()
     }
   }

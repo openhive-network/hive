@@ -317,7 +317,7 @@ public:
 
     fc::variant var;
     to_variant( dynamic_props, var );
-    fc::mutable_variant_object result( var.get_object() );
+    fc::variant_object result( var.get_object() );
 
     result["witness_majority_version"]  = fc::string( _remote_wallet_bridge_api->get_witness_schedule({}, LOCK).majority_version);
     result["hardfork_version"]          = fc::string( _remote_wallet_bridge_api->get_hardfork_version({}, LOCK) );
@@ -349,17 +349,17 @@ public:
     if( pos != string::npos && client_version.size() > pos )
       client_version = client_version.substr( pos + 1 );
 
-    fc::mutable_variant_object result;
-    result["blockchain_version"]       = HIVE_BLOCKCHAIN_VERSION;
-    result["client_version"]           = client_version;
-    result["hive_revision"]            = hive::utilities::git_revision_sha;
-    result["hive_revision_age"]        = fc::get_approximate_relative_time_string( fc::time_point_sec( hive::utilities::git_revision_unix_timestamp ) );
-    result["fc_revision"]              = fc::git_revision_sha;
-    result["fc_revision_age"]          = fc::get_approximate_relative_time_string( fc::time_point_sec( fc::git_revision_unix_timestamp ) );
-    result["chain_id"]                 = _hive_chain_id;
-    result["compile_date"]             = "compiled on " __DATE__ " at " __TIME__;
-    result["boost_version"]            = boost::replace_all_copy(std::string(BOOST_LIB_VERSION), "_", ".");
-    result["openssl_version"]          = OPENSSL_VERSION_TEXT;
+    fc::variant_object_builder result;
+    result("blockchain_version", HIVE_BLOCKCHAIN_VERSION);
+    result("client_version",     client_version);
+    result("hive_revision",      hive::utilities::git_revision_sha);
+    result("hive_revision_age",  fc::get_approximate_relative_time_string( fc::time_point_sec( hive::utilities::git_revision_unix_timestamp ) ));
+    result("fc_revision",        fc::git_revision_sha);
+    result("fc_revision_age",    fc::get_approximate_relative_time_string( fc::time_point_sec( fc::git_revision_unix_timestamp ) ));
+    result("chain_id",           _hive_chain_id);
+    result("compile_date",       "compiled on " __DATE__ " at " __TIME__);
+    result("boost_version",      boost::replace_all_copy(std::string(BOOST_LIB_VERSION), "_", "."));
+    result("openssl_version",    OPENSSL_VERSION_TEXT);
 
     std::string bitness = boost::lexical_cast<std::string>(8 * sizeof(int*)) + "-bit";
 #if defined(__APPLE__)
@@ -371,24 +371,24 @@ public:
 #else
     std::string os = "other";
 #endif
-    result["build"] = os + " " + bitness;
+    result("build", os + " " + bitness);
 
     try
     {
       FC_ASSERT( !_wallet.offline ); // Throw fc::exception if not online
       auto v = _remote_wallet_bridge_api->get_version({}, LOCK);
-      result["server_blockchain_version"] = v["blockchain_version"];
-      result["server_hive_revision"] = v["hive_revision"];
-      result["server_fc_revision"] = v["fc_revision"];
-      result["server_chain_id"] = v["chain_id"];
-      result["server_url"] = _wallet.ws_server;
+      result("server_blockchain_version", v["blockchain_version"]);
+      result("server_hive_revision", v["hive_revision"]);
+      result("server_fc_revision", v["fc_revision"]);
+      result("server_chain_id", v["chain_id"]);
+      result("server_url", _wallet.ws_server);
     }
     catch( fc::exception& )
     {
-      result["server"] = "Could not retrieve server version information";
+      result("server", "Could not retrieve server version information");
     }
 
-    return result;
+    return result.get();
   }
 
   database_api::api_account_object get_account( fc::variant account_name ) const

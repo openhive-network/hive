@@ -58,7 +58,7 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 /*#define HIVE_REQUIRE_THROW( expr, exc_type )            \
 {                                                         \
   std::string req_throw_info = fc::json::to_string(      \
-    fc::mutable_variant_object()                        \
+    fc::variant_object()                        \
     ("source_file", __FILE__)                           \
     ("source_lineno", __LINE__)                         \
     ("expr", #expr)                                     \
@@ -79,11 +79,11 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 #define HIVE_CHECK_THROW( expr, exc_type )             \
 {                                                      \
   std::string req_throw_info = fc::json::to_string(    \
-    fc::mutable_variant_object()                       \
+    fc::variant_object_builder                         \
     ("source_file", __FILE__)                          \
     ("source_lineno", __LINE__)                        \
     ("expr", #expr)                                    \
-    ("exc_type", #exc_type)                            \
+    ("exc_type", #exc_type).get()                      \
     );                                                 \
   if( fc::enable_record_assert_trip )                  \
     std::cout << "HIVE_CHECK_THROW begin "             \

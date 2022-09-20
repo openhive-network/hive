@@ -219,10 +219,10 @@ inline void to_variant( const hive::protocol::asset_symbol_type& sym, fc::varian
 {
   try
   {
-    mutable_variant_object o;
-      o( ASSET_SYMBOL_NAI_KEY, sym.to_nai_string() )
+    variant_object_builder o = variant_object_builder
+        ( ASSET_SYMBOL_NAI_KEY, sym.to_nai_string() )
         ( ASSET_SYMBOL_DECIMALS_KEY, sym.decimals() );
-    var = std::move( o );
+    var = std::move( o.get() );
   } FC_CAPTURE_AND_RETHROW()
 }
 

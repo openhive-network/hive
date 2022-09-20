@@ -68,7 +68,7 @@ namespace detail {
 
     void schedule_production_loop();
     block_production_condition::block_production_condition_enum block_production_loop();
-    block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
+    block_production_condition::block_production_condition_enum maybe_produce_block(fc::variant_object& capture);
 
     bool     _production_enabled              = false;
     bool     _is_p2p_enabled                  = false;
@@ -415,7 +415,7 @@ namespace detail {
     }
 
     block_production_condition::block_production_condition_enum result;
-    fc::mutable_variant_object capture;
+    fc::variant_object capture;
     try
     {
       result = maybe_produce_block(capture);
@@ -475,7 +475,7 @@ namespace detail {
     return result;
   }
 
-  block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
+  block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::variant_object& capture)
   {
     fc::time_point now_fine = fc::time_point::now();
     fc::time_point_sec now = now_fine + fc::microseconds( 500000 );

@@ -32,7 +32,7 @@ struct variant_creator_functor
   variant operator()( const T& v ) const
   {
     auto name = trim_typename_namespace( fc::get_typename< T >::name() );
-    return mutable_variant_object( "type", name )( "value", v );
+    return variant_object_builder( "type", name )( "value", v ).get();
   }
 };
 

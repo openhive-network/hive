@@ -182,7 +182,7 @@ class chain_plugin_impl
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
 
     vector< string >                 loaded_plugins;
-    fc::mutable_variant_object       plugin_state_opts;
+    fc::variant_object               plugin_state_opts;
     bfs::path                        database_cfg;
 
     database  db;

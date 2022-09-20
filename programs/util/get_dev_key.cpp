@@ -86,7 +86,7 @@ int main( int argc, char** argv )
 
     auto show_key = [&]( const fc::ecc::private_key& priv_key, const std::string& name )
     {
-      fc::mutable_variant_object mvo;
+      fc::variant_object_builder mvo;
       hive::protocol::public_key_type pub_key = priv_key.get_public_key();
       mvo( "private_key",    hive::utilities::key_to_wif( priv_key ) )
     ( "public_key",     std::string( pub_key ) )
@@ -94,7 +94,7 @@ int main( int argc, char** argv )
   ;
       if( comma )
         std::cout << ",\n";
-      std::cout << fc::json::to_string( mvo );
+      std::cout << fc::json::to_string( mvo.get() );
       comma = true;
     };
 

@@ -569,7 +569,7 @@ namespace fc { namespace json_relaxed
    {
       depth++;
       FC_ASSERT( depth <= JSON_MAX_RECURSION_DEPTH );
-      mutable_variant_object obj;
+      variant_object obj;
       try
       {
          char c = in.peek();

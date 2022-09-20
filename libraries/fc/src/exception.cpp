@@ -127,10 +127,10 @@ namespace fc
 
    void to_variant( const exception& e, variant& v )
    {
-      v = mutable_variant_object( "code", e.code() )
+      v = variant_object_builder( "code", e.code() )
                                 ( "name", e.name() )
                                 ( "message", e.what() )
-                                ( "stack", e.get_log() );
+                                ( "stack", e.get_log() ).get();
 
    }
    void          from_variant( const variant& v, exception& ll )
@@ -253,12 +253,12 @@ namespace fc
    {
       last_assert_expression = expr;
 
-      fc::mutable_variant_object assert_trip_info =
-         fc::mutable_variant_object()
+      fc::variant_object assert_trip_info =
+         fc::variant_object_builder
          ("source_file", filename)
          ("source_lineno", lineno)
          ("expr", expr)
-         ;
+         .get();
       std::cout
          << "FC_ASSERT triggered:  "
          << fc::json::to_string( assert_trip_info ) << "\n";

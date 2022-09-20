@@ -110,11 +110,11 @@ class debug_node_plugin : public plugin< debug_node_plugin >
       bool immediate_generation
       );
 
-    void set_json_object_stream( const std::string& filename );
-    void flush_json_object_stream();
+    // void set_json_object_stream( const std::string& filename );
+    // void flush_json_object_stream();
 
-    void save_debug_updates( fc::mutable_variant_object& target );
-    void load_debug_updates( const fc::variant_object& target );
+    // void save_debug_updates( const fc::variant_object& target );
+    // void load_debug_updates( const fc::variant_object& target );
 
     bool logging = true;
 

@@ -124,7 +124,7 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
   if( vo.size() == 1 )
     action = db_action_delete;
 
-  fc::mutable_variant_object mvo( vo );
+  fc::variant_object mvo( vo );
   mvo( "id", oid );
   auto it_action = vo.find("_action" );
   if( it_action != vo.end() )
@@ -349,7 +349,7 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
     _json_object_stream->flush();
 }*/
 
-/*void debug_node_plugin::save_debug_updates( fc::mutable_variant_object& target )
+/*void debug_node_plugin::save_debug_updates( fc::variant_object& target )
 {
   for( const std::pair< chain::block_id_type, std::vector< fc::variant_object > >& update : _debug_updates )
   {

@@ -205,7 +205,7 @@ namespace fc {
 
       //fc::variant lmsg(m);
 
-      // fc::string fmt_str = fc::format_string( my->cfg.format, mutable_variant_object(m.get_context())( "message", message)  );
+      // fc::string fmt_str = fc::format_string( my->cfg.format, variant_object(m.get_context())( "message", message)  );
 
       {
         fc::scoped_lock<boost::mutex> lock( my->slock );

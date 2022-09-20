@@ -512,7 +512,7 @@ void rc_plugin_impl::on_first_block()
       {
         auto k = kv.first.as< rc_resource_types >();
         fc::variant_object& vo = kv.second.first;
-        fc::mutable_variant_object mvo(vo);
+        fc::variant_object mvo(vo);
         fc::from_variant( fc::variant( mvo ), params_obj.resource_param_array[ k ] );
       }
 
@@ -1305,7 +1305,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_usage_bucket_index);
 
-    fc::mutable_variant_object state_opts;
+    fc::variant_object state_opts;
 
     my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
 #ifndef IS_TEST_NET

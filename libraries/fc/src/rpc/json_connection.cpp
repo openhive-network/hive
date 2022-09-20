@@ -668,11 +668,6 @@ namespace fc { namespace rpc {
       }
       return my->_awaiting[id];
    }
-
-   future<variant> json_connection::async_call( const fc::string& method, mutable_variant_object named_args )
-   {
-        return async_call( method, variant_object( fc::move(named_args) ) );
-   }
    future<variant> json_connection::async_call( const fc::string& method, const variant_object& named_args )
    {
       auto id = my->_next_id++;

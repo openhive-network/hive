@@ -61,21 +61,21 @@ namespace fc {
       logging_config cfg;
 
      variants  c;
-               c.push_back(  mutable_variant_object( "level","debug")("color", "green") );
-               c.push_back(  mutable_variant_object( "level","warn")("color", "brown") );
-               c.push_back(  mutable_variant_object( "level","error")("color", "red") );
+               c.emplace_back(  variant_object_builder( "level","debug")("color", "green").get() );
+               c.emplace_back(  variant_object_builder( "level","warn")("color", "brown").get() );
+               c.emplace_back(  variant_object_builder( "level","error")("color", "red").get() );
 
       cfg.appenders.push_back( 
              appender_config( "stderr", "console", 
-                 mutable_variant_object()
+                 variant_object_builder()
                      ( "stream","std_error")
-                     ( "level_colors", c ) 
+                     ( "level_colors", c ).get() 
                  ) ); 
       cfg.appenders.push_back( 
              appender_config( "stdout", "console", 
-                 mutable_variant_object()
+                 variant_object_builder()
                      ( "stream","std_out") 
-                     ( "level_colors", c ) 
+                     ( "level_colors", c ).get() 
                  ) ); 
       
       logger_config dlc;

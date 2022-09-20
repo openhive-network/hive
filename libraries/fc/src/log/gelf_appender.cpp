@@ -91,43 +91,42 @@ namespace fc
 
     log_context context = message.get_context();
 
-    mutable_variant_object gelf_message;
-    gelf_message["version"] = "1.1";
-    gelf_message["host"] = my->cfg.host;
-    gelf_message["short_message"] = format_string(message.get_format(), message.get_data());
-
-    gelf_message["timestamp"] = context.get_timestamp().time_since_epoch().count() / 1000000.;
+    variant_object_builder gelf_message = fc::variant_object_builder
+      ("version",  "1.1")
+      ("host", my->cfg.host)
+      ("short_message", format_string(message.get_format(), message.get_data()))
+      ("timestamp", context.get_timestamp().time_since_epoch().count() / 1000000.);
 
     switch (context.get_log_level())
     {
     case log_level::debug:
-      gelf_message["level"] = 7; // debug
+      gelf_message("level", 7); // debug
       break;
     case log_level::info:
-      gelf_message["level"] = 6; // info
+      gelf_message("level", 6); // info
       break;
     case log_level::warn:
-      gelf_message["level"] = 4; // warning
+      gelf_message("level", 4); // warning
       break;
     case log_level::error:
-      gelf_message["level"] = 3; // error
+      gelf_message("level", 3); // error
       break;
     case log_level::all:
     case log_level::off:
       // these shouldn't be used in log messages, but do something deterministic just in case
-      gelf_message["level"] = 6; // info
+      gelf_message("level", 6); // info
       break;
     }
 
     if (!context.get_context().empty())
-      gelf_message["context"] = context.get_context();
-    gelf_message["_line"] = context.get_line_number();
-    gelf_message["_file"] = context.get_file();
-    gelf_message["_method_name"] = context.get_method();
+      gelf_message("context", context.get_context());
+    gelf_message("_line", context.get_line_number());
+    gelf_message("_file", context.get_file());
+    gelf_message("_method_name", context.get_method());
     if (!context.get_task_name().empty())
-      gelf_message["_task_name"] = context.get_task_name();
+      gelf_message("_task_name", context.get_task_name());
 
-    string gelf_message_as_string = json::to_string(gelf_message);
+    string gelf_message_as_string = json::to_string(gelf_message.get());
     //unsigned uncompressed_size = gelf_message_as_string.size();
     gelf_message_as_string = zlib_compress(gelf_message_as_string);
 

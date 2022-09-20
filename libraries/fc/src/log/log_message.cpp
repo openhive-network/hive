@@ -161,8 +161,8 @@ namespace fc
 
    variant log_context::to_variant()const
    {
-      mutable_variant_object o;
-              o( "level",        variant(my->level)      )
+      variant_object_builder o = variant_object_builder
+               ( "level",        variant(my->level)      )
                ( "file",         my->file                )
                ( "line",         my->line                )
                ( "method",       my->method              )
@@ -172,7 +172,7 @@ namespace fc
       if( my->context.size() )
          o( "context",      my->context             );
 
-      return o;
+      return o.get();
    }
 
    log_message::~log_message(){}
@@ -195,9 +195,9 @@ namespace fc
 
    variant log_message::to_variant()const
    {
-      return mutable_variant_object( "context", my->context )
+      return variant_object_builder( "context", my->context )
                           ( "format",  my->format )
-                          ( "data",    my->args   );
+                          ( "data",    my->args   ).get();
    }
 
    log_context          log_message::get_context()const { return my->context; }

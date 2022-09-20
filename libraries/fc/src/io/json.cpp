@@ -220,7 +220,7 @@ namespace fc
    {
       depth++;
       FC_ASSERT( depth <= JSON_MAX_RECURSION_DEPTH );
-      mutable_variant_object obj;
+      variant_object obj;
       try
       {
          char c = in.peek();
@@ -691,7 +691,7 @@ namespace fc
               return;
          case variant::int64_type:
          {
-              int64_t i = v.as_int64();
+              int64_t i = v.get_int64();
               if( format == json::stringify_large_ints_and_doubles &&
                   i > 0xffffffff )
                  os << '"'<<v.as_string()<<'"';
@@ -702,7 +702,7 @@ namespace fc
          }
          case variant::uint64_type:
          {
-              uint64_t i = v.as_uint64();
+              uint64_t i = v.get_uint64();
               if( format == json::stringify_large_ints_and_doubles &&
                   i > 0xffffffff )
                  os << '"'<<v.as_string()<<'"';
@@ -715,7 +715,7 @@ namespace fc
               if (format == json::stringify_large_ints_and_doubles)
                  os << '"'<<v.as_string()<<'"';
               else
-                 os << v.as_string();
+                 os << v.get_double();
               return;
          case variant::bool_type:
               os << v.as_string();
@@ -952,7 +952,7 @@ namespace fc
                }
             case simdjson::ondemand::json_type::object:
                {
-                  mutable_variant_object obj;
+                  variant_object obj;
                   auto object = element.get_object();
                   std::for_each(object.begin(), object.end(), [&obj](simdjson::ondemand::field field) {
                      variant value = parse_element(field.value());

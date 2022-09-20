@@ -37,7 +37,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_params )
 {
   get_resource_params_return result;
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-  fc::mutable_variant_object resource_params_mvo;
+  fc::variant_object_builder resource_params_mvo;
 
   for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
   {
@@ -49,13 +49,13 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_params )
   state_object_size_info state_size_info;
   operation_exec_info exec_info;
 
-  fc::mutable_variant_object size_info_mvo;
+  fc::variant_object_builder size_info_mvo;
   size_info_mvo
     ( "resource_state_bytes", state_size_info )
     ( "resource_execution_time", exec_info );
 
-  result.size_info = size_info_mvo;
-  result.resource_params = resource_params_mvo;
+  result.size_info = size_info_mvo.get();
+  result.resource_params = resource_params_mvo.get();
 
   return result;
 }
@@ -63,7 +63,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_params )
 DEFINE_API_IMPL( rc_api_impl, get_resource_pool )
 {
   get_resource_pool_return result;
-  fc::mutable_variant_object mvo;
+  fc::variant_object_builder mvo;
   const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
@@ -76,7 +76,7 @@ DEFINE_API_IMPL( rc_api_impl, get_resource_pool )
     mvo( fc::reflector< rc_resource_types >::to_string( i ), api_pool );
   }
 
-  result.resource_pool = mvo;
+  result.resource_pool = mvo.get();
   return result;
 }
 

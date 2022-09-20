@@ -46,13 +46,13 @@ void schema_pair_impl< K, V >::get_str_schema( std::string& s )
 
   std::string my_name;
   get_name( my_name );
-  fc::mutable_variant_object mvo;
-  mvo("name", my_name)
+  fc::variant_object_builder mvo = fc::variant_object_builder
+    ("name", my_name)
     ("type", "tuple")
     ("etypes", e_types)
     ;
 
-  str_schema = fc::json::to_string( mvo );
+  str_schema = fc::json::to_string( mvo.get() );
   s = str_schema;
   return;
 }

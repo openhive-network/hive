@@ -14,7 +14,7 @@ namespace fc
    class to_variant_visitor
    {
       public:
-         to_variant_visitor( mutable_variant_object& mvo, const T& v )
+         to_variant_visitor( variant_object& mvo, const T& v )
          :vo(mvo),val(v){}
 
          template<typename Member, class Class, Member (Class::*member)>
@@ -25,16 +25,16 @@ namespace fc
 
       private:
          template<typename M>
-         void add( mutable_variant_object& vo, const char* name, const optional<M>& v )const
+         void add( variant_object& vo, const char* name, const optional<M>& v )const
          { 
             if( v.valid() )
                vo(name,*v);
          }
          template<typename M>
-         void add( mutable_variant_object& vo, const char* name, const M& v )const
+         void add( variant_object& vo, const char* name, const M& v )const
          { vo(name,v); }
 
-         mutable_variant_object& vo;
+         variant_object& vo;
          const T& val;
    };
 
@@ -63,7 +63,7 @@ namespace fc
      template<typename T>
      static inline void to_variant( const T& v, fc::variant& vo ) 
      { 
-         mutable_variant_object mvo;
+         variant_object mvo;
          fc::reflector<T>::visit( to_variant_visitor<T>( mvo, v ) );
          vo = fc::move(mvo);
      }

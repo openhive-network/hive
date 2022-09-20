@@ -56,7 +56,7 @@ macro(generate_get_config path_to_config_hpp get_config_cpp_in get_config_cpp_ou
       string(REGEX REPLACE "#define ([A-Z0-9_]+) .*" "\\1" UNSAFE_VALUE "${line}")
       string(STRIP ${UNSAFE_VALUE} VALUE)
       if( NOT ${VALUE} STREQUAL "HIVE_CHAIN_ID" )
-        list( APPEND list_of_new_lines "  result[\"${VALUE}\"] = ${VALUE}\;\n" )
+        list( APPEND list_of_new_lines "  result(\"${VALUE}\", ${VALUE})\;\n" )
       endif()
     endif()
   endforeach()

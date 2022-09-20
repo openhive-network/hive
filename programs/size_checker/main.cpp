@@ -56,11 +56,11 @@ struct size_check_type_visitor
   template<typename Type>
   result_type operator()( const Type& op )const
   {
-    fc::mutable_variant_object vo;
-    vo["name"] = fc::get_typename<Type>::name();
-    vo["mem_size"] = sizeof( Type );
-    vo["wire_size"] = get_wire_size<Type>();
-    g_op_types.push_back( vo );
+    fc::variant_object_builder vo;
+    vo("name", fc::get_typename<Type>::name());
+    vo("mem_size", sizeof( Type ));
+    vo("wire_size", get_wire_size<Type>());
+    g_op_types.push_back( vo.get() );
   }
 };
 

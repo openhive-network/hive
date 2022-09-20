@@ -136,7 +136,7 @@ namespace fc { namespace raw {
        unsigned_int vs;
        unpack( s, vs, depth );
 
-       mutable_variant_object mvo;
+       variant_object mvo;
        for( uint32_t i = 0; i < vs.value; ++i )
        {
           fc::string key;

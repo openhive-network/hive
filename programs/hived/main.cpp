@@ -36,7 +36,7 @@ using std::string;
 
 string version_string()
 {
-  fc::mutable_variant_object version_storage;
+  fc::variant_object version_storage;
   hive::utilities::build_version_info(&version_storage);
 
   string v_str ="  \"version\":" + fc::json::to_string(version_storage);

@@ -956,7 +956,7 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
   if(_do_immediate_dump)
     _snapshot_name = options.at("dump-snapshot").as<std::string>();
 
-  fc::mutable_variant_object state_opts;
+  fc::variant_object state_opts;
 
   appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().report_state_options(_self.name(), state_opts);
   }
