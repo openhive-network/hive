@@ -191,10 +191,10 @@ std::vector< std::pair< int64_t, account_name_type > > dump_all_rc_accounts( con
   return result;
 }
 
-int64_t use_account_rcs(
+void use_account_rcs(
   database& db,
   const dynamic_global_property_object& gpo,
-  const account_name_type& account_name,
+  rc_info& tx_info,
   int64_t rc,
   rc_plugin_skip_flags skip
 #ifdef IS_TEST_NET
@@ -203,7 +203,7 @@ int64_t use_account_rcs(
 #endif
   )
 {
-
+  const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
   {
     if( db.is_in_control() )
@@ -212,11 +212,11 @@ int64_t use_account_rcs(
         "Tried to execute transaction with no resource user",
         );
     }
-    return 0;
+    return;
   }
 
 #ifdef IS_TEST_NET
-  if( whitelist.count( account_name ) ) return 0;
+  if( whitelist.count( account_name ) ) return;
 #endif
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
@@ -226,6 +226,8 @@ int64_t use_account_rcs(
   manabar_params mbparams;
   auto max_mana = get_maximum_rc( account, rc_account );
   mbparams.max_mana = max_mana;
+  tx_info.max = max_mana;
+  tx_info.rc = rc_account.rc_manabar.current_mana;
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try{
@@ -244,7 +246,7 @@ int64_t use_account_rcs(
           "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
           ("account", account_name)
           ("rc_needed", rc)
-          ("rc_current", rca.rc_manabar.current_mana)
+          ("rc_current", tx_info.rc)
           );
       }
       else
@@ -263,7 +265,7 @@ int64_t use_account_rcs(
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
             ("account", account_name)
             ("rc_needed", rc)
-            ("rc_current", rca.rc_manabar.current_mana)
+            ("rc_current", tx_info.rc)
             ("b", gpo.head_block_number)
             ("w", gpo.current_witness)
             );
@@ -275,10 +277,9 @@ int64_t use_account_rcs(
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
     min_mana /= HIVE_100_PERCENT;
     rca.rc_manabar.use_mana( rc, -min_mana.to_int64() );
+    tx_info.rc = rca.rc_manabar.current_mana;
   } );
-  }FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
-
-  return max_mana;
+  }FC_CAPTURE_AND_RETHROW( (tx_info) )
 }
 
 int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info )
@@ -350,7 +351,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  tx_info.max = use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip
+  use_account_rcs( _db, gpo, tx_info, total_cost, _skip
 #ifdef IS_TEST_NET
   ,
   _whitelist
@@ -1191,7 +1192,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  opt_action_info.max = use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip
+  use_account_rcs( _db, gpo, opt_action_info, total_cost, _skip
 #ifdef IS_TEST_NET
   ,
   _whitelist
