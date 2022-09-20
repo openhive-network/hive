@@ -456,13 +456,16 @@ datagen_api_tests:
   tags:
     - public-runner-docker
 
-patterns_tests:
+
+# PATTERN TESTS BEGIN
+
+.patterns_tests: # final
   stage: test
-  image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
+  extends: .test_tools_based
   variables:
     FF_NETWORK_PER_BUILD: 1
-    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
-    TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
+    TEST_SUITE: ""
+
   needs:
     - job: prepare_hived_data_image
       artifacts: true
@@ -471,32 +474,35 @@ patterns_tests:
     - name: $HIVED_IMAGE_NAME
       alias: hived-instance
 
-  before_script:
-    - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - pip install tox==3.25.1
-    - pip install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
-
   script:
-    # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
-    - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
+    - timeout 33m pytest -n 6 -m $TEST_SUITE --junitxml "$CI_PROJECT_DIR/report.xml" --port 8090 --address hived-instance tavern/
 
   timeout: 38min
   artifacts:
     when: always
     reports:
-      junit: tests/api_tests/pattern_tests/results.xml
+      junit: "$CI_PROJECT_DIR/report.xml"
     paths:
-    - "$CI_JOB_NAME"
-    - "**/from_node.log"
-    - "**/ah.log"
-    - "**/*.out.json"
-    - "$CI_PROJECT_DIR/tests/tests_api/hived/workdir_*"
+      - "**/*.out.json"
     when: always
     expire_in: 6 hours
   tags:
     - public-runner-docker
     - hived-for-tests
+
+
+account_history_pattern_tests:
+  extends: .patterns_tests
+  variables:
+    TEST_SUITE: "method/get_transaction or method/get_account_history or method/enum_virtual_ops or method/get_ops_in_block"
+
+block_api_pattern_tests:
+  extends: .patterns_tests
+  variables:
+    TEST_SUITE: "api/block_api"
+
+# PATTERN TESTS END
 
 transaction_serialization_testnet_tests:
   stage: test
