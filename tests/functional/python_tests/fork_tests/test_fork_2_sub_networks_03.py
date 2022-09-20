@@ -45,14 +45,20 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     _M = logs[0].collector
     _m = logs[1].collector
 
-    blocks_before_disconnect        = 5
+    blocks_before_disconnect        = 10
     blocks_after_disconnect         = 2
     blocks_after_disable_witness    = 10
     blocks_after_enable_witness   = 20
 
     tt.logger.info(f'Before disconnecting')
+    cnt = 0 
+    while True:
+        wait(1, logs, majority_api_node)
 
-    wait(blocks_before_disconnect, logs, majority_api_node)
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+                break
 
     tt.logger.info(f'Disconnect sub networks')
     disconnect_sub_networks(sub_networks)

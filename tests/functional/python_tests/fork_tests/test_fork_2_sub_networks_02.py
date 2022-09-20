@@ -40,6 +40,9 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     logs.append(fork_log("M", majority_witness_wallet))
     logs.append(fork_log("m", tt.Wallet(attach_to = minority_api_node)))
 
+    _M = logs[0].collector
+    _m = logs[1].collector
+
     blocks_before_disconnect        = 10
 
     blocks_after_disable_witness    = 15
@@ -51,10 +54,14 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     blocks_after_reconnect          = 5
 
     tt.logger.info(f'Before disconnecting')
-    wait(blocks_before_disconnect, logs, majority_api_node)
+    cnt = 0 
+    while True:
+        wait(1, logs, majority_api_node)
 
-    _M = logs[0].collector
-    _m = logs[1].collector
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+                break
 
     tt.logger.info(f'Disable {len(witness_details_part)} witnesses')
     tt.logger.info(f'{witness_details_part}')
