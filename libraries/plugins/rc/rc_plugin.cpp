@@ -50,6 +50,13 @@ class rc_plugin_impl
     typedef rc_plugin::report_type report_type;
     enum class report_output { DLOG, ILOG, NOTIFY };
 
+    static void set_auto_report( const std::string& _option_type, const std::string& _option_output );
+    static void set_auto_report( report_type _type, report_output _output )
+    {
+      auto_report_type = _type;
+      auto_report_output = _output;
+    }
+
     rc_plugin_impl( rc_plugin& _plugin ) :
       _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin )
@@ -121,6 +128,29 @@ class rc_plugin_impl
 
 rc_plugin_impl::report_type rc_plugin_impl::auto_report_type = rc_plugin_impl::report_type::REGULAR;
 rc_plugin_impl::report_output rc_plugin_impl::auto_report_output = rc_plugin_impl::report_output::ILOG;
+
+void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std::string& _option_output )
+{
+  if( _option_type == "NONE" )
+    auto_report_type = report_type::NONE;
+  else if( _option_type == "MINIMAL" )
+    auto_report_type = report_type::MINIMAL;
+  else if( _option_type == "REGULAR" )
+    auto_report_type = report_type::REGULAR;
+  else if( _option_type == "FULL" )
+    auto_report_type = report_type::FULL;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report type" );
+
+  if( _option_output == "NOTIFY" )
+    auto_report_output = report_output::NOTIFY;
+  else if( _option_output == "ILOG" )
+    auto_report_output = report_output::ILOG;
+  else if( _option_output == "DLOG" )
+    auto_report_output = report_output::DLOG;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
+}
 
 int64_t get_next_vesting_withdrawal( const account_object& account )
 {
@@ -1369,6 +1399,8 @@ void rc_plugin::set_program_options( options_description& cli, options_descripti
     ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
     ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
 #endif
+    ("rc-stats-report-type", bpo::value<string>()->default_value("REGULAR"), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
+    ("rc-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
     ;
   cli.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::bool_switch()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
@@ -1468,6 +1500,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     // Add the registry to the database so the database can delegate custom ops to the plugin
     my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
 
+    my->set_auto_report( options.at( "rc-stats-report-type" ).as<std::string>(),
+      options.at( "rc-stats-report-output" ).as<std::string>() );
 
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }
