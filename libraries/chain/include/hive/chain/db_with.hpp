@@ -99,7 +99,7 @@ struct pending_transactions_restorer
         const signed_transaction& tx = full_transaction->get_transaction();
         try
         {
-          if( tx.expiration < head_block_time )
+          if( tx.expiration <= head_block_time )
           {
             ++expired_txs;
           }
