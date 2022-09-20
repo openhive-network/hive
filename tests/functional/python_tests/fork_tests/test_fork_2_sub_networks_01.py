@@ -38,7 +38,10 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     logs.append(fork_log("M", tt.Wallet(attach_to = majority_api_node)))
     logs.append(fork_log("m", tt.Wallet(attach_to = minority_api_node)))
 
-    blocks_before_disconnect        = 5
+    _M = logs[0].collector
+    _m = logs[1].collector
+
+    blocks_before_disconnect        = 10
 
     blocks_after_disable_witness    = 5
     blocks_after_disable_witness_2  = 10
@@ -48,10 +51,14 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     blocks_after_enable_witness     = 5
 
     tt.logger.info(f'Before disconnecting')
-    wait(blocks_before_disconnect, logs, majority_api_node)
+    cnt = 0 
+    while True:
+        wait(1, logs, majority_api_node)
 
-    _M = logs[0].collector
-    _m = logs[1].collector
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+                break
 
     assert get_last_head_block_number(_M)      == get_last_head_block_number(_m)
     assert get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m)
@@ -102,7 +109,8 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     while True:
         wait(1, logs, minority_api_node)
 
-        if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
-            break
+        if get_last_irreversible_block_num(_M) > last_lib_04:
+            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+                break
 
     assert_no_duplicates(minority_api_node, majority_api_node)

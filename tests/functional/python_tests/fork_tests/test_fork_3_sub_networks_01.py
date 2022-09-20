@@ -31,7 +31,14 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
     blocks_after_disconnect     = 10
 
     tt.logger.info(f'Before disconnecting')
-    wait(blocks_before_disconnect, logs, minority_api_node_7a)
+    cnt = 0 
+    while True:
+        wait(1, logs, minority_api_node_7a)
+
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_m7a) == get_last_irreversible_block_num(_m7b) and get_last_irreversible_block_num(_m7a) == get_last_irreversible_block_num(_m7c):
+                break
 
     assert get_last_head_block_number(_m7a)      == get_last_head_block_number(_m7b)
     assert get_last_head_block_number(_m7a)      == get_last_head_block_number(_m7c)
