@@ -1,2 +1,8 @@
-pytest==7.1.2
+deepdiff==5.8.1
+pyaml==21.10.1
+pytest==7.1.3
+pytest-asyncio==0.19.0
+pytest-forked==1.4.0
 pytest-xdist==2.5.0
+requests==2.27.1
+urllib3==1.26.12
