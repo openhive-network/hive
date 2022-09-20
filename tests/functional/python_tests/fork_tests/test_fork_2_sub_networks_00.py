@@ -23,12 +23,20 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
     logs.append(fork_log("M", tt.Wallet(attach_to = majority_api_node)))
     logs.append(fork_log("m", tt.Wallet(attach_to = minority_api_node)))
 
-    tt.logger.info(f'Before disconnecting')
-
-    wait(5, logs, majority_api_node)
-
     _M = logs[0].collector
     _m = logs[1].collector
+
+    blocks_before_disconnect        = 10
+
+    tt.logger.info(f'Before disconnecting')
+    cnt = 0 
+    while True:
+        wait(1, logs, majority_api_node)
+
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+                break
 
     assert get_last_head_block_number(_M)      == get_last_head_block_number(_m)
     assert get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m)
