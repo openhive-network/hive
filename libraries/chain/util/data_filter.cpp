@@ -236,6 +236,18 @@ bool operation_body_filter::is_tracked_operation( const operation& op ) const
         {
           elog( "Caught unexpected exception during operation's body filtering: ${e}" );
           ilog("Body of operation: ${body}", ("body", _op_body) );
+
+          std::exception_ptr e = std::current_exception();
+
+          try
+          {
+            if( e )
+              std::rethrow_exception( e );
+          }
+          catch( const std::exception& e )
+          {
+            elog( "Caught an exception during operation's body filtering: ${e}", ("e", e.what()) );
+          }
         }
       }
       else
