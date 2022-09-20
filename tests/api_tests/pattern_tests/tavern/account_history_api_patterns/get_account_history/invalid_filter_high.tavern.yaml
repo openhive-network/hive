@@ -19,13 +19,13 @@
         json:
           jsonrpc: "2.0"
           id: 1
-          method: "account_history_api.get_transaction"
-          params: {"id":"7d14e2ef7b2a4bf26c2da7c1aba38cf042c5ceba", "include_reversible": "5x"}
+          method: "account_history_api.get_account_history"
+          params: { "account":"abit", "operation_filter_high":"5x" }
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
             error_response: True
-            ignore_tags:
-              - data
+            ignore_tags: <error>
+

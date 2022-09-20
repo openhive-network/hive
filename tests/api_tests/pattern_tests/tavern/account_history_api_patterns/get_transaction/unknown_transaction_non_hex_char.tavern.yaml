@@ -19,13 +19,12 @@
         json:
           jsonrpc: "2.0"
           id: 1
-          method: "account_history_api.get_ops_in_block"
-          params: {"block_num":1,"only_virtual":"5x"}
+          method: "account_history_api.get_transaction"
+          params: {"id":"cdbzxvd10eec6057466f91d59caecf3ef616d8ae"}
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
             error_response: True
-            ignore_tags:
-              - data
+            ignore_tags: <error>

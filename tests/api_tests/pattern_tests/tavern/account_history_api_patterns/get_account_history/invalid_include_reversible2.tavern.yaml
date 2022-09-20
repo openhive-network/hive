@@ -27,6 +27,5 @@
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
             error_response: True
-            ignore_tags:
-              - data
+            ignore_tags: <error>
 

@@ -20,12 +20,11 @@
           jsonrpc: "2.0"
           id: 1
           method: "account_history_api.enum_virtual_ops"
-          params: {"block_range_begin": 25, "block_range_end": 25}
+          params: {"block_range_begin": "lime", "block_range_end": 2}
       response:
         status_code: 200
         verify_response_with:
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
             error_response: True
-            ignore_tags:
-              - data
+            ignore_tags: <error>
