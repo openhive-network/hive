@@ -211,17 +211,40 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
   const auto& op_stats = _db.get< rc_stats_object >( RC_ARCHIVE_STATS_ID ).get_op_stats( op_id );
 
   result.count = op_stats.count;
-  result.avg_cost = op_stats.average_cost();
-  if( result.avg_cost > 0 )
+  result.avg_cost_rc = op_stats.average_cost();
+
+  resource_cost_type cost;
+  resource_share_type share;
+  resource_count_type usage;
+  if( result.avg_cost_rc > 0 )
   {
     for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
     {
-      result.resource_cost[i] = op_stats.cost[i] / op_stats.count;
-      result.resource_usage[i] = op_stats.usage[i] / op_stats.count;
-      //there should still be a solid margin even for new account tokens for the calculation below
-      result.resource_cost_share[i] = result.resource_cost[i] * HIVE_100_PERCENT / result.avg_cost;
+      cost[i] = op_stats.cost[i] / op_stats.count;
+      usage[i] = op_stats.usage[i] / op_stats.count;
+      // there should still be a solid margin even for new account tokens for the calculation below
+      share[i] = cost[i] * HIVE_100_PERCENT / result.avg_cost_rc;
     }
   }
+  // we are not using arrays in result to increase readability, so we need to rewrite values one by one
+  result.resource_cost.history_rc = cost[ resource_history_bytes ];
+  result.resource_cost.tokens_rc = cost[ resource_new_accounts ];
+  result.resource_cost.market_rc = cost[ resource_market_bytes ];
+  result.resource_cost.state_rc = cost[ resource_state_bytes ];
+  result.resource_cost.exec_rc = cost[ resource_execution_time ];
+  result.resource_cost_share.history_bp = share[ resource_history_bytes ];
+  result.resource_cost_share.tokens_bp = share[ resource_new_accounts ];
+  result.resource_cost_share.market_bp = share[ resource_market_bytes ];
+  result.resource_cost_share.state_bp = share[ resource_state_bytes ];
+  result.resource_cost_share.exec_bp = share[ resource_execution_time ];
+  //ABW: somehow I can't be bothered to code it in generic way; it only works when resource units are [1,10000,10,1,1] respectively
+  result.resource_usage.history_bytes = usage[ resource_history_bytes ];
+  std::stringstream tokens_str;
+  tokens_str << std::fixed << std::setprecision(4) << double( usage[ resource_new_accounts ] ) / 10000.0;
+  result.resource_usage.tokens = tokens_str.str();
+  result.resource_usage.market_bytes = usage[ resource_market_bytes ] / 10;
+  result.resource_usage.state_hbytes = usage[ resource_state_bytes ];
+  result.resource_usage.exec_ns = usage[ resource_execution_time ];
 
   return result;
 }

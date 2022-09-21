@@ -131,13 +131,37 @@ struct get_rc_operation_stats_args
   std::string operation; //behaves like enum, except hive::protocol::operation is not an enum
 };
 
+struct get_rc_operation_stats_return_cost
+{
+  int64_t history_rc;
+  int64_t tokens_rc;
+  int64_t market_rc;
+  int64_t state_rc;
+  int64_t exec_rc;
+};
+struct get_rc_operation_stats_return_share
+{
+  uint16_t history_bp;
+  uint16_t tokens_bp;
+  uint16_t market_bp;
+  uint16_t state_bp;
+  uint16_t exec_bp;
+};
+struct get_rc_operation_stats_return_usage
+{
+  int64_t history_bytes;
+  std::string tokens; //not a double to force format with fixed precision
+  int64_t market_bytes;
+  int64_t state_hbytes;
+  int64_t exec_ns;
+};
 struct get_rc_operation_stats_return
 {
   uint32_t count;
-  int64_t avg_cost;
-  resource_cost_type resource_cost;
-  resource_share_type resource_cost_share;
-  resource_count_type resource_usage;
+  int64_t avg_cost_rc;
+  get_rc_operation_stats_return_cost resource_cost;
+  get_rc_operation_stats_return_share resource_cost_share;
+  get_rc_operation_stats_return_usage resource_usage;
 };
 
 class rc_api
@@ -217,9 +241,30 @@ FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_args,
   (operation)
   )
 
+FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_return_cost,
+  (history_rc)
+  (tokens_rc)
+  (market_rc)
+  (state_rc)
+  (exec_rc)
+  )
+FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_return_share,
+  (history_bp)
+  (tokens_bp)
+  (market_bp)
+  (state_bp)
+  (exec_bp)
+  )
+FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_return_usage,
+  (history_bytes)
+  (tokens)
+  (market_bytes)
+  (state_hbytes)
+  (exec_ns)
+  )
 FC_REFLECT( hive::plugins::rc::get_rc_operation_stats_return,
   (count)
-  (avg_cost)
+  (avg_cost_rc)
   (resource_cost)
   (resource_cost_share)
   (resource_usage)
