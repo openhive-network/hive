@@ -237,6 +237,11 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
+      if (appbase::app().is_interrupt_request())
+      {
+        throw fc::exception(fc::canceled_exception_code, "interrupted by user");
+      }
+
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
