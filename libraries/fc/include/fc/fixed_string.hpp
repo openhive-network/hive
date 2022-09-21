@@ -20,19 +20,13 @@ namespace fc {
          fixed_string( const fixed_string& c ):data(c.data){}
 
          fixed_string( const std::string& str ) {
-            if( str.size() <= sizeof(data) )
-               memcpy( (char*)&data, str.c_str(), str.size() );
-            else {
-               memcpy( (char*)&data, str.c_str(), sizeof(data) );
-            }
+           verify_max_length(str);
+           memcpy( (char*)&data, str.c_str(), str.size() );
          }
          fixed_string( const char* str ) {
             auto l = strlen(str);
-            if( l <= sizeof(data) )
-               memcpy( (char*)&data, str, l );
-            else {
-               memcpy( (char*)&data, str, sizeof(data) );
-            }
+            verify_max_length(str, l);
+            memcpy( (char*)&data, str, l );
          }
 
          operator std::string()const {
@@ -56,6 +50,8 @@ namespace fc {
          }
 
          fixed_string& operator=( const std::string& str ) {
+            verify_max_length(str);
+
             if( str.size() <= sizeof(data) ) {
                data = Storage();
                memcpy( (char*)&data, str.c_str(), str.size() );
@@ -91,6 +87,18 @@ namespace fc {
          friend bool operator != ( const fixed_string& a, const fixed_string& b ) {
             return a.data != b.data;
          }
+
+      private:
+        void verify_max_length(const char* in, size_t in_len) const
+        {
+          FC_ASSERT(in_len <= sizeof(data), "Input too large: ${is} for fixed size string: ${fs}", ("is", in_len)("fs", sizeof(data)));
+        }
+
+        void verify_max_length(const std::string& in) const
+        {
+          verify_max_length(in.c_str(), in.size());
+        }
+
       //private:
          Storage data;
    };
