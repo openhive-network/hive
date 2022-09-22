@@ -2158,6 +2158,7 @@ void pow_apply( database& db, Operation o )
     {
         w.owner             = o.get_worker_account();
         copy_legacy_chain_properties< true >( w.props, o.props );
+        w.created           = db.head_block_time();
         w.signing_key       = o.work.worker;
         w.pow_worker        = dgp.total_pow;
         w.last_work         = o.work.work;
@@ -2259,6 +2260,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     {
         w.owner             = worker_account;
         copy_legacy_chain_properties< true >( w.props, o.props );
+        w.created           = db.head_block_time();
         w.signing_key       = *o.new_owner_key;
         w.pow_worker        = dgp.total_pow;
     });
