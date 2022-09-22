@@ -1,22 +1,24 @@
 import pytest
 
+from ..local_tools import run_for
+
 METHODS_WITH_CORRECT_ARGUMENTS = [
     ['find_account_recovery_requests', {'accounts': ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']}],
     ['find_accounts', {'accounts': ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']}],
     ['find_change_recovery_account_requests', {'accounts': ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']}],
-    ['find_collateralized_conversion_requests', {'account': 'hive.fund'}],
+    ['find_collateralized_conversion_requests', {'account': 'initminer'}],
     ['find_comments', {'comments': [['hive.fund', 'https://api.hive.blog']]}],
     ['find_decline_voting_rights_requests', {'accounts': ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']}],
     ['find_escrows', {'from': 'initminer'}],
-    ['find_hbd_conversion_requests', {'account': 'hive.fund'}],
-    ['find_limit_orders', {'account': 'hive.fund'}],
-    ['find_owner_histories', {'owner': 'hive.fund'}],
+    ['find_hbd_conversion_requests', {'account': 'initminer'}],
+    ['find_limit_orders', {'account': 'initminer'}],
+    ['find_owner_histories', {'owner': 'initminer'}],
     ['find_proposals', {'proposal_ids': [0, 1, 2, 3]}],
     ['find_recurrent_transfers', {'from': 'initminer'}],
-    ['find_savings_withdrawals', {'account': 'hive.fund'}],
-    ['find_vesting_delegation_expirations', {'account': 'hive.fund'}],
-    ['find_vesting_delegations', {'account': 'hive.fund'}],
-    ['find_withdraw_vesting_routes', {'account': 'hive.fund', 'order': 'by_destination'}],
+    ['find_savings_withdrawals', {'account': 'initminer'}],
+    ['find_vesting_delegation_expirations', {'account': 'initminer'}],
+    ['find_vesting_delegations', {'account': 'initminer'}],
+    ['find_withdraw_vesting_routes', {'account': 'initminer', 'order': 'by_destination'}],
     ['find_witnesses', {'owners': ['initminer']}],
     ['get_active_witnesses', {}],
     ['get_active_witnesses', {'include_future':True}],
@@ -52,7 +54,7 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
                         'status': 'all'}],
     ['list_savings_withdrawals', {'start': ['2022-04-11T10:29:00', 'initminer', 0], 'limit': 100, 'order': 'by_complete_from_id'}],
     ['list_vesting_delegation_expirations', {'start': ['initminer', '2022-04-11T10:29:00', 0], 'limit': 100, 'order': 'by_account_expiration'}],
-    ['list_vesting_delegations', {'start': ['hive.fund', 'initminer'], 'limit': 100, 'order': 'by_delegation'}],
+    ['list_vesting_delegations', {'start': ['initminer', 'initminer'], 'limit': 100, 'order': 'by_delegation'}],
     ['list_withdraw_vesting_routes', {'start': ['hive.fund', 'initminer'], 'limit': 100, 'order': 'by_withdraw_route'}],
     ['list_witness_votes', {'start': ['initminer', 'hive.fund'], 'limit': 100, 'order': 'by_witness_account'}],
     ['list_witnesses', {'start': '', 'limit': 100, 'order': 'by_name'}],
@@ -66,13 +68,15 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     'api_database_method, arguments',
     METHODS_WITH_CORRECT_ARGUMENTS
 )
-def test_run_method_with_additional_argument(node, api_database_method, arguments):
-    getattr(node.api.database, api_database_method)(**arguments, arg=True)
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_run_method_with_additional_argument(prepared_node, api_database_method, arguments):
+    getattr(prepared_node.api.database, api_database_method)(**arguments, arg=True)
 
 
 @pytest.mark.parametrize(
     'api_database_method, arguments',
     METHODS_WITH_CORRECT_ARGUMENTS
 )
-def test_run_method_with_correct_arguments(node, api_database_method, arguments):
-    getattr(node.api.database, api_database_method)(**arguments)
+@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+def test_run_method_with_correct_arguments(prepared_node, api_database_method, arguments):
+    getattr(prepared_node.api.database, api_database_method)(**arguments)
