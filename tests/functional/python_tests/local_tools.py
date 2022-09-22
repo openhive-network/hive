@@ -2,12 +2,16 @@ from datetime import datetime
 
 from typing import List
 
+from pathlib import Path
+
+import os
+
 import test_tools as tt
 
 def parse_datetime(datetime_: str) -> datetime:
     return datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
 
-def prepare_witnesses( init_node, all_witness_names : List[str] ):
+def init_network( init_node, all_witness_names : List[str], key : str = None, block_log_directory_name : str = None):
 
     tt.logger.info('Attaching wallets...')
     wallet = tt.Wallet(attach_to=init_node)
@@ -22,7 +26,10 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
     # Prepare witnesses on blockchain
     with wallet.in_single_transaction():
         for name in all_witness_names:
-            wallet.api.create_account('initminer', name, '')
+            if key is None:
+                wallet.api.create_account('initminer', name, '')
+            else:
+                wallet.api.create_account_with_keys('initminer', name, '', key, key, key, key)
     with wallet.in_single_transaction():
         for name in all_witness_names:
             wallet.api.transfer_to_vesting("initminer", name, tt.Asset.Test(1000))
@@ -47,12 +54,21 @@ def prepare_witnesses( init_node, all_witness_names : List[str] ):
     tt.logger.info('Wait 21 blocks (when every witness sign at least one block)')
     init_node.wait_number_of_blocks(21)
 
-    # Network should be set up at this time, with 21 active witnesses, enough participation rate
-    # and irreversible block number lagging behind around 15-20 blocks head block number
     result = wallet.api.info()
-    irreversible = result["last_irreversible_block_num"]
-    head = result["head_block_num"]
-    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
+    head_block_num = result['head_block_number']
+    timestamp = init_node.api.block.get_block(block_num=head_block_num)['block']['timestamp']
+    tt.logger.info(f'head block timestamp: {timestamp}')
 
-    # with fast confirm, irreversible will usually be = head
-    # assert irreversible + 10 < head
+    if block_log_directory_name is not None:
+        if os.path.exists(block_log_directory_name):
+            Path(block_log_directory_name + '/block_log').unlink(missing_ok=True)
+        else:
+            os.mkdir(block_log_directory_name)
+
+        init_node.close()
+        init_node.get_block_log(include_index=False).copy_to(block_log_directory_name)
+
+        with open(block_log_directory_name + '/timestamp', 'w') as f:
+            f.write(f'{timestamp}')
+
+    return wallet

@@ -1,1 +1,25 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"transfer_from_savings_operation","value":{"from":"alice","request_id":1000,"to":"bob","amount":{"amount":"1000","precision":3,"nai":"@@000000021"},"memo":"memo"}}],"extensions":[],"signatures":["2017d6fe09570fc6174337e6993532395daeed7a468b5331ebabac47156e0c583d55854e4fa222814bb1dae85c3f03b1a38371d342c8bd7bc724ce0851a9080663"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "transfer_from_savings_operation",
+      "value": {
+        "amount": {
+          "amount": "1000",
+          "nai": "@@000000021",
+          "precision": 3
+        },
+        "from": "alice",
+        "memo": "memo",
+        "request_id": 1000,
+        "to": "bob"
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "2017d6fe09570fc6174337e6993532395daeed7a468b5331ebabac47156e0c583d55854e4fa222814bb1dae85c3f03b1a38371d342c8bd7bc724ce0851a9080663"
+  ]
+}

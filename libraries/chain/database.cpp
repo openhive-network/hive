@@ -1024,6 +1024,7 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
       {
         result = _push_block( block_ctrl );
         block_ctrl.on_end_of_apply_block();
+        notify_finish_push_block( full_block );
       }
       FC_CAPTURE_AND_RETHROW((new_block))
 
@@ -1060,7 +1061,7 @@ void database::switch_forks(const item_ptr new_head)
   ilog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
   const block_id_type original_head_block_id = head_block_id();
   const uint32_t original_head_block_number = head_block_num();
-  ilog("Before switching, head_block_id is ${original_head_block_id}", (original_head_block_id));
+  ilog("Before switching, head_block_id is ${original_head_block_id} head_block_number ${original_head_block_number}", (original_head_block_id)(original_head_block_number));
   const auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), original_head_block_id);
 
   ilog("Destination branch block ids:");
@@ -1070,7 +1071,7 @@ void database::switch_forks(const item_ptr new_head)
   const block_id_type common_block_id = new_branch.back()->previous_id();
   const uint32_t common_block_number = new_branch.back()->get_block_num() - 1;
 
-  ilog(" - ${common_block_id} (block before first block in branch, should be common)", (common_block_id));
+  ilog(" - common_block_id ${common_block_id} common_block_number ${common_block_number} (block before first block in branch, should be common)", (common_block_id)(common_block_number));
 
   if (old_branch.size())
   {
@@ -1539,6 +1540,11 @@ void database::notify_pre_apply_custom_operation( const custom_operation_notific
 void database::notify_post_apply_custom_operation( const custom_operation_notification& note )
 {
   HIVE_TRY_NOTIFY( _post_apply_custom_operation_signal, note )
+}
+
+void database::notify_finish_push_block( const block_notification& note )
+{
+  HIVE_TRY_NOTIFY( _finish_push_block_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -5162,6 +5168,12 @@ boost::signals2::connection database::add_post_reindex_handler(const reindex_han
   return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");
 }
 
+boost::signals2::connection database::add_finish_push_block_handler( const push_block_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl<false>(_finish_push_block_signal, func, plugin, group, "block");
+}
+
 boost::signals2::connection database::add_generate_optional_actions_handler(const generate_optional_actions_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
@@ -5663,7 +5675,10 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     }
 
   }
-  FC_CAPTURE_AND_RETHROW()
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
 }
 
 

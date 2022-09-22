@@ -70,6 +70,12 @@ struct debug_get_json_schema_return
   std::string schema;
 };
 
+struct debug_throw_exception_args
+{
+  bool throw_exception = false;
+};
+
+typedef void_type debug_throw_exception_return;
 
 class debug_node_api
 {
@@ -103,6 +109,7 @@ class debug_node_api
       (debug_set_hardfork)
       (debug_has_hardfork)
       (debug_get_json_schema)
+      (debug_throw_exception)
     )
 
   private:
@@ -131,3 +138,6 @@ FC_REFLECT( hive::plugins::debug_node::debug_has_hardfork_return,
 
 FC_REFLECT( hive::plugins::debug_node::debug_get_json_schema_return,
         (schema) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_throw_exception_args,
+        (throw_exception) )

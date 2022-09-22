@@ -1273,7 +1273,17 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     my->_pre_apply_transaction_conn = db.add_pre_apply_transaction_handler( [&]( const transaction_notification& note )
       { try { my->on_pre_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_transaction_conn = db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
-      { try { my->on_post_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
+    {
+      try
+      {
+        my->on_post_apply_transaction( note );
+      }
+      catch( not_enough_rc_exception& ex )
+      {
+        throw;
+      }
+      FC_LOG_AND_RETHROW()
+    }, *this, 0 );
     my->_pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note )
       { try { my->on_pre_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note )

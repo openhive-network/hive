@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 import test_tools as tt
-
+from typing import List
 
 def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
     """
@@ -47,3 +47,84 @@ def get_time_offset_from_iso_8601(timestamp: str) -> str:
     difference = round(new_time.timestamp()-current_time.timestamp()) - 5
     time_offset = f'{difference}s'
     return time_offset
+
+def connect_sub_networks(sub_networks : list):
+    assert len(sub_networks) > 1
+
+    current_idx = 0
+    while current_idx < len(sub_networks) - 1:
+        next_current_idx = current_idx + 1
+        while next_current_idx < len(sub_networks):
+            tt.logger.info(f"Sub network {current_idx} connected with {next_current_idx}")
+            sub_networks[current_idx].connect_with(sub_networks[next_current_idx])
+            next_current_idx += 1
+        current_idx += 1
+
+def disconnect_sub_networks(sub_networks : list):
+    assert len(sub_networks) > 1
+
+    current_idx = 0
+    while current_idx < len(sub_networks) - 1:
+        next_current_idx = current_idx + 1
+        while next_current_idx < len(sub_networks):
+            tt.logger.info(f"Sub network {current_idx} disconnected from {next_current_idx}")
+            sub_networks[current_idx].disconnect_from(sub_networks[next_current_idx])
+            next_current_idx += 1
+        current_idx += 1
+
+def enable_witnesses(wallet : tt.Wallet, witness_details : list):
+    with wallet.in_single_transaction():
+        for name in witness_details:
+            wallet.api.update_witness(
+                name, "https://" + name,
+                tt.Account(name).public_key,
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+            )
+
+def disable_witnesses(wallet : tt.Wallet, witness_details : list):
+    key = 'TST5NUU7M7pmqMpMHUwscgUBMuwLQE56MYwCLF7q9ZGB6po1DMNoG'
+    with wallet.in_single_transaction():
+        for name in witness_details:
+            wallet.api.update_witness(
+                name, "https://" + name,
+                key,
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+            )
+
+def get_last_head_block_number(blocks : list):
+    return blocks[len(blocks) - 1][0]
+
+def get_last_irreversible_block_num(blocks : list):
+    return blocks[len(blocks) - 1][1]
+
+def get_part_of_witness_details(witness_details : list, start, length : int):
+    assert start >= 0 and start + length <= len(witness_details)
+    new_witness_details = []
+    for i in range(start, start + length):
+        new_witness_details.append(witness_details[i])
+    return new_witness_details
+
+def info(msg : str, wallet : tt.Wallet):
+    info    = wallet.api.info()
+    hb      = info['head_block_number']
+    lib     = info['last_irreversible_block_num']
+    tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib}')
+    return hb, lib
+
+class fork_log:
+    def __init__(self, name, wallet):
+        self.name       = name
+        self.collector  = []
+        self.wallet     = wallet
+
+    def append(self):
+        self.collector.append( info(self.name, self.wallet) )
+
+def wait(blocks, log : List[fork_log], api_node):
+    for i in range(blocks):
+
+        for current in log:
+            current.append()
+
+        api_node.wait_number_of_blocks(1)
+        tt.logger.info(f'{i+1}/{blocks} blocks')

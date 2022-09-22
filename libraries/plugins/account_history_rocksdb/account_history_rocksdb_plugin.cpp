@@ -2028,7 +2028,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
       }
       else
       {
-        wlog("Skipped operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", operation.get_id())("b", operation.block)
+        dlog("Skipped operation: id ${id}, block: ${b}, tx_status: ${txs}, body: ${body}", ("id", operation.get_id())("b", operation.block)
           ("txs", to_string(txs))("body", fc::json::to_string(fc::raw::unpack_from_buffer< hive::protocol::operation >(operation.serialized_op))));
 
         return false; /// Disallow object erasing inside move_to_external_storage internals

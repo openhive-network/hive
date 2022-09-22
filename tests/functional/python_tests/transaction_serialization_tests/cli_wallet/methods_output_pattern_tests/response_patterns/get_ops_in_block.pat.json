@@ -1,1 +1,18 @@
-[{"trx_id": "0000000000000000000000000000000000000000", "block": 10, "trx_in_block": 4294967295, "op_in_trx": 1, "virtual_op": true, "timestamp": "2016-03-24T16:06:00", "op": ["producer_reward", {"producer": "initminer", "vesting_shares": "1.000 HIVE"}], "operation_id": 0}]
+[
+  {
+    "block": 10,
+    "op": [
+      "producer_reward",
+      {
+        "producer": "initminer",
+        "vesting_shares": "1.000 HIVE"
+      }
+    ],
+    "op_in_trx": 1,
+    "operation_id": 0,
+    "timestamp": "2016-03-24T16:06:00",
+    "trx_id": "0000000000000000000000000000000000000000",
+    "trx_in_block": 4294967295,
+    "virtual_op": true
+  }
+]

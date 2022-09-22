@@ -3541,6 +3541,13 @@ namespace graphene { namespace net {
         block_processed_this_iteration = false;
         for (const peer_connection_ptr& peer : _active_connections)
         {
+
+          if (appbase::app().is_interrupt_request())
+          {
+            ilog("Stopping processing of sync-blocks due to interrupt request");
+            break;
+          }
+
           if (!peer->ids_of_items_to_get.empty())
           {
             // check if we have a backlog block to push

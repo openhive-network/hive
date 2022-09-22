@@ -1,1 +1,18 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["account_witness_proxy",{"account":"initminer","proxy":"alice"}]],"extensions":[],"signatures":["2023393838e2a631b75c43d8ccfa0fc589a217d88154072421c6987662781a89cc37d723d645d98fe11ea3bab54c175b82181f27126ff6729d4058552de63e7c34"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    [
+      "account_witness_proxy",
+      {
+        "account": "initminer",
+        "proxy": "alice"
+      }
+    ]
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "2023393838e2a631b75c43d8ccfa0fc589a217d88154072421c6987662781a89cc37d723d645d98fe11ea3bab54c175b82181f27126ff6729d4058552de63e7c34"
+  ]
+}

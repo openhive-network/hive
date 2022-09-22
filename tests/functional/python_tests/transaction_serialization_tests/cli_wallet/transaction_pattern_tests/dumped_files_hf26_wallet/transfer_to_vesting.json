@@ -1,1 +1,23 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[{"type":"transfer_to_vesting_operation","value":{"from":"initminer","to":"alice","amount":{"amount":"100000","precision":3,"nai":"@@000000021"}}}],"extensions":[],"signatures":["1f08a87d00a1fa0ba102a1b01105bb6a77d677dcaec06f2bc38b4f091aaaeb7c9f1be06e86e6e09d51726f1bc118fb39240433a4ac8f21d0fac40bf9e0cd164781"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "transfer_to_vesting_operation",
+      "value": {
+        "amount": {
+          "amount": "100000",
+          "nai": "@@000000021",
+          "precision": 3
+        },
+        "from": "initminer",
+        "to": "alice"
+      }
+    }
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "1f08a87d00a1fa0ba102a1b01105bb6a77d677dcaec06f2bc38b4f091aaaeb7c9f1be06e86e6e09d51726f1bc118fb39240433a4ac8f21d0fac40bf9e0cd164781"
+  ]
+}

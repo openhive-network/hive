@@ -739,8 +739,11 @@ string      format_string( const string& format, const variant_object& args )
    void to_variant( unsigned long long int s, variant& v ) { v = variant( uint64_t(s)); }
    #endif
 
-   variant operator == ( const variant& a, const variant& b )
+   bool operator == ( const variant& a, const variant& b )
    {
+      if( a.get_type() != b.get_type() )
+         return false;
+
       if( a.is_string()  || b.is_string() ) return a.as_string() == b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() == b.as_double();
       if( a.is_int64()   || b.is_int64() )  return a.as_int64() == b.as_int64();
@@ -748,149 +751,20 @@ string      format_string( const string& format, const variant_object& args )
       return false;
    }
 
-   variant operator != ( const variant& a, const variant& b )
+   bool operator != ( const variant& a, const variant& b )
    {
+      if( a.get_type() != b.get_type() )
+         return true;
+
       if( a.is_string()  || b.is_string() ) return a.as_string() != b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() != b.as_double();
       if( a.is_int64()   || b.is_int64() )  return a.as_int64() != b.as_int64();
       if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() != b.as_uint64();
-      return false;
+      return true;
    }
 
-   variant operator ! ( const variant& a )
+   bool operator ! ( const variant& a )
    {
       return !a.as_bool();
-   }
-
-   variant operator < ( const variant& a, const variant& b )
-   {
-      if( a.is_string()  || b.is_string() ) return a.as_string() < b.as_string();
-      if( a.is_double()  || b.is_double() ) return a.as_double() < b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() < b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() < b.as_uint64();
-      FC_ASSERT( false, "Invalid operation" );
-   }
-
-   variant operator > ( const variant& a, const variant& b )
-   {
-      if( a.is_string()  || b.is_string() ) return a.as_string() > b.as_string();
-      if( a.is_double()  || b.is_double() ) return a.as_double() > b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() > b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() > b.as_uint64();
-      FC_ASSERT( false, "Invalid operation" );
-   }
-
-   variant operator <= ( const variant& a, const variant& b )
-   {
-      if( a.is_string()  || b.is_string() ) return a.as_string() <= b.as_string();
-      if( a.is_double()  || b.is_double() ) return a.as_double() <= b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() <= b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() <= b.as_uint64();
-      FC_ASSERT( false, "Invalid operation" );
-   }
-
-
-   variant operator + ( const variant& a, const variant& b )
-   {
-      if( a.is_array()  && b.is_array() )
-      {
-         const variants& aa = a.get_array();
-         const variants& ba = b.get_array();
-         variants result;
-         result.reserve( std::max(aa.size(),ba.size()) );
-         auto num = std::max(aa.size(),ba.size());
-         for( unsigned i = 0; i < num; ++i )
-         {
-            if( aa.size() > i && ba.size() > i )
-               result[i]  = aa[i] + ba[i];
-            else if( aa.size() > i )
-               result[i]  = aa[i];
-            else
-               result[i]  = ba[i];
-         }
-         return result;
-      }
-      if( a.is_string()  || b.is_string() ) return a.as_string() + b.as_string();
-      if( a.is_double()  || b.is_double() ) return a.as_double() + b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() + b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() + b.as_uint64();
-      FC_ASSERT( false, "invalid operation ${a} + ${b}", ("a",a)("b",b) );
-   }
-
-   variant operator - ( const variant& a, const variant& b )
-   {
-      if( a.is_array()  && b.is_array() )
-      {
-         const variants& aa = a.get_array();
-         const variants& ba = b.get_array();
-         variants result;
-         result.reserve( std::max(aa.size(),ba.size()) );
-         auto num = std::max(aa.size(),ba.size());
-         for( unsigned i = 0; i < num; --i )
-         {
-            if( aa.size() > i && ba.size() > i )
-               result[i]  = aa[i] - ba[i];
-            else if( aa.size() > i )
-               result[i]  = aa[i];
-            else
-               result[i]  = ba[i];
-         }
-         return result;
-      }
-      if( a.is_string()  || b.is_string() ) return a.as_string() - b.as_string();
-      if( a.is_double()  || b.is_double() ) return a.as_double() - b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() - b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() - b.as_uint64();
-      FC_ASSERT( false, "invalid operation ${a} + ${b}", ("a",a)("b",b) );
-   }
-   variant operator * ( const variant& a, const variant& b )
-   {
-      if( a.is_double()  || b.is_double() ) return a.as_double() * b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() * b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() * b.as_uint64();
-      if( a.is_array()  && b.is_array() )
-      {
-         const variants& aa = a.get_array();
-         const variants& ba = b.get_array();
-         variants result;
-         result.reserve( std::max(aa.size(),ba.size()) );
-         auto num = std::max(aa.size(),ba.size());
-         for( unsigned i = 0; i < num; ++i )
-         {
-            if( aa.size() > i && ba.size() > i )
-               result[i]  = aa[i] * ba[i];
-            else if( aa.size() > i )
-               result[i]  = aa[i];
-            else
-               result[i]  = ba[i];
-         }
-         return result;
-      }
-      FC_ASSERT( false, "invalid operation ${a} * ${b}", ("a",a)("b",b) );
-   }
-   variant operator / ( const variant& a, const variant& b )
-   {
-      if( a.is_double()  || b.is_double() ) return a.as_double() / b.as_double();
-      if( a.is_int64()   || b.is_int64() )  return a.as_int64() / b.as_int64();
-      if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() / b.as_uint64();
-      if( a.is_array()  && b.is_array() )
-      {
-         const variants& aa = a.get_array();
-         const variants& ba = b.get_array();
-         variants result;
-         result.reserve( std::max(aa.size(),ba.size()) );
-         auto num = std::max(aa.size(),ba.size());
-         for( unsigned i = 0; i < num; ++i )
-         {
-            if( aa.size() > i && ba.size() > i )
-               result[i]  = aa[i] / ba[i];
-            else if( aa.size() > i )
-               result[i]  = aa[i];
-            else
-               result[i]  = ba[i];
-         }
-         return result;
-      }
-      FC_ASSERT( false, "invalid operation ${a} / ${b}", ("a",a)("b",b) );
    }
 } // namespace fc

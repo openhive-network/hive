@@ -1,1 +1,23 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["comment",{"parent_author":"","parent_permlink":"someone","author":"bob","permlink":"test-permlink","title":"test-title","body":"this is a body","json_metadata":"{}"}]],"extensions":[],"signatures":["1f7e20b943abbad7b365b5323f1f3d29ca6fa26212d5654d780339cc20087c186712b865145d6368dd33527151e3a2f1b065e8c71648d0ef5176309c202e5d8f80"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    [
+      "comment",
+      {
+        "author": "bob",
+        "body": "this is a body",
+        "json_metadata": "{}",
+        "parent_author": "",
+        "parent_permlink": "someone",
+        "permlink": "test-permlink",
+        "title": "test-title"
+      }
+    ]
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "1f7e20b943abbad7b365b5323f1f3d29ca6fa26212d5654d780339cc20087c186712b865145d6368dd33527151e3a2f1b065e8c71648d0ef5176309c202e5d8f80"
+  ]
+}

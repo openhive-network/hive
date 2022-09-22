@@ -1,1 +1,21 @@
-{"ref_block_num":40,"ref_block_prefix":2744011363,"expiration":"2022-07-26T11:58:30","operations":[["remove_proposal",{"proposal_owner":"initminer","proposal_ids":[6],"extensions":[]}]],"extensions":[],"signatures":["204b2e49057c10e8c62729a68cfc19e439819a2491d0b27dd797e185cd9252b1fd10fc22db6f3082bbf9c9f856a82fb621ec904581024efd3514da3ac07c43ce69"]}
+{
+  "expiration": "2022-07-26T11:58:30",
+  "extensions": [],
+  "operations": [
+    [
+      "remove_proposal",
+      {
+        "extensions": [],
+        "proposal_ids": [
+          6
+        ],
+        "proposal_owner": "initminer"
+      }
+    ]
+  ],
+  "ref_block_num": 40,
+  "ref_block_prefix": 2744011363,
+  "signatures": [
+    "204b2e49057c10e8c62729a68cfc19e439819a2491d0b27dd797e185cd9252b1fd10fc22db6f3082bbf9c9f856a82fb621ec904581024efd3514da3ac07c43ce69"
+  ]
+}

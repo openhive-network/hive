@@ -1,1 +1,32 @@
-{"id": 9493, "owner": "gtg", "created": "1970-01-01T00:00:00", "url": "https://steemit.com/witness-category/@gtg/witness-gtg", "votes": "57548658449068633", "virtual_last_update": "109365512737828348123165341", "virtual_position": "119445661624739888994961491644708048164", "virtual_scheduled_time": "109369350128850966698038402", "total_missed": 1, "last_aslot": 5044400, "last_confirmed_block_num": 4999861, "pow_worker": 0, "signing_key": "STM6GmnhcBN9DxmFcj1e423Q2RkFYStUgSotviptAMSdy74eHQSYM", "props": {"account_creation_fee": "3.000 HIVE", "maximum_block_size": 65536, "hbd_interest_rate": 1000, "account_subsidy_budget": 797, "account_subsidy_decay": 347321}, "hbd_exchange_rate": {"base": "0.578 HBD", "quote": "1.000 HIVE"}, "last_hbd_exchange_update": "2016-09-15T05:23:51", "last_work": "0000000048bf77f525731f28db7c1aa9ad853a475ccc78e71ea952a7782e5459", "running_version": "0.13.0", "hardfork_version_vote": "0.13.0", "hardfork_time_vote": "2016-08-15T14:00:00", "available_witness_account_subsidies": 0}
+{
+  "available_witness_account_subsidies": 0,
+  "created": "1970-01-01T00:00:00",
+  "hardfork_time_vote": "2016-08-15T14:00:00",
+  "hardfork_version_vote": "0.13.0",
+  "hbd_exchange_rate": {
+    "base": "0.578 HBD",
+    "quote": "1.000 HIVE"
+  },
+  "id": 9493,
+  "last_aslot": 5044400,
+  "last_confirmed_block_num": 4999861,
+  "last_hbd_exchange_update": "2016-09-15T05:23:51",
+  "last_work": "0000000048bf77f525731f28db7c1aa9ad853a475ccc78e71ea952a7782e5459",
+  "owner": "gtg",
+  "pow_worker": 0,
+  "props": {
+    "account_creation_fee": "3.000 HIVE",
+    "account_subsidy_budget": 797,
+    "account_subsidy_decay": 347321,
+    "hbd_interest_rate": 1000,
+    "maximum_block_size": 65536
+  },
+  "running_version": "0.13.0",
+  "signing_key": "STM6GmnhcBN9DxmFcj1e423Q2RkFYStUgSotviptAMSdy74eHQSYM",
+  "total_missed": 1,
+  "url": "https://steemit.com/witness-category/@gtg/witness-gtg",
+  "virtual_last_update": "109365512737828348123165341",
+  "virtual_position": "119445661624739888994961491644708048164",
+  "virtual_scheduled_time": "109369350128850966698038402",
+  "votes": "57548658449068633"
+}

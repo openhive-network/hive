@@ -8,16 +8,55 @@
 
 namespace hive {
 
-  struct shutdown_state
-  {
-    using ptr_shutdown_state = std::shared_ptr< shutdown_state >;
+  enum class hive_p2p_handler_type { HIVE_P2P_BLOCK_HANDLER, HIVE_P2P_TRANSACTION_HANDLER };
 
+  class shutdown_state
+  {
     std::promise<void>        promise;
     std::shared_future<void>  future;
-    std::atomic_uint          activity;
+    std::atomic_uint32_t      activity;
     std::string               name;
 
-    shutdown_state( const std::string& _name ) : name( _name ){}
+    public:
+
+      using ptr_shutdown_state = std::shared_ptr< shutdown_state >;
+
+      shutdown_state( const std::string& name ) : name( name )
+      {
+        future = std::shared_future<void>( promise.get_future() );
+        activity.store( 0 );
+      }
+
+      void change_activity( int32_t val )
+      {
+        FC_ASSERT( activity.load() + val >= 0 );
+        activity.store( activity.load() + val );
+      }
+
+      uint32_t get_activity() const
+      {
+        return activity.load();
+      }
+
+      bool is_future_valid() const
+      {
+        return future.valid();
+      }
+
+      std::future_status future_wait_for( uint32_t milliseconds ) const
+      {
+        return future.wait_for( std::chrono::milliseconds( milliseconds ) );
+      }
+
+      void set_promise()
+      {
+        promise.set_value();
+      }
+
+      const std::string& get_name() const
+      {
+        return name;
+      }
   };
 
   class shutdown_mgr
@@ -28,7 +67,7 @@ namespace hive {
 
       std::atomic_bool running;
 
-      std::vector< shutdown_state::ptr_shutdown_state > states;
+      std::map< hive_p2p_handler_type, shutdown_state::ptr_shutdown_state > states;
 
       const char* fStatus(std::future_status s)
       {
@@ -45,24 +84,26 @@ namespace hive {
         }
       }
 
-      void wait( const shutdown_state& state )
+      void wait( const shutdown_state::ptr_shutdown_state& state )
       {
-        FC_ASSERT( !get_running().load(), "Lack of shutdown" );
+        FC_ASSERT( state, "State doesn't exist" );
+        FC_ASSERT( !is_running(), "Lack of shutdown" );
 
         std::future_status res;
         uint32_t cnt = 0;
         uint32_t time_maximum = 300;//30 seconds
 
-        ilog("Processing of '${name}' in progress...", ("name", state.name ) );
+        ilog("Processing of '${name}' in progress...", ("name", state->get_name() ) );
 
         do
         {
-          if( state.activity.load() != 0 )
+          if( state->get_activity() != 0 )
           {
-            res = state.future.wait_for( std::chrono::milliseconds(100) );
+            res = state->future_wait_for( 100 );
             if( res != std::future_status::ready )
             {
-              ilog("finishing: ${s}, future status: ${fs}, attempt: ${attempt} ...", ("s", fStatus( res ) )("fs", std::to_string( state.future.valid() ) )("attempt", cnt + 1) );
+              ilog( "attempt: ${attempt}/${total}, reason: ${s}, future status(internal): ${fs} ...", ("attempt", cnt + 1)("total", time_maximum)("s", fStatus( res ) )("fs", std::to_string( state->is_future_valid() ) ) );
+              ilog( "Details: Wait for: ${name}. Currently ${number} of '${name}' items are processed...\n", ("name", state->get_name())("number", state->get_activity())("name", state->get_name()) );
             }
             FC_ASSERT( ++cnt <= time_maximum, "Closing the ${name} is terminated", ( "name", name ) );
           }
@@ -74,24 +115,20 @@ namespace hive {
         }
         while( res != std::future_status::ready );
 
-        ilog("Processing of '${name}' was finished...", ("name", state.name ) );
+        ilog("Processing of '${name}' was finished...", ("name", state->get_name() ) );
       }
 
     public:
 
-      shutdown_mgr( std::string _name, size_t _nr_actions, const std::vector< std::string >& names )
+      shutdown_mgr( std::string _name )
         : name( _name ), running( true )
       {
-        FC_ASSERT( _nr_actions == names.size() );
+        std::map< hive_p2p_handler_type, std::string > input = {
+                    { hive_p2p_handler_type::HIVE_P2P_BLOCK_HANDLER, "P2P_BLOCK" },
+                    { hive_p2p_handler_type::HIVE_P2P_TRANSACTION_HANDLER, "P2P_TRANSACTION" } };
 
-        for( size_t i = 0; i < _nr_actions; ++i )
-        {
-          shutdown_state::ptr_shutdown_state _state( new shutdown_state( "shutdown-state type: " + names[i] ) );
-          _state->future = std::shared_future<void>( _state->promise.get_future() );
-          _state->activity.store( 0 );
-
-          states.emplace_back( _state );
-        }
+        for( auto& item : input )
+          states[ item.first ] = std::make_shared<shutdown_state>( item.second );
       }
 
       void shutdown()
@@ -99,23 +136,20 @@ namespace hive {
         running.store( false );
 
         for( auto& state : states )
-        {
-          shutdown_state* _state = state.get();
-          FC_ASSERT( _state, "State has NULL value" );
-          wait( *_state );
-        }
+          wait( state.second );
       }
 
-      const std::atomic_bool& get_running() const
+      bool is_running() const
       {
-        return running;
+        return running.load() && !appbase::app().is_interrupt_request();
       }
 
-      shutdown_state& get_state( size_t idx )
+      shutdown_state& get_state( hive_p2p_handler_type handler )
       {
-        FC_ASSERT( idx < states.size(), "Incorrect index - lack of correct state" );
+        auto _found = states.find( handler );
+        FC_ASSERT( _found != states.end(), "Incorrect index - lack of correct state" );
 
-        shutdown_state* _state = states[idx].get();
+        shutdown_state* _state = ( _found->second ).get();
         FC_ASSERT( _state, "State has NULL value" );
 
         return *_state;
@@ -126,28 +160,28 @@ namespace hive {
   {
     private:
     
-      const std::atomic_bool& running;
-      shutdown_state&         state;
+      shutdown_mgr& mgr;
+      shutdown_state& state;
 
     public:
 
-      action_catcher( const std::atomic_bool& _running, shutdown_state& _state ):
-        running( _running ), state( _state )
+      action_catcher( shutdown_mgr& mgr, hive_p2p_handler_type handler ):
+        mgr( mgr ), state( mgr.get_state( handler ) )
       {
-        state.activity.store( state.activity.load() + 1 );
+        state.change_activity( 1 );
       }
 
       ~action_catcher()
       {
-        state.activity.store( state.activity.load() - 1 );
+        state.change_activity( -1 );
 
-        if( running.load() == false && state.future.valid() == false )
+        if( !mgr.is_running() && !state.is_future_valid() )
         {
           ilog("Sending notification to shutdown barrier.");
 
           try
           {
-            state.promise.set_value();
+            state.set_promise();
           }
           catch( const std::future_error& e )
           {

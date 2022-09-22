@@ -125,6 +125,8 @@ class chain_plugin_impl
       snapshot_provider = &provider;
     }
 
+    bool is_running() const;
+
     void start_write_processing();
     void stop_write_processing();
 
@@ -235,6 +237,11 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
+      if (appbase::app().is_interrupt_request())
+      {
+        throw fc::exception(fc::canceled_exception_code, "interrupted by user");
+      }
+
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
@@ -317,6 +324,11 @@ struct chain_plugin_impl::write_request_visitor
   }
 };
 
+bool chain_plugin_impl::is_running() const
+{
+  return running && !appbase::app().is_interrupt_request();
+}
+
 void chain_plugin_impl::start_write_processing()
 {
   write_processor_thread = std::make_shared<std::thread>([&]()
@@ -376,10 +388,10 @@ void chain_plugin_impl::start_write_processing()
                                                                                                 : block_wait_max_time - time_since_last_popped_item;
           std::unique_lock<std::mutex> lock(queue_mutex);
           bool wait_timed_out = false;
-          while (running && write_queue.empty() && !wait_timed_out)
+          while (is_running() && write_queue.empty() && !wait_timed_out)
             if (queue_condition_variable.wait_for(lock, std::chrono::microseconds(max_time_to_wait.count())) == std::cv_status::timeout)
               wait_timed_out = true;
-          if (!running) // we woke because the node is shutting down
+          if (!is_running()) // we woke because the node is shutting down
             break;
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
             continue;
