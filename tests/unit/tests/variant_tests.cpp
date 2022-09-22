@@ -167,11 +167,11 @@ HIVE_AUTO_TEST_CASE( null_type,
   BOOST_REQUIRE( !v.is_integer() );
 )
 
-HIVE_AUTO_TEST_CASE( mutable_variant_object,
+HIVE_AUTO_TEST_CASE( variant_object,
   fc::variant_object vo;
   BOOST_REQUIRE_EQUAL( vo.size(), 0 );
 
-  fc::mutable_variant_object mvo;
+  fc::variant_object mvo;
   vo = mvo( "a", 1 )( "b", true ).set( "c", 3.14 );
   BOOST_REQUIRE_EQUAL( mvo[ "a" ].get_type(), fc::variant::int64_type );
   BOOST_REQUIRE_EQUAL( mvo[ "b" ].get_type(), fc::variant::bool_type );
@@ -180,7 +180,7 @@ HIVE_AUTO_TEST_CASE( mutable_variant_object,
   BOOST_REQUIRE_EQUAL( vo.size(), 3 );
 
   // Throws on const object as it cannot add another element to the entries storage
-  BOOST_REQUIRE_THROW( static_cast< const fc::mutable_variant_object >( mvo )[ "d" ], fc::key_not_found_exception );
+  BOOST_REQUIRE_THROW( static_cast< const fc::variant_object >( mvo )[ "d" ], fc::key_not_found_exception );
   // But inserts variant to the storage if used on non-const object
   BOOST_REQUIRE_NO_THROW( mvo[ "d" ] );
 
@@ -198,25 +198,25 @@ HIVE_AUTO_TEST_CASE( mutable_variant_object,
   BOOST_REQUIRE_EQUAL( mvo[ "c" ].as_double(), 3.14 );
 )
 
-HIVE_AUTO_TEST_CASE( variant_object,
-  fc::variant_object vo;
-  BOOST_REQUIRE_EQUAL( vo.size(), 0 );
+HIVE_AUTO_TEST_CASE( variant_object_builder,
+  fc::variant_object_builder vo;
+  BOOST_REQUIRE_EQUAL( vo.get().size(), 0 );
 
-  fc::mutable_variant_object mvo;
-  vo = mvo( "a", 1 )( "b", true ).set( "c", 3.14 );
+  fc::variant_object_builder mvob;
+  mvob( "a", 1 )( "b", true ).append( "c", 3.14 );
 
-  BOOST_REQUIRE_EQUAL( vo.size(), 3 );
+  mvob.validate();
 
-  BOOST_REQUIRE( vo.contains( "c" ) );
+  fc::variant_object mvo = mvob.get();
+  BOOST_REQUIRE_EQUAL( mvo[ "a" ].get_type(), fc::variant::int64_type );
+  BOOST_REQUIRE_EQUAL( mvo[ "b" ].get_type(), fc::variant::bool_type );
+  BOOST_REQUIRE_EQUAL( mvo[ "c" ].get_type(), fc::variant::double_type );
 
-  BOOST_REQUIRE_EQUAL( vo[ "a" ].get_type(), fc::variant::int64_type );
-  BOOST_REQUIRE_EQUAL( vo[ "b" ].get_type(), fc::variant::bool_type );
-  BOOST_REQUIRE_EQUAL( vo[ "c" ].get_type(), fc::variant::double_type );
+  BOOST_REQUIRE_EQUAL( mvo.size(), 3 );
 
-  BOOST_REQUIRE_THROW( vo[ "d" ], fc::key_not_found_exception );
-
-  // Random value test
-  BOOST_REQUIRE_EQUAL( vo[ "c" ].as_double(), 3.14 );
+  // Add duplicate item
+  mvob.append( "a", 1 );
+  BOOST_REQUIRE_THROW( (mvob.validate()), fc::assert_exception );
 )
 
 HIVE_AUTO_TEST_CASE( object_type,
@@ -308,8 +308,6 @@ void test_type_conversion( variant_retrieve_member_fn_t< TypeTested > variant_re
   // Objects:
   v = fc::variant_object{};
   BOOST_REQUIRE_THROW( (HIVE_TEST_VARIANT_FUNCTION_INVOKE( v, variant_retrieve_fn )), fc::bad_cast_exception );
-  v = fc::mutable_variant_object{};
-  BOOST_REQUIRE_THROW( (HIVE_TEST_VARIANT_FUNCTION_INVOKE( v, variant_retrieve_fn )), fc::bad_cast_exception );
 
   // Arrays:
   v = fc::variants{};
@@ -364,8 +362,6 @@ HIVE_AUTO_TEST_CASE( as_bool_conversions,
   // Objects:
   v = fc::variant_object{};
   BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
-  v = fc::mutable_variant_object{};
-  BOOST_REQUIRE_THROW( v.as_bool(), fc::bad_cast_exception );
 
   // Arrays:
   v = fc::variants{};
@@ -403,8 +399,6 @@ HIVE_AUTO_TEST_CASE( as_string_conversions,
 
   // Objects:
   v = fc::variant_object{};
-  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
-  v = fc::mutable_variant_object{};
   BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
 
   // Arrays:
@@ -454,8 +448,6 @@ HIVE_AUTO_TEST_CASE( as_blob_conversions,
 
   // Objects:
   v = fc::variant_object{};
-  BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
-  v = fc::mutable_variant_object{};
   BOOST_REQUIRE_THROW( v.as_string(), fc::bad_cast_exception );
 
   // Arrays:
