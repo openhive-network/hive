@@ -1364,6 +1364,12 @@ fc::variant_object rc_plugin_impl::get_report( report_type rt, const rc_stats_ob
       payer
         ( "rank", i )
         ( "count", payer_stats.count );
+      if( rt == report_type::FULL )
+      {
+        payer
+          ( "cost", payer_stats.cost )
+          ( "usage", payer_stats.usage );
+      }
       if( payer_stats.less_than_5_percent )
         payer( "lt5", payer_stats.less_than_5_percent );
       if( payer_stats.less_than_10_percent )
@@ -1613,6 +1619,11 @@ void rc_stats_object::add_stats( const rc_info& tx_info )
     rc_payer_stats& _payer_stats = payer_stats[ _payer_rank ];
 
     _payer_stats.count += 1;
+    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    {
+      _payer_stats.cost[i] += tx_info.cost[i];
+      _payer_stats.usage[i] += tx_info.usage[i];
+    }
     // since it is just statistics we can do rough calculations:
     int64_t low_rc = tx_info.max / 20; // 5%
     if( tx_info.rc < low_rc )

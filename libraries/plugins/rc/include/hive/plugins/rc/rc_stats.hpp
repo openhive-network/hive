@@ -31,12 +31,15 @@ struct rc_op_stats
 // statistics for payer with certain rank
 struct rc_payer_stats
 {
-  uint32_t less_than_5_percent = 0; // payer was observed with < 5% of his max RC
-  uint32_t less_than_10_percent = 0; // payer was observed with < 10% of his max RC
-  uint32_t less_than_20_percent = 0; // payer was observed with < 20% of his max RC
+  resource_count_type usage;
+  resource_cost_type  cost;
+
+  uint32_t            less_than_5_percent = 0; // payer was observed with < 5% of his max RC
+  uint32_t            less_than_10_percent = 0; // payer was observed with < 10% of his max RC
+  uint32_t            less_than_20_percent = 0; // payer was observed with < 20% of his max RC
   fc::int_array< uint32_t, 3 >
-           cant_afford; // payer was observed with less than average cost in RC mana for first three ops (vote, comment, transfer)
-  uint32_t count = 0; // total number of times payer was observed
+                      cant_afford; // payer was observed with less than average cost in RC mana for first three ops (vote, comment, transfer)
+  uint32_t            count = 0; // total number of times payer was observed
 
   bool was_dry() const
   {
@@ -53,6 +56,8 @@ FC_REFLECT( hive::plugins::rc::rc_op_stats,
 )
 
 FC_REFLECT( hive::plugins::rc::rc_payer_stats,
+  (usage)
+  (cost)
   (less_than_5_percent)
   (less_than_10_percent)
   (less_than_20_percent)

@@ -46,12 +46,12 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_index::MULTIINDEX_NODE_TYPE ), 400u );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 176u ); //singleton
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_index::MULTIINDEX_NODE_TYPE ), 208u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_object ), 4848u //two objects
+  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_object ), 5520u //two objects
 #ifdef HIVE_ENABLE_SMT
     + 616u
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_index::MULTIINDEX_NODE_TYPE ), 4880u
+  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_index::MULTIINDEX_NODE_TYPE ), 5552u
 #ifdef HIVE_ENABLE_SMT
     + 616u
 #endif
