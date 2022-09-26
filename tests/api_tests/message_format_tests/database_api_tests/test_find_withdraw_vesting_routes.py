@@ -15,5 +15,7 @@ def test_find_withdraw_vesting_routes_in_testnet(prepared_node):
 
 @run_for('mainnet_5m', 'mainnet_64m')
 def test_find_withdraw_vesting_routes_in_mainnet(prepared_node):
-    routes = prepared_node.api.database.find_withdraw_vesting_routes(account='temporary_name', order='by_destination')['routes']
+    account = prepared_node.api.database.list_withdraw_vesting_routes(start=['alice', 'bob'], limit=100,
+                                                                      order='by_withdraw_route')['routes'][0]['to_account']
+    routes = prepared_node.api.database.find_withdraw_vesting_routes(account=account, order='by_destination')['routes']
     assert len(routes) != 0

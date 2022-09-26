@@ -16,5 +16,6 @@ def test_find_owner_histories_in_testnet(prepared_node):
 
 @run_for('mainnet_5m', 'mainnet_64m')
 def test_find_owner_histories_in_mainnet(prepared_node):
-    owner_auths = prepared_node.api.database.find_owner_histories(owner='temporary_name')['owner_auths']
+    account = prepared_node.api.database.list_owner_histories(start=['alice', date_from_now(weeks=-100)], limit=100)['owner_auths'][0]['account']
+    owner_auths = prepared_node.api.database.find_owner_histories(owner=account)['owner_auths']
     assert len(owner_auths) != 0
