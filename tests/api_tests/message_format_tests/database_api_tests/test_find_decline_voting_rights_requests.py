@@ -1,10 +1,14 @@
 import test_tools as tt
 
-from ....local_tools import create_account_and_fund_it
+from ..local_tools import run_for
 
 
-def test_find_decline_voting_rights_requests(node, wallet):
-    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+# This test cannot be performed on 5 million blocklog and most recent (current) blocklog because they don't contain any
+# decline voting rights requests. See the readme.md file in this directory for further explanation.
+@run_for('testnet')
+def test_find_decline_voting_rights_requests(prepared_node):
+    wallet = tt.Wallet(attach_to=prepared_node)
+    wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
     wallet.api.decline_voting_rights('alice', True)
-    requests = node.api.database.find_decline_voting_rights_requests(accounts=['alice'])
+    requests = prepared_node.api.database.find_decline_voting_rights_requests(accounts=['alice'])['requests']
     assert len(requests) != 0
