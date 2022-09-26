@@ -3771,6 +3771,9 @@ void database::process_decline_voting_rights()
     nullify_proxied_witness_votes( account );
     clear_witness_votes( account );
 
+    if( account.has_proxy() )
+      push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+
     modify( account, [&]( account_object& a )
     {
       a.can_vote = false;
@@ -7359,6 +7362,10 @@ void database::remove_expired_governance_votes()
     {
       nullify_proxied_witness_votes( account );
       clear_witness_votes( account );
+
+      if( account.has_proxy() )
+        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+
       modify( account, [&]( account_object& a )
       {
         a.clear_proxy();

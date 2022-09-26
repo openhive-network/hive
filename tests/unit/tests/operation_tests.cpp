@@ -2430,6 +2430,171 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_authorities )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
+{
+  try
+  {
+    /*
+      There are 4 cases( 4 operations ) that can generate `proxy_cleared_operation` virtual operation:
+
+        `account_witness_proxy_operation`:
+        A vop `proxy_cleared_operation` is created in the same block.
+          We want to set a proxy, but an old proxy exists:
+            1) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+          We don't want to set a proxy:
+            2) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+
+        `decline_voting_rights_operation`:
+        A vop `proxy_cleared_operation` is generated automatically after `HIVE_OWNER_AUTH_RECOVERY_PERIOD` time ( 30 days ).
+          3) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+
+
+        `update_proposal_votes_operation`, `account_witness_proxy_operation`, `account_witness_vote_operation`:
+        After HF25 a vop `proxy_cleared_operation` is generated automatically after `HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD` time ( 365 days ).
+          4) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+    */
+
+    BOOST_TEST_MESSAGE( "Testing: 'proxy_cleared_operation' virtual operation" );
+
+    ACTORS( (alice)(bob)(carol)(dan) )
+    fund( "alice", 1000 );
+    vest( "alice", 1000 );
+    fund( "bob", 3000 );
+    vest( "bob", 3000 );
+    fund( "carol", 3000 );
+    vest( "carol", 3000 );
+    fund( "dan", 3000 );
+    vest( "dan", 3000 );
+
+    {
+      BOOST_TEST_MESSAGE( "--- Test setting proxy to another account" );
+
+      account_witness_proxy_operation op;
+      op.account = "bob";
+      op.proxy = "alice";
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      push_transaction( tx, bob_private_key );
+
+      CHECK_PROXY( bob, alice );
+      CHECK_NO_PROXY( alice );
+    }
+
+    {
+      BOOST_TEST_MESSAGE( "--- Test removing proxy" );
+
+      account_witness_proxy_operation op;
+      op.account = "bob";
+      op.proxy = "";
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      push_transaction( tx, bob_private_key );
+
+      CHECK_NO_PROXY( bob );
+      CHECK_NO_PROXY( alice );
+
+      auto recent_ops = get_last_operations( 1 );
+      auto reject_op = recent_ops.back().get< proxy_cleared_operation >();
+      BOOST_REQUIRE( reject_op.account == "bob" );
+      BOOST_REQUIRE( reject_op.proxy == "alice" );
+    }
+
+    {
+      BOOST_TEST_MESSAGE( "--- Test removing proxy using 'decline_voting_rights_operation'" );
+
+      account_witness_proxy_operation op;
+      op.account = "bob";
+      op.proxy = "carol";
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      decline_voting_rights_operation op2;
+      op2.account = "bob";
+      op2.decline = true;
+
+      tx.operations.push_back( op2 );
+
+      push_transaction( tx, bob_private_key );
+
+      const auto& request_idx = db->get_index< decline_voting_rights_request_index >().indices().get< by_account >();
+      auto itr = request_idx.find( db->get_account( "bob" ).name );
+      BOOST_REQUIRE( itr != request_idx.end() );
+      BOOST_REQUIRE( itr->effective_date == db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
+
+      generate_block();
+
+      BOOST_REQUIRE( db->get_account( "bob" ).get_proxy() == db->get_account( "carol" ).get_id() );
+      BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
+
+      generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ) - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
+
+      BOOST_REQUIRE( db->get_account( "bob" ).get_proxy() == db->get_account( "carol" ).get_id() );
+      BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
+
+      generate_blocks( db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL ) );
+
+      BOOST_REQUIRE( db->get_account( "bob" ).has_proxy() == false );
+      BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
+
+      auto recent_ops = get_last_operations( 1 );
+      auto reject_op = recent_ops.back().get< proxy_cleared_operation >();
+      BOOST_REQUIRE( reject_op.account == "bob" );
+      BOOST_REQUIRE( reject_op.proxy == "carol" );
+    }
+
+    {
+      BOOST_TEST_MESSAGE( "--- Test removing proxy because of votes expiration" );
+
+      generate_block();
+
+      fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
+      db_plugin->debug_update( [=]( database& db )
+      {
+        db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+        {
+          //fake timestamp of current block so we don't need to wait for creation of 39mln blocks in next line
+          //even though it is skipping it still takes a lot of time, especially under debugger
+          gpo.time = hardfork_25_time;
+        } );
+      } );
+
+      account_witness_proxy_operation op;
+      op.account = "carol";
+      op.proxy = "dan";
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      push_transaction( tx, carol_private_key );
+
+      generate_block();
+
+      BOOST_REQUIRE( db->get_account( "carol" ).get_proxy() == db->get_account( "dan" ).get_id() );
+      BOOST_REQUIRE( db->get_account( "dan" ).has_proxy() == false );
+
+      generate_blocks( db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD );
+
+      BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
+      BOOST_REQUIRE( db->get_account( "dan" ).has_proxy() == false );
+
+      auto recent_ops = get_last_operations( 2 );
+      auto reject_op = recent_ops.back().get< proxy_cleared_operation >();
+      BOOST_REQUIRE( reject_op.account == "carol" );
+      BOOST_REQUIRE( reject_op.proxy == "dan" );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 {
   try

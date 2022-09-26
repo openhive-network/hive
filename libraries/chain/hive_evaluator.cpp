@@ -1338,6 +1338,11 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.clear_witness_votes( account );
 
     _db.modify( account, [&]( account_object& a ) {
+      if( account.has_proxy() )
+      {
+        _db.push_virtual_operation( proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
+      }
+
       a.set_proxy( new_proxy );
     });
 
@@ -1349,6 +1354,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
     FC_ASSERT( account.has_proxy(), "Proxy must change." );
+
+    _db.push_virtual_operation( proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
+
     _db.modify( account, [&]( account_object& a ) {
       a.clear_proxy();
     });

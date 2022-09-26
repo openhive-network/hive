@@ -139,6 +139,7 @@ enum enum_vops_filter : uint64_t
                                                 = 0x0040'00000000ull,
   escrow_approved_operation                     = 0x0080'00000000ull,
   escrow_rejected_operation                     = 0x0100'00000000ull,
+  proxy_cleared_operation                       = 0x0200'00000000ull,
 };
 
 /** Allows to specify range of blocks to retrieve virtual operations for.

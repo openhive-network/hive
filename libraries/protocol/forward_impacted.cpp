@@ -444,6 +444,12 @@ struct get_impacted_account_visitor
     _impacted.insert( op.agent );
   }
 
+  void operator()( const proxy_cleared_operation& op )
+  {
+    _impacted.insert( op.account );
+    _impacted.insert( op.proxy );
+  }
+
   //void operator()( const operation& op ){}
 };
 

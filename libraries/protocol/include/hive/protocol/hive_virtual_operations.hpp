@@ -777,6 +777,36 @@ struct escrow_rejected_operation : public virtual_operation
   asset             fee; //(HIVE of HBD) fee from cancelled escrow transfer (same amount as in escrow_transfer_operation)
 };
 
+/**
+ *
+  * There are 4 cases( 4 operations ) that can generate `proxy_cleared_operation` virtual operation:
+
+  * `account_witness_proxy_operation`:
+  * A vop `proxy_cleared_operation` is created in the same block.
+  * We want to set a proxy, but an old proxy exists:
+  * 1) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+  * We don't want to set a proxy:
+  * 2) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+
+  * `decline_voting_rights_operation`:
+  * A vop `proxy_cleared_operation` is generated automatically after `HIVE_OWNER_AUTH_RECOVERY_PERIOD` time ( 30 days ).
+  * 3) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+
+  * `update_proposal_votes_operation`, `account_witness_proxy_operation`, `account_witness_vote_operation`:
+  * After HF25 a vop `proxy_cleared_operation` is generated automatically after `HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD` time ( 365 days ).
+  * 4) {"type":"proxy_cleared_operation","value":{"account":"ACCOUNT","proxy":"OLD-PROXY-ACCOUNT-NAME"}}
+ */
+struct proxy_cleared_operation : public virtual_operation
+{
+  proxy_cleared_operation() = default;
+  proxy_cleared_operation( const account_name_type& account, const account_name_type& proxy )
+    : account( account ), proxy( proxy )
+  {}
+
+  account_name_type account;//user that sets/unsets a proxy
+  account_name_type proxy;//proxy user that facilitates voting on witnesses
+};
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
@@ -820,3 +850,4 @@ FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal
 FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
 FC_REFLECT( hive::protocol::escrow_approved_operation, (from)(to)(agent)(escrow_id)(fee) )
 FC_REFLECT( hive::protocol::escrow_rejected_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee) )
+FC_REFLECT( hive::protocol::proxy_cleared_operation, (account)(proxy) )
