@@ -17,5 +17,7 @@ def test_find_vesting_delegations_in_testnet(prepared_node):
 
 @run_for('mainnet_64m')
 def test_find_vesting_delegations_in_mainnet_64m(prepared_node):
-    delegations = prepared_node.api.database.find_vesting_delegations(account='temporary_name')['delegations']
+    account = prepared_node.api.database.list_vesting_delegations(start=['catharsis', 'veshu1230'], limit=100,
+                                                                  order='by_delegation')['delegations'][0]['delegator']
+    delegations = prepared_node.api.database.find_vesting_delegations(account=account)['delegations']
     assert len(delegations) != 0

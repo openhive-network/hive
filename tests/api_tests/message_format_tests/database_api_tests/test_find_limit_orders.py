@@ -14,5 +14,7 @@ def test_find_limit_orders_in_testnet(prepared_node):
 
 @run_for('mainnet_5m', 'mainnet_64m')
 def test_find_limit_orders_in_mainnet(prepared_node):
-    orders = prepared_node.api.database.find_limit_orders(account='temporary_name')['orders']
+    account = prepared_node.api.database.list_limit_orders(start=['alice', 0], limit=100,
+                                                           order='by_account')['orders'][0]['seller']
+    orders = prepared_node.api.database.find_limit_orders(account=account)['orders']
     assert len(orders) != 0

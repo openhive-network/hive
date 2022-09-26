@@ -13,5 +13,6 @@ def test_find_escrows(prepared_node, should_prepare):
         # "from" is a Python keyword and needs workaround
         escrows = prepared_node.api.database.find_escrows(**{'from': 'alice'})['escrows']
     else:
-        escrows = prepared_node.api.database.find_escrows(**{'from': 'temporary_name'})['escrows']
+        account = prepared_node.api.database.list_escrows(start=['', 0], limit=5, order='by_from_id')['escrows'][0]['from']
+        escrows = prepared_node.api.database.find_escrows(**{'from': account})['escrows']
     assert len(escrows) != 0

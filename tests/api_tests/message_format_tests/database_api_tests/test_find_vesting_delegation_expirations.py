@@ -18,5 +18,8 @@ def test_find_vesting_delegation_expirations_in_testnet(prepared_node):
 
 @run_for('mainnet_64m')
 def test_find_vesting_delegation_expirations_in_mainnet_64m(prepared_node):
-    delegations = prepared_node.api.database.find_vesting_delegation_expirations(account='temporary_name')['delegations']
+    account = prepared_node.api.database.list_vesting_delegation_expirations(start=['alice', date_from_now(weeks=-100), 0],
+                                                                             limit=100,
+                                                                             order='by_account_expiration')['delegations'][0]['delegator']
+    delegations = prepared_node.api.database.find_vesting_delegation_expirations(account=account)['delegations']
     assert len(delegations) != 0

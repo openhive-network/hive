@@ -17,5 +17,8 @@ def test_find_savings_withdrawals_in_testnet(prepared_node):
 
 @run_for('mainnet_64m')
 def test_find_savings_withdrawals_in_mainnet_64m(prepared_node):
-    withdrawals = prepared_node.api.database.find_savings_withdrawals(account='temporary_name')['withdrawals']
+    account = prepared_node.api.database.list_savings_withdrawals(start=[date_from_now(weeks=-100), 'alice', 0],
+                                                                  limit=100,
+                                                                  order='by_complete_from_id')['withdrawals'][0]['to']
+    withdrawals = prepared_node.api.database.find_savings_withdrawals(account=account)['withdrawals']
     assert len(withdrawals) != 0
