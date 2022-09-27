@@ -14,22 +14,22 @@ from local_tools import Config, are_objects_same, gather_all_tests, get_response
 # tags (in normal case ignore_tags must be a list of tag specifiers)
 PREDEFINED_IGNORE_TAGS = {
     '<error>': re.compile(r"root\['data'\]"),
-    '<bridge post>' : re.compile(r"root\['post_id'\]"),
-    '<bridge posts>' : re.compile(r"root\[\d+\]\['post_id'\]"),
-    '<bridge discussion>' : re.compile(r"root\[.+\]\['post_id'\]"),
-    '<bridge community>' : re.compile(r"root\['id'\]"),
-    '<bridge communities>' : re.compile(r"root\[\d+\]\['id'\]"),
-    '<bridge profile>' : re.compile(r"root\['id'\]"),
-    '<condenser posts>' : re.compile(r"root\[\d+\]\['post_id'\]"),
-    '<condenser content>' : re.compile(r"root\['id'\]"), # condenser_api.get_content
-    '<condenser replies>' : re.compile(r"root\[\d+\]\['id'\]"), # condenser_api.get_content_replies
-    '<condenser blog>' : re.compile(r"root\[\d+\]\['comment'\]\['post_id'\]"), # condenser_api.get_blog
-    '<condenser state>' : re.compile(r"root\['content'\]\[.+\]\['post_id'\]"), # condenser_api.get_state
-    '<database posts>' : re.compile(r"root\['comments'\]\[\d+\]\['id'\]"),
-    '<database votes>' : re.compile(r"root\['votes'\]\[\d+\]\['id'\]"),
-    '<follow blog>' : re.compile(r"root\[\d+\]\['comment'\]\['post_id'\]"), # follow_api.get_blog
-    '<tags posts>' : re.compile(r"root\[\d+\]\['post_id'\]"),
-    '<tags post>' : re.compile(r"root\['post_id'\]") # tags_api.get_discussion
+    '<bridge post>': re.compile(r"root\['post_id'\]"),
+    '<bridge posts>': re.compile(r"root\[\d+\]\['post_id'\]"),
+    '<bridge discussion>': re.compile(r"root\[.+\]\['post_id'\]"),
+    '<bridge community>': re.compile(r"root\['id'\]"),
+    '<bridge communities>': re.compile(r"root\[\d+\]\['id'\]"),
+    '<bridge profile>': re.compile(r"root\['id'\]"),
+    '<condenser posts>': re.compile(r"root\[\d+\]\['post_id'\]"),
+    '<condenser content>': re.compile(r"root\['id'\]"), # condenser_api.get_content
+    '<condenser replies>': re.compile(r"root\[\d+\]\['id'\]"), # condenser_api.get_content_replies
+    '<condenser blog>': re.compile(r"root\[\d+\]\['comment'\]\['post_id'\]"), # condenser_api.get_blog
+    '<condenser state>': re.compile(r"root\['content'\]\[.+\]\['post_id'\]"), # condenser_api.get_state
+    '<database posts>': re.compile(r"root\['comments'\]\[\d+\]\['id'\]"),
+    '<database votes>': re.compile(r"root\['votes'\]\[\d+\]\['id'\]"),
+    '<follow blog>': re.compile(r"root\[\d+\]\['comment'\]\['post_id'\]"), # follow_api.get_blog
+    '<tags posts>': re.compile(r"root\[\d+\]\['post_id'\]"),
+    '<tags post>': re.compile(r"root\['post_id'\]") # tags_api.get_discussion
 }
 
 @pytest.mark.parametrize('request_body, pattern_json_path, output_path, negative, exclude_fields', gather_all_tests())
@@ -51,10 +51,10 @@ def test_pattern(config: Config, request_body: dict, pattern_json_path: Path, ou
         tt.logger.error(f'While processing {pattern_json_path} got exception: {e}')
         raise e
 
-def generate_pattern(config: Config, request : dict, negative : bool, output_path : Path):
+def generate_pattern(config: Config, request: dict, negative: bool, output_path: Path):
     save_json(get_response(config, request, negative, True), output_path)
 
-def check_with_pattern(config : Config, request_body : dict, pattern_json_path : Path, output_path: Path, negative: bool, exclude_fields: list):
+def check_with_pattern(config: Config, request_body: dict, pattern_json_path: Path, output_path: Path, negative: bool, exclude_fields: list):
     with pattern_json_path.open('rt') as file:
         pattern = json.load(file)
 
@@ -75,7 +75,7 @@ def check_with_pattern(config : Config, request_body : dict, pattern_json_path :
     assert are_objects_same(pattern, response, exclude_fields)
     remove(output_path)
 
-def handle_excluded_fields(obj : dict, exclude_fields : Union[str, list]) -> Tuple[dict, Union[List[re.Pattern], Literal[None]]]:
+def handle_excluded_fields(obj: dict, exclude_fields: Union[str, list]) -> Tuple[dict, Union[List[re.Pattern], Literal[None]]]:
     if isinstance(exclude_fields, str):
         exclude_fields = [PREDEFINED_IGNORE_TAGS.get(exclude_fields, None)]
     elif exclude_fields is not None:

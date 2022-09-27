@@ -15,7 +15,7 @@ import yaml
 class Config:
     timeout: int
     node: tt.RemoteNode
-    url : str
+    url: str
 
 @dataclass
 class TestDescription:
@@ -90,11 +90,11 @@ def gather_all_tests() -> List[Tuple]:
         )
     return tests
 
-def load_yaml(filename : Path) -> dict:
+def load_yaml(filename: Path) -> dict:
     with filename.open('rt') as file:
         return yaml.safe_load(file.read().replace('!', ''))
 
-def extract_from_path(obj : Union[dict, list], *path):
+def extract_from_path(obj: Union[dict, list], *path):
     for item in path:
         assert not isinstance(item, int) or item < len(obj), f'object is shorter than {item}'
         assert not isinstance(item, str) or item in obj, f'object does not contain {item} key'
@@ -104,7 +104,7 @@ def extract_from_path(obj : Union[dict, list], *path):
 def get_path_to_tests() -> Path:
     return Path(__file__).parent
 
-def remove_tag(data, tags_to_remove : Iterable):
+def remove_tag(data, tags_to_remove: Iterable):
     tt.logger.debug(f'removing from: {data}')
     if not isinstance(data, (dict, list)):
         return data
@@ -112,19 +112,19 @@ def remove_tag(data, tags_to_remove : Iterable):
         return [remove_tag(v, tags_to_remove) for v in data]
     return {k: remove_tag(v, tags_to_remove) for k, v in data.items() if k not in tags_to_remove}
 
-def save_json(response : dict, output_path : Path):
+def save_json(response: dict, output_path: Path):
     with output_path.open('wt') as file:
         json.dump(response, file, ensure_ascii=False, indent=2)
 
-def hived_call(config: Config, api : str, method : str, params : Union[dict, list]):
+def hived_call(config: Config, api: str, method: str, params: Union[dict, list]):
     req_options = tt.RequestOptions(only_result=False,timeout=config.timeout,allow_error=True)
     endpoint = getattr(getattr(config.node.api, api.replace('_api', '')), method)
     return endpoint(**params, options=req_options) if isinstance(params, dict) else endpoint(*params, options=req_options)
 
-def direct_call(config: Config, api : str, method : str, params : dict):
+def direct_call(config: Config, api: str, method: str, params: dict):
     return requests.post(urljoin(config.url, f'rpc/{method}'), json=params, timeout=config.timeout).json()
 
-def call_api(config: Config, request : dict) -> dict:
+def call_api(config: Config, request: dict) -> dict:
     api, method = request['method'].split('.')
     params = request['params']
     retries = 5
@@ -138,7 +138,7 @@ def call_api(config: Config, request : dict) -> dict:
             retries -= 1
     assert retries != 0, 'Exceeded max amount of retries'
 
-def get_response(config: Config, request : dict, negative : bool, allow_null : bool) -> dict:
+def get_response(config: Config, request: dict, negative: bool, allow_null: bool) -> dict:
     result = call_api(config, request)
     if not allow_null:
         assert (negative and 'error' in result) or (
