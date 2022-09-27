@@ -2,7 +2,6 @@ from typing import Final
 
 from beem import Hive
 from beembase.operations import Create_proposal
-import pytest
 import test_tools as tt
 
 from . import test_utils
@@ -42,10 +41,3 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
         hive_utils.debug_generate_blocks(node.rpc.url, wif, 5)
     else:
         hive_utils.common.wait_n_blocks(node.rpc.url, 5)
-
-
-@pytest.fixture
-def node():
-    init_node = tt.InitNode()
-    init_node.run()
-    return init_node
