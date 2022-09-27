@@ -1,6 +1,7 @@
 import test_tools as tt
 
-from ..local_tools import create_account_and_fund_it, create_and_cancel_vesting_delegation, date_from_now, run_for
+from ....local_tools import create_account_and_fund_it, date_from_now, run_for
+from ..local_tools import create_and_cancel_vesting_delegation
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')

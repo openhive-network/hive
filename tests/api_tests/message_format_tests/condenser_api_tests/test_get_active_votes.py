@@ -1,6 +1,6 @@
 import test_tools as tt
 
-from ..local_tools import create_account_and_fund_it, run_for
+from ....local_tools import create_account_and_fund_it, run_for
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')

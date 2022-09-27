@@ -1,7 +1,6 @@
 import test_tools as tt
 
-from ..local_tools import run_for
-from ....local_tools import create_account_and_fund_it
+from ....local_tools import create_account_and_fund_it, run_for
 
 
 # This test is not performed on 5 million block log because it doesn't contain any vesting delegations.
