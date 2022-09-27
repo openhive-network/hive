@@ -2,7 +2,8 @@ import json
 from dataclasses import dataclass
 from os import getenv
 from pathlib import Path
-from typing import Iterable, List, Tuple, Union
+from pytest import param, mark
+from typing import Iterable, List, Set, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
@@ -10,25 +11,46 @@ import deepdiff
 import test_tools as tt
 import yaml
 
-IS_DIRECT_CALL_HAFAH : bool = (getenv('IS_DIRECT_CALL_HAFAH', '').lower() == 'true')
-
 @dataclass
 class Config:
     timeout: int
     node: tt.RemoteNode
     url : str
 
-def gather_all_tests() -> List[Tuple[
-        str,        # api
-        str,        # method
-        dict,       # request_body
-        Path,       # pattern_json_path
-        Path,       # output_path
-        bool,       # is_negative
-        List[str],  # excluded_fields
-        str         # is_negative (for filtering purpose e.x 'pytest -k negative/True')
-    ]]:
-    tests = []
+@dataclass
+class TestDescription:
+    api: str
+    method: str
+    request: dict
+    pattern_json_path: Path
+    output_path: Path
+    is_negative: bool
+    ignore_tags: Union[str, List[str]]
+
+IS_DIRECT_CALL_HAFAH: bool = (getenv('IS_DIRECT_CALL_HAFAH', '').lower() == 'true')
+CACHE_FOR_PROCESSED_FILES: List[TestDescription] = None
+
+def get_marker(key: str, value):
+    new_mark = getattr(mark, f'{key}/{value}')
+    tt.logger.debug(f'preparing mark: {new_mark.name=} {new_mark.markname=}')
+    return new_mark
+
+def get_api_marker(api_name: str):
+    return get_marker('api', api_name)
+
+def get_method_marker(method_name: str):
+    return get_marker('method', method_name)
+
+def get_is_negative_marker(is_negative: bool):
+    return get_marker('negative', is_negative)
+
+def process_all_files() -> List[TestDescription]:
+    global CACHE_FOR_PROCESSED_FILES
+    if CACHE_FOR_PROCESSED_FILES is not None:
+        return CACHE_FOR_PROCESSED_FILES
+    else:
+        CACHE_FOR_PROCESSED_FILES = []
+
     for file in get_path_to_tests().rglob('*.tavern.yaml'):
         tt.logger.info(f'Processing {file}')
         test_case = load_yaml(file)
@@ -43,7 +65,29 @@ def gather_all_tests() -> List[Tuple[
         pattern_json_path = file.parent / file.name.replace('.tavern.yaml', '.pat.json')
         output_path = file.parent / file.name.replace('.tavern.yaml', '.out.json')
 
-        tests.append((f'api/{api}', f'method/{method}', request, pattern_json_path, output_path, negative, ignore_tags, f'negative/{negative}'))
+        CACHE_FOR_PROCESSED_FILES.append(
+            TestDescription(api, method, request, pattern_json_path, output_path, negative, ignore_tags)
+        )
+    return CACHE_FOR_PROCESSED_FILES
+
+
+def gather_all_tests() -> List[Tuple]:
+    tests = []
+    for test in process_all_files():
+        tests.append(
+            param(
+                test.request,
+                test.pattern_json_path,
+                test.output_path,
+                test.is_negative,
+                test.ignore_tags,
+                marks=[
+                    get_api_marker(test.api),
+                    get_method_marker(test.method),
+                    get_is_negative_marker(test.is_negative)
+                ]
+            )
+        )
     return tests
 
 def load_yaml(filename : Path) -> dict:

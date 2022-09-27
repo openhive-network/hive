@@ -32,15 +32,15 @@ PREDEFINED_IGNORE_TAGS = {
     '<tags post>' : re.compile(r"root\['post_id'\]") # tags_api.get_discussion
 }
 
-@pytest.mark.parametrize('api, method, request_body, pattern_json_path, output_path, negative, exclude_fields, filter_negative', gather_all_tests())
-def test_pattern(config: Config, api: str, method: str, request_body : dict, pattern_json_path : Path, output_path: Path, negative: bool, exclude_fields: list, filter_negative : str):
+@pytest.mark.parametrize('request_body, pattern_json_path, output_path, negative, exclude_fields', gather_all_tests())
+def test_pattern(config: Config, request_body: dict, pattern_json_path: Path, output_path: Path, negative: bool, exclude_fields: list):
     '''
     Some of fields here are duplicated, for example: api and method is already in request body, and negative is boolean representation of negative_filter
     Those arguments are because of filtering functionality in pytest, thanks to this it's possible to run tests like:
 
-        pytest -k api/condenser_api
-        pytest -k 'method/get_account_history and negative/False'
-        pytest -k 'method/get_account_history or method/enum_virtual_ops and api/block_api'
+        pytest -m api/condenser_api
+        pytest -m 'method/get_account_history and negative/False'
+        pytest -m 'method/get_account_history or method/enum_virtual_ops and api/block_api'
     '''
     try:
         if not getenv('TAVERN_DISABLE_COMPARATOR', False):
