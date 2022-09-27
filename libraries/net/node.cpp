@@ -3200,6 +3200,7 @@ namespace graphene { namespace net {
       peer_connection_ptr originating_peer_ptr = originating_peer->shared_from_this();
       _rate_limiter.remove_tcp_socket( &originating_peer->get_socket() );
 
+      //update peer_db record if possible
       fc::optional<fc::ip::endpoint> endpoint_for_db = originating_peer->get_endpoint_for_db();
       if (endpoint_for_db)
       {
@@ -3217,6 +3218,7 @@ namespace graphene { namespace net {
         }
       }
 
+      //remove peer from global lists
       _closing_connections.erase(originating_peer_ptr);
       _handshaking_connections.erase(originating_peer_ptr);
       _terminating_connections.erase(originating_peer_ptr);
@@ -3491,13 +3493,17 @@ namespace graphene { namespace net {
           block_ids_still_referenced.insert(block_id);
       unsigned discarded_count = 0;
       for (auto iter = _received_sync_items.begin(); iter != _received_sync_items.end();)
-        if (block_ids_still_referenced.find((*iter)->get_block_id()) == block_ids_still_referenced.end())
+      {
+        auto block_id = (*iter)->get_block_id();
+        if (block_ids_still_referenced.find(block_id) == block_ids_still_referenced.end())
         {
+          _already_received_sync_item_ids.erase(block_id);
           iter = _received_sync_items.erase(iter);
           ++discarded_count;
         }
         else
           ++iter;
+      }
       // fc_ilog(fc::logger::get("default"), "Currently discarding ${discarded_count} unreferenced sync blocks", (discarded_count));
     }
 
