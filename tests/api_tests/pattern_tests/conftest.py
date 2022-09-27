@@ -4,7 +4,7 @@ from collections import namedtuple
 from urllib.parse import urlunparse
 
 import test_tools as tt
-from local_tools import Config, IS_DIRECT_CALL_HAFAH
+from local_tools import Config, gather_all_markers, IS_DIRECT_CALL_HAFAH
 
 # create this function only if run with tavern
 if 'HIVEMIND_PORT' in os.environ:
@@ -14,6 +14,13 @@ if 'HIVEMIND_PORT' in os.environ:
             method_name = test_dict["stages"][0]["request"]["json"]["method"].split(".")[1]
             test_dict["stages"][0]["request"]["url"] = f"{url}rpc/{method_name}"
             test_dict["stages"][0]["request"]["json"] = test_dict["stages"][0]["request"]["json"]["params"]
+
+
+def pytest_configure(config):
+    for marker in gather_all_markers():
+        config.addinivalue_line(
+            "markers", f"{marker}: extracted from *.tavern.yaml files, use for filtering tests"
+        )
 
 def pytest_addoption(parser):
     parser.addoption('--proto', type=str, default='http', help='Specifies protocol of connection to node [default: http]')

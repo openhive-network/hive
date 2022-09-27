@@ -70,6 +70,14 @@ def process_all_files() -> List[TestDescription]:
         )
     return CACHE_FOR_PROCESSED_FILES
 
+def gather_all_markers() -> Set[str]:
+    markers = set([get_is_negative_marker(True).name, get_is_negative_marker(False).name])
+    for test in process_all_files():
+        markers.update([
+            get_api_marker(test.api).name,
+            get_method_marker(test.method).name
+        ])
+    return markers
 
 def gather_all_tests() -> List[Tuple]:
     tests = []
