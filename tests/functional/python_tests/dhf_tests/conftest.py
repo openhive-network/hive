@@ -44,13 +44,6 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
         hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
-@pytest.fixture
-def node():
-    init_node = tt.InitNode()
-    init_node.run()
-    return init_node
-
-
 class NodeClientMaker(Protocol):
     def __call__(self, accounts: List[dict] = None) -> Hive:
         pass
