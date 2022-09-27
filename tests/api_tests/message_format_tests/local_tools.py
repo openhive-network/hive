@@ -24,14 +24,6 @@ def request_account_recovery(wallet, account_name):
     wallet.api.request_account_recovery('initminer', account_name, authority)
 
 
-def request_account_recovery(wallet, account_name):
-    recovery_account_key = tt.Account('initminer').public_key
-    # 'initminer' account is listed as recovery_account in 'alice' and only he has 'power' to recover account.
-    # That's why initminer's key is in new 'alice' authority.
-    authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[recovery_account_key, 1]]}
-    wallet.api.request_account_recovery('initminer', account_name, authority)
-
-
 def prepare_escrow(wallet, *, sender: str) -> None:
     create_account_and_fund_it(wallet, sender, tests=tt.Asset.Test(100), vests=tt.Asset.Test(100),
                                tbds=tt.Asset.Tbd(100))
