@@ -26,6 +26,14 @@
 
 namespace hive { namespace utilities {
 
+/// Points git revision of root project (in case Hive project is embedded i.e. inside HAF)
+extern const char* const root_project_git_revision_sha;
+/// Points a name of root project (in case Hive project is embedded i.e. inside HAF)
+extern const char* const root_project_name;
+/// Points always a name of Hive projet
+extern const char* const hive_project_name;
+
+/// Points a Hive project git revision
 extern const char* const git_revision_sha;
 extern const uint32_t git_revision_unix_timestamp;
 extern const char* const git_revision_description;

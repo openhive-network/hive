@@ -1,11 +1,20 @@
 #include <stdint.h>
 #include <hive/utilities/git_revision.hpp>
 
+#define ROOT_GIT_REVISION_SHA "@ROOT_GIT_REVISION_SHA@"
+#define ROOT_PROJECT_NAME "@CMAKE_PROJECT_NAME@"
+
 #define HIVE_GIT_REVISION_SHA "@HIVE_GIT_REVISION_SHA@"
+#define HIVE_PROJECT_NAME "@PROJECT_NAME@"
+
 #define HIVE_GIT_REVISION_UNIX_TIMESTAMP @HIVE_GIT_REVISION_UNIX_TIMESTAMP@
 #define HIVE_GIT_REVISION_DESCRIPTION "@HIVE_GIT_REVISION_DESCRIPTION@"
 
 namespace hive { namespace utilities {
+
+const char* const root_project_git_revision_sha = ROOT_GIT_REVISION_SHA;
+const char* const root_project_name = ROOT_PROJECT_NAME;
+const char* const hive_project_name = HIVE_PROJECT_NAME;
 
 const char* const git_revision_sha = HIVE_GIT_REVISION_SHA;
 const uint32_t git_revision_unix_timestamp = HIVE_GIT_REVISION_UNIX_TIMESTAMP;
