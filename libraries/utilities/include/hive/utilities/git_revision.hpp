@@ -24,6 +24,11 @@
 #pragma once
 #include <stdint.h>
 
+namespace fc
+{
+class mutable_variant_object;
+} ///namespace fc
+
 namespace hive { namespace utilities {
 
 /// Points git revision of root project (in case Hive project is embedded i.e. inside HAF)
@@ -37,5 +42,7 @@ extern const char* const hive_project_name;
 extern const char* const git_revision_sha;
 extern const uint32_t git_revision_unix_timestamp;
 extern const char* const git_revision_description;
+
+void build_version_info(fc::mutable_variant_object* storage);
 
 } } // end namespace hive::utilities
