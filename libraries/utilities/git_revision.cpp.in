@@ -1,14 +1,45 @@
-#include <stdint.h>
 #include <hive/utilities/git_revision.hpp>
 
+#include <hive/protocol/config.hpp>
+
+using hive::protocol::version;
+
+#include <fc/git_revision.hpp>
+#include <fc/variant_object.hpp>
+
+#define ROOT_GIT_REVISION_SHA "@ROOT_GIT_REVISION_SHA@"
+#define ROOT_PROJECT_NAME "@CMAKE_PROJECT_NAME@"
+
 #define HIVE_GIT_REVISION_SHA "@HIVE_GIT_REVISION_SHA@"
+#define HIVE_PROJECT_NAME "@PROJECT_NAME@"
+
 #define HIVE_GIT_REVISION_UNIX_TIMESTAMP @HIVE_GIT_REVISION_UNIX_TIMESTAMP@
 #define HIVE_GIT_REVISION_DESCRIPTION "@HIVE_GIT_REVISION_DESCRIPTION@"
 
 namespace hive { namespace utilities {
 
+const char* const root_project_git_revision_sha = ROOT_GIT_REVISION_SHA;
+const char* const root_project_name = ROOT_PROJECT_NAME;
+const char* const hive_project_name = HIVE_PROJECT_NAME;
+
 const char* const git_revision_sha = HIVE_GIT_REVISION_SHA;
 const uint32_t git_revision_unix_timestamp = HIVE_GIT_REVISION_UNIX_TIMESTAMP;
 const char* const git_revision_description = HIVE_GIT_REVISION_DESCRIPTION;
+
+void build_version_info(fc::mutable_variant_object* storage)
+{
+  if(strcmp(root_project_name, hive_project_name) != 0)
+  {
+    /// There is present some root project embedding Hive. We need to report it's name and git revision.
+    std::string key_name(root_project_name);
+    key_name += "_revision";
+    /// haf_revision (usually)
+    storage->set(key_name, root_project_git_revision_sha);
+  }
+
+  storage->set("blockchain_version", std::string(HIVE_BLOCKCHAIN_VERSION));
+  storage->set("hive_revision", git_revision_sha);
+  storage->set("fc_revision", fc::git_revision_sha);
+}
 
 } } // end namespace hive::utilities

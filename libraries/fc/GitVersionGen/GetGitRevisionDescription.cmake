@@ -39,8 +39,8 @@ set(__get_git_revision_description YES)
 # to find the path to this module rather than the path to a calling list file
 get_filename_component(_gitdescmoddir ${CMAKE_CURRENT_LIST_FILE} PATH)
 
-function(get_git_head_revision _refspecvar _hashvar)
-	set(GIT_PARENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+function(get_git_head_revision_dir start_dir _refspecvar _hashvar)
+	set(GIT_PARENT_DIR "${start_dir}")
 	set(GIT_DIR "${GIT_PARENT_DIR}/.git")
 	while(NOT EXISTS "${GIT_DIR}")	# .git dir not found, search parent directories
 		set(GIT_PREVIOUS_PARENT "${GIT_PARENT_DIR}")
@@ -79,6 +79,15 @@ function(get_git_head_revision _refspecvar _hashvar)
 	set(${_refspecvar} "${HEAD_REF}" PARENT_SCOPE)
 	set(${_hashvar} "${HEAD_HASH}" PARENT_SCOPE)
 endfunction()
+
+function(get_git_head_revision _refspecvar _hashvar)
+  get_git_head_revision_dir("${CMAKE_CURRENT_SOURCE_DIR}" _local_refspecvar _local_hashvar)
+
+	set(${_refspecvar} "${_local_refspecvar}" PARENT_SCOPE)
+	set(${_hashvar} "${_local_hashvar}" PARENT_SCOPE)
+
+endfunction()
+
 
 function(git_describe _var)
 	if(NOT GIT_FOUND)

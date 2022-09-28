@@ -1,6 +1,12 @@
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libraries/fc/GitVersionGen" )
 include( GetGitRevisionDescription )
+
+get_git_head_revision_dir("${CMAKE_SOURCE_DIR}" ROOT_GIT_REFSPEC ROOT_GIT_REVISION_SHA)
 get_git_head_revision(GIT_REFSPEC HIVE_GIT_REVISION_SHA)
+
+MESSAGE(STATUS "Detected root project git revision: ${ROOT_GIT_REVISION_SHA}")
+MESSAGE(STATUS "Detected Hive project git revision: ${HIVE_GIT_REVISION_SHA}")
+
 get_git_unix_timestamp(HIVE_GIT_REVISION_UNIX_TIMESTAMP)
 git_describe(HIVE_GIT_REVISION_DESCRIPTION --tags)
 if(NOT HIVE_GIT_REVISION_DESCRIPTION)

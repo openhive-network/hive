@@ -377,10 +377,10 @@ public:
     {
       FC_ASSERT( !_wallet.offline ); // Throw fc::exception if not online
       auto v = _remote_wallet_bridge_api->get_version({}, LOCK);
-      result["server_blockchain_version"] = v.blockchain_version;
-      result["server_hive_revision"] = v.hive_revision;
-      result["server_fc_revision"] = v.fc_revision;
-      result["server_chain_id"] = v.chain_id;
+      result["server_blockchain_version"] = v["blockchain_version"];
+      result["server_hive_revision"] = v["hive_revision"];
+      result["server_fc_revision"] = v["fc_revision"];
+      result["server_chain_id"] = v["chain_id"];
       result["server_url"] = _wallet.ws_server;
     }
     catch( fc::exception& )
@@ -887,7 +887,7 @@ public:
     if( broadcast ) {
       try {
         auto v = _remote_wallet_bridge_api->get_version({}, LOCK);
-        FC_ASSERT( _hive_chain_id == v.chain_id, "chain id on wallet does not mach chain id on node" );
+        FC_ASSERT(std::string(_hive_chain_id) == v["chain_id"], "chain id on wallet does not mach chain id on node");
 
         if( blocking )
         {

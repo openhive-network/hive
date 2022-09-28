@@ -767,6 +767,119 @@ struct impacted_balance_collector
   }
 };
 
+
+
+struct keyauth_collector
+{
+  collected_keyauth_collection_t collected_keyauths;
+
+  typedef void result_type;
+
+private:
+  
+  auto get_keys(const authority& _authority)
+  {
+    return _authority.get_keys();
+  }
+
+  auto get_keys(const optional<authority>& _authority)
+  {
+    if(_authority)
+      return _authority->get_keys();
+    return std::vector<public_key_type>();
+  }
+
+  template<typename T, typename AT> 
+  void collect_one(
+    const T& _op,
+    const AT& _authority,
+    authority_t _authority_kind,
+    std::string _account_name)
+  {
+    collected_keyauth_t collected_item;
+    collected_item.account_name   = _account_name;
+    collected_item.authority_kind = _authority_kind;
+
+    for(const auto& key_data: get_keys(_authority))
+    {
+      std::string s = static_cast<std::string>(key_data);
+      collected_item.key_auth = s;
+      collected_keyauths.emplace_back(collected_item);
+    }
+  }
+
+  public:
+
+
+  // ops
+  result_type operator()( const account_create_operation& op )
+  {
+    collect_one(op, op.owner,   hive::app::authority_t::OWNER,   op.new_account_name);
+    collect_one(op, op.active,  hive::app::authority_t::ACTIVE,  op.new_account_name);
+    collect_one(op, op.posting, hive::app::authority_t::POSTING, op.new_account_name);
+  }
+
+  result_type operator()( const account_create_with_delegation_operation& op )
+  {
+    collect_one(op, op.owner,   hive::app::authority_t::OWNER,   op.new_account_name);
+    collect_one(op, op.active,  hive::app::authority_t::ACTIVE,  op.new_account_name);
+    collect_one(op, op.posting, hive::app::authority_t::POSTING, op.new_account_name);
+  }
+  
+  result_type operator()( const account_update_operation& op )
+  {
+    collect_one(op, op.owner,  hive::app::authority_t::OWNER,  op.account);
+    collect_one(op, op.active, hive::app::authority_t::ACTIVE, op.account);
+    collect_one(op, op.posting,hive::app::authority_t::POSTING, op.account);
+  }
+  
+  result_type operator()( const account_update2_operation& op )
+  {
+    collect_one(op, op.owner,  hive::app::authority_t::OWNER,  op.account);
+    collect_one(op, op.active, hive::app::authority_t::ACTIVE, op.account);
+    collect_one(op, op.posting,hive::app::authority_t::POSTING, op.account);
+  }
+  
+  result_type operator()( const create_claimed_account_operation& op )
+  {
+    collect_one(op, op.owner,  hive::app::authority_t::OWNER,  op.new_account_name);
+    collect_one(op, op.active, hive::app::authority_t::ACTIVE, op.new_account_name);
+    collect_one(op, op.posting,hive::app::authority_t::POSTING, op.new_account_name);
+  }
+
+  result_type operator()( const recover_account_operation& op)
+  {
+    collect_one(op, op.new_owner_authority,    hive::app::authority_t::NEW_OWNER_AUTHORITY,    op.account_to_recover);
+    collect_one(op, op.recent_owner_authority, hive::app::authority_t::RECENT_OWNER_AUTHORITY, op.account_to_recover);
+  }
+
+  result_type operator()( const reset_account_operation& op) 
+  {
+    collect_one(op, op.new_owner_authority, hive::app::authority_t::NEW_OWNER_AUTHORITY, op.account_to_reset);
+  }
+  
+  result_type operator()( const request_account_recovery_operation& op)
+  {
+    collect_one(op, op.new_owner_authority, hive::app::authority_t::NEW_OWNER_AUTHORITY, op.account_to_recover);
+    collect_one(op, op.new_owner_authority, hive::app::authority_t::NEW_OWNER_AUTHORITY, op.recovery_account);
+  }
+
+  result_type operator()( const witness_set_properties_operation& op )
+  {
+    vector< authority > authorities;
+    op.get_required_authorities(authorities);
+    for(const auto& authority : authorities)
+    {
+      collect_one(op, authority, hive::app::authority_t::WITNESS,  op.owner);
+    }
+  }
+
+  template <class T>
+  void operator()(const T& op) 
+  {
+  }
+};
+
 } /// anonymous
 
 impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hardfork_1)
@@ -776,6 +889,15 @@ impacted_balance_data operation_get_impacted_balances(const hive::protocol::oper
   op.visit(collector);
   
   return std::move(collector.result);
+}
+
+collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op)
+{
+  keyauth_collector collector;
+
+  op.visit(collector);
+  
+  return std::move(collector.collected_keyauths);
 }
 
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )

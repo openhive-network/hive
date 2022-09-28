@@ -83,18 +83,9 @@ typedef fc::mutable_variant_object get_config_return;
 
 /* get_version */
 typedef void_type          get_version_args;
-struct get_version_return
-{
-  get_version_return() {}
-  get_version_return( fc::string bc_v, fc::string s_v, fc::string fc_v, chain_id_type c_id )
-    :blockchain_version( bc_v ), hive_revision( s_v ), fc_revision( fc_v ), chain_id( c_id ) {}
 
-  fc::string     blockchain_version;
-  fc::string     hive_revision;
-  fc::string     fc_revision;
-  chain_id_type  chain_id;
-};
-
+/// Returns set of keys: `blockchain_version`, `hive_revision`, `fc_revision`, `chain_id` and optional root project version i.e. `haf_revision` with string values
+typedef fc::mutable_variant_object get_version_return;
 
 /* Singletons */
 
@@ -702,9 +693,6 @@ struct is_known_transaction_return
 };
 
 } } } // hive::database_api
-
-FC_REFLECT( hive::plugins::database_api::get_version_return,
-        (blockchain_version)(hive_revision)(fc_revision)(chain_id) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::withdraw_route_type, (incoming)(outgoing)(all) )
 

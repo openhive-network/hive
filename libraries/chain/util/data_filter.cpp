@@ -5,7 +5,8 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <regex>
+#include <boost/regex.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 #define DIAGNOSTIC(s)
 //#define DIAGNOSTIC(s) s
@@ -205,8 +206,49 @@ bool operation_body_filter::is_tracked_operation( const operation& op ) const
           ilog("[${fn}] Body of operation: ${body}", ("fn", filter_name)("body", _op_body) );
         )
 
-        std::regex _regex( _found->second );
-        _result = std::regex_search( _op_body, _regex );
+        try
+        {
+          boost::regex _regex( _found->second );
+          boost::smatch what;
+
+          /*
+            Important
+
+              1) A complex regex can cause slowdown or even processing can be abandoned due to complexity.
+
+              2) Unfortunately `std::regex` triggers SEGFAULT sometimes( take a look at `custom_json_operation` from `13713977` block for `nettybot` account ).
+              This problem is widely known ( https://stackoverflow.com/questions/36304204/c-regex-segfault-on-long-sequences ).
+              Solution: Instead of `std::regex` `boost::regex` is used.
+          */
+          _result = boost::regex_search( _op_body, what, _regex );
+        }
+        catch ( const std::exception& e )
+        {
+          elog( "Caught an exception during operation's body filtering: ${e}", ("e", e.what()) );
+          ilog("Body of operation: ${body}", ("body", _op_body) );
+        }
+        catch ( const boost::exception& e )
+        {
+          elog( "Caught an exception during operation's body filtering: ${e}", ("e", boost::diagnostic_information(e)) );
+          ilog("Body of operation: ${body}", ("body", _op_body) );
+        }
+        catch(...)
+        {
+          elog( "Caught unexpected exception during operation's body filtering: ${e}" );
+          ilog("Body of operation: ${body}", ("body", _op_body) );
+
+          std::exception_ptr e = std::current_exception();
+
+          try
+          {
+            if( e )
+              std::rethrow_exception( e );
+          }
+          catch( const std::exception& e )
+          {
+            elog( "Caught an exception during operation's body filtering: ${e}", ("e", e.what()) );
+          }
+        }
       }
       else
         FC_ASSERT( false, "Filter-Error: incorrect operation" );
