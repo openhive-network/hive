@@ -13,8 +13,6 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-#include <fc/git_revision.hpp>
-
 namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
@@ -269,13 +267,12 @@ DEFINE_API_IMPL( database_api_impl, get_config )
 
 DEFINE_API_IMPL( database_api_impl, get_version )
 {
-  return get_version_return
-  (
-    fc::string( HIVE_BLOCKCHAIN_VERSION ),
-    fc::string( hive::utilities::git_revision_sha ),
-    fc::string( fc::git_revision_sha ),
-    _db.get_chain_id()
-  );
+  fc::mutable_variant_object version_storage;
+  hive::utilities::build_version_info(&version_storage);
+
+  version_storage.set("chain_id", std::string(_db.get_chain_id()));
+
+  return version_storage;
 }
 
 DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
