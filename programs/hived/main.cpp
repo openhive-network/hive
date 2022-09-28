@@ -34,11 +34,12 @@ namespace bpo = boost::program_options;
 using hive::protocol::version;
 using std::string;
 
-string& version_string()
+string version_string()
 {
-  static string v_str =
-    "  \"version\" : { \"hive_blockchain_hard_fork\" : \""   + fc::string( HIVE_BLOCKCHAIN_VERSION )            + "\", " +
-    "\"hive_git_revision\" : \""                             + fc::string( hive::utilities::git_revision_sha )  + "\" }";
+  fc::mutable_variant_object version_storage;
+  hive::utilities::build_version_info(&version_storage);
+
+  string v_str ="  \"version\":" + fc::json::to_string(version_storage);
 
   return v_str;
 }
