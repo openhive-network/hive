@@ -3706,7 +3706,8 @@ namespace graphene { namespace net {
         // we don't know they're the same (for the peer in normal operation, it has only told us the
         // message id, for the peer in the sync case we only known the block_id).
         fc::time_point message_validated_time;
-        if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) == _most_recent_blocks_accepted.end())
+        if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) == _most_recent_blocks_accepted.end() &&
+            _message_ids_currently_being_processed.find(block_id) == _message_ids_currently_being_processed.end())
         {
           _message_ids_currently_being_processed.insert(legacy_block_message_hash);
           _message_ids_currently_being_processed.insert(block_id);
