@@ -1,6 +1,7 @@
 #include <fc/fwd_impl.hpp>
 
 #include <secp256k1.h>
+#include <secp256k1_recovery.h>
 
 #include "_elliptic_impl_priv.hpp"
 
@@ -69,34 +70,52 @@ namespace fc { namespace ecc {
 
     public_key private_key::get_public_key()const
     {
-       FC_ASSERT( my->_key != empty_priv );
-       public_key_data pub;
-       unsigned int pk_len;
-       FC_ASSERT( secp256k1_ec_pubkey_create( detail::_get_context(), (unsigned char*) pub.begin(), (int*) &pk_len, (unsigned char*) my->_key.data(), 1 ) );
-       FC_ASSERT( pk_len == pub.size() );
-       return public_key(pub);
+      FC_ASSERT(my->_key != empty_priv);
+      public_key_data pub;
+      size_t pk_len = pub.size();
+
+      secp256k1_pubkey pubkey;
+      FC_ASSERT(secp256k1_ec_pubkey_create(detail::_get_context(), &pubkey, (const unsigned char*)my->_key.data()));
+
+      secp256k1_ec_pubkey_serialize(detail::_get_context(), (unsigned char*)&pub.data[0], &pk_len, &pubkey, SECP256K1_EC_COMPRESSED);
+
+      return public_key(pub);
     }
 
-    static int extended_nonce_function( unsigned char *nonce32, const unsigned char *msg32,
-                                        const unsigned char *key32, unsigned int attempt,
-                                        const void *data ) {
-        unsigned int* extra = (unsigned int*) data;
-        (*extra)++;
-        return secp256k1_nonce_function_default( nonce32, msg32, key32, *extra, nullptr );
+    static int extended_nonce_function(unsigned char *nonce32, 
+                                       const unsigned char *msg32, 
+                                       const unsigned char *key32, 
+                                       const unsigned char *algo16, 
+                                       void *data, unsigned int counter) 
+    {
+      unsigned int* extra = (unsigned int*) data;
+      (*extra)++;
+      return secp256k1_nonce_function_default(nonce32, msg32, key32, algo16, nullptr, *extra);
     }
+
 
     compact_signature private_key::sign_compact( const fc::sha256& digest, canonical_signature_type canon_type )const
     {
-        FC_ASSERT( my->_key != empty_priv );
-        compact_signature result;
-        int recid;
-        unsigned int counter = 0;
-        do
-        {
-            FC_ASSERT( secp256k1_ecdsa_sign_compact( detail::_get_context(), (unsigned char*) digest.data(), (unsigned char*) result.begin() + 1, (unsigned char*) my->_key.data(), extended_nonce_function, &counter, &recid ));
-        } while( !public_key::is_canonical( result, canon_type ) );
-        result.begin()[0] = 27 + 4 + recid;
-        return result;
+      FC_ASSERT( my->_key != empty_priv );
+      compact_signature result;
+      int recid;
+      unsigned int counter = 0;
+      do
+      {
+        secp256k1_ecdsa_recoverable_signature sig;
+        FC_ASSERT(secp256k1_ecdsa_sign_recoverable(detail::_get_context(),
+                                                   &sig, 
+                                                   (unsigned char*)digest.data(),
+                                                   (unsigned char*)my->_key.data(), 
+                                                   extended_nonce_function,
+                                                   &counter));
+        FC_ASSERT(secp256k1_ecdsa_recoverable_signature_serialize_compact(detail::_get_context(), (unsigned char*)result.begin() + 1,
+                                                                          &recid, &sig));
+        FC_ASSERT(recid != -1);
+      } 
+      while (!public_key::is_canonical(result, canon_type));
+      result.begin()[0] = 27 + 4 + recid;
+      return result;
     }
 
 }}
