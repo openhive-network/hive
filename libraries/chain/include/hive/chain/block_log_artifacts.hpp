@@ -64,7 +64,7 @@ public:
   *   Function throws on any error f.e. related to IO.
   */
   static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, bool read_only,
-    const block_log& source_block_provider, uint32_t head_block_num);
+                                        const block_log& source_block_provider, uint32_t head_block_num);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;
@@ -85,8 +85,9 @@ public:
   artifact_container_t read_block_artifacts(uint32_t start_block_num, uint32_t block_count, size_t* block_size_sum = nullptr) const;
 
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
-    const block_id_t& block_id);
+                             const block_id_t& block_id);
 
+  void truncate(uint32_t new_head_block_num);
 private:
   class impl;
 

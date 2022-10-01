@@ -42,6 +42,7 @@ struct blockchain_worker_thread_pool::impl
   std::vector<std::thread> threads;
 
   bool p2p_force_validate = false;
+  bool validate_during_replay = false;
 
   bool allow_enqueue_work() const;
   bool is_running() const;
@@ -170,6 +171,22 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
         full_block->decode_block_header();
         break;
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_replay:
+        // fully decompress (if necessary) the block and unpack it
+        full_block->decode_block();
+
+        // precompute some stuff we'll need for validating the block
+        if (validate_during_replay)
+        {
+          // now we have the full_transactions, get started working on them
+          blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
+                                                                     blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay);
+          full_block->compute_signing_key();
+          full_block->compute_merkle_root();
+        }
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_decompressing:
+        full_block->decompress_block();
+        break;
       default:
         elog("Error: full block added to worker thread with an unrecognized data source");
     }
@@ -203,10 +220,10 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
   switch (data_source)
   {
     case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p:
-      // this should depends a bit on what the current validation settings are
+      // this depends a bit on what the current validation settings are
       try
       {
-        // validate is always called during reindex and normal block processing
+        // validate is always called during normal block processing
         full_transaction->validate();
       }
       catch (...)
@@ -220,6 +237,43 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
       if (p2p_force_validate)
       {
+        try
+        {
+          (void)full_transaction->get_signature_keys();
+        }
+        catch (...)
+        {
+        }
+
+        try
+        {
+          (void)full_transaction->get_required_authorities();
+        }
+        catch (...)
+        {
+        }
+      }
+      break;
+    case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay:
+      // by default very little checking is done during replay, unless you specify --validate_during_replay
+      // NOTE: currently, transactions aren't enqueued unless validate_during_replay is true, so this
+      // check is redundant.  But if you do add some work that needs to happen when validate_during_replay
+      // is false, you'll need to change the block's perform_work to enqueue transactions
+      if (validate_during_replay)
+      {
+        try
+        {
+          // validate is always called during reindex and normal block processing
+          full_transaction->validate();
+        }
+        catch (...)
+        {
+          // we ignore exceptions for all calls, we're just trying to make the full_transaction precompute the
+          // result (or, if there's an error, precompute the exception).  Just like with a normal result, the
+          // full_transaction will cache any exceptions thrown now and rethrow them when and if the blockchain
+          // makes the corresponding call during the course of apply_transaction.
+        }
+
         try
         {
           (void)full_transaction->get_signature_keys();
@@ -284,6 +338,10 @@ namespace
         return blockchain_worker_thread_pool::impl::priority_type::low;
       case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
         return blockchain_worker_thread_pool::impl::priority_type::high; // nothing else will be running, priority doesn't matter
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_replay:
+        return blockchain_worker_thread_pool::impl::priority_type::medium;
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_decompressing:
+        return blockchain_worker_thread_pool::impl::priority_type::high; // nothing else will be running, priority doesn't matter
       default:
         elog("invalid data source type for block");
         return blockchain_worker_thread_pool::impl::priority_type::low;
@@ -295,6 +353,7 @@ namespace
     switch (data_source)
     {
       case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p:
+      case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay:
         return blockchain_worker_thread_pool::impl::priority_type::high;
       case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p:
       case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api:
@@ -365,6 +424,11 @@ void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_p
 void blockchain_worker_thread_pool::set_p2p_force_validate()
 {
   my->p2p_force_validate = true;
+}
+
+void blockchain_worker_thread_pool::set_validate_during_replay()
+{
+  my->validate_during_replay = true;
 }
 
 void blockchain_worker_thread_pool::shutdown()

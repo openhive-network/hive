@@ -303,44 +303,40 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
   BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
   set_tx_status( TX_STATUS_BLOCK );
 
-  std::shared_ptr<full_block_type> block = start_block;
-  while( !appbase::app().is_interrupt_request() && block->get_block_num() != last_block_num )
-  {
-    uint32_t cur_block_num = block->get_block_num();
+  std::shared_ptr<full_block_type> last_applied_block;
+  const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
+    const uint32_t current_block_num = full_block->get_block_num();
 
-    if (cur_block_num % 100000 == 0)
+    if (current_block_num % 100000 == 0)
     {
       std::ostringstream percent_complete_stream;
-      percent_complete_stream << std::fixed << std::setprecision(2) << double(cur_block_num) * 100 / last_block_num;
-      ulog("   ${cur_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
+      percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
+      ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
            ("percent_complete", percent_complete_stream.str())
-           (cur_block_num)(last_block_num)
+           (current_block_num)(last_block_num)
            ("free_memory_megabytes", get_free_memory() >> 20));
     }
 
-    apply_block( block, skip_flags );
+    apply_block(full_block, skip_flags);
+    last_applied_block = full_block;
 
-    if( !appbase::app().is_interrupt_request() )
-    {
-      block = _block_log.read_block_by_num(cur_block_num + 1);
-      FC_ASSERT(block, "Unable to read block ${block_num} from the block log during reindexing, but it should be in the log",
-                ("block_num", cur_block_num + 1));
-    }
-  }
+    return !appbase::app().is_interrupt_request();
+  };
+
+  const uint32_t start_block_number = start_block->get_block_num();
+  process_block(start_block);
+
+  if (start_block_number < last_block_num)
+    _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
+
+  if (appbase::app().is_interrupt_request())
+    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", 
+         ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
   fc::enable_record_assert_trip = rat; //restore flag
   fc::enable_assert_stacktrace = as;
 
-  if( appbase::app().is_interrupt_request() )
-  {
-    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", ("n", block->get_block_num())("id", block->get_block_id()));
-  }
-  else
-  {
-    apply_block( block, skip_flags );
-  }
-
-  return block->get_block_num();
+  return last_applied_block->get_block_num();
 }
 
 bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
