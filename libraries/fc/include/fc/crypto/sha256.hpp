@@ -36,6 +36,7 @@ class sha256
     {
       public:
         encoder();
+        encoder(const sha256::encoder& other);
         ~encoder();
 
         void write( const char* d, uint32_t dlen );
@@ -45,7 +46,7 @@ class sha256
 
       private:
         struct      impl;
-        fc::fwd<impl,112> my;
+        std::unique_ptr<impl> my;
     };
 
     template<typename T>

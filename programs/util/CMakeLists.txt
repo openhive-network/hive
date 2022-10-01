@@ -140,12 +140,21 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+add_executable( block_log_util block_log_util.cpp )
+target_link_libraries( block_log_util PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+install( TARGETS
+   block_log_util
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
+
 add_executable( compress_block_log compress_block_log.cpp )
 
 # needed to correctly print crash stacktrace
 set_target_properties(compress_block_log PROPERTIES ENABLE_EXPORTS true)
 
-target_include_directories( compress_block_log PRIVATE ${BROTLI_INCLUDE_DIRS})
 target_link_libraries( compress_block_log
                        PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIB} ${PLATFORM_SPECIFIC_LIBS})
 
