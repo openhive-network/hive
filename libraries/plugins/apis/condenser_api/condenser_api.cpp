@@ -973,7 +973,7 @@ namespace detail
         };
         _callback_expirations[ trx.expiration ].push_back( txid );
         LOG_DELAY( api_start_time, fc::seconds( 1 ), "Excessive delay to setup callback" );
-        if( callback_setup_time != fc::time_point() )
+        if( callback_setup_time == fc::time_point() )
           callback_setup_time = fc::time_point::now();
       }
     };
