@@ -456,6 +456,61 @@ void operation_get_impacted_accounts( const operation& op, flat_set<account_name
 namespace /// anonymous
 {
 
+struct get_static_variant_name_with_prefix
+{
+  string& name;
+  get_static_variant_name_with_prefix( string& n )
+      : name( n ) {}
+
+  typedef void result_type;
+
+  template< typename T > void operator()( const T& v )const
+  {
+      name = fc::get_typename< T >::name();
+  }
+};
+
+
+hive::app::stringset used_operations;
+
+template <typename T>
+void exclude_from_used_operations()
+{
+  used_operations.erase(fc::get_typename<T>::name());
+}
+
+template<typename Collector>
+hive::app::stringset run_all_visitor_overloads(Collector& k)
+{
+    //all type strings and variant instances into a map
+    std::map< string, hive::protocol::operation > string_variant_map;
+
+    for( int i = 0; i < hive::protocol::operation::count(); ++i )
+    {
+        hive::protocol::operation variant;
+        variant.set_which(i);
+        string operation_name;
+        variant.visit( get_static_variant_name_with_prefix( operation_name ) );
+        string_variant_map[operation_name] = variant;
+    }
+    
+    used_operations.clear();
+    //collect all type strings
+    for(const auto& [s, _]: string_variant_map)
+    {
+      used_operations.insert(s);
+    }
+    
+    //call all overloads by visiting - inside overload remove unused type strings with exclude_from_used_operations
+    for(const auto& [_, variant_instance]: string_variant_map)
+    {
+      variant_instance.visit(k);
+    }
+
+    return used_operations;
+}
+
+
 /**
  * @brief Visitor collects changes to account balances to be involved by given operation.
 */
@@ -760,13 +815,13 @@ struct impacted_balance_collector
     emplace_back( op.from, op.fee );
   }
 
-  template <class T>
-  void operator()(const T&) 
+  template <typename T>
+  void operator()(const T& op) 
   {
-    /// Nothing to do for non-financial ops.
+    exclude_from_used_operations<T>();
   }
-};
 
+};
 
 
 struct keyauth_collector
@@ -874,11 +929,16 @@ private:
     }
   }
 
-  template <class T>
+  template <typename T>
   void operator()(const T& op) 
   {
+    exclude_from_used_operations<T>();
   }
+
+
 };
+
+
 
 } /// anonymous
 
@@ -891,6 +951,14 @@ impacted_balance_data operation_get_impacted_balances(const hive::protocol::oper
   return std::move(collector.result);
 }
 
+stringset get_operations_used_in_get_balance_impacting_operations()
+{
+  impacted_balance_collector collector(true);
+  static auto used_operations = run_all_visitor_overloads(collector);
+  return used_operations;
+}
+
+
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op)
 {
   keyauth_collector collector;
@@ -898,6 +966,13 @@ collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::oper
   op.visit(collector);
   
   return std::move(collector.collected_keyauths);
+}
+
+stringset get_operations_used_in_get_keyauths()
+{
+  keyauth_collector collector;
+  static auto used_operations = run_all_visitor_overloads(collector);
+  return used_operations;
 }
 
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )
