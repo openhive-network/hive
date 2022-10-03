@@ -521,7 +521,4 @@ struct visitor {
       }
    };
 
-
-
-
 } // namespace fc

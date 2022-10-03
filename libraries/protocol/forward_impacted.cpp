@@ -1,16 +1,8 @@
-#include <cassert>
-#include <string>
-#include <unordered_set>
-
-#include <boost/type_index.hpp>
-
 #include <hive/protocol/authority.hpp>
 
 #include <hive/protocol/forward_impacted.hpp>
 
 #include <fc/utility.hpp>
-
-#include <fc/static_variant.hpp>
 
 namespace hive { namespace app {
 
@@ -934,11 +926,6 @@ std::map< string, fc::static_variant<T...> >  vnamemap(fc::static_variant<T...>&
       }
       return collector.used_operations;
   }
-
-
-
-
-
 } /// anonymous
 
 impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hardfork_1)
@@ -952,7 +939,6 @@ impacted_balance_data operation_get_impacted_balances(const hive::protocol::oper
 
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op)
 {
-
   keyauth_collector collector;
 
   op.visit(collector);
