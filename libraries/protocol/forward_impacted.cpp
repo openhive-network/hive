@@ -896,7 +896,7 @@ private:
 
 //MTTK is there a better way ?
 template<typename... T>
-std::map< string, fc::static_variant<T...> >  vnamemap(fc::static_variant<T...>& s )
+std::map< string, fc::static_variant<T...> >  get_string_visitor_map(fc::static_variant<T...>& s )
 {
     std::map< string, fc::static_variant<T...> > name_map;
     for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
@@ -910,13 +910,12 @@ std::map< string, fc::static_variant<T...> >  vnamemap(fc::static_variant<T...>&
     return name_map;
 }
 
-//MTTK todo rename
   std::unordered_set<std::string> run_all_keyauth_overloads()
   {
       keyauth_collector collector;
       hive::protocol::operation var;
       std::map< std::string, hive::protocol::operation > vm;
-      vm = vnamemap(var);
+      vm = get_string_visitor_map(var);
       for(auto [s, var]: vm)
       {
         collector.used_operations.insert(s);
