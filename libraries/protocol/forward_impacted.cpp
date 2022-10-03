@@ -1,8 +1,16 @@
+#include <cassert>
+#include <string>
+#include <unordered_set>
+
+#include <boost/type_index.hpp>
+
 #include <hive/protocol/authority.hpp>
 
 #include <hive/protocol/forward_impacted.hpp>
 
 #include <fc/utility.hpp>
+
+#include <fc/static_variant.hpp>
 
 namespace hive { namespace app {
 
@@ -874,9 +882,18 @@ private:
     }
   }
 
+
+  std::unordered_set<std::string> used_operations;
+
+//MTTK todo enacpsulate below in function
   template <class T>
   void operator()(const T& op) 
   {
+    const std::string cutout{"hive::protocol::"};
+    std::string s = fc::get_typename<T>::name();
+    assert(s.find("hive::protocol::")!= string::npos);
+    s = s.substr(cutout.size());
+    used_operations.erase(s);
   }
 };
 
@@ -893,12 +910,42 @@ impacted_balance_data operation_get_impacted_balances(const hive::protocol::oper
 
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op)
 {
+
   keyauth_collector collector;
 
   op.visit(collector);
   
   return std::move(collector.collected_keyauths);
 }
+
+  std::unordered_set<std::string> run_all_overloads()
+  {
+      keyauth_collector collector;
+      hive::protocol::operation var;
+      std::map< std::string, hive::protocol::operation > vm;
+      vm = fc::vnamemap(var);
+      for(auto [s, var]: vm)
+      {
+        collector.used_operations.insert(s);
+      }
+
+      for(auto [s, var]: vm)
+      {
+
+        var.visit(collector);
+        
+      }
+      return collector.used_operations;
+  }
+
+
+std::unordered_set<std::string> get_operations_used_in_get_keyauths()
+{
+  static auto used_operations = run_all_overloads();
+  return used_operations;
+}
+
+
 
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )
 {
@@ -907,3 +954,44 @@ void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_
 }
 
 } }
+
+
+
+// using strings_t = std::unordered_set<std::string>;
+
+// template <class var, std::size_t I = 0>
+// void autofill(var v, strings_t& names)
+// {
+//     if constexpr (I < std::variant_size_v<var>)
+//     {
+//         //vec.push_back(std::variant_alternative_t<I, var>{});
+//         std::variant_alternative_t<I, var>{};
+
+//         names.emplace(boost::typeindex::type_id<std::variant_alternative_t<I, var> >().pretty_name());
+
+//         std::cout << boost::typeindex::type_id<std::variant_alternative_t<I, var> >().pretty_name() ;// human readable
+//         std::cout << std::endl;
+
+        
+//         autofill<var, I + 1>(v, names);
+//     }
+// }
+
+// void fun()
+// {
+
+
+//   //  strings_t names;;
+
+//   //   hive::protocol::operation v;
+
+//   //   autofill(v, names);
+
+//   hive::protocol::operation v;
+
+//   fc::get_comma_separated_typenames<hive::protocol::operation> stru;
+
+//   auto names = stru.names;
+//   names = names;
+
+// }

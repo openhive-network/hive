@@ -36,6 +36,7 @@ struct collected_keyauth_t
 typedef std::vector<collected_keyauth_t> collected_keyauth_collection_t;
 
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op);
+std::unordered_set<std::string> get_operations_used_in_get_keyauths();
 
 typedef std::vector<std::pair<protocol::account_name_type, protocol::asset>> impacted_balance_data;
 impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hf01);
