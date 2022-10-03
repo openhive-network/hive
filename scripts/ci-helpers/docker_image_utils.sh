@@ -67,3 +67,23 @@ function docker_image_exists() {
   fi
 }
 
+extract_files_from_image() {
+  IMAGE_TAGGED_NAME=${1:?"Missing image name"}
+  EXPORT_PATH=${2:?"Missing export target directory"}
+  TST_ANY_FILE=${3:?"Missing file(s) to be exported"}
+  shift
+  shift 
+
+  FILES=("$@")
+
+  echo "Attempting to export file(s): ${FILES[@]} from image: ${IMAGE_TAGGED_NAME} into directory: ${EXPORT_PATH}"
+
+  export DOCKER_BUILDKIT=1
+
+  docker build -o "${EXPORT_PATH}" - << EOF
+    FROM scratch
+    COPY --from=${IMAGE_TAGGED_NAME} "${FILES[@]}" /
+EOF
+
+}
+
