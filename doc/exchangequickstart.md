@@ -19,6 +19,44 @@ curl -fsSL get.docker.com -o get-docker.sh
 sh get-docker.sh
 ```
 
+### Using single-step script
+
+Hive repository contains a script which allows to setup an exchange node in one step, also in several variants, altough all scenarios are based on dockerized setup. The `build_and_setup_exchange_instance.sh` script allows to:
+
+A) optionally clone sources. This is default behavior. You can specify `--branch=<branch-name>` option, to specify different branch than master
+B) optionally use already checked out sources to build a docker image. This can be achieved by using `--use-source-dir=<hive_hf26_source>`
+C) or just reuse already built docker image to start a container holding hived node - that happens every time when specified image tag already exists on your machine - image build process is skipped
+
+Script also allows automatic download of block_log file(s) before starting hived replay process. To do it, please specify: `--download-block-log` option.
+
+Please call `./scripts/build_and_setup_exchange_instance.sh --help` to list all available options. There is supported passing options using an option file (see `--option-file=PATH`). 
+This script by default uses a `scripts/exchange_instance.conf` file, containing default Hived options needed to setup an API instance specific to exchange needs (including activation of AccountHistory plugin and definition of account filters)
+
+Deployment scenarios:
+
+1) Starting from scratch:
+
+`../hive-26/scripts/build_and_setup_exchange_instance.sh local-exchange --name=exchange-instance-p2p --data-dir="$(pwd)/datadir/"`
+
+Above call will perform a Hive repository clone, then verify existance of given image and build it if needed. Finally, a docker container called `exchange-instance-p2p` will be started, where hived will be gathering blocks from scratch using P2P layer.
+
+2) Downloading a block_log and performing a replay:
+
+`../hive-26/scripts/build_and_setup_exchange_instance.sh local-exchange --name=exchange-instance-replay --data-dir="$(pwd)/datadir/" --download-block-log --replay-blockchain`
+
+Above call will perform a Hive repository clone, then verify existance of given image and build it if needed. Finally, a docker container called `exchange-instance-replay` will be started, where hived will be evaluating blocks using a block_log downloaded at previous step.
+
+3) Using an existing block_log and performing a replay:
+
+`../hive-26/scripts/build_and_setup_exchange_instance.sh local-exchange --name=exchange-instance-replay --use-source-dir=../hive-26 --data-dir="$(pwd)/datadir/" --replay-blockchain`
+
+In this scenario, inside directory `datadir` must exists `blockchain` subdirectory, containing a block_log file(s).
+Above call uses already cloned sources, then verify existance of given image and build it if needed. Finally, a docker container called `exchange-instance-replay` will be started, where hived will be evaluating blocks using a block_log downloaded at previous step.
+
+Both scenarios using --replay-blockchain, allows to continue previously stopped replay process - starting this script again should resume replay process at last processed block (if the same data directory holding shared memory file will be specified).
+
+Script accepts all options provided by hived. If you want to specify different p2p or http port, please use `--p2p-endpoint=` or `--webserver-http-endpoint=` or `--webserver-ws-endpoint=` options, since script will transpose them into docker port mappings accordingly.
+
 ### Clone the hive repo
 
 Pull in the hive repo from the official source on github and then change into the directory that's created for it.
