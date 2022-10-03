@@ -522,20 +522,6 @@ struct visitor {
    };
 
 
-  template<typename... T>
-  std::map< string, fc::static_variant<T...> >  vnamemap(fc::static_variant<T...>& s )
-  {
-      std::map< string, fc::static_variant<T...> > name_map;
-      for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
-      {
-         fc::static_variant<T...> tmp;
-         tmp.set_which(i);
-         string n;
-         tmp.visit( get_static_variant_name( n ) );
-         name_map[n] = tmp;
-      }
-      return name_map;
-  }
 
 
 } // namespace fc

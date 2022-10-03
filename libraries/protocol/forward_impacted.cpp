@@ -897,6 +897,48 @@ private:
   }
 };
 
+
+//MTTK is there a better way ?
+template<typename... T>
+std::map< string, fc::static_variant<T...> >  vnamemap(fc::static_variant<T...>& s )
+{
+    std::map< string, fc::static_variant<T...> > name_map;
+    for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
+    {
+        fc::static_variant<T...> tmp;
+        tmp.set_which(i);
+        string n;
+        tmp.visit( get_static_variant_name( n ) );
+        name_map[n] = tmp;
+    }
+    return name_map;
+}
+
+//MTTK todo rename
+  std::unordered_set<std::string> run_all_overloads()
+  {
+      keyauth_collector collector;
+      hive::protocol::operation var;
+      std::map< std::string, hive::protocol::operation > vm;
+      vm = vnamemap(var);
+      for(auto [s, var]: vm)
+      {
+        collector.used_operations.insert(s);
+      }
+
+      for(auto [s, var]: vm)
+      {
+
+        var.visit(collector);
+        
+      }
+      return collector.used_operations;
+  }
+
+
+
+
+
 } /// anonymous
 
 impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hardfork_1)
@@ -918,34 +960,11 @@ collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::oper
   return std::move(collector.collected_keyauths);
 }
 
-  std::unordered_set<std::string> run_all_overloads()
-  {
-      keyauth_collector collector;
-      hive::protocol::operation var;
-      std::map< std::string, hive::protocol::operation > vm;
-      vm = fc::vnamemap(var);
-      for(auto [s, var]: vm)
-      {
-        collector.used_operations.insert(s);
-      }
-
-      for(auto [s, var]: vm)
-      {
-
-        var.visit(collector);
-        
-      }
-      return collector.used_operations;
-  }
-
-
 std::unordered_set<std::string> get_operations_used_in_get_keyauths()
 {
   static auto used_operations = run_all_overloads();
   return used_operations;
 }
-
-
 
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )
 {
@@ -954,44 +973,3 @@ void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_
 }
 
 } }
-
-
-
-// using strings_t = std::unordered_set<std::string>;
-
-// template <class var, std::size_t I = 0>
-// void autofill(var v, strings_t& names)
-// {
-//     if constexpr (I < std::variant_size_v<var>)
-//     {
-//         //vec.push_back(std::variant_alternative_t<I, var>{});
-//         std::variant_alternative_t<I, var>{};
-
-//         names.emplace(boost::typeindex::type_id<std::variant_alternative_t<I, var> >().pretty_name());
-
-//         std::cout << boost::typeindex::type_id<std::variant_alternative_t<I, var> >().pretty_name() ;// human readable
-//         std::cout << std::endl;
-
-        
-//         autofill<var, I + 1>(v, names);
-//     }
-// }
-
-// void fun()
-// {
-
-
-//   //  strings_t names;;
-
-//   //   hive::protocol::operation v;
-
-//   //   autofill(v, names);
-
-//   hive::protocol::operation v;
-
-//   fc::get_comma_separated_typenames<hive::protocol::operation> stru;
-
-//   auto names = stru.names;
-//   names = names;
-
-// }
