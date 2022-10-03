@@ -896,7 +896,7 @@ private:
 
 //MTTK is there a better way ?
 template<typename... T>
-std::map< string, fc::static_variant<T...> >  get_string_visitor_map(fc::static_variant<T...>& s )
+std::map< string, fc::static_variant<T...> >  get_string_variant_map(fc::static_variant<T...>& s )
 {
     std::map< string, fc::static_variant<T...> > name_map;
     for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
@@ -913,20 +913,21 @@ std::map< string, fc::static_variant<T...> >  get_string_visitor_map(fc::static_
   std::unordered_set<std::string> run_all_keyauth_overloads()
   {
       keyauth_collector collector;
-      hive::protocol::operation var;
-      std::map< std::string, hive::protocol::operation > vm;
-      vm = get_string_visitor_map(var);
-      for(auto [s, var]: vm)
+      hive::protocol::operation dummy_variant;
+      auto string_variant_map = get_string_variant_map(dummy_variant);
+      
+      //collect all type strings and variant instances
+      for(auto [s, _]: string_variant_map)
       {
         collector.used_operations.insert(s);
       }
 
-      for(auto [s, var]: vm)
+      //call all overloads by visiting - inside overload remove unused type strings
+      for(auto [_, variant_instance]: string_variant_map)
       {
-
-        var.visit(collector);
-        
+        variant_instance.visit(collector);
       }
+
       return collector.used_operations;
   }
 } /// anonymous
