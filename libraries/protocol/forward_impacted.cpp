@@ -874,12 +874,14 @@ private:
     }
   }
 
-
-  std::unordered_set<std::string> used_operations;
-
-//MTTK todo enacpsulate below in function
   template <class T>
   void operator()(const T& op) 
+  {
+    remove_from_used_operations<T>();
+  }
+
+  template <class T>
+  void remove_from_used_operations()
   {
     const std::string cutout{"hive::protocol::"};
     std::string s = fc::get_typename<T>::name();
@@ -887,6 +889,8 @@ private:
     s = s.substr(cutout.size());
     used_operations.erase(s);
   }
+
+  std::unordered_set<std::string> used_operations;
 };
 
 
@@ -907,7 +911,7 @@ std::map< string, fc::static_variant<T...> >  vnamemap(fc::static_variant<T...>&
 }
 
 //MTTK todo rename
-  std::unordered_set<std::string> run_all_overloads()
+  std::unordered_set<std::string> run_all_keyauth_overloads()
   {
       keyauth_collector collector;
       hive::protocol::operation var;
@@ -948,7 +952,7 @@ collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::oper
 
 std::unordered_set<std::string> get_operations_used_in_get_keyauths()
 {
-  static auto used_operations = run_all_overloads();
+  static auto used_operations = run_all_keyauth_overloads();
   return used_operations;
 }
 
