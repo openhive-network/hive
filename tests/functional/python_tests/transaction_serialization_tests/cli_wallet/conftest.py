@@ -4,12 +4,6 @@ import pytest
 import test_tools as tt
 
 
-def pytest_addoption(parser):
-    parser.addoption("--http-endpoint", action="store", type=str, help='specifies http_endpoint of reference node')
-    parser.addoption("--ws-endpoint", action="store", type=str, help='specifies ws_endpoint of reference node')
-    parser.addoption("--wallet-path", action="store", type=str, help='specifies path of reference cli wallet')
-
-
 @pytest.fixture
 def node():
     node = tt.InitNode()

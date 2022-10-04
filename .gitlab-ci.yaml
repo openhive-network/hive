@@ -545,7 +545,7 @@ transaction_serialization_testnet_tests:
   tags:
     - public-runner-docker
 
-transaction_serialization_mainnet_tests:
+python_pattern_mainnet_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
   interruptible: true
@@ -568,14 +568,14 @@ transaction_serialization_mainnet_tests:
 
   script:
     # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet
+    - cd $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests
     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet)
     - *run-pytest
 
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
-      junit: $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/cli_wallet/report.xml
+      junit: $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests/report.xml
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
