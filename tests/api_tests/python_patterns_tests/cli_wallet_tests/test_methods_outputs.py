@@ -1,10 +1,10 @@
-import json
 import pathlib
-from typing import Any, Dict
 
 import pytest
 
 import test_tools as tt
+
+from ...local_tools import read_from_json_pattern, write_to_json_pattern
 
 STORE_PATTERNS = False
 
@@ -81,14 +81,3 @@ def test_or_dump_methods_outputs(remote_node_wallet, cli_wallet_method, argument
     else:
         pattern = read_from_json_pattern(__PATTERNS_DIRECTORY, cli_wallet_method)
         assert response == pattern
-
-
-def read_from_json_pattern(directory: pathlib.Path, method_name: str) -> Dict[str, Any]:
-    with open(directory / f'{method_name}.pat.json', 'r') as json_file:
-        return json.load(json_file)
-
-
-def write_to_json_pattern(directory: pathlib.Path, method_name: str, json_response) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    with open(directory / f'{method_name}.pat.json', 'w') as json_file:
-        json.dump(json_response, json_file)
