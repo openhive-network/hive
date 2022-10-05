@@ -1253,6 +1253,112 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
   FC_LOG_AND_RETHROW()
 }
 
+
+BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with a vesting delegation" );
+    generate_block();
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+      });
+    });
+    generate_block();
+
+    ACTORS_DEFAULT_FEE( (alice)(bob)(dave)(eve)(martin) )
+    generate_block();
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
+    generate_block();
+
+    const rc_account_object& alice_rc_initial = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& alice_account_initial = db->get_account( "alice" );
+    int64_t vesting_amount = alice_account_initial.get_vesting().amount.value;
+    int64_t creation_rc = alice_rc_initial.max_rc_creation_adjustment.amount.value;
+
+    // We delegate all our vesting shares to bob
+    delegate_vesting_shares_operation dvso;
+    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.delegator = "alice";
+    dvso.delegatee = {"bob"};
+    push_transaction(dvso, alice_private_key);
+
+    // Delegate 10 rc to dave, the rest to eve, bob has max_rc_creation_adjustment remaining rc
+    delegate_rc_operation op;
+    op.from = "bob";
+    op.delegatees = {"dave"};
+    op.max_rc = 10;
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "bob" );
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    push_transaction(custom_op, bob_private_key);
+    op.delegatees = {"eve"};
+    op.max_rc = vesting_amount - 10 + 1;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    //check that it is not possible to dip into creation_rc, nor will it be accepted at the cost of dropping eve
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "from_delegable_rc >= delta_total" );
+
+    op.max_rc = vesting_amount - 10;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    push_transaction(custom_op, bob_private_key);
+    generate_block();
+
+    const rc_account_object& alice_rc_before = db->get< rc_account_object, by_name >( "alice" );
+    const rc_account_object& bob_rc_account_before = db->get< rc_account_object, by_name >("bob");
+    const rc_account_object& dave_rc_account_before = db->get< rc_account_object, by_name >("dave");
+    const rc_account_object& eve_rc_account_before = db->get< rc_account_object, by_name >("eve");
+
+    BOOST_REQUIRE( alice_rc_before.delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_before.received_delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_before.last_max_rc == creation_rc );
+
+    BOOST_REQUIRE( bob_rc_account_before.delegated_rc == uint64_t(vesting_amount) );
+    BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc );
+    BOOST_REQUIRE( bob_rc_account_before.received_delegated_rc == 0 );
+    BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc - ( 28755 + 28756 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
+
+    BOOST_REQUIRE( eve_rc_account_before.rc_manabar.current_mana == creation_rc + vesting_amount - 10 );
+    BOOST_REQUIRE( eve_rc_account_before.last_max_rc == creation_rc + vesting_amount - 10 );
+    BOOST_REQUIRE( eve_rc_account_before.received_delegated_rc == uint64_t(vesting_amount - 10) );
+
+    BOOST_REQUIRE( dave_rc_account_before.rc_manabar.current_mana == creation_rc + 10 );
+    BOOST_REQUIRE( dave_rc_account_before.last_max_rc == creation_rc + 10 );
+    BOOST_REQUIRE( dave_rc_account_before.received_delegated_rc == 10 );
+
+    // we remove the vesting delegation and it affects the rc delegations
+    dvso.vesting_shares = ASSET( "0.000000 VESTS");
+    push_transaction(dvso, alice_private_key);
+
+    const rc_account_object& alice_rc_after = db->get< rc_account_object, by_name >( "alice" );
+    const rc_account_object& bob_rc_account_after = db->get< rc_account_object, by_name >("bob");
+    const rc_account_object& dave_rc_account_after = db->get< rc_account_object, by_name >("dave");
+    const rc_account_object& eve_rc_account_after = db->get< rc_account_object, by_name >("eve");
+
+    BOOST_REQUIRE( alice_rc_after.delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_after.received_delegated_rc == 0 );
+    BOOST_REQUIRE( alice_rc_after.last_max_rc == creation_rc ); // Still creation_rc because the vesting delegation didn't come back
+
+    BOOST_REQUIRE( bob_rc_account_after.delegated_rc == 0 );
+    BOOST_REQUIRE( bob_rc_account_after.last_max_rc == creation_rc );
+    BOOST_REQUIRE( bob_rc_account_after.received_delegated_rc == 0 );
+
+    BOOST_REQUIRE( eve_rc_account_after.rc_manabar.current_mana == creation_rc );
+    BOOST_REQUIRE( eve_rc_account_after.last_max_rc == creation_rc );
+    BOOST_REQUIRE( eve_rc_account_after.received_delegated_rc == 0 );
+
+    BOOST_REQUIRE( dave_rc_account_after.rc_manabar.current_mana == creation_rc );
+    BOOST_REQUIRE( dave_rc_account_after.last_max_rc == creation_rc );
+    BOOST_REQUIRE( dave_rc_account_after.received_delegated_rc == 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
