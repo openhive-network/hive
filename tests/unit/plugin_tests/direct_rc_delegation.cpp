@@ -1345,7 +1345,6 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     BOOST_REQUIRE( bob_rc_account_after.delegated_rc == 0 );
     BOOST_REQUIRE( bob_rc_account_after.last_max_rc == creation_rc );
     BOOST_REQUIRE( bob_rc_account_after.received_delegated_rc == 0 );
-    BOOST_REQUIRE( bob_rc_account_after.rc_manabar.current_mana == creation_rc ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
 
     BOOST_REQUIRE( eve_rc_account_after.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( eve_rc_account_after.last_max_rc == creation_rc );
