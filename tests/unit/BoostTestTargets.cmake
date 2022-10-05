@@ -63,8 +63,8 @@ if("${Boost_VERSION_MACRO}0" LESS "1034000")
 	endif()
 endif()
 
-include(GetForceIncludeDefinitions.cmake)
-include(CopyResourcesToBuildTree.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/GetForceIncludeDefinitions.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CopyResourcesToBuildTree.cmake)
 
 if(Boost_FOUND AND NOT "${Boost_VERSION_MACRO}0" LESS "1034000")
 	set(_boosttesttargets_libs)

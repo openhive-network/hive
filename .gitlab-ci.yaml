@@ -273,7 +273,7 @@ beem_tests:
     - !reference [.test_tools_based, before_script]
     - git clone --depth 1 --branch master https://github.com/wolfcw/libfaketime.git
     - cd libfaketime && make
-    - export LIBFAKETIME_PATH=`pwd`/src/libfaketime.so.1
+    - export LIBFAKETIME_PATH=`pwd`/src/libfaketimeMT.so.1
     - cd ..
 
 cli_wallet_tests:
@@ -408,7 +408,7 @@ network_broadcast_tests:
 
 test_tools_tests:
   stage: test
-  extends: .test_tools_based
+  extends: .test_tools_based_with_faketime
   needs:
     - job: testnet_node_build
       artifacts: true

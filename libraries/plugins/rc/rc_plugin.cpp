@@ -933,7 +933,7 @@ struct post_apply_operation_visitor
   void operator()( const delegate_vesting_shares_operation& op )const
   {
     update_after_vest_change( op.delegator, true, true );
-    update_after_vest_change( op.delegatee );
+    update_after_vest_change( op.delegatee, true, true  );
   }
 
   void operator()( const author_reward_operation& op )const

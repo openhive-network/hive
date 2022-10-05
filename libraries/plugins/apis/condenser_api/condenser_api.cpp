@@ -973,7 +973,7 @@ namespace detail
         };
         _callback_expirations[ trx.expiration ].push_back( txid );
         LOG_DELAY( api_start_time, fc::seconds( 1 ), "Excessive delay to setup callback" );
-        if( callback_setup_time != fc::time_point() )
+        if( callback_setup_time == fc::time_point() )
           callback_setup_time = fc::time_point::now();
       }
     };
@@ -992,17 +992,16 @@ namespace detail
     }
     catch( fc::exception& e )
     {
-      LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx ${e}", (e) );
+      if (callback_setup_time != fc::time_point())
+        LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx ${e}", (e) );
       set_remove_callback( true );
       throw;
     }
     catch( ... )
     {
-      LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
+      ulog("unknown exception thrown while processing trx: ${trx}",(trx));
       set_remove_callback( true );
-      throw fc::unhandled_exception(
-        FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
-        std::current_exception() );
+      throw fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ), std::current_exception() );
     }
 
     LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
