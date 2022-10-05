@@ -297,6 +297,7 @@ add_boost_test( plugin_test
     direct_rc_delegation/direct_rc_delegation_vesting_withdrawal_routes
     direct_rc_delegation/rc_delegation_regeneration
     direct_rc_delegation/rc_delegation_removal_no_rc
+    direct_rc_delegation/update_outdel_overflow_delegatee
 )
 
 # needed to correctly print crash stacktrace
