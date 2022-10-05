@@ -75,11 +75,11 @@ class fixed_string_impl
     fixed_string_impl( const char* str ) : fixed_string_impl( std::string( str ) ) {}
     fixed_string_impl( const std::string& str )
     {
+      verify_max_length(str);
+
       Storage d;
-      if( str.size() <= sizeof(d) )
-        memcpy( (char*)&d, str.c_str(), str.size() );
-      else
-        memcpy( (char*)&d, str.c_str(), sizeof(d) );
+
+      memcpy( (char*)&d, str.c_str(), str.size() );
 
       data = boost::endian::big_to_native( d );
     }
@@ -130,6 +130,17 @@ class fixed_string_impl
     friend bool operator != ( const fixed_string_impl& a, const fixed_string_impl& b ) { return a.data != b.data; }
 
     Storage data;
+
+  private:
+    void verify_max_length(const char* in, size_t in_len) const
+    {
+      FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
+    }
+
+    void verify_max_length(const std::string& in) const
+    {
+      verify_max_length(in.c_str(), in.size());
+    }
 };
 
 // These storage types work with memory layout and should be used instead of a custom template.
