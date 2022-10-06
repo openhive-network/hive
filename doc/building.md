@@ -1,66 +1,83 @@
 # Building Hive
 
-Building Hive requires 8GB of RAM.
+Building Hive requires at least 16GB of RAM. 
+
+Hive project is described using CMake. By default it uses a Ninja tool as a build executor.
+
+Only Linux based systems are supported as build and runtime platform. Nowadays Ubuntu 20.04 LTS is chosen as base OS supported by build and runtime processes (Ubuntu 18.04 LTS is not supported anymore). Build process requires tools available in default Ubuntu package repository.
+
+## Getting sources
+
+To get Hive sources, please clone a git repository using following command line:
+
+    git clone --recurse --branch master https://github.com/openhive-network/hive
 
 ## Compile-Time Options (cmake)
 
-### CMAKE_BUILD_TYPE=[Release/Debug]
+### CMAKE_BUILD_TYPE=[Release/RelWithDebInfo/Debug]
 
 Specifies whether to build with or without optimization and without or with
 the symbol table for debugging. Unless you are specifically debugging or
-running tests, it is recommended to build as release.
+running tests, it is recommended to build as Release or at least RelWithDebInfo (which includes debugging symbols, but should not have significant impact on performance).
 
 ### BUILD_HIVE_TESTNET=[OFF/ON]
 
-Builds hived for use in a private testnet. Also required for building unit tests.
+Builds Hive project for use in a private testnet. Also required for building unit tests.
+
+### HIVE_CONVERTER_BUILD=[ON/OFF]
+
+Builds Hive project in MirrorNet configuration (similar to testnet, but allows to import mainnet data to create better testing environemnt).
 
 ## Building under Docker
 
 We ship a Dockerfile.  This builds both common node type binaries.
 
-    git clone https://github.com/openhive-network/hive
-    cd hive
-    docker build -t hiveio/hive --target=consensus_node .
+    mkdir workdir
+    cd workdir # use different directory to leave source directory clean
+    ../hive/scripts/ci-helpers/build_instance.sh my-local-tag ../hive/ registry.gitlab.syncad.com/hive/hive/
 
-## Building on Ubuntu 18.04/20.04
+`build_instance.sh` has optional parameters:
+- `--network-type` which allows to select network type supported by built binaries. It can take values:
+    - testnet
+    - mirrornet
+    - mainnet (default)
 
-For Ubuntu 18.04/20.04 users, after installing the right packages with `apt` Hive
-will build out of the box without further effort:
+- `--export-binaries=PATH` - allows to extract built binaries from created image
 
-    sudo apt-get update
+Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:my-local-tag`
 
-    # Required packages
-    sudo apt-get install -y \
-        autoconf \
-        automake \
-        cmake \
-        g++ \
-        git \
-        zlib1g-dev \
-        libbz2-dev \
-        libsnappy-dev \
-        libssl-dev \
-        libtool \
-        make \
-        pkg-config \
-        doxygen \
-        libncurses5-dev \
-        libreadline-dev \
-        libboost-all-dev \
-        perl \
-        python3 \
-        python3-jinja2
+To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:my-local-tag --name=hived-instance --data-dir=../datadir --shared-file-dir../datadir/ #[<other regular hived options>]`
 
-    git clone https://github.com/openhive-network/hive
-    cd hive
-    git checkout master
-    git submodule update --init --recursive
-    mkdir build && cd build
-    cmake -DCMAKE_BUILD_TYPE=Release ..
-    make -j$(nproc) hived
-    make -j$(nproc) cli_wallet
-    # optional
-    make install  # defaults to /usr/local
+## Building on Ubuntu 20.04 LTS
+
+For Ubuntu 20.04 LTS users, after installing the right packages with `apt` Hive should build out of the box without further effort:
+
+    # workdir directory is assumed as cwd, like also already cloned repository using command line described earlier
+
+    sudo ../hive/scripts/setup_ubuntu.sh --dev # this script contains a list of all required packages for runtime and development (build) process
+
+    mkdir build
+    
+    ../hive/scripts/build.sh --source-dir=../hive/ --binary-dir=./build/ --cmake-arg="-DBUILD_HIVE_TESTNET=OFF"
+
+The --cmake_arg parameter can be skipped, then default mainnet release binaries will be built.
+
+If you would like to run cmake directly, you can do it as follows:
+
+    cd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_HIVE_TESTNET=OFF -GNinja ../../hive/
+
+To start build process:
+
+    ninja
+
+If you want to build only specific targets use:
+
+    ninja hived cli_wallet
+
+Ninja tool can be installed from standard Ubuntu package repositories by using:
+
+    sudo apt-get install -y ninja-build
 
 **If at any time you find this documentation not up to date or unprecise, please take a look at CI/CD scripts.**
 
