@@ -20,7 +20,8 @@ namespace hive { namespace chain { namespace util {
 
   advanced_benchmark_dumper::~advanced_benchmark_dumper()
   {
-    dump();
+    if (enabled)
+      dump();
   }
 
   void advanced_benchmark_dumper::begin()
