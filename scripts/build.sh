@@ -15,7 +15,7 @@ log_exec_params "$@"
 print_help () {
     echo "Usage: $0 [OPTION[=VALUE]]... [target]..."
     echo
-    echo "Allows to build HAF sources "
+    echo "Allows to build Hive sources "
     echo "  --source-dir=DIRECTORY_PATH"
     echo "                       Allows to specify a directory containing a Hived source tree."
     echo "  --binary-dir=DIRECTORY_PATH"
