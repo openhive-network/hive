@@ -215,14 +215,14 @@ BOOST_AUTO_TEST_CASE( account_update_validate )
 
     ACTORS( (alice) )
 
-    account_update_operation op;
-    op.account = "alice";
-    op.posting = authority();
-    op.posting->weight_threshold = 1;
-    op.posting->add_authorities( "abcdefghijklmnopq", 1 );
-
     try
     {
+      account_update_operation op;
+      op.account = "alice";
+      op.posting = authority();
+      op.posting->weight_threshold = 1;
+      op.posting->add_authorities( "abcdefghijklmnopq", 1 );
+
       op.validate();
 
       signed_transaction tx;

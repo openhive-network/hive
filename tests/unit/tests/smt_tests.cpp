@@ -345,10 +345,14 @@ BOOST_AUTO_TEST_CASE( setup_validate )
     op.initial_generation_policy = gp;
     HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
-    gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 13 } };
-    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } };
-    op.initial_generation_policy = gp;
-    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+    auto action = [&gp, &op]() -> void
+    {
+      gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 13 } };
+      gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } }; /// too long string for account name
+      op.initial_generation_policy = gp;
+      op.validate();
+    };
+    HIVE_REQUIRE_THROW(action(), fc::exception);
 
     //FC_ASSERT( hive_unit.value > 0 );
     gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 0 } };
