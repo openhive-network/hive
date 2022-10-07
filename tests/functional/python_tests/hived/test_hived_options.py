@@ -111,7 +111,6 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
     assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
 
-
 def test_hived_get_version():
     node = tt.RawNode()
     version_json = node.get_version()
@@ -122,3 +121,17 @@ def test_hived_get_version():
     assert version_json["version"].keys() == expected_keys
 
     assert version_json["version"]["node_type"] == "testnet"
+
+def test_benchmark_multiindex_live_notifications():
+    node = tt.InitNode()
+    node.run(arguments=['--set-benchmark-interval', '1', '--dump-memory-details'], wait_for_live=True)
+    node.wait_for_notification('benchmark', timeout=4.0)
+
+def test_benchmark_multiindex_live_notifications_during_replay(block_log: Path):
+    amount_of_blocks_to_replay: Final[int] = 5
+    node = tt.ApiNode()
+    node.run(replay_from=block_log, stop_at_block=amount_of_blocks_to_replay, arguments=['--set-benchmark-interval', '1', '--dump-memory-details'], wait_for_live=False, timeout=120.0)
+    for i in range(amount_of_blocks_to_replay):
+        tt.logger.debug(f'waiting for block: {i+1}')
+        x = node.wait_for_notification('benchmark')
+        assert x['value']['multiindex_stats']['block_number'] == i+1
