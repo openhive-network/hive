@@ -108,9 +108,12 @@ struct full_transaction_type
     hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
     const fc::ripemd160& get_legacy_transaction_message_hash() const;
     const hive::protocol::transaction_id_type& get_transaction_id() const;
+    void compute_signature_keys() const;
     const flat_set<hive::protocol::public_key_type>& get_signature_keys() const;
+    void compute_required_authorities() const;
     const hive::protocol::required_authorities_type& get_required_authorities() const;
     bool is_legacy_pack() const;
+    void precompute_validation(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
     void validate(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
 
     const serialized_transaction_data& get_serialized_transaction() const;
