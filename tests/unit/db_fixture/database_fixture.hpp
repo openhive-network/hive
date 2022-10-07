@@ -629,4 +629,18 @@ namespace test
     hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
 }
 
+namespace performance
+{
+  struct initial_data
+  {
+    std::string account;
+
+    fc::ecc::private_key key;
+
+    initial_data( database_fixture* db, const std::string& _account );
+  };
+
+  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts );
+}
+
 } }

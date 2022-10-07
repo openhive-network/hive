@@ -13,6 +13,8 @@
 
 #include "../db_fixture/database_fixture.hpp"
 
+#include <chrono>
+
 using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins::rc;
@@ -1472,6 +1474,98 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     BOOST_REQUIRE( dave_rc_account_after.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( dave_rc_account_after.last_max_rc == creation_rc );
     BOOST_REQUIRE( dave_rc_account_after.received_delegated_rc == 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing:  erformance is taken into consideration, when `rc_direct_delegation_object` are removed" );
+    generate_block();
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+      });
+    });
+    generate_block();
+
+    ACTORS_DEFAULT_FEE( (alice)(bob) )
+    generate_block();
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    const uint32_t nr_accounts = 100'000;
+
+    const account_object& alice_account_initial = db->get_account( "alice" );
+
+    std::vector< performance::initial_data > accounts = performance::generate_accounts( this, nr_accounts );
+
+    // We delegate all our vesting shares to bob
+    delegate_vesting_shares_operation dvso;
+    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.delegator = "alice";
+    dvso.delegatee = {"bob"};
+    push_transaction(dvso, alice_private_key);
+
+    auto time_checker = []( std::function<void()> callable, uint32_t value = 0 )
+    {
+      auto _start = std::chrono::high_resolution_clock::now();
+      callable();
+      auto _end = std::chrono::high_resolution_clock::now();
+      double elapsed_time_ms = std::chrono::duration<double, std::milli>( _end - _start ).count();
+      BOOST_TEST_MESSAGE( "time: " + std::to_string( elapsed_time_ms ) );
+      if( value )
+        BOOST_REQUIRE_GT( value, elapsed_time_ms );
+    };
+
+    delegate_rc_operation op;
+    op.from = "bob";
+    op.max_rc = 5;
+
+    size_t cnt = 0;
+    while( cnt < accounts.size() )
+    {
+      for( size_t i = cnt; i < cnt + HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP; ++i )
+        op.delegatees.insert( accounts[i].account );
+
+      cnt += op.delegatees.size();
+
+      custom_json_operation custom_op;
+      custom_op.required_posting_auths.insert( "bob" );
+      custom_op.id = HIVE_RC_PLUGIN_NAME;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+
+      BOOST_TEST_MESSAGE( "create delegations" );
+      auto push_00 = [ this, &custom_op, &bob_private_key ]{ push_transaction(custom_op, bob_private_key); };
+      time_checker( push_00, 0 );
+      generate_block();
+
+      op.delegatees.clear();
+    }
+
+    for( auto& account : accounts )
+    {
+      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      BOOST_REQUIRE( _account.received_delegated_rc == 5 );
+    }
+
+    BOOST_TEST_MESSAGE( "remove delegations" );
+    dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
+    auto push_01 = [ this, &dvso, &alice_private_key ]{ push_transaction(dvso, alice_private_key); };
+    //for `AMD Ryzen 7 5800X 8-Core Processor` ~480ms
+    time_checker( push_01, 600 );
+
+    for( auto& account : accounts )
+    {
+      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      BOOST_REQUIRE( _account.received_delegated_rc == 0 );
+    }
 
     validate_database();
   }

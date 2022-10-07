@@ -1681,4 +1681,39 @@ void _push_transaction( database& db, const signed_transaction& tx, const fc::ec
 
 } // hive::chain::test
 
+namespace performance
+{
+  initial_data::initial_data( database_fixture* db, const std::string& _account ): account( _account )
+  {
+    key = db->generate_private_key( account );
+
+    db->account_create( account, key.get_public_key(), db->generate_private_key( account + "_post" ).get_public_key() );
+  }
+
+  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts )
+  {
+    const std::string basic_name = "tester";
+
+    std::vector< initial_data > res;
+
+    for( int32_t i = 0; i< number_accounts; ++i  )
+    {
+      std::string name = basic_name + std::to_string( i );
+      res.push_back( initial_data( db, name ) );
+
+      if( ( i + 1 ) % 100 == 0 )
+        db->generate_block();
+
+      if( ( i + 1 ) % 1000 == 0 )
+        ilog( "Created: ${accs} accounts",( "accs", i+1 ) );
+    }
+
+    db->validate_database();
+    db->generate_block();
+
+    return res;
+  }
+
+} // hive::chain::performance
+
 } } // hive::chain
