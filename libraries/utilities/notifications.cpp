@@ -47,7 +47,7 @@ void add_program_options(boost::program_options::options_description& options)
   )
   (
     flags::notifiations_filter(),
-    boost::program_options::value< fc::string >()->default_value(""),
+    boost::program_options::value< fc::string >()->default_value("!timer"),
     "notification is accepted if name matches given regular expression, if not specified all notifications are accepted"
   );
 }
