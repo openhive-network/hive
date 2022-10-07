@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from pathlib import Path
 import time
 from typing import Dict, Iterable
@@ -11,22 +10,14 @@ from test_tools.__private.init_node import InitNode
 from test_tools.__private.user_handles.get_implementation import get_implementation
 
 from test_tools.__private.wait_for import wait_for_event
-from tests.functional.python_tests.fork_tests.local_tools import get_time_offset_from_iso_8601
 
 from ..local_tools import init_network
 from .local_tools import connect_sub_networks
 
-def get_time_offset_from_file(file: Path):
-    with open(file, 'r') as f:
-        timestamp = f.read()
-    timestamp = timestamp.strip()
-    time_offset = get_time_offset_from_iso_8601(timestamp)
-    return time_offset
-
 
 def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
     if blocklog_directory is not None:
-        time_offset = get_time_offset_from_file(blocklog_directory/'timestamp')
+        time_offset = tt.Time.get_time_offset_from_file(blocklog_directory/'timestamp', offset=tt.Time.seconds(-5))
         block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
 
     tt.logger.info('Running nodes...')
