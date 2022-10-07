@@ -1242,7 +1242,7 @@ class wallet_api
 
     /**
       *  Account operations have sequence numbers from 0 to N where N is the most recent operation. This method
-      *  returns operations in the range [from-limit, from]
+      *  returns operations in the range (from-limit, from].
       *
       *  @param account - account whose history will be returned
       *  @param from - the absolute sequence number, -1 means most recent, limit is the number of operations before from.
