@@ -55,7 +55,7 @@ void add_program_options(boost::program_options::options_description& options)
   )
   (
     flags::notifications_filter(),
-    boost::program_options::value< fc::string >()->default_value(""),
+    boost::program_options::value< fc::string >()->default_value("!timer"),
     "notification is accepted if name matches given regular expression, if not specified all notifications are accepted"
   );
 }
@@ -64,7 +64,7 @@ std::tuple<std::vector<fc::string>, fc::string> setup_notifications(const boost:
 {
   std::vector<fc::string> endpoints{};
   fc::string filter = "";
-  if( hive::utilities::notifications::check_is_flag_set(args))
+  if( hive::utilities::notifications::check_is_notifications_enabled(args))
   {
     endpoints = args[ flags::notifications_endpoint() ].as<std::vector<fc::string>>();
     if(hive::utilities::notifications::check_is_notification_filter_provided(args))
