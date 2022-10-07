@@ -5,6 +5,8 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
+  MIRRORNET_CHAIN_ID: 42
+  MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
@@ -108,8 +110,6 @@ mirrornet_replay_test:
     BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     BLOCK_LOG_SOURCE_DIR: "/blockchain"
     NUMBER_OF_BLOCKS: 5000000
-    CHAIN_ID: 42
-    SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
     MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
   interruptible: true
@@ -132,15 +132,15 @@ mirrornet_replay_test:
       --plugin block_log_conversion
       -i "$MAINNET_TRUNCATED_DIR/block_log"
       -o "$MIRRORNET_WORKING_DIR/blockchain/block_log"
-      --chain-id $CHAIN_ID
-      --private-key "$SKELETON_KEY"
+      --chain-id $MIRRORNET_CHAIN_ID
+      --private-key "$MIRRORNET_SKELETON_KEY"
       --use-same-key
       --jobs $NUMBER_OF_PROCESSES
     - echo "Starting hived replay"
     - ./hived
       -d "$MIRRORNET_WORKING_DIR"
-      --chain-id $CHAIN_ID
-      --skeleton-key "$SKELETON_KEY"
+      --chain-id $MIRRORNET_CHAIN_ID
+      --skeleton-key "$MIRRORNET_SKELETON_KEY"
       --set-benchmark-interval 100000
       --force-replay
       --stop-replay-at-block $NUMBER_OF_BLOCKS
@@ -215,30 +215,21 @@ plugin_test:
      - additional arguments: ${PYTEST_ARGS[@]}"
   - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="./report.xml" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
 
-.beem_setup : &beem_setup
-  - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
-  - python3 -m venv venv/
-  - . venv/bin/activate
-  - python3 -m pip install --upgrade pip
-  - pip3 install junit-xml python-dateutil
-  - cd beem
-  - python3 -m pip install --upgrade -r requirements-test.txt
-  - python3 setup.py install
-  - cd ..
-  - mkdir -p build/tests/hive-node-data
-
-beem_tests:
+.beem_tests_base:
   stage: test
-  extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 18
-    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
+  extends: .test_tools_based
   script:
-    - *beem_setup
+    - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
+    - python3 -m venv venv/
+    - . venv/bin/activate
+    - python3 -m pip install --upgrade pip
+    - pip3 install junit-xml python-dateutil
+    - cd beem
+    - python3 -m pip install --upgrade -r requirements-test.txt
+    - python3 setup.py install
+    - cd ..
+    - mkdir -p build/tests/hive-node-data
     - cd tests/functional/python_tests/beem_tests
     - *run-pytest
   artifacts:
@@ -246,6 +237,29 @@ beem_tests:
       junit: tests/functional/python_tests/dhf_tests/report.xml
   tags:
     - public-runner-docker
+
+beem_testnet_tests:
+  extends: .beem_tests_base
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 18
+    PYTEST_ARGS: "-m not mirrornet"
+
+beem_mirrornet_tests:
+  extends: .beem_tests_base
+  needs:
+    - job: mirrornet_node_build
+      artifacts: true
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 4
+    HIVED_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
+  before_script:
+    - !reference [.test_tools_based_with_faketime, before_script]
+    - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
 
 .test_tools_based:
   variables:
