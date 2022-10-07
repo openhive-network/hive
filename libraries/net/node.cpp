@@ -85,6 +85,7 @@
 #include <hive/protocol/config.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <appbase/application.hpp>
 
 #include <fc/git_revision.hpp>
 
