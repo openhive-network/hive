@@ -3706,7 +3706,8 @@ namespace graphene { namespace net {
         // we don't know they're the same (for the peer in normal operation, it has only told us the
         // message id, for the peer in the sync case we only known the block_id).
         fc::time_point message_validated_time;
-        if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) == _most_recent_blocks_accepted.end() &&
+        bool block_has_been_accepted = std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) != _most_recent_blocks_accepted.end();
+        if (!block_has_been_accepted &&
             _message_ids_currently_being_processed.find(block_id) == _message_ids_currently_being_processed.end())
         {
           _message_ids_currently_being_processed.insert(legacy_block_message_hash);
@@ -3735,6 +3736,8 @@ namespace graphene { namespace net {
                   ("block_num", block_num)("block_hash", block_id)
                   ("peer", originating_peer->get_remote_endpoint())("id", legacy_block_message_hash));
           dlog("Already received and accepted this block (presumably through sync mechanism), treating it as accepted");
+          if (!block_has_been_accepted) //if we haven't finished processing this block yet, don't talk to peers about it
+            return;
         }
 
         dlog("client validated the block, advertising it to other peers");
