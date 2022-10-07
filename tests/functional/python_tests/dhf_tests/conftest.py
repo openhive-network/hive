@@ -61,8 +61,7 @@ def node_client(node, worker_id) -> NodeClientMaker:
     def _node_client(accounts: List[dict] = None) -> Hive:
         accounts = accounts or []
 
-        wif = tt.Account("initminer").private_key
-        keys = [wif]
+        keys = node.config.private_key.copy()
 
         for account in accounts:
             keys.append(account["private_key"])
