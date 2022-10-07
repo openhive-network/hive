@@ -138,7 +138,7 @@ namespace fc
        sz[sizeof(sz) - 1] = '\0';
 
       uint128 ii(*this);
-      int i = 128 - 1;
+      int i = 128;
 
       while (ii != 0 && i) {
 
