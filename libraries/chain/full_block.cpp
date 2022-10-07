@@ -34,6 +34,10 @@ full_block_type::full_block_type()
 full_block_type::~full_block_type()
 {
   number_of_instances_destroyed.fetch_add(1, std::memory_order_relaxed);
+  if (merkle_root && !merkle_key_accessed)
+    fc_ilog(fc::logger::get("worker_thread"), "computed merkle_root, but full_block_type::get_merkle_root() was never called");
+  if (block_signing_key && !block_signing_key_accessed)
+    fc_ilog(fc::logger::get("worker_thread"), "computed block_signing_key, but full_block_type::get_signing_key() was never called");
 }
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
@@ -517,6 +521,7 @@ const fc::ecc::public_key& full_block_type::get_signing_key() const
 {
   {
     std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
+    block_signing_key_accessed = true;
     if (block_signing_key)
       return *block_signing_key;
   }
@@ -589,6 +594,7 @@ const checksum_type& full_block_type::get_merkle_root() const
 { try {
   {
     std::lock_guard<std::mutex> guard(block_signing_key_merkle_root_mutex);
+    merkle_key_accessed = true;
     if (merkle_root)
       return *merkle_root;
   }

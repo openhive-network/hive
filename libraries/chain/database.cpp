@@ -24,6 +24,7 @@
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/reward.hpp>
@@ -122,6 +123,7 @@ class database_impl
     evaluator_registry< required_automated_action > _req_action_evaluator_registry;
     evaluator_registry< optional_automated_action > _opt_action_evaluator_registry;
     std::map<account_name_type, block_id_type>      _last_fast_approved_block_by_witness;
+    bool                                            _last_pushed_block_was_before_checkpoint = false; // just used for logging
 };
 
 database_impl::database_impl( database& self )
@@ -970,6 +972,8 @@ void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& check
 {
   for( const auto& i : checkpts )
     _checkpoints[i.first] = i.second;
+  if (!_checkpoints.empty())
+    blockchain_worker_thread_pool::get_instance().set_last_checkpoint(_checkpoints.rbegin()->first);
 }
 
 bool database::before_last_checkpoint()const
@@ -996,6 +1000,7 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
       FC_ASSERT(full_block->get_block_id() == itr->second, "Block did not match checkpoint", ("checkpoint", *itr)("block_id", full_block->get_block_id()));
 
     if( _checkpoints.rbegin()->first >= block_num )
+    {
       skip = skip_witness_signature
           | skip_transaction_signatures
           | skip_transaction_dupe_check
@@ -1009,6 +1014,19 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
           | skip_validate
           | skip_validate_invariants
           ;
+      if (!_my->_last_pushed_block_was_before_checkpoint)
+      {
+        // log something to let the node operator know that checkpoints are in force
+        ilog("checkpoints enabled, doing reduced validation until final checkpoint, block ${block_num}, id ${block_id}",
+             ("block_num", _checkpoints.rbegin()->first)("block_id", _checkpoints.rbegin()->second));
+        _my->_last_pushed_block_was_before_checkpoint = true;
+      }
+    }
+    else if (_my->_last_pushed_block_was_before_checkpoint)
+    {
+      ilog("final checkpoint reached, resuming normal block validation");
+      _my->_last_pushed_block_was_before_checkpoint = false;
+    }
   }
 
   bool result;
