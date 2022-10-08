@@ -54,15 +54,72 @@ We **strongly** recommend using one of our pre-built Docker images or using Dock
 
 But if you would still like to build from source, we also have [build instructions](doc/building.md) for Linux (Ubuntu LTS).
 
-## Dockerized Consensus Node
+## Dockerized deployment
 
-To run a Hive node (ca. 24GB of memory is required at the moment):
+Building a docker image is described here: [Building under Docker](https://gitlab.syncad.com/hive/hive/-/blob/master/doc/building.md#building-under-docker)
 
-    docker run \
-        -d -p 2001:2001 -p 8090:8090 --name hived \
-        hiveio/hive
+To run a Hive consensus node there are needed resources:
+- data directory to hold a blockchain file(s) (ca 400GB is required)
+- storage to hold a shared memory file (ca. 24GB of memory is required at the moment to store state data):
 
-    docker logs -f hived  # follow along
+There is provided a script wrapping `docker run` statement and emulating direct hived usage: [run_hived_img.sh](https://gitlab.syncad.com/hive/hive/-/blob/master/scripts/run_hived_img.sh)
+
+General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option>]...`
+
+`run_hived_img.sh` can take following parameters:
+
+    <img_name> - name of image to create a container for,
+    --name=<container_name> - allows to specify explicit container name
+    --docker-option=OPTION  - allows to pass give OPTION directly to docker run spawn
+
+    Options specific to node endpoints (they are also creating appropriete docker port mappings at container spawn)
+
+    --webserver-http-endpoint=<endpoint>
+    --webserver-ws-endpoint=<endpoint>
+    --p2p-endpoint=<endpoint>
+
+    Options to specify node work directories (script will pass appropriete volume mappings to underlying docker run basing on following options):
+
+    --data-dir=DIRECTORY_PATH - allows to specify blockchain data directory. See deployment scenarios described below, for details how to prepare this directory
+    --shared-file-dir=DIRECTORY_PATH - allows to specify a directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located at ram-disk, inside subdirectory created under /dev/shm resource.
+
+    Started container (and hived process) will create a log file: hived.log located in specified data directory (so in examples below: /home/hived/datadir/hived.log).
+    Container is always started in detached mode.
+
+    Logs can be also examined using docker logs feature:
+
+    docker logs -f hived-instance  # follow along
+
+    To stop container, you should use a docker stop hived-instance command. Successfully stopped container should leave in the hived.log `exited cleanly` message:
+
+    ```
+    < some log contents >
+    Shutting down...
+    Leaving application main loop...
+    exited cleanly 
+    ```
+
+### Scenarios of using dockerized hived (assumed mainnet configuration)
+
+1. Full P2P sync.
+    In this case, all what you need is to specify empty data directory and the storage for shared memory file. Blockchain directory will be filled by hived node performing a full P2P sync. Please be sure, that dockerized hived process has write access to both directories
+
+    `run_hived_img.sh my-local-image --name=hived-instance --data-dir=/home/hived/datadir --shared-file-dir=/dev/shm/hived/consensus_node --webserver-http-endpoint=0.0.0.0:8091 --webserver-ws-endpoint=0.0.0.0:8090 --p2p-endpoint=0.0.0.0:2001`
+
+2. Hived node full replay, basing on local copy of blockchain file(s).
+    To perform a replay, you need to copy blockchain file(s) into directory expected by hived node. Dockerized version assumes a data-dir/blockchain location where block_log and block_log.artifacts files should be stored. Dockerized hived process must write access to such directory and files. To run replay, you need to pass `--force-replay` option to the `run_hived_img.sh` script, which next will be passed to the underlying hived process.
+
+    Before starting following command line, there was created and prepared a /home/hived/datadir (containing a blockchain subdirectory with block_log and block_log.artifacts files), like also created /dev/shm/hived/consensus_node directory
+
+    `run_hived_img.sh my-local-image --name=hived-instance --data-dir=/home/hived/datadir --shared-file-dir=/dev/shm/hived/consensus_node --webserver-http-endpoint=0.0.0.0:8091 --webserver-ws-endpoint=0.0.0.0:8090 --p2p-endpoint=0.0.0.0:2001 --force-replay`
+
+3. Hived node configuration customization
+    Data directory specified to `run_hived_img.sh` spawn can of course contain a custom config.ini file, where as usually can be specified dedicated set of plugins and their specific options. Otherwise, hived node (also as usually) will generate default one in this directory. Anyway dockerized deployment has some gotchas:
+    - data directory, shared memory file directory options are always passed to underlying hived command line, as internal directory located inside docker container
+    - port configuration always should be left as is, since dockerized hived process shall always use default ones, which can be externally mapped by specifying --webserver-http-endpoint, --webserver-ws-endpoint, --p2p-endpoint options to the script
+    - snapshot, account history storage directories rather shall be specified relatievely to docker internal `/home/hived/datadir` which is mapped to hosted data directory
+    
+    Other options can be as usually passed directly to the (run_hived_img.sh) command line (as hived-options) or explicitly specified in config.ini file.
 
 ## CLI Wallet
 
