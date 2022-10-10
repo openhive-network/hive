@@ -106,6 +106,8 @@ General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option
 
     `run_hived_img.sh my-local-image --name=hived-instance --data-dir=/home/hived/datadir --shared-file-dir=/dev/shm/hived/consensus_node --webserver-http-endpoint=0.0.0.0:8091 --webserver-ws-endpoint=0.0.0.0:8090 --p2p-endpoint=0.0.0.0:2001`
 
+    Pointed data directory **must** contain an empty `blockchain` subdirectory otherwise hived node can fail at start.
+
 2. Hived node full replay, basing on local copy of blockchain file(s).
     To perform a replay, you need to copy blockchain file(s) into directory expected by hived node. Dockerized version assumes a data-dir/blockchain location where block_log and block_log.artifacts files should be stored. Dockerized hived process must write access to such directory and files. To run replay, you need to pass `--force-replay` option to the `run_hived_img.sh` script, which next will be passed to the underlying hived process.
 
