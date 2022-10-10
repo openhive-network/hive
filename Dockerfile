@@ -101,6 +101,7 @@ COPY --from=build \
   /home/hived/build/programs/cli_wallet/cli_wallet \
   /home/hived/build/programs/util/compress_block_log \
   /home/hived/build/programs/util/truncate_block_log \
+  /home/hived/build/programs/util/get_dev_key \
   /home/hived/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived/build/tests/unit/* /home/hived/bin/
 
