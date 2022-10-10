@@ -71,12 +71,3 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_run_method_with_additional_argument(prepared_node, api_database_method, arguments):
     getattr(prepared_node.api.database, api_database_method)(**arguments, arg=True)
-
-
-@pytest.mark.parametrize(
-    'api_database_method, arguments',
-    METHODS_WITH_CORRECT_ARGUMENTS
-)
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_run_method_with_correct_arguments(prepared_node, api_database_method, arguments):
-    getattr(prepared_node.api.database, api_database_method)(**arguments)
