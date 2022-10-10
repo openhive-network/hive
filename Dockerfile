@@ -102,6 +102,7 @@ COPY --from=build \
   /home/hived/build/tests/unit/* /home/hived/bin/
 
 COPY --from=build /home/hived/hive/scripts/common.sh ./scripts/common.sh
+COPY --from=build /home/hived/hive/doc/example_config.ini /home/hived/datadir/example_config.ini
 
 ADD ./docker/docker_entrypoint.sh .
 
