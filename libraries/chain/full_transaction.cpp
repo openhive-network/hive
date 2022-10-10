@@ -36,6 +36,13 @@ full_transaction_type::~full_transaction_type()
   if (is_in_cache)
     full_transaction_cache::get_instance().remove_from_cache(get_merkle_digest());
   number_of_instances_destroyed.fetch_add(1, std::memory_order_relaxed);
+
+  if (validation_attempted.load(std::memory_order_relaxed) && !validation_accessed.load(std::memory_order_relaxed))
+    fc_ilog(fc::logger::get("worker_thread"), "transaction validation pre-computed, but full_transaction_type::validate() was never called");
+  if (has_signature_info.load(std::memory_order_relaxed) && !signature_keys_accessed.load(std::memory_order_relaxed))
+    fc_ilog(fc::logger::get("worker_thread"), "transaction signature keys pre-computed, but full_transaction_type::get_signature_keys() was never called");
+  if (has_required_authorities.load(std::memory_order_relaxed) && !required_authorities_accessed.load(std::memory_order_relaxed))
+    fc_ilog(fc::logger::get("worker_thread"), "transaction required authorities pre-computed, but full_transaction_type::get_required_authorities() was never called");
 }
 
 const signed_transaction& full_transaction_type::get_transaction() const
@@ -156,9 +163,7 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
 {
   if (!has_signature_info.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> guard(results_mutex);
-    if (!has_signature_info.load(std::memory_order_consume))
-      compute_signature_keys();
+    compute_signature_keys();
     cached_get_signature_keys_calls.fetch_add(1, std::memory_order_relaxed);
   }
   else
@@ -169,6 +174,8 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
     //      ("cached", cached_get_signature_keys_calls.load())
     //      ("not", non_cached_get_signature_keys_calls.load()));
   }
+
+  signature_keys_accessed.store(true, std::memory_order_relaxed);
 
   if (signature_info.signature_keys_exception)
     signature_info.signature_keys_exception->dynamic_rethrow_exception();
@@ -208,9 +215,7 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
 {
   if (!validation_attempted.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> results_guard(results_mutex);
-    if (!validation_attempted.load(std::memory_order_consume))
-      precompute_validation(notify);
+    precompute_validation(notify);
     non_cached_validate_calls.fetch_add(1, std::memory_order_relaxed);
   }
   else
@@ -219,6 +224,7 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
     // ilog("validate cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
   }
+  validation_accessed.store(true, std::memory_order_relaxed);
   if (validation_exception)
     validation_exception->dynamic_rethrow_exception();
 }
@@ -239,9 +245,7 @@ const hive::protocol::required_authorities_type& full_transaction_type::get_requ
 {
   if (!has_required_authorities.load(std::memory_order_consume))
   {
-    std::lock_guard<std::mutex> guard(results_mutex);
-    if (!has_required_authorities.load(std::memory_order_consume))
-      compute_required_authorities();
+    compute_required_authorities();
     non_cached_get_required_authorities_calls.fetch_add(1, std::memory_order_relaxed);
   }
   else
@@ -251,6 +255,7 @@ const hive::protocol::required_authorities_type& full_transaction_type::get_requ
     //      ("saved", required_authorities_computation_time)
     //      ("cached", cached_get_required_authorities_calls.load())("not", non_cached_get_required_authorities_calls.load()));
   }
+  required_authorities_accessed.store(true, std::memory_order_relaxed);
   return required_authorities;
 }
 

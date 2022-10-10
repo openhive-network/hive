@@ -46,6 +46,7 @@ struct full_transaction_type
     mutable std::atomic<bool> validation_attempted = { false }; // true if validate() has been called & cached
     mutable fc::exception_ptr validation_exception; // if validate() threw, this is what it threw 
     mutable fc::microseconds validation_computation_time;
+    mutable std::atomic<bool> validation_accessed = false;
 
     mutable std::atomic<bool> has_is_packed_in_legacy_format = { false };
     mutable bool is_packed_in_legacy_format = false;
@@ -59,10 +60,12 @@ struct full_transaction_type
     };
     mutable std::atomic<bool> has_signature_info = { false };
     mutable signature_info_type signature_info; // if we've computed the public keys that signed the transaction, it's stored here
+    mutable std::atomic<bool> signature_keys_accessed = { false };
 
     mutable std::atomic<bool> has_required_authorities = { false };
     mutable hive::protocol::required_authorities_type required_authorities; // if we've figured out who is supposed to sign this tranaction, it's here
     mutable std::chrono::nanoseconds required_authorities_computation_time;
+    mutable std::atomic<bool> required_authorities_accessed;
 
     /// all data below here isn't accessed across multiple threads, it's set at construction time and left alone
     

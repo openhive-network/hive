@@ -234,8 +234,9 @@ void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::
       // this depends a bit on what the current validation settings are
       try
       {
-        // validate is always called during normal block processing
-        full_transaction->precompute_validation();
+        // validate is always called during normal block processing, unless there's a checkpoint in the future
+        if (!last_checkpoint || transaction_work_request.block_number > *last_checkpoint)
+          full_transaction->precompute_validation();
       }
       catch (...)
       {
@@ -247,7 +248,8 @@ void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::
 
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
       // or you're a witness
-      if (p2p_force_validate || is_block_producer)
+      if ((p2p_force_validate || is_block_producer) && // if we're doing full validation
+          (!last_checkpoint || transaction_work_request.block_number > *last_checkpoint)) // and we've passed the last checkpoint
       {
         try
         {
