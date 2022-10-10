@@ -17,7 +17,7 @@ from .local_tools import connect_sub_networks
 
 def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
     if blocklog_directory is not None:
-        time_offset = tt.Time.get_time_offset_from_file(blocklog_directory/'timestamp', offset=tt.Time.seconds(-5))
+        time_offset = tt.Time.read_from_file(blocklog_directory/'timestamp', offset=tt.Time.seconds(-5))
         block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
 
     tt.logger.info('Running nodes...')
@@ -49,6 +49,8 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
             deadline=deadline,
             exception_message='Live mode not activated on time.'
         )
+
+        tt.logger.info(f'{node}: {node.api.condenser.get_dynamic_global_properties()}')
 
 def display_info(wallet):
     # Network should be set up at this time, with 21 active witnesses, enough participation rate
