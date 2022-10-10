@@ -1277,7 +1277,7 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
   {
-    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    CHECK_ARG_SIZE( 2 )
     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
     rc::list_rc_accounts_args a;
     a.start = args[0].as< account_name_type >();
@@ -1287,7 +1287,7 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, list_rc_direct_delegations )
   {
-    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    CHECK_ARG_SIZE( 2 )
     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
     rc::list_rc_direct_delegations_args a;
     a.start = args[0].as< vector< fc::variant > >();
