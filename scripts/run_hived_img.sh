@@ -74,7 +74,7 @@ while [ $# -gt 0 ]; do
         echo "Container name is: $CONTAINER_NAME"
         ;;
     --docker-option=*)
-        option="${o#*=}"
+        option="${1#*=}"
         add_docker_arg "$option"
         ;; 
     --help)
