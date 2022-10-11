@@ -88,6 +88,9 @@ ENV WS_PORT=${WS_PORT}
 ARG HTTP_PORT=8090
 ENV HTTP_PORT=${HTTP_PORT}
 
+ARG CLI_WALLET_PORT=8093
+ENV CLI_WALLET_PORT=${CLI_WALLET_PORT}
+
 SHELL ["/bin/bash", "-c"] 
 
 USER hived
@@ -123,6 +126,8 @@ EXPOSE ${P2P_PORT}
 EXPOSE ${WS_PORT}
 # JSON rpc service
 EXPOSE ${HTTP_PORT}
+# Port specific to HTTP cli_wallet server
+EXPOSE ${CLI_WALLET_PORT}
 
 FROM ${CI_REGISTRY_IMAGE}instance-5m:instance-${BUILD_IMAGE_TAG} as data
 
