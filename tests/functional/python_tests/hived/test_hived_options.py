@@ -110,3 +110,16 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
 
     assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
+
+
+def test_hived_get_version():
+    node = tt.RawNode()
+    version_json = node.get_version()
+
+    assert "version" in version_json
+
+    expected_keys = ["blockchain_version", "hive_revision", "fc_revision", "node_type"]
+    given_keys = list(version_json["version"].keys())
+    assert expected_keys == given_keys
+
+    assert version_json["version"]["node_type"] == "testnet"
