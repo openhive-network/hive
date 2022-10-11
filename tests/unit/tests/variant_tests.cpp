@@ -7,10 +7,15 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/reflect/typename.hpp>
 #include <fc/exception/exception.hpp>
+#include <fc/io/json.hpp>
+
+#include <hive/protocol/block.hpp>
 
 #include <string>
+#include <filesystem>
 #include <functional>
 #include <limits>
+#include <fstream>
 
 // Used later in `reflected` tests
 namespace variant_tests
@@ -668,6 +673,65 @@ HIVE_AUTO_TEST_CASE( variant_compare_ne,
   BOOST_REQUIRE( (fc::variant{ true } != fc::variant{ 1 }) );
   BOOST_REQUIRE( (fc::variant{ "alice" } != fc::variant{ "bob" }) );
 )
+
+/**
+ * @brief Tests performance of the variant and variant_object
+ *
+ * This test case is disabled by default, due to its long execution time
+ * To run this test simply execute the following line from your build directory:
+ * ```bash
+ * ./tests/unit/chain_test -t variant_tests/variant_optimization
+ * ```
+ * Results will be dumped at the end
+ */
+BOOST_AUTO_TEST_CASE( variant_optimization, *boost::unit_test::disabled() )
+{
+  try
+  {
+    std::filesystem::path fp = __FILE__;
+
+    std::ifstream file( fp.replace_filename( "blocks.json" ) );
+    FC_ASSERT( file.is_open(), "Could not open the file: ${fp}", ("fp", static_cast< std::string >( fp )) );
+
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    auto init = fc::time_point::now();
+
+    fc::variants v = fc::json::from_string( content )["result"]["blocks"].get_array();
+
+    fc::variants v_out;
+    v_out.resize( v.size() );
+
+    auto start = fc::time_point::now();
+    auto init_took = start - init;
+
+    for( size_t i = 0; i < v.size(); ++i )
+    {
+      hive::protocol::signed_block sb;
+      fc::from_variant( v.at(i), sb );
+
+      const auto deserialized_id = sb.legacy_id();
+      const auto parsed_id = hive::protocol::block_id_type{ v.at(i)["block_id"].template as<fc::string>() };
+
+      FC_ASSERT( deserialized_id != hive::protocol::block_id_type{}, "Deserialization error: block id could not be parsed" );
+      FC_ASSERT( deserialized_id == parsed_id, "Deserialization error: ids do not match", ("deserialized_id",deserialized_id)("parsed_id",parsed_id) );
+
+      fc::to_variant( sb, v_out.at(i) );
+
+      const auto serialized_rbn = v_out.at(i)["timestamp"].as< fc::time_point_sec >().sec_since_epoch();
+      const auto parsed_rbn = sb.timestamp.sec_since_epoch();
+
+      FC_ASSERT( serialized_rbn == parsed_rbn, "Serialization error: block ref_block_num do not match", ("serialized_rbn",serialized_rbn)("parsed_rbn",parsed_rbn) );
+    }
+
+    auto took = fc::time_point::now() - start;
+
+    dlog("Processed ${n} blocks within ${time}us (avg. ${avg}us per block). JSON parsing took ${init}us", ("n", v.size())("time", took)("avg", took.count() / v.size())("init", init_took) );
+
+    file.close();
+  }
+  FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif
