@@ -58,6 +58,12 @@ But if you would still like to build from source, we also have [build instructio
 
 Building a docker image is described here: [Building under Docker](https://gitlab.syncad.com/hive/hive/-/blob/master/doc/building.md#building-under-docker)
 
+If you'd like to use our already pre-built official binary images, it's as simple as downloading it from the Dockerhub registry with only one command:
+
+```
+docker pull hiveio/hive
+```
+
 To run a Hive consensus node there are needed resources:
 - data directory to hold a blockchain file(s) (ca 400GB is required)
 - storage to hold a shared memory file (ca. 24GB of memory is required at the moment to store state data):
