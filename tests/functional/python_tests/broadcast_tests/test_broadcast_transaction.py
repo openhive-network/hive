@@ -41,3 +41,19 @@ def test_broadcast_same_transaction_twice(node, wallet):
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.network_broadcast.broadcast_transaction(trx=transaction)
+
+
+@pytest.mark.parametrize(
+    "way_of_broadcasting",
+    [
+        "node.api.condenser.broadcast_transaction(transaction)",
+        "node.api.network_broadcast.broadcast_transaction(trx=transaction)",
+        "node.api.wallet_bridge.broadcast_transaction(transaction)",
+    ]
+)
+def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcasting):
+    transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
+    transaction = wallet.api.sign_transaction(transaction, broadcast=False)
+
+    eval(way_of_broadcasting)
+    assert 'alice' in wallet.list_accounts()

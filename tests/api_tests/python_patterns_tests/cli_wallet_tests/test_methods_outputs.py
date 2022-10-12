@@ -1,11 +1,14 @@
-import json
 import pathlib
 
 import pytest
 
 import test_tools as tt
 
+from ...local_tools import read_from_json_pattern, write_to_json_pattern
+
 STORE_PATTERNS = False
+
+__PATTERNS_DIRECTORY = pathlib.Path(__file__).with_name('response_patterns')
 
 
 @pytest.fixture
@@ -71,24 +74,10 @@ WALLET_API_METHODS = [
     'cli_wallet_method, arguments', WALLET_API_METHODS
 )
 def test_or_dump_methods_outputs(remote_node_wallet, cli_wallet_method, arguments):
-    patterns_directory = 'response_patterns'
     response = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
 
     if STORE_PATTERNS:
-        write_to_json(patterns_directory, cli_wallet_method, response)
+        write_to_json_pattern(__PATTERNS_DIRECTORY, cli_wallet_method, response)
     else:
-        pattern = read_from_json(patterns_directory, cli_wallet_method)
+        pattern = read_from_json_pattern(__PATTERNS_DIRECTORY, cli_wallet_method)
         assert response == pattern
-
-
-def read_from_json(folder_name, method_name):
-    path_to_folder = pathlib.Path(__file__).parent.absolute() / folder_name
-    with open(f'{path_to_folder}/{method_name}.pat.json', 'r') as json_file:
-        return json.load(json_file)
-
-
-def write_to_json(folder_name, method_name, json_response):
-    path_to_folder = pathlib.Path(__file__).parent.absolute() / folder_name
-    path_to_folder.mkdir(parents=True, exist_ok=True)
-    with open(f'{path_to_folder}/{method_name}.pat.json', 'w') as json_file:
-        json.dump(json_response, json_file)

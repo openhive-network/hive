@@ -11,6 +11,31 @@ from ..local_tools import parse_datetime
 
 from ..local_tools import init_network
 
+from ....local_tools import date_from_now
+
+
+@pytest.fixture
+def node_hf25() -> tt.InitNode:
+    node = tt.InitNode()
+    date_as_seconds = calculate_epoch_time(date_from_now(weeks=10))
+    node.run(environment_variables={"HIVE_HF26_TIME": str(date_as_seconds)})
+    return node
+
+@pytest.fixture
+def node_hf26() -> tt.InitNode:
+    node = tt.InitNode()
+    node.run()
+    return node
+
+@pytest.fixture
+def wallet_hf25(node_hf25) -> tt.Wallet:
+    return tt.Wallet(attach_to=node_hf25)
+
+@pytest.fixture
+def wallet_hf26(node_hf26) -> tt.Wallet:
+    return tt.Wallet(attach_to=node_hf26)
+
+
 def prepare_network(witnesses_number: int, network_name : str, allow_create_init_node : bool, allow_create_api_node : bool):
     tt.logger.info(f'Prototypes of nodes(init, witness, api) are created...')
 

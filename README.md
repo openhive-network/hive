@@ -58,6 +58,12 @@ But if you would still like to build from source, we also have [build instructio
 
 Building a docker image is described here: [Building under Docker](https://gitlab.syncad.com/hive/hive/-/blob/master/doc/building.md#building-under-docker)
 
+If you'd like to use our already pre-built official binary images, it's as simple as downloading it from the Dockerhub registry with only one command:
+
+```
+docker pull hiveio/hive
+```
+
 To run a Hive consensus node there are needed resources:
 - data directory to hold a blockchain file(s) (ca 400GB is required)
 - storage to hold a shared memory file (ca. 24GB of memory is required at the moment to store state data):
@@ -123,9 +129,46 @@ General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option
     
     Other options can be as usually passed directly to the (run_hived_img.sh) command line (as hived-options) or explicitly specified in config.ini file.
 
+4. Running API node and associated cli_wallet in network daemon mode
+    To run an API node and next start a cli_wallet cooperating to it, use following steps:
+    - start a Hive container instance running hived enabled required set of plugins, like also having additionally mapped the port cli_wallet will be operating on. It is important to specify this optional port mapping at container start, since it can't be changed later, without restarting the container.
+    ```
+    ./run_hived_img.sh my-local-image --name=api-instance --data-dir=/home/hived/datadir --shared-file-dir=/dev/shm/hived/api_node \
+      --webserver-http-endpoint=0.0.0.0:8091 --webserver-ws-endpoint=0.0.0.0:8090 --p2p-endpoint=0.0.0.0:2001 \
+      --docker-option="-p 8093:8093" \
+      --plugin=account_history_api --plugin=database_api --plugin=condenser_api --plugin=account_by_key_api --plugin=wallet_bridge_api \
+      --force-replay
+    ```
+    - run a cli_wallet tool, which should execute **inside** docker container started in previous step
+    
+    ```
+    ./run_cli_wallet_img.sh api-instance \
+      --rpc-http-endpoint=0.0.0.0:8093 # that means that we want to expose from docker container the cli_wallet HTTP server at port 8093. This port value should match to the port specified at `--docker-option="-p 8093:8093"` passed to run_hived_img.sh
+      --rpc-http-allowip=172.17.0.1 # this is very important option, which allows to accept HTTP connections (incoming to cli_wallet) only from given IPs. This example value covers default docker bridge network address mode. Best to check given ip using `docker container inspect api-instance` and verify IP specific to its Networks property
+    ```
+
+    By default, the run_cli_wallet_img.sh script will instruct a cli_wallet to load/store its data (like password, imported keys to operate on) in the `wallet.json` file located in the directory specified as data-dir mapping during run_hived_img.sh spawn. You can also copy an existing wallet.json file to the data-dir. Then started cli_wallet will load such preconfigured values from it.
+
+    Then you can operate with cli_wallet using network API calls, like this:
+    
+    curl --request POST --url http://<your-container-ip>:8093/ --header 'Content-Type: application/json' --data '{"jsonrpc": "2.0", "id": 0, "method": "info", "params": []}'
+    curl --request POST --url http://<your-container-ip>:8093/ --header 'Content-Type: application/json' --data '{"jsonrpc": "2.0", "id": 0, "method": "unlock", "params": ["my-secres-pass"]}'
+    curl --request POST --url http://<your-container-ip>:8093/ --header 'Content-Type: application/json' --data '{"jsonrpc": "2.0", "id": 0, "method": "create_account", "params":  ["initminer", "alice", "{}", True]}'
+
 ## CLI Wallet
 
-We provide a basic cli wallet for interfacing with `hived`. The wallet is self-documented via command line help. The node you connect to via the cli wallet needs to be running the `account_by_key_api`, `condenser_api`, `wallet_bridge_api` and needs to be configured to accept WebSocket connections via `webserver-ws-endpoint`.
+We provide a basic cli wallet for interfacing with `hived`. The wallet is self-documented via command line help. The node you connect to via the cli wallet needs to be running the `account_by_key_api`, `condenser_api`, `database_api`, `account_history_api`, `wallet_bridge_api` and needs to be configured to accept WebSocket connections via `webserver-ws-endpoint`.
+
+cli_wallet tool offers two operating modes:
+- interactive, when given commands are executed in interactive command line
+- daemon based, where it is possible to execute wallet commands using RPC calls. It is important to specify also an IP set, which are allowed to establish connections to the wallet HTTP server. See `--rpc-http-endpoint`, `--daemon`, `--rpc-http-allowip` options for details
+
+To prepare transactions, you need to execute few setup steps in cli_wallet:
+- use set_password <password> call establish a password protecting your wallet from unauthorized access
+- use unlock <password> to turn full-operation mode in the wallet
+- import private key(s) using import_key "WIF-key" command
+
+Keys and password are stored in the wallet.json file.
 
 ## Testing
 

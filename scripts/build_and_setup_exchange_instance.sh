@@ -231,5 +231,5 @@ fi
 
 prepare_data_directory "${HIVED_DATADIR}" ${img_name} ${BLOCK_LOG_BASE_URL}
 
-"${HIVED_SOURCE_DIR}/scripts/run_hived_img.sh" ${img_name} ${IMPLICIT_SHM_DIR} "${RUN_HIVED_IMG_ARGS[@]}"
+"${HIVED_SOURCE_DIR}/scripts/run_hived_img.sh" ${img_name} --docker-option="-p 8093:8093" ${IMPLICIT_SHM_DIR} "${RUN_HIVED_IMG_ARGS[@]}"
 

@@ -163,6 +163,19 @@ def test_multidelegation(wallet: tt.Wallet):
         assert get_rc_account_info(accounts[account_index], wallet)['received_delegated_rc'] == amount_of_delegated_rc
 
 
+def test_delegations_cancellation_after_rollback_vest_delegation_to_delegator(wallet: tt.Wallet):
+    accounts = get_accounts_name(wallet.create_accounts(5, 'account'))
+    wallet.api.transfer_to_vesting('initminer', accounts[0], tt.Asset.Test(10000))
+    wallet.api.delegate_vesting_shares(accounts[0], accounts[1], tt.Asset.Vest(1000))
+    wallet.api.delegate_rc(accounts[1], accounts[2:5], 10)
+
+    assert len(wallet.api.list_rc_direct_delegations([accounts[1], accounts[0]], 100)) == 3
+
+    wallet.api.delegate_vesting_shares(accounts[0], accounts[1], tt.Asset.Vest(0))
+
+    assert len(wallet.api.list_rc_direct_delegations([accounts[1], accounts[0]], 100)) == 0
+
+
 def delegate_rc(wallet, delegator, receivers, amount_of_delegated_rc):
     tt.logger.info(f'Delegation accounts from range {receivers[0]} : {receivers[-1]}--------START')
     for account_number in range(0, len(receivers), 100):
