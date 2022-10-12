@@ -281,7 +281,9 @@ void database::load_state_initial_data(const open_args& args)
 uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
 {
   uint64_t skip_flags = skip_validate_invariants | skip_block_log;
-  if( !args.validate_during_replay )
+  if (args.validate_during_replay)
+    ulog("Doing full validation during replay at user request");
+  else
   {
     skip_flags |= skip_witness_signature |
       skip_transaction_signatures |
