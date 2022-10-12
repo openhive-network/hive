@@ -12,6 +12,7 @@
 #include <atomic>
 #include <iostream>
 #include <map>
+#include <future>
 #include <utility>
 #include <vector>
 #include <regex>
@@ -81,14 +82,14 @@ class notification_handler
     signal_connection_t connection;
     std::atomic_bool allowed_connection{true};
     std::map<fc::ip::endpoint, uint32_t> address_pool;
+
     bool allowed() const { return allowed_connection.load(); }
 
   public:
-    network_broadcaster(const std::vector<fc::ip::endpoint> &pool, signal_t &con)
+    network_broadcaster(const std::vector<fc::ip::endpoint> &pool)
     {
       for (const fc::ip::endpoint &addr : pool)
         address_pool[addr] = 0;
-      this->connection = con.connect([&](const notification_t &ev) { this->broadcast(ev); });
     }
 
     ~network_broadcaster()
@@ -100,6 +101,12 @@ class notification_handler
 
     void broadcast(const notification_t &ev) noexcept;
   };
+
+  template<typename ... KeyValuesTypes>
+  static void broadcast_impl(network_broadcaster& broadcaster, const fc::string& name, KeyValuesTypes&& ... key_value_types)
+  {
+    broadcaster.broadcast(notification_t{name, std::forward<KeyValuesTypes>(key_value_types)...});
+  }
 
 public:
   template <typename... KeyValuesTypes>
@@ -122,18 +129,38 @@ public:
     if(this->name_filter.valid() && !(std::regex_match(name, *this->name_filter) ^ this->exclude_matching))
       return;
 
-    on_send(notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...));
+    {
+      std::unique_lock<std::mutex> lck{mtx_access_futures};
+
+      if(futures.size() == max_amount_of_futures)
+      {
+        futures.clear();
+        futures.reserve(max_amount_of_futures);
+      }
+
+      futures.emplace_back(
+        std::async(
+          std::launch::async,
+          &notification_handler::broadcast_impl<KeyValuesTypes...>,
+          std::ref(*network),
+          std::ref(name),
+          std::forward<KeyValuesTypes>(key_value_types)...
+        )
+      );
+    }
   }
   void setup(const std::vector<fc::ip::endpoint> &address_pool, const fc::string& regex);
 
 private:
+  inline static const size_t max_amount_of_futures{ 100ul };
+  inline const static fc::string::value_type exclude_matching_sign{'!'};
 
-  signal_t on_send;
   std::unique_ptr<network_broadcaster> network;
   fc::optional<std::regex> name_filter;
   bool exclude_matching;
 
-  const static fc::string::value_type exclude_matching_sign{'!'};
+  std::vector<std::future<void>> futures;
+  std::mutex mtx_access_futures{};
 
   bool is_broadcasting_active() const;
 };
@@ -161,11 +188,10 @@ inline void notify(
     const fc::string &name,
     KeyValuesTypes &&...key_value_pairs) noexcept
 {
-  utilities::notifications::detail::error_handler([&]{
-    utilities::notifications::get_notification_handler_instance().broadcast(
-      name,
-      std::forward<KeyValuesTypes>(key_value_pairs)...
-    );
+  using namespace utilities::notifications;
+
+  detail::error_handler([&]{
+    get_notification_handler_instance().broadcast(name, std::forward<KeyValuesTypes>(key_value_pairs)...);
   });
 }
 

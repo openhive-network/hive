@@ -101,13 +101,15 @@ void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_po
     const size_t ap_size = address_pool.size();
     ilog("setting up notification handler for ${count} address${fix}", ("count", ap_size)( "fix", (ap_size > 1 ? "es" : "") ));
 
-    network = std::make_unique<network_broadcaster>(address_pool, on_send);
+    network = std::make_unique<network_broadcaster>(address_pool);
 
     if (!regex.empty() && !(regex.size() == 1 && regex[0] == notification_handler::exclude_matching_sign))
     {
       this->exclude_matching = (regex[0] == notification_handler::exclude_matching_sign);
       this->name_filter = std::regex(regex.substr(static_cast<size_t>(this->exclude_matching)));
     }
+
+    futures.reserve(max_amount_of_futures);
   }
 }
 
