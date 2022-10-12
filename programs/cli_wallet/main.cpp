@@ -237,10 +237,18 @@ int main( int argc, char** argv )
 
     std::string _store_transaction = options.count("store-transaction") ? options["store-transaction"].as<std::string>() : "";
 
+    bool daemon_mode_enabled = options.count("daemon");
+
+    if( !daemon_mode_enabled && ( options.count("rpc-endpoint") || options.count("rpc-tls-endpoint") || options.count("rpc-http-endpoint") ) )
+    {
+      ilog( "Daemon mode has been implicitly enabled by running the cli_wallet RPC server" );
+      daemon_mode_enabled = true;
+    }
+
     if( wdata.offline )
     {
       ilog( "Not connecting to server RPC endpoint, due to the offline option set" );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, options.count("daemon"), get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, fc::api< hive::plugins::wallet_bridge_api::wallet_bridge_api >{}, exit_promise, daemon_mode_enabled, get_output_formatter( options, output_formatter_type::text ), _transaction_serialization, _store_transaction );
     }
     else
     {
@@ -267,11 +275,11 @@ int main( int argc, char** argv )
       auto remote_api = apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
 
       output_formatter_type output_format;
-      if( options.count("daemon") )
+      if( daemon_mode_enabled )
         output_format = get_output_formatter( options, output_formatter_type::none );
       else
         output_format = get_output_formatter( options, output_formatter_type::text );
-      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, options.count("daemon"), output_format, _transaction_serialization, _store_transaction );
+      wapiptr = std::make_shared<wallet_api>( wdata, _hive_chain_id, remote_api, exit_promise, daemon_mode_enabled, output_format, _transaction_serialization, _store_transaction );
       closed_connection = con->closed.connect([=]{
         cerr << "Server has disconnected us.\n";
         wallet_cli->stop();
@@ -364,7 +372,7 @@ int main( int argc, char** argv )
       wapi->unlock( options.at("unlock").as<string>() );
     }
 
-    if( !options.count( "daemon" ) )
+    if( !daemon_mode_enabled )
     {
       wallet_cli->register_api( wapi );
       wallet_cli->start();
