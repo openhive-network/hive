@@ -16,18 +16,6 @@ def sign_transaction(transaction: dict, private_key: str, serialization_type: st
                                      input=input.encode(encoding='utf-8')).decode('utf-8')
     return json.loads(output)['result']
 
-def test_after_hf26(network_after_hf26):
-    wallet_legacy, wallet_hf26 = prepare_wallets(network_after_hf26)
-
-    legacy_operation_passed(wallet_legacy)
-    hf26_operation_passed(wallet_hf26)
-
-def test_after_hf26_without_majority(network_after_hf26_without_majority):
-    wallet_legacy, wallet_hf26 = prepare_wallets(network_after_hf26_without_majority)
-
-    legacy_operation_passed(wallet_legacy)
-    hf26_operation_failed(wallet_hf26)
-
 @pytest.mark.parametrize(
     'serialization_type,expected_signature', [
         (None,'1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411'),
