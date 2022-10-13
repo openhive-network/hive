@@ -5,8 +5,7 @@ import pytest
 
 import test_tools as tt
 
-from ..local_tools import init_network, parse_datetime
-
+from ....shared_tools.complex_networks import init_network, parse_datetime
 
 def prepare_wallets(api_node):
     tt.logger.info( "Attaching legacy/hf26 wallets..." )

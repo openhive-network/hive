@@ -1,5 +1,4 @@
-from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks,\
-                disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, lib_true_condition
+from ....shared_tools.complex_networks_helper_functions import *
 import test_tools as tt
 
 def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
@@ -38,8 +37,8 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
 
     logs = []
 
-    logs.append(fork_log("M", majority_witness_wallet))
-    logs.append(fork_log("m", tt.Wallet(attach_to = minority_api_node)))
+    logs.append(NodeLog("M", majority_witness_wallet))
+    logs.append(NodeLog("m", tt.Wallet(attach_to = minority_api_node)))
 
     _M = logs[0].collector
     _m = logs[1].collector
@@ -55,7 +54,7 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     blocks_after_reconnect          = 5
 
     tt.logger.info(f'Before disconnecting')
-    cnt = 0 
+    cnt = 0
     while True:
         wait(1, logs, majority_api_node)
 

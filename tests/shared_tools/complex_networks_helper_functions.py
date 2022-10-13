@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import time
 from typing import Dict, Iterable, List
+from datetime import datetime, timezone
 
 import test_tools as tt
 from test_tools.__private.init_node import InitNode
@@ -12,20 +13,19 @@ from test_tools.__private.wait_for import wait_for_event
 
 from ..local_tools import init_network
 
-
 def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
     """
-    :param op_type: type of operation (ex. 'producer_reward_operation')
+    :param op_type: type of operation (ex. "producer_reward_operation")
     :param start: start queries with this block number
     :param limit: limit queries until start-limit+1
     """
     count = {}
-    for i in range(start, start-limit, -1):
+    for i in range(start, start - limit, -1):
         response = node.api.account_history.get_ops_in_block(block_num=i, only_virtual=False)
         ops = response["ops"]
         count[i] = 0
-        for op in ops:
-            this_op_type = op["op"]["type"]
+        for current_op in ops:
+            this_op_type = current_op["op"]["type"]
             if this_op_type == op_type:
                 count[i] += 1
     return count
@@ -33,19 +33,19 @@ def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
 
 def check_account_history_duplicates(node, wallet):
     last_irreversible_block = wallet.api.info()["last_irreversible_block_num"]
-    node_reward_operations = count_ops_by_type(node, 'producer_reward_operation', last_irreversible_block, limit=50)
-    assert sum(i==1 for i in node_reward_operations.values()) == 50
+    node_reward_operations = count_ops_by_type(node, "producer_reward_operation", last_irreversible_block, limit=50)
+    assert sum(i == 1 for i in node_reward_operations.values()) == 50
 
 
 def assert_no_duplicates(node, *nodes):
-    nodes = [node, *nodes]
-    for node in nodes:
-        wallet = tt.Wallet(attach_to=node)
-        check_account_history_duplicates(node, wallet)
-    node.wait_number_of_blocks(10)
-    for node in nodes:
-        wallet = tt.Wallet(attach_to=node)
-        check_account_history_duplicates(node, wallet)
+    _nodes = [node, *nodes]
+    for _node in _nodes:
+        wallet = tt.Wallet(attach_to=_node)
+        check_account_history_duplicates(_node, wallet)
+    _node.wait_number_of_blocks(10)
+    for _node in _nodes:
+        wallet = tt.Wallet(attach_to=_node)
+        check_account_history_duplicates(_node, wallet)
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
@@ -79,9 +79,10 @@ def enable_witnesses(wallet : tt.Wallet, witness_details : list):
     with wallet.in_single_transaction():
         for name in witness_details:
             wallet.api.update_witness(
-                name, "https://" + name,
+                name,
+                "https://" + name,
                 tt.Account(name).public_key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
             )
 
 
@@ -90,9 +91,10 @@ def disable_witnesses(wallet : tt.Wallet, witness_details : list):
     with wallet.in_single_transaction():
         for name in witness_details:
             wallet.api.update_witness(
-                name, "https://" + name,
+                name,
+                "https://" + name,
                 key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
             )
 
 
@@ -111,7 +113,6 @@ def get_part_of_witness_details(witness_details : list, start, length : int):
         new_witness_details.append(witness_details[i])
     return new_witness_details
 
-
 def info(msg : str, wallet : tt.Wallet):
     info            = wallet.api.info()
     hb              = info['head_block_number']
@@ -120,36 +121,36 @@ def info(msg : str, wallet : tt.Wallet):
     tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib} current witness: {current_witness}')
     return hb, lib
 
-
-class fork_log:
+class NodeLog:
     def __init__(self, name, wallet):
-        self.name       = name
-        self.collector  = []
-        self.wallet     = wallet
+        self.name = name
+        self.collector = []
+        self.wallet = wallet
 
     def append(self):
-        self.collector.append( info(self.name, self.wallet) )
+        self.collector.append(info(self.name, self.wallet))
 
 
-def wait(blocks, log : List[fork_log], api_node):
+def wait(blocks, log : List[NodeLog], api_node):
     for i in range(blocks):
 
         for current in log:
             current.append()
 
         api_node.wait_number_of_blocks(1)
-        tt.logger.info(f'{i+1}/{blocks} blocks')
+        tt.logger.info(f"{i+1}/{blocks} blocks")
 
 
-def final_block_the_same(method, data : list):
+def final_block_the_same(method, data: list):
     current = None
     for item in data:
         if current is None:
             current = item
         else:
-            if method( current ) != method( item ):
+            if method(current) != method(item):
                 return False
     return True
+
 
 def lib_true_condition():
     return True
@@ -162,19 +163,20 @@ def lib_custom_condition(compared_item1, compared_item2):
 def wait_for_final_block(witness_node, logs, data : list, allow_lib = True, lib_cond = lib_true_condition, allow_last_head = True):
     assert allow_lib or allow_last_head
 
-    #Hard to say when all nodes would have the same HEAD's/LIB's. All nodes are connected together in common network
-    #so sometimes one or two nodes are "delayed" - their LIB is lower than LIB others.
-    #The best option is to wait until every node has the same data: it doesn't matter if such situation occurs after 5 or 25 blocks.
-    #In case when nodes wouldn't have the same data, it's an obvious error and CI will finish this test.
+    # Hard to say when all nodes would have the same HEAD"s/LIB"s. All nodes are connected together in common network
+    # so sometimes one or two nodes are "delayed" - their LIB is lower than LIB others.
+    # The best option is to wait until every node has the same data.
+    # It doesn"t matter if such situation occurs after 5 or 25 blocks.
+    # In case when nodes wouldn"t have the same data, it"s an obvious error and CI will finish this test.
     while True:
         wait(1, logs, witness_node)
 
-        #Veryfing if all nodes have the same last irreversible block number
+        # Veryfing if all nodes have the same last irreversible block number
         if allow_lib:
             if lib_cond() and final_block_the_same(get_last_irreversible_block_num, data):
                 return False
 
-        #Veryfing if all nodes have the same last head block number
+        # Veryfing if all nodes have the same last head block number
         if allow_last_head:
             if final_block_the_same(get_last_head_block_number, data):
                 return False

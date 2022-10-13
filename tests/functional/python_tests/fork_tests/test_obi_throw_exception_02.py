@@ -1,6 +1,15 @@
-from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, wait_for_specific_witnesses
-import test_tools as tt
 import time
+
+import test_tools as tt
+
+from ....shared_tools.complex_networks_helper_functions import (
+    wait,
+    get_last_head_block_number,
+    get_last_irreversible_block_num,
+    wait_for_final_block,
+    wait_for_specific_witnesses,
+    NodeLog
+)
 
 def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     # start - A network (consists of a 'A' network(10 witnesses) + a 'B' network(11 witnesses)) produces blocks
@@ -22,11 +31,11 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
 
     logs = []
 
-    logs.append(fork_log("a0", tt.Wallet(attach_to = api_node_0)))
-    logs.append(fork_log("w0", tt.Wallet(attach_to = witness_node_0)))
+    logs.append(NodeLog("a0", tt.Wallet(attach_to = api_node_0)))
+    logs.append(NodeLog("w0", tt.Wallet(attach_to = witness_node_0)))
 
-    logs.append(fork_log("a1", tt.Wallet(attach_to = api_node_1)))
-    logs.append(fork_log("w1", tt.Wallet(attach_to = witness_node_1)))
+    logs.append(NodeLog("a1", tt.Wallet(attach_to = api_node_1)))
+    logs.append(NodeLog("w1", tt.Wallet(attach_to = witness_node_1)))
 
     _a0 = logs[0].collector
     _w0 = logs[1].collector
