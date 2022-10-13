@@ -4,7 +4,7 @@ import pytest
 
 import test_tools as tt
 
-from ..local_tools import parse_datetime
+from ....shared_tools.complex_networks import parse_datetime
 
 
 def test_transaction(wallet):
