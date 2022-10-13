@@ -1,12 +1,14 @@
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 import pytest
 
 import test_tools as tt
 
-from ..local_tools import init_network, parse_datetime
+from shared_tools.complex_networks import init_network
 
+def parse_datetime(datetime_: str) -> datetime:
+    return datetime.strptime(datetime_, '%Y-%m-%dT%H:%M:%S')
 
 def prepare_wallets(api_node):
     tt.logger.info( "Attaching legacy/hf26 wallets..." )

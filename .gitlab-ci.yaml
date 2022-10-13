@@ -231,7 +231,7 @@ plugin_test:
     before_script:
       - python3 -m venv venv/
       - . venv/bin/activate
-      - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+      - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas" "$CI_PROJECT_DIR/tests/shared_tools"
     artifacts:
       reports:
         junit: $JUNIT_REPORT

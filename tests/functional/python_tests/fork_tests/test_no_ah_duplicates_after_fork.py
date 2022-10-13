@@ -1,11 +1,9 @@
-import test_tools as tt
-
-from .local_tools import assert_no_duplicates
+from shared_tools.complex_networks_helper_functions import *
 
 
-def test_no_duplicates_in_account_history_plugin_after_fork(prepared_networks):
-    alpha_net = prepared_networks['Alpha']
-    beta_net = prepared_networks['Beta']
+def test_no_duplicates_in_account_history_plugin_after_fork(prepare_basic_networks):
+    alpha_net = prepare_basic_networks['Alpha']
+    beta_net = prepare_basic_networks['Beta']
 
     alpha_node = alpha_net.node('ApiNode0')
     beta_node = beta_net.node('ApiNode1')

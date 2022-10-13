@@ -1,9 +1,7 @@
-from .local_tools import connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, \
-                        wait_for_final_block, lib_custom_condition
-
-import test_tools as tt
-
 from functools import partial
+
+from shared_tools.complex_networks_helper_functions import *
+import test_tools as tt
 
 def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
     # start - A network consists of a 'minority_7a' network(7 witnesses), a 'minority_7b' network(7 witnesses), a 'minority_7c' network(7 witnesses).
@@ -23,9 +21,9 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
 
     logs = []
 
-    logs.append(fork_log("m7a", tt.Wallet(attach_to = minority_api_node_7a)))
-    logs.append(fork_log("m7b", tt.Wallet(attach_to = minority_api_node_7b)))
-    logs.append(fork_log("m7c", tt.Wallet(attach_to = minority_api_node_7c)))
+    logs.append(NodeLog("m7a", tt.Wallet(attach_to = minority_api_node_7a)))
+    logs.append(NodeLog("m7b", tt.Wallet(attach_to = minority_api_node_7b)))
+    logs.append(NodeLog("m7c", tt.Wallet(attach_to = minority_api_node_7c)))
 
     _m7a = logs[0].collector
     _m7b = logs[1].collector
@@ -35,7 +33,7 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
     blocks_after_disconnect     = 10
 
     tt.logger.info(f'Before disconnecting')
-    cnt = 0 
+    cnt = 0
     while True:
         wait(1, logs, minority_api_node_7a)
 
