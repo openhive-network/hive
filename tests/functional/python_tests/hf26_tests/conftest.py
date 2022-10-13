@@ -14,3 +14,7 @@ def create_block_log_directory_name(name : str):
 @pytest.fixture
 def prepare_network_before_hf26() -> Dict:
     yield { 'sub-networks-data': prepare_sub_networks([20], allow_generate_block_log(), create_block_log_directory_name('block_log_network_before_hf26')) }
+
+@pytest.fixture
+def prepare_network_after_hf26() -> Dict:
+    yield { 'sub-networks-data': prepare_sub_networks([20], allow_generate_block_log(), create_block_log_directory_name('block_log_network_after_hf26')) }
