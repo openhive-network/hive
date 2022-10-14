@@ -2,10 +2,10 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import create_account_and_fund_it
+from .....local_tools import create_account_and_fund_it, run_for
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_hf26_serialization, request):
     create_and_power_account_and_update_witness(wallet_with_hf26_serialization)
 
@@ -16,7 +16,7 @@ def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_hf
     assert bin_transaction.find(b'TESTS') == -1
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_is_legacy_keyword_TESTS_is_in_legacy_transaction(node, wallet_with_legacy_serialization, request):
     create_and_power_account_and_update_witness(wallet_with_legacy_serialization)
 
@@ -27,7 +27,7 @@ def test_is_legacy_keyword_TESTS_is_in_legacy_transaction(node, wallet_with_lega
     assert bin_transaction.find(b'TESTS') != -1
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_update_witness_serialization(node, wallet, request):
     create_account_and_fund_it(wallet, 'alice', vests=tt.Asset.Test(100))
     update_witness = wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').public_key,

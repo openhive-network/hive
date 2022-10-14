@@ -1,7 +1,9 @@
 import pytest
 
+from ....local_tools import run_for
 
-@pytest.mark.testnet
+
+@run_for('testnet')
 def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
     already_generated_transaction_ids = set()
 
@@ -17,7 +19,7 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
 # If the transactions do not enter a single block, they will be split between two blocks.
 # In this case, the test is repeated.
 @pytest.mark.flaky(reruns=5, reruns_delay=30)
-@pytest.mark.testnet
+@run_for('testnet')
 def test_if_transaction_ids_order_corresponds_to_transactions_order(node, wallet):
     names = [f'account-{i:02d}' for i in range(50)]
 
