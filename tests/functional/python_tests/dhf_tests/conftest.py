@@ -12,6 +12,21 @@ CREATOR: Final[str] = "initminer"
 TREASURY: Final[str] = "hive.fund"
 
 
+def pytest_addoption(parser):
+    parser.addoption("--chain-id", type=int, help="chain-id used for converting and running node")
+    parser.addoption("--skeleton-key", type=str, help="skeleton-key used for converting and running node")
+
+
+@pytest.fixture
+def chain_id(request):
+    return request.config.getoption("--chain-id") or 42
+
+
+@pytest.fixture
+def skeleton_key(request):
+    return request.config.getoption("--skeleton-key") or "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+
+
 def create_proposals(node, accounts, start_date, end_date, wif=None):
     tt.logger.info("Creating proposals...")
     for account in accounts:
