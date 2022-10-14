@@ -33,6 +33,7 @@ class wallet_bridge_api_impl
     DECLARE_API_IMPL(
         (get_version)
         (get_witness_schedule)
+        (get_future_witness_schedule)
         (get_current_median_history_price)
         (get_hardfork_version)
         (get_block)
@@ -268,6 +269,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness_schedule )
 {
   FC_ASSERT(_database_api , "database_api_plugin not enabled." );
   return _database_api->get_witness_schedule({});
+}
+
+DEFINE_API_IMPL( wallet_bridge_api_impl, get_future_witness_schedule )
+{
+  FC_ASSERT(_database_api , "database_api_plugin not enabled." );
+  return _database_api->get_future_witness_schedule({});
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_current_median_history_price )
@@ -821,6 +828,7 @@ DEFINE_READ_APIS(
   (get_block)
   (get_chain_properties)
   (get_witness_schedule)
+  (get_future_witness_schedule)
   (get_current_median_history_price)
   (get_hardfork_version)
   (get_feed_history)

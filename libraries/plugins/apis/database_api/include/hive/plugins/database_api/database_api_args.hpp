@@ -100,6 +100,11 @@ typedef api_dynamic_global_property_object   get_dynamic_global_properties_retur
 typedef void_type                   get_witness_schedule_args;
 typedef api_witness_schedule_object get_witness_schedule_return;
 
+/* get_future_witness_schedule */
+
+typedef void_type                   get_future_witness_schedule_args;
+typedef api_witness_schedule_object get_future_witness_schedule_return;
+
 
 /* get_hardfork_properties */
 

@@ -73,6 +73,7 @@ namespace detail
         (get_current_median_history_price)
         (get_feed_history)
         (get_witness_schedule)
+        (get_future_witness_schedule)
         (get_hardfork_version)
         (get_next_scheduled_hardfork)
         (get_reward_fund)
@@ -307,6 +308,12 @@ namespace detail
   {
     CHECK_ARG_SIZE( 0 )
     return _database_api->get_witness_schedule( {} );
+  }
+
+  DEFINE_API_IMPL( condenser_api_impl, get_future_witness_schedule )
+  {
+    CHECK_ARG_SIZE( 0 )
+    return _database_api->get_future_witness_schedule( {} );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_hardfork_version )
@@ -1404,6 +1411,7 @@ DEFINE_READ_APIS( condenser_api,
   (get_current_median_history_price)
   (get_feed_history)
   (get_witness_schedule)
+  (get_future_witness_schedule)
   (get_hardfork_version)
   (get_next_scheduled_hardfork)
   (get_reward_fund)

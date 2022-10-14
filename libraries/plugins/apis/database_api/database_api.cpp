@@ -50,6 +50,7 @@ class database_api_impl
       (get_version)
       (get_dynamic_global_properties)
       (get_witness_schedule)
+      (get_future_witness_schedule)
       (get_hardfork_properties)
       (get_reward_funds)
       (get_current_price_feed)
@@ -283,6 +284,11 @@ DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
 DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
 {
   return api_witness_schedule_object( _db.get_witness_schedule_object(), _db );
+}
+
+DEFINE_API_IMPL( database_api_impl, get_future_witness_schedule )
+{
+  return api_witness_schedule_object( _db.get_future_witness_schedule_object(), _db );
 }
 
 DEFINE_API_IMPL( database_api_impl, get_hardfork_properties )
@@ -2049,6 +2055,7 @@ DEFINE_LOCKLESS_APIS( database_api, (get_config)(get_version) )
 DEFINE_READ_APIS( database_api,
   (get_dynamic_global_properties)
   (get_witness_schedule)
+  (get_future_witness_schedule)
   (get_hardfork_properties)
   (get_reward_funds)
   (get_current_price_feed)

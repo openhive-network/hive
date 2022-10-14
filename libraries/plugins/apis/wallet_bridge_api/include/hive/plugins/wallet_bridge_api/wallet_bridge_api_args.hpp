@@ -20,6 +20,10 @@ typedef database_api::get_version_return   get_version_return;
 typedef variant                                     get_witness_schedule_args;
 typedef database_api::get_witness_schedule_return   get_witness_schedule_return;
 
+/* get_future_witness_schedule */
+typedef variant                                            get_future_witness_schedule_args;
+typedef database_api::get_future_witness_schedule_return   get_future_witness_schedule_return;
+
 /* get_current_median_history_price */
 typedef variant             get_current_median_history_price_args;
 typedef protocol::price     get_current_median_history_price_return;

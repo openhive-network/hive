@@ -16,6 +16,7 @@ class wallet_bridge_api
     DECLARE_API(
         (get_version)
         (get_witness_schedule)
+        (get_future_witness_schedule)
         (get_current_median_history_price)
         (get_hardfork_version)
         (get_block)
@@ -64,6 +65,7 @@ FC_API(
   hive::plugins::wallet_bridge_api::wallet_bridge_api,
   (get_version)
   (get_witness_schedule)
+  (get_future_witness_schedule)
   (get_current_median_history_price)
   (get_hardfork_version)
   (get_block)
