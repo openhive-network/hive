@@ -1,9 +1,11 @@
 #ifndef HIVE_HARDFORK_1_26
 #define HIVE_HARDFORK_1_26 26
 
-long next_hf_time();
-
-#define HIVE_HARDFORK_1_26_TIME next_hf_time()
+#ifdef IS_TEST_NET
+# define HIVE_HARDFORK_1_26_TIME 1643716800 // Tuesday, 1 February 2022 12:00:00
+#else
+# define HIVE_HARDFORK_1_26_TIME 1665489600 // Tuesday, 11 October 2022 12:00:00 GMT
+#endif /// IS_TEST_NET
 
 #define HIVE_HARDFORK_1_26_VERSION hive::protocol::hardfork_version( 1, 26 )
 

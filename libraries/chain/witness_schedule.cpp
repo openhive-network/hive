@@ -14,11 +14,10 @@ using hive::chain::util::rd_system_params;
 using hive::chain::util::rd_user_params;
 using hive::chain::util::rd_validate_user_params;
 
-// this is only called on application of hf4, and the future witness schedule doesn't take
-// effect until a much later hard fork, so we only need to operate on the current witness schedule here.
 void reset_virtual_schedule_time( database& db )
 { try {
-  const witness_schedule_object& wso = db.get_witness_schedule_object();
+  const witness_schedule_object& wso = db.has_hardfork(HIVE_HARDFORK_1_27_FIX_TIMESHARE_WITNESS_SCHEDULING) ?
+                                       db.get_witness_schedule_object_for_irreversibility() : db.get_witness_schedule_object();
   db.modify( wso, [&](witness_schedule_object& o )
   {
     o.current_virtual_time = fc::uint128(); // reset it 0
