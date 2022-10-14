@@ -129,7 +129,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
 
 
 @pytest.fixture
-def should_prepare(prepared_node) -> bool:
+def should_prepare(node) -> bool:
     """
     When tests are run on mainnet or mirrornet node, where block log contains operations and blockchain state reflects
     real world blockchain, there is no need to perform any additional preparation for most of test cases. Tests usually
@@ -145,11 +145,11 @@ def should_prepare(prepared_node) -> bool:
     Example use case:
     ```
     @run_for('testnet', 'mainnet_5m')
-    def test_some_method(prepared_node, should_prepare):
+    def test_some_method(node, should_prepare):
         if should_prepare:
-            perform_additional_preparation(prepared_node)  # Optional preparation only executed in testnet
+            perform_additional_preparation(node)  # Optional preparation only executed in testnet
 
-        prepared_node.api.some_api.some_method()  # Common part
+        node.api.some_api.some_method()  # Common part
     ```
     """
-    return not isinstance(prepared_node, tt.RemoteNode)
+    return not isinstance(node, tt.RemoteNode)
