@@ -48,30 +48,6 @@ def get_time_offset_from_iso_8601(timestamp: str) -> str:
     time_offset = f'{difference}s'
     return time_offset
 
-def connect_sub_networks(sub_networks : list):
-    assert len(sub_networks) > 1
-
-    current_idx = 0
-    while current_idx < len(sub_networks) - 1:
-        next_current_idx = current_idx + 1
-        while next_current_idx < len(sub_networks):
-            tt.logger.info(f"Sub network {current_idx} connected with {next_current_idx}")
-            sub_networks[current_idx].connect_with(sub_networks[next_current_idx])
-            next_current_idx += 1
-        current_idx += 1
-
-def disconnect_sub_networks(sub_networks : list):
-    assert len(sub_networks) > 1
-
-    current_idx = 0
-    while current_idx < len(sub_networks) - 1:
-        next_current_idx = current_idx + 1
-        while next_current_idx < len(sub_networks):
-            tt.logger.info(f"Sub network {current_idx} disconnected from {next_current_idx}")
-            sub_networks[current_idx].disconnect_from(sub_networks[next_current_idx])
-            next_current_idx += 1
-        current_idx += 1
-
 def enable_witnesses(wallet : tt.Wallet, witness_details : list):
     with wallet.in_single_transaction():
         for name in witness_details:

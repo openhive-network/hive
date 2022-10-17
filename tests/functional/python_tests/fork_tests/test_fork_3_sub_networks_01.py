@@ -1,4 +1,5 @@
-from .local_tools import connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from ..local_tools import connect_sub_networks, disconnect_sub_networks
 import test_tools as tt
 
 def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):

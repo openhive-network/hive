@@ -1,4 +1,5 @@
-from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from ..local_tools import connect_sub_networks, disconnect_sub_networks
 import test_tools as tt
 
 def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
