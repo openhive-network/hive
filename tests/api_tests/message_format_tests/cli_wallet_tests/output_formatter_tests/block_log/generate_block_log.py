@@ -9,7 +9,7 @@ def prepare_block_log_with_transactions():
 
     wallet = tt.Wallet(attach_to=node)
 
-    prepare_transactions(wallet)
+    prepare_transactions_for_get_account_history_test(wallet)
 
     # Wait to appear transactions in block log
     node.wait_number_of_blocks(21)
@@ -19,7 +19,7 @@ def prepare_block_log_with_transactions():
     node.get_block_log(include_index=False).copy_to(Path(__file__).parent.absolute())
 
 
-def prepare_transactions(wallet) -> None:
+def prepare_transactions_for_get_account_history_test(wallet) -> None:
     wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     wallet.api.post_comment('alice', 'test-permlink', '', 'someone0', 'test-title', 'this is a body', '{}')
