@@ -66,7 +66,9 @@ def get_time_offset_from_file(file: Path):
     return time_offset
 
 def connect_sub_networks(sub_networks : list):
-    assert len(sub_networks) > 1
+    assert len(sub_networks) > 0
+    if len(sub_networks) == 1:
+        return
 
     current_idx = 0
     while current_idx < len(sub_networks) - 1:
@@ -78,7 +80,9 @@ def connect_sub_networks(sub_networks : list):
         current_idx += 1
 
 def disconnect_sub_networks(sub_networks : list):
-    assert len(sub_networks) > 1
+    assert len(sub_networks) > 0
+    if len(sub_networks) == 1:
+        return
 
     current_idx = 0
     while current_idx < len(sub_networks) - 1:
@@ -155,12 +159,17 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
     if blocklog_directory is not None:
         time_offset = get_time_offset_from_file(blocklog_directory/'timestamp')
         block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
-
-    tt.logger.info('Running nodes...')
+        tt.logger.info(f'Running nodes with time offset {time_offset} ...')
+    else:
+        tt.logger.info(f'Running nodes without offset...')
 
     connect_sub_networks(networks)
 
     nodes = [node for network in networks for node in network.nodes]
+
+    for node in nodes:
+        tt.logger.info(f'Created `{get_implementation(node).get_name()}` node')
+
     if blocklog_directory is not None:
         nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=time_offset)
     else:
@@ -179,7 +188,7 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
 
     deadline = time.time() + InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT
     for node in nodes:
-        tt.logger.debug(f'Waiting for {node} to be live...')
+        tt.logger.debug(f'Waiting for {node} to be live( timeout: {InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT})...')
         wait_for_event(
             get_implementation(node)._Node__notifications.live_mode_entered_event,
             deadline=deadline,
