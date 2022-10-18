@@ -9,11 +9,15 @@ from ..local_tools import init_network, parse_datetime
 from ....local_tools import date_from_now
 
 
+def run_with_faketime(node, time):
+    #time example: '2020-01-01T00:00:00'
+    requested_start_time = tt.Time.parse(time)
+    node.run(time_offset=f'{tt.Time.serialize(requested_start_time, format_="@%Y-%m-%d %H:%M:%S")}')
+
 @pytest.fixture
 def node_hf25() -> tt.InitNode:
     node = tt.InitNode()
-    date_as_seconds = calculate_epoch_time(date_from_now(weeks=10))
-    node.run(environment_variables={"HIVE_HF26_TIME": str(date_as_seconds)})
+    run_with_faketime(node, '2022-10-10T10:10:10')
     return node
 
 
