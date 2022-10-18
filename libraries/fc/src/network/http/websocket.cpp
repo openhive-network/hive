@@ -194,7 +194,7 @@ namespace fc { namespace http {
                     }).wait();
                });
                _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
-                    _server_thread.async( [&](){
+                    auto response_future = _server_thread.async( [&](){
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
                        wdump(("server")(msg->get_payload()));
@@ -205,11 +205,14 @@ namespace fc { namespace http {
                        auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
                        if( _pending_messages > 100 ) 
                          f.wait();
-                    }).wait();
+                    });
+                    
+                    requests_in_progress.emplace_back(fc::async([&](){ _on_message( response_future ); }, "websocket_server handle_connection"));
+                    response_future.wait();
                });
 
                _server.set_http_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
+                    auto response_future = _server_thread.async( [&](){
                        auto current_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
                        _on_connection( current_con );
 
@@ -225,7 +228,10 @@ namespace fc { namespace http {
                           con->send_http_response();
                           current_con->closed();
                        }, "call on_http");
-                    }).wait();
+                    });
+
+                    requests_in_progress.emplace_back(fc::async([&](){ _on_message( response_future ); }, "websocket_server handle_connection"));
+                    response_future.wait();
                });
 
                _server.set_close_handler( [&]( connection_hdl hdl ){
@@ -271,6 +277,26 @@ namespace fc { namespace http {
                if( _connections.size() )
                   _closed = new fc::promise<void>();
 
+               for (fc::future<void>& request_in_progress : requests_in_progress)
+               {
+                  try
+                  {
+                     request_in_progress.cancel_and_wait();
+                  }
+                  catch (const fc::exception& e)
+                  {
+                     wlog("Caught exception while canceling websocket request task: ${error}", ("error", e));
+                  }
+                  catch (const std::exception& e)
+                  {
+                     wlog("Caught exception while canceling websocket request task: ${error}", ("error", e.what()));
+                  }
+                  catch (...)
+                  {
+                     wlog("Caught unknown exception while canceling websocket request task");
+                  }
+               }
+
                auto cpy_con = _connections;
                for( auto item : cpy_con )
                   _server.close( item.first, 0, "server exit" );
@@ -284,8 +310,11 @@ namespace fc { namespace http {
             fc::thread&              _server_thread;
             websocket_server_type    _server;
             on_connection_handler    _on_connection;
+            on_message_handler       _on_message;
             fc::promise<void>::ptr   _closed;
             uint32_t                 _pending_messages = 0;
+
+            std::vector<fc::future<void>> requests_in_progress;
       };
 
       class websocket_tls_server_impl
@@ -323,17 +352,20 @@ namespace fc { namespace http {
                     }).wait();
                });
                _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
-                    _server_thread.async( [&](){
+                    auto response_future = _server_thread.async( [&](){
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
                        auto received = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
                        fc::async([con,received](){ con->on_message( received ); });
-                    }).wait();
+                    });
+
+                    requests_in_progress.emplace_back(fc::async([&](){ _on_message( response_future ); }, "websocket_server handle_connection"));
+                    response_future.wait();
                });
 
                _server.set_http_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
+                    auto response_future = _server_thread.async( [&](){
 
                        auto current_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
                        try{
@@ -351,7 +383,10 @@ namespace fc { namespace http {
                        }
                        current_con->closed();
 
-                    }).wait();
+                    });
+
+                    requests_in_progress.emplace_back(fc::async([&](){ _on_message( response_future ); }, "websocket_server handle_connection"));
+                    response_future.wait();
                });
 
                _server.set_close_handler( [&]( connection_hdl hdl ){
@@ -379,6 +414,26 @@ namespace fc { namespace http {
                if( _server.is_listening() )
                   _server.stop_listening();
                auto cpy_con = _connections;
+               for (fc::future<void>& request_in_progress : requests_in_progress)
+               {
+                  try
+                  {
+                     request_in_progress.cancel_and_wait();
+                  }
+                  catch (const fc::exception& e)
+                  {
+                     wlog("Caught exception while canceling websocket request task: ${error}", ("error", e));
+                  }
+                  catch (const std::exception& e)
+                  {
+                     wlog("Caught exception while canceling websocket request task: ${error}", ("error", e.what()));
+                  }
+                  catch (...)
+                  {
+                     wlog("Caught unknown exception while canceling websocket request task");
+                  }
+               }
+               requests_in_progress.clear();
                for( auto item : cpy_con )
                   _server.close( item.first, 0, "server exit" );
             }
@@ -389,7 +444,10 @@ namespace fc { namespace http {
             fc::thread&                 _server_thread;
             websocket_tls_server_type   _server;
             on_connection_handler       _on_connection;
+            on_message_handler          _on_message;
             fc::promise<void>::ptr      _closed;
+
+            std::vector<fc::future<void>> requests_in_progress;
       };
 
 
@@ -620,6 +678,11 @@ namespace fc { namespace http {
       my->_on_connection = handler;
    }
 
+   void websocket_server::on_message( const on_message_handler& handler )
+   {
+      my->_on_message = handler;
+   }
+
    void websocket_server::listen( uint16_t port )
    {
       my->_server.listen(port);
@@ -642,6 +705,11 @@ namespace fc { namespace http {
    void websocket_tls_server::on_connection( const on_connection_handler& handler )
    {
       my->_on_connection = handler;
+   }
+
+   void websocket_tls_server::on_message( const on_message_handler& handler )
+   {
+      my->_on_message = handler;
    }
 
    void websocket_tls_server::listen( uint16_t port )
