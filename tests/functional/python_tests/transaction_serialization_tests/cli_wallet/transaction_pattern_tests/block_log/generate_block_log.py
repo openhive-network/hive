@@ -53,7 +53,7 @@ def prepare_blocklog():
 
     node.wait_number_of_blocks(21)
     node.close()
-    node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
+    node.get_block_log(include_index=False).copy_to(Path(__file__).parent.absolute())
 
 
 if __name__ == "__main__":
