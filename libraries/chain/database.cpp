@@ -62,7 +62,7 @@ long next_hf_time()
 #ifdef IS_TEST_NET
     1665532800; // Wednesday, October 12, 2022 0:00:00 GMT
 #else
-    1666699200; // Tuesday, October 25, 2022 12:00:00 GMT
+    1666612800; // Monday, 24 October 2022 12:00:00 GMT
 #endif /// IS_TEST_NET
 
   const char* value = getenv("HIVE_HF27_TIME");
