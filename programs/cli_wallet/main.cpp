@@ -27,6 +27,9 @@
 #include <iostream>
 #include <iterator>
 #include <future>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -72,6 +75,10 @@ namespace bpo = boost::program_options;
 namespace
 {
   fc::promise< int >::ptr exit_promise = new fc::promise<int>("cli_wallet exit promise");
+
+  std::condition_variable rpc_server_connections;
+  std::mutex rpc_server_mutex;
+  std::atomic< uint64_t > rpc_server_transactions = { 0 };
 
   void sig_handler(int signal)
   {
@@ -316,6 +323,12 @@ int main( int argc, char** argv )
         wsc->register_api(wapi);
         c->set_session_data( wsc );
       });
+      _websocket_server->on_message([&]( fc::future<void>& f ){
+          ++rpc_server_transactions;
+          f.wait();
+          --rpc_server_transactions;
+          rpc_server_connections.notify_all();
+      });
       ilog( "Listening for incoming RPC requests on ${p}", ("p", options.at("rpc-endpoint").as<string>() ));
       _websocket_server->listen( fc::ip::endpoint::from_string(options.at("rpc-endpoint").as<string>()) );
       _websocket_server->start_accept();
@@ -332,6 +345,12 @@ int main( int argc, char** argv )
         auto wsc = std::make_shared<fc::rpc::websocket_api_connection>(*c);
         wsc->register_api(wapi);
         c->set_session_data( wsc );
+      });
+      _websocket_tls_server->on_message([&]( fc::future<void>& f ){
+          ++rpc_server_transactions;
+          f.wait();
+          --rpc_server_transactions;
+          rpc_server_connections.notify_all();
       });
       ilog( "Listening for incoming TLS RPC requests on ${p}", ("p", options.at("rpc-tls-endpoint").as<string>() ));
       _websocket_tls_server->listen( fc::ip::endpoint::from_string(options.at("rpc-tls-endpoint").as<string>()) );
@@ -355,6 +374,8 @@ int main( int argc, char** argv )
       _http_server->on_request(
         [&]( const fc::http::request& req, const fc::http::server::response& resp )
         {
+          ++rpc_server_transactions;
+
           if( allowed_ip_set.find( fc::ip::endpoint::from_string(req.remote_endpoint).get_address() ) == allowed_ip_set.end() &&
               allowed_ip_set.find( fc::ip::address() ) == allowed_ip_set.end() ) {
             elog("Rejected connection from ${ip} because it isn't in allowed set ${s}", ("ip",req.remote_endpoint)("s",allowed_ip_set) );
@@ -365,6 +386,9 @@ int main( int argc, char** argv )
             std::make_shared< fc::rpc::http_api_connection>();
           conn->register_api( wapi );
           conn->on_request( req, resp );
+
+          --rpc_server_transactions;
+          rpc_server_connections.notify_all();
         } );
     }
 
@@ -385,6 +409,11 @@ int main( int argc, char** argv )
     }
 
     exit_promise->wait();
+    {
+      std::unique_lock< std::mutex > lk(rpc_server_mutex);
+      // 0 or 1 (exit method invoked)
+      rpc_server_connections.wait( lk, [&]{ return rpc_server_transactions <= 1; } );
+    }
     wallet_cli->stop();
 
     wapi->save_wallet_file(wallet_file.generic_string());

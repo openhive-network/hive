@@ -38,6 +38,7 @@ namespace fc { namespace http {
    typedef std::shared_ptr<websocket_connection> websocket_connection_ptr;
 
    typedef std::function<void(const websocket_connection_ptr&)> on_connection_handler;
+   typedef std::function<void(fc::future<void>&)> on_message_handler;
 
    class websocket_server
    {
@@ -46,6 +47,7 @@ namespace fc { namespace http {
          ~websocket_server();
 
          void on_connection( const on_connection_handler& handler);
+         void on_message( const on_message_handler& handler );
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
          void start_accept();
@@ -64,6 +66,7 @@ namespace fc { namespace http {
          ~websocket_tls_server();
 
          void on_connection( const on_connection_handler& handler);
+         void on_message( const on_message_handler& handler );
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
          void start_accept();
