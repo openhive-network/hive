@@ -9857,4 +9857,436 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif
+
+template <int hardfork_number>
+struct timeshare_test_fixture : clean_database_fixture
+{
+  std::set<std::string> timeshare_witness_names;
+
+  timeshare_test_fixture() :
+    clean_database_fixture(shared_file_size_in_mb_512, hardfork_number)
+  {
+    // declare 20 witnesses that we'll vote in.  these will remain constant throughout the test
+    ACTORS((voted1)(voted2)(voted3)(voted4)(voted5)(voted6)(voted7)(voted8)(voted9)(voted10)
+                   (voted11)(voted12)(voted13)(voted14)(voted15)(voted16)(voted17)(voted18)(voted19)(voted20))
+    // declare 10 witnesses that will vie for the 21st slot
+    ACTORS((timeshare1)(timeshare2)(timeshare3)(timeshare4)(timeshare5)(timeshare6)(timeshare7)(timeshare8)(timeshare9)(timeshare10))
+    for (unsigned i = 1; i <= 10; ++i)
+      timeshare_witness_names.insert("timeshare" + std::to_string(i));
+
+    // one account that votes for all voted witnesses
+    ACTORS((staticvoter))
+    fund("staticvoter", 100000000);
+    vest("staticvoter", 100000000);
+
+    // one account that votes for all timeshare witnesses
+    ACTORS((timesharevoter1))
+    fund("timesharevoter1", 10000000);
+    vest("timesharevoter1", 10000000);
+
+    ACTORS((timesharevoter2))
+    fund("timesharevoter2", 10000000);
+    vest("timesharevoter2", 10000000);
+
+    ACTORS((timesharevoter3))
+    fund("timesharevoter3", 100);
+    vest("timesharevoter3", 100);
+
+    ACTORS((littlevoter1)(littlevoter2)(littlevoter3)(littlevoter4)(littlevoter5)(littlevoter6)(littlevoter7)(littlevoter8)(littlevoter9)(littlevoter10))
+    for (unsigned i = 1; i <= 10; ++i)
+    {
+      fund("littlevoter" + std::to_string(i), 1);
+      vest("littlevoter" + std::to_string(i), 1);
+    }
+
+    generate_blocks(28800); // wait 1 day until the newly-vested funds have passed the delay period and can vote
+
+    const auto create_witness = [&](const std::string& witness_name) {
+      const private_key_type account_key = generate_private_key(witness_name);
+      const private_key_type witness_key = generate_private_key(witness_name + "_witness");
+      witness_create(witness_name, account_key, witness_name + ".com", witness_key.get_public_key(), 1000);
+      //const witness_object& sam_witness = db->get_witness("sam");
+    };
+    for (unsigned i = 1; i <= 20; ++i)
+      create_witness("voted" + std::to_string(i));
+    for (unsigned i = 1; i <= 10; ++i)
+      create_witness("timeshare" + std::to_string(i));
+
+  }
+  virtual ~timeshare_test_fixture() {}
+  void vote(const std::string& voter, const std::string& witness_name, bool approve = true)
+  {
+    account_witness_vote_operation op;
+    op.account = voter;
+    op.witness = witness_name;
+    op.approve = approve;
+
+    signed_transaction tx;
+    tx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+    tx.operations.push_back(op);
+
+    const private_key_type voter_key = generate_private_key(voter);
+    push_transaction(tx, voter_key);
+  }
+  account_name_type get_timeshare_witness_in_round(const witness_schedule_object& schedule)
+  {
+    for (unsigned i = 0; i < schedule.num_scheduled_witnesses; ++i)
+    {
+      const witness_object& witness = db->get_witness(schedule.current_shuffled_witnesses[i]);
+      if (witness.schedule == witness_object::timeshare)
+        return witness.owner;
+    }
+    FC_THROW_EXCEPTION(fc::key_not_found_exception, "no timeshare witness, that was unexpected");
+  }
+  account_name_type get_timeshare_witness_this_round()
+  {
+    return get_timeshare_witness_in_round(db->get_witness_schedule_object());
+  }
+  account_name_type get_timeshare_witness_in_future_round()
+  {
+    return get_timeshare_witness_in_round(db->get_future_witness_schedule_object());
+  }
+
+  fc::uint128 get_virtual_schedule_time(const std::string& witness_name)
+  {
+    const witness_object& witness = db->get_witness(witness_name);
+    return witness.virtual_scheduled_time;
+  }
+  std::string log_witnesses_on_schedule(const witness_schedule_object& schedule)
+  {
+    std::vector<std::string> scheduled_witness_names;
+    for (unsigned i = 0; i < schedule.num_scheduled_witnesses; ++i)
+      scheduled_witness_names.push_back(schedule.current_shuffled_witnesses[i]);
+    return fc::json::to_pretty_string(scheduled_witness_names);
+  }
+  void test_timeshare_witness_scheduling(bool expect_correct_behavior)
+  {
+    try
+    {
+      BOOST_TEST_MESSAGE("Testing timeshare witness behavior");
+
+      for (unsigned i = 1; i <= 20; ++i)
+        vote("staticvoter", "voted" + std::to_string(i));
+
+      for (unsigned i = 1; i <= 10; ++i)
+        vote("timesharevoter1", "timeshare" + std::to_string(i));
+   
+      const fc::uint128 first_virtual_scheduled_time = get_virtual_schedule_time("timeshare1");
+      for (unsigned i = 2; i <= 10; ++i)
+        BOOST_REQUIRE(get_virtual_schedule_time("timeshare" + std::to_string(i)) == first_virtual_scheduled_time);
+
+      // none of the timeshare witnesses should have been voted in yet
+      BOOST_REQUIRE(timeshare_witness_names.find(get_timeshare_witness_in_future_round()) == timeshare_witness_names.end());
+      BOOST_TEST_MESSAGE("Waiting until a new schedule is generated including one of our timeshare witnesses");
+      const uint32_t timeshare_shuffle_block_num = db->get_witness_schedule_object_for_irreversibility().next_shuffle_block_num;
+      while (db->head_block_num() <= timeshare_shuffle_block_num)
+        generate_block();
+      // but now one should be voted into the future schedule
+      BOOST_REQUIRE(timeshare_witness_names.find(get_timeshare_witness_in_future_round()) != timeshare_witness_names.end());
+      for (unsigned i = 1; i <= 10; ++i)
+        if (get_timeshare_witness_in_future_round() != "timeshare" + std::to_string(i))
+          BOOST_REQUIRE(get_virtual_schedule_time("timeshare" + std::to_string(i)) == first_virtual_scheduled_time);
+      BOOST_REQUIRE(get_virtual_schedule_time(get_timeshare_witness_in_future_round()) != first_virtual_scheduled_time);
+
+      generate_blocks(42); // delay until the votes should have taken effect
+
+      BOOST_TEST_MESSAGE("Witness Schedule: " << log_witnesses_on_schedule(db->get_witness_schedule_object()));
+      if (db->has_hardfork(HIVE_HARDFORK_1_26_FUTURE_WITNESS_SCHEDULE))
+        BOOST_TEST_MESSAGE("Future Witness Schedule: " << log_witnesses_on_schedule(db->get_future_witness_schedule_object()));
+
+      BOOST_TEST_MESSAGE("All ten timeshare witnesses have equal votes, so we should expect each witness to "
+                         "get a chance to produce in the next ten rounds");
+      {
+        std::set<std::string> timeshare_witnesses_that_produced;
+        for (unsigned i = 0; i < 10; ++i)
+        {
+          generate_blocks(21);
+          timeshare_witnesses_that_produced.insert(get_timeshare_witness_this_round());
+        }
+        std::set<std::string> timeshare_witnesses_expected_to_produce;
+        for (unsigned i = 1; i <= 10; ++i)
+          timeshare_witnesses_expected_to_produce.insert("timeshare" + std::to_string(i));
+
+        BOOST_TEST_MESSAGE("In the last 10 rounds, these witnesses produced: " << fc::json::to_string(timeshare_witnesses_that_produced));
+        BOOST_CHECK(timeshare_witnesses_that_produced == timeshare_witnesses_expected_to_produce);
+      }
+
+      BOOST_TEST_MESSAGE("Unvoting all timeshare witnesses");
+      for (unsigned i = 1; i <= 10; ++i)
+        vote("timesharevoter1", "timeshare" + std::to_string(i), false);
+      BOOST_TEST_MESSAGE("Letting 12 rounds elapse to give the timeshare witnesses one last chance");
+      generate_blocks(12 * 21); // flush out the current and next round
+
+
+      BOOST_TEST_MESSAGE("Voting for the first three timeshare witnesses");
+      for (unsigned i = 1; i <= 3; ++i)
+        vote("timesharevoter1", "timeshare" + std::to_string(i));
+      BOOST_TEST_MESSAGE("and doubling the vote of 1 and 2");
+      for (unsigned i = 1; i <= 2; ++i)
+        vote("timesharevoter2", "timeshare" + std::to_string(i));
+      BOOST_TEST_MESSAGE("Our votes for the timeshare witnesses are now 2*x, 2*x, and x");
+      BOOST_TEST_MESSAGE("So in five rounds, we expect to see 1 twice, 2 twice, and 3 once");
+
+      generate_blocks(42); // flush out the current and next round
+
+      {
+        std::multiset<std::string> timeshare_witnesses_that_produced;
+        for (unsigned i = 0; i < 5; ++i)
+        {
+          generate_blocks(21);
+          timeshare_witnesses_that_produced.insert(get_timeshare_witness_this_round());
+        }
+        std::multiset<std::string> timeshare_witnesses_expected_to_produce;
+        for (unsigned i = 1; i <= 3; ++i)
+          timeshare_witnesses_expected_to_produce.insert("timeshare" + std::to_string(i));
+        for (unsigned i = 1; i <= 2; ++i)
+          timeshare_witnesses_expected_to_produce.insert("timeshare" + std::to_string(i));
+
+        BOOST_TEST_MESSAGE("In the last 5 rounds, these witnesses produced: " << fc::json::to_string(timeshare_witnesses_that_produced));
+        BOOST_CHECK(timeshare_witnesses_that_produced == timeshare_witnesses_expected_to_produce);
+      }
+
+      BOOST_TEST_MESSAGE("Unvoting for the first three timeshare witnesses with both voters");
+      for (unsigned i = 1; i <= 3; ++i)
+        vote("timesharevoter1", "timeshare" + std::to_string(i), false);
+      for (unsigned i = 1; i <= 2; ++i)
+        vote("timesharevoter2", "timeshare" + std::to_string(i), false);
+      // give them each a last chance to produce
+      generate_blocks(21 * 3);
+
+      BOOST_TEST_MESSAGE("Voting all 10 back in equally");
+      for (unsigned i = 1; i <= 10; ++i)
+      {
+        vote("timesharevoter1", "timeshare" + std::to_string(i));
+        vote("littlevoter1", "timeshare" + std::to_string(i));
+      }
+      generate_blocks(42); // flush out the current and next round
+
+      BOOST_TEST_MESSAGE("All ten timeshare witnesses have equal votes, so we should expect each witness to "
+                         "get a chance to produce in the next ten rounds");
+      {
+        std::multiset<std::string> timeshare_witnesses_that_produced;
+        bool unvoted = false;
+        // generate 100 rounds of blocks (2100 blocks), allowing the scheduling algorithm to 
+        // fill the timeshare slot 100 times.
+        for (unsigned i = 0; i < 100; ++i)
+        {
+          // for each block in the round, either unvote or re-vote using littlevoter1
+          // on average, timeshare1 will have slightly less votes than the other timeshare witnesses, but not by enough to 
+          // alter the schedule in the short term
+          for (unsigned j = 0; j < 21; ++j)
+          {
+            if (unvoted)
+            {
+              vote("littlevoter1", "timeshare1");
+              unvoted = false;
+            }
+            else
+            {
+              vote("littlevoter1", "timeshare1", false);
+              unvoted = true;
+            }
+            // then generate a block
+            generate_block();
+          }
+          // and record which timeshare witness produced the block
+          timeshare_witnesses_that_produced.insert(get_timeshare_witness_this_round());
+        }
+
+        BOOST_TEST_MESSAGE("In the last 100 rounds, these witnesses produced: ");
+        for (unsigned i = 1; i <= 10; ++i)
+          BOOST_TEST_MESSAGE("timeshare" << i << ": " << std::count(timeshare_witnesses_that_produced.begin(), timeshare_witnesses_that_produced.end(), "timeshare" + std::to_string(i)));
+
+        // In correct operation, each timeshare witness would have an equal number of slots.  
+        // Due to the bug in HF26, timeshare1 will get considerably more slots because its votes were adjusted incorrectly
+        // HF26 results will be:
+        // timeshare1: 22
+        // timeshare2: 9
+        // timeshare3: 9
+        // timeshare4: 9
+        // timeshare5: 9
+        // timeshare6: 9
+        // timeshare7: 9
+        // timeshare8: 8
+        // timeshare9: 8
+        // timeshare10: 8
+        if (expect_correct_behavior)
+        {
+          for (unsigned i = 1; i <= 10; ++i)
+            BOOST_CHECK_EQUAL(std::count(timeshare_witnesses_that_produced.begin(), timeshare_witnesses_that_produced.end(), "timeshare" + std::to_string(i)), 10);
+        }
+        else
+        {
+          unsigned blocks_produced_by_timeshare1 = std::count(timeshare_witnesses_that_produced.begin(), timeshare_witnesses_that_produced.end(), "timeshare1");
+          for (unsigned i = 2; i <= 10; ++i)
+            BOOST_CHECK_LT(std::count(timeshare_witnesses_that_produced.begin(), timeshare_witnesses_that_produced.end(), "timeshare" + std::to_string(i)), blocks_produced_by_timeshare1);
+        }
+      }
+    }
+    FC_LOG_AND_RETHROW()
+  }
+};
+
+BOOST_AUTO_TEST_SUITE( timeshare_tests )
+
+BOOST_FIXTURE_TEST_CASE(test_pre_hf26_behavior, timeshare_test_fixture<25>)
+{
+  // coded differently from test_timeshare_witness_scheduling() because hf25 didn't have the future witness schedule
+  try
+  {
+    BOOST_TEST_MESSAGE("Testing timeshare witness behavior at HF25");
+    for (unsigned i = 1; i <= 20; ++i)
+      vote("staticvoter", "voted" + std::to_string(i));
+
+    for (unsigned i = 1; i <= 10; ++i)
+      vote("timesharevoter1", "timeshare" + std::to_string(i));
+ 
+    const fc::uint128 first_virtual_scheduled_time = get_virtual_schedule_time("timeshare1");
+    for (unsigned i = 2; i <= 10; ++i)
+      BOOST_REQUIRE(get_virtual_schedule_time("timeshare" + std::to_string(i)) == first_virtual_scheduled_time);
+
+    // none of the timeshare witnesses should have been voted in yet
+    BOOST_REQUIRE(timeshare_witness_names.find(get_timeshare_witness_this_round()) == timeshare_witness_names.end());
+    BOOST_TEST_MESSAGE("Waiting until a new schedule is generated including one of our timeshare witnesses");
+    const uint32_t timeshare_shuffle_block_num = db->get_witness_schedule_object_for_irreversibility().next_shuffle_block_num;
+    while (db->head_block_num() <= timeshare_shuffle_block_num)
+      generate_block();
+    // but now one should be voted into the schedule
+    BOOST_REQUIRE(timeshare_witness_names.find(get_timeshare_witness_this_round()) != timeshare_witness_names.end());
+
+    // since all timeshare witnesses have the same number of votes, their virtual schedule time should be the same
+    for (unsigned i = 1; i <= 10; ++i)
+      if (get_timeshare_witness_this_round() != "timeshare" + std::to_string(i))
+        BOOST_REQUIRE(get_virtual_schedule_time("timeshare" + std::to_string(i)) == first_virtual_scheduled_time);
+
+    BOOST_TEST_MESSAGE("Witness Schedule: " << log_witnesses_on_schedule(db->get_witness_schedule_object()));
+
+    // The first test, which should be the same before and after HF26, just checks that the scheduling
+    // is fair when all timeshare witnesses have the same voting weight
+    BOOST_TEST_MESSAGE("All ten timeshare witnesses have equal votes, so we should expect each witness to "
+                       "get a chance to produce in the next ten rounds");
+    {
+      std::set<std::string> timeshare_witnesses_that_produced;
+      for (unsigned i = 0; i < 10; ++i)
+      {
+        generate_blocks(21);
+        timeshare_witnesses_that_produced.insert(get_timeshare_witness_this_round());
+      }
+      std::set<std::string> timeshare_witnesses_expected_to_produce;
+      for (unsigned i = 1; i <= 10; ++i)
+        timeshare_witnesses_expected_to_produce.insert("timeshare" + std::to_string(i));
+
+      BOOST_TEST_MESSAGE("In the last 10 rounds, these witnesses produced: " << fc::json::to_string(timeshare_witnesses_that_produced));
+      BOOST_CHECK(timeshare_witnesses_that_produced == timeshare_witnesses_expected_to_produce);
+    }
+
+    BOOST_TEST_MESSAGE("Unvoting all timeshare witnesses");
+    for (unsigned i = 1; i <= 10; ++i)
+      vote("timesharevoter1", "timeshare" + std::to_string(i), false);
+    BOOST_TEST_MESSAGE("Letting 10 rounds elapse to give the timeshare witnesses one last chance");
+    generate_blocks(10 * 21); // flush out the current and next round
+
+    // The second test, which should also be the same before and after HF26, checks that the scheduling
+    // is proportional to the voting weight when timeshare witnesses have unequal votes
+    BOOST_TEST_MESSAGE("Voting for the first three timeshare witnesses");
+    for (unsigned i = 1; i <= 3; ++i)
+      vote("timesharevoter1", "timeshare" + std::to_string(i));
+    BOOST_TEST_MESSAGE("and doubling the vote of 1 and 2");
+    for (unsigned i = 1; i <= 2; ++i)
+      vote("timesharevoter2", "timeshare" + std::to_string(i));
+    BOOST_TEST_MESSAGE("Our votes for the timeshare witnesses are now 2*x, 2*x, and x");
+    BOOST_TEST_MESSAGE("So in five rounds, we expect to see 1 twice, 2 twice, and 3 once");
+
+    generate_blocks(21); // flush out the current round
+
+    {
+      std::multiset<std::string> timeshare_witnesses_that_produced;
+      for (unsigned i = 0; i < 5; ++i)
+      {
+        generate_blocks(21);
+        timeshare_witnesses_that_produced.insert(get_timeshare_witness_this_round());
+      }
+      std::multiset<std::string> timeshare_witnesses_expected_to_produce;
+      for (unsigned i = 1; i <= 3; ++i)
+        timeshare_witnesses_expected_to_produce.insert("timeshare" + std::to_string(i));
+      for (unsigned i = 1; i <= 2; ++i)
+        timeshare_witnesses_expected_to_produce.insert("timeshare" + std::to_string(i));
+
+      BOOST_TEST_MESSAGE("In the last 5 rounds, these witnesses produced: " << fc::json::to_string(timeshare_witnesses_that_produced));
+      BOOST_CHECK(timeshare_witnesses_that_produced == timeshare_witnesses_expected_to_produce);
+    }
+
+    BOOST_TEST_MESSAGE("Unvoting for the first three timeshare witnesses with both voters");
+    for (unsigned i = 1; i <= 3; ++i)
+      vote("timesharevoter1", "timeshare" + std::to_string(i), false);
+    for (unsigned i = 1; i <= 2; ++i)
+      vote("timesharevoter2", "timeshare" + std::to_string(i), false);
+    // give them each a last chance to produce
+    generate_blocks(21 * 3);
+
+    // The third test is where the behavior was broken in HF26.  The problem arises when vote changes occur,
+    // it could cause the next timeshare witness to be selected unfairly.
+    BOOST_TEST_MESSAGE("Voting all 10 back in equally");
+    for (unsigned i = 1; i <= 10; ++i)
+    {
+      vote("timesharevoter1", "timeshare" + std::to_string(i));
+      vote("littlevoter1", "timeshare" + std::to_string(i));
+    }
+    generate_blocks(42); // flush out the current
+
+    BOOST_TEST_MESSAGE("All ten timeshare witnesses have equal votes, so we should expect each witness to "
+                       "get a chance to produce in the next ten rounds");
+    {
+      std::multiset<std::string> timeshare_witnesses_that_produced;
+      bool unvoted = false;
+      // generate 100 rounds of blocks (2100 blocks), allowing the scheduling algorithm to 
+      // fill the timeshare slot 100 times.
+      for (unsigned i = 0; i < 100; ++i)
+      {
+        // for each block in the round, either unvote or re-vote using littlevoter1
+        // on average, timeshare1 will have slightly less votes than the other timeshare witnesses, but not by enough to 
+        // alter the schedule in the short term
+        for (unsigned j = 0; j < 21; ++j)
+        {
+          if (unvoted)
+          {
+            vote("littlevoter1", "timeshare1");
+            unvoted = false;
+          }
+          else
+          {
+            vote("littlevoter1", "timeshare1", false);
+            unvoted = true;
+          }
+          // then generate a block
+          generate_block();
+        }
+        // and record which timeshare witness produced the block
+        timeshare_witnesses_that_produced.insert(get_timeshare_witness_this_round());
+      }
+
+      BOOST_TEST_MESSAGE("In the last 100 rounds, these witnesses produced: ");
+      for (unsigned i = 1; i <= 10; ++i)
+        BOOST_TEST_MESSAGE("timeshare" << i << ": " << std::count(timeshare_witnesses_that_produced.begin(), timeshare_witnesses_that_produced.end(), "timeshare" + std::to_string(i)));
+
+      // Check that each timeshare witness got an equal number of slots
+      for (unsigned i = 1; i <= 10; ++i)
+        BOOST_CHECK_EQUAL(std::count(timeshare_witnesses_that_produced.begin(), timeshare_witnesses_that_produced.end(), "timeshare" + std::to_string(i)), 10);
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_FIXTURE_TEST_CASE(test_hf26_behavior, timeshare_test_fixture<26>)
+{
+  test_timeshare_witness_scheduling(false);
+}
+
+BOOST_FIXTURE_TEST_CASE(test_hf27_behavior, timeshare_test_fixture<27>)
+{
+  test_timeshare_witness_scheduling(true);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+#endif /* IS_TEST_NET */
