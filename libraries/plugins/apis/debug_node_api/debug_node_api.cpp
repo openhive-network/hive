@@ -114,6 +114,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_pop_block )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_witness_schedule )
 {
+  //ABW: not adding access to future schedule because this entire function seems superfluous
   return debug_get_witness_schedule_return( _db.get( chain::witness_schedule_id_type() ), _db );
 }
 
