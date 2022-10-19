@@ -19,6 +19,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
 
     def __assert_no_duplicated_requests_of_same_node() -> None:
         requested_markers: List[str] = [marker.name for marker in request.node.iter_markers() if marker.name != 'parametrize']
+        # jeżeli ilość marków żądanych jest różna z ilością żądanych marków unikatowych
         if len(requested_markers) != len(set(requested_markers)):
             raise RuntimeError(f'Duplicated marker. You used two or more times markers: {requested_markers}. Do not use duplicates.')
 
@@ -61,6 +62,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     }
 
     __assert_no_duplicated_requests_of_same_node()
+    # markery przypisane do testu zgadzające się ze zdefiniowanymi nodami w [create_node]
     requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node
                                   if request.node.get_closest_marker(node) is not None]
 
