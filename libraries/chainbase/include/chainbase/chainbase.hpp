@@ -530,6 +530,15 @@ namespace chainbase {
       const index_type& indicies()const { return _indices; }
       int64_t revision()const { return _revision; }
 
+      id_type get_next_id() const
+      {
+        return _next_id;
+      }
+
+      void store_next_id(id_type next_id)
+      {
+        _next_id = next_id;
+      }
 
       /**
         *  Restores the state to how it was prior to the current session discarding all changes
@@ -892,14 +901,15 @@ namespace chainbase {
       virtual void dump_snapshot(snapshot_writer& writer) const override final
       {
         generic_index_snapshot_dumper<BaseIndex> dumper(_base, writer);
-        dumper.dump();
+        dumper.dump(_base.get_next_id());
       }
 
       virtual void load_snapshot(snapshot_reader& reader) override final
       {
         clear();
         generic_index_snapshot_loader<BaseIndex> loader(_base, reader);
-        loader.load();
+        auto next_id = loader.load();
+        _base.store_next_id(next_id);
       }
 
     private:
