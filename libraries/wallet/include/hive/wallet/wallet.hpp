@@ -147,7 +147,7 @@ class wallet_api
       *
       * @param future Set to true to return next round of witnesses instead of current one
       */
-    vector< account_name_type > get_active_witnesses( bool future = false )const;
+    vector< account_name_type > get_active_witnesses( bool future )const;
 
     /** Returns vesting withdraw routes for an account.
       *
