@@ -19,6 +19,7 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     ['find_withdraw_vesting_routes', {'account': 'hive.fund', 'order': 'by_destination'}],
     ['find_witnesses', {'owners': ['initminer']}],
     ['get_active_witnesses', {}],
+    ['get_active_witnesses', {'future':true}],
     ['get_comment_pending_payouts', {'comments': [['initminer', 'test-permlink']]}],
     ['get_config', {}],
     ['get_current_price_feed', {}],
