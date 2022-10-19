@@ -4,10 +4,10 @@ from ..local_tools import create_account_and_fund_it, run_for
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_active_votes(prepared_node, should_prepare):
+def test_get_active_votes(node, should_prepare):
     if should_prepare:
-        wallet = tt.Wallet(attach_to=prepared_node)
+        wallet = tt.Wallet(attach_to=node)
         create_account_and_fund_it(wallet, 'acidyo', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         wallet.api.post_comment('acidyo', 'drew-an-avatar-signature-for-my-posts', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
         wallet.api.vote('initminer', 'acidyo', 'drew-an-avatar-signature-for-my-posts', 100, broadcast=True)
-    prepared_node.api.condenser.get_active_votes('acidyo', 'drew-an-avatar-signature-for-my-posts')
+    node.api.condenser.get_active_votes('acidyo', 'drew-an-avatar-signature-for-my-posts')

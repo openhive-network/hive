@@ -6,9 +6,9 @@ from ....local_tools import create_account_and_fund_it
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_recent_trades(prepared_node, should_prepare):
+def test_get_recent_trades(node, should_prepare):
     if should_prepare:
-        wallet = tt.Wallet(attach_to=prepared_node)
+        wallet = tt.Wallet(attach_to=node)
         create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         create_account_and_fund_it(wallet, 'bob', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100),
                                    tbds=tt.Asset.Tbd(100))
@@ -16,5 +16,5 @@ def test_get_recent_trades(prepared_node, should_prepare):
         wallet.api.create_order('alice', 0, tt.Asset.Test(100), tt.Asset.Tbd(100), False, 3600)  # Sell 100 HIVE for 100 HBD
         wallet.api.create_order('bob', 0, tt.Asset.Tbd(100), tt.Asset.Test(100), False, 3600)  # Buy 100 HIVE for 100 HBD
 
-    trades = prepared_node.api.market_history.get_recent_trades(limit=10)
+    trades = node.api.market_history.get_recent_trades(limit=10)
     assert len(trades) != 0
