@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import pytest
 
 from test_tools.__private.scope.scope_fixtures import *  # pylint: disable=wildcard-import, unused-wildcard-import
@@ -9,11 +11,42 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def prepared_node(request):
-    def __create_init_node():
+def prepared_node(request) -> Union[tt.InitNode, tt.RemoteNode]:
+    def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
         init_node.run()
         return init_node
+
+    def __get_requested_node_markers() -> List[str]:
+        requested_node_markers = []
+        for marker in request.node.iter_markers():
+            if marker.name in create_node:
+                requested_node_markers.append(marker.name)
+        return requested_node_markers
+
+    def __assert_no_duplicated_requests_of_same_node() -> None:
+        requested_markers = __get_requested_node_markers()
+        for marker in requested_markers:
+            if requested_markers.count(marker) > 1:
+                raise AssertionError(f'Duplicated marker "{marker}". Must be used only once.')
+
+    def __assert_no_duplicated_node_in_run_for_params() -> None:
+        for marker in request.node.iter_markers():
+            if marker.name == 'parametrize' and marker.args[0] == 'node':
+                number_of_nodes_specified_in_run_for = len(marker.args[1])
+                number_of_unique_nodes_given_in_the_run_for_parameters = len(set([marker_obj.values[0][0] for marker_obj in marker.args[1]]))
+
+                if number_of_nodes_specified_in_run_for != number_of_unique_nodes_given_in_the_run_for_parameters:
+                    raise AssertionError(f"Duplicate requested `nodes` in `@run_for' function parameters."
+                                         f" Use only defined nodes: {', '.join(create_node.keys())}.")
+
+    def __was_run_for_used() -> bool:
+        return request.node.get_closest_marker('decorated_with_run_for') is not None
+
+    def __is_run_for_node() -> bool:
+        requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node
+                                      if request.node.get_closest_marker(node) is not None]
+        return True if not requested_nodes == [] else False
 
     create_node = {
         'testnet': __create_init_node,
@@ -21,15 +54,21 @@ def prepared_node(request):
         'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }
 
-    requested_node = request.param[0]
-    try:
-        yield create_node[requested_node]()
-    except KeyError as exception:
-        supported_nodes = ', '.join(f'"{name}"' for name in create_node.keys())
-        raise RuntimeError(
-            f'Requested node name "{requested_node}" is not supported. '
-            f'Use one of following: {supported_nodes}.'
-        ) from exception
+    __assert_no_duplicated_requests_of_same_node()
+    if not __was_run_for_used():
+        if not __is_run_for_node():
+            return create_node['testnet']()
+        raise AssertionError(
+            f"Incorrect test marking. Use the `@run_for` function to mark the test. Available nodes: {', '.join(create_node.keys())}.\n"
+            f"To mark correctly your test use syntax:\n"
+            f"@run_for({list(create_node.keys())})\n"
+            f"def {request.node.originalname}(node):\n"
+            f"    <do something>"
+        )
+    else:
+        __assert_no_duplicated_node_in_run_for_params()
+        requested_node = __get_requested_node_markers()[0]
+        return create_node[requested_node]()
 
 
 @pytest.fixture
