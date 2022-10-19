@@ -11,7 +11,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def prepared_node(request) -> Union[tt.InitNode, tt.RemoteNode]:
+def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
         init_node.run()
