@@ -356,6 +356,125 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
+    ACTORS( (alice)(bob)(dave)(dan)(carol) )
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    uint64_t alice_vests = alice.vesting_shares.amount.value;
+
+    std::string json = "[";
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob" };
+    op.max_rc = alice_vests;
+    json += "\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    op.delegatees = { "dave" };
+    op.max_rc = alice_vests - 1; //just to be different than that for bob
+    json += ",\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    op.delegatees = { "nonexistent" };
+    op.max_rc = 0;
+    json += ",\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    json += "]";
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
+    custom_op.json = json;
+    ilog( "${json}", (json) );
+
+    // Delegating more rc than alice has should fail, but it does not, because of how interpreter
+    // works - only the first pair in outer array is processed when it is formatted this way
+    // see https://hiveblocks.com/tx/65b4772d915dfda66a254e5105c74b5c7667991a
+    // it also means that even "delegating" to nonexistent account will pass since it is ignored
+    push_transaction( custom_op, alice_private_key );
+
+    generate_block();
+
+    const rc_direct_delegation_object* delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == bob_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
+    BOOST_REQUIRE( delegation == nullptr ); // second part of ill-formed json was ignored so there is no delegation
+
+    op.delegatees = { "bob" };
+    op.max_rc = 0;
+    json = "[\"delegate_rc\"," + fc::json::to_string( op ) + "]";
+    custom_op.json = json; // use proper legacy format to remove delegation
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_blocks( db->head_block_time() + fc::seconds( HIVE_RC_REGEN_TIME ) ); //regenerate mana
+    generate_block();
+
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation == nullptr ); // delegation should be removed properly
+
+    op.max_rc = alice_vests / 3;
+    std::string delegate_rc_type = fc::json::to_string( rc_plugin_operation( op ).which() );
+    json = "[" + delegate_rc_type + "," + fc::json::to_string( op ) + "]";
+    custom_op.json = json; // use alternative (even smaller) legacy format to add delegation
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_block();
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == bob_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 3 );
+
+    // now delegate to three accounts using the most compact form (alternative legacy in array)
+    // (actually the extension that is constantly added could be dropped since empty is default)
+    json = "[";
+    op.delegatees = { "bob" };
+    op.max_rc = 0;
+    json += "[" + delegate_rc_type + "," + fc::json::to_string(op) + "]";
+    op.delegatees = { "dave" };
+    op.max_rc = alice_vests / 4;
+    json += ",[" + delegate_rc_type + "," + fc::json::to_string( op ) + "]";
+    op.delegatees = { "dan", "carol" };
+    op.max_rc = alice_vests / 5;
+    json += ",[" + delegate_rc_type + "," + fc::json::to_string( op ) + "]";
+    json += "]";
+    // double array is important because it tells the interpreter to think of it as array
+    // and not as tuple; note that each part is in fact separate operation (executed in order),
+    // therefore it would not be ok if alice could not afford delegation without undelegating of bob
+    // since she only gets back regen power, not the RC itself (operations don't balance out when
+    // they are not part of single delegation)
+    custom_op.json = json;
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_block();
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation == nullptr );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == dave_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 4 );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dan_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == dan_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 5 );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, carol_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == carol_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 5 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 {
   try
