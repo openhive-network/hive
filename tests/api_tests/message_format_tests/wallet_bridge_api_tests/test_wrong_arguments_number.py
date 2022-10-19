@@ -30,6 +30,7 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('get_order_book', (10,)),
     ('get_witness', ('non-exist-acc',)),
     ('get_active_witnesses', (False)),
+    ('get_witness_schedule', (False)),
     ('list_accounts', ('non-exist-acc', 100)),
 ]
 
@@ -60,7 +61,6 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
         ('get_current_median_history_price', ()),
         ('get_dynamic_global_properties', ()),
         ('get_hardfork_version', ()),
-        ('get_witness_schedule', ()),
     ]
 )
 def test_run_command_with_additional_argument(node, wallet_bridge_api_command, arguments):
