@@ -28,7 +28,7 @@ def get_relative_time_offset_from_file(file: Path) -> str:
 def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
     if blocklog_directory is not None:
         time_offset = get_relative_time_offset_from_file(blocklog_directory / 'timestamp')
-        block_log = tt.BlockLog(None, blocklog_directory/'block_log', include_index=False)
+        block_log = tt.BlockLog(blocklog_directory/'block_log')
 
     tt.logger.info('Running nodes...')
 

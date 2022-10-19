@@ -35,7 +35,7 @@ def prepare_block_log_with_transactions():
 
     node.close()
 
-    node.get_block_log(include_index=False).copy_to(Path(__file__).parent.absolute())
+    node.block_log.copy_to(Path(__file__).parent.absolute())
 
 
 def prepare_transactions_for_get_account_history_test(wallet) -> None:

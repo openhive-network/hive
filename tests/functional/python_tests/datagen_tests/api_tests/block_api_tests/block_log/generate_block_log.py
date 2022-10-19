@@ -10,7 +10,7 @@ def prepare_block_log() -> None:
     init_node.run()
     init_node.wait_number_of_blocks(TOTAL_BLOCKS)
     init_node.close()
-    init_node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute()) 
+    init_node.block_log.copy_to(Path(__file__).parent.absolute())
 
 
 if __name__ == '__main__':

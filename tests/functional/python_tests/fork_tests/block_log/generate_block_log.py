@@ -83,7 +83,7 @@ def prepare_blocklog():
     Path('block_log').unlink(missing_ok=True)
 
     init_node.close()
-    init_node.get_block_log(include_index=False).copy_to(Path(__file__).parent.absolute())
+    init_node.block_log.copy_to(Path(__file__).parent.absolute())
 
     with open('timestamp', 'w') as f:
         f.write(f'{timestamp}')
