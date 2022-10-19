@@ -89,18 +89,19 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
   {
     FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_24) );
 
-    const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
+    const auto* proposal = _db.find< proposal_object, by_proposal_id >( o.proposal_id );
 
-    FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
+    FC_ASSERT(proposal != nullptr, "Cannot edit a proposal because the proposal with given id doesn't exist");
+    FC_ASSERT(o.creator == proposal->creator, "Cannot edit a proposal you are not the creator of");
 
-    const auto* commentObject = _db.find_comment(proposal.creator, o.permlink);
+    const auto* commentObject = _db.find_comment(proposal->creator, o.permlink);
     if(commentObject == nullptr)
     {
-      commentObject = _db.find_comment(proposal.receiver, o.permlink);
+      commentObject = _db.find_comment(proposal->receiver, o.permlink);
       FC_ASSERT(commentObject != nullptr, "Proposal permlink must point to the article posted by creator or the receiver");
     }
 
-    FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
+    FC_ASSERT(o.daily_pay <= proposal->daily_pay, "You cannot increase the daily pay");
 
     const update_proposal_end_date* ed = nullptr;
     if (_db.has_hardfork(HIVE_HARDFORK_1_25)) {
@@ -108,14 +109,14 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
       // NOTE: This assumes there is only one extension and it's of type proposal_end_date, if you add more, update this code
       if (o.extensions.size() == 1) {
         ed = &(o.extensions.begin()->get<update_proposal_end_date>());
-        FC_ASSERT(ed->end_date <= proposal.end_date, "You cannot increase the end date of the proposal");
-        FC_ASSERT(ed->end_date > proposal.start_date, "The new end date must be after the start date");
+        FC_ASSERT(ed->end_date <= proposal->end_date, "You cannot increase the end date of the proposal");
+        FC_ASSERT(ed->end_date > proposal->start_date, "The new end date must be after the start date");
       }
     } else {
       FC_ASSERT( o.extensions.empty() , "Cannot set extensions");
     }
 
-    _db.modify( proposal, [&]( proposal_object& p )
+    _db.modify( *proposal, [&]( proposal_object& p )
     {
       p.daily_pay = o.daily_pay;
       p.subject = o.subject.c_str();

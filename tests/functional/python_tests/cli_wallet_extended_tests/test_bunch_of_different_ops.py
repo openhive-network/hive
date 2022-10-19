@@ -39,6 +39,12 @@ def test_different_false_cases(wallet):
         assert message.find('Proposal permlink must point to the article posted by creator or receiver') != -1
 
     try:
+        response = wallet.api.update_proposal(1, "initminer", "10.000 TBD", "avocado", "mango", '2022-10-19T23:41:54')
+    except Exception as e:
+        message = str(e)
+        assert message.find('Cannot edit a proposal because the proposal with given id doesn\'t exist') != -1
+
+    try:
         response = wallet.api.post_comment('bob', 'hello-world', '', 'xyz', 'something bout world', 'just nothing', '{}')
     except Exception as e:
         message = str(e)
