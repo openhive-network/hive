@@ -21,6 +21,15 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
     """
     return pytest.mark.parametrize(
         'prepared_node',
-        [pytest.param((name,), marks=getattr(pytest.mark, name)) for name in node_names],
+        [
+            pytest.param(
+                (name,),
+                marks=[
+                    getattr(pytest.mark, name),
+                    pytest.mark.decorated_with_run_for,
+                ],
+            )
+            for name in node_names
+        ],
         indirect=['prepared_node'],
     )
