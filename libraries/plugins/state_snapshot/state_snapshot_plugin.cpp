@@ -39,6 +39,8 @@
 
 namespace bpo = boost::program_options;
 
+#define SNAPSHOT_FORMAT_VERSION "2.0"
+
 namespace {
 
 namespace bfs = boost::filesystem;
@@ -57,6 +59,10 @@ struct index_manifest_info
   size_t      dumpedItems = 0;
   size_t      firstId = 0;
   size_t      lastId = 0;
+  /** \warning indexNextId must be then explicitly loaded to generic_index::next_id to conform proposal ID rules. next_id can be different (higher)
+      than last_object_id + 1 due to removing proposals, which does not correct next_id
+  */
+  size_t      indexNextId = 0;
   std::vector<index_manifest_file_info> storage_files;
   };
 
@@ -230,7 +236,7 @@ private:
 
 } /// namespace anonymous
 
-FC_REFLECT(index_manifest_info, (name)(dumpedItems)(firstId)(lastId)(storage_files))
+FC_REFLECT(index_manifest_info, (name)(dumpedItems)(firstId)(lastId)(indexNextId)(storage_files))
 FC_REFLECT(index_manifest_file_info, (relative_path)(file_size))
 
 namespace hive { namespace plugins { namespace state_snapshot {
@@ -413,14 +419,14 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
     index_dump_writer(const chain::database& mainDb, const chainbase::abstract_index& index, const bfs::path& outputRootPath,
       bool allow_concurrency) :
       snapshot_processor_data<chainbase::snapshot_writer>(outputRootPath), _mainDb(mainDb), _index(index), _firstId(0), _lastId(0),
-      _allow_concurrency(allow_concurrency) {}
+      _nextId(0), _allow_concurrency(allow_concurrency) {}
 
     index_dump_writer(const index_dump_writer&) = delete;
     index_dump_writer& operator=(const index_dump_writer&) = delete;
 
     virtual ~index_dump_writer() = default;
 
-    virtual workers prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize,
+    virtual workers prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize, size_t indexNextId,
       snapshot_converter_t converter) override;
     virtual void start(const workers& workers) override;
 
@@ -437,6 +443,7 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
     std::vector <std::unique_ptr<dumping_worker>> _builtWorkers;
     size_t _firstId;
     size_t _lastId;
+    size_t _nextId;
     bool   _allow_concurrency;
   };
 
@@ -452,7 +459,7 @@ class index_dump_reader final : public snapshot_processor_data<chainbase::snapsh
 
     virtual ~index_dump_reader() = default;
 
-    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter) override;
+    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id) override;
     virtual void start(const workers& workers) override;
 
     size_t getCurrentlyProcessedId() const;
@@ -604,18 +611,19 @@ void dumping_worker::prepareWriter()
 
 chainbase::snapshot_writer::workers 
 index_dump_writer::prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize,
-  snapshot_converter_t converter)
+  size_t indexNextId, snapshot_converter_t converter)
   {
-  if(indexSize == 0 || process_index(indexDescription) == false)
-    return workers();
-
-  ilog("Preparing snapshot writer to store index holding `${d}' items. Index size: ${s}. Index id range: <${f}, ${l}>.",
-    ("d", indexDescription)("s", indexSize)("f", firstId)("l", lastId));
+  ilog("Preparing snapshot writer to store index holding `${d}' items. Index size: ${s}. Index next_id: ${indexNextId}.Index id range: <${f}, ${l}>.",
+    ("d", indexDescription)("s", indexSize)(indexNextId)("f", firstId)("l", lastId));
 
   _converter = converter;
   _indexDescription = indexDescription;
   _firstId = firstId;
   _lastId = lastId;
+  _nextId = indexNextId;
+
+  if(indexSize == 0 || process_index(indexDescription) == false)
+    return workers();
 
   chainbase::snapshot_writer::workers retVal;
 
@@ -706,6 +714,7 @@ void index_dump_writer::store_index_manifest(index_manifest_info* manifest) cons
   manifest->dumpedItems = _index.size();
   manifest->firstId = _firstId;
   manifest->lastId = _lastId;
+  manifest->indexNextId = _nextId;
 
   size_t totalWrittenEntries = 0;
 
@@ -721,6 +730,8 @@ void index_dump_writer::store_index_manifest(index_manifest_info* manifest) cons
 
   FC_ASSERT(_index.size() == totalWrittenEntries, "Mismatch between written entries: ${e} and size ${s} of index: `${i}",
     ("e", totalWrittenEntries)("s", _index.size())("i", _indexDescription));
+
+  ilog("Saved manifest for index: '${d}' containing ${s} items and ${n} saved as next_id", ("d", _indexDescription)("s", manifest->dumpedItems)("n", manifest->indexNextId));
   }
 
 class loading_worker final : public chainbase::snapshot_reader::worker
@@ -833,7 +844,7 @@ void loading_worker::perform_load()
   }
 
 chainbase::snapshot_reader::workers 
-index_dump_reader::prepare(const std::string& indexDescription, snapshot_converter_t converter)
+index_dump_reader::prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id)
   {
   _converter = converter;
   _indexDescription = indexDescription;
@@ -849,6 +860,8 @@ index_dump_reader::prepare(const std::string& indexDescription, snapshot_convert
     }
 
   const index_manifest_info& manifestInfo = *snapshotIt;
+
+  *snapshot_index_next_id = manifestInfo.indexNextId;
 
   _builtWorkers.emplace_back(std::make_unique<loading_worker>(manifestInfo, _rootPath, *this));
 
@@ -1059,6 +1072,20 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     }
   }
 
+  {
+    Slice key("SNAPSHOT_VERSION");
+    Slice value(SNAPSHOT_FORMAT_VERSION);
+    auto status = db->Put(writeOptions, snapshotManifestCF, key, value);
+
+    if (status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"SNAPSHOT_VERSION\"");
+
+      throw std::exception();
+    }
+  }
+
   db.close();
   }
 
@@ -1124,7 +1151,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
 
       FC_ASSERT(keySlice.ToString() == info.name);
 
-      ilog("Loaded manifest info for index ${i} having storage files: ${sf}", ("i", info.name)("sf", info.storage_files));
+      ilog("Loaded manifest info for index ${i}, containing ${s} items, next_id: ${n}, having storage files: ${sf}", ("i", info.name)("s", info.dumpedItems)("n", info.indexNextId)("sf", info.storage_files));
 
       retVal.emplace(std::move(info));
 
@@ -1180,7 +1207,12 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
     FC_ASSERT(irreversibleStateIterator->Valid(), "No entry for IRREVERSIBLE_STATE. Probably used old snapshot format (must be regenerated).");
 
     std::vector<char> buffer;
+    Slice keySlice = irreversibleStateIterator->key();
     auto valueSlice = irreversibleStateIterator->value();
+
+    std::string keyName = keySlice.ToString();;
+
+    FC_ASSERT(keyName == "LAST_IRREVERSIBLE_BLOCK", "Broken snapshot - no entry for LAST_IRREVERSIBLE_BLOCK");
 
     buffer.insert(buffer.end(), valueSlice.data(), valueSlice.data() + valueSlice.size());
     chainbase::serialization::unpack_from_buffer(lib, buffer);
@@ -1188,7 +1220,20 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
     //ilog("lib: ${s}", ("s", lib));
 
     irreversibleStateIterator->Next();
-    FC_ASSERT(irreversibleStateIterator->Valid() == false, "Multiple entries specifying irreversible block ?");
+    FC_ASSERT(irreversibleStateIterator->Valid(), "Expected multiple entries specifying irreversible block.");
+
+    keySlice = irreversibleStateIterator->key();
+    valueSlice = irreversibleStateIterator->value();
+    keyName = keySlice.ToString();
+
+    FC_ASSERT(keyName == "SNAPSHOT_VERSION", "Broken snapshot - no entry for SNAPSHOT_VERSION, ${k} found.", ("k", keyName));
+
+    std::string versionValue = valueSlice.ToString();
+    FC_ASSERT(versionValue == SNAPSHOT_FORMAT_VERSION, "Snapshot version mismatch - ${f} found, ${e} expected.", ("f", versionValue)("e", SNAPSHOT_FORMAT_VERSION));
+
+    irreversibleStateIterator->Next();
+
+    FC_ASSERT(irreversibleStateIterator->Valid() == false, "Unexpected entries specifying irreversible block ?");
   }
 
   for(auto* cfh : cfHandles)
