@@ -35,6 +35,7 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     ['get_transaction_hex', {'trx': {'ref_block_num': 0, 'ref_block_prefix': 0, 'expiration': '2022-04-11T10:29:00',
                                      'operations': [], 'extensions': [], 'signatures': []}}], ['get_version', {}],
     ['get_witness_schedule', {}],
+    ['get_witness_schedule', {'future':true}],
     ['is_known_transaction', {'id': '0000000000000000000000000000000000000000'}],
     ['list_account_recovery_requests', {'start': '', 'limit': 100, 'order': 'by_account'}],
     ['list_accounts', {'start': '', 'limit': 100, 'order': 'by_name'}],
