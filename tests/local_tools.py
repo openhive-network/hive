@@ -20,7 +20,7 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
     Allows to perform optional, additional preparations. See `should_prepare` fixture for details.
     """
     return pytest.mark.parametrize(
-        'prepared_node',
+        'node',
         [
             pytest.param(
                 (name,),
@@ -31,5 +31,5 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
             )
             for name in node_names
         ],
-        indirect=['prepared_node'],
+        indirect=['node'],
     )
