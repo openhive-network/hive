@@ -285,6 +285,11 @@ DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.future, "Future witnesses only become available after HF26" );
   const auto& wso = args.future ? _db.get_future_witness_schedule_object() : _db.get_witness_schedule_object();
   get_witness_schedule_return result( wso, _db );
+  if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) && !args.future )
+  {
+    const auto& future_wso = _db.get_future_witness_schedule_object();
+    result.next_shuffle_block_num = future_wso.next_shuffle_block_num;
+  }
   return result;
 }
 
