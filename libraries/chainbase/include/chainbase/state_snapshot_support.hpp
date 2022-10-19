@@ -109,7 +109,7 @@ public:
 
   typedef std::vector<worker*> workers;
 
-  virtual workers prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize, snapshot_converter_t converter) = 0;
+  virtual workers prepare(const std::string& indexDescription, size_t firstId, size_t lastId, size_t indexSize, size_t indexNextId, snapshot_converter_t converter) = 0;
   virtual void start(const workers& workers) = 0;
 
 protected:
@@ -153,7 +153,7 @@ class snapshot_reader : public snapshot_base_serializer
 
     typedef std::vector<worker*> workers;
 
-    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter) = 0;
+    virtual workers prepare(const std::string& indexDescription, snapshot_converter_t converter, size_t* snapshot_index_next_id) = 0;
     virtual void start(const workers& workers) = 0;
 
   protected:
@@ -182,13 +182,15 @@ template <class GenericIndexType>
 class generic_index_snapshot_dumper final : public generic_index_serialize_base
 {
 public:
+  using id_type = typename GenericIndexType::id_type;
+
   generic_index_snapshot_dumper(const GenericIndexType& index, snapshot_writer& writer) :
     _index(index),
     _writer(writer) {}
 
-  void dump() const
+  void dump(id_type index_next_id) const
     {
-    dump_index(_index.indices());
+    dump_index(index_next_id, _index.indices());
     }
 
 private:
@@ -292,7 +294,7 @@ private:
   };
 
   template <class MultiIndexType>
-  void dump_index(const MultiIndexType& index) const
+  void dump_index(id_type index_next_id, const MultiIndexType& index) const
   {
     typedef dumper_data< MultiIndexType> dumper_t;
 
@@ -315,7 +317,7 @@ private:
       lastId = byIdIdx.rbegin()->get_id();
       }
 
-    auto workers = _writer.prepare(indexName, firstId, lastId, index.size(), converter);
+    auto workers = _writer.prepare(indexName, firstId, lastId, index.size(), index_next_id, converter);
 
     std::vector<std::unique_ptr<dumper_t>> workerData;
 
@@ -337,13 +339,19 @@ template <class GenericIndexType>
 class generic_index_snapshot_loader final : public generic_index_serialize_base
   {
   public:
+    using id_type = typename GenericIndexType::id_type;
+
     generic_index_snapshot_loader(GenericIndexType& index, snapshot_reader& reader) :
       _index(index),
       _reader(reader) {}
 
-    void load()
+    /// <summary>
+    /// Allows to load index contents from snapshot. 
+    /// Returns index next_id value.
+    /// </summary>
+    id_type load()
       {
-      load_index(_index.mutable_indices());
+      return load_index(_index.mutable_indices());
       }
 
   private:
@@ -411,7 +419,7 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
       };
 
     template <class MultiIndexType>
-    void load_index(MultiIndexType& index)
+    id_type load_index(MultiIndexType& index)
       {
       typedef loader_data<MultiIndexType> loader_t;
 
@@ -424,7 +432,9 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
         actualData->doConversion(w);
         };
 
-      auto workers = _reader.prepare(indexName, converter);
+      size_t index_next_id = 0;
+
+      auto workers = _reader.prepare(indexName, converter, &index_next_id);
 
       std::vector<std::unique_ptr<loader_t>> workerData;
 
@@ -435,6 +445,8 @@ class generic_index_snapshot_loader final : public generic_index_serialize_base
         }
 
       _reader.start(workers);
+
+      return id_type(index_next_id);
       }
 
   private:
