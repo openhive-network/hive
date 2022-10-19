@@ -282,7 +282,10 @@ DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
 
 DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
 {
-  return api_witness_schedule_object( _db.get_witness_schedule_object(), _db );
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.future, "Future witnesses only become available after HF26" );
+  const auto& wso = args.future ? _db.get_future_witness_schedule_object() : _db.get_witness_schedule_object();
+  get_witness_schedule_return result( wso, _db );
+  return result;
 }
 
 DEFINE_API_IMPL( database_api_impl, get_hardfork_properties )
@@ -429,7 +432,8 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
 
 DEFINE_API_IMPL( database_api_impl, get_active_witnesses )
 {
-  const auto& wso = _db.get_witness_schedule_object();
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.future, "Future witnesses only become available after HF26" );
+  const auto& wso = args.future ? _db.get_future_witness_schedule_object() : _db.get_witness_schedule_object();
   get_active_witnesses_return result;
   result.witnesses.assign(wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.begin() + wso.num_scheduled_witnesses);
   return result;

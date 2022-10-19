@@ -267,7 +267,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_chain_properties )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness_schedule )
 {
   FC_ASSERT(_database_api , "database_api_plugin not enabled." );
-  return _database_api->get_witness_schedule({});
+  verify_args( args, 1 );
+  FC_ASSERT( args.get_array()[0].is_array(), "get_witness_schedule needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+  bool future = arguments.get_array()[0].as<bool>();
+  return _database_api->get_witness_schedule( { future } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_current_median_history_price )
@@ -307,8 +312,14 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_feed_history )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_active_witnesses )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
+  verify_args( args, 1 );
+  FC_ASSERT( args.get_array()[0].is_array(), "get_active_witnesses needs at least one argument" );
+  const auto arguments = args.get_array()[0];
+  verify_args( arguments, 1 );
+  bool future = arguments.get_array()[0].as<bool>();
+
   get_active_witnesses_return result;
-  result.witnesses = _database_api->get_active_witnesses( {} ).witnesses;
+  result.witnesses = _database_api->get_active_witnesses( { future } ).witnesses;
   return result;
 }
 

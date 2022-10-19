@@ -319,7 +319,7 @@ public:
     to_variant( dynamic_props, var );
     fc::mutable_variant_object result( var.get_object() );
 
-    result["witness_majority_version"]  = fc::string( _remote_wallet_bridge_api->get_witness_schedule({}, LOCK).majority_version);
+    result["witness_majority_version"]  = fc::string( _remote_wallet_bridge_api->get_witness_schedule( vector<variant>{ false }, LOCK).majority_version);
     result["hardfork_version"]          = fc::string( _remote_wallet_bridge_api->get_hardfork_version({}, LOCK) );
     result["head_block_num"]            = dynamic_props.value.head_block_number;
     result["head_block_id"]             = dynamic_props.value.head_block_id;
@@ -1074,9 +1074,10 @@ vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, 
   return result;
 }
 
-vector< account_name_type > wallet_api::get_active_witnesses()const {
+vector< account_name_type > wallet_api::get_active_witnesses( bool future )const {
   my->require_online();
-  return my->_remote_wallet_bridge_api->get_active_witnesses({}, LOCK).witnesses;
+  vector<variant> args{ future };
+  return my->_remote_wallet_bridge_api->get_active_witnesses( args, LOCK ).witnesses;
 }
 
 brain_key_info wallet_api::suggest_brain_key()const
