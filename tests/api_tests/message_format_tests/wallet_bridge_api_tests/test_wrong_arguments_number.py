@@ -29,8 +29,8 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('get_reward_fund', ('post',)),
     ('get_order_book', (10,)),
     ('get_witness', ('non-exist-acc',)),
-    ('get_active_witnesses', (False)),
-    ('get_witness_schedule', (False)),
+    ('get_active_witnesses', (False,)),
+    ('get_witness_schedule', (False,)),
     ('list_accounts', ('non-exist-acc', 100)),
 ]
 
