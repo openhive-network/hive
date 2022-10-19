@@ -19,7 +19,7 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
 
     __assert_node_is_specified()
     return pytest.mark.parametrize(
-        'prepared_node',
+        'node',
         [
             pytest.param(
                 (name,),
@@ -30,5 +30,5 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
             )
             for name in node_names
         ],
-        indirect=['prepared_node'],
+        indirect=['node'],
     )
