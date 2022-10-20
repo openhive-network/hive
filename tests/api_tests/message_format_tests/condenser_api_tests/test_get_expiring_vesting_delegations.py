@@ -1,14 +1,13 @@
 import test_tools as tt
 
-from ..local_tools import create_account_and_fund_it, create_and_cancel_vesting_delegation, date_from_now, run_for
+from ..local_tools import create_and_cancel_vesting_delegation, date_from_now, run_for
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_get_expiring_vesting_delegations(prepared_node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=prepared_node)
-
-        create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+        wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         wallet.api.create_account('initminer', 'bob', '{}')
         create_and_cancel_vesting_delegation(wallet, 'alice', 'bob')
     prepared_node.api.condenser.get_expiring_vesting_delegations('alice', date_from_now(weeks=0))

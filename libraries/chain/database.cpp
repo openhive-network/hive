@@ -56,20 +56,20 @@
 
 long next_hf_time()
 {
-  // current "next hardfork" is HF26
+  // current "next hardfork" is HF27
   long hfTime =
 
 #ifdef IS_TEST_NET
-    1643716800; // Tuesday, 1 February 2022 12:00:00
+    1665532800; // Wednesday, October 12, 2022 0:00:00 GMT
 #else
-    1665489600; // Tuesday, 11 October 2022 12:00:00 GMT
+    1666612800; // Monday, 24 October 2022 12:00:00 GMT
 #endif /// IS_TEST_NET
 
-  const char* value = getenv("HIVE_HF26_TIME");
-  if(value != nullptr)
+  const char* value = getenv("HIVE_HF27_TIME");
+  if (value)
   {
     hfTime = atol(value);
-    ilog("HIVE_HF26_TIME has been specified through environment variable as ${v}, long value: ${l}", ("v", value)("l", hfTime));
+    ilog("HIVE_HF27_TIME has been specified through environment variable as ${value}, long value: ${hfTime}", (value)(hfTime));
   }
 
   return hfTime;
@@ -245,7 +245,7 @@ void database::load_state_initial_data(const open_args& args)
     FC_ASSERT(hardforks.last_hardfork <= HIVE_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork", hardforks.last_hardfork)("HIVE_NUM_HARDFORKS", HIVE_NUM_HARDFORKS));
     FC_ASSERT(_hardfork_versions.versions[hardforks.last_hardfork] <= HIVE_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork");
     FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION);
-    FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS]);
+    FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS], "Blockchain version mismatch", (HIVE_BLOCKCHAIN_HARDFORK_VERSION)(_hardfork_versions.versions[HIVE_NUM_HARDFORKS]));
   });
 
 #ifdef USE_ALTERNATE_CHAIN_ID
@@ -1891,7 +1891,8 @@ void database::adjust_witness_votes( const account_object& a, const share_type& 
 
 void database::adjust_witness_vote( const witness_object& witness, share_type delta )
 {
-  const witness_schedule_object& wso = get_witness_schedule_object();
+  const witness_schedule_object& wso = has_hardfork(HIVE_HARDFORK_1_27_FIX_TIMESHARE_WITNESS_SCHEDULING) ?
+                                       get_witness_schedule_object_for_irreversibility() : get_witness_schedule_object();
   modify( witness, [&]( witness_object& w )
   {
     auto delta_pos = w.votes.value * (wso.current_virtual_time - w.virtual_last_update);
@@ -6422,10 +6423,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_26 == 26, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_26 ] = fc::time_point_sec( HIVE_HARDFORK_1_26_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_26 ] = HIVE_HARDFORK_1_26_VERSION;
-#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
   FC_ASSERT( HIVE_HARDFORK_1_27 == 27, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_27 ] = fc::time_point_sec( HIVE_HARDFORK_1_27_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_27 ] = HIVE_HARDFORK_1_27_VERSION;
+#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
+  FC_ASSERT( HIVE_HARDFORK_1_28 == 28, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_28 ] = fc::time_point_sec( HIVE_HARDFORK_1_28_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_28 ] = HIVE_HARDFORK_1_28_VERSION;
 #endif
 }
 

@@ -2,11 +2,9 @@ import pytest
 
 import test_tools as tt
 
-from ....local_tools import create_account_and_fund_it
-
 
 def test_multiple_auth_key_updates_in_hf25(wallet_hf25):
-    create_account_and_fund_it(wallet_hf25, 'alice', vests=tt.Asset.Test(100))
+    wallet_hf25.create_account('alice', vests=tt.Asset.Test(100))
 
     owner_keys = [tt.PublicKey(account) for account in ['bob', 'carol']]
 
@@ -18,7 +16,7 @@ def test_multiple_auth_key_updates_in_hf25(wallet_hf25):
 
 
 def test_multiple_auth_key_updates_in_hf26(wallet_hf26):
-    create_account_and_fund_it(wallet_hf26, 'alice', vests=tt.Asset.Test(100))
+    wallet_hf26.create_account('alice', vests=tt.Asset.Test(100))
 
     owner_keys = [tt.PublicKey(account) for account in ['bob', 'carol', 'dan']]
 

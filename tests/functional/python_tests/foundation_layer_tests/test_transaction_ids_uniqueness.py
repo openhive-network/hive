@@ -19,7 +19,7 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
 @pytest.mark.flaky(reruns=5, reruns_delay=30)
 @pytest.mark.testnet
 def test_if_transaction_ids_order_corresponds_to_transactions_order(node, wallet):
-    names = [f'account-{i:02d}' for i in range(50)]
+    names = [f'account-{i:02d}' for i in range(20)]
 
     # transactions created in this loop are sent to single block (it's ensured by assert below)
     for name in names:

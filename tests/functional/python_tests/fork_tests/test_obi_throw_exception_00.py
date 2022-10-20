@@ -5,7 +5,7 @@ import time
 def test_obi_throw_exception_00(prepare_obi_throw_exception_00):
     # start - A network (consists of a 'A' network(10 witnesses) + a 'B' network(11 witnesses)) produces blocks
 
-    # A witness from the `A` network has an exception - during 1 block of 'B' network this sub network can't produce.
+    # A witness from the `A` network has an exception - during `1` block this sub network can't produce.
     # After production resuming, both sub networks link together and LIB increases, because during the exception a block is produced by a witness from `A` network
 
     sub_networks_data   = prepare_obi_throw_exception_00['sub-networks-data']

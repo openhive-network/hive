@@ -4,64 +4,63 @@ from typing import Dict
 import test_tools as tt
 
 from .local_tools import verify_json_patterns, verify_text_patterns
-from .....local_tools import create_account_and_fund_it
 
 BALANCES = {
     'alice': {
-        'tests': tt.Asset.Test(100),
+        'hives': tt.Asset.Test(100),
         'vests': tt.Asset.Test(110),
-        'tbds': tt.Asset.Tbd(120),
+        'hbds': tt.Asset.Tbd(120),
     },
     'bob': {
-        'tests': tt.Asset.Test(200),
+        'hives': tt.Asset.Test(200),
         'vests': tt.Asset.Test(210),
-        'tbds': tt.Asset.Tbd(220),
+        'hbds': tt.Asset.Tbd(220),
     },
     'carol': {
-        'tests': tt.Asset.Test(300),
+        'hives': tt.Asset.Test(300),
         'vests': tt.Asset.Test(310),
-        'tbds': tt.Asset.Tbd(320),
+        'hbds': tt.Asset.Tbd(320),
     }
 }
 
 TOTAL_BALANCES = {
-    'tests': sum((balance['tests'] for balance in BALANCES.values()), start=tt.Asset.Test(0)),
-    'tbds': sum((balance['tbds'] for balance in BALANCES.values()), start=tt.Asset.Tbd(0))
+    'hives': sum((balance['hives'] for balance in BALANCES.values()), start=tt.Asset.Test(0)),
+    'hbds': sum((balance['hbds'] for balance in BALANCES.values()), start=tt.Asset.Tbd(0))
 }
 
 
 def test_list_my_accounts_json_format(wallet_with_json_formatter):
     for name, balances in BALANCES.items():
-        create_account_and_fund_it(wallet_with_json_formatter, name=name, **balances)
+        wallet_with_json_formatter.create_account(name=name, **balances)
 
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
     for name, balances, returned_account in zip(BALANCES.keys(), BALANCES.values(), accounts_summary['accounts']):
         assert returned_account['name'] == name
-        assert returned_account['balance'] == balances['tests'].as_nai()
-        assert returned_account['hbd_balance'] == balances['tbds'].as_nai()
+        assert returned_account['balance'] == balances['hives'].as_nai()
+        assert returned_account['hbd_balance'] == balances['hbds'].as_nai()
 
-    assert accounts_summary['total_hive'] == TOTAL_BALANCES['tests'].as_nai()
-    assert accounts_summary['total_hbd'] == TOTAL_BALANCES['tbds'].as_nai()
+    assert accounts_summary['total_hive'] == TOTAL_BALANCES['hives'].as_nai()
+    assert accounts_summary['total_hbd'] == TOTAL_BALANCES['hbds'].as_nai()
 
 
 def test_list_my_accounts_text_format(wallet_with_text_formatter):
     for name, balances in BALANCES.items():
-        create_account_and_fund_it(wallet_with_text_formatter, name=name, **balances)
+        wallet_with_text_formatter.create_account(name=name, **balances)
 
     accounts_summary = parse_text_response(wallet_with_text_formatter.api.list_my_accounts())
 
     for name, balances, returned_account in zip(BALANCES.keys(), BALANCES.values(), accounts_summary['accounts']):
         assert returned_account['name'] == name
-        assert returned_account['balance'] == balances['tests']
-        assert returned_account['hbd_balance'] == balances['tbds']
+        assert returned_account['balance'] == balances['hives']
+        assert returned_account['hbd_balance'] == balances['hbds']
 
-    assert accounts_summary['total_hive'] == TOTAL_BALANCES['tests']
-    assert accounts_summary['total_hbd'] == TOTAL_BALANCES['tbds']
+    assert accounts_summary['total_hive'] == TOTAL_BALANCES['hives']
+    assert accounts_summary['total_hbd'] == TOTAL_BALANCES['hbds']
 
 
 def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_formatter):
     for name, balances in BALANCES.items():
-        create_account_and_fund_it(wallet_with_json_formatter, name=name, **balances)
+        wallet_with_json_formatter.create_account(name=name, **balances)
 
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
 
@@ -70,7 +69,7 @@ def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_format
 
 def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_formatter):
     for name, balances in BALANCES.items():
-        create_account_and_fund_it(wallet_with_text_formatter, name=name, **balances)
+        wallet_with_text_formatter.create_account(name=name, **balances)
 
     accounts_summary = wallet_with_text_formatter.api.list_my_accounts()
 

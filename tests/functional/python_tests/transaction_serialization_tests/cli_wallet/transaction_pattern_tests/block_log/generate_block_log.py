@@ -2,8 +2,6 @@ from pathlib import Path
 
 import test_tools as tt
 
-from local_tools import create_account_and_fund_it
-
 
 def prepare_blocklog():
     node = tt.InitNode()
@@ -11,10 +9,10 @@ def prepare_blocklog():
 
     wallet = tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=legacy'])
 
-    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(1000), vests=tt.Asset.Test(1000000),
-                                       tbds=tt.Asset.Tbd(1000))
-    create_account_and_fund_it(wallet, 'bob', tests=tt.Asset.Test(1000), vests=tt.Asset.Test(1000000),
-                                     tbds=tt.Asset.Tbd(1000))
+    wallet.create_account('alice', hives=tt.Asset.Test(1000), vests=tt.Asset.Test(1000000),
+                          hbds=tt.Asset.Tbd(1000))
+    wallet.create_account('bob', hives=tt.Asset.Test(1000), vests=tt.Asset.Test(1000000),
+                          hbds=tt.Asset.Tbd(1000))
 
     ####################################################################################################################
     # Cancel_transfer_from_savings preparation
@@ -55,7 +53,7 @@ def prepare_blocklog():
 
     node.wait_number_of_blocks(21)
     node.close()
-    node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
+    node.get_block_log(include_index=False).copy_to(Path(__file__).parent.absolute())
 
 
 if __name__ == "__main__":

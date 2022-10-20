@@ -2,8 +2,6 @@ from pathlib import Path
 
 import test_tools as tt
 
-from local_tools import create_account_and_fund_it
-
 
 def prepare_block_log_with_transactions():
     node = tt.InitNode()
@@ -22,7 +20,7 @@ def prepare_block_log_with_transactions():
 
 
 def prepare_transactions(wallet) -> None:
-    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     wallet.api.post_comment('alice', 'test-permlink', '', 'someone0', 'test-title', 'this is a body', '{}')
 

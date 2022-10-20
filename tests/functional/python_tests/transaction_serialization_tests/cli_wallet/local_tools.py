@@ -8,8 +8,6 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import create_account_and_fund_it
-
 
 def __serialize_legacy(assets: Iterable) -> Iterable[str]:
     return (str(asset) for asset in assets)
@@ -65,9 +63,9 @@ def run_for_all_cases(**assets: tt.AnyAsset):
 
 def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
     # Transfer to vest huge amount of test to give power to accounts.
-    create_account_and_fund_it(wallet, 'alice', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100000),
-                               tbds=tt.Asset.Tbd(100))
-    create_account_and_fund_it(wallet, 'bob', tests=tt.Asset.Test(100), vests=tt.Asset.Test(100000))
+    wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000),
+                          hbds=tt.Asset.Tbd(100))
+    wallet.create_account('bob', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000))
 
     # Post comment and vote allow to get reward on accounts alice and bob.
     wallet.api.post_comment('alice', 'permlink', '', 'paremt-permlink', 'title', 'body', '{}')

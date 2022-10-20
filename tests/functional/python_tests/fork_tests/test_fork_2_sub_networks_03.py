@@ -2,7 +2,7 @@ from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witnes
 import test_tools as tt
 from time import sleep
 
-def test_fork_2_sub_networks_04(prepare_fork_2_sub_networks_03):
+def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     # start - A network (consists of a 'minority' network(3 witnesses) + a 'majority' network(18 witnesses)) produces blocks
 
     # - the network is split into 2 sub networks: 3 witnesses('minority' network) + 18 witnesses('majority' network)
