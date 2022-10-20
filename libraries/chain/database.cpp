@@ -4311,6 +4311,13 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     {
       ilog( "Processing ${n} genesis hardforks", ("n", n) );
       set_hardfork( n, true );
+#ifdef IS_TEST_NET
+      if( n < HIVE_NUM_HARDFORKS )
+      {
+        ilog( "Next hardfork scheduled for ${t} (current block timestamp ${c})",
+          ( "t", _hardfork_versions.times[ n + 1 ] )( "c", block.timestamp ) );
+      }
+#endif
 
       const hardfork_property_object& hardfork_state = get_hardfork_property_object();
       FC_ASSERT( hardfork_state.current_hardfork_version == _hardfork_versions.versions[n], "Unexpected genesis hardfork state" );
