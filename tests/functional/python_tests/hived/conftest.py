@@ -24,7 +24,7 @@ def block_log_helper() -> Tuple[tt.BlockLog, int]:
 
 @fixture(scope='package')
 def block_log(block_log_helper) -> Path:
-    return block_log_helper[0].get_path()
+    return block_log_helper[0].path
 
 
 @fixture(scope='package')
