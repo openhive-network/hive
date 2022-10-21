@@ -346,7 +346,7 @@ fork_tests:
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   variables:
-    PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_TIMEOUT_MINUTES: 15
   script:
     - cd tests/functional/python_tests/fork_tests
     - *run-pytest

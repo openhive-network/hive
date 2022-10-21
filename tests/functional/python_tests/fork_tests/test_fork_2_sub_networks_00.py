@@ -1,4 +1,5 @@
-from .local_tools import assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, \
+                get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, lib_true_condition
 import test_tools as tt
 
 def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
@@ -53,10 +54,6 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
     tt.logger.info(f'Reconnect sub networks - start')
     connect_sub_networks(sub_networks)
 
-    while True:
-        wait(1, logs, majority_api_node)
-
-        if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
-            break
+    wait_for_final_block(majority_api_node, logs, [_m, _M], True, lib_true_condition, False)
 
     assert_no_duplicates(minority_api_node, majority_api_node)

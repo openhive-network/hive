@@ -1,5 +1,8 @@
-from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks, \
+                        disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, lib_custom_condition
 import test_tools as tt
+
+from functools import partial
 
 def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     # start - A network (consists of a 'minority' network(6 witnesses) + a 'majority' network(17 witnesses)) produces blocks
@@ -106,11 +109,6 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     tt.logger.info(f'Reconnect sub networks')
     connect_sub_networks(sub_networks)
 
-    while True:
-        wait(1, logs, minority_api_node)
-
-        if get_last_irreversible_block_num(_M) > last_lib_04:
-            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
-                break
+    wait_for_final_block(minority_api_node, logs, [_m, _M], True, partial(lib_custom_condition, _M, last_lib_04), False)
 
     assert_no_duplicates(minority_api_node, majority_api_node)

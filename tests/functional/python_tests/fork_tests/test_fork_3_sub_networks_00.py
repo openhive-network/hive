@@ -1,5 +1,9 @@
-from .local_tools import connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, \
+    get_last_irreversible_block_num, wait_for_final_block, lib_custom_condition
+
 import test_tools as tt
+
+from functools import partial
 
 def test_fork_3_sub_networks_00(prepare_fork_3_sub_networks_00):
     # start - A network consists of a 'minority_3' network(3 witnesses), a 'minority_4' network(4 witnesses), a 'majority' network(14 witnesses).
@@ -56,9 +60,4 @@ def test_fork_3_sub_networks_00(prepare_fork_3_sub_networks_00):
     tt.logger.info(f'Reconnect sub networks')
     connect_sub_networks(sub_networks)
 
-    while True:
-        wait(1, logs, majority_api_node)
-
-        if get_last_irreversible_block_num(_M) > last_lib:
-            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m3) and get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m4):
-                break
+    wait_for_final_block(majority_api_node, logs, [_m3, _m4, _M], True, partial(lib_custom_condition, _M, last_lib), False)

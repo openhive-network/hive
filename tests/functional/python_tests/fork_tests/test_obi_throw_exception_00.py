@@ -1,4 +1,4 @@
-from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block
 import test_tools as tt
 import time
 
@@ -53,12 +53,4 @@ def test_obi_throw_exception_00(prepare_obi_throw_exception_00):
 
     assert get_last_head_block_number(_a0) > last_lib_01
 
-    while True:
-        wait(1, logs, witness_node_0)
-        if  get_last_head_block_number(_a0) == get_last_head_block_number(_a1) and \
-            get_last_head_block_number(_w0) == get_last_head_block_number(_w1) and \
-            get_last_head_block_number(_a0) == get_last_head_block_number(_w0) and \
-            get_last_irreversible_block_num(_a0) == get_last_irreversible_block_num(_a1) and \
-            get_last_irreversible_block_num(_w0) == get_last_irreversible_block_num(_w1) and \
-            get_last_irreversible_block_num(_a0) == get_last_irreversible_block_num(_w0):
-            break
+    wait_for_final_block(witness_node_0, logs, [_a0, _w0, _a1, _w1])

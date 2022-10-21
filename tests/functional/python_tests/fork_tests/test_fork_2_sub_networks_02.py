@@ -1,4 +1,5 @@
-from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks,\
+                disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, lib_true_condition
 import test_tools as tt
 
 def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
@@ -95,4 +96,6 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     assert last_lib_m  < get_last_irreversible_block_num(_m)
     assert last_lib_M  < get_last_irreversible_block_num(_M)
 
-    assert get_last_irreversible_block_num(_m) == get_last_irreversible_block_num(_M)
+    wait_for_final_block(minority_api_node, logs, [_m, _M], True, lib_true_condition, False)
+
+    assert_no_duplicates(minority_api_node, majority_api_node)

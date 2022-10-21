@@ -128,3 +128,40 @@ def wait(blocks, log : List[fork_log], api_node):
 
         api_node.wait_number_of_blocks(1)
         tt.logger.info(f'{i+1}/{blocks} blocks')
+
+
+def final_block_the_same(method, data : list):
+    current = None
+    for item in data:
+        if current is None:
+            current = item
+        else:
+            if method( current ) != method( item ):
+                return False
+    return True
+
+def lib_true_condition():
+    return True
+
+def lib_custom_condition(compared_item1, compared_item2):
+    return get_last_irreversible_block_num(compared_item1) > compared_item2
+
+def wait_for_final_block(witness_node, logs, data : list, allow_lib = True, lib_cond = lib_true_condition, allow_last_head = True):
+    assert allow_lib or allow_last_head
+
+    #Hard to say when all nodes would have the same HEAD's/LIB's. All nodes are connected together in common network
+    #so sometimes one or two nodes are "delayed" - their LIB is lower than LIB others.
+    #The best option is to wait until every node has the same data: it doesn't matter if such situation occurs after 5 or 25 blocks.
+    #In case when nodes wouldn't have the same data, it's an obvious error and CI will finish this test.
+    while True:
+        wait(1, logs, witness_node)
+
+        #Veryfing if all nodes have the same last irreversible block number
+        if allow_lib:
+            if lib_cond() and final_block_the_same(get_last_irreversible_block_num, data):
+                return False
+
+        #Veryfing if all nodes have the same last head block number
+        if allow_last_head:
+            if final_block_the_same(get_last_head_block_number, data):
+                return False
