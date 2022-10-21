@@ -36,7 +36,7 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     tt.logger.info(f'Before an exception')
 
     last_block_before_exception = 121
-    blocks_after_exception      = 20
+    blocks_after_exception      = 5
     delay_seconds               = 5
 
     while True:
@@ -62,10 +62,12 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
 
     assert get_last_head_block_number(_a0) > last_lib_01 + 1
 
-    assert get_last_head_block_number(_a0) == get_last_head_block_number(_a1)
-    assert get_last_head_block_number(_w0) == get_last_head_block_number(_w1)
-    assert get_last_head_block_number(_a0) == get_last_head_block_number(_w0)
-
-    assert get_last_irreversible_block_num(_a0) == get_last_irreversible_block_num(_a1)
-    assert get_last_irreversible_block_num(_w0) == get_last_irreversible_block_num(_w1)
-    assert get_last_irreversible_block_num(_a0) == get_last_irreversible_block_num(_w0)
+    while True:
+        wait(1, logs, witness_node_0)
+        if  get_last_head_block_number(_a0) == get_last_head_block_number(_a1) and \
+            get_last_head_block_number(_w0) == get_last_head_block_number(_w1) and \
+            get_last_head_block_number(_a0) == get_last_head_block_number(_w0) and \
+            get_last_irreversible_block_num(_a0) == get_last_irreversible_block_num(_a1) and \
+            get_last_irreversible_block_num(_w0) == get_last_irreversible_block_num(_w1) and \
+            get_last_irreversible_block_num(_a0) == get_last_irreversible_block_num(_w0):
+            break
