@@ -116,12 +116,12 @@ namespace fc { namespace http {
           request req = c->read_request();
           if( do_on_req ) 
             do_on_req( req, rep );
-          c->get_socket().close();
         } 
         catch ( fc::exception& e ) 
         {
           wlog( "unable to read request ${1}", ("1", e.to_detail_string() ) );//fc::except_str().c_str());
         }
+        c->get_socket().close();
         //wlog( "done handle connection" );
       }
 
