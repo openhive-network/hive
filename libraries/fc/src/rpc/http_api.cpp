@@ -5,15 +5,6 @@
 
 namespace fc { namespace rpc {
 
-fc::http::connection_base& http_api_connection::get_connection()
-{
-   if( is_ssl )
-      return _ssl_connection;
-   else
-      return _http_connection;
-}
-
-
 http_api_connection::http_api_connection( const std::string& _url )
 {
    this->_url = fc::url{ _url };
@@ -109,15 +100,11 @@ void http_api_connection::send_notice(
    return;
 }
 
-fc::variant http_api_connection::do_request(
-   const fc::rpc::request& request
-)
+void http_api_connection::connect_with( fc::http::connection_base& con )
 {
-   idump( (request) );
-
    try
    {
-      get_connection().connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
+      con.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
    }
    catch( const fc::exception& e )
    {
@@ -125,11 +112,31 @@ fc::variant http_api_connection::do_request(
 
       try
       {
-         get_connection().connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
+         con.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
       } FC_CAPTURE_AND_RETHROW( (_url) )
    }
+}
 
-   std::vector< char > _body = get_connection().request( "POST", _url, fc::json::to_string(request) ).body;
+fc::variant http_api_connection::do_request(
+   const fc::rpc::request& request
+)
+{
+   idump( (request) );
+
+   std::vector< char > _body;
+
+   if( is_ssl )
+   {
+      fc::http::ssl_connection _ssl_connection;
+      connect_with( _ssl_connection );
+      _body = _ssl_connection.request( "POST", _url, fc::json::to_string(request) ).body;
+   }
+   else
+   {
+      fc::http::connection _http_connection;
+      connect_with( _http_connection );
+      _body = _http_connection.request( "POST", _url, fc::json::to_string(request) ).body;
+   }
 
    const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() } );
 
