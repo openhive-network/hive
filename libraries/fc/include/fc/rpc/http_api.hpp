@@ -37,13 +37,10 @@ namespace fc { namespace rpc {
       private:
          bool is_ssl;
 
-         fc::http::connection _http_connection;
-         fc::http::ssl_connection _ssl_connection;
-
       protected:
          fc::variant do_request( const fc::rpc::request& request );
 
-         fc::http::connection_base& get_connection();
+         void connect_with( fc::http::connection_base& con );
 
          fc::url            _url;
    };
