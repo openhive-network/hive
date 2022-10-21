@@ -4,7 +4,7 @@
 
 namespace hive{ namespace plugins { namespace p2p {
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_BUILD)
 const std::vector< std::string > default_seeds;
 #else
 const std::vector< std::string > default_seeds = {
