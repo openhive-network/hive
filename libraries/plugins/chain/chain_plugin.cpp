@@ -699,6 +699,7 @@ bool chain_plugin_impl::replay_blockchain()
     if( stop_replay_at > 0 && stop_replay_at == last_block_number )
     {
       ilog("Stopped blockchain replaying on user request. Last applied block number: ${n}.", ("n", last_block_number));
+      return true;
     }
 
     /*
