@@ -9,6 +9,8 @@
 #include <vector>
 #include <functional>
 
+#include <appbase/application.hpp>
+
 #include <boost/preprocessor/repetition.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/control/if.hpp>
@@ -216,12 +218,12 @@ namespace hive { namespace converter {
     for( size_t i = 0; i < signers_size; ++i )
       signers.emplace( signers.end(), std::bind( [&]( size_t worker_index ) {
         sig_stack_in_type local_trx;
-        while( !signers_exit.load() )
+        while( !signers_exit.load() && !appbase::app().is_interrupt_request() )
           if( shared_signatures_stack_in.pop( local_trx ) )
           {
             sign_transaction( *local_trx.second );
 
-            while( !shared_signatures_stack_out.push( local_trx.first ) ) continue;
+            while( !shared_signatures_stack_out.push( local_trx.first ) && !appbase::app().is_interrupt_request() ) continue;
           }
       }, i ) );
   }
