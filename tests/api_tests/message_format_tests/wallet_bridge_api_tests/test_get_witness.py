@@ -3,6 +3,7 @@ import pytest
 import test_tools as tt
 
 from .local_tools import as_string
+from ....local_tools import replay_prepared_block_log, run_for
 
 from .block_log.generate_block_log import WITNESSES_NAMES
 
@@ -23,8 +24,10 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-def test_get_witness_with_correct_value(replayed_node, witness_account):
-    replayed_node.api.wallet_bridge.get_witness(witness_account)
+@run_for('testnet')
+@replay_prepared_block_log
+def test_get_witness_with_correct_value(node, witness_account):
+    node.api.wallet_bridge.get_witness(witness_account)
 
 
 @pytest.mark.parametrize(
@@ -33,6 +36,8 @@ def test_get_witness_with_correct_value(replayed_node, witness_account):
         ['example-array']
     ]
 )
+@run_for('testnet')
+@replay_prepared_block_log
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_witness(witness_account)
