@@ -225,6 +225,9 @@ namespace hive { namespace converter {
 
             while( !shared_signatures_stack_out.push( local_trx.first ) && !appbase::app().is_interrupt_request() ) continue;
           }
+
+        if( appbase::app().is_interrupt_request() )
+          ilog("Signer thread #${worker_index} interrupted on user request", (worker_index));
       }, i ) );
   }
 
