@@ -5,6 +5,21 @@ import pytest
 from beem import Hive
 
 
+def pytest_addoption(parser):
+    parser.addoption("--chain-id", type=int, help="chain-id used for converting and running node")
+    parser.addoption("--skeleton-key", type=str, help="skeleton-key used for converting and running node")
+
+
+@pytest.fixture
+def chain_id(request):
+    return request.config.getoption("--chain-id") or 42
+
+
+@pytest.fixture
+def skeleton_key(request):
+    return request.config.getoption("--skeleton-key") or "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+
+
 class NodeClientMaker(Protocol):
     def __call__(self, accounts: List[dict] = None) -> Hive:
         pass
