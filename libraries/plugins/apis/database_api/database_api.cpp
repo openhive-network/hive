@@ -288,6 +288,7 @@ DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
   if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) && !args.future )
   {
     const auto& future_wso = _db.get_future_witness_schedule_object();
+    result.current_virtual_time = future_wso.current_virtual_time;
     result.next_shuffle_block_num = future_wso.next_shuffle_block_num;
   }
   return result;
