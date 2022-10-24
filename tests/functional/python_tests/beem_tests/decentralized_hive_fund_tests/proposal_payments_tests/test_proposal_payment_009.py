@@ -6,7 +6,8 @@ import test_tools as tt
 
 from .conftest import vote_proposals
 from .. import test_utils
-from ..conftest import CREATOR, NodeClientMaker, TREASURY
+from ..conftest import CREATOR, TREASURY
+from ...conftest import NodeClientMaker
 from ..... import hive_utils
 
 

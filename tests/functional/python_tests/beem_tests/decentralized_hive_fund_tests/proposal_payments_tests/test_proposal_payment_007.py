@@ -5,7 +5,8 @@ import test_tools as tt
 from beembase.operations import Update_proposal_votes
 
 from .. import test_utils
-from ..conftest import CREATOR, NodeClientMaker, TREASURY
+from ..conftest import CREATOR,  TREASURY
+from ...conftest import NodeClientMaker
 from ..... import hive_utils
 
 

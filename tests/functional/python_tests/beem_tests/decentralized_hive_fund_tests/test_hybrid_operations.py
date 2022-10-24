@@ -6,7 +6,8 @@ from beembase import operations
 import pytest
 import test_tools as tt
 
-from .conftest import CREATOR, node_client, NodeClientMaker
+from .conftest import CREATOR
+from ..conftest import NodeClientMaker
 from .... import hive_utils
 
 
