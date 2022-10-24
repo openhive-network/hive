@@ -3,6 +3,7 @@ import pytest
 import test_tools as tt
 
 from .local_tools import as_string
+from ....local_tools import replay_prepared_block_log, run_for
 
 from .block_log.generate_block_log import ACCOUNTS
 
@@ -38,10 +39,12 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], -1, True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_get_account_history_with_correct_value(replayed_node, account, from_, limit):
+@run_for('testnet')
+@replay_prepared_block_log
+def test_get_account_history_with_correct_value(node, account, from_, limit):
     # A replayed node was used. Because of this, there is no need to wait for transactions
     # to become visible in `get_account_history`
-    replayed_node.api.wallet_bridge.get_account_history(account, from_, limit)
+    node.api.wallet_bridge.get_account_history(account, from_, limit)
 
 
 @pytest.mark.parametrize(

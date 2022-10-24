@@ -3,6 +3,7 @@ import pytest
 import test_tools as tt
 
 from .local_tools import as_string
+from ....local_tools import replay_prepared_block_log, run_for
 
 from .block_log.generate_block_log import WITNESSES_NAMES
 
@@ -31,8 +32,10 @@ CORRECT_VALUES = [
         (WITNESSES_NAMES[0], True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_list_witnesses_with_correct_value(witness_account, limit, replayed_node):
-    replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+@run_for('testnet')
+@replay_prepared_block_log
+def test_list_witnesses_with_correct_value(witness_account, limit, node):
+    node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -42,9 +45,11 @@ def test_list_witnesses_with_correct_value(witness_account, limit, replayed_node
         (WITNESSES_NAMES[0], 1001),
     ]
 )
-def test_list_witnesses_with_incorrect_value(replayed_node, witness_account, limit):
+@run_for('testnet')
+@replay_prepared_block_log
+def test_list_witnesses_with_incorrect_value(node, witness_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
-        replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+        node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -57,6 +62,8 @@ def test_list_witnesses_with_incorrect_value(replayed_node, witness_account, lim
         (WITNESSES_NAMES[0], 'true'),
     ]
 )
-def test_list_witnesses_with_incorrect_type_of_arguments(replayed_node, witness_account, limit):
+@run_for('testnet')
+@replay_prepared_block_log
+def test_list_witnesses_with_incorrect_type_of_arguments(node, witness_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
-        replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+        node.api.wallet_bridge.list_witnesses(witness_account, limit)
