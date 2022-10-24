@@ -5,18 +5,19 @@ import test_tools as tt
 
 from .. import test_utils
 from ..conftest import CREATOR, NodeClientMaker, TREASURY
-from .... import hive_utils
+from ..... import hive_utils
 
 
 # Greedy baby scenario
+
 # 0. In this scenario we have one proposal with huge daily pay and couple with low daily pay
 #    all proposals have the same number of votes, greedy proposal is last
-# 1. create few proposals - in this scenario proposals have the same starting and ending dates
+# 1. create few proposals - in this scenario proposals have different starting and ending dates
 # 2. vote on them to show differences in asset distribution (depending on collected votes)
 # 3. wait for proposal payment phase
 # 4. verify (using account history and by checking regular account balance) that given accounts have been correctly paid
 # Expected result: all got paid.
-def test_proposal_payment_004(node_client: NodeClientMaker):
+def test_proposal_payment_006(node_client: NodeClientMaker):
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {
@@ -73,12 +74,13 @@ def test_proposal_payment_004(node_client: NodeClientMaker):
     now = test_utils.date_from_iso(now)
 
     proposal_data = [
-        ["tester001", 1 + 0, 3, 24.000],  # starts 1 day from now and lasts 3 days
-        ["tester002", 1 + 0, 3, 24.000],  # starts 1 days from now and lasts 3 day
-        ["tester003", 1 + 0, 3, 24.000],  # starts 1 days from now and lasts 3 day
-        ["tester004", 1 + 0, 3, 240000.000],  # starts 1 day from now and lasts 3 days
+        ["tester001", 1 + 0, 1, 24.000],  # starts 1 day from now and lasts 1 day
+        ["tester002", 1 + 1, 1, 24.000],  # starts 2 days from now and lasts 1 day
+        ["tester003", 1 + 2, 1, 24.000],  # starts 3 days from now and lasts 1 day
+        ["tester004", 1 + 0, 3, 240000.000],  # starts one day from now and lasts 3 days
     ]
-    proposals_daily_pay = dict([(prop[0], prop[3]) for prop in proposal_data])
+    proposals_daily_pay = [(prop[0], prop[3]) for prop in proposal_data]
+    proposals_datetime_ranges = {}
 
     proposals = [
         # pace proposals here in the format: {'creator' : creator, 'receiver' : receiver, 'start_date' : start-date, 'end_date' : end_date}
@@ -97,6 +99,10 @@ def test_proposal_payment_004(node_client: NodeClientMaker):
             "daily_pay": f"{pd[3] :.3f} TBD",
         }
         proposals.append(proposal)
+        proposals_datetime_ranges[pd[0]] = {
+            "start": test_utils.date_from_iso(start_date),
+            "end": test_utils.date_from_iso(end_date),
+        }
 
     test_utils.create_proposals(node_client, proposals, wif)
 
@@ -150,14 +156,19 @@ def test_proposal_payment_004(node_client: NodeClientMaker):
 
         tt.logger.info("Balances for accounts at time: {}".format(current_date_iso))
         accnts = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
-
-        expected_results = test_utils.calculate_expected_hourly_payout(proposals_daily_pay, budget)
+        expected_results = dict()
+        for acc, payout in proposals_daily_pay:
+            date_ranges = proposals_datetime_ranges[acc]
+            if current_date >= date_ranges["start"] and current_date < date_ranges["end"]:
+                expected_results[acc] = payout
+        expected_results = test_utils.calculate_expected_hourly_payout(expected_results, budget)
 
         for acc, ret in accnts.items():
-            # because of rounding mechanism
-            assert (
-                abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2
-            ), f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected: {expected_results[acc]}, account: {acc}"
+            if acc in expected_results.keys():
+                # because of rounding mechanism
+                assert (
+                    abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2
+                ), f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected: {expected_results[acc]}, account: {acc}"
 
         previous_balances = accnts
 

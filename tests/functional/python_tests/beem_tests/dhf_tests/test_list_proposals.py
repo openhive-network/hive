@@ -6,7 +6,7 @@ from beembase.operations import Create_proposal
 import test_tools as tt
 
 from .conftest import CREATOR, NodeClientMaker, TREASURY
-from ... import hive_utils
+from .... import hive_utils
 
 START_END_SUBJECTS = [
     [1, 3, "Subject001"],

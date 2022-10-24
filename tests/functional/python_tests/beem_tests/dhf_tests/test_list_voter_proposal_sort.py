@@ -8,7 +8,7 @@ import test_tools as tt
 
 from . import test_utils
 from .conftest import create_proposals, CREATOR, NodeClientMaker, TREASURY
-from ... import hive_utils
+from .... import hive_utils
 
 
 def list_proposal_votes(node, start: list, limit: int, order: str, direction: str) -> list:

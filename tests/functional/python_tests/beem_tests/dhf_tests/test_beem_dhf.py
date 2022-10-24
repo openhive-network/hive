@@ -13,7 +13,7 @@ import test_tools as tt
 
 from . import test_utils
 from .conftest import CREATOR, NodeClientMaker, TREASURY
-from ... import hive_utils
+from .... import hive_utils
 
 
 def create_proposal(node, creator_account, receiver_account, wif, subject):

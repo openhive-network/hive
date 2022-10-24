@@ -6,7 +6,7 @@ from beembase.operations import Update_proposal_votes
 
 from .. import test_utils
 from ..conftest import CREATOR, NodeClientMaker, TREASURY
-from .... import hive_utils
+from ..... import hive_utils
 
 
 def unvote_proposals(node, accounts, wif):

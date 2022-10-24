@@ -10,7 +10,7 @@ import test_tools as tt
 
 from .conftest import CREATOR, NodeClientMaker
 from .test_utils import get_permlink
-from ... import hive_utils
+from .... import hive_utils
 
 
 def create_accounts(node, creator, account):

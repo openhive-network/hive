@@ -1,7 +1,7 @@
 from beembase.operations import Update_proposal_votes
 import test_tools as tt
 
-from .... import hive_utils
+from ..... import hive_utils
 
 
 def vote_proposals(node, accounts, wif):

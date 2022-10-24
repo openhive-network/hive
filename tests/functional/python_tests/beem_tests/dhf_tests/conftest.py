@@ -6,7 +6,7 @@ import pytest
 import test_tools as tt
 
 from . import test_utils
-from ... import hive_utils
+from .... import hive_utils
 
 CREATOR: Final[str] = "initminer"
 TREASURY: Final[str] = "hive.fund"

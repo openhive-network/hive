@@ -7,7 +7,7 @@ import pytest
 import test_tools as tt
 
 from .conftest import CREATOR, node_client, NodeClientMaker
-from ... import hive_utils
+from .... import hive_utils
 
 
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif=None):

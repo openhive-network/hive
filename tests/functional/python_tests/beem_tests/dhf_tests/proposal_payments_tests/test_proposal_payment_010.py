@@ -5,18 +5,14 @@ import test_tools as tt
 
 from .. import test_utils
 from ..conftest import CREATOR, NodeClientMaker, TREASURY
-from .... import hive_utils
+from ..... import hive_utils
 
 
-# Greedy baby scenario
-# 0. In this scenario we have one proposal with huge daily pay and couple with low daily pay
-#    all proposals have the same number of votes, greedy proposal is first
 # 1. create few proposals - in this scenario proposals have different starting and ending dates
 # 2. vote on them to show differences in asset distribution (depending on collected votes)
 # 3. wait for proposal payment phase
 # 4. verify (using account history and by checking regular account balance) that given accounts have been correctly paid
-# Expected result: Only greedy baby got paid
-def test_proposal_payment_005(node_client: NodeClientMaker):
+def test_proposal_payment_010(node_client: NodeClientMaker):
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {
@@ -40,8 +36,6 @@ def test_proposal_payment_005(node_client: NodeClientMaker):
             "public_key": "TST8dPte853xAuLMDV7PTVmiNMRwP6itMyvSmaht7J5tVczkDLa5K",
         },
     ]
-
-    account_names = [v["name"] for v in accounts]
 
     wif = tt.Account("initminer").private_key
     node_client = node_client(accounts=accounts)
@@ -73,49 +67,40 @@ def test_proposal_payment_005(node_client: NodeClientMaker):
     now = test_utils.date_from_iso(now)
 
     proposal_data = [
-        ["tester001", 1 + 0, 3, 240000.000],  # starts 1 day from now and lasts 3 days
-        ["tester002", 1 + 0, 1, 24.000],  # starts 1 day from now and lasts 1 days
-        ["tester003", 1 + 1, 1, 24.000],  # starts 2 days from now and lasts 1 day
-        ["tester004", 1 + 2, 1, 24.000],  # starts 3 days from now and lasts 1 day
+        ["tester001", 1 + 0, 5, "24.000 TBD"],  # starts one day from now and lasts five days
+        ["tester002", 1 + 0, 2, "24.000 TBD"],  # starts one day from now and lasts two days
+        ["tester003", 1 + 2, 1, "24.000 TBD"],  # starts three days from now and lasts one day
+        ["tester004", 1 + 4, 1, "24.000 TBD"],  # starts five days from now and lasts one day
     ]
 
     proposals = [
         # pace proposals here in the format: {'creator' : creator, 'receiver' : receiver, 'start_date' : start-date, 'end_date' : end_date}
     ]
 
-    start = None
     for pd in proposal_data:
         start_date, end_date = test_utils.get_start_and_end_date(now, pd[1], pd[2])
-        if start is None:
-            start = test_utils.date_from_iso(start_date)
         proposal = {
             "creator": pd[0],
             "receiver": pd[0],
             "start_date": start_date,
             "end_date": end_date,
-            "daily_pay": f"{pd[3] :.3f} TBD",
+            "daily_pay": pd[3],
         }
         proposals.append(proposal)
 
+    test_start_date = now + datetime.timedelta(days=1)
+    test_start_date_iso = test_utils.date_to_iso(test_start_date)
+
+    test_end_date = test_start_date + datetime.timedelta(days=6, hours=1)
+    test_end_date_iso = test_utils.date_to_iso(test_end_date)
+
     test_utils.create_proposals(node_client, proposals, wif)
+
+    # list proposals with inactive status, it shoud be list of pairs id:total_votes
+    test_utils.list_proposals(node_client, test_start_date_iso, "inactive")
 
     # each account is voting on proposal
     test_utils.vote_proposals(node_client, accounts, wif)
-
-    propos = node_client.get_dynamic_global_properties(False)
-    period = test_utils.date_from_iso(propos["next_maintenance_time"])
-
-    while period + datetime.timedelta(hours=1) < start:
-        period = period + datetime.timedelta(hours=1)
-
-    pre_test_start_date = period
-    test_start_date = pre_test_start_date
-    pre_test_start_date = test_start_date - datetime.timedelta(seconds=2)
-    test_start_date_iso = test_utils.date_to_iso(test_start_date)
-    pre_test_start_date_iso = test_utils.date_to_iso(pre_test_start_date)
-
-    test_end_date = test_start_date + datetime.timedelta(days=3)
-    test_end_date_iso = test_utils.date_to_iso(test_end_date)
 
     # list proposals with inactive status, it shoud be list of pairs id:total_votes
     votes = test_utils.list_proposals(node_client, test_start_date_iso, "inactive")
@@ -132,41 +117,44 @@ def test_proposal_payment_005(node_client: NodeClientMaker):
 
     # move forward in time to see if proposals are paid
     # moving is made in 1h increments at a time, after each
-    # increment balance is printed and checked
+    # increment balance is printed
     tt.logger.info("Moving to date: {}".format(test_start_date_iso))
-    hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, pre_test_start_date_iso, False)
-    previous_balances = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
     current_date = test_start_date
-    choosen_one = account_names[0]
-
     while current_date < test_end_date:
         current_date = current_date + datetime.timedelta(hours=1)
         current_date_iso = test_utils.date_to_iso(current_date)
 
         tt.logger.info("Moving to date: {}".format(current_date_iso))
-        budget = test_utils.calculate_propsal_budget(node_client, TREASURY, wif)
+        hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
 
         tt.logger.info("Balances for accounts at time: {}".format(current_date_iso))
-        accnts = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
+        test_utils.print_balance(node_client, accounts)
+        test_utils.print_balance(node_client, [{"name": TREASURY}])
 
-        for acc, ret in accnts.items():
-            if acc == choosen_one:
-                # because of rounding mechanism
-                assert (
-                    abs((int(previous_balances[acc]) + budget) - int(ret)) < 2
-                ), f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}"
-            else:
-                assert ret == "390000", f"missmatch in balances for {acc}: {ret} != 390000"
-
-        previous_balances = accnts
+        votes = test_utils.list_proposals(node_client, test_start_date_iso, "active")
+        votes = test_utils.list_proposals(node_client, test_start_date_iso, "expired")
+        votes = test_utils.list_proposals(node_client, test_start_date_iso, "all")
 
     # move additional hour to ensure that all proposals ended
     tt.logger.info("Moving to date: {}".format(test_end_date_iso))
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
     tt.logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
-    balances = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
-    test_balances = previous_balances
+    balances = test_utils.print_balance(node_client, accounts)
 
-    for k, v in test_balances.items():
-        assert v == balances[k], f"invalid value in {k}: {v} != {balances[k]}"
+    # 'HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD' == 5 days, so in 5th day any proposal is not paid at all, therefore:
+    #     An account 'tester001' got only 486.000 TBD
+    #     An account 'tester004' didn't get any reward
+    test_balances = [
+        "486000",
+        "438000",
+        "414000",
+        "390000",
+    ]
+
+    for idx in range(0, len(test_balances)):
+        assert balances[idx] == test_balances[idx], "Balances dont match {} != {}".format(
+            balances[idx], test_balances[idx]
+        )
+
+    test_utils.print_balance(node_client, [{"name": TREASURY}])

@@ -2,7 +2,7 @@ from typing import Final
 
 import test_tools as tt
 
-from ... import hive_utils
+from .... import hive_utils
 
 STACK_LEVEL: Final[int] = 2
 

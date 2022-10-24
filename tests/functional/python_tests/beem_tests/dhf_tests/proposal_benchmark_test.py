@@ -32,7 +32,7 @@ import sys
 
 import dateutil.parser
 
-from ... import hive_utils
+from .... import hive_utils
 
 data_size = 100
 delayed_blocks = 1

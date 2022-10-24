@@ -6,7 +6,7 @@ import test_tools as tt
 
 from .. import test_utils
 from ..conftest import create_proposals, CREATOR, NodeClientMaker, TREASURY
-from .... import hive_utils
+from ..... import hive_utils
 
 
 # 1. create few proposals - in this scenario all proposals have the same start and end date

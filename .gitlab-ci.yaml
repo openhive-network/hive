@@ -239,7 +239,7 @@ beem_tests:
     PYTHONPATH: $CI_PROJECT_DIR/tests/functional
   script:
     - *beem_setup
-    - cd tests/functional/python_tests/dhf_tests
+    - cd tests/functional/python_tests/beem_tests
     - *run-pytest
   artifacts:
     reports:
