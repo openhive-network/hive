@@ -33,8 +33,8 @@ from ..local_tools import run_for
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_ops_in_block_with_correct_values(prepared_node, block_num, virtual_operation, include_reversible):
-    prepared_node.api.account_history.get_ops_in_block(
+def test_get_ops_in_block_with_correct_values(node, block_num, virtual_operation, include_reversible):
+    node.api.account_history.get_ops_in_block(
         block_num=block_num,
         only_virtual=virtual_operation,
         include_reversible=include_reversible,
@@ -64,9 +64,9 @@ def test_get_ops_in_block_with_correct_values(prepared_node, block_num, virtual_
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_ops_in_block_with_incorrect_type_of_arguments(prepared_node, block_num, virtual_operation, include_reversible):
+def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_num, virtual_operation, include_reversible):
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.account_history.get_ops_in_block(
+        node.api.account_history.get_ops_in_block(
             block_num=block_num,
             only_virtual=virtual_operation,
             include_reversible=include_reversible,
