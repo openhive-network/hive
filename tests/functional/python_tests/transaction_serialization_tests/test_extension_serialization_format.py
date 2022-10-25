@@ -2,7 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from ....local_tools import date_from_now
+from ....local_tools import date_from_now, run_for
+
 
 PROPOSAL_START_DATE = date_from_now(weeks=16)
 PROPOSAL_END_DATE = date_from_now(weeks=20)
@@ -26,7 +27,7 @@ PROPOSAL_END_DATE_AFTER_UPDATE = date_from_now(weeks=19)
         ),
     ]
 )
-@pytest.mark.testnet
+@run_for('testnet')
 def test_change_comment_operation(node, api, expected_extension):
     wallet = tt.Wallet(attach_to=node)
 
@@ -72,7 +73,7 @@ def test_change_comment_operation(node, api, expected_extension):
         ('condenser', ['update_proposal_end_date', {'end_date': PROPOSAL_END_DATE_AFTER_UPDATE}]),
     ]
 )
-@pytest.mark.testnet
+@run_for('testnet')
 def test_update_proposal_operation(node, api, expected_extension):
     wallet = tt.Wallet(attach_to=node)
 
