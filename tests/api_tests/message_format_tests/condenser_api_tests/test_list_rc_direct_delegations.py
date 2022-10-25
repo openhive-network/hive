@@ -25,9 +25,9 @@ CORRECT_VALUES = [
     ]
 )
 @run_for('testnet')
-def test_list_rc_direct_delegations_with_correct_value(prepared_node, wallet, from_, to, limit):
+def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, limit):
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
-    prepared_node.api.condenser.list_rc_direct_delegations([from_, to], limit)
+    node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
 @pytest.mark.parametrize(
@@ -47,19 +47,19 @@ def test_list_rc_direct_delegations_with_correct_value(prepared_node, wallet, fr
     ]
 )
 @run_for('testnet')
-def test_list_rc_direct_delegations_with_incorrect_value(prepared_node, wallet, from_, to, limit):
+def test_list_rc_direct_delegations_with_incorrect_value(node, wallet, from_, to, limit):
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_direct_delegations([from_, to], limit)
+        node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
 @run_for('testnet')
-def test_list_rc_direct_delegations_with_additional_argument(prepared_node, wallet):
+def test_list_rc_direct_delegations_with_additional_argument(node, wallet):
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]], 100, 'additional-argument')
+        node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]], 100, 'additional-argument')
 
 
 @pytest.mark.parametrize(
@@ -85,19 +85,19 @@ def test_list_rc_direct_delegations_with_additional_argument(prepared_node, wall
     ]
 )
 @run_for('testnet')
-def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(prepared_node, wallet, from_, to, limit):
+def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(node, wallet, from_, to, limit):
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+        node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
 @run_for('testnet')
-def test_list_rc_direct_delegations_with_missing_argument(prepared_node, wallet):
+def test_list_rc_direct_delegations_with_missing_argument(node, wallet):
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]])
+        node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]])
 
 
 def create_account_and_delegate_its_rc(wallet, accounts):

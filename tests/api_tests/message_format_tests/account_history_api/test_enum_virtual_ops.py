@@ -29,8 +29,8 @@ from ..local_tools import run_for
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_enum_virtual_ops_with_correct_values(prepared_node, block_range_begin, block_range_end, group_by_block):
-    prepared_node.api.account_history.enum_virtual_ops(
+def test_enum_virtual_ops_with_correct_values(node, block_range_begin, block_range_end, group_by_block):
+    node.api.account_history.enum_virtual_ops(
         block_range_begin=block_range_begin,
         block_range_end=block_range_end,
         group_by_block=group_by_block,
@@ -64,9 +64,9 @@ def test_enum_virtual_ops_with_correct_values(prepared_node, block_range_begin, 
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_enum_virtual_ops_with_incorrect_values(prepared_node, block_range_begin, block_range_end, group_by_block):
+def test_enum_virtual_ops_with_incorrect_values(node, block_range_begin, block_range_end, group_by_block):
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.account_history.enum_virtual_ops(
+        node.api.account_history.enum_virtual_ops(
             block_range_begin=block_range_begin,
             block_range_end=block_range_end,
             group_by_block=group_by_block,
