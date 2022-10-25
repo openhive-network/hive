@@ -93,6 +93,11 @@ notification_handler &instance()
   return instance;
 }
 
+void notification_handler::broadcast_impl(network_broadcaster& broadcaster, std::unique_ptr<notification_t> note)
+{
+  broadcaster.broadcast(*note);
+}
+
 void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_pool, const fc::string& regex)
 {
   if (address_pool.empty()) network.reset();
@@ -120,27 +125,9 @@ bool notification_handler::is_broadcasting_active() const
 
 void notification_handler::network_broadcaster::broadcast(const notification_t &notification) noexcept
 {
-  if (!allowed()) return;
-
-  bool is_exception_occured = false;
-
-  for (auto &address : address_pool)
-  {
-    if (!allowed()) return;
-    is_exception_occured = !error_handler([&]{
-      if (address.second < MAX_RETRIES)
-      {
-        fc::http::connection_ptr con{new fc::http::connection{}};
-        con->connect_to(address.first);
-        con->request("PUT", "", fc::json::to_string(notification), fc::http::headers(), false);
-      }
-    });
-
-    if (is_exception_occured && ++address.second == MAX_RETRIES)
-      wlog("address ${addr} exceeded max amount of failures, no future requests will be sent there",
-            ("addr", address.first));
-    else address.second = 0;
-  }
+  for (auto& con : connections)
+    if (allowed())
+      con.send_request(notification);
 }
 
 void scope_guarded_timer::send_notif()
@@ -165,6 +152,26 @@ scope_guarded_timer::~scope_guarded_timer()
   send_notif();
 }
 
+void notification_handler::network_broadcaster::notification_connection_holder_t::send_request(const notification_t& note)
+{
+  if(m_failure_counter >= MAX_RETRIES) return;
+
+  const bool is_sending_request_succeed = error_handler([&]{
+      const fc::string json{ fc::json::to_string(note) };
+      fc::http::connection_ptr connection{ new fc::http::connection{} };
+
+      {
+        std::lock_guard<std::mutex> lock{*(this->m_mtx_connection_access)};
+        connection->connect_to(this->m_address);
+        connection->request("PUT", "", json, fc::http::headers{}, /* wait for response = */ false);
+      }
+  });
+
+  if(is_sending_request_succeed)
+    m_failure_counter = 0ul;
+  else if(++m_failure_counter == MAX_RETRIES)
+    wlog("address ${addr} exceeded max amount of failures, no future requests will be sent there", ("addr", m_address));
+}
 } // detail
 
 detail::notification_handler &get_notification_handler_instance() { return detail::instance(); }

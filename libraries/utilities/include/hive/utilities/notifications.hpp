@@ -2,6 +2,7 @@
 
 #include <fc/time.hpp>
 #include <fc/variant.hpp>
+#include <fc/io/json.hpp>
 #include <fc/network/ip.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/reflect/variant.hpp>
@@ -79,40 +80,40 @@ class notification_handler
 
   class network_broadcaster
   {
-    signal_connection_t connection;
+    class notification_connection_holder_t
+    {
+      fc::ip::endpoint m_address;
+      std::shared_ptr<std::mutex> m_mtx_connection_access{ std::make_shared<std::mutex>() };
+      uint8_t m_failure_counter{0};
+
+    public:
+      explicit notification_connection_holder_t(const fc::ip::endpoint& ip) : m_address{ip} {}
+      void send_request(const notification_t& note);
+    };
+
     std::atomic_bool allowed_connection{true};
-    std::map<fc::ip::endpoint, uint32_t> address_pool;
+    std::vector<notification_connection_holder_t> connections;
 
     bool allowed() const { return allowed_connection.load(); }
 
   public:
-    network_broadcaster(const std::vector<fc::ip::endpoint> &pool)
+    explicit network_broadcaster(const std::vector<fc::ip::endpoint> &pool)
     {
+      connections.reserve(size_t{10ul});
       for (const fc::ip::endpoint &addr : pool)
-        address_pool[addr] = 0;
-    }
-
-    ~network_broadcaster()
-    {
-      allowed_connection.store(false);
-      if (connection.connected())
-        connection.disconnect();
+        connections.emplace_back(addr);
     }
 
     void broadcast(const notification_t &ev) noexcept;
   };
 
-  template<typename ... KeyValuesTypes>
-  static void broadcast_impl(network_broadcaster& broadcaster, const fc::string& name, KeyValuesTypes&& ... key_value_types)
-  {
-    broadcaster.broadcast(notification_t{name, std::forward<KeyValuesTypes>(key_value_types)...});
-  }
+  static void broadcast_impl(network_broadcaster& broadcaster, std::unique_ptr<notification_t> note);
 
 public:
   template <typename... KeyValuesTypes>
   void broadcast(
-      const fc::string &name,
-      KeyValuesTypes &&...key_value_pairs) noexcept
+      const fc::string name,
+      KeyValuesTypes&& ...key_value_pairs) noexcept
   {
     if (!is_broadcasting_active())
       return;
@@ -138,13 +139,13 @@ public:
         futures.reserve(max_amount_of_futures);
       }
 
+      auto note_ptr = std::make_unique<notification_t>(name, std::forward<KeyValuesTypes>(key_value_pairs)...);
       futures.emplace_back(
         std::async(
           std::launch::async,
-          &notification_handler::broadcast_impl<KeyValuesTypes...>,
+          &notification_handler::broadcast_impl,
           std::ref(*network),
-          std::ref(name),
-          std::forward<KeyValuesTypes>(key_value_types)...
+          std::move(note_ptr)
         )
       );
     }
