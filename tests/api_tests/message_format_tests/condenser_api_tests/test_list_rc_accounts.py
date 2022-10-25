@@ -29,9 +29,9 @@ CORRECT_VALUES = [
     ]
 )
 @run_for('testnet')
-def test_list_rc_accounts_with_correct_values(prepared_node, wallet, rc_account, limit):
+def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
     wallet.create_account(ACCOUNT)
-    prepared_node.api.condenser.list_rc_accounts(rc_account, limit)
+    node.api.condenser.list_rc_accounts(rc_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -42,10 +42,10 @@ def test_list_rc_accounts_with_correct_values(prepared_node, wallet, rc_account,
     ]
 )
 @run_for('testnet')
-def test_list_rc_accounts_with_incorrect_values(prepared_node, wallet, rc_account, limit):
+def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit):
     wallet.create_account(ACCOUNT)
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_accounts(rc_account, limit)
+        node.api.condenser.list_rc_accounts(rc_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -60,21 +60,21 @@ def test_list_rc_accounts_with_incorrect_values(prepared_node, wallet, rc_accoun
     ]
 )
 @run_for('testnet')
-def test_list_rc_accounts_with_incorrect_type_of_arguments(prepared_node, wallet, rc_account, limit):
+def test_list_rc_accounts_with_incorrect_type_of_arguments(node, wallet, rc_account, limit):
     wallet.create_account(ACCOUNT)
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_accounts(rc_account, limit)
+        node.api.condenser.list_rc_accounts(rc_account, limit)
 
 
 @run_for('testnet')
-def test_list_rc_account_with_additional_argument(prepared_node, wallet):
+def test_list_rc_account_with_additional_argument(node, wallet):
     wallet.create_account(ACCOUNT)
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_accounts(ACCOUNT, 100, 'additional-argument')
+        node.api.condenser.list_rc_accounts(ACCOUNT, 100, 'additional-argument')
 
 
 @run_for('testnet')
-def test_list_rc_account_with_missing_argument(prepared_node, wallet):
+def test_list_rc_account_with_missing_argument(node, wallet):
     wallet.create_account(ACCOUNT)
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.condenser.list_rc_accounts(ACCOUNT)
+        node.api.condenser.list_rc_accounts(ACCOUNT)

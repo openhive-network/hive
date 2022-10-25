@@ -19,11 +19,11 @@ CORRECT_VALUES = [
 
 
 @pytest.fixture
-def ready_node(prepared_node, should_prepare):
+def ready_node(node, should_prepare):
     if should_prepare:
-        wallet = tt.Wallet(attach_to=prepared_node)
+        wallet = tt.Wallet(attach_to=node)
         create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
-    return prepared_node
+    return node
 
 
 @pytest.mark.parametrize(
