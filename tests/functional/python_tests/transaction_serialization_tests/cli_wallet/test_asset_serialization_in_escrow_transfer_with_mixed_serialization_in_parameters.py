@@ -2,10 +2,10 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import date_from_now
+from .....local_tools import date_from_now, run_for
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_hbd_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization):
     with wallet_with_hf26_serialization.in_single_transaction():
         wallet_with_hf26_serialization.api.create_account('initminer', 'alice', '{}')
@@ -16,7 +16,7 @@ def test_hbd_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_se
                                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_hbd_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}')
@@ -28,7 +28,7 @@ def test_hbd_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_
                                                              date_from_now(weeks=20), '{}')
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_hive_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization):
     with wallet_with_hf26_serialization.in_single_transaction():
         wallet_with_hf26_serialization.api.create_account('initminer', 'alice', '{}')
@@ -39,7 +39,7 @@ def test_hive_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_s
                                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_hive_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}')
@@ -51,7 +51,7 @@ def test_hive_amount_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy
                                                              date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_fee_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization):
     with wallet_with_hf26_serialization.in_single_transaction():
         wallet_with_hf26_serialization.api.create_account('initminer', 'alice', '{}')
@@ -62,7 +62,7 @@ def test_fee_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serializa
                                                        date_from_now(weeks=16), date_from_now(weeks=20), '{}')
 
 
-@pytest.mark.testnet
+@run_for('testnet')
 def test_fee_in_hf26_serialization_with_legacy_wallet(wallet_with_legacy_serialization):
     with wallet_with_legacy_serialization.in_single_transaction():
         wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}')
