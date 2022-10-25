@@ -118,8 +118,7 @@ def test_hived_get_version():
 
     assert "version" in version_json
 
-    expected_keys = ["blockchain_version", "hive_revision", "fc_revision", "node_type"]
-    given_keys = list(version_json["version"].keys())
-    assert expected_keys == given_keys
+    expected_keys = {"blockchain_version", "hive_revision", "fc_revision", "node_type"}
+    assert version_json["version"].keys() == expected_keys
 
     assert version_json["version"]["node_type"] == "testnet"
