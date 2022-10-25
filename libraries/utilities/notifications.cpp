@@ -92,15 +92,16 @@ bool error_handler(const std::function<void ()> &foo)
   return !is_exception_occurred;
 }
 
+void notification_handler::broadcast_impl(network_broadcaster& broadcaster, std::unique_ptr<notification_t> note)
+{
+  broadcaster.broadcast(*note);
+}
+
 void notification_handler::setup(const std::vector<std::string> &address_pool, const fc::string& regex)
 {
   const std::vector<fc::ip::endpoint> _address_pool = create_endpoints(address_pool);
 
   if (_address_pool.empty()) network.reset();
-  else
-  {
-    const size_t ap_size = _address_pool.size();
-    ilog("setting up notification handler for ${count} address${fix}", ("count", ap_size)( "fix", (ap_size > 1 ? "es" : "") ));
 
     network = std::make_unique<network_broadcaster>(_address_pool);
 
@@ -112,22 +113,21 @@ void notification_handler::setup(const std::vector<std::string> &address_pool, c
 
     futures.reserve(max_amount_of_futures);
   }
-}
 
-void notification_handler::register_endpoints( const std::vector<std::string> &pool )
+void detail::notification_handler::register_endpoints( const std::vector<std::string> &pool )
 {
   if( !network )
-    network = std::make_unique<network_broadcaster>(create_endpoints(pool), on_send);
+    network = std::make_unique<network_broadcaster>(create_endpoints(pool));
   else
     network->register_endpoints(create_endpoints(pool));
 }
 
-bool notification_handler::is_broadcasting_active() const
+bool detail::notification_handler::is_broadcasting_active() const
 {
   return network.get() != nullptr;
 }
 
-std::vector<fc::ip::endpoint> notification_handler::create_endpoints( const std::vector<std::string>& address_pool )
+std::vector<fc::ip::endpoint> detail::notification_handler::create_endpoints( const std::vector<std::string>& address_pool )
 {
   std::vector<fc::ip::endpoint> epool;
   epool.reserve(address_pool.size());
@@ -138,45 +138,46 @@ std::vector<fc::ip::endpoint> notification_handler::create_endpoints( const std:
   return epool;
 }
 
-void notification_handler::network_broadcaster::broadcast(const notification_t &notification) noexcept
+void detail::notification_handler::network_broadcaster::broadcast(const notification_t &notification) noexcept
 {
-  if (!allowed()) return;
-
-  bool is_exception_occured = false;
-
-  for (auto &address : address_pool)
-  {
-    if (!allowed()) return;
-    is_exception_occured = !error_handler([&]{
-      if (address.second < MAX_RETRIES)
-      {
-        fc::http::connection_ptr con{new fc::http::connection{}};
-        con->connect_to(address.first);
-        con->request("PUT", "", fc::json::to_string(notification), fc::http::headers(), false);
-      }
-    });
-
-    if (is_exception_occured && ++address.second == MAX_RETRIES)
-      wlog("address ${addr} exceeded max amount of failures, no future requests will be sent there",
-            ("addr", address.first));
-    else address.second = 0;
-  }
+  for (auto& con : connections)
+    if (allowed())
+      con.send_request(notification);
 }
 
-void notification_handler::network_broadcaster::register_endpoints( const std::vector<fc::ip::endpoint> &pool )
+void detail::notification_handler::network_broadcaster::register_endpoints( const std::vector<fc::ip::endpoint> &pool )
 {
   for (const fc::ip::endpoint &addr : pool)
-    address_pool[addr] = 0;
+    this->connections.emplace_back(addr);
 }
 
+void detail::notification_handler::network_broadcaster::notification_connection_holder_t::send_request(const notification_t& note)
+{
+  if(m_failure_counter >= MAX_RETRIES) return;
+
+  const bool is_sending_request_succeed = error_handler([&]{
+      const fc::string json{ fc::json::to_string(note) };
+      fc::http::connection_ptr connection{ new fc::http::connection{} };
+
+      {
+        std::lock_guard<std::mutex> lock{*(this->m_mtx_connection_access)};
+        connection->connect_to(this->m_address);
+        connection->request("PUT", "", json, fc::http::headers{}, /* wait for response = */ false);
+      }
+  });
+
+  if(is_sending_request_succeed)
+    m_failure_counter = 0ul;
+  else if(++m_failure_counter == MAX_RETRIES)
+    wlog("address ${addr} exceeded max amount of failures, no future requests will be sent there", ("addr", m_address));
+}
 } // detail
 
-bool error_handler( const std::function<void()>& foo )
+bool notifications::error_handler( const std::function<void()>& foo )
 {
-  return detail::error_handler( foo );
+  return notifications::detail::error_handler( foo );
 }
 
 } // notifications
 } // utilities
-
 } // hive
