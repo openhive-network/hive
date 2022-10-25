@@ -1,6 +1,7 @@
 import test_tools as tt
 
-from ..local_tools import create_and_cancel_vesting_delegation, run_for
+from ..local_tools import create_and_cancel_vesting_delegation
+from ....local_tools import run_for
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')

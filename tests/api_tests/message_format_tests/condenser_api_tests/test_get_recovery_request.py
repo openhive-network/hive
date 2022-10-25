@@ -1,4 +1,5 @@
-from ..local_tools import run_for, request_account_recovery
+from ..local_tools import request_account_recovery
+from ....local_tools import run_for
 
 
 # This test is not performed on 5 million block log because of lack of accounts with recovery requests within it. In

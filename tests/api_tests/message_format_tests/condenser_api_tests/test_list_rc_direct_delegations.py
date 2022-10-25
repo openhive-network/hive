@@ -1,7 +1,8 @@
 import pytest
 
 import test_tools as tt
-from ..local_tools import as_string, run_for
+from ..local_tools import as_string
+from ....local_tools import run_for
 
 
 ACCOUNTS = ['initminer', 'alice']
