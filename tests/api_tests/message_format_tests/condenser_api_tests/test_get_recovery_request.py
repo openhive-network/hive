@@ -5,8 +5,8 @@ from ..local_tools import run_for, request_account_recovery
 # case of most recent blocklog (current_blocklog) there is a lot of recovery requests, but they are changed after every
 # remote node update. See the readme.md file in this directory for further explanation.
 @run_for('testnet')
-def test_get_recovery_request(prepared_node, wallet):
+def test_get_recovery_request(node, wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
     request_account_recovery(wallet, 'alice')
-    requests = prepared_node.api.condenser.get_recovery_request('alice')
+    requests = node.api.condenser.get_recovery_request('alice')
     assert len(requests) != 0
