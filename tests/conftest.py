@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional, Union
 
 import pytest
@@ -16,6 +17,11 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         init_node = tt.InitNode()
         init_node.run()
         return init_node
+
+    def __create_replayed_node() -> tt.ApiNode:
+        api_node = tt.ApiNode()
+        api_node.run(replay_from=Path(__file__).parent.joinpath('api_tests/message_format_tests/wallet_bridge_api_tests/block_log/block_log'), wait_for_live=False)
+        return api_node
 
     def __assert_no_duplicated_requests_of_same_node() -> None:
         requested_markers: List[str] = [marker.name for marker in request.node.iter_markers() if marker.name != 'parametrize']
@@ -55,8 +61,15 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
                         return True
         return False
 
+    def __mark_exist(name: str) -> bool:
+        mark = request.node.get_closest_marker(name)
+        if hasattr(mark, "name"):
+            if mark.name == name:
+                return True
+        return False
+
     create_node = {
-        'testnet': __create_init_node,
+        'testnet': __create_init_node if not __mark_exist('replay_prepared_block_log') else __create_replayed_node,
         'mainnet_5m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
         'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }
