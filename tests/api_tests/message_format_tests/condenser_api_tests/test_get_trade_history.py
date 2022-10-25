@@ -1,6 +1,6 @@
 import test_tools as tt
 
-from ..local_tools import run_for, date_from_now
+from ....local_tools import run_for, date_from_now
 
 
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
