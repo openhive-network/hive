@@ -27,7 +27,7 @@ def broadcast_transaction_with_wallet_bridge_api(node, transaction):
         broadcast_transaction_with_wallet_bridge_api,
     ]
 )
-@pytest.mark.testnet
+@run_for("testnet")
 def test_broadcast_transaction_with_rejected_transaction(node, broadcast):
     wallet = tt.Wallet(attach_to=node)
     wallet.api.create_account('initminer', ACCOUNT, '{}')
@@ -47,7 +47,7 @@ def test_broadcast_transaction_with_rejected_transaction(node, broadcast):
         'wallet_bridge',
     ]
 )
-@pytest.mark.testnet
+@run_for("testnet")
 def test_broadcast_transaction_synchronous_with_rejected_transaction(node, api):
     wallet = tt.Wallet(attach_to=node)
     wallet.api.create_account('initminer', ACCOUNT, '{}')
