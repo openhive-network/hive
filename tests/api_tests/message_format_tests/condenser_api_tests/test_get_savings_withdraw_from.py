@@ -1,6 +1,7 @@
 import test_tools as tt
 
-from ..local_tools import run_for, transfer_and_withdraw_from_savings
+from ..local_tools import transfer_and_withdraw_from_savings
+from ....local_tools import run_for
 
 
 # This test is not performed on 5 million and current block logs because they don't contain any savings withdrawals.
