@@ -14,8 +14,9 @@ variables:
   RUNTIME_IMAGE_TAG: "@sha256:58b2ef26ece0463bad9ba61c665ffb9dc4255a4d65b27f56048786e3fae7b2e5"
   #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-3
   BUILDER_IMAGE_TAG: "@sha256:590750387c74c470ee30910502b4f855122eae9ef9c6e7ad0841985abdc3938c"
-  #points registry.gitlab.syncad.com/hive/hive/test:ubuntu-20.04-3
-  TEST_IMAGE_TAG: "@sha256:991f5c225ea66dccabd43ae18ebe9cc4c90dc2b14d80625202f96e041c832ac6"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-4
+  TEST_IMAGE_TAG: "@sha256:f0fe7ccc77abb1fd18e0c3176ddf2c29b2125bef7eb8603946199e56450f9de9"
+
   #points to our clone of python:3.8-slim-bullseye
   PYTHON_BULLSEYE_TAG: "@sha256:c4dc24a9761fe0a7b3f498fe677e8129ab0a62d72a3beae5ea899482f104a962"
   # Versions of Python packages
@@ -268,7 +269,7 @@ beem_mirrornet_tests:
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   interruptible: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev python3-venv
     - python3 -m venv venv/
